@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alpine Rally – Prototyp</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Three.js liegt lokal unter lib/ (Version r160, gepinnt) -->
+  <script type="importmap">
+    { "imports": { "three": "./lib/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <div id="buehne">
+    <canvas id="spiel"></canvas>
+    <canvas id="hud"></canvas>
+  </div>
+  <div id="lade">ALPINE RALLY<br><small>Strecke wird gebaut …</small></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
