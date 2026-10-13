@@ -9,6 +9,7 @@ import { baueAuto } from './car.js';
 import { Fahrphysik } from './physics.js';
 import { leseEingabe } from './input.js';
 import { baueHud } from './hud.js';
+import { baueKollision } from './kollision.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -56,6 +57,7 @@ const kamera = new THREE.PerspectiveCamera(CONFIG.kamera.sichtfeld, B / H, 0.3, 
 const strecke = baueStrecke();
 const welt = baueWelt(szene, strecke);
 const pflanzen = bauePflanzen(szene, strecke, welt);
+const kollision = baueKollision(pflanzen.hindernisse);
 const auto = baueAuto();
 szene.add(auto.objekt);
 const physik = new Fahrphysik();
@@ -77,6 +79,8 @@ function setzeAuf(s, seite = 0) {
 }
 
 function neustart() {
+  kollision.restRuck = 0;
+  kollision.ruhigZeit = 0;
   setzeAuf(CONFIG.strasse.spawnBeiMeter);
   rennen.zustand = 'bereit';
   rennen.zeit = 0;
@@ -114,7 +118,7 @@ function physikSchritt(dt, e) {
   let eingabe = e;
   if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: Math.max(e.bremse, 0.35) };
 
-  const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h;
+  const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
   });
@@ -142,6 +146,9 @@ function physikSchritt(dt, e) {
     physik.vx *= 0.985;
     physik.vz *= 0.985;
   }
+
+  // Bäume und Steine
+  kollision.loese(physik, xAlt, zAlt, wAlt, dt);
 
   // Begrenzungen: Felswand, Abhang, zu weit weg
   const q2 = strecke.abfrage(physik.x, physik.z, qAuto);
@@ -274,6 +281,8 @@ function schleife(jetzt) {
 
   const xVor = physik.x, zVor = physik.z;
   akku += dt;
+  // nur für automatische Tests: Physik von aussen gesteuert
+  if (window.__alpineRally && window.__alpineRally.anhalten) akku = 0;
   while (akku >= SCHRITT) {
     physikSchritt(SCHRITT, e);
     akku -= SCHRITT;
@@ -290,6 +299,7 @@ function schleife(jetzt) {
     kmh: physik.tempo * 3.6, debug: debugAn, fps,
     meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
     untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS' }[untergrund],
+    hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
   });
 }
 
@@ -298,4 +308,7 @@ lade.style.display = 'none';
 requestAnimationFrame(schleife);
 
 // Für Tests (Screenshots) von aussen erreichbar
-window.__alpineRally = { THREE, physik, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort };
+window.__alpineRally = {
+  THREE, physik, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort, kollision,
+  physikSchritt, SCHRITT,
+};

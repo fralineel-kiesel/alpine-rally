@@ -147,6 +147,34 @@ export const CONFIG = {
     steilsterHang: 0.55,       // steiler als das (0.55 = ca. 29°) kommt das Auto nicht hoch
   },
 
+  // --- Kollision mit Bäumen und Steinen ---------------------------------
+  kollision: {
+    // Das Auto als 3 Kreise: versatz = Abstand vor (+) / hinter (-) der Automitte
+    autoKreise: [
+      { versatz: 1.35, r: 0.9 },  // vorne
+      { versatz: 0, r: 0.9 },     // Mitte
+      { versatz: -1.35, r: 0.9 }, // hinten
+    ],
+    stammRadius: 0.45,         // Bäume: nur der Stamm zählt (Meter)
+    steinFaktor: 0.42,         // Steine: Radius = Breite des Steins mal diesem Wert
+    rueckprall: 0.08,          // wie stark das Auto zurückprallt (0 = gar nicht, 1 = Gummi)
+    reibung: 0.3,              // seitliches Reiben am Hindernis (höher = bremst mehr)
+    ablenkung: 0.42,           // frontaler Aufprall: so viel Tempo bleibt als Rutschen zur Seite
+    drehStoss: 0.15,           // wie stark ein Stoss an der Ecke das Auto dreht
+    drehNachlauf: 0.3,         // nach dem Ruck dreht das Auto noch etwas weiter
+    maxDrehung: 1.8,           // höchstens so schnell dreht ein Aufprall das Auto (rad/s)
+    drehRuck: 0.6,             // Anteil der Drehung Richtung Rutschrichtung (Ruck beim Aufprall)
+    maxRuck: 50,               // höchstens so viel Grad Ruck
+    ruckSofort: 35,            // davon so viel Grad sofort im selben Moment
+    ruckTempo: 6,              // den Rest so schnell (rad/s)
+    ruhigNach: 0.8,            // so lange nach einem harten Aufprall wird das Weiterdrehen gedämpft (s)
+    drehDaempfung: 6,          // wie stark gedämpft wird
+    drehAbTempo: 15,           // ab diesem Aufpralltempo (m/s) volle Drehung, darunter weniger
+    wegDrehen: 0.01,           // Auto drückt ins Hindernis: dreht so viel pro Schritt davon weg (rad)
+    zelle: 8,                  // Rastergrösse für die schnelle Suche (Meter)
+    pruefSchritt: 0.25,        // Weg wird in so kurzen Stücken geprüft (gegen Durchrutschen)
+  },
+
   // --- Kamera -----------------------------------------------------------
   kamera: {
     sichtfeld: 62,             // Blickwinkel (Grad)

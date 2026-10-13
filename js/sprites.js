@@ -151,5 +151,12 @@ export function bauePflanzen(szene, strecke, welt) {
   for (const [liste, tex] of [[tannen, tanne], [laubbaeume, laub], [steine, stein]]) {
     if (liste.length) szene.add(spriteGruppe(liste, tex));
   }
-  return { tannen: tannen.length, laubbaeume: laubbaeume.length, steine: steine.length };
+  // Hindernisse für die Kollision: bei Bäumen nur der Stamm, Steine nach Breite
+  const k = CONFIG.kollision;
+  const hindernisse = [
+    ...tannen.map((t) => ({ x: t.x, z: t.z, r: k.stammRadius })),
+    ...laubbaeume.map((t) => ({ x: t.x, z: t.z, r: k.stammRadius })),
+    ...steine.map((t) => ({ x: t.x, z: t.z, r: t.b * k.steinFaktor })),
+  ];
+  return { tannen, laubbaeume, steine, hindernisse };
 }

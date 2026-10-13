@@ -45,6 +45,7 @@ const SCHRIFT = {
   '.': ['.....', '.....', '.....', '.....', '.....', '.##..', '.##..'],
   '/': ['....#', '....#', '...#.', '..#..', '.#...', '#....', '#....'],
   '-': ['.....', '.....', '.....', '.###.', '.....', '.....', '.....'],
+  '>': ['.#...', '..#..', '...#.', '....#', '...#.', '..#..', '.#...'],
   '=': ['.....', '.....', '#####', '.....', '#####', '.....', '.....'],
   '°': ['.##..', '#..#.', '#..#.', '.##..', '.....', '.....', '.....'],
   '+': ['.....', '..#..', '..#..', '#####', '..#..', '..#..', '.....'],
@@ -129,9 +130,13 @@ export function baueHud(canvas) {
           `TEMPO ${Math.round(z.kmh)} KM/H`,
           `DRIFT ${Math.round(z.drift)}°`,
           `UNTERGRUND ${z.untergrund}`,
+          `HINDERNISSE ${z.hindernisse}`,
+          z.aufprall
+            ? `AUFPRALL ${Math.round(z.aufprall.vorher * 3.6)} -> ${Math.round(z.aufprall.nachher * 3.6)} KM/H`
+            : 'AUFPRALL -',
         ];
         ctx.fillStyle = 'rgba(10,14,20,0.6)';
-        ctx.fillRect(2, 26, 122, zeilen.length * 9 + 4);
+        ctx.fillRect(2, 26, 152, zeilen.length * 9 + 4);
         zeilen.forEach((t, i) => text(t, 5, 29 + i * 9));
       }
     },
