@@ -80,8 +80,6 @@ const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
 
 function setzeAuf(s, seite = 0) {
-  kollision.restRuck = 0;
-  kollision.ruhigZeit = 0;
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
   rennen.letztesS = s;
@@ -107,8 +105,6 @@ function aufStrasse() {
   const q = strecke.abfrage(physik.x, physik.z);
   const s = begrenze(q.s, 2, strecke.laenge - 2);
   const p = strecke.punktBei(s);
-  kollision.restRuck = 0;
-  kollision.ruhigZeit = 0;
   physik.reset(p.x, p.z, Math.atan2(p.tx, p.tz));
   rennen.letztesS = s;
   kameraSofort();
@@ -165,7 +161,7 @@ function physikSchritt(dt, e) {
   }
 
   // Bäume und Steine
-  kollision.loese(physik, xAlt, zAlt, wAlt, dt);
+  kollision.loese(physik, xAlt, zAlt, wAlt);
 
   // Begrenzungen: Felswand, Abhang, zu weit weg
   const q2 = strecke.abfrage(physik.x, physik.z, qAuto);
