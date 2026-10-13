@@ -247,3 +247,37 @@ export function zielTextur() {
     for (let x = 0; x < 14; x++) setze(l, x, y, (x + y) % 2 ? [30, 30, 30] : [240, 240, 236]);
   return zuTextur(l, { mipmaps: false });
 }
+
+// Kleine Ziffern (3x5 Pixel) für das Checkpoint-Banner
+const ZIFFERN = {
+  1: ['.#.', '##.', '.#.', '.#.', '###'], 2: ['##.', '..#', '.#.', '#..', '###'], 3: ['##.', '..#', '.#.', '..#', '##.'],
+  4: ['#.#', '#.#', '###', '..#', '..#'], 5: ['###', '#..', '##.', '..#', '##.'], 6: ['.##', '#..', '###', '#.#', '###'],
+  7: ['###', '..#', '.#.', '.#.', '.#.'], 8: ['###', '#.#', '###', '#.#', '###'], 9: ['###', '#.#', '###', '..#', '##.'],
+  C: ['.##', '#..', '#..', '#..', '.##'], P: ['##.', '#.#', '##.', '#..', '#..'],
+};
+
+// Checkpoint-Banner: gelb-schwarze Schrägstreifen, in der Mitte "CP" + Nummer
+export function checkpointBannerTextur(nummer) {
+  const B = 48, H = 8;
+  const l = leinwand(B, H);
+  const gelb = [242, 196, 26], schwarz = [24, 24, 24];
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < B; x++) setze(l, x, y, Math.floor((x + y) / 4) % 2 ? schwarz : gelb);
+  // schwarzes Feld mit gelber Schrift
+  const text = ['C', 'P', String(nummer)];
+  const breite = text.length * 4 + 1, ox = Math.floor((B - breite) / 2);
+  for (let y = 0; y < H; y++) for (let x = ox - 1; x < ox + breite + 1; x++) setze(l, x, y, schwarz);
+  text.forEach((z, n) => {
+    const muster = ZIFFERN[z] || ZIFFERN[9];
+    for (let y = 0; y < 5; y++)
+      for (let x = 0; x < 3; x++) if (muster[y][x] === '#') setze(l, ox + 1 + n * 4 + x, 1 + y, gelb);
+  });
+  return zuTextur(l);
+}
+
+// Pfosten: gelb-schwarz geringelt
+export function pfostenTextur() {
+  const l = leinwand(2, 8);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 2; x++) setze(l, x, y, y < 4 ? [242, 196, 26] : [24, 24, 24]);
+  return zuTextur(l, { wiederholen: true });
+}

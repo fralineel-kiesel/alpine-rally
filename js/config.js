@@ -153,6 +153,16 @@ export const CONFIG = {
     gras:    { grip: 0.62, rollen: 2.2, rollenTempo: 0.11 },
   },
 
+  // --- Checkpoints -------------------------------------------------------
+  checkpoints: {
+    beiMeter: [900, 1870, 2880], // wo die Tore stehen (Meter ab Strassenanfang)
+    abkuerzungenVerhindern: true, // true = wer einen Checkpoint auslässt, wird zurückgesetzt
+    anzeigeDauer: 3,           // so lange steht die Zwischenzeit oben im Bild (Sekunden)
+    torBreite: 12.4,           // Abstand der Pfosten (Strasse 7 m + Bankett)
+    torHoehe: 5.2,             // Höhe des Banners über der Strasse
+    durchfahrtBreite: 9,       // so weit von der Strassenmitte zählt die Durchfahrt noch
+  },
+
   // --- Begrenzung ---------------------------------------------------------
   grenze: {
     maxAbstand: 45,            // weiter weg von der Strasse geht es nicht (unsichtbare Wand)
