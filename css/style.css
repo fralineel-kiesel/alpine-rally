@@ -1,0 +1,46 @@
+/* Schwarzer Hintergrund, Spielbild mittig im Seitenverhältnis 16:9 */
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#buehne {
+  position: relative;
+}
+
+/* Beide Leinwände (3D-Bild und HUD) übereinander, scharfe Pixel */
+#buehne canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+#lade {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #f4f4ee;
+  font: bold 28px monospace;
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+#lade small {
+  font-size: 14px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
