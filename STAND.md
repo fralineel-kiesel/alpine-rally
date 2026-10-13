@@ -1,7 +1,7 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 1.3 fertig** – der hellblaue „Nebelstreifen“ zwischen den Hintergrund-Bergen
-und dem Wald/der Wiese ist weg. Dazu alles aus Meilenstein 1.2 (Kurven schneiden, Getriebe mit
+Aktuell: **Meilenstein 1.3b fertig** – der milchige Dunststreifen zwischen den Hintergrund-Bergen
+und dem Gelände ist jetzt wirklich weg (1.3 hatte ihn nur grünlich gemacht). Dazu alles aus Meilenstein 1.2 (Kurven schneiden, Getriebe mit
 Schaltpause, analoge Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
 Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
@@ -21,7 +21,80 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 1.3: Horizont-Dunst ✅
+## Meilenstein 1.3b: Dunst-Korrektur ✅
+
+### Was war das Problem?
+
+Nach M1.3 lag zwischen den Bergen und den Bäumen/der Wiese immer noch ein schmaler, milchiger Streifen
+ohne Struktur – nur grünlich statt hellblau. Ursache: Der Dunst war noch zu dicht. Fernes Gelände
+(ab ca. 400–500 m, wo keine Bäume mehr stehen) wurde zu 60–80 % Dunstfarbe und sah aus wie eine
+Nebelschicht. In einer klaren Alpenszene wirkt so eine Schicht immer wie ein Fehler, egal in welcher
+Farbe.
+
+### Was geändert wurde
+
+Nur vier Zahlen in `js/config.js`, Block `nebel` – keine neue Logik:
+
+| Wert | vorher | jetzt | Bedeutung |
+|---|---|---|---|
+| `nebel.ende` | 1000 | 3000 | hier ist der Dunst am dichtesten (Meter) |
+| `nebel.maxDichte` | 0.8 | 0.45 | so dicht wird der Dunst höchstens |
+| `nebel.bergDunst` | 0.2 | 0.15 | Dunst auf den Gipfeln |
+| `nebel.bergDunstUnten` | 0.6 | 0.3 | so viel Dunst kommt am Bergfuss dazu |
+
+Der Dunst macht jetzt nur noch eine leichte Tiefenwirkung. Die Berge setzen direkt auf grünen Hügeln
+auf. Bergfuss = 0.15 + 0.3 = 0.45 = `maxDichte`, damit passt der Bergfuss weiterhin zum fernen
+Gelände. Nicht verändert: `nebel.start` (120), Dunstfarbe `#aabdc8`, `gelaende.feinBis` (480),
+Bergformen.
+
+### So testest du
+
+1. **Start, Kehren (ca. 1400 m), Passhöhe (ca. 2590 m), Zielgerade:** Zwischen Bergen und Gelände
+   sollte kein milchiger Streifen mehr sein. Die grünen Hügel laufen bis an die Bergfüsse.
+2. Wirken die Berge noch nach Alpen (helle Gipfel)? Oder sind die Bergfüsse zu dunkel/grau?
+3. Wirkt es zu klar, so als fehle die Tiefe? Dann `maxDichte` ein wenig höher (siehe unten).
+
+### Wo man schrauben kann (alles in `js/config.js`, Block `nebel`)
+
+- `ende` (3000) – wo der Dunst am dichtesten ist. Kleiner = dunstiger.
+- `maxDichte` (0.45) – wie dicht der Dunst höchstens wird. **Je höher `maxDichte`, desto eher entsteht
+  wieder ein Dunststreifen.** Lieber in kleinen Schritten (0.05) drehen.
+- `bergDunst` (0.15) – Dunst auf den Gipfeln. Höher = Berge blasser und weiter weg.
+- `bergDunstUnten` (0.3) – zusätzlicher Dunst am Bergfuss. `bergDunst` + `bergDunstUnten` sollte etwa
+  `maxDichte` sein. Wirken die Bergfüsse zu dunkel: in 0.05er-Schritten höher.
+
+### Selbst getestet
+
+- Vorher/Nachher-Screenshots (1280x720, ohne HUD) an Start, Kehren (1400 m), Passhöhe (2586 m) und
+  Ziel (3600 m): `screenshots/m1-3b/` (`a` = vorher, `b` = nachher). Der milchige Streifen ist an
+  **allen vier Stellen weg**. Am deutlichsten an der Zielgeraden (dort war er am breitesten) und am
+  Start.
+- Gipfel bleiben weiss/hell, die Bergflanken grau, die Füsse grau-grün. Zum Vergleich auch
+  `bergDunstUnten` 0.35 ausprobiert: kaum ein sichtbarer Unterschied, darum bei 0.3 geblieben.
+- Himmel am Horizont passt weiterhin (gleiche Dunstfarbe, nichts verändert).
+- **Leistung** (Software-Modus), vorher → nachher genau gleich, es sind ja nur Werte:
+
+| Stelle | Zeichenaufrufe | Dreiecke |
+|---|---|---|
+| Start | 109 → 109 | 106 874 → 106 874 |
+| Kehren (1400 m) | 65 → 65 | 114 670 → 114 670 |
+| Passhöhe (2586 m) | 74 → 74 | 102 480 → 102 480 |
+| Ziel (3600 m) | 51 → 51 | 77 108 → 77 108 |
+
+- `node tools/testfahrer.mjs` – Zeiten auf die Hundertstel gleich (2:33.24 / 2:19.11 / 2:10.41), kein
+  Aufprall. `node tools/aufprall-test.mjs` – alle Prüfungen erfüllt. Keine Fehler in der
+  Browser-Konsole.
+
+### Bekannte Probleme
+
+- Der Wald hört weiterhin ca. 230 m neben der Strasse auf, dahinter kahle grüne Hügel. Mit weniger
+  Dunst sieht man das noch etwas besser. Gehört zu Meilenstein 2 (dichtere Landschaft).
+- Die Bergfüsse sind jetzt grau-grün statt weisslich. Falls dir das zu dunkel ist: `bergDunstUnten`
+  etwas höher (siehe oben).
+
+---
+
+## Meilenstein 1.3: Horizont-Dunst ✅ (Verlauf, Stand damals)
 
 ### Was war das Problem?
 
@@ -110,9 +183,9 @@ nur dünner).
 
 ### Bekannte Probleme
 
-- **Zielgerade:** Der ferne Hügelkamm ist dort ein ziemlich gleichmässiger grau-grüner Streifen vor
-  dem Berg. Kein hellblaues Band mehr und keine harte Kante, aber auch nicht so schön abgestuft wie am
-  Start. Die Berge sind dort sehr nah und gross (war schon vorher so).
+- ~~**Zielgerade:** Der ferne Hügelkamm ist dort ein ziemlich gleichmässiger grau-grüner Streifen vor
+  dem Berg.~~ **Behoben in M1.3b** (weniger Dunst, jetzt grüne Hügel bis an den Berg). Die Berge sind
+  dort weiterhin sehr nah und gross.
 - Weil die Ferne jetzt klarer ist, sieht man, dass der Wald ca. 230 m neben der Strasse aufhört. Die
   Hügel dahinter sind kahl grün (gut sichtbar in `05b-kehren-von-oben-nachher.png`).
 - Ein paar einzelne Pixel an Hügelkanten in 480 m Entfernung können beim Fahren minimal springen
