@@ -297,6 +297,88 @@ export const CONFIG = {
     begleitSteine: [1, 3],     // kleine Steine rund um die Sperre
   },
 
+  // --- Strassenrand: Leitplanken, Holzzäune, Schilder (Meilenstein 2a) ---
+  // Wo was steht, wird beim Laden aus der Strecke abgeleitet (js/strassenrand.js).
+  // Gleicher seed = gleiche Zäune und Lücken bei jeder Fahrt.
+  strassenrand: {
+    seed: 77,                  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (77: Zäune gut verteilt)
+    abstand: 6.0,              // Abstand Strassenmitte -> Vorderkante Leitplanke (Bankett endet bei 5.5).
+                               // Zaun und Schilder stehen etwas dahinter (siehe versatz)
+    puffer: 20,                // so viele Meter vor/nach einer gesperrten Kurve ("nicht schneiden") bleibt die Innenseite frei
+    pufferSchneiden: 50,       // ... und so viele bei freien Kurven ("schneiden"): lange Abkürzungen kommen erst
+                               // bis ca. 50 m nach der Kurve auf die Strasse zurück
+    cpFrei: 8,                 // so viele Meter vor/nach einem Checkpoint-Tor steht nichts (Torpfosten)
+    sichtweite: 550,           // Stücke weiter weg von der Kamera werden nicht gezeichnet (sind eh unter 1 Pixel)
+    stueckLaenge: 130,         // Leitplanken/Zäune/Schilder werden in Stücken dieser Länge gezeichnet
+
+    planke: {
+      an: true,                // false = keine Leitplanken
+      hoehe: 0.75,             // Oberkante der Planke über dem Boden
+      profil: 0.32,            // Höhe des Wellprofils (Blech)
+      pfostenAbstand: 4,       // Abstand der Pfosten (Meter)
+      reflektorAlle: 3,        // an jedem 3. Pfosten ein Reflektor (also alle ca. 12 m)
+      abhangHoehe: 3,          // Planke auf der Talseite, wenn das Gelände um mindestens so viele Meter ...
+      abhangWeite: 8,          // ... auf so vielen Metern hinter der Planke abfällt
+      kehrenRadius: 18,        // Kurven enger als dieser Radius gelten als Kehre: aussen immer Planke
+      kehreVorNach: 15,        // ... und so viele Meter vor und nach der Kehre auch
+      mindestLaenge: 15,       // kürzere Stücke werden weggelassen (keine Schnipsel)
+      lueckeFuellen: 12,       // kürzere Lücken zwischen zwei Stücken werden geschlossen
+      zufahrtAlle: [180, 320], // ab und zu eine Unterbrechung (Zufahrt): alle so viele Meter Planke ...
+      zufahrt: [6, 10],        // ... so lang (Meter)
+      endeLaenge: 4,           // Abschluss: auf so vielen Metern ins Gelände abgesenkt ...
+      endeAbwinkeln: 0.7,      // ... und so weit nach aussen abgewinkelt
+      kreisAbstand: 0.7,       // Kollision: alle so viele Meter ein Kreis
+      kreisRadius: 0.28,       // ... mit diesem Radius
+    },
+
+    zaun: {
+      an: true,                // false = keine Holzzäune
+      versatz: 0.35,           // steht so viel weiter weg als die Leitplanken (randAbstand + versatz)
+      hoehe: 1.1,              // Höhe der Pfosten
+      latten: [0.4, 0.75, 1.0], // Höhe der Querlatten (2 oder 3 Stück)
+      pfostenAbstand: 2.5,     // Abstand der Pfosten
+      waldMax: 0.15,           // nur wo der Waldanteil der Strecke kleiner ist (Wiese)
+      steilMax: 2.5,           // nicht wo das Gelände 4 m hinter dem Zaun mehr als so viel steigt/fällt
+      feldLaenge: [70, 160],   // die Wiese wird in Felder dieser Länge aufgeteilt ...
+      quote: 0.55,             // ... so ein Anteil der Wiese bekommt einen Zaun (Ziel 40–70 %)
+      beideSeiten: 0.15,       // so oft hat ein Feld auf beiden Seiten einen Zaun (sonst abwechselnd)
+      torAlle: [45, 90],       // ein Weidetor (Lücke) alle so viele Meter Zaun
+      tor: [4, 6],             // Breite der Lücke (Meter, befahrbar)
+      torOffen: 0.5,           // so oft steht das Tor offen (ins Feld gedreht), sonst nur Lücke mit Torpfosten
+      latteFehlt: 0.05,        // so oft fehlt eine Latte (kaputte Stelle)
+      latteHaengt: 0.03,       // so oft hängt eine Latte auf einer Seite runter
+      pfostenSchief: 0.06,     // so oft steht ein Pfosten schief
+      schief: 0.06,            // Latten liegen bis so viele Meter schief (leicht unregelmässig)
+      kreisAbstand: 0.6,       // Kollision: alle so viele Meter ein Kreis
+      kreisRadius: 0.25,       // ... mit diesem Radius (enger als 0.6/0.25: die Autoecke rutscht sonst in die Lücken)
+    },
+
+    schilder: {
+      an: true,                // false = keine Schilder
+      versatz: 1.0,            // stehen so viel hinter der Leitplanken-Linie (randAbstand + versatz)
+      warnRadius: 80,          // Kurvenwarnung vor Kurven, die enger sind als dieser Radius (Meter)
+      warnVor: [80, 120],      // ... so viele Meter vor der Kurve (bevorzugt 100)
+      gruppenLuecke: 120,      // enge Kurven mit weniger Abstand gelten als eine Folge -> Schild "Doppelkurve"
+      chevrons: true,          // false = keine Richtungstafeln (KONZEPT.md: Lino mochte früher keine Kurvenpfeil-Schilder)
+      chevronRadius: 25,       // Richtungstafeln (Chevrons) aussen in Kurven enger als das
+      chevronAnzahl: [2, 4],   // so viele pro Kurve (mehr bei engeren/längeren Kurven)
+      kmAlle: 500,             // Kilometertafel alle so viele Meter (0.5, 1.0, ...)
+      gefaelleAb: 0.05,        // Schild "Gefälle", wo es über gefaelleStrecke Meter mehr als 5 % bergab geht
+      gefaelleStrecke: 150,
+      gefahrVor: 60,           // Gefahr-Schilder (Steinschlag, Gefälle) so viele Meter vor der Stelle
+      mindestAbstand: 12,      // zwei Schilder auf derselben Seite mindestens so weit auseinander
+      blickVor: 20,            // Schilder schauen zur Strasse so viele Meter vor ihnen (zum Fahrer hin)
+      warnGroesse: 1.3,        // Kantenlänge der Warn-Dreiecke (Meter, grösser als echt: das Bild ist nur 320x180)
+      warnHoehe: 1.4,          // Unterkante der Warnschilder über dem Boden
+      chevronGroesse: [0.7, 0.875], // Breite, Höhe der Chevrons
+      chevronHoehe: 0.8,       // Unterkante der Chevrons
+      kehreGroesse: [0.7, 0.6], // Kehren-Nummern-Tafel (Breite, Höhe)
+      kmGroesse: [0.65, 0.38], // Kilometertafel (Breite, Höhe)
+      kmHoehe: 1.0,
+      kreisRadius: 0.15,       // Kollision: Kreis um den Pfosten
+    },
+  },
+
   // --- Kamera -----------------------------------------------------------
   kamera: {
     sichtfeld: 62,             // Blickwinkel (Grad)

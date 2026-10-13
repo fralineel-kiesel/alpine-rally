@@ -1,8 +1,9 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 1.3b fertig** – der milchige Dunststreifen zwischen den Hintergrund-Bergen
-und dem Gelände ist jetzt wirklich weg (1.3 hatte ihn nur grünlich gemacht). Dazu alles aus Meilenstein 1.2 (Kurven schneiden, Getriebe mit
-Schaltpause, analoge Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
+Aktuell: **Meilenstein 2a fertig** – die Strasse hat jetzt einen Rand: Leitplanken an den Abhängen und
+aussen in den Kehren, Holzzäune an den Wiesen (mit Weidetoren) und ein paar Schilder (Kurvenwarnungen,
+Kehren-Nummern, Richtungstafeln, Steinschlag/Gefälle, Kilometertafeln). Dazu alles aus 1.3b (kein
+Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
 Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 ## Steuerung
@@ -21,7 +22,178 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 1.3b: Dunst-Korrektur ✅
+## Meilenstein 2a: Strassenrand (Leitplanken, Holzzäune, Schilder) ✅
+
+### Was gebaut wurde
+
+Alles wird beim Laden **automatisch aus der Strecke abgeleitet**, nichts ist von Hand pro Kurve gesetzt
+(neue Datei `js/strassenrand.js`, Werte in `js/config.js`, Block `strassenrand`).
+
+1. **Leitplanken** (insgesamt ca. 1.2 km, 9 Stücke): durchgehendes Band aus verzinktem Wellblech, dunkle
+   Pfosten alle 4 m, an jedem 3. Pfosten ein kleiner Reflektor (rechts orange, links weiss). Sie stehen
+   - auf der **Talseite**, wo das Gelände hinter der Planke stark abfällt (mind. 3 m auf 8 m),
+   - **aussen in allen vier Kehren** (und 15 m davor/danach).
+   Am Anfang und Ende taucht die Planke schräg ins Gelände ab (kein abgeschnittenes Stück). Kürzer als
+   15 m gibt es nicht. Eine Lücke (Zufahrt, ca. 9 m) bei ca. 2400 m.
+2. **Holzzäune** (ca. 870 m, 16 Stücke): Pfosten alle 2.5 m, 2 oder 3 Latten, leicht schief, ab und zu
+   fehlt eine Latte, hängt eine runter oder steht ein Pfosten schief. Nur an Wiesen (wenig Wald, keine
+   Felswand, keine Planke), **abwechselnd links oder rechts**, nur selten auf beiden Seiten. Genau **50 %**
+   der Wiesenstrecke haben einen Zaun. 5 **Weidetore** (4–6 m Lücke mit dickeren Torpfosten, 4 davon mit
+   offenem, ins Feld gedrehtem Tor). Hinter einem Tor steht nie ein Baum oder Stein.
+3. **Schilder** (28 Stück, bewusst wenige):
+   - 3 **Kurvenwarnungen** ca. 100 m vor den engen Kurvenfolgen, alle als „Doppelkurve“: vor dem Waldstück
+     (678 m), vor den Kehren (1256 m, links, weil rechts kein freier Platz war) und vor der Schikane in der
+     Abfahrt (3061 m, links, weil rechts die Felswand ist). Abgeleitet aus der Krümmung der Strecke.
+   - 4 **Kehren-Nummern** (blaue Tafel, 1–4) kurz vor jeder Kehre, aussen.
+   - 12 **Richtungstafeln (Chevrons)**, je 3 aussen in jeder Kehre (rot mit weissem Pfeil).
+   - **Steinschlag** vor beiden Felswänden; vor der Abfahrt hängen **Gefälle** und Steinschlag
+     übereinander am selben Pfosten (2828 m).
+   - 7 **Kilometertafeln** bei 0.5, 1.0 … 3.5 km (Streckenmeter ab Strassenanfang, passt später zu
+     Pace-Notes/Minimap).
+   Die Schilder sind kleine Tafeln aus Formen (keine Sprites), weil sie zur Strasse schauen müssen und
+   nicht zur Kamera. Sie sind in groben Pixeln gezeichnet, damit sie im kleinen Bild lesbar bleiben.
+4. **Kollision**: Planke, Zaun, Torpfosten, offenes Tor und Schilderpfosten sind Hindernisse (Kreise
+   alle 0.6–0.7 m). Es gilt die bestehende Aufprall-Physik, die habe ich **nicht verändert**.
+5. **Vorbereitet für M3**: Der Abstand zur Strassenmitte kommt aus der Funktion `randAbstand(s, seite)`
+   in `js/strassenrand.js`. Heute liefert sie fest 6.0 m. Wird die Strasse in M3 je Abschnitt breiter
+   oder anders, wandern Planken, Zäune und Schilder automatisch mit.
+
+### Regeln, die nie gebrochen werden
+
+- Nichts auf der **Felswand-Seite**.
+- Nichts auf der **Innenseite der Abkürzungs-Kurven** („nicht schneiden“ +20 m Puffer, „schneiden“
+  +50 m Puffer). Ob man abkürzen kann, entscheidet weiterhin nur die Spielbalance aus M1.2.
+  `js/abkuerzungen.js` wurde **nicht** neu erzeugt.
+- Nichts bei den Checkpoint-Toren (±8 m) und nichts nahe an einem anderen Ast der Strecke (z. B. in den
+  Kehren an der Strasse darüber).
+
+### So testest du (wo man was sieht)
+
+| Wo | Was |
+|---|---|
+| Start (0–100 m) | Zaun links mit einer Tor-Lücke bei 50 m |
+| Talabschnitt (270–430 m, 735–870 m) | Zaun rechts mit offenem Tor bei 340 m, später auf beiden Seiten |
+| 500 m rechts | Kilometertafel 0.5 |
+| 678 m rechts | Warnschild „Doppelkurve“ vor dem Waldstück |
+| 1256 m links | Warnschild vor den Kehren |
+| Kehren (1350–1855 m) | Leitplanken aussen und an der Talseite, Kehren-Nummern 1–4, je 3 Chevrons |
+| Felswand 1 (1880–2480 m) | Steinschlag-Schild links bei 1854 m, Leitplanke rechts über dem Tal, Lücke bei 2400 m |
+| Passhöhe (2600–2920 m) | Zäune auf der Hochweide, ein offenes Tor |
+| 2828 m rechts | Gefälle + Steinschlag übereinander vor der Abfahrt |
+| Abfahrt (2950–3400 m) | Leitplanke links über dem Tal, Doppelkurve-Warnung vor der Schikane |
+| Zielgerade | Zaun rechts mit offenem Tor |
+
+Bitte ausprobieren:
+1. Wirkt es nach Alpenpass? Zu viel, zu wenig, zu gleichförmig?
+2. **Absichtlich in eine Planke fahren:** frontal oder steil (ab ca. 60° zur Planke) = harter Stopp wie an
+   einem Baum. Flach (15–30°) schrammt man entlang und verliert 15–40 % Tempo. Fühlt sich das gut an?
+3. Durch ein Weidetor ins Feld fahren (z. B. bei 340 m rechts).
+4. FPS mit F3 auf beiden Rechnern.
+
+### Wo man schrauben kann (`js/config.js`, Block `strassenrand`)
+
+- `abstand` (6.0) – Abstand der Planken-Vorderkante zur Strassenmitte. Zäune stehen `zaun.versatz` (0.35 m)
+  dahinter, Schilder `schilder.versatz` (1.0 m) dahinter.
+- `seed` (77) – anderer Wert = andere Verteilung der Zäune, Tore und kaputten Latten.
+- `planke.an` / `zaun.an` / `schilder.an` – ganz ausschalten.
+- `planke.abhangHoehe` (3) / `abhangWeite` (8) – ab wie viel Abfall eine Planke kommt. Kleiner = mehr Planken.
+- `planke.hoehe` (0.75), `pfostenAbstand` (4), `reflektorAlle` (3), `zufahrtAlle` / `zufahrt` (Lücken).
+- `zaun.quote` (0.55) – Anteil der Wiese mit Zaun (heute ergibt das 50 %), `beideSeiten` (0.15),
+  `torAlle` / `tor` / `torOffen` (Weidetore), `latteFehlt` / `latteHaengt` / `pfostenSchief` (kaputte Stellen).
+- `schilder.chevrons` – **false = keine Richtungstafeln.** In `KONZEPT.md` steht „Mag nicht:
+  Kurvenpfeil-Schilder“, der Auftrag wollte sie aber ausdrücklich. Falls sie dich stören: ein Wort ändern.
+- `schilder.warnRadius` (80) – Kurven enger als das bekommen eine Warnung. `warnVor` (80–120 m).
+- `schilder.kmAlle` (500), `warnGroesse` (1.3 m), `chevronGroesse`, `kehreGroesse`, `kmGroesse`.
+- `sichtweite` (550) – weiter weg werden Randstücke nicht gezeichnet (sind dort kleiner als ein Pixel).
+
+### Selbst getestet
+
+- **Screenshots** (1280x720, ohne HUD) unter `screenshots/m2a/`: `a` = vorher, `b` = nachher für Start,
+  Talabschnitt (2x), Kehren hinter dem Auto, Kehren von aussen, Kehre 1, Felswand, Passhöhe, Abfahrt,
+  Schikane, Ziel. Dazu Nahaufnahmen `12b`–`16b` (Doppelkurve, Kehre 1 mit Chevrons, Gefälle+Steinschlag,
+  offenes Weidetor, Kilometertafel). Neu erzeugen: `node tools/strassenrand-bilder.mjs --endung b`.
+- **Leistung** (Software-Modus ohne Grafikkarte, Kamera hinter dem Auto):
+
+| Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+|---|---|---|
+| Start | 109 → 112 | 106 874 → 109 442 |
+| Talabschnitt (300 m) | 109 → 113 | 129 048 → 132 666 |
+| Kehren (1475 m) | 63 → 70 | 93 078 → 96 476 |
+| Kehre 1 (1352 m) | 99 → 105 | 130 672 → 132 658 |
+| Felswand (2150 m) | 98 → 103 | 112 384 → 114 886 |
+| Passhöhe (2586 m) | 74 → 79 | 102 480 → 106 404 |
+| Abfahrt (3080 m) | 63 → 68 | 98 028 → 100 252 |
+| Ziel (3560 m) | 51 → 53 | 77 108 → 78 444 |
+
+  Schlimmste Stelle beim Durchlauf alle 50 m über die ganze Strecke: **+9 Zeichenaufrufe** (bei 710 m)
+  und **+4 428 Dreiecke** (bei 2460 m). Der ganze Strassenrand hat 14 180 Dreiecke in 26 Stücken.
+- **Ladezeit** (je 5 Mal abwechselnd alt/neu geladen, Median): vorher 1 688 ms, nachher 1 665 ms, also
+  kein messbarer Unterschied. Der Strassenrand selbst braucht beim Laden ca. 70–90 ms.
+- `node tools/strassenrand-test.mjs` (neu) – **alle Prüfungen erfüllt**:
+
+| Aufprall (80 km/h, Winkel zur Planke) | Tempo direkt danach | 0.4 s danach |
+|---|---|---|
+| Leitplanke 15° (streifen) | 75 → 65 km/h | 50 km/h |
+| Leitplanke 30° | 78 → 49 km/h | 31 km/h |
+| Leitplanke 45° | 79 → 23 km/h | 13 km/h |
+| Leitplanke 60° / 75° | 79 → 1–2 km/h | 0 km/h |
+| Holzzaun 30° / 60° (70 km/h) | 68 → 44 / 69 → 2 km/h | 31 / 0 km/h |
+| Kilometertafel 30° / 60° (60 km/h) | → 1 km/h | 0 km/h |
+
+  Danach jedes Mal 6–7 m rückwärts raus (beim Schild 2.6–5.9 m), nirgends steckengeblieben (0.00 m im
+  Hindernis). Durch ein offenes Weidetor fährt man ohne Aufprall 30 m ins Feld. Durch die Lücke in der
+  Planke kommt man bis an die unsichtbare Abhang-Grenze (siehe unten). Keine Fehler in der Konsole.
+- **Abkürzungen unverändert** (Test + `node tools/abkuerzungen.mjs --pruefen`, vorher und nachher gleich):
+
+| Kurve | Liste | Planke/Zaun/Schild innen | Abkürzungen übrig vorher → nachher |
+|---|---|---|---|
+| 1350–1415 links | nicht schneiden | keine | 0 → 0 |
+| 1496–1562 rechts | nicht schneiden | keine | 0 → 0 |
+| 1789–1854 rechts | nicht schneiden | keine | 0 → 0 |
+| 3196–3234 links | nicht schneiden | keine | 0 → 0 |
+| 482–752 links | schneiden | keine | 128 → 128 Linien, bis 7.1 m |
+| 1085–1230 rechts | schneiden | keine | 5 → 5 Linien, bis 3.2 m |
+| 1643–1708 links | schneiden | keine | 342 → 342 Linien, bis 6.3 m |
+| 2484–2710 links | schneiden | keine | 84 → 84 Linien, bis 5.1 m |
+
+  (Mit 20 m Puffer hatte ein Zaun bei 773 m eine einzige lange Abkürzung 599–799 m zugemacht, darum
+  haben die „schneiden“-Kurven jetzt 50 m Puffer.)
+- `node tools/testfahrer.mjs` – Zeiten **auf die Hundertstel gleich** wie vorher (vorsichtig 2:33.24,
+  mittel 2:19.11, flott 2:10.41), kein Aufprall, nirgends hängen geblieben. Der flotte Fahrer kommt
+  höchstens 4.8 m neben die Mitte, die Planke steht bei 6.0 m.
+- `aufprall-test.mjs`, `lenk-test.mjs`: alle Prüfungen erfüllt. `getriebe-test.mjs` läuft durch.
+
+### Bekannte Probleme
+
+- **Schilder sind klein.** Im 320x180-Bild ist ein Warnschild ca. 10–20 Pixel gross. Das Symbol erkennt
+  man nur aus der Nähe, von weitem sieht man vor allem das rote Dreieck. Grösser machen geht mit
+  `warnGroesse`, wirkt dann aber schnell wie ein Spielzeug.
+- **Leitplanke aus der Ferne / von oben** (Bild `05b`) kaum zu sehen. Hinter dem Auto ist sie gut sichtbar.
+- **Lücke in der Planke an der Felswand** (2400 m): Man fährt in die Lücke, wird aber 0.6 m dahinter von
+  der unsichtbaren Abhang-Grenze gestoppt (gab es vor M2a schon überall am Abhang). Wirkt wie eine
+  Ausweichstelle, nicht wie eine Zufahrt.
+- **Schon vorher da, jetzt gefunden:** Fährt man langsam (unter ca. 25 km/h) quer von der Strasse weg,
+  bleibt das Auto an manchen Stellen an der Bankett-Kante hängen (z. B. bei 89 m links). Die Prüfung
+  „zu steiler Hang“ hält die 5 cm Stufe vom Bankett aufs Gras für eine Wand. Das hat nichts mit den Zäunen
+  zu tun (in der alten Version genau gleich), ist aber beim Weidetor-Test aufgefallen. Nicht geändert.
+- Zwei Stellen mit Zaun auf beiden Seiten (803–870 m und 2835–2923 m) wirken kurz wie ein Korridor.
+  Wenn es stört: `zaun.beideSeiten` auf 0.
+- Auf der Felswand-Strecke zwischen 1945 und 2070 m steht rechts keine Planke, weil das Gelände dort
+  ansteigt statt abfällt. Das ist richtig so, sieht aber lückenhaft aus.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Gleiten an Leitplanken:** Flach (15–30°) an die Planke kostet heute 15–40 % Tempo, wie an einem
+  Baumstamm. Auf echten Pässen schrammt man an der Planke entlang. Man könnte für Planken eine eigene,
+  kleinere Reibung nehmen (frontal bliebe es ein harter Stopp).
+- Bankett-Kante: die Hang-Prüfung erst ab ein paar Zentimetern Stufe greifen lassen (siehe oben).
+- Zufahrten nur dort, wo man wirklich wegfahren kann (mit kleinem Feldweg aus Schotter, passt zu M3).
+- Leitpfosten (weiss-schwarze Pfosten mit Reflektor) an Stellen ohne Planke, typisch für Schweizer Pässe.
+- Pace-Notes (M4) könnten die Kurvenwarnungen und Kilometertafeln direkt aus `strassenrand.plan` nehmen.
+
+---
+
+## Meilenstein 1.3b: Dunst-Korrektur ✅ (Verlauf, Stand damals)
 
 ### Was war das Problem?
 

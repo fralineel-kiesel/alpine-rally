@@ -1,0 +1,454 @@
+{
+ "ladezeiten": [
+  1596,
+  2602,
+  2573
+ ],
+ "stellen": [
+  {
+   "nr": "01",
+   "name": "start",
+   "s": 12,
+   "calls": 109,
+   "dreiecke": 106874
+  },
+  {
+   "nr": "02",
+   "name": "talabschnitt",
+   "s": 540,
+   "calls": 106,
+   "dreiecke": 114552
+  },
+  {
+   "nr": "03",
+   "name": "talabschnitt-wiese",
+   "s": 300,
+   "calls": 109,
+   "dreiecke": 129048
+  },
+  {
+   "nr": "04",
+   "name": "kehren-hinter-auto",
+   "s": 1475,
+   "calls": 63,
+   "dreiecke": 93078
+  },
+  {
+   "nr": "05",
+   "name": "kehren-von-aussen",
+   "frei": "kehrenAussen",
+   "calls": 65,
+   "dreiecke": 113806
+  },
+  {
+   "nr": "06",
+   "name": "kehre-1-hinter-auto",
+   "s": 1352,
+   "calls": 99,
+   "dreiecke": 130672
+  },
+  {
+   "nr": "07",
+   "name": "felswand",
+   "s": 2150,
+   "calls": 98,
+   "dreiecke": 112384
+  },
+  {
+   "nr": "08",
+   "name": "passhoehe",
+   "s": 2586,
+   "calls": 74,
+   "dreiecke": 102480
+  },
+  {
+   "nr": "09",
+   "name": "abfahrt",
+   "s": 3080,
+   "calls": 63,
+   "dreiecke": 98028
+  },
+  {
+   "nr": "10",
+   "name": "abfahrt-schikane",
+   "s": 3175,
+   "calls": 60,
+   "dreiecke": 96300
+  },
+  {
+   "nr": "11",
+   "name": "ziel",
+   "s": 3560,
+   "calls": 51,
+   "dreiecke": 77108
+  }
+ ],
+ "durchlauf": [
+  {
+   "s": 10,
+   "calls": 109,
+   "dreiecke": 106874
+  },
+  {
+   "s": 60,
+   "calls": 106,
+   "dreiecke": 108600
+  },
+  {
+   "s": 110,
+   "calls": 104,
+   "dreiecke": 108120
+  },
+  {
+   "s": 160,
+   "calls": 104,
+   "dreiecke": 108120
+  },
+  {
+   "s": 210,
+   "calls": 103,
+   "dreiecke": 108118
+  },
+  {
+   "s": 260,
+   "calls": 103,
+   "dreiecke": 128662
+  },
+  {
+   "s": 310,
+   "calls": 109,
+   "dreiecke": 129048
+  },
+  {
+   "s": 360,
+   "calls": 111,
+   "dreiecke": 121080
+  },
+  {
+   "s": 410,
+   "calls": 110,
+   "dreiecke": 115512
+  },
+  {
+   "s": 460,
+   "calls": 110,
+   "dreiecke": 115512
+  },
+  {
+   "s": 510,
+   "calls": 109,
+   "dreiecke": 115224
+  },
+  {
+   "s": 560,
+   "calls": 105,
+   "dreiecke": 108120
+  },
+  {
+   "s": 610,
+   "calls": 94,
+   "dreiecke": 104086
+  },
+  {
+   "s": 660,
+   "calls": 84,
+   "dreiecke": 115666
+  },
+  {
+   "s": 710,
+   "calls": 78,
+   "dreiecke": 119026
+  },
+  {
+   "s": 760,
+   "calls": 70,
+   "dreiecke": 118414
+  },
+  {
+   "s": 810,
+   "calls": 73,
+   "dreiecke": 99154
+  },
+  {
+   "s": 860,
+   "calls": 76,
+   "dreiecke": 115090
+  },
+  {
+   "s": 910,
+   "calls": 82,
+   "dreiecke": 116506
+  },
+  {
+   "s": 960,
+   "calls": 98,
+   "dreiecke": 122964
+  },
+  {
+   "s": 1010,
+   "calls": 97,
+   "dreiecke": 116436
+  },
+  {
+   "s": 1060,
+   "calls": 76,
+   "dreiecke": 108814
+  },
+  {
+   "s": 1110,
+   "calls": 80,
+   "dreiecke": 112654
+  },
+  {
+   "s": 1160,
+   "calls": 94,
+   "dreiecke": 118068
+  },
+  {
+   "s": 1210,
+   "calls": 99,
+   "dreiecke": 119856
+  },
+  {
+   "s": 1260,
+   "calls": 101,
+   "dreiecke": 119824
+  },
+  {
+   "s": 1310,
+   "calls": 100,
+   "dreiecke": 118096
+  },
+  {
+   "s": 1360,
+   "calls": 97,
+   "dreiecke": 130224
+  },
+  {
+   "s": 1410,
+   "calls": 67,
+   "dreiecke": 126430
+  },
+  {
+   "s": 1460,
+   "calls": 64,
+   "dreiecke": 97342
+  },
+  {
+   "s": 1510,
+   "calls": 58,
+   "dreiecke": 92514
+  },
+  {
+   "s": 1560,
+   "calls": 100,
+   "dreiecke": 118096
+  },
+  {
+   "s": 1610,
+   "calls": 98,
+   "dreiecke": 117648
+  },
+  {
+   "s": 1660,
+   "calls": 89,
+   "dreiecke": 115824
+  },
+  {
+   "s": 1710,
+   "calls": 70,
+   "dreiecke": 113314
+  },
+  {
+   "s": 1760,
+   "calls": 64,
+   "dreiecke": 97066
+  },
+  {
+   "s": 1810,
+   "calls": 59,
+   "dreiecke": 94722
+  },
+  {
+   "s": 1860,
+   "calls": 104,
+   "dreiecke": 120340
+  },
+  {
+   "s": 1910,
+   "calls": 95,
+   "dreiecke": 104496
+  },
+  {
+   "s": 1960,
+   "calls": 86,
+   "dreiecke": 110544
+  },
+  {
+   "s": 2010,
+   "calls": 90,
+   "dreiecke": 124080
+  },
+  {
+   "s": 2060,
+   "calls": 98,
+   "dreiecke": 126016
+  },
+  {
+   "s": 2110,
+   "calls": 100,
+   "dreiecke": 126496
+  },
+  {
+   "s": 2160,
+   "calls": 97,
+   "dreiecke": 112144
+  },
+  {
+   "s": 2210,
+   "calls": 92,
+   "dreiecke": 110928
+  },
+  {
+   "s": 2260,
+   "calls": 83,
+   "dreiecke": 105360
+  },
+  {
+   "s": 2310,
+   "calls": 81,
+   "dreiecke": 103536
+  },
+  {
+   "s": 2360,
+   "calls": 85,
+   "dreiecke": 108240
+  },
+  {
+   "s": 2410,
+   "calls": 84,
+   "dreiecke": 119952
+  },
+  {
+   "s": 2460,
+   "calls": 84,
+   "dreiecke": 120792
+  },
+  {
+   "s": 2510,
+   "calls": 80,
+   "dreiecke": 118488
+  },
+  {
+   "s": 2560,
+   "calls": 77,
+   "dreiecke": 102648
+  },
+  {
+   "s": 2610,
+   "calls": 74,
+   "dreiecke": 102480
+  },
+  {
+   "s": 2660,
+   "calls": 71,
+   "dreiecke": 105936
+  },
+  {
+   "s": 2710,
+   "calls": 70,
+   "dreiecke": 106536
+  },
+  {
+   "s": 2760,
+   "calls": 68,
+   "dreiecke": 105168
+  },
+  {
+   "s": 2810,
+   "calls": 70,
+   "dreiecke": 105744
+  },
+  {
+   "s": 2860,
+   "calls": 70,
+   "dreiecke": 104880
+  },
+  {
+   "s": 2910,
+   "calls": 65,
+   "dreiecke": 110124
+  },
+  {
+   "s": 2960,
+   "calls": 65,
+   "dreiecke": 108588
+  },
+  {
+   "s": 3010,
+   "calls": 67,
+   "dreiecke": 111564
+  },
+  {
+   "s": 3060,
+   "calls": 65,
+   "dreiecke": 98508
+  },
+  {
+   "s": 3110,
+   "calls": 62,
+   "dreiecke": 97836
+  },
+  {
+   "s": 3160,
+   "calls": 60,
+   "dreiecke": 96300
+  },
+  {
+   "s": 3210,
+   "calls": 61,
+   "dreiecke": 97452
+  },
+  {
+   "s": 3260,
+   "calls": 56,
+   "dreiecke": 96972
+  },
+  {
+   "s": 3310,
+   "calls": 55,
+   "dreiecke": 100428
+  },
+  {
+   "s": 3360,
+   "calls": 55,
+   "dreiecke": 100332
+  },
+  {
+   "s": 3410,
+   "calls": 55,
+   "dreiecke": 96108
+  },
+  {
+   "s": 3460,
+   "calls": 53,
+   "dreiecke": 77708
+  },
+  {
+   "s": 3510,
+   "calls": 51,
+   "dreiecke": 77108
+  },
+  {
+   "s": 3560,
+   "calls": 51,
+   "dreiecke": 77108
+  },
+  {
+   "s": 3610,
+   "calls": 51,
+   "dreiecke": 77108
+  }
+ ],
+ "rand": null
+}

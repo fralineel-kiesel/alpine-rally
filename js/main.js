@@ -12,6 +12,7 @@ import { leseEingabe } from './input.js';
 import { baueHud, formatZeit } from './hud.js';
 import { baueKollision } from './kollision.js';
 import { baueCheckpointTore } from './checkpoints.js';
+import { baueStrassenrand } from './strassenrand.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -64,7 +65,9 @@ const kamera = new THREE.PerspectiveCamera(CONFIG.kamera.sichtfeld, B / H, 0.3, 
 const strecke = baueStrecke();
 const welt = baueWelt(szene, strecke);
 const pflanzen = bauePflanzen(szene, strecke, welt);
-const kollision = baueKollision(pflanzen.hindernisse);
+// Leitplanken, Holzzäune, Schilder (Meilenstein 2a) – sind auch Hindernisse
+const strassenrand = baueStrassenrand(szene, strecke, welt, pflanzen);
+const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse]);
 const checkpoints = baueCheckpointTore(szene, strecke);
 const auto = baueAuto();
 szene.add(auto.objekt);
@@ -347,6 +350,7 @@ function schleife(jetzt) {
   autoZeichnen(dt, weg);
   kameraFuehren(dt);
   welt.aktualisiere(kamera.position);
+  strassenrand.aktualisiere(kamera.position);
   renderer.render(szene, kamera);
 
   hud.zeichne({
@@ -371,6 +375,6 @@ requestAnimationFrame(schleife);
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort, kollision,
-  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG,
+  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };

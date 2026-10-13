@@ -371,3 +371,234 @@ export function pfostenTextur() {
   for (let y = 0; y < 8; y++) for (let x = 0; x < 2; x++) setze(l, x, y, y < 4 ? [242, 196, 26] : [24, 24, 24]);
   return zuTextur(l, { wiederholen: true });
 }
+
+// ---------------------------------------------------------------------
+// Strassenrand (Meilenstein 2a): alles auf einem Bild (Atlas), damit Leitplanken,
+// Zäune und Schilder mit einem einzigen Material gezeichnet werden können.
+// Ergebnis: { textur, kachel(name) -> { u0, v0, u1, v1 } }
+// ---------------------------------------------------------------------
+const ZIFFERN0 = { ...ZIFFERN, 0: ['###', '#.#', '#.#', '#.#', '###'] };
+export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61) {
+  const N = 128, RAND = 2;
+  const l = leinwand(N, N);
+  const rnd = zufall(seed);
+  const rechtecke = {};
+  let x0 = 0, y0 = 0, zeileH = 0;
+  // Kachel anlegen: malen(px) zeichnet mit px(x, y, rgb, a) in die Kachel.
+  // Undurchsichtige Kacheln bekommen einen Rand aus wiederholten Randpixeln (gegen
+  // Farbsäume in der Ferne), durchsichtige einen leeren Rand.
+  function kachel(name, b, h, malen, durchsichtig = false) {
+    if (x0 + b + RAND * 2 > N) { x0 = 0; y0 += zeileH; zeileH = 0; }
+    const ox = x0 + RAND, oy = y0 + RAND;
+    const daten = new Array(b * h).fill(null);
+    malen((x, y, rgb, a = 255) => {
+      if (x >= 0 && y >= 0 && x < b && y < h) daten[y * b + x] = { rgb, a };
+    });
+    for (let y = -RAND; y < h + RAND; y++) {
+      for (let x = -RAND; x < b + RAND; x++) {
+        const innen = x >= 0 && y >= 0 && x < b && y < h;
+        if (!innen && durchsichtig) continue;
+        const d = daten[Math.min(h - 1, Math.max(0, y)) * b + Math.min(b - 1, Math.max(0, x))];
+        if (d) setze(l, ox + x, oy + y, d.rgb, d.a);
+      }
+    }
+    rechtecke[name] = { x: ox, y: oy, b, h };
+    x0 += b + RAND * 2;
+    zeileH = Math.max(zeileH, h + RAND * 2);
+  }
+  const hell = (rgb, f) => rgb.map((c) => Math.max(0, Math.min(255, Math.round(c * f))));
+
+  // Leitplanke: verzinktes Wellprofil (helle Kanten, dunkle Rille), leicht verwittert. 32x8 = 4 m
+  const PLANKE = ['#8a9096', '#cdd2d6', '#b5bbc0', '#80868c', '#6b7177', '#a7adb2', '#c3c8cc', '#6c7176'].map(hexZuRgb);
+  const ROST = hexZuRgb('#8a6a4c');
+  kachel('planke', 32, 8, (px) => {
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 32; x++) {
+        let c = PLANKE[y];
+        const r = rnd();
+        if (r < 0.1) c = hell(c, 0.86);
+        else if (r < 0.14) c = hell(c, 1.06);
+        if (y >= 5 && rnd() < 0.025) c = ROST;
+        px(x, y, c);
+      }
+    }
+    // Stoss zweier Bleche mit Schrauben
+    for (let y = 1; y < 7; y++) px(0, y, hell(PLANKE[y], 0.8));
+    px(1, 2, [60, 62, 64]); px(1, 5, [60, 62, 64]);
+  });
+  // Stahl (Pfosten der Leitplanke, Schilderpfosten): dunkelgrau
+  kachel('stahl', 8, 16, (px) => {
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 8; x++) {
+        const basis = x < 2 ? '#6c7177' : x > 5 ? '#3c3f43' : '#50545a';
+        px(x, y, hell(hexZuRgb(basis), 0.94 + rnd() * 0.1));
+      }
+    }
+  });
+  // Reflektoren: orange und weiss
+  kachel('reflOrange', 4, 4, (px) => {
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) px(x, y, hexZuRgb(x === 1 && y === 1 ? '#ffd9a0' : '#ff8a1c'));
+  });
+  kachel('reflWeiss', 4, 4, (px) => {
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) px(x, y, hexZuRgb(x === 1 && y === 1 ? '#ffffff' : '#e8e8e2'));
+  });
+  // Holzlatte: Maserung längs, ein paar Astlöcher. 32x4
+  const HOLZ_L = ['#6b5236', '#8a6b46', '#a1815a', '#4d3b27'].map(hexZuRgb);
+  kachel('latte', 32, 4, (px) => {
+    for (let y = 0; y < 4; y++) {
+      let f = rnd() < 0.5 ? 1 : 2;
+      for (let x = 0; x < 32; x++) {
+        if (rnd() < 0.15) f = f === 1 ? 2 : 1;
+        let c = HOLZ_L[f];
+        if (y === 3) c = HOLZ_L[0];
+        if (rnd() < 0.04) c = HOLZ_L[3];
+        px(x, y, c);
+      }
+    }
+    px(9, 1, HOLZ_L[3]); px(10, 1, HOLZ_L[0]); px(23, 2, HOLZ_L[3]);
+  });
+  // Holzpfosten: verwittertes, graubraunes Holz. 8x16
+  const HOLZ_P = ['#5a4a36', '#6f5d45', '#86735a', '#3f3426'].map(hexZuRgb);
+  kachel('holzpfosten', 8, 16, (px) => {
+    for (let x = 0; x < 8; x++) {
+      let f = x < 3 ? 2 : x > 5 ? 0 : 1;
+      for (let y = 0; y < 16; y++) {
+        let c = HOLZ_P[f];
+        if (rnd() < 0.08) c = HOLZ_P[3];
+        else if (rnd() < 0.1) c = HOLZ_P[Math.min(2, f + 1)];
+        px(x, y, c);
+      }
+    }
+  });
+  // Rückseite der Schilder: Blech
+  kachel('blech', 8, 8, (px) => {
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) px(x, y, hell(hexZuRgb('#8e9297'), 0.94 + rnd() * 0.1));
+  });
+
+  // --- Schilder. Sie sind im Spiel nur ca. 10–20 Bildpunkte gross. Darum werden sie in
+  // halber Auflösung mit groben Pixeln gezeichnet und doppelt so gross abgelegt: so bleiben
+  // sie auch in der Ferne (kleinere Mipmap-Stufe) scharf statt zu grauem Brei zu werden.
+  function kachel2(name, b, h, malen, durchsichtig = false) {
+    kachel(name, b * 2, h * 2, (px) => malen((x, y, rgb, a) => {
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) px(x * 2 + dx, y * 2 + dy, rgb, a);
+    }), durchsichtig);
+  }
+  // Muster aus Text: jedes Zeichen ein Pixel, '.' = leer
+  const muster = (px, zeilen, x0, y0, farben) => zeilen.forEach((z, y) => [...z].forEach((ch, x) => {
+    if (farben[ch]) px(x0 + x, y0 + y, farben[ch]);
+  }));
+  const ROT = hexZuRgb('#c81e28'), WEISS = hexZuRgb('#f4f2ea'), SCHWARZ = hexZuRgb('#1e1e1e'), GRAU = hexZuRgb('#8e9297');
+
+  // Warnschilder: rotes Dreieck, weiss innen, schwarzes Symbol. 16x14 (abgelegt 32x28)
+  const WB = 16, WH = 14;
+  function imDreieck(x, y) {
+    const py = y + 0.5, pxx = x + 0.5;
+    const halb = (py / WH) * (WB / 2);
+    return Math.min((halb - Math.abs(pxx - WB / 2)) * 0.87, WH - py); // Abstand zum Rand (negativ = aussen)
+  }
+  function dreieck(name, symbol) {
+    kachel2(name, WB, WH, (px) => {
+      for (let y = 0; y < WH; y++) {
+        for (let x = 0; x < WB; x++) {
+          const d = imDreieck(x, y);
+          if (d >= 0) px(x, y, d < 1.4 ? ROT : WEISS);
+        }
+      }
+      muster(px, symbol, 4, 5, { k: SCHWARZ });
+    }, true);
+  }
+  // Kurve rechts (für links wird das Schild gespiegelt)
+  dreieck('warnKurve', [
+    '........',
+    '....k...',
+    '..kkkk..',
+    '..k.k...',
+    '..k.....',
+    '..k.....',
+    '..k.....',
+  ]);
+  // Doppelkurve, zuerst rechts (für zuerst links gespiegelt)
+  dreieck('warnDoppel', [
+    '....k...',
+    '...kkk..',
+    '....k...',
+    '...k....',
+    '...k....',
+    '....k...',
+    '...k....',
+  ]);
+  // Steinschlag: Felshang links, Steine fallen nach rechts
+  dreieck('warnStein', [
+    '........',
+    '..k.....',
+    '..kk.k..',
+    '.kkk....',
+    '.kkk..k.',
+    '.kkkk...',
+    'kkkkk.k.',
+  ]);
+  // Gefälle: Keil, der nach rechts abfällt
+  dreieck('warnGefaelle', [
+    '........',
+    '........',
+    'k.......',
+    'kkk.....',
+    'kkkkk...',
+    'kkkkkkk.',
+    '........',
+  ]);
+  // Rückseite der Warnschilder: graues Dreieck
+  kachel2('warnRuecken', WB, WH, (px) => {
+    for (let y = 0; y < WH; y++) for (let x = 0; x < WB; x++) if (imDreieck(x, y) >= 0) px(x, y, hell(GRAU, 0.94 + rnd() * 0.1));
+  }, true);
+
+  // Richtungstafel (Chevron): rot mit weissem Pfeil nach links (für rechts gespiegelt). 8x10
+  kachel2('chevron', 8, 10, (px) => {
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 8; x++) px(x, y, ROT);
+    muster(px, [
+      '........',
+      '.....ww.',
+      '....ww..',
+      '...ww...',
+      '..ww....',
+      '..ww....',
+      '...ww...',
+      '....ww..',
+      '.....ww.',
+      '........',
+    ], 0, 0, { w: WEISS });
+  });
+  // Kehren-Nummern: blaue Tafel, weisser Rand, weisse Ziffer. 8x7
+  const BLAU = hexZuRgb('#1f4f9a');
+  for (let k = 1; k <= kehren; k++) {
+    kachel2(`kehre${k}`, 8, 7, (px) => {
+      for (let y = 0; y < 7; y++) for (let x = 0; x < 8; x++) px(x, y, x === 0 || y === 0 || x === 7 || y === 6 ? WEISS : BLAU);
+      muster(px, ZIFFERN0[k] || ZIFFERN0[9], 3, 1, { '#': WEISS });
+    });
+  }
+  // Kilometertafeln: weiss mit schwarzem Rand und Zahl wie "1.5". 12x7
+  for (const zahl of kmZahlen) {
+    kachel2(`km${zahl}`, 12, 7, (px) => {
+      for (let y = 0; y < 7; y++) for (let x = 0; x < 12; x++) px(x, y, x === 0 || y === 0 || x === 11 || y === 6 ? SCHWARZ : WEISS);
+      const zeichen = zahl.split('');
+      const breite = zeichen.reduce((n, z) => n + (z === '.' ? 2 : 4), -1);
+      let x = Math.floor((12 - breite) / 2);
+      for (const z of zeichen) {
+        if (z === '.') { px(x, 5, SCHWARZ); x += 2; continue; }
+        muster(px, ZIFFERN0[z], x, 1, { '#': SCHWARZ });
+        x += 4;
+      }
+    });
+  }
+
+  const textur = zuTextur(l);
+  return {
+    textur,
+    // Texturbereich einer Kachel (u nach rechts, v nach oben, wie Three.js es will)
+    kachel(name) {
+      const r = rechtecke[name];
+      if (!r) throw new Error(`Atlas: Kachel ${name} fehlt`);
+      return { u0: r.x / N, u1: (r.x + r.b) / N, v0: 1 - (r.y + r.h) / N, v1: 1 - r.y / N };
+    },
+  };
+}
