@@ -1,6 +1,9 @@
-// Kollisionen mit Bäumen und Steinen.
-// Jedes Hindernis ist ein Kreis am Boden (bei Bäumen nur der Stamm).
-// Das Auto wird durch 3 Kreise angenähert (vorne, Mitte, hinten).
+// Kollisionen mit Bäumen, Steinen und Baumstämmen.
+// Jedes Hindernis ist ein Kreis am Boden (bei Bäumen nur der Stamm,
+// liegende Stämme sind eine Reihe Kreise).
+// Das Auto ist ein Rechteck mit runden Ecken. Die Front ist flach: Fährt man
+// gerade auf einen Baum zu, ist das ein frontaler Aufprall, auch wenn der Baum
+// nicht genau mittig steht.
 // Damit nicht jedes Mal alle Hindernisse geprüft werden müssen, liegen sie
 // in einem Raster (Zellen von z. B. 8 m). Geprüft werden nur die Zellen um das Auto.
 // Diese Datei kennt kein Three.js – reine Rechnerei.
@@ -14,7 +17,8 @@ export function baueKollision(hindernisse) {
   const k = CONFIG.kollision;
   const Z = k.zelle;
   const anzahl = hindernisse.length;
-  const hx = new Float32Array(anzahl), hz = new Float32Array(anzahl), hr = new Float32Array(anzahl);
+  // Float64, damit die Rasterzelle genau gleich gerechnet wird wie minX/minZ
+  const hx = new Float64Array(anzahl), hz = new Float64Array(anzahl), hr = new Float64Array(anzahl);
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, maxR = 0;
   hindernisse.forEach((h, i) => {
     hx[i] = h.x; hz[i] = h.z; hr[i] = h.r;
@@ -26,7 +30,8 @@ export function baueKollision(hindernisse) {
   const NX = Math.floor((maxX - minX) / Z) + 1, NZ = Math.floor((maxZ - minZ) / Z) + 1;
 
   // Raster als zwei Listen: pro Zelle "ab wo" und "wie viele" in einer langen Liste
-  const zelleVon = (x, z) => Math.floor((z - minZ) / Z) * NX + Math.floor((x - minX) / Z);
+  const zelleVon = (x, z) =>
+    begrenze(Math.floor((z - minZ) / Z), 0, NZ - 1) * NX + begrenze(Math.floor((x - minX) / Z), 0, NX - 1);
   const start = new Int32Array(NX * NZ + 1);
   for (let i = 0; i < anzahl; i++) start[zelleVon(hx[i], hz[i]) + 1]++;
   for (let c = 0; c < NX * NZ; c++) start[c + 1] += start[c];
@@ -37,9 +42,9 @@ export function baueKollision(hindernisse) {
   // Alle Hindernisse, die einen Kreis (x, z, r) berühren könnten
   function inDerNaehe(x, z, r, rueckruf) {
     const rr = r + maxR;
+    if (x + rr < minX || x - rr > maxX + Z || z + rr < minZ || z - rr > maxZ + Z) return;
     const x0 = begrenze(Math.floor((x - rr - minX) / Z), 0, NX - 1), x1 = begrenze(Math.floor((x + rr - minX) / Z), 0, NX - 1);
     const z0 = begrenze(Math.floor((z - rr - minZ) / Z), 0, NZ - 1), z1 = begrenze(Math.floor((z + rr - minZ) / Z), 0, NZ - 1);
-    if (x + rr < minX || x - rr > maxX + Z || z + rr < minZ || z - rr > maxZ + Z) return;
     for (let cz = z0; cz <= z1; cz++) {
       for (let cx = x0; cx <= x1; cx++) {
         const c = cz * NX + cx;
@@ -48,54 +53,82 @@ export function baueKollision(hindernisse) {
     }
   }
 
-  // Tiefster Kontakt zwischen den Auto-Kreisen und den Hindernissen,
-  // wenn das Auto bei (x, z) mit Blickrichtung w steht.
-  const kontakt = { tiefe: 0, nx: 0, nz: 0, px: 0, pz: 0, i: -1 };
+  // Auto-Rechteck: innerer Kern (ohne runde Ecken) und Eckradius
+  const ecke = k.eckRadius;
+  const kernL = k.autoLaenge / 2 - ecke, kernB = k.autoBreite / 2 - ecke;
+  const umkreis = Math.hypot(k.autoLaenge / 2, k.autoBreite / 2);
+
+  // Kontakt zwischen Auto und Hindernissen, wenn das Auto bei (x, z) mit
+  // Blickrichtung w steht.
+  // 1. das Hindernis finden, das am tiefsten im Auto steckt, und den Punkt am
+  //    Auto, an dem es drückt;
+  // 2. an diesem Punkt die Richtung der Hindernis-Oberfläche bestimmen. Dabei
+  //    zählen auch Nachbarn mit (z. B. die Kreise eines liegenden Stamms) –
+  //    so fühlt sich ein Stamm glatt an und nicht wie eine Perlenkette.
+  const kontakt = { tiefe: 0, nx: 0, nz: 0 };
+  const band = k.glaetten;
   function finde(x, z, w) {
-    const fx = Math.sin(w), fz = Math.cos(w);
-    kontakt.tiefe = 0; kontakt.i = -1;
-    for (const kreis of k.autoKreise) {
-      const cx = x + fx * kreis.versatz, cz = z + fz * kreis.versatz;
-      inDerNaehe(cx, cz, kreis.r, (i) => {
-        const dx = cx - hx[i], dz = cz - hz[i];
-        const d = Math.hypot(dx, dz);
-        const tiefe = kreis.r + hr[i] - d;
-        if (tiefe <= kontakt.tiefe) return;
-        // Richtung vom Hindernis zum Auto-Kreis (bei genau gleichem Punkt: nach hinten)
-        const nx = d > 1e-6 ? dx / d : -fx, nz = d > 1e-6 ? dz / d : -fz;
-        kontakt.tiefe = tiefe; kontakt.i = i;
-        kontakt.nx = nx; kontakt.nz = nz;
-        // Berührpunkt am Rand des Hindernisses
-        kontakt.px = hx[i] + nx * hr[i]; kontakt.pz = hz[i] + nz * hr[i];
-      });
-    }
-    return kontakt.i >= 0 ? kontakt : null;
+    const fx = Math.sin(w), fz = Math.cos(w);   // vorne
+    const lx = Math.cos(w), lz = -Math.sin(w);  // links
+    let tiefe = 0, px = 0, pz = 0, nx = 0, nz = 0;
+    inDerNaehe(x, z, umkreis, (i) => {
+      // Hindernis im Auto-Koordinatensystem (v = vorne, s = links)
+      const dx = hx[i] - x, dz = hz[i] - z;
+      const v = dx * fx + dz * fz, s = dx * lx + dz * lz;
+      // nächster Punkt auf dem Kern des Rechtecks
+      const kv = begrenze(v, -kernL, kernL), ks = begrenze(s, -kernB, kernB);
+      const ev = v - kv, es = s - ks;
+      const d = Math.hypot(ev, es);
+      const R = hr[i] + ecke;
+      let t, nv, ns; // Tiefe und Richtung vom Hindernis zum Auto (Auto-Koordinaten)
+      if (d > 1e-6) {
+        t = R - d;
+        nv = -ev / d; ns = -es / d;
+      } else {
+        // Mittelpunkt steckt im Kern (sehr selten): kürzester Weg hinaus
+        const tv = kernL - Math.abs(v) + R, ts = kernB - Math.abs(s) + R;
+        if (tv < ts) { t = tv; nv = -Math.sign(v || 1); ns = 0; } else { t = ts; nv = 0; ns = -Math.sign(s || 1); }
+      }
+      if (t <= tiefe) return;
+      tiefe = t;
+      px = x + kv * fx + ks * lx; pz = z + kv * fz + ks * lz;
+      nx = nv * fx + ns * lx; nz = nv * fz + ns * lz;
+    });
+    if (tiefe <= 0) return null;
+    // Oberflächen-Richtung am Druckpunkt (Mittel über die nahen Hindernisse)
+    let sx = 0, sz = 0;
+    inDerNaehe(px, pz, ecke + band, (i) => {
+      const dx = px - hx[i], dz = pz - hz[i];
+      const d = Math.hypot(dx, dz);
+      const g = hr[i] + ecke + band - d; // Gewicht: je näher, desto wichtiger
+      if (g <= 0 || d < 1e-6) return;
+      sx += (g * dx) / d; sz += (g * dz) / d;
+    });
+    const l = Math.hypot(sx, sz);
+    if (l > 1e-9 && (sx * nx + sz * nz) / l > 0.3) { nx = sx / l; nz = sz / l; }
+    kontakt.tiefe = tiefe; kontakt.nx = nx; kontakt.nz = nz;
+    return kontakt;
   }
 
   const kol = {
     anzahl,
     letzterAufprall: null, // { vorher, nachher } in m/s
-    restRuck: 0,           // noch zu drehender Teil des Aufprall-Rucks (rad)
-    ruhigZeit: 0,          // so lange wird die Drehung nach dem Aufprall noch gedämpft (s)
+
+    // Ist ein Kreis (x, z, r) frei von Hindernissen? (für die Abkürzungs-Analyse)
+    frei(x, z, r) {
+      let ok = true;
+      inDerNaehe(x, z, r, (i) => {
+        if (ok && Math.hypot(hx[i] - x, hz[i] - z) < r + hr[i]) ok = false;
+      });
+      return ok;
+    },
 
     // Nach einem Physik-Schritt: Hat das Auto auf dem Weg von (xAlt, zAlt)
     // zur neuen Position ein Hindernis getroffen? Der Weg wird in kurzen
     // Stücken abgefahren, damit man auch bei Höchsttempo nicht durch einen
     // Stamm rutscht.
-    loese(physik, xAlt, zAlt, wAlt, dt) {
+    loese(physik, xAlt, zAlt, wAlt) {
       if (!anzahl) return false;
-      // Ruck vom letzten Aufprall: Auto dreht sich schnell, aber nicht in einem Bild
-      if (this.restRuck) {
-        const d = Math.sign(this.restRuck) * Math.min(Math.abs(this.restRuck), k.ruckTempo * dt);
-        physik.richtung += d;
-        wAlt += d;
-        this.restRuck -= d;
-      }
-      // Kurz nach dem Aufprall: Drehung dämpfen, damit das Auto nicht überdreht
-      if (this.ruhigZeit > 0) {
-        this.ruhigZeit -= dt;
-        physik.drehrate *= Math.exp(-k.drehDaempfung * dt);
-      }
       const weg = Math.hypot(physik.x - xAlt, physik.z - zAlt);
       const teile = Math.max(1, Math.ceil(weg / k.pruefSchritt));
       let dw = physik.richtung - wAlt;
@@ -108,84 +141,53 @@ export function baueKollision(hindernisse) {
         if (treffer) { physik.x = x; physik.z = z; physik.richtung = w; }
       }
       if (!treffer) return false;
+      const vorher = physik.tempo;
+      let wucht = 0, winkel = 0;
       // höchstens ein paar Runden, falls das Auto zwei Hindernisse zugleich berührt
-      for (let runde = 0; runde < 3 && treffer; runde++) {
-        this.stoss(physik, treffer);
+      for (let runde = 0; runde < 4 && treffer; runde++) {
+        const st = this.stoss(physik, treffer);
+        if (runde === 0) winkel = st.winkel;
+        wucht = Math.max(wucht, st.wucht);
         treffer = finde(physik.x, physik.z, physik.richtung);
       }
+      // für F3: Tempo vor und nach dem Aufprall (winkel: 0° = frontal, 90° = streifend)
+      if (wucht > 1.5) this.letzterAufprall = { vorher, nachher: physik.tempo, winkel };
       return true;
     },
 
-    // Reaktion auf einen Kontakt
+    // Reaktion auf einen Kontakt (c.nx/c.nz zeigt vom Hindernis zum Auto).
+    // Ergebnis: Wucht (Tempo Richtung Hindernis) und Aufprallwinkel (Grad)
     stoss(physik, c) {
       // 1. aus dem Hindernis schieben (ein Hauch mehr, damit nichts klebt)
       physik.x += c.nx * (c.tiefe + 0.002);
       physik.z += c.nz * (c.tiefe + 0.002);
 
-      // Schaut das Auto ins Hindernis, dreht es sich langsam davon weg
-      // (sonst bleibt es mit Gas frontal am Baum kleben)
-      const fx = Math.sin(physik.richtung), fz = Math.cos(physik.richtung);
-      if (fx * -c.nx + fz * -c.nz > 0.3) {
-        const links = (c.px - physik.x) * fz - (c.pz - physik.z) * fx; // + = Hindernis links
-        physik.richtung += (links >= 0 ? -1 : 1) * k.wegDrehen; // + = nach links drehen
-      }
-
       const vn = physik.vx * c.nx + physik.vz * c.nz; // < 0 = fährt aufs Hindernis zu
-      if (vn >= 0) return;
-      const vorher = physik.tempo;
-
-      // Seitliche Richtung am Hindernis (entlang der "Oberfläche")
-      let tx = -c.nz, tz = c.nx;
-      let vt = physik.vx * tx + physik.vz * tz;
-      if (Math.abs(vt) < 0.05) {
-        // Fast genau frontal: das Auto rutscht zur Seite, auf der das
-        // Hindernis weniger im Weg ist (Hindernis links der Automitte -> nach rechts)
-        const lx = Math.cos(physik.richtung), lz = -Math.sin(physik.richtung); // "links" vom Auto
-        const links = (c.px - physik.x) * lx + (c.pz - physik.z) * lz; // + = Hindernis links
-        const wunsch = links >= 0 ? -1 : 1; // weg vom Hindernis
-        if ((tx * lx + tz * lz) * wunsch < 0) { tx = -tx; tz = -tz; }
-        vt = 0;
-      } else if (vt < 0) {
-        tx = -tx; tz = -tz; vt = -vt;
-      }
+      if (vn >= 0) return { wucht: 0, winkel: 90 };
+      const winkel = Math.acos(Math.min(1, -vn / physik.tempo)) * 180 / Math.PI;
+      const tx = -c.nz, tz = c.nx; // entlang des Hindernisses
+      const vt = physik.vx * tx + physik.vz * tz;
       const stossTempo = -vn;
-      // Wie frontal war der Aufprall? 1 = genau frontal, 0 = streifend
-      const frontal = vorher > 0.1 ? stossTempo / vorher : 1;
 
-      // 2. Tempo Richtung Hindernis fast ganz weg, kleiner Rückprall
+      // 2. Tempo Richtung Hindernis ist weg, nur ein winziger Rückprall
       const vnNeu = stossTempo * k.rueckprall;
-      // 3. seitlich: etwas Reibung, bei frontalem Aufprall wird das Auto
-      //    zusätzlich zur Seite abgelenkt (es "dreht sich um den Baum")
-      let vtNeu = Math.max(0, vt - stossTempo * k.reibung) + stossTempo * k.ablenkung * frontal;
-      const dvx = c.nx * (vnNeu - vn) + tx * (vtNeu - vt);
-      const dvz = c.nz * (vnNeu - vn) + tz * (vtNeu - vt);
-      physik.vx += dvx;
-      physik.vz += dvz;
-
-      // 4. Drehung: Der Stoss trifft das Auto nicht im Schwerpunkt -> es dreht sich.
-      //    Ein Teil passiert sofort (Ruck): Die Schnauze dreht in die Richtung,
-      //    in die das Auto am Hindernis vorbeirutscht.
-      const fwd = physik.vx * fx + physik.vz * fz;
-      const zielX = vtNeu > 0.5 ? tx : physik.vx, zielZ = vtNeu > 0.5 ? tz : physik.vz;
-      let alpha = Math.atan2(zielX, zielZ) - physik.richtung;
+      // 3. Tempo entlang des Hindernisses: Reibung, die mit der Wucht des
+      //    Aufpralls wächst. Frontal (viel Wucht, wenig Rutschen) bleibt
+      //    nichts übrig, beim Streifschuss (wenig Wucht) fast alles.
+      const vtNeu = Math.sign(vt) * Math.max(0, Math.abs(vt) - stossTempo * k.reibung);
+      physik.vx = c.nx * vnNeu + tx * vtNeu;
+      physik.vz = c.nz * vnNeu + tz * vtNeu;
+      // Der Aufprall stoppt auch ein Drehen des Autos
+      physik.drehrate *= k.drehBremse;
+      // Rutscht das Auto am Hindernis entlang, drückt es die Schnauze (oder das
+      // Heck) sanft parallel zum Hindernis. Frontal (kein Rutschen) dreht nichts.
+      const rutschen = Math.abs(vtNeu) / Math.max(physik.tempo, 0.1);
+      let alpha = Math.atan2(tx, tz) - physik.richtung; // Winkel Blickrichtung -> Hindernis-Linie
       alpha = Math.atan2(Math.sin(alpha), Math.cos(alpha));
-      // fährt das Auto rückwärts, richtet sich das Heck aus
-      if (fwd < 0 && Math.abs(alpha) > Math.PI / 2) alpha -= Math.sign(alpha) * Math.PI;
-      const staerke = Math.min(1, stossTempo / k.drehAbTempo);
-      const ruck = Math.sign(alpha) * Math.min(Math.abs(alpha) * k.drehRuck, (k.maxRuck * Math.PI) / 180) * staerke;
-      // Ein Teil sofort (sonst steht das Auto quer zur Fahrt und die Reifen
-      // bremsen es abrupt), der Rest weich in den nächsten Schritten
-      const sofort = Math.sign(ruck) * Math.min(Math.abs(ruck), (k.ruckSofort * Math.PI) / 180);
-      physik.richtung += sofort;
-      this.restRuck = ruck - sofort;
-      if (staerke > 0.3) this.ruhigZeit = k.ruhigNach;
-      const rx = c.px - physik.x, rz = c.pz - physik.z;
-      const hebel = rz * dvx - rx * dvz; // + = dreht wie drehrate
-      const dreh = begrenze((k.drehStoss * hebel) / CONFIG.auto.traegheit + ruck * k.drehNachlauf,
-        -k.maxDrehung, k.maxDrehung);
-      physik.drehrate = physik.drehrate * 0.3 + dreh;
-
-      if (stossTempo > 1.5) this.letzterAufprall = { vorher, nachher: physik.tempo };
+      if (alpha > Math.PI / 2) alpha -= Math.PI; else if (alpha < -Math.PI / 2) alpha += Math.PI;
+      const dreh = Math.min(Math.abs(alpha), k.ausrichten * stossTempo * rutschen);
+      physik.richtung += Math.sign(alpha) * dreh;
+      return { wucht: stossTempo, winkel };
     },
   };
   return kol;

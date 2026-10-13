@@ -154,6 +154,96 @@ export function steinTextur(varianten = 3, seed = 31) {
   return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
 }
 
+// Felsbrocken: grosse, kantige Blöcke mit Flächen, Rissen und etwas Moos, je 24x20 Pixel
+const FELSBROCKEN = ['#403e3b', '#5a5752', '#77736b', '#938f85', '#2c2b28'];
+const MOOS = ['#4f6a2c', '#677f36'];
+export function felsbrockenTextur(varianten = 3, seed = 41) {
+  const B = 24, H = 20;
+  const l = leinwand(B * varianten, H);
+  const rnd = zufall(seed);
+  const farben = FELSBROCKEN.map(hexZuRgb), moos = MOOS.map(hexZuRgb);
+  for (let v = 0; v < varianten; v++) {
+    const ox = v * B;
+    // Umriss: Vieleck mit flachem Boden
+    const n = 9, ecken = [];
+    for (let i = 0; i < n; i++) ecken.push(0.72 + rnd() * 0.3);
+    // ein paar Kanten (Lichtgrenzen) quer über den Block
+    const kanten = [];
+    for (let i = 0; i < 3; i++) kanten.push({ a: (rnd() - 0.5) * 1.6, b: (rnd() - 0.5) * 0.6, s: rnd() < 0.5 ? -1 : 1 });
+    const risse = [];
+    for (let i = 0; i < 2; i++) risse.push({ x: 5 + rnd() * 14, y: 4 + rnd() * 8, l: 3 + rnd() * 5, d: rnd() < 0.5 ? 1 : -1 });
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < B; x++) {
+        const dx = (x + 0.5 - 12) / 11.5, dy = (y + 0.5 - 20) / 19;
+        const w = Math.atan2(dy, dx);
+        const idx = ((w / (Math.PI * 2)) * n + n) % n;
+        const i0 = Math.floor(idx), t = idx - i0;
+        const r = ecken[i0] * (1 - t) + ecken[(i0 + 1) % n] * t; // kantiger Umriss
+        if (Math.hypot(dx, dy) > r) continue;
+        // Licht von links oben, Flächen über die Kanten verschieden hell
+        let licht = -dx * 0.55 - dy * 0.75 - 0.35;
+        for (const k of kanten) if ((dy + 0.5) - (k.a * dx + k.b) > 0) licht += 0.18 * k.s;
+        let f = licht > 0.4 ? 3 : licht > 0.1 ? 2 : licht > -0.25 ? 1 : 0;
+        if (rnd() < 0.08) f = Math.max(0, f - 1);
+        if (rnd() < 0.04) f = 4;
+        let farbe = farben[f];
+        // Moos oben auf dem Block
+        if (dy < -0.62 && rnd() < 0.45) farbe = moos[rnd() < 0.6 ? 0 : 1];
+        setze(l, ox + x, y, farbe);
+      }
+    }
+    // Risse
+    for (const rr of risse) {
+      for (let i = 0; i < rr.l; i++) {
+        const x = Math.round(rr.x + i * 0.5 * rr.d), y = Math.round(rr.y + i);
+        const k = (y * l.b + ox + x) * 4;
+        if (x >= 0 && x < B && y < H && l.bild.data[k + 3]) setze(l, ox + x, y, farben[4]);
+      }
+    }
+  }
+  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
+}
+
+// Baumstamm: Rinde (rundherum x entlang), 8x32 Pixel, wiederholt sich entlang des Stamms
+const RINDE = ['#3b2a1c', '#4e3624', '#64462d', '#2a1d13'];
+export function rindenTextur(seed = 51) {
+  const B = 8, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const farben = RINDE.map(hexZuRgb);
+  for (let x = 0; x < B; x++) {
+    let furche = rnd() < 0.35;
+    for (let y = 0; y < H; y++) {
+      if (rnd() < 0.12) furche = !furche; // Furchen der Rinde laufen längs
+      let f = furche ? 0 : rnd() < 0.3 ? 2 : 1;
+      if (rnd() < 0.05) f = 3;
+      setze(l, x, y, farben[f]);
+    }
+  }
+  return zuTextur(l, { wiederholen: true });
+}
+
+// Baumstamm: Schnittfläche am Ende (heller Holzring mit Jahresringen), 16x16 Pixel
+const HOLZ = ['#c9a571', '#b38e5a', '#9a7647', '#3b2a1c'];
+export function holzringTextur(seed = 53) {
+  const N = 16;
+  const l = leinwand(N, N);
+  const rnd = zufall(seed);
+  const farben = HOLZ.map(hexZuRgb);
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const d = Math.hypot(x + 0.5 - 8, y + 0.5 - 8) / 8;
+      let f;
+      if (d > 0.82) f = 3;                     // Rinde aussen
+      else f = Math.floor(d * 7 + rnd() * 0.5) % 2 ? 1 : 0; // Jahresringe
+      if (d < 0.12) f = 2;                     // Kern
+      if (d <= 0.82 && rnd() < 0.06) f = 2;
+      setze(l, x, y, farben[f]);
+    }
+  }
+  return zuTextur(l);
+}
+
 // Körnung für Gras und Fels (graue Pixel, wird mit der Geländefarbe multipliziert)
 export function koernungTextur(seed = 5) {
   const N = 32;

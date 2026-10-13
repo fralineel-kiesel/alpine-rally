@@ -17,6 +17,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { ABKUERZUNGEN } from './abkuerzungen.js';
 
 export const STRECKEN_PUNKTE = [
   // --- 1. Start im Tal: gerade, offene Wiese, Berge voraus ---
@@ -326,6 +327,9 @@ export function baueStrecke() {
     box: { minX, maxX, minZ, maxZ },
     startS: CONFIG.strasse.startBeiMeter,
     zielS: laenge - CONFIG.strasse.zielVorEnde,
+    // Gesperrte Kurven { sVon, sBis, seite } für die Pace-Note "nicht schneiden"
+    // (Meilenstein 4). Kommt automatisch aus tools/abkuerzungen.mjs.
+    nichtSchneiden: ABKUERZUNGEN.nichtSchneiden,
 
     // Nächster Streckenpunkt zu (x, z).
     // Ergebnis: s (Meter entlang der Strecke), seite (Abstand zur Mitte, + = rechts),
