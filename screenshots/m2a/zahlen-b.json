@@ -1,0 +1,511 @@
+{
+ "ladezeiten": [
+  1858,
+  2325,
+  2721
+ ],
+ "stellen": [
+  {
+   "nr": "01",
+   "name": "start",
+   "s": 12,
+   "calls": 112,
+   "dreiecke": 109442
+  },
+  {
+   "nr": "02",
+   "name": "talabschnitt",
+   "s": 540,
+   "calls": 109,
+   "dreiecke": 116464
+  },
+  {
+   "nr": "03",
+   "name": "talabschnitt-wiese",
+   "s": 300,
+   "calls": 113,
+   "dreiecke": 132666
+  },
+  {
+   "nr": "04",
+   "name": "kehren-hinter-auto",
+   "s": 1475,
+   "calls": 70,
+   "dreiecke": 96476
+  },
+  {
+   "nr": "05",
+   "name": "kehren-von-aussen",
+   "frei": "kehrenAussen",
+   "calls": 71,
+   "dreiecke": 116018
+  },
+  {
+   "nr": "06",
+   "name": "kehre-1-hinter-auto",
+   "s": 1352,
+   "calls": 105,
+   "dreiecke": 132658
+  },
+  {
+   "nr": "07",
+   "name": "felswand",
+   "s": 2150,
+   "calls": 103,
+   "dreiecke": 114886
+  },
+  {
+   "nr": "08",
+   "name": "passhoehe",
+   "s": 2586,
+   "calls": 79,
+   "dreiecke": 106404
+  },
+  {
+   "nr": "09",
+   "name": "abfahrt",
+   "s": 3080,
+   "calls": 68,
+   "dreiecke": 100252
+  },
+  {
+   "nr": "10",
+   "name": "abfahrt-schikane",
+   "s": 3175,
+   "calls": 64,
+   "dreiecke": 98190
+  },
+  {
+   "nr": "11",
+   "name": "ziel",
+   "s": 3560,
+   "calls": 53,
+   "dreiecke": 78444
+  },
+  {
+   "nr": "12",
+   "name": "nah-doppelkurve-vor-waldstueck",
+   "nah": "schild:warnung:0",
+   "calls": 87,
+   "dreiecke": 125080
+  },
+  {
+   "nr": "13",
+   "name": "nah-kehre-1-chevrons",
+   "nah": "schild:kehre:0",
+   "calls": 85,
+   "dreiecke": 131910
+  },
+  {
+   "nr": "14",
+   "name": "nah-steinschlag-gefaelle",
+   "nah": "schild:gefahr:1",
+   "calls": 54,
+   "dreiecke": 105972
+  },
+  {
+   "nr": "15",
+   "name": "nah-weidetor",
+   "nah": "tor:0",
+   "calls": 95,
+   "dreiecke": 126002
+  },
+  {
+   "nr": "16",
+   "name": "nah-kilometertafel",
+   "nah": "schild:km:0",
+   "calls": 85,
+   "dreiecke": 104670
+  }
+ ],
+ "durchlauf": [
+  {
+   "s": 10,
+   "calls": 112,
+   "dreiecke": 109442
+  },
+  {
+   "s": 60,
+   "calls": 109,
+   "dreiecke": 111168
+  },
+  {
+   "s": 110,
+   "calls": 107,
+   "dreiecke": 110254
+  },
+  {
+   "s": 160,
+   "calls": 107,
+   "dreiecke": 110254
+  },
+  {
+   "s": 210,
+   "calls": 107,
+   "dreiecke": 111736
+  },
+  {
+   "s": 260,
+   "calls": 107,
+   "dreiecke": 132280
+  },
+  {
+   "s": 310,
+   "calls": 113,
+   "dreiecke": 132666
+  },
+  {
+   "s": 360,
+   "calls": 115,
+   "dreiecke": 124698
+  },
+  {
+   "s": 410,
+   "calls": 114,
+   "dreiecke": 117884
+  },
+  {
+   "s": 460,
+   "calls": 114,
+   "dreiecke": 117884
+  },
+  {
+   "s": 510,
+   "calls": 112,
+   "dreiecke": 117136
+  },
+  {
+   "s": 560,
+   "calls": 108,
+   "dreiecke": 110032
+  },
+  {
+   "s": 610,
+   "calls": 98,
+   "dreiecke": 106584
+  },
+  {
+   "s": 660,
+   "calls": 92,
+   "dreiecke": 119336
+  },
+  {
+   "s": 710,
+   "calls": 87,
+   "dreiecke": 123150
+  },
+  {
+   "s": 760,
+   "calls": 76,
+   "dreiecke": 121710
+  },
+  {
+   "s": 810,
+   "calls": 79,
+   "dreiecke": 102538
+  },
+  {
+   "s": 860,
+   "calls": 83,
+   "dreiecke": 118488
+  },
+  {
+   "s": 910,
+   "calls": 90,
+   "dreiecke": 118780
+  },
+  {
+   "s": 960,
+   "calls": 107,
+   "dreiecke": 125776
+  },
+  {
+   "s": 1010,
+   "calls": 105,
+   "dreiecke": 119234
+  },
+  {
+   "s": 1060,
+   "calls": 84,
+   "dreiecke": 111612
+  },
+  {
+   "s": 1110,
+   "calls": 89,
+   "dreiecke": 115996
+  },
+  {
+   "s": 1160,
+   "calls": 103,
+   "dreiecke": 121410
+  },
+  {
+   "s": 1210,
+   "calls": 108,
+   "dreiecke": 123198
+  },
+  {
+   "s": 1260,
+   "calls": 110,
+   "dreiecke": 123642
+  },
+  {
+   "s": 1310,
+   "calls": 108,
+   "dreiecke": 121460
+  },
+  {
+   "s": 1360,
+   "calls": 103,
+   "dreiecke": 132210
+  },
+  {
+   "s": 1410,
+   "calls": 75,
+   "dreiecke": 130140
+  },
+  {
+   "s": 1460,
+   "calls": 71,
+   "dreiecke": 100740
+  },
+  {
+   "s": 1510,
+   "calls": 60,
+   "dreiecke": 93444
+  },
+  {
+   "s": 1560,
+   "calls": 109,
+   "dreiecke": 121914
+  },
+  {
+   "s": 1610,
+   "calls": 107,
+   "dreiecke": 121466
+  },
+  {
+   "s": 1660,
+   "calls": 96,
+   "dreiecke": 118344
+  },
+  {
+   "s": 1710,
+   "calls": 77,
+   "dreiecke": 116712
+  },
+  {
+   "s": 1760,
+   "calls": 68,
+   "dreiecke": 98952
+  },
+  {
+   "s": 1810,
+   "calls": 61,
+   "dreiecke": 95520
+  },
+  {
+   "s": 1860,
+   "calls": 113,
+   "dreiecke": 124158
+  },
+  {
+   "s": 1910,
+   "calls": 103,
+   "dreiecke": 107470
+  },
+  {
+   "s": 1960,
+   "calls": 91,
+   "dreiecke": 112218
+  },
+  {
+   "s": 2010,
+   "calls": 95,
+   "dreiecke": 125754
+  },
+  {
+   "s": 2060,
+   "calls": 104,
+   "dreiecke": 128566
+  },
+  {
+   "s": 2110,
+   "calls": 105,
+   "dreiecke": 128998
+  },
+  {
+   "s": 2160,
+   "calls": 102,
+   "dreiecke": 114646
+  },
+  {
+   "s": 2210,
+   "calls": 98,
+   "dreiecke": 114754
+  },
+  {
+   "s": 2260,
+   "calls": 88,
+   "dreiecke": 108648
+  },
+  {
+   "s": 2310,
+   "calls": 87,
+   "dreiecke": 107936
+  },
+  {
+   "s": 2360,
+   "calls": 90,
+   "dreiecke": 112096
+  },
+  {
+   "s": 2410,
+   "calls": 89,
+   "dreiecke": 123808
+  },
+  {
+   "s": 2460,
+   "calls": 90,
+   "dreiecke": 125220
+  },
+  {
+   "s": 2510,
+   "calls": 84,
+   "dreiecke": 122372
+  },
+  {
+   "s": 2560,
+   "calls": 82,
+   "dreiecke": 106572
+  },
+  {
+   "s": 2610,
+   "calls": 79,
+   "dreiecke": 106404
+  },
+  {
+   "s": 2660,
+   "calls": 76,
+   "dreiecke": 109860
+  },
+  {
+   "s": 2710,
+   "calls": 76,
+   "dreiecke": 110932
+  },
+  {
+   "s": 2760,
+   "calls": 73,
+   "dreiecke": 108688
+  },
+  {
+   "s": 2810,
+   "calls": 75,
+   "dreiecke": 109264
+  },
+  {
+   "s": 2860,
+   "calls": 76,
+   "dreiecke": 108482
+  },
+  {
+   "s": 2910,
+   "calls": 70,
+   "dreiecke": 112402
+  },
+  {
+   "s": 2960,
+   "calls": 70,
+   "dreiecke": 110866
+  },
+  {
+   "s": 3010,
+   "calls": 72,
+   "dreiecke": 113788
+  },
+  {
+   "s": 3060,
+   "calls": 70,
+   "dreiecke": 100732
+  },
+  {
+   "s": 3110,
+   "calls": 68,
+   "dreiecke": 100338
+  },
+  {
+   "s": 3160,
+   "calls": 64,
+   "dreiecke": 98190
+  },
+  {
+   "s": 3210,
+   "calls": 65,
+   "dreiecke": 99342
+  },
+  {
+   "s": 3260,
+   "calls": 60,
+   "dreiecke": 98862
+  },
+  {
+   "s": 3310,
+   "calls": 59,
+   "dreiecke": 102318
+  },
+  {
+   "s": 3360,
+   "calls": 59,
+   "dreiecke": 102222
+  },
+  {
+   "s": 3410,
+   "calls": 58,
+   "dreiecke": 97526
+  },
+  {
+   "s": 3460,
+   "calls": 56,
+   "dreiecke": 79126
+  },
+  {
+   "s": 3510,
+   "calls": 53,
+   "dreiecke": 78444
+  },
+  {
+   "s": 3560,
+   "calls": 53,
+   "dreiecke": 78444
+  },
+  {
+   "s": 3610,
+   "calls": 53,
+   "dreiecke": 78444
+  }
+ ],
+ "rand": {
+  "ms": 92,
+  "msPlan": 43,
+  "plankenMeter": 1195,
+  "plankenStuecke": 9,
+  "zaunMeter": 871,
+  "zaunStuecke": 16,
+  "tore": 5,
+  "toreOffen": 4,
+  "wiesenAnteilMitZaun": 50,
+  "schilder": 28,
+  "schilderArten": {
+   "warnung": 3,
+   "chevron": 12,
+   "kehre": 4,
+   "gefahr": 2,
+   "km": 7
+  },
+  "kehren": 4,
+  "hindernisse": 3900,
+  "stuecke": 26,
+  "dreiecke": 14180
+ }
+}
