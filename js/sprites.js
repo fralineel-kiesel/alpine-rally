@@ -88,9 +88,8 @@ function spriteGruppe(liste, tex) {
 export function bauePflanzen(szene, strecke, welt) {
   const c = CONFIG.sprites;
   const rnd = zufall(c.seed);
-  const kb = welt.kernBox;
-  const rand = 60; // auch etwas ausserhalb des feinen Geländes
   const q = {};
+  const { px, pz, tx, tz } = strecke;
 
   // Darf hier etwas stehen? (nicht auf der Strasse, nicht in der Felswand)
   function frei(x, z, mindest) {
@@ -104,15 +103,27 @@ export function bauePflanzen(szene, strecke, welt) {
     return Math.hypot(welt.gelaendeHoehe(x + 2, z) - h, welt.gelaendeHoehe(x, z + 2) - h) / 2;
   }
 
-  function verteile(anzahl, tex, hoehe, chance) {
+  // Sprites entlang der Strecke verteilen: zufällige Stelle der Strecke,
+  // zufälliger Abstand links oder rechts (nahe der Strasse dichter, weiter weg
+  // dünner – dort liegt eh Dunst). Ob dort wirklich etwas steht, entscheidet
+  // "chance" zusammen mit der Baumdichte des Abschnitts.
+  function verteile(proKm, tex, hoehe, chance) {
     const liste = [];
-    for (let versuch = 0; versuch < anzahl * 40 && liste.length < anzahl; versuch++) {
-      const x = mische(kb.minX - rand, kb.maxX + rand, rnd());
-      const z = mische(kb.minZ - rand, kb.maxZ + rand, rnd());
+    const versuche = Math.round((proKm * strecke.laenge) / 1000);
+    for (let n = 0; n < versuche; n++) {
+      const i = Math.floor(rnd() * strecke.anzahl);
+      const seite = rnd() < 0.5 ? -1 : 1;
+      const nah = strecke.nahWald[i] > 0.5;
+      const ab = nah ? c.waldAbstand : c.mindestAbstand;
+      const lat = seite * (ab + Math.pow(rnd(), c.verteilung) * (c.breite - ab));
+      const x = px[i] - tz[i] * lat, z = pz[i] + tx[i] * lat;
       const wurf = rnd();
-      if (!frei(x, z, c.mindestAbstand)) continue;
-      const wald = fbm(x / 140, z / 140, c.seed);
-      if (wurf > chance(wald, q.abstand, steilheit(x, z), x, z)) continue;
+      if (!frei(x, z, ab)) continue;
+      const k = q.i; // nächster Streckenpunkt (kann ein anderer Ast sein)
+      // Waldstücke (Rauschen), dazu geschlossener Wald je nach Abschnitt
+      let wald = fbm(x / 140, z / 140, c.seed);
+      if (fbm(x / 70, z / 70, c.seed + 9) > 1 - strecke.waldAnteil[k] * 0.75) wald = 1;
+      if (wurf > chance(wald, q.abstand, steilheit(x, z), x, z) * strecke.baumFaktor[k]) continue;
       const h = mische(hoehe[0], hoehe[1], rnd());
       liste.push({
         x, z, y: welt.gelaendeHoehe(x, z) - 0.25,
@@ -128,21 +139,21 @@ export function bauePflanzen(szene, strecke, welt) {
   const tanne = tannenTextur(), laub = laubTextur(), stein = steinTextur();
 
   // Tannen: Waldstücke an den Hängen und einzelne nahe der Strasse
-  const tannen = verteile(c.tannen, tanne, c.tannenHoehe, (wald, d, steil) => {
+  const tannen = verteile(c.tannenProKm, tanne, c.tannenHoehe, (wald, d, steil) => {
     if (steil > 1.1) return 0.02;
     if (wald > 0.53) return 0.95;
     if (d < 16) return 0.32;
-    return 0.05;
+    return 0.06;
   });
-  // Laubbäume: eher am Waldrand und unten im Tal
-  const laubbaeume = verteile(c.laubbaeume, laub, c.laubHoehe, (wald, d, steil, x, z) => {
+  // Laubbäume: eher am Waldrand und weiter unten
+  const laubbaeume = verteile(c.laubProKm, laub, c.laubHoehe, (wald, d, steil, x, z) => {
     if (steil > 0.7) return 0;
-    const unten = welt.gelaendeHoehe(x, z) < 20 ? 1 : 0.3;
+    const unten = welt.gelaendeHoehe(x, z) < 60 ? 1 : 0.3;
     if (wald > 0.45 && wald < 0.55) return 0.5 * unten;
-    return 0.06 * unten;
+    return 0.08 * unten;
   });
   // Steine: am Strassenrand und an steilen Stellen
-  const steine = verteile(c.steine, stein, c.steinHoehe, (wald, d, steil) => {
+  const steine = verteile(c.steineProKm, stein, c.steinHoehe, (wald, d, steil) => {
     if (steil > 0.8) return 0.6;
     if (d < 14) return 0.35;
     return 0.06;

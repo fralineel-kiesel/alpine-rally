@@ -292,6 +292,7 @@ function schleife(jetzt) {
 
   autoZeichnen(dt, weg);
   kameraFuehren(dt);
+  welt.aktualisiere(kamera.position);
   renderer.render(szene, kamera);
 
   hud.zeichne({

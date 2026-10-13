@@ -64,11 +64,22 @@ export const CONFIG = {
   // --- Gelände --------------------------------------------------------
   gelaende: {
     raster: 4,                 // Abstand der Geländepunkte nahe der Strecke (Meter)
-    kernRand: 130,             // so weit um die Strecke herum ist das Gelände fein
-    aussenRand: 1100,          // so weit reicht das Gelände insgesamt (grob, im Dunst)
+    kachel: 64,                // Gelände ist in Kacheln dieser Grösse aufgeteilt (Meter)
+    kernRand: 100,             // bis so weit von der Strecke ist das Gelände fein (raster)
+    mittelRand: 300,           // bis hier halb so fein (2 x raster)
+    fernRand: 800,             // bis hier 4 x raster, danach ganz grob (32 m) – liegt im Dunst
+    aussenRand: 1100,          // so weit über die Strecke hinaus reicht das Gelände
+    stueck: 6,                 // so viele Kacheln (pro Richtung) werden zu einem Stück zusammengefasst
     flachBis: 7.5,             // bis zu diesem Abstand von der Strassenmitte ist es flach
     uebergang: 12,             // danach geht es über so viele Meter ins natürliche Gelände
+    randSteigung: 0.35,        // so steil darf es gleich neben der Strasse höchstens ansteigen
     huegelHoehe: 7,            // Höhe der kleinen Zufallshügel
+    grundWeite: 250,           // Grundhöhe der Landschaft = Strassenhöhe, über so viele Meter gemittelt
+    wandBerg: 75,              // Berg hinter den Felswänden (Höhe über der Grundhöhe)
+    talTiefe: 55,              // Tal unter den Abhängen (Tiefe unter der Grundhöhe)
+    randAnstiegAb: 350,        // ab diesem Abstand von der Strecke steigt das Land an ...
+    randAnstiegBis: 1000,      // ... bis hier ...
+    randHoehe: 170,            // ... um so viele Meter (Talflanken, liegen im Dunst)
     seed: 1987,                // Zufallszahl für Hügel (gleich = gleiches Gelände)
   },
 
@@ -83,10 +94,13 @@ export const CONFIG = {
   // --- Sprites (Bäume, Steine) ----------------------------------------
   sprites: {
     seed: 4242,                // Zufallszahl für die Platzierung (gleich = gleiche Welt)
-    tannen: 1600,              // Anzahl Tannen
-    laubbaeume: 220,           // Anzahl Laubbäume
-    steine: 320,               // Anzahl Steine
+    tannenProKm: 4200,         // Versuche pro km Strecke (wie viele stehen bleiben, hängt vom Abschnitt ab)
+    laubProKm: 500,
+    steineProKm: 700,
+    breite: 230,               // so weit links und rechts der Strasse stehen Sprites (Meter)
+    verteilung: 1.8,           // > 1 = nahe der Strasse dichter, weiter weg dünner
     mindestAbstand: 9,         // so nah dürfen Objekte an die Strassenmitte
+    waldAbstand: 7.5,          // im Waldstück dürfen Bäume näher ran
     tannenHoehe: [8, 15],      // Höhe von bis (Meter)
     laubHoehe: [7, 11],
     steinHoehe: [0.8, 2.2],
@@ -96,8 +110,9 @@ export const CONFIG = {
   // --- Hintergrundberge -----------------------------------------------
   berge: {
     anzahl: 34,                // Berge im hinteren Kranz (vorne kommen 70 % dazu)
-    radius: [2900, 3700],      // Entfernung von der Streckenmitte
-    hoehe: [1000, 1750],       // Gipfelhöhe
+    abstand: [1400, 2200],     // Entfernung hinter dem Geländerand (Meter)
+    hoehe: [1000, 1750],       // Gipfelhöhe (bei bezugsAbstand, weiter weg etwas höher)
+    bezugsAbstand: 3300,       // bei dieser Entfernung gilt die Gipfelhöhe
     schneeAb: 0.5,             // Schnee ab diesem Anteil der Höhe
     seed: 77,
   },
