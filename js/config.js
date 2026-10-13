@@ -200,6 +200,22 @@ export const CONFIG = {
                                // zählt eine Linie als Abkürzung – vorher ist es die Ideallinie
     linienAbstand: 2,          // alle so viele Meter beginnt und endet eine geprüfte Linie
     pruefSchritt: 0.25,        // entlang der Linie alle so viele Meter prüfen
+
+    // Welche Kurven werden gesperrt? (Meilenstein 1.2) Schneiden gehört zum Spiel:
+    // nur ein Teil der Kurven bekommt Sperren ("nicht schneiden"), die anderen bleiben
+    // frei ("schneiden"). Nach einer Änderung muss tools/abkuerzungen.mjs neu laufen.
+    sperrQuote: 0.4,           // so ein Anteil der Kurvenzonen wird gesperrt (0.4 = 40 %)
+    sperrQuoteMin: 0.3,        // ... aber mindestens so viel
+    sperrQuoteMax: 0.5,        // ... und höchstens so viel (ausser Pflicht-Sperren)
+    pflichtGewinn: 12,         // spart eine Abkürzung so viele Meter, wird immer gesperrt
+    pflichtZeit: 0.5,          // spart Schneiden mit echter Fahrphysik so viele Sekunden, wird immer gesperrt
+    immerSperren: [],          // Streckenmeter irgendwo in einer Kurve, die immer gesperrt sein soll, z. B. [1520]
+    immerFrei: [],             // Streckenmeter irgendwo in einer Kurve, die immer frei sein soll, z. B. [612]
+    wieseReihe: 16,            // eine Sperre, die länger als das quer in die Wiese ragt, ...
+    wieseDichte: 1.2,          // ... und dort weniger Bäume/Steine pro 100 m² hat, gilt als "offene Wiese"
+    wieseFaktor: 0.35,         // offene Wiese: Kurve wird so viel seltener gesperrt (sieht künstlich aus)
+    waldDichte: 1.5,           // ab so vielen Bäumen/Steinen pro 100 m² wirkt eine Sperre ganz natürlich
+    nachbarFaktor: 0.6,        // ist die Kurve davor/danach schon gesperrt, wird diese seltener gesperrt (Abwechslung)
   },
 
   // --- Abkürzungs-Sperren (Felsbrocken, Tannengruppen, Baumstämme) -------

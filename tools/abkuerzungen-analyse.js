@@ -224,3 +224,124 @@ export function groessteLuecke(strecke, welt, sperren, tex) {
   }
   return { max, wo };
 }
+
+// --- Meilenstein 1.2: nur ein Teil der Kurven wird gesperrt ------------------
+
+// Kurvenzonen: jede Abkürzung gehört zu der Kurve, die sie (auf ihrer Seite) am
+// meisten überdeckt. Ergebnis: Liste { sVon, sBis, seite (+1/-1), gewinn, linien }
+// nach Streckenmetern sortiert, dazu "ohneZone" (Linien ohne passende Kurve).
+export function kurvenZonen(strecke, linien) {
+  const kurven = kurvenDerStrecke(strecke);
+  const zonen = new Map();
+  const ohneZone = [];
+  for (const l of linien) {
+    let best = null, bestU = 0;
+    for (const k of kurven) {
+      if (k.seite !== l.seite) continue;
+      const u = Math.min(k.sBis, l.sBis) - Math.max(k.sVon, l.sVon);
+      if (u > bestU) { bestU = u; best = k; }
+    }
+    if (!best) { ohneZone.push(l); continue; }
+    const z = zonen.get(best) || { sVon: Math.round(best.sVon), sBis: Math.round(best.sBis), seite: best.seite, gewinn: 0, linien: [] };
+    z.gewinn = Math.max(z.gewinn, l.gewinn);
+    z.linien.push(l);
+    zonen.set(best, z);
+  }
+  return { zonen: [...zonen.values()].sort((a, b) => a.sVon - b.sVon), ohneZone };
+}
+
+// Wie natürlich sähe eine Sperre in dieser Zone aus?
+//   reihe:    längste Sperre (Meter quer in die Wiese)
+//   dichte:   Bäume/Steine aus M1 rund um die Sperren (pro 100 m²)
+//   wand:     Felswand oder Abhang an der Zone (0..1)
+//   hang:     mittlere Geländeneigung im Kurveninnern (0.1 = 10 %)
+export function bewerteZone(zone, strecke, welt, basis, tex) {
+  const { sperren } = planeSperren(strecke, welt, basis, tex, zone.linien);
+  const reihe = sperren.length ? Math.max(...sperren.map((s) => s.bis - s.von)) : 0;
+  const R = 15;
+  let treffer = 0, flaeche = 0, hang = 0, nHang = 0;
+  for (const sp of sperren) {
+    const p = strecke.punktBei(sp.s);
+    const nx = -p.tz * sp.seite, nz = p.tx * sp.seite;
+    const d = (sp.von + sp.bis) / 2;
+    const mx = p.x + nx * d, mz = p.z + nz * d;
+    for (const h of basis) if (Math.hypot(h.x - mx, h.z - mz) < R) treffer++;
+    flaeche += Math.PI * R * R;
+    for (let dd = sp.von; dd <= sp.bis + 5; dd += 2) {
+      const x = p.x + nx * dd, z = p.z + nz * dd;
+      const gx = welt.gelaendeHoehe(x + 1, z) - welt.gelaendeHoehe(x - 1, z);
+      const gz = welt.gelaendeHoehe(x, z + 1) - welt.gelaendeHoehe(x, z - 1);
+      hang += Math.hypot(gx, gz) / 2; nHang++;
+    }
+  }
+  let wand = 0;
+  for (let i = Math.max(0, zone.sVon); i <= Math.min(strecke.anzahl - 1, zone.sBis); i++) wand = Math.max(wand, strecke.wandStaerke[i] || 0);
+  return {
+    sperren, reihe: Math.round(reihe * 10) / 10,
+    dichte: flaeche ? Math.round((treffer / flaeche) * 100 * 100) / 100 : 0,
+    wand: Math.round(wand * 100) / 100, hang: nHang ? Math.round((hang / nHang) * 100) / 100 : 0,
+  };
+}
+
+// Auswahl: welche Zonen werden gesperrt? (Reihenfolge der Wichtigkeit)
+//   1. Pflicht (Gewinn >= pflichtGewinn Meter oder Zeitgewinn >= pflichtZeit)
+//   2. von Hand: immerSperren / immerFrei
+//   3. grösster Gewinn zuerst, lange Reihen auf offener Wiese abgewertet,
+//      Wald/Hang/Fels aufgewertet, Nachbarn einer gesperrten Zone abgewertet
+//      (Abwechslung)
+// zonen: mit gewinn und bewertung (aus bewerteZone), optional zeitGewinn (s).
+// Setzt zone.gesperrt (true/false) und zone.grund (Text).
+export function waehleZonen(zonen) {
+  const a = CONFIG.abkuerzung;
+  const inZone = (z, liste) => liste.some((m) => m >= z.sVon && m <= z.sBis);
+  const n = zonen.length;
+  const minAnz = Math.ceil(n * a.sperrQuoteMin - 1e-9), maxAnz = Math.floor(n * a.sperrQuoteMax + 1e-9);
+  const ziel = Math.max(minAnz, Math.min(maxAnz, Math.round(n * a.sperrQuote)));
+  for (const z of zonen) {
+    z.gesperrt = null;
+    z.offen = z.bewertung.reihe >= a.wieseReihe && z.bewertung.dichte < a.wieseDichte;
+    if (z.gewinn >= a.pflichtGewinn) { z.gesperrt = true; z.grund = `Pflicht: Gewinn ${z.gewinn.toFixed(1)} m >= ${a.pflichtGewinn} m`; z.pflicht = true; }
+    else if (z.zeitGewinn != null && z.zeitGewinn >= a.pflichtZeit) {
+      z.gesperrt = true; z.grund = `Pflicht: Schneiden spart ${z.zeitGewinn.toFixed(2)} s >= ${a.pflichtZeit} s`; z.pflicht = true;
+    } else if (inZone(z, a.immerSperren)) { z.gesperrt = true; z.grund = 'von Hand: immerSperren'; }
+    else if (inZone(z, a.immerFrei)) { z.gesperrt = false; z.grund = 'von Hand: immerFrei'; }
+  }
+  // Punkte für die übrigen: Gewinn mal Natürlichkeit
+  const punkte = (z) => {
+    const b = z.bewertung;
+    let p = z.gewinn;
+    if (z.offen) p *= a.wieseFaktor;
+    else p *= 1 + Math.min(1, b.dichte / a.waldDichte) * 0.25 + Math.min(1, b.hang / 0.3) * 0.15 + b.wand * 0.15;
+    // Abwechslung: Nachbar gesperrt -> weniger Punkte
+    const i = zonen.indexOf(z);
+    for (const j of [i - 1, i + 1]) if (zonen[j] && zonen[j].gesperrt === true) p *= a.nachbarFaktor;
+    return p;
+  };
+  for (;;) {
+    const anz = zonen.filter((z) => z.gesperrt === true).length;
+    const offen = zonen.filter((z) => z.gesperrt === null);
+    if (anz >= ziel || !offen.length) break;
+    let best = null, bestP = -1;
+    for (const z of offen) { const p = punkte(z); if (p > bestP) { bestP = p; best = z; } }
+    best.gesperrt = true;
+    const b = best.bewertung;
+    best.grund = `Gewinn ${best.gewinn.toFixed(1)} m` + (best.offen ? ' (trotz offener Wiese)' : '') +
+      `, Umgebung: ${b.dichte} Bäume/Steine pro 100 m²` + (b.wand > 0.3 ? ', Felswand/Abhang' : '') +
+      (b.hang >= 0.15 ? `, Hang ${Math.round(b.hang * 100)} %` : '');
+  }
+  for (const z of zonen) {
+    if (z.gesperrt !== null) continue;
+    z.gesperrt = false;
+    z.grund = z.offen
+      ? `offene Wiese (Sperre wäre eine ${z.bewertung.reihe} m lange Reihe)`
+      : `Quote erreicht, kleinerer Gewinn (${z.gewinn.toFixed(1)} m) oder Nachbar schon gesperrt`;
+  }
+  return { ziel, minAnz, maxAnz };
+}
+
+// Abwechslung prüfen: alle gesperrten am Stück oder alle freien am Stück?
+export function abwechslung(zonen) {
+  const muster = zonen.map((z) => (z.gesperrt ? 'G' : 'F')).join('');
+  const amStueck = (c) => { const i = muster.indexOf(c), j = muster.lastIndexOf(c); return i >= 0 && !muster.slice(i, j + 1).includes(c === 'G' ? 'F' : 'G'); };
+  return { muster, gesperrtAmStueck: amStueck('G'), freiAmStueck: amStueck('F') };
+}
