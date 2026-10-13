@@ -133,7 +133,8 @@ function physikSchritt(dt, e) {
   const u = CONFIG.untergrund[boden.art];
 
   let eingabe = e;
-  if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: Math.max(e.bremse, 0.35) };
+  // Nach dem Ziel bremst das Auto von selbst bis zum Stand (aber nicht weiter in den Rückwärtsgang)
+  if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: physik.vVor > 0.5 ? Math.max(e.bremse, 0.35) : 0 };
 
   const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?

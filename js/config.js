@@ -314,6 +314,23 @@ export const CONFIG = {
   // --- Anzeigen (HUD) ----------------------------------------------------
   // Masse in Pixeln des 320x180-Bildes.
   hud: {
+    // Zeit oben Mitte auf einer kleinen Tafel, darunter die Checkpoint-Punkte (Meilenstein 1.2)
+    zeit: {
+      oben: 3,                 // Abstand der Tafel vom oberen Bildrand
+      hoehe: 13,               // Höhe der Tafel
+      innen: 3,                // Rand innen links und rechts
+      luecke: 4,               // Abstand zwischen "ZEIT" und der Zeit
+      ecke: 2,                 // so viele Pixel sind die Ecken abgeschrägt
+      farbeTafel: 'rgba(18, 24, 32, 0.74)', // dunkel, halbtransparent (wie die Tachos)
+      farbeRand: '#e6e2d3',    // heller Rand, 1 Pixel
+      farbeBeschriftung: '#e6e2d3', // das winzige "ZEIT"
+      cpGroesse: 4,            // Checkpoint-Punkte: Kantenlänge
+      cpAbstand: 4,            // ... Abstand dazwischen
+      cpUnter: 2,              // ... Abstand unter der Tafel
+      farbeCpLeer: '#e6e2d3',  // Rahmen eines noch nicht erreichten Checkpoints
+      farbeCpErreicht: '#ffd23c', // erreichter Checkpoint (gefüllt)
+      meldungUnter: 4,         // Zwischenzeit-Meldung so weit unter den Punkten
+    },
     // Analoge Tachos unten rechts (Meilenstein 1.2)
     tacho: {
       randRechts: 3,           // Abstand des Tempo-Tachos vom rechten Bildrand
