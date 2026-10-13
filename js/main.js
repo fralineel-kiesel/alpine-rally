@@ -243,7 +243,8 @@ function autoZeichnen(dt, wegStrecke) {
   optik.nicken += (begrenze(-physik.beschlVor * o.nicken, -0.06, 0.06) - optik.nicken) * k2;
   optik.rollen += (begrenze(physik.beschlSeit * o.rollen, -0.08, 0.08) - optik.rollen) * k2;
   auto.karosse.rotation.set(optik.nicken, 0, optik.rollen);
-  auto.raederBewegen(physik.lenkwinkel, wegStrecke);
+  const radMax = o.radEinschlagMax * Math.PI / 180; // sichtbarer Einschlag begrenzt (Physik unverändert)
+  auto.raederBewegen(begrenze(physik.lenkwinkel, -radMax, radMax), wegStrecke);
 }
 
 // --- Verfolgerkamera ---

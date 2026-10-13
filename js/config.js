@@ -135,6 +135,9 @@ export const CONFIG = {
     lenkwinkelLangsam: 32,     // max. Lenkwinkel im Stand (Grad)
     lenkwinkelSchnell: 4.5,    // max. Lenkwinkel bei Referenztempo (Grad)
     lenkReferenzTempo: 45,     // ab diesem Tempo (m/s) gilt lenkwinkelSchnell
+    lenkwinkelStand: 48,       // max. Lenkwinkel im Schritttempo, z. B. nach einem Aufprall (Grad, 0 = aus)
+    lenkStandBisTempo: 8,      // bis zu diesem Tempo (m/s, 8 = ca. 30 km/h) läuft der Extra-Einschlag weich aus;
+                               // voll gilt er bis zu einem Viertel davon (2 m/s = ca. 7 km/h)
 
     gripVorne: 1.0,            // Haftung Vorderachse (etwas weniger = Auto schiebt eher)
     gripHinten: 1.12,          // Haftung Hinterachse
@@ -276,5 +279,6 @@ export const CONFIG = {
     rollen: 0.012,             // Karosserie neigt sich in Kurven (pro m/s²)
     nicken: 0.008,             // Karosserie nickt beim Bremsen/Gas
     blobSchatten: true,        // dunkler Fleck unter dem Auto
+    radEinschlagMax: 35,       // so weit (Grad) drehen die Vorderräder sichtbar höchstens ein (nur Optik)
   },
 };

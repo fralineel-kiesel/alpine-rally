@@ -56,7 +56,14 @@ export class Fahrphysik {
 
     // --- Lenkung: langsam direkt, schnell ruhiger ---
     const tAnteil = Math.sqrt(begrenze(Math.abs(vVor) / c.lenkReferenzTempo, 0, 1));
-    const maxLenk = (c.lenkwinkelLangsam + (c.lenkwinkelSchnell - c.lenkwinkelLangsam) * tAnteil) * GRAD;
+    const maxLenkAlt = (c.lenkwinkelLangsam + (c.lenkwinkelSchnell - c.lenkwinkelLangsam) * tAnteil) * GRAD;
+    let maxLenk = maxLenkAlt;
+    // Im Schritttempo (vorwärts und rückwärts) zusätzlicher Einschlag: voll bis zu einem
+    // Viertel von lenkStandBisTempo, dann weich auslaufend, darüber wie bisher.
+    if (c.lenkwinkelStand > 0) {
+      const stand = 1 - glatt(c.lenkStandBisTempo * 0.25, c.lenkStandBisTempo, Math.abs(vVor));
+      maxLenk += (c.lenkwinkelStand * GRAD - maxLenk) * stand;
+    }
     const delta = -eingabe.lenkung * maxLenk; // + = links
     this.lenkwinkel = delta;
 
@@ -112,7 +119,11 @@ export class Fahrphysik {
 
     // --- Beschleunigungen im Auto-Koordinatensystem ---
     const quer = kraftV * Math.cos(delta) + kraftH;
-    const laengsQuer = -kraftV * Math.sin(delta);
+    // Längsanteil der Vorderrad-Seitenkraft: mit dem Einschlag ohne den Extra-Einschlag
+    // im Schritttempo gerechnet, damit Rückwärtsfahren und Anfahren wie bisher bleiben
+    // (der Extra-Einschlag wirkt nur aufs Drehen).
+    const deltaLaengs = begrenze(delta, -maxLenkAlt, maxLenkAlt);
+    const laengsQuer = -kraftV * Math.sin(deltaLaengs);
     const drehBeschl = (a * kraftV * Math.cos(delta) - b * kraftH) / c.traegheit
       + c.stabilitaet * this.stabAnteil * schraeg * Math.min(1, Math.abs(vVor) / 10);
 
