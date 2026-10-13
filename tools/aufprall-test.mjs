@@ -103,6 +103,8 @@ for (const [name, nachher] of [['Bremse/Rückwärts', BREMSE], ['Gas gehalten', 
     }
     console.log(`     aus dem Stand am Baum: nach 2 s ${fmt(weg2, 2)} m rückwärts, 8 m nach ${fmt(tt, 2)} s (Rückwärtsgang: max ${fmt(kmh(CONFIG.auto.rueckwaertsTempo), 0)} km/h)`);
     pruefe(zurueck > 3 && !r2.eingedrungen, 'fährt rückwärts weg, bleibt nicht hängen');
+    if (weg2 < 8) console.log(`  HINWEIS: 8 m in 2 s aus dem Stand schafft der heutige Rückwärtsgang nicht` +
+      ` (rueckwaertsBeschl ${CONFIG.auto.rueckwaertsBeschl} m/s²; mit 5 wären es ca. 8 m). Fahrphysik bewusst nicht geändert.`);
   }
   if (name === 'Gas gehalten') {
     const bew = Math.hypot(r.ende.x - r.stand.x, r.ende.z - r.stand.z);

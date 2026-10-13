@@ -14,14 +14,17 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 
 ## Was Lino mag / nicht mag
 - Mag: erdiges Bankett statt Randsteinen, Temposchilder, Leitplanke und Holzzaun als durchgehendes Band, Kollision mit Tempoverlust, Fahrgefühl wie ein schweres 80er-Rallyauto.
+- Aufprall: frontal hart zum Halt, danach rückwärts rausfahren (kein Wegschleudern, kein Weiterrutschen).
+- Abkürzungen sollen nicht gehen: Steine, Bäume, umgefallene Stämme im Kurveninnern.
 - Mag nicht: Formel-1-Randsteine, Kurvenpfeil-Schilder, zu starkes Beschleunigen bergab, hartes Höchsttempo.
 - Später gewünscht: Schotter- und Wiesenabschnitte im Wechsel, Abzweigung mit Rally-Absperrung, sichtbare Auto-Seite beim Lenken, Wetter und Tageszeit.
 
 ## Fahrplan
 - M0 Prototyp (fertig)
-- M1 Erste Etappe: Strassen-Fix, Kollisionen, 3-4 km Strecke, Checkpoints
+- M1 Erste Etappe: Strassen-Fix, Kollisionen, 3-4 km Strecke, Checkpoints (fertig)
+- M1.1 Harter Aufprall, Abkürzungssperren (Felsbrocken, Baumgruppen, umgefallene Stämme) (fertig)
 - M2 Dichtere Landschaft: Holzzäune, Leitplanken, Kühe, Schilder
 - M3 Untergründe: Schotter und Wiese, Abzweigung mit Absperrung
-- M4 Pace-Notes als Symbole
+- M4 Pace-Notes als Symbole, inkl. Symbol "nicht schneiden" an den gesperrten Kurven (Daten liegen seit M1.1 bereit)
 - M5 Drumherum: Tacho, Zielbildschirm, Feinschliff (Auto, Fahrphysik)
 
