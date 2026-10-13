@@ -95,8 +95,8 @@ export const CONFIG = {
   sprites: {
     seed: 4242,                // Zufallszahl für die Platzierung (gleich = gleiche Welt)
     tannenProKm: 4200,         // Versuche pro km Strecke (wie viele stehen bleiben, hängt vom Abschnitt ab)
-    laubProKm: 500,
-    steineProKm: 700,
+    laubProKm: 2800,
+    steineProKm: 1600,
     breite: 230,               // so weit links und rechts der Strasse stehen Sprites (Meter)
     verteilung: 1.8,           // > 1 = nahe der Strasse dichter, weiter weg dünner
     mindestAbstand: 9,         // so nah dürfen Objekte an die Strassenmitte
