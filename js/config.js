@@ -190,6 +190,51 @@ export const CONFIG = {
     pruefSchritt: 0.25,        // Weg wird in so kurzen Stücken geprüft (gegen Durchrutschen)
   },
 
+  // --- Abkürzungen (Analyse) -------------------------------------------
+  abkuerzung: {
+    minGewinn: 3,              // so viele Meter muss eine gerade Linie sparen, damit sie als Abkürzung zählt
+                               // (10 m fand mit den Bäumen von M1 nichts, Linos Abkürzungen sparen 3-8 m)
+    maxLaenge: 200,            // Linien über höchstens so viele Strassenmeter prüfen
+    autoBreite: 2.2,           // so breit muss eine Durchfahrt sein (Auto 1.8 m plus Reserve)
+    wieseAb: 5.5,              // erst wenn die Automitte so weit neben der Strassenmitte ist (Bankett-Ende),
+                               // zählt eine Linie als Abkürzung – vorher ist es die Ideallinie
+    linienAbstand: 2,          // alle so viele Meter beginnt und endet eine geprüfte Linie
+    pruefSchritt: 0.25,        // entlang der Linie alle so viele Meter prüfen
+  },
+
+  // --- Abkürzungs-Sperren (Felsbrocken, Tannengruppen, Baumstämme) -------
+  // Wo Sperren stehen, rechnet tools/abkuerzungen.mjs aus (-> js/abkuerzungen.js).
+  // Wie sie aussehen, steht hier.
+  sperren: {
+    seed: 815,                 // Zufallszahl (gleich = gleiche Sperren)
+    abstandMitte: 6,           // Hindernisse halten so viel Abstand zur Strassenmitte (Asphalt endet bei 3.5, Bankett bei 5.5)
+    baumAbstandMitte: 8.5,     // Tannen erst ab hier (sonst hängen die Kronen über die Strasse)
+    reserve: 4,                // Sperre reicht so viel weiter ins Kurveninnere als die tiefste gefundene Abkürzung
+    maxTiefe: 40,              // ... aber höchstens so weit weg von der Strassenmitte
+    mindestAbstand: 5,         // zwei Sperren auf derselben Seite stehen mindestens so weit auseinander (Meter)
+    luecke: [0.15, 1.0],       // Lücke zwischen zwei Teilen (Meter, Kante zu Kante)
+    maxLuecke: 1.4,            // nie grösser (das Auto ist 1.8 m breit)
+    seitlich: 1.4,             // so weit pendeln die Teile seitlich (unregelmässig, keine Mauer)
+    schraeg: 18,               // die Sperre verläuft bis so viel Grad schräg statt genau quer
+    begleitChance: 0.35,       // so oft steht neben einem Teil noch ein Brocken oder eine Tanne
+    mischung: { fels: 0.36, baeume: 0.3, stamm: 0.34 }, // Anteile der Bausteine
+    felsHoehe: [2, 3.5],       // Felsbrocken: Höhe (Meter)
+    felsFaktor: 0.4,           // Felsbrocken: Kollisionsradius = Breite mal diesem Wert
+    felsGruppe: [1, 3],        // so viele Brocken pro Gruppe
+    baumGruppe: [3, 6],        // so viele Tannen pro Gruppe
+    baumHoehe: [7, 12],        // Höhe der Tannen in den Gruppen
+    baumAbstand: [1.3, 2.0],   // Abstand der Stämme in der Gruppe
+    stammLaenge: [4, 8],       // umgefallene Stämme: Länge (Meter)
+    stammDicke: [0.7, 1.0],    // ... Durchmesser
+    stammStapel: [1, 3],       // ... so viele übereinander/nebeneinander
+    stammDrehung: 22,          // ... so viel Grad schräg (zufällig)
+    stammSeiten: 7,            // ... Ecken des Zylinders (Low-Poly)
+    stammKreisAbstand: 0.6,    // ... Kollision: alle so viele Meter ein Kreis
+    stammAufliegen: 0.8,       // ... Achse so viele Radien über dem höchsten Geländepunkt darunter
+    aeste: [2, 4],             // ... abgebrochene Äste pro Stamm
+    begleitSteine: [1, 3],     // kleine Steine rund um die Sperre
+  },
+
   // --- Kamera -----------------------------------------------------------
   kamera: {
     sichtfeld: 62,             // Blickwinkel (Grad)

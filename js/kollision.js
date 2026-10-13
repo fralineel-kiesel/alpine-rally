@@ -114,6 +114,15 @@ export function baueKollision(hindernisse) {
     anzahl,
     letzterAufprall: null, // { vorher, nachher } in m/s
 
+    // Ist ein Kreis (x, z, r) frei von Hindernissen? (für die Abkürzungs-Analyse)
+    frei(x, z, r) {
+      let ok = true;
+      inDerNaehe(x, z, r, (i) => {
+        if (ok && Math.hypot(hx[i] - x, hz[i] - z) < r + hr[i]) ok = false;
+      });
+      return ok;
+    },
+
     // Nach einem Physik-Schritt: Hat das Auto auf dem Weg von (xAlt, zAlt)
     // zur neuen Position ein Hindernis getroffen? Der Weg wird in kurzen
     // Stücken abgefahren, damit man auch bei Höchsttempo nicht durch einen

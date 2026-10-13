@@ -5,7 +5,9 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { zufall, fbm, mische } from './util.js';
-import { tannenTextur, laubTextur, steinTextur } from './pixel.js';
+import { tannenTextur, laubTextur, steinTextur, felsbrockenTextur } from './pixel.js';
+import { planeAlleSperren, baueStaemme } from './sperren.js';
+import { ABKUERZUNGEN } from './abkuerzungen.js';
 
 const VERTEX = /* glsl */ `
   #include <common>
@@ -159,9 +161,6 @@ export function bauePflanzen(szene, strecke, welt) {
     return 0.06;
   });
 
-  for (const [liste, tex] of [[tannen, tanne], [laubbaeume, laub], [steine, stein]]) {
-    if (liste.length) szene.add(spriteGruppe(liste, tex));
-  }
   // Hindernisse für die Kollision: bei Bäumen nur der Stamm, Steine nach Breite
   const k = CONFIG.kollision;
   const hindernisse = [
@@ -169,5 +168,22 @@ export function bauePflanzen(szene, strecke, welt) {
     ...laubbaeume.map((t) => ({ x: t.x, z: t.z, r: k.stammRadius })),
     ...steine.map((t) => ({ x: t.x, z: t.z, r: t.b * k.steinFaktor })),
   ];
-  return { tannen, laubbaeume, steine, hindernisse };
+
+  // Abkürzungs-Sperren (Felsbrocken, Tannengruppen, Stämme) – siehe sperren.js
+  const fels = felsbrockenTextur();
+  let sperrenListe = ABKUERZUNGEN.sperren;
+  if (sperrenListe.length && Math.abs(ABKUERZUNGEN.streckenLaenge - strecke.laenge) > 0.5) {
+    console.warn('Abkürzungs-Sperren passen nicht zur Strecke – bitte tools/abkuerzungen.mjs neu laufen lassen.');
+    sperrenListe = [];
+  }
+  const sperren = planeAlleSperren(sperrenListe, strecke, welt, { tanne, fels, stein });
+  tannen.push(...sperren.tannen);
+  steine.push(...sperren.steine);
+  hindernisse.push(...sperren.hindernisse);
+  baueStaemme(szene, sperren.staemme, welt);
+
+  for (const [liste, tex] of [[tannen, tanne], [laubbaeume, laub], [steine, stein], [sperren.felsen, fels]]) {
+    if (liste.length) szene.add(spriteGruppe(liste, tex));
+  }
+  return { tannen, laubbaeume, steine, felsbrocken: sperren.felsen, staemme: sperren.staemme, hindernisse, sperren: sperrenListe };
 }
