@@ -44,11 +44,11 @@ export const CONFIG = {
   // --- Nebel / Dunst --------------------------------------------------
   nebel: {
     start: 120,                // ab hier beginnt der Dunst (Meter)
-    ende: 1000,                // hier ist der Dunst am dichtesten (Meter)
-    maxDichte: 0.8,            // so dicht wird der Dunst höchstens (0..1). Unter 1 bleibt fernes Gelände
-                               // leicht grün statt ganz hellblau (1 = alte Wirkung, gibt das "Nebelband")
-    bergDunst: 0.2,            // Hintergrundberge: so viel Dunst liegt auf den Gipfeln (0..1)
-    bergDunstUnten: 0.6,       // ... und so viel kommt zum Bergfuss hin dazu. Fuss = beide zusammen,
+    ende: 3000,                // hier ist der Dunst am dichtesten (Meter)
+    maxDichte: 0.45,           // so dicht wird der Dunst höchstens (0..1). Nur leichte Tiefenwirkung:
+                               // je höher, desto eher entsteht wieder ein milchiger Dunststreifen
+    bergDunst: 0.15,           // Hintergrundberge: so viel Dunst liegt auf den Gipfeln (0..1)
+    bergDunstUnten: 0.3,       // ... und so viel kommt zum Bergfuss hin dazu. Fuss = beide zusammen,
                                // sollte etwa maxDichte sein, dann passt der Fuss zum fernen Gelände
   },
 
