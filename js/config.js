@@ -311,6 +311,39 @@ export const CONFIG = {
     tastaturRueckTempo: 6,     // Tastatur: wie schnell die Lenkung zurück in die Mitte geht
   },
 
+  // --- Anzeigen (HUD) ----------------------------------------------------
+  // Masse in Pixeln des 320x180-Bildes.
+  hud: {
+    // Analoge Tachos unten rechts (Meilenstein 1.2)
+    tacho: {
+      randRechts: 3,           // Abstand des Tempo-Tachos vom rechten Bildrand
+      randUnten: 3,            // Abstand der Tachos vom unteren Bildrand
+      abstand: 3,              // Abstand zwischen den beiden Tachos
+      tempoRadius: 25,         // Grösse des Tempo-Tachos (Radius, Durchmesser = 2 x Radius + 1)
+      drehzahlRadius: 22,      // Grösse des Drehzahlmessers
+      bogen: 240,              // Nadelbogen in Grad (links unten bis rechts unten)
+      tempoMax: 200,           // Skala Tempo bis (km/h)
+      tempoStrichLang: 20,     // lange Striche alle ... km/h
+      tempoStrichKurz: 10,     // kurze Striche alle ... km/h
+      tempoZahlen: 40,         // Zahlen alle ... km/h
+      drehzahlMax: 8,          // Skala Drehzahl bis (x 1000 U/min)
+      drehzahlRotAb: 7,        // roter Bereich ab (x 1000 U/min)
+      nadelBreite: 1,          // Nadel 1 oder 2 Pixel breit
+      tempoNadelFolgen: 7,     // wie schnell die Tempo-Nadel folgt (höher = direkter, gedämpft)
+      drehzahlNadelFolgen: 22, // Drehzahl-Nadel folgt schneller
+      farbeBlatt: 'rgba(18, 24, 32, 0.74)', // Zifferblatt (halbtransparent dunkel)
+      farbeRand: '#e6e2d3',    // heller Rand
+      farbeRandAussen: 'rgba(8, 10, 14, 0.8)', // dunkler Ring aussen herum
+      farbeStriche: '#e6e2d3', // Skalenstriche
+      farbeZahlen: '#ffd23c',  // Skalenzahlen (gelb)
+      farbeRot: '#d8352a',     // roter Bereich auf dem Drehzahlmesser
+      farbeNadel: '#ff3b2e',   // Nadel
+      farbeSchatten: '#101418', // Schatten von Nadel und Schrift
+      farbeNabe: '#9aa0a6',    // Knopf in der Mitte
+      farbeKasten: 'rgba(0, 0, 0, 0.55)', // Kästchen hinter der Gangzahl
+    },
+  },
+
   // --- Optik am Auto -----------------------------------------------------
   autoOptik: {
     rollen: 0.012,             // Karosserie neigt sich in Kurven (pro m/s²)

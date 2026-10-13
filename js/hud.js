@@ -1,7 +1,8 @@
-// HUD: Tempo, Zeit, Zielanzeige und Debug-Panel.
+// HUD: Tachos, Zeit, Zielanzeige und Debug-Panel.
 // Gezeichnet mit einer eigenen 5x7-Pixelschrift (keine externen Fonts).
 
 import { CONFIG } from './config.js';
+import { baueTachos } from './tacho.js';
 
 // Pixelschrift: jedes Zeichen 5 Pixel breit, 7 hoch ('#' = Pixel an)
 const SCHRIFT = {
@@ -105,14 +106,15 @@ export function baueHud(canvas) {
     }
   }
 
+  const tachos = baueTachos(ctx, text);
+
   return {
     zeichne(z) {
       ctx.clearRect(0, 0, B, H);
       // Zeit oben Mitte
       text(formatZeit(z.zeit), B / 2, 5, 2, z.zustand === 'laeuft' ? 'weiss' : 'gelb', 'mitte');
-      // Tempo unten rechts
-      text(Math.round(z.kmh), B - 30, H - 26, 3, 'weiss', 'rechts');
-      text('KM/H', B - 5, H - 12, 1, 'weiss', 'rechts');
+      // Tachos unten rechts (Drehzahl mit Gang, Tempo)
+      tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang);
 
       if (z.zustand === 'bereit' && z.hilfe) {
         text('PFEILE/WASD: FAHREN', 5, H - 34);
@@ -139,6 +141,7 @@ export function baueHud(canvas) {
           `FPS ${Math.round(z.fps)}`,
           `METER ${Math.max(0, Math.round(z.meter))} / ${Math.round(z.laenge)}`,
           `TEMPO ${Math.round(z.kmh)} KM/H`,
+          `GANG ${z.gang} U/MIN ${Math.round(z.drehzahl)}`,
           `DRIFT ${Math.round(z.drift)}°`,
           `UNTERGRUND ${z.untergrund}`,
           `HINDERNISSE ${z.hindernisse}`,

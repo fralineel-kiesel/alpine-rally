@@ -345,7 +345,7 @@ function schleife(jetzt) {
 
   hud.zeichne({
     zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
-    kmh: physik.tempo * 3.6, debug: debugAn, fps,
+    dt, kmh: physik.tempo * 3.6, debug: debugAn, fps,
     gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
     meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
     untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS' }[untergrund],
