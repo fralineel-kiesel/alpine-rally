@@ -1,8 +1,8 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 1.2 fertig** – Sperren nur noch in 4 von 9 Kurven (Schneiden gehört dazu),
-mehr Lenkeinschlag im Schritttempo, Getriebe mit spürbarer Schaltpause, analoge Tachos und eine
-kleinere Zeitanzeige. Dazu alles aus Meilenstein 1 und 1.1 (Etappe „Passstrasse“, harter Aufprall).
+Aktuell: **Meilenstein 1.3 fertig** – der hellblaue „Nebelstreifen“ zwischen den Hintergrund-Bergen
+und dem Wald/der Wiese ist weg. Dazu alles aus Meilenstein 1.2 (Kurven schneiden, Getriebe mit
+Schaltpause, analoge Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
 Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 ## Steuerung
@@ -21,7 +21,118 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 1.2: Kurven schneiden, Lenken, Schalten, Tachos ✅
+## Meilenstein 1.3: Horizont-Dunst ✅
+
+### Was war das Problem?
+
+Zwischen den Hintergrund-Bergen und dem Wald lag ein flaches, hellblaues Band – wie eine Nebelwand.
+**Ursache (bestätigt, Linos Vermutung stimmt):** Der Dunst auf dem Gelände war ab 420 m Entfernung zu
+**100 %** dicht. Das Gelände reicht aber je nach Blickrichtung 1100 bis 3000 m weit. Alles dahinter
+wurde darum eine einfarbige hellblaue Fläche. Die Berge haben ihren Dunst anders bekommen (eigene
+Einfärbung, die danach noch von der Sonne aufgehellt wurde) und waren am Fuss weisslich-grau. So
+entstand die Abfolge „grüner Wald → flaches Hellblau → grauer Berg“.
+
+Nachgeprüft mit Ein-/Ausschalten: Nebel aus → Band weg; Himmel aus → Band bleibt; Gelände aus → nur
+noch Dunstfarbe. Nur den Nebel weiter weg zu schieben reicht nicht: Irgendwo ist das Gelände immer
+weiter weg als das Nebel-Ende, dort wäre es wieder ganz hellblau (darum wurde Linos Versuch mit 120/850
+nur dünner).
+
+### Was geändert wurde
+
+1. **Dunst weiter weg und nie ganz dicht.** Der Dunst beginnt jetzt bei 120 m (vorher 70 m), ist bei
+   1000 m am dichtesten (vorher 420 m) und deckt **höchstens 80 %** ab (vorher 100 %). Ferne Hügel
+   werden zum Horizont hin heller und blauer, bleiben aber leicht grün – keine flache Fläche mehr.
+   Bäume, Steine, Sperren und Strasse bekommen genau denselben Dunst.
+2. **Dunstfarbe etwas dunkler:** `#aabdc8` statt `#b9c8d6`. Drei Varianten verglichen (`#aabdc8`,
+   leicht grünlich `#a6bcbf`, heller `#b3c3cc`). Die grünliche machte die Berge „matschig“, die
+   hellere sah fast aus wie vorher. Der Himmel unten am Horizont nimmt dieselbe Farbe, das Blau oben
+   bleibt.
+3. **Bergfüsse passen zum fernen Gelände.** Die Berge bekommen ihren Dunst jetzt gleich wie das
+   Gelände (erst Sonne, dann Dunst in genau derselben Farbe), am Fuss so dicht wie das ferne Gelände.
+   Ihr unterster Teil ist dunkelgrün (bewaldet) und geht nach oben in Fels über, die Gipfel bleiben
+   weiss. Form und Anzahl der Berge sind genau gleich wie vorher.
+4. Schritt 5 aus dem Auftrag (zusätzliche Vorgebirgs-Kämme) war **nicht nötig**.
+5. Technisch nötig: Bis wohin das Gelände fein gezeichnet wird, hing bisher am Nebel-Ende. Mit 1000 m
+   wäre das viel mehr Arbeit für die Grafikkarte geworden. Jetzt ist es ein eigener Wert
+   (`gelaende.feinBis`, 480 m wie vorher). Geprüft: Ob fein oder grob, unterscheidet sich auf der
+   ganzen Strecke um höchstens 43 von 57 600 Bildpunkten (einzelne Pixel an Hügelkanten), kein
+   sichtbares „Ploppen“.
+
+### So testest du
+
+1. **Start:** Hinter der Startlinie bis zu den Bergen schauen. Kein hellblauer Streifen mehr, die
+   Hügel laufen grün-dunstig bis an die Bergfüsse?
+2. **Kehren (ca. 1400 m)** und **Passhöhe (ca. 2590 m):** Wirkt der Horizont noch nach Alpen (weisse
+   Gipfel gut sichtbar)? Ist es zu klar oder zu dunstig?
+3. **Zielgerade:** Hier war das Band am stärksten. Jetzt grüne Hügel, die zum Berg hin dunstiger werden.
+4. Beim Fahren: Tauchen Bäume, Steine oder Sperren irgendwo „aus dem Nichts“ auf? (Sollte nicht: sie
+   werden immer alle gezeichnet und stehen höchstens 230 m neben der Strasse.)
+5. **FPS (F3)** auf beiden Rechnern wie bisher.
+
+### Wo man schrauben kann (alles in `js/config.js`)
+
+- `nebel.start` (120) / `nebel.ende` (1000) – wo der Dunst beginnt und wo er am dichtesten ist (Meter).
+  Kleiner = dunstiger, mehr Tiefe; grösser = klarer Tag.
+- `nebel.maxDichte` (0.8) – wie dicht der Dunst höchstens wird. **1 = alter Zustand mit Band.** Tiefer
+  (z. B. 0.65) = Ferne grüner und klarer.
+- `farben.dunst` (`#aabdc8`) – Dunstfarbe (gilt für Gelände, Bergfüsse und Himmel am Horizont).
+- `nebel.bergDunst` (0.2) – Dunst auf den Gipfeln. Höher = Berge blasser und weiter weg.
+- `nebel.bergDunstUnten` (0.6) – so viel Dunst kommt zum Bergfuss dazu. Bergdunst + das hier sollte
+  etwa `maxDichte` sein, sonst passt der Bergfuss nicht zum fernen Gelände.
+- `farben.bergFuss` (`#3f6a30`) und `berge.fussBis` (0.3) – Farbe des bewaldeten Bergfusses und bis zu
+  welchem Anteil der Berghöhe er reicht.
+- `gelaende.feinBis` (480) – bis so weit wird das Gelände fein gezeichnet (Leistung).
+
+### Selbst getestet
+
+- Vorher/Nachher-Screenshots (1280x720) an Start, Kehren (1400 m), Passhöhe (2586 m) und kurz vor dem
+  Ziel, dazu die Kehren von oben: `screenshots/m1-3/` (`a` = vorher, `b` = nachher). Das Band ist an
+  allen Stellen weg.
+- **Leistung**, alte und neue Version direkt nacheinander (Software-Modus ohne Grafikkarte):
+
+| Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+|---|---|---|
+| Start | 109 → 109 | 106 874 → 106 874 |
+| Kehren (1400 m) | 65 → 65 | 114 670 → 114 670 |
+| Passhöhe (2586 m) | 74 → 74 | 102 480 → 102 480 |
+| Ziel | 51 → 51 | 77 108 → 77 108 |
+
+  FPS gleich (5–7 im Software-Modus, schwankt je Lauf gleich stark wie vorher), Ladezeit gleich
+  (ca. 1.0–1.2 s). **Echte FPS bitte mit F3 auf beiden Rechnern prüfen.**
+- Sichtweite von Hindernissen: Bäume, Steine und Sperren haben **keine eigene Sichtweite**, sie werden
+  immer alle gezeichnet (bis 9000 m Kamera-Sichtweite). Sie stehen höchstens 230 m neben der Strasse
+  und sind jetzt sogar früher und klarer zu sehen als vorher.
+- `node tools/testfahrer.mjs` – Zeiten **auf die Hundertstel gleich wie in M1.2** (vorsichtig 2:33.24,
+  mittel 2:19.11, flott 2:10.41), kein Aufprall, nirgends hängen geblieben.
+- `node tools/aufprall-test.mjs`, `getriebe-test.mjs`, `lenk-test.mjs` – laufen durch, alle Prüfungen
+  erfüllt.
+- Spiel startet ohne Fehler in der Browser-Konsole.
+
+### Bekannte Probleme
+
+- **Zielgerade:** Der ferne Hügelkamm ist dort ein ziemlich gleichmässiger grau-grüner Streifen vor
+  dem Berg. Kein hellblaues Band mehr und keine harte Kante, aber auch nicht so schön abgestuft wie am
+  Start. Die Berge sind dort sehr nah und gross (war schon vorher so).
+- Weil die Ferne jetzt klarer ist, sieht man, dass der Wald ca. 230 m neben der Strasse aufhört. Die
+  Hügel dahinter sind kahl grün (gut sichtbar in `05b-kehren-von-oben-nachher.png`).
+- Ein paar einzelne Pixel an Hügelkanten in 480 m Entfernung können beim Fahren minimal springen
+  (Wechsel fein/grob, siehe oben). Falls du es siehst: `gelaende.feinBis` höher (kostet Leistung).
+- Die Gipfel sind etwas heller/dunstiger als vorher (der Dunst wird jetzt anders gerechnet). Zu blass?
+  → `nebel.bergDunst` tiefer, z. B. 0.1.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Ferne Waldflächen auf den Hügeln (z. B. dunkelgrüne Flecken im Gelände oder sehr einfache
+  Fern-Bäume), damit der Wald nicht bei 230 m aufhört.
+- Leichter Farbverlauf im Dunst je nach Sonnenrichtung (zur Sonne hin heller/wärmer).
+- Hintergrundberge an der Zielgerade etwas weiter weg oder niedriger, damit sie nicht so wandartig
+  wirken.
+- Später für Wetter/Tageszeit: `nebel.start/ende/maxDichte` und `farben.dunst` je Wetter umschalten
+  (z. B. Föhn = klar, Regen = dicht).
+
+---
+
+## Meilenstein 1.2: Kurven schneiden, Lenken, Schalten, Tachos ✅ (Verlauf, Stand damals)
 
 ### Was neu ist
 

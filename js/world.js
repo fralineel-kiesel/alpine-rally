@@ -355,7 +355,7 @@ export function baueWelt(szene, strecke) {
   welt.gelaendeDreiecke = dreiecke;
 
   // Jedes Bild: nahe Stücke fein, ferne grob zeigen
-  const detailBis = CONFIG.nebel.ende + 60;
+  const detailBis = g.feinBis;
   welt.aktualisiere = function (kamPos) {
     for (const st of stuecke) {
       const dx = Math.max(st.minX - kamPos.x, 0, kamPos.x - st.maxX);
@@ -511,13 +511,12 @@ export function baueWelt(szene, strecke) {
   {
     const b = CONFIG.berge;
     const rndB = zufall(b.seed);
-    const pos = [], col = [];
-    const cFels = new THREE.Color(f.bergFels), cSchnee = new THREE.Color(f.schnee), cDunst = new THREE.Color(f.dunst);
-    const dunstFarbe = (c, y, H) => {
-      let anteil = begrenze(CONFIG.nebel.bergDunst + CONFIG.nebel.bergDunstUnten * (1 - y / H), 0, 1);
-      if (c === cSchnee) return c.clone().lerp(cDunst, anteil * 0.3).multiplyScalar(1.35); // Schnee soll leuchten
-      return c.clone().lerp(cDunst, anteil);
-    };
+    const pos = [], col = [], dunst = [];
+    const cFels = new THREE.Color(f.bergFels), cSchnee = new THREE.Color(f.schnee), cFuss = new THREE.Color(f.bergFuss);
+    // Wie viel Dunst auf einem Punkt liegt: oben wenig, zum Fuss hin mehr.
+    // Wird erst nach dem Licht beigemischt (wie der Nebel auf dem Gelände),
+    // darum hat der Bergfuss genau die Farbe des fernen Geländes.
+    const dunstAnteil = (y, H) => begrenze(CONFIG.nebel.bergDunst + CONFIG.nebel.bergDunstUnten * (1 - y / H), 0, CONFIG.nebel.maxDichte);
     // Ein Berg: Ringe von unten nach oben, oben eine Spitze
     function berg(cx, cz, H, fuss) {
       const seiten = 6 + Math.floor(rndB() * 3);
@@ -543,9 +542,13 @@ export function baueWelt(szene, strecke) {
         const my = (a.y + bb.y + c.y) / 3;
         const maxY = Math.max(a.y, bb.y, c.y);
         const schnee = my > schneeY + (rndB() - 0.5) * H * 0.15 || (maxY >= H - 1 && rndB() < 0.8);
-        const grund = schnee ? cSchnee : cFels.clone().multiplyScalar(0.8 + rndB() * 0.3);
-        const farbe = dunstFarbe(grund, my, H);
+        // unten bewaldet (grün), nach oben Fels
+        const farbe = schnee
+          ? cSchnee.clone().multiplyScalar(1.35) // Schnee soll leuchten
+          : cFuss.clone().lerp(cFels, glatt(0, b.fussBis, my / H)).multiplyScalar(0.8 + rndB() * 0.3);
         for (let k = 0; k < 3; k++) col.push(farbe.r, farbe.g, farbe.b);
+        // Schnee bekommt weniger Dunst, damit die Gipfel weiss bleiben
+        for (const p of [a, bb, c]) dunst.push(dunstAnteil(p.y, H) * (schnee ? 0.3 : 1));
       };
       for (let ri = 0; ri < ringPunkte.length; ri++) {
         const unten = ringPunkte[ri], oben = ringPunkte[ri + 1];
@@ -576,8 +579,19 @@ export function baueWelt(szene, strecke) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setAttribute('aDunst', new THREE.Float32BufferAttribute(dunst, 1));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, fog: false, side: THREE.DoubleSide });
+    // Statt des normalen Nebels (die Berge sind zu weit weg, sie wären ganz im
+    // Dunst) eigener Dunst pro Punkt, in derselben Nebelfarbe.
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, fog: true, side: THREE.DoubleSide });
+    mat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float aDunst;\nvarying float vDunst;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvDunst = aDunst;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vDunst;')
+        .replace('#include <fog_fragment>', 'gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, vDunst);');
+    };
     const berge = new THREE.Mesh(geo, mat);
     berge.frustumCulled = false;
     szene.add(berge);

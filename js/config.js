@@ -14,7 +14,7 @@ export const CONFIG = {
   // --- Farben (Palette) -----------------------------------------------
   farben: {
     himmelOben: '#2d6fd2',     // klares Blau im Zenit
-    dunst: '#b9c8d6',          // helles Blaugrau am Horizont (= Nebelfarbe)
+    dunst: '#aabdc8',          // Blaugrau am Horizont (= Nebelfarbe, auch für Gelände und Bergfüsse)
     gras: '#4e9a2c',           // sattes Gras
     grasDunkel: '#3b7d22',     // dunklere Grasflecken
     fels: '#7f7b74',           // Steingrau (steile Hänge, Felswand)
@@ -24,6 +24,7 @@ export const CONFIG = {
     asphalt: '#56585b',        // Strassenbelag
     mittellinie: '#c9c9bd',    // dezente Mittellinie
     bergFels: '#596070',         // Hintergrundberge, Fels
+    bergFuss: '#3f6a30',       // Hintergrundberge, bewaldeter Fuss (passt zum fernen Gelände)
     schnee: '#f2f5fa',         // Schneekappen
     autoLack: '#f1f1ec',       // Auto: weiss
     autoStreifen: '#c8202c',   // Auto: der eine farbige Streifen
@@ -42,10 +43,13 @@ export const CONFIG = {
 
   // --- Nebel / Dunst --------------------------------------------------
   nebel: {
-    start: 70,                 // ab hier beginnt der Dunst (Meter)
-    ende: 420,                 // hier ist alles im Dunst verschwunden
-    bergDunst: 0.22,           // Hintergrundberge: wie stark bläulich eingefärbt (0..1)
-    bergDunstUnten: 0.6,       // zusätzlicher Dunst am Bergfuss (0..1)
+    start: 120,                // ab hier beginnt der Dunst (Meter)
+    ende: 1000,                // hier ist der Dunst am dichtesten (Meter)
+    maxDichte: 0.8,            // so dicht wird der Dunst höchstens (0..1). Unter 1 bleibt fernes Gelände
+                               // leicht grün statt ganz hellblau (1 = alte Wirkung, gibt das "Nebelband")
+    bergDunst: 0.2,            // Hintergrundberge: so viel Dunst liegt auf den Gipfeln (0..1)
+    bergDunstUnten: 0.6,       // ... und so viel kommt zum Bergfuss hin dazu. Fuss = beide zusammen,
+                               // sollte etwa maxDichte sein, dann passt der Fuss zum fernen Gelände
   },
 
   // --- Strasse --------------------------------------------------------
@@ -68,6 +72,7 @@ export const CONFIG = {
     kernRand: 100,             // bis so weit von der Strecke ist das Gelände fein (raster)
     mittelRand: 300,           // bis hier halb so fein (2 x raster)
     fernRand: 800,             // bis hier 4 x raster, danach ganz grob (32 m) – liegt im Dunst
+    feinBis: 480,              // so weit von der Kamera wird das Gelände fein gezeichnet, dahinter grob (spart Leistung)
     aussenRand: 1100,          // so weit über die Strecke hinaus reicht das Gelände
     stueck: 6,                 // so viele Kacheln (pro Richtung) werden zu einem Stück zusammengefasst
     flachBis: 7.5,             // bis zu diesem Abstand von der Strassenmitte ist es flach
@@ -114,6 +119,7 @@ export const CONFIG = {
     hoehe: [1000, 1750],       // Gipfelhöhe (bei bezugsAbstand, weiter weg etwas höher)
     bezugsAbstand: 3300,       // bei dieser Entfernung gilt die Gipfelhöhe
     schneeAb: 0.5,             // Schnee ab diesem Anteil der Höhe
+    fussBis: 0.3,              // bis zu diesem Anteil der Höhe geht der Bergfuss von Grün (farben.bergFuss) in Fels über
     seed: 77,
   },
 

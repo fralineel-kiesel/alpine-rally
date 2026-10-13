@@ -47,6 +47,11 @@ anpassen();
 const szene = new THREE.Scene();
 szene.background = new THREE.Color(CONFIG.farben.dunst);
 szene.fog = new THREE.Fog(CONFIG.farben.dunst, CONFIG.nebel.start, CONFIG.nebel.ende);
+// Dunst nie ganz dicht (nebel.maxDichte): sonst wird alles ferne Gelände eine
+// flache hellblaue Fläche unter den Bergen. Gilt für alle Materialien mit Nebel.
+THREE.ShaderChunk.fog_fragment = THREE.ShaderChunk.fog_fragment.replace(
+  'fogColor, fogFactor )', `fogColor, fogFactor * ${CONFIG.nebel.maxDichte.toFixed(3)} )`,
+);
 const l = CONFIG.licht;
 szene.add(new THREE.AmbientLight(l.umgebungFarbe, l.umgebungStaerke));
 const sonne = new THREE.DirectionalLight(l.sonneFarbe, l.sonneStaerke);
