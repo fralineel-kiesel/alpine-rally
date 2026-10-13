@@ -5,7 +5,8 @@
 //   - Leitplanken: auf der Talseite, wo das Gelände stark abfällt, und aussen in den Kehren
 //   - Holzzäune: an Wiesen (wenig Wald, keine Felswand), abwechselnd links/rechts, mit Weidetoren
 //   - Schilder: Kurvenwarnungen vor engen Kurven, Kehren-Nummern, Richtungstafeln (Chevrons),
-//     Steinschlag/Gefälle, Kilometertafeln
+//     Steinschlag/Gefälle, Kilometertafeln; seit M2a.1 Tempo-Tafeln (aus der Krümmung abgeleitet,
+//     reine Optik, kein Tempolimit), Kühe und Kreuzung im Tal
 // Werte zum Schrauben: config.js, Block "strassenrand". Fester Zufall (seed): gleiche Strecke =
 // gleiche Zäune.
 //
@@ -52,7 +53,8 @@ function laeufe(arr, von = 0, bis = arr.length - 1) {
 // =====================================================================
 // Plan: wo steht was (ohne 3D-Objekte; die Tests brauchen das auch)
 // =====================================================================
-export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
+// kronen: Bäume mit Grösse { x, z, b } (für die Sichtprüfung der neuen Schilder, M2a.1)
+export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], kronen = []) {
   const c = CONFIG.strassenrand;
   const n = strecke.anzahl;
   const { px, py, pz, tx, tz } = strecke;
@@ -290,12 +292,20 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
   // 3. Schilder
   // =====================================================================
   const cs = c.schilder;
+  const G = cs.groesse || 1;            // alle Schilder etwas grösser (M2a.1, Lesbarkeit im kleinen Bild)
+  const W = cs.warnGroesse * G;         // Kantenlänge der Warn-Dreiecke
   const schilder = [];
   // Freien Platz für ein Schild suchen: erst an der Wunschstelle, dann etwas davor/danach,
   // dann (falls erlaubt) auf der anderen Seite
-  function platz(sWunsch, seiteWunsch, { andereSeite = true, schieben = 20, gruppe = null } = {}) {
-    const versuche = [0];
-    for (let d = 3; d <= schieben; d += 3) versuche.push(d, -d);
+  // abstandAlle: so viele Meter Abstand zu jedem anderen Schild (beide Seiten, gegen Schilderwälder)
+  // versuche: eigene Liste der Verschiebungen (Meter), z. B. nur nach vorne
+  // sicht: der Fahrer muss das Schild sehen (kein Baum davor, siehe sichtbar)
+  // ausser: Schilder, die für abstandAlle nicht zählen (bewusst gepaart: Warnung + Tempo derselben Stelle)
+  function platz(sWunsch, seiteWunsch, { andereSeite = true, schieben = 20, gruppe = null, abstandAlle = 0, versuche = null, sicht = false, ausser = [] } = {}) {
+    if (!versuche) {
+      versuche = [0];
+      for (let d = 3; d <= schieben; d += 3) versuche.push(d, -d);
+    }
     for (const sd of andereSeite ? [seiteWunsch, -seiteWunsch] : [seiteWunsch]) {
       for (const ds of versuche) {
         const s = sWunsch + ds, i = Math.round(s);
@@ -307,11 +317,24 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
         const zuNah = schilder.some((o) => o.seite === sd &&
           Math.abs(o.s - s) < (gruppe != null && o.gruppe === gruppe ? 3 : gruppe != null || o.gruppe != null ? 5 : cs.mindestAbstand));
         if (zuNah) continue;
+        if (abstandAlle && schilder.some((o) => !ausser.includes(o) && Math.abs(o.s - s) < abstandAlle)) continue;
+        if (sicht && !sichtbar(s, P.x, P.z)) continue;
         if (tore.some((t) => t.seite === sd && s > t.von - 1.5 && s < t.bis + 1.5)) continue;
         return { s, seite: sd, x: P.x, z: P.z };
       }
     }
     return null;
+  }
+  // Sieht der Fahrer das Schild? Von der Strassenmitte sichtWeite Meter davor bis zum Schild
+  // darf keine Baumkrone (halbe Breite des Baums plus sichtFrei) auf der Sichtlinie liegen.
+  function sichtbar(s, x, z) {
+    const v = punkt(s - cs.sichtWeite, 0, {});
+    const nah = kronen.filter((k) => Math.hypot(k.x - x, k.z - z) < cs.sichtWeite + 10);
+    for (let f = 0.25; f <= 1.0001; f += 0.05) {
+      const px2 = v.x + (x - v.x) * f, pz2 = v.z + (z - v.z) * f;
+      if (nah.some((k) => Math.hypot(k.x - px2, k.z - pz2) < k.b * 0.5 + cs.sichtFrei)) return false;
+    }
+    return true;
   }
   // Schild aufstellen: schaut zur Strasse etwas vor ihm (dort kommt der Fahrer her)
   function stelle(ort, art, tafeln, gruppe = null) {
@@ -335,7 +358,7 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
       for (let j = 0; j < anzahl; j++) {
         const s = mische(k.von, k.bis, (j + 0.5) / anzahl);
         stelle(platz(s, aussen, { andereSeite: false, schieben: 4, gruppe }), 'chevron', [{
-          kachel: 'chevron', b: cs.chevronGroesse[0], h: cs.chevronGroesse[1], unten: cs.chevronHoehe,
+          kachel: 'chevron', b: cs.chevronGroesse[0] * G, h: cs.chevronGroesse[1] * G, unten: cs.chevronHoehe,
           spiegeln: k.richtung > 0, form: 'rechteck',
         }], gruppe);
       }
@@ -343,7 +366,7 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
     // b) Kehren-Nummern an der Kehre (aussen, kurz vor der Kehre)
     for (const k of kehren) {
       stelle(platz(k.von - 6, k.aussen, { andereSeite: false, schieben: 9 }), 'kehre', [{
-        kachel: `kehre${k.nr}`, b: cs.kehreGroesse[0], h: cs.kehreGroesse[1], unten: 1.3, form: 'rechteck',
+        kachel: `kehre${k.nr}`, b: cs.kehreGroesse[0] * G, h: cs.kehreGroesse[1] * G, unten: 1.3, form: 'rechteck',
       }]);
     }
     // c) Kurvenwarnungen vor engen Kurven (eine Folge enger Kurven = ein Schild "Doppelkurve")
@@ -351,14 +374,14 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
     const folgen = [];
     for (const k of eng) {
       const f = folgen[folgen.length - 1];
-      if (f && k.von - f.bis < cs.gruppenLuecke) { f.bis = k.bis; f.anzahl++; } else folgen.push({ von: k.von, bis: k.bis, richtung: k.richtung, anzahl: 1 });
+      if (f && k.von - f.bis < cs.gruppenLuecke) { f.bis = k.bis; f.anzahl++; f.maxK = Math.max(f.maxK, k.maxK); } else folgen.push({ von: k.von, bis: k.bis, richtung: k.richtung, anzahl: 1, maxK: k.maxK });
     }
     const warnungen = [];
     for (const f of folgen) {
       const mitte = (cs.warnVor[0] + cs.warnVor[1]) / 2;
       const kachel = f.anzahl > 1 ? 'warnDoppel' : 'warnKurve';
       const sch = stelle(platz(f.von - mitte, 1, { schieben: (cs.warnVor[1] - cs.warnVor[0]) / 2 }), 'warnung', [{
-        kachel, b: cs.warnGroesse, h: cs.warnGroesse * 0.875, unten: cs.warnHoehe, spiegeln: f.richtung < 0, form: 'dreieck',
+        kachel, b: W, h: W * 0.875, unten: cs.warnHoehe, spiegeln: f.richtung < 0, form: 'dreieck',
       }]);
       warnungen.push({ ...f, art: kachel === 'warnDoppel' ? 'Doppelkurve' : 'Kurve', schild: sch });
     }
@@ -387,15 +410,77 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
       const g = gefahren[j], tafeln = [g.kachel];
       while (j + 1 < gefahren.length && gefahren[j + 1].s - g.s < 50) tafeln.push(gefahren[++j].kachel);
       stelle(platz(g.s, 1, { schieben: 21 }), 'gefahr', tafeln.map((k, t) => ({
-        kachel: k, b: cs.warnGroesse, h: cs.warnGroesse * 0.875, unten: cs.warnHoehe + t * (cs.warnGroesse * 0.875 + 0.08), form: 'dreieck',
+        kachel: k, b: W, h: W * 0.875, unten: cs.warnHoehe + t * (W * 0.875 + 0.08), form: 'dreieck',
       })));
     }
     // e) Kilometertafeln alle 500 m
     for (let s = cs.kmAlle; s < strecke.laenge - 30; s += cs.kmAlle) {
       const zahl = (s / 1000).toFixed(1);
       stelle(platz(s, 1, { schieben: 30 }), 'km', [{
-        kachel: `km${zahl}`, b: cs.kmGroesse[0], h: cs.kmGroesse[1], unten: cs.kmHoehe, form: 'rechteck', zahl,
+        kachel: `km${zahl}`, b: cs.kmGroesse[0] * G, h: cs.kmGroesse[1] * G, unten: cs.kmHoehe, form: 'rechteck', zahl,
       }]);
+    }
+
+    // f) Tempo-Tafeln (M2a.1, reine Optik): aus den Kurvenfolgen abgeleitet.
+    //    Talabschnitt am Start, vor einer Kehrengruppe, vor einer engen Passage (enger als
+    //    engRadius), und wieder aufheben, wenn danach lange keine enge Kurve mehr kommt.
+    //    Rechts in Fahrtrichtung, mit Abstand zu allen anderen Schildern. Geht das nicht (z. B.
+    //    Felswand rechts), kommt die Tafel unter die Kurvenwarnung derselben Stelle.
+    const tc = cs.tempo;
+    const tempo = [];
+    // Verschiebungen für platz(): nur nach vorne / nur nach hinten (Meter)
+    const vorne = (bis) => { const v = []; for (let d = 0; d <= bis; d += 3) v.push(d); return v; };
+    const hinten = (bis) => { const v = []; for (let d = 0; d <= bis; d += 3) v.push(-d); return v; };
+    if (tc && tc.an) {
+      const D = tc.groesse * G;
+      const tafel = (wert, unten = tc.hoehe) => ({ kachel: `tempo${wert}`, b: D, h: D, unten, form: 'kreis', zahl: wert });
+      const wuensche = [{ s: strecke.startS + tc.startNach, wert: tc.tal, wo: 'Talabschnitt', versuche: vorne(60) }];
+      folgen.forEach((f, j) => {
+        const kehre = kehren.some((k) => k.von >= f.von - 1 && k.bis <= f.bis + 1);
+        const wert = kehre ? tc.kehren : 1 / f.maxK < tc.engRadius ? tc.eng : null;
+        if (!wert) return;
+        wuensche.push({ s: f.von - tc.vor[0], wert, wo: kehre ? 'vor den Kehren' : 'vor enger Passage', versuche: hinten(tc.vor[1] - tc.vor[0]), folge: f });
+        const naechste = folgen[j + 1];
+        if ((naechste ? naechste.von : n) - f.bis >= tc.aufhebenNach) {
+          wuensche.push({ s: f.bis + tc.nach[0], wert: tc.aufheben, wo: 'nach der Folge (aufheben)', versuche: vorne(tc.nach[1] - tc.nach[0]) });
+        }
+      });
+      for (const w of wuensche.slice(0, tc.max)) {
+        // Die Kurvenwarnung derselben Folge gehört dazu (bewusst gepaart): für sie gilt abstandNeu nicht
+        const warn = w.folge && warnungen.find((x) => x.von === w.folge.von && x.schild);
+        const ausser = warn ? [warn.schild] : [];
+        // 1. rechts, eigener Pfosten
+        const ort = platz(w.s, 1, { andereSeite: false, versuche: w.versuche, abstandAlle: cs.abstandNeu, sicht: true, ausser });
+        if (ort) { tempo.push({ ...w, schild: stelle(ort, 'tempo', [tafel(w.wert)]) }); continue; }
+        // 2. unter die Kurvenwarnung (gleicher Pfosten), wenn man diese gut sieht
+        if (warn && tc.zurWarnung && sichtbar(warn.schild.s, warn.schild.x, warn.schild.z)) {
+          const sch = warn.schild, t0 = sch.tafeln[0];
+          sch.tafeln = [tafel(w.wert, tc.hoehePaar), { ...t0, unten: tc.hoehePaar + D + 0.08 }];
+          tempo.push({ ...w, schild: sch, gepaart: true });
+          continue;
+        }
+        // 3. links, eigener Pfosten
+        const links = platz(w.s, -1, { andereSeite: false, versuche: w.versuche, abstandAlle: cs.abstandNeu, sicht: true, ausser });
+        if (links) tempo.push({ ...w, schild: stelle(links, 'tempo', [tafel(w.wert)]) });
+      }
+    }
+    schilder.tempo = tempo;
+
+    // g) Kühe und Kreuzung im Talabschnitt (M2a.1). Kreuzung: vor dem ersten offenen Weidetor
+    //    (dort mündet ein Feldweg ein). Kühe: vor der Wiese mit den meisten Zäunen im Tal.
+    if (cs.talSchilder) {
+      const talBis = (folgen.find((f) => kehren.some((k) => k.von >= f.von - 1 && k.bis <= f.bis + 1)) || { von: n }).von - 100;
+      const tor = tore.filter((t) => t.offen && t.von < talBis).sort((a, b) => a.von - b.von)[0];
+      const dreieck = (kachel) => [{ kachel, b: W, h: W * 0.875, unten: cs.warnHoehe, form: 'dreieck' }];
+      if (tor) stelle(platz(tor.von - cs.gefahrVor, tor.seite, { schieben: 30, abstandAlle: cs.abstandNeu, sicht: true }), 'gefahr', dreieck('warnKreuzung'));
+      // Zäune im Tal zu Wiesen zusammenfassen (Lücken unter 60 m), die mit den meisten Zaunmetern nehmen
+      const wiesen = [];
+      for (const l of zaunLaeufe.filter((z) => z.bis < talBis).sort((a, b) => a.von - b.von)) {
+        const w = wiesen[wiesen.length - 1];
+        if (w && l.von - w.bis < 60) { w.bis = Math.max(w.bis, l.bis); w.meter += l.bis - l.von; } else wiesen.push({ von: l.von, bis: l.bis, meter: l.bis - l.von });
+      }
+      const weide = wiesen.sort((a, b) => b.meter - a.meter)[0];
+      if (weide) stelle(platz(weide.von - cs.gefahrVor, 1, { versuche: hinten(90).concat(vorne(30)), abstandAlle: cs.abstandNeu, sicht: true }), 'gefahr', dreieck('warnKuh'));
     }
     schilder.warnungen = warnungen;
   }
@@ -413,12 +498,14 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = []) {
 export function baueStrassenrand(szene, strecke, welt, pflanzen) {
   const t0 = performance.now();
   const c = CONFIG.strassenrand;
-  const plan = planeStrassenrand(strecke, welt, pflanzen ? pflanzen.hindernisse : []);
+  const plan = planeStrassenrand(strecke, welt, pflanzen ? pflanzen.hindernisse : [],
+    pflanzen ? [...pflanzen.tannen, ...pflanzen.laubbaeume] : []);
   const tPlan = performance.now() - t0;
   const { punkt } = plan;
   const rndPlanke = zufall(c.seed + 1), rnd = zufall(c.seed + 2); // Helligkeit, kaputte Latten, schiefe Pfosten
   const kmZahlen = plan.schilder.filter((s) => s.art === 'km').map((s) => s.tafeln[0].zahl);
-  const atlas = strassenrandAtlas(kmZahlen, Math.max(4, plan.kehren.length));
+  const tempoZahlen = [...new Set(plan.schilder.flatMap((s) => s.tafeln.filter((t) => t.form === 'kreis').map((t) => t.zahl)))];
+  const atlas = strassenrandAtlas(kmZahlen, Math.max(4, plan.kehren.length), 61, tempoZahlen);
   const hindernisse = [];
   const gelaende = (x, z) => welt.gelaendeHoehe(x, z);
 
@@ -631,7 +718,7 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
       // Rückseite (2 cm dahinter)
       const bx = -dx * 0.02, bz = -dz * 0.02;
       viereck(st, [qx + bx, y0, qz + bz], [lx + bx, y0, lz + bz], [lx + bx, y1, lz + bz], [qx + bx, y1, qz + bz],
-        t.form === 'dreieck' ? 'warnRuecken' : 'blech', [-dx, 0, -dz], 0.9);
+        t.form === 'dreieck' ? 'warnRuecken' : t.form === 'kreis' ? 'tempoRuecken' : 'blech', [-dx, 0, -dz], 0.9);
     }
     hindernisse.push({ x: sch.x, z: sch.z, r: cs.kreisRadius, rand: 'schild' });
   }
@@ -675,7 +762,8 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
     tore: plan.tore.length, toreOffen: plan.tore.filter((t) => t.offen).length,
     wiesenAnteilMitZaun: plan.wiesenMeter ? Math.round((plan.zaunMeter / plan.wiesenMeter) * 100) : 0,
     schilder: plan.schilder.length,
-    schilderArten: { warnung: zaehle('warnung'), chevron: zaehle('chevron'), kehre: zaehle('kehre'), gefahr: zaehle('gefahr'), km: zaehle('km') },
+    schilderArten: { warnung: zaehle('warnung'), chevron: zaehle('chevron'), kehre: zaehle('kehre'), gefahr: zaehle('gefahr'), km: zaehle('km'), tempo: zaehle('tempo') },
+    tempoTafeln: plan.schilder.flatMap((s) => s.tafeln).filter((t) => t.form === 'kreis').length,
     kehren: plan.kehren.length, hindernisse: hindernisse.length, stuecke: meshes.length, dreiecke,
   };
   return { plan, hindernisse, meshes, aktualisiere, statistik };

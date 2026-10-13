@@ -10,11 +10,13 @@
 //   Abkürzung = befahrbar, spart mindestens minGewinn Meter und führt neben das
 //               Bankett auf die Wiese (sonst ist es nur die Ideallinie).
 // Danach werden Sperren geplant: immer dort, wo eine Querlinie von der Strasse
-// ins Kurveninnere die meisten Abkürzungen abschneidet.
+// ins Kurveninnere die meisten Abkürzungen abschneidet. Seit M2a.1 werden dabei
+// jedes Mal alle Reihen zusammen gebaut (so wie im Spiel: pro Kurve ein Thema,
+// Reihen einer Kurve teilen sich Teile) und alle Linien neu geprüft.
 
 import { CONFIG } from '../js/config.js';
 import { baueKollision } from '../js/kollision.js';
-import { planeSperre } from '../js/sperren.js';
+import { planeAlleSperren } from '../js/sperren.js';
 
 // Ist die gerade Linie von (ax, az) nach (bx, bz) befahrbar und führt auf die Wiese?
 // halb = halbe Autobreite (so viel Abstand müssen Hindernisse zur Linie halten)
@@ -135,13 +137,24 @@ function kreuzung(strecke, l, s0, seite) {
   return d;
 }
 
+// Ist die Linie l trotz der Hindernisse kol noch befahrbar (nur Hindernisse, schnell)?
+function linieOffen(kol, l) {
+  const n = Math.ceil(Math.hypot(l.bx - l.ax, l.bz - l.az) / CONFIG.abkuerzung.pruefSchritt);
+  for (let k = 0; k <= n; k++) {
+    if (!kol.frei(l.ax + (l.bx - l.ax) * (k / n), l.az + (l.bz - l.az) * (k / n), l.halb)) return false;
+  }
+  return true;
+}
+
 // Sperren planen, bis keine Abkürzung mehr übrig ist.
 // basis: Hindernisse ohne Sperren, tex: Sprite-Seitenverhältnisse
 // linien: Abkürzungen (jede mit eigener halber Breite l.halb)
-export function planeSperren(strecke, welt, basis, tex, linien) {
+// offenLassen: Linien, die offen bleiben müssen (freie Kurven, M2a.1). Eine Reihe, die eine
+//   davon zu macht, wird nicht genommen.
+export function planeSperren(strecke, welt, basis, tex, linien, offenLassen = []) {
   const c = CONFIG.sperren, a = CONFIG.abkuerzung;
   const halb = a.autoBreite / 2;
-  const sperren = [];
+  let sperren = [];
   let rest = linien.slice();
   const gesperrt = new Set(); // Stellen, an denen eine Sperre nichts gebracht hat
   for (let runde = 0; runde < 300 && rest.length; runde++) {
@@ -150,7 +163,9 @@ export function planeSperren(strecke, welt, basis, tex, linien) {
     let best = null;
     for (const abstand of [c.mindestAbstand, 0]) {
       for (const seite of [-1, 1]) {
-        const meine = rest.filter((l) => l.seite === seite);
+        // erst die Linien dieser Seite; kommt dort nichts, auch die der anderen Seite (eine lange
+        // Linie kann mit der Mitte links liegen und trotzdem rechts durch eine Kehre führen)
+        const meine = abstand ? rest.filter((l) => l.seite === seite) : rest;
         if (!meine.length) continue;
         const von = Math.min(...meine.map((l) => l.sVon)), bis = Math.max(...meine.map((l) => l.sBis));
         for (let s0 = Math.ceil(von) + 1; s0 < bis; s0 += 1) {
@@ -174,20 +189,14 @@ export function planeSperren(strecke, welt, basis, tex, linien) {
       s: best.s, seite: best.seite, von: c.abstandMitte,
       bis: Math.round(Math.min(c.maxTiefe, best.tief + halb + c.reserve) * 10) / 10,
     };
-    const teile = planeSperre(sperre, strecke, welt, tex);
-    if (!teile.hindernisse.length) { gesperrt.add(`${best.seite}:${best.s}`); continue; }
-    // welche Abkürzungen sind jetzt zu?
+    // alle Reihen zusammen bauen (wie im Spiel) und alle Linien neu prüfen
+    const probe = sperren.concat([sperre]);
+    const teile = planeAlleSperren(probe, strecke, welt, tex, basis);
     const kol = baueKollision(teile.hindernisse);
-    const vorher = rest.length;
-    rest = rest.filter((l) => {
-      const n = Math.ceil(Math.hypot(l.bx - l.ax, l.bz - l.az) / a.pruefSchritt);
-      for (let k = 0; k <= n; k++) {
-        if (!kol.frei(l.ax + (l.bx - l.ax) * (k / n), l.az + (l.bz - l.az) * (k / n), l.halb)) return false;
-      }
-      return true;
-    });
-    if (rest.length === vorher) { gesperrt.add(`${best.seite}:${best.s}`); continue; }
-    sperren.push(sperre);
+    const neuRest = linien.filter((l) => linieOffen(kol, l));
+    if (neuRest.length >= rest.length || !offenLassen.every((l) => linieOffen(kol, l))) { gesperrt.add(`${best.seite}:${best.s}`); continue; }
+    sperren = probe;
+    rest = neuRest;
   }
   return { sperren: sperren.sort((p, q) => p.s - q.s), rest };
 }
@@ -195,18 +204,24 @@ export function planeSperren(strecke, welt, basis, tex, linien) {
 // Grösste Lücke einer Sperre: Die Teile (Kreise) bilden eine Kette von der
 // Strasse bis ans äussere Ende. Gesucht ist der Weg durch die Kette, bei dem die
 // grösste Lücke (Kante zu Kante) am kleinsten ist. Ist diese Lücke schmaler als
-// das Auto, kommt es nirgends durch. Ergebnis: grösste solche Lücke aller Sperren.
-export function groessteLuecke(strecke, welt, sperren, tex) {
+// das Auto, kommt es nirgends durch. Seit M2a.1 zählen alle Teile der Kurve und
+// Bäume/Steine der Landschaft mit (die Kette darf sie benutzen).
+// Ergebnis: grösste solche Lücke aller Reihen.
+export function groessteLuecke(strecke, welt, sperren, tex, basis = []) {
   let max = 0, wo = null;
+  const plan = planeAlleSperren(sperren, strecke, welt, tex, basis);
+  const alle = plan.hindernisse.concat(basis);
   for (const sp of sperren) {
     const p = strecke.punktBei(sp.s);
     const nx = -p.tz * sp.seite, nz = p.tx * sp.seite;
-    const k = planeSperre(sp, strecke, welt, tex).hindernisse
-      .map((h) => ({ ...h, d: (h.x - p.x) * nx + (h.z - p.z) * nz }));
-    if (k.length < 2) continue;
-    const dMin = Math.min(...k.map((h) => h.d - h.r)), dMax = Math.max(...k.map((h) => h.d + h.r));
+    const k = alle.filter((h) => Math.hypot(h.x - p.x, h.z - p.z) < sp.bis + 8)
+      .map((h) => ({ ...h, d: (h.x - p.x) * nx + (h.z - p.z) * nz, u: (h.x - p.x) * p.tx + (h.z - p.z) * p.tz }))
+      .filter((h) => h.d > 0 && Math.abs(h.u) < 6);
+    if (k.filter((h) => h.sperre).length < 2) continue;
+    // Ende der Kette: das tiefste Teil der Sperre (Bäume dahinter zählen nicht als Ende)
+    const dMin = sp.von, dMax = Math.max(...k.filter((h) => h.sperre).map((h) => h.d + h.r));
     // "Engpass-Weg" (wie Dijkstra, aber mit der grössten Lücke statt der Summe)
-    const best = k.map((h) => (h.d - h.r < dMin + 0.8 ? 0 : Infinity));
+    const best = k.map((h) => (h.d - h.r < dMin + 0.8 && Math.abs(h.u) < 4 ? 0 : Infinity));
     const fertig = new Array(k.length).fill(false);
     for (;;) {
       let i = -1;

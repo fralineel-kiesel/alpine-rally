@@ -169,14 +169,15 @@ export function bauePflanzen(szene, strecke, welt) {
     ...steine.map((t) => ({ x: t.x, z: t.z, r: t.b * k.steinFaktor })),
   ];
 
-  // Abkürzungs-Sperren (Felsbrocken, Tannengruppen, Stämme) – siehe sperren.js
+  // Abkürzungs-Sperren (je Kurve Felsbrocken, Tannengruppen oder Stämme) – siehe sperren.js
   const fels = felsbrockenTextur();
   let sperrenListe = ABKUERZUNGEN.sperren;
   if (sperrenListe.length && Math.abs(ABKUERZUNGEN.streckenLaenge - strecke.laenge) > 0.5) {
     console.warn('Abkürzungs-Sperren passen nicht zur Strecke – bitte tools/abkuerzungen.mjs neu laufen lassen.');
     sperrenListe = [];
   }
-  const sperren = planeAlleSperren(sperrenListe, strecke, welt, { tanne, fels, stein });
+  // (die Landschaft wird mitgegeben, damit kein Teil einer Sperre in einem Baum steht)
+  const sperren = planeAlleSperren(sperrenListe, strecke, welt, { tanne, fels, stein }, hindernisse);
   tannen.push(...sperren.tannen);
   steine.push(...sperren.steine);
   hindernisse.push(...sperren.hindernisse);

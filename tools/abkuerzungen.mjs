@@ -3,6 +3,13 @@
 //   node tools/abkuerzungen.mjs           Analyse vorher, Sperren planen, js/abkuerzungen.js schreiben,
 //                                         danach im Spiel nachprüfen
 //   node tools/abkuerzungen.mjs --pruefen nur nachprüfen (nichts schreiben)
+//   node tools/abkuerzungen.mjs --nur-reihen  (seit M2a.1) nur die Reihen der schon gesperrten Kurven
+//                                         neu planen. Welche Kurven gesperrt/frei sind ("nichtSchneiden",
+//                                         "schneiden") bleibt genau gleich, danach wird nachgeprüft
+//     --offen <datei>                     dazu: Liste der offenen Linien der alten Version (von --offen-merken).
+//                                         Alles, was dort zu war, muss wieder zu sein, und in den freien
+//                                         Kurven bleibt offen, was offen war
+//   node tools/abkuerzungen.mjs --pruefen --offen-merken <datei>   offene Linien in <datei> schreiben
 //
 // Braucht Playwright mit Chromium (in der Testumgebung vorhanden). Startet einen
 // kleinen Webserver, öffnet das Spiel im Headless-Browser und rechnet dort mit
@@ -16,6 +23,10 @@ import { createRequire } from 'node:module';
 
 const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const nurPruefen = process.argv.includes('--pruefen');
+const nurReihen = process.argv.includes('--nur-reihen');
+const argWert = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
+const offenDatei = argWert('--offen'), offenMerken = argWert('--offen-merken');
+const REFERENZ = offenDatei ? JSON.parse(fs.readFileSync(path.resolve(offenDatei), 'utf8')) : null;
 
 // Playwright suchen (lokal oder global installiert)
 async function ladePlaywright() {
@@ -63,7 +74,7 @@ const ZEIT_DATEI = path.join(WURZEL, 'tools/schneiden-zeiten.json');
 const ZEITEN = fs.existsSync(ZEIT_DATEI) ? JSON.parse(fs.readFileSync(ZEIT_DATEI, 'utf8')).zeitGewinn || {} : {};
 
 // --- 1. vorher: ohne Sperren messen und Sperren planen -------------------------
-if (!nurPruefen) {
+if (!nurPruefen && !nurReihen) {
   await ladeSpiel();
   const plan = await page.evaluate(async (ZEITEN) => {
     const A = window.__alpineRally;
@@ -97,7 +108,7 @@ if (!nurPruefen) {
     const { sperren, rest } = m.planeSperren(A.strecke, A.welt, basis, tex, zuSperren);
     // Freie Zonen: welche Abkürzungen bleiben wirklich offen? (Eine Sperre der
     // Nachbarkurve kann sie schon zumachen.) Daraus entsteht die Liste "schneiden".
-    const teile = (await import('/js/sperren.js')).planeAlleSperren(sperren, A.strecke, A.welt, tex);
+    const teile = (await import('/js/sperren.js')).planeAlleSperren(sperren, A.strecke, A.welt, tex, basis);
     const kolSperren = baueKollision(teile.hindernisse);
     const offenLinie = (l) => {
       const n = Math.ceil(Math.hypot(l.bx - l.ax, l.bz - l.az) / A.CONFIG.abkuerzung.pruefSchritt);
@@ -181,6 +192,76 @@ ${frei.map((k) => `    { sVon: ${k.sVon}, sBis: ${k.sBis}, seite: '${k.seite}', 
   console.log('-> js/abkuerzungen.js geschrieben');
 }
 
+// --- 1b. nur die Reihen der gesperrten Kurven neu planen (M2a.1) ------------------
+if (nurReihen) {
+  await ladeSpiel();
+  const plan = await page.evaluate(async (REFERENZ) => {
+    const A = window.__alpineRally;
+    const m = await import('/tools/abkuerzungen-analyse.js');
+    const { baueKollision } = await import('/js/kollision.js');
+    const { planeAlleSperren } = await import('/js/sperren.js');
+    const { ABKUERZUNGEN } = await import('/js/abkuerzungen.js');
+    const px = await import('/js/pixel.js');
+    const tex = { tanne: px.tannenTextur(), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
+    const basis = A.pflanzen.hindernisse.filter((h) => !h.sperre);
+    // alles ausser den Sperren (auch Leitplanken, Zäune, Schilder): so ist das Spiel ohne Sperren
+    const ohneSperren = basis.concat(A.strassenrand ? A.strassenrand.hindernisse : []);
+    const kol = baueKollision(ohneSperren);
+    const linien = m.findeAbkuerzungen(A.strecke, A.welt, kol).concat(m.findeAbkuerzungen(A.strecke, A.welt, kol, { breite: 1.8 }));
+    const schluessel = (l) => `${l.i}-${l.j}-${l.halb}`;
+    const { zonen, ohneZone } = m.kurvenZonen(A.strecke, linien);
+    const passt = (z, k) => k.sVon <= z.sBis && k.sBis >= z.sVon && (k.seite === 'rechts') === (z.seite > 0);
+    const gesperrt = zonen.filter((z) => ABKUERZUNGEN.nichtSchneiden.some((k) => passt(z, k)));
+    // Was muss zu sein? Mit Referenz: alles, was in der alten Version zu war (auch die paar Linien
+    // freier Kurven, die eine Sperre der Nachbarkurve mit zu gemacht hat). Sonst: die gesperrten Kurven.
+    const ref = REFERENZ ? new Set(REFERENZ) : null;
+    const zuSperren = ref ? linien.filter((l) => !ref.has(schluessel(l))) : gesperrt.flatMap((z) => z.linien).concat(ohneZone);
+    const offenLassen = ref ? linien.filter((l) => ref.has(schluessel(l))) : [];
+    const { sperren, rest } = m.planeSperren(A.strecke, A.welt, basis, tex, zuSperren, offenLassen);
+    // freie Kurven: was bleibt mit den neuen Sperren offen?
+    const teile = planeAlleSperren(sperren, A.strecke, A.welt, tex, basis);
+    const kolS = baueKollision(teile.hindernisse);
+    const offenLinie = (l) => {
+      const n = Math.ceil(Math.hypot(l.bx - l.ax, l.bz - l.az) / A.CONFIG.abkuerzung.pruefSchritt);
+      for (let k = 0; k <= n; k++) if (!kolS.frei(l.ax + (l.bx - l.ax) * (k / n), l.az + (l.bz - l.az) * (k / n), l.halb)) return false;
+      return true;
+    };
+    const frei = ABKUERZUNGEN.schneiden.map((k) => {
+      const z = zonen.find((z) => passt(z, k));
+      const offen = z ? z.linien.filter(offenLinie) : [];
+      return {
+        sVon: k.sVon, gewinnListe: k.gewinn, offen: offen.length,
+        offenVorher: ref && z ? z.linien.filter((l) => ref.has(schluessel(l))).length : null,
+        gewinnJetzt: offen.length ? Math.round(Math.max(...offen.map((l) => l.gewinn)) * 10) / 10 : 0,
+      };
+    });
+    const nunZu = ref ? linien.filter((l) => ref.has(schluessel(l)) && !offenLinie(l)).length : 0;
+    return { restListe: rest.map((l) => `${Math.round(l.sVon)} – ${Math.round(l.sBis)} ${l.seite > 0 ? 'rechts' : 'links'} ${l.gewinn.toFixed(1)} m (Breite ${l.halb * 2} m)`),
+      sperren, rest: rest.length, zuSperren: zuSperren.length, alt: ABKUERZUNGEN.sperren, frei, nunZu, gesperrt: gesperrt.length, nichtSchneiden: ABKUERZUNGEN.nichtSchneiden.length };
+  }, REFERENZ);
+  console.log(`\n=== NUR REIHEN NEU (${plan.gesperrt} von ${plan.nichtSchneiden} gesperrten Kurven gefunden) ===`);
+  console.log(`Linien, die zu sein müssen: ${plan.zuSperren}${REFERENZ ? ' (alles, was in der alten Version zu war)' : ''}`);
+  console.log(`Reihen vorher: ${plan.alt.length}, nachher: ${plan.sperren.length}, nicht sperrbar: ${plan.rest} Linien`);
+  for (const r of plan.restListe) console.log(`  nicht sperrbar: ${r}`);
+  if (REFERENZ) console.log(`Linien, die vorher offen waren und jetzt zu sind: ${plan.nunZu}`);
+  for (const f of plan.frei) {
+    console.log(`  frei ${f.sVon}: Gewinn laut Liste ${f.gewinnListe} m, jetzt offen ${f.offen} Linien` +
+      (f.offenVorher != null ? ` (vorher ${f.offenVorher})` : '') + ` bis ${f.gewinnJetzt} m` +
+      (f.gewinnJetzt !== f.gewinnListe || (f.offenVorher != null && f.offen !== f.offenVorher) ? '  ACHTUNG: anders als vorher!' : ''));
+  }
+  if (plan.rest || plan.gesperrt !== plan.nichtSchneiden ||
+      plan.frei.some((f) => f.gewinnJetzt !== f.gewinnListe || (f.offenVorher != null && f.offen !== f.offenVorher))) {
+    console.log('NICHT geschrieben: Sperren halten nicht oder die freien Kurven ändern sich.');
+  } else {
+    const datei = path.join(WURZEL, 'js/abkuerzungen.js');
+    const alt = fs.readFileSync(datei, 'utf8');
+    const neu = alt.replace(/  sperren: \[\n[\s\S]*?\n  \],\n/,
+      `  sperren: [\n${plan.sperren.map((s) => `    { s: ${s.s}, seite: ${s.seite}, von: ${s.von}, bis: ${s.bis} },`).join('\n')}\n  ],\n`);
+    fs.writeFileSync(datei, neu);
+    console.log('-> js/abkuerzungen.js: nur die Liste "sperren" ersetzt');
+  }
+}
+
 // --- 2. nachher: Spiel neu laden (jetzt mit Sperren) und nachprüfen --------------
 const ladeMs = await ladeSpiel();
 const nach = await page.evaluate(async () => {
@@ -191,7 +272,8 @@ const nach = await page.evaluate(async () => {
   const { ABKUERZUNGEN } = await import('/js/abkuerzungen.js');
   const linien = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision);
   const linien18 = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision, { breite: 1.8 });
-  const luecke = m.groessteLuecke(A.strecke, A.welt, ABKUERZUNGEN.sperren, tex);
+  const offenKeys = linien.concat(linien18).map((l) => `${l.i}-${l.j}-${l.halb}`);
+  const luecke = m.groessteLuecke(A.strecke, A.welt, ABKUERZUNGEN.sperren, tex, A.pflanzen.hindernisse.filter((h) => !h.sperre));
   // Wie nah kommt ein sichtbarer Teil einer Sperre der Strassenmitte? (Bankett endet bei 5.5 m)
   const P = A.pflanzen, q = {};
   const abst = (x, z) => A.strecke.abfrage(x, z, q).abstand;
@@ -205,7 +287,7 @@ const nach = await page.evaluate(async () => {
   const sperrH = P.hindernisse.filter((h) => h.sperre).length;
   return {
     linien: linien.map((l) => ({ sVon: Math.round(l.sVon), sBis: Math.round(l.sBis), gewinn: l.gewinn, seite: l.seite })),
-    linien18: linien18.length,
+    linien18: linien18.length, offenKeys,
     // übrige Abkürzungen pro Zone: in gesperrten Zonen darf keine mehr übrig sein
     zonen: m.kurvenZonen(A.strecke, linien.concat(linien18)).zonen.map((z) => ({
       sVon: z.sVon, sBis: z.sBis, gewinn: z.gewinn, linien: z.linien.length,
@@ -219,6 +301,7 @@ const nach = await page.evaluate(async () => {
   };
 });
 console.log(`\n=== NACHHER (mit ${nach.sperren} Sperren) ===`);
+if (offenMerken) { fs.writeFileSync(path.resolve(offenMerken), JSON.stringify(nach.offenKeys)); console.log(`offene Linien -> ${offenMerken}`); }
 console.log(`Ladezeit im Headless-Browser: ${ladeMs} ms`);
 console.log(`Hindernisse gesamt: ${nach.hindernisse} (davon Sperren: ${nach.sperrHindernisse} Kollisionskreise)`);
 console.log(`Felsbrocken: ${nach.felsbrocken}, liegende Stämme: ${nach.staemme}`);
