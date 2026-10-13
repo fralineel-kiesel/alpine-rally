@@ -1,0 +1,14 @@
+{
+  "hinweis": "Automatisch erzeugt von node tools/testfahrer.mjs --schneiden. Zeitgewinn (s) beim Schneiden je Kurve (Schlüssel = Streckenmeter Kurvenanfang).",
+  "zeitGewinn": {
+    "482": -5.87,
+    "1085": -0.78,
+    "1350": -0.25,
+    "1496": -0.01,
+    "1643": -0.26,
+    "1789": -0.27,
+    "1876": -0.91,
+    "2484": -4.79,
+    "3196": 1.54
+  }
+}

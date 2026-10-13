@@ -120,9 +120,10 @@ export const CONFIG = {
   // --- Fahrphysik -----------------------------------------------------
   auto: {
     name: 'Ringwerk RT4',
-    beschleunigung: 6.2,       // Grundbeschleunigung (m/s²). Höher = schneller auf 100
-    hoechsttempo: 52.5,        // m/s, dem nähert sich das Auto weich (52.5 = 189 km/h)
-    motorbremse: 0.35,         // Abbremsen ohne Gas (m/s²)
+    // Antrieb und Schalten: siehe "getriebe" weiter unten
+    luftwiderstand: 3.25,      // Bremsung durch die Luft bei 190 km/h (m/s²), wächst mit dem Tempo im Quadrat.
+                               // Zusammen mit dem 5. Gang ergibt das das Höchsttempo (weich, kein harter Anschlag)
+    motorbremse: 0.35,         // Abbremsen ohne Gas (m/s², Mittelwert; je nach Gang und Drehzahl mehr oder weniger)
     bremse: 10,                // Bremskraft (m/s²)
     rueckwaertsTempo: 6,       // max. Tempo rückwärts (m/s)
     rueckwaertsBeschl: 3,      // Beschleunigung rückwärts (m/s²)
@@ -147,6 +148,42 @@ export const CONFIG = {
     gasImDrift: 0.12,          // Gas im Drift lockert das Heck etwas (0 = aus)
     stabilitaet: 5,            // zieht das Auto aus dem Drift zurück gerade. 0 = aus, höher = braver
     stabilitaetRueckkehr: 2.5, // wie schnell die Stabilität nach der Handbremse zurückkommt
+  },
+
+  // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
+  // Automatik, die sich wie ein Handschalter mit kurzer Schaltpause anfühlt.
+  // Schaltgefühl anpassen: schaltDauerHoch/-Runter, Schaltpunkte (hoch.../runter...),
+  // Drehmomentkurve (drehmoment) und Schub je Gang (zugkraft).
+  getriebe: {
+    modus: 'automatik',        // 'automatik' (später evtl. 'manuell' mit Tasten)
+    gaenge: [48, 82, 118, 156, 195], // Tempo (km/h) bei nennDrehzahl im 1. bis 5. Gang
+    nennDrehzahl: 7000,        // U/min, auf die sich "gaenge" bezieht
+    leerlauf: 1000,            // U/min im Leerlauf
+    standgas: 4500,            // im Stand mit Vollgas dreht der Motor bis hierhin (Kupplung schleift)
+    kupplungDrehzahl: 3500,    // beim Anfahren im 1. Gang zählt mindestens dieses Drehmoment (kein lahmer Start)
+    // Drehmomentkurve: [U/min, Anteil 0..1]. Unten schwach, 4000–6000 voll, oben leicht abfallend
+    drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [6000, 1.0], [7000, 0.85], [8000, 0.65]],
+    zugkraft: [8.0, 6.55, 5.4, 4.45, 3.65], // Schub (m/s²) bei vollem Drehmoment im 1. bis 5. Gang. Höher = schneller
+    traktion: 8.5,             // mehr Schub geht nicht auf den Boden (mal Grip: Asphalt 1.0, Bankett 0.85, Gras 0.62)
+    schaltDauerHoch: 0.28,     // Schaltpause beim Hochschalten (Sekunden): kein Antrieb, das Auto rollt
+    schaltDauerRunter: 0.18,   // Schaltpause beim Runterschalten (Sekunden)
+    hochWenigGas: 4500,        // hochschalten bei dieser Drehzahl mit wenig Gas ...
+    hochVollgas: 6900,         // ... und bei dieser mit Vollgas (dazwischen gemischt)
+    runterWenigGas: 1800,      // runterschalten unter dieser Drehzahl ohne Gas ...
+    runterVollgas: 2600,       // ... und unter dieser mit Vollgas
+    runterBremsen: 3200,       // beim Bremsen schon unter dieser Drehzahl runterschalten
+    runterReserve: 1.3,        // beim Runterschalten so viel über der Runterschalt-Drehzahl landen (sonst 2 Gänge runter)
+    kickdownGas: 0.9,          // Kickdown: ab so viel Gas ...
+    kickdownUnter: 4200,       // ... und unter dieser Drehzahl in einen tieferen Gang ...
+    kickdownMax: 6500,         // ... wenn die Drehzahl dort unter diesem Wert bleibt
+    gasGlattRauf: 0.1,         // Schaltpunkte folgen dem Gaspedal so schnell (Sekunden), wenn man mehr Gas gibt ...
+    gasGlattRunter: 1.0,       // ... und so langsam, wenn man vom Gas geht (kein Hochschalten beim kurzen Lupfen)
+    schaltSperre: 0.6,         // nach einem Schaltvorgang so lange (Sekunden) nicht wieder schalten
+    leerlaufNach: 0.5,         // so lange (Sekunden) im Stand ohne Gas und Bremse, dann "N"
+    motorbremseBezugGang: 3,   // in diesem Gang ...
+    motorbremseBezugDrehzahl: 4000, // ... und bei dieser Drehzahl gilt auto.motorbremse genau
+    drehzahlFolgen: 14,        // wie schnell die Drehzahl-Anzeige folgt (höher = direkter)
+    drehzahlFolgenSchalten: 9, // ... während der Schaltpause (Nadel fällt sichtbar ab)
   },
 
   // --- Untergrund -------------------------------------------------------

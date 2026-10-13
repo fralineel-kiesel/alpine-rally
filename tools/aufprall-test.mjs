@@ -5,9 +5,19 @@
 
 import { CONFIG } from '../js/config.js';
 import { Fahrphysik } from '../js/physics.js';
+import { Getriebe } from '../js/getriebe.js';
 import { baueKollision } from '../js/kollision.js';
 
 const DT = 1 / 120;
+// Ein Physik-Schritt wie im Spiel: das Getriebe (seit M1.2) liefert Antrieb und Motorbremse
+function fahrSchritt(p, e) {
+  if (!p.getriebe) p.getriebe = new Getriebe();
+  p.schritt(DT, e, BODEN, p.getriebe.schritt(DT, e, p.vVor, p.tempo, BODEN.grip));
+}
+// Auto fährt schon: Tempo setzen (auch für das Getriebe)
+function setzeTempo(p, richtung, v) {
+  p.vx = Math.sin(richtung) * v; p.vz = Math.cos(richtung) * v; p.vVor = v;
+}
 const BODEN = { ...CONFIG.untergrund.asphalt, steigung: 0 };
 const GRAD = 180 / Math.PI;
 const kmh = (v) => v * 3.6;
@@ -18,14 +28,13 @@ function fahre({ hindernisse, v0, x0 = 0, start = -4, richtung = 0, vorher, nach
   const kol = baueKollision(hindernisse);
   const p = new Fahrphysik();
   p.reset(x0, start, richtung);
-  p.vx = Math.sin(richtung) * v0 / 3.6;
-  p.vz = Math.cos(richtung) * v0 / 3.6;
+  setzeTempo(p, richtung, v0 / 3.6);
   let t = 0, aufprallT = -1, vorherTempo = 0, minZ = Infinity, maxEindringen = 0;
   let stand = null, ende = null;
   const schritt = (e) => {
     const xA = p.x, zA = p.z, wA = p.richtung;
     const tempoVor = p.tempo;
-    p.schritt(DT, e, BODEN);
+    fahrSchritt(p, e);
     const traf = kol.loese(p, xA, zA, wA);
     if (traf && aufprallT < 0) { aufprallT = t; vorherTempo = tempoVor; }
     // eindringen: wie tief steckt ein Hindernis im Auto (nach der Kollision)?
@@ -94,11 +103,11 @@ for (const [name, nachher] of [['Bremse/Rückwärts', BREMSE], ['Gas gehalten', 
     const r2 = fahre({ hindernisse: tanne(0), v0: 100, vorher: LEER, nachher: BREMSE, nachherDauer: 10 });
     let tt = 0; {
       const kol = baueKollision(tanne(0)); const p = new Fahrphysik(); p.reset(0, r.stand.z, 0);
-      const z0 = p.z; while (z0 - p.z < 8 && tt < 10) { const a = [p.x, p.z, p.richtung]; p.schritt(DT, BREMSE, BODEN); kol.loese(p, ...a); tt += DT; }
+      const z0 = p.z; while (z0 - p.z < 8 && tt < 10) { const a = [p.x, p.z, p.richtung]; fahrSchritt(p, BREMSE); kol.loese(p, ...a); tt += DT; }
     }
     let weg2 = 0; {
       const p = new Fahrphysik(); p.reset(0, 0, 0);
-      for (let t2 = 0; t2 < 2 - 1e-9; t2 += DT) p.schritt(DT, BREMSE, BODEN);
+      for (let t2 = 0; t2 < 2 - 1e-9; t2 += DT) fahrSchritt(p, BREMSE);
       weg2 = -p.z;
     }
     console.log(`     aus dem Stand am Baum: nach 2 s ${fmt(weg2, 2)} m rückwärts, 8 m nach ${fmt(tt, 2)} s (Rückwärtsgang: max ${fmt(kmh(CONFIG.auto.rueckwaertsTempo), 0)} km/h)`);
@@ -181,10 +190,10 @@ console.log('\n4. 190 km/h');
     const w = (zz() - 0.5) * 1.2;
     const hind = i % 3 === 0 ? stamm(zz() * 90) : i % 3 === 1 ? tanne((zz() - 0.5) * 2.4) : [{ x: (zz() - 0.5) * 3, z: 0, r: 1.4 }];
     const p = new Fahrphysik(); p.reset(-Math.sin(w) * 30, -Math.cos(w) * 30, w);
-    p.vx = Math.sin(w) * 52.5; p.vz = Math.cos(w) * 52.5;
+    setzeTempo(p, w, 52.5);
     const kol = baueKollision(hind);
     for (let t = 0; t < 2; t += DT) {
-      const a = [p.x, p.z, p.richtung]; p.schritt(DT, GAS, BODEN); kol.loese(p, ...a);
+      const a = [p.x, p.z, p.richtung]; fahrSchritt(p, GAS); kol.loese(p, ...a);
       if (eindringen(p, hind) > 0.05) { durch2++; break; }
     }
   }

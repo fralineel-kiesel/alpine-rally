@@ -40,7 +40,7 @@ export const ABKUERZUNGEN = {
     { sVon: 1350, sBis: 1415, seite: 'links' }, // Gewinn bis 6.9 m – Gewinn 6.9 m, Umgebung: 4.84 Bäume/Steine pro 100 m², Hang 23 %
     { sVon: 1496, sBis: 1562, seite: 'rechts' }, // Gewinn bis 8.4 m – Gewinn 8.4 m, Umgebung: 3.88 Bäume/Steine pro 100 m², Hang 22 %
     { sVon: 1789, sBis: 1854, seite: 'rechts' }, // Gewinn bis 6.3 m – Gewinn 6.3 m, Umgebung: 4.53 Bäume/Steine pro 100 m², Hang 20 %
-    { sVon: 3196, sBis: 3234, seite: 'links' }, // Gewinn bis 3.2 m – Gewinn 3.2 m, Umgebung: 0.71 Bäume/Steine pro 100 m², Felswand/Abhang, Hang 30 %
+    { sVon: 3196, sBis: 3234, seite: 'links' }, // Gewinn bis 3.2 m – Pflicht: Schneiden spart 1.54 s >= 0.5 s
   ],
   schneiden: [
     { sVon: 482, sBis: 752, seite: 'links', gewinn: 7.1 }, // offene Wiese (Sperre wäre eine 21.4 m lange Reihe)

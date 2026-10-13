@@ -8,6 +8,7 @@ import { CONFIG } from './config.js';
 
 const G = 9.81;
 const GRAD = Math.PI / 180;
+const LUFT_BEZUG = 190 / 3.6; // auto.luftwiderstand gilt bei 190 km/h
 
 const begrenze = (w, min, max) => (w < min ? min : w > max ? max : w);
 const glatt = (a, b, x) => {
@@ -44,7 +45,8 @@ export class Fahrphysik {
   // Ein Physik-Schritt.
   // eingabe: { gas 0..1, bremse 0..1, lenkung -1..1 (+ = rechts), handbremse true/false }
   // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus) }
-  schritt(dt, eingabe, boden) {
+  // motor:   vom Getriebe (getriebe.js): { beschl: Antrieb vorwärts (m/s²), motorbremse (m/s²) }
+  schritt(dt, eingabe, boden, motor) {
     const c = CONFIG.auto;
 
     // Blickrichtung und "links" als Vektoren
@@ -98,7 +100,7 @@ export class Fahrphysik {
 
     // --- Längs: Antrieb ---
     let antrieb = 0;
-    if (eingabe.gas > 0 && vVor > -0.5) antrieb += eingabe.gas * c.beschleunigung;
+    if (eingabe.gas > 0 && vVor > -0.5) antrieb += motor.beschl;
     if (eingabe.bremse > 0 && vVor <= 0.5 && eingabe.gas < 0.1) {
       // rückwärts fahren
       if (vVor > -c.rueckwaertsTempo) antrieb -= eingabe.bremse * c.rueckwaertsBeschl;
@@ -110,8 +112,8 @@ export class Fahrphysik {
     // --- Längs: Widerstände (bremsen nur bis Stillstand) ---
     let widerstand = 0;
     // Luftwiderstand: sorgt für das weiche Auslaufen beim Höchsttempo
-    widerstand += c.beschleunigung * (vVor / c.hoechsttempo) ** 2;
-    if (eingabe.gas < 0.05) widerstand += c.motorbremse;
+    widerstand += c.luftwiderstand * (vVor / LUFT_BEZUG) ** 2;
+    widerstand += motor.motorbremse;
     widerstand += boden.rollen + boden.rollenTempo * Math.abs(vVor);
     if (eingabe.bremse > 0 && vVor > 0.5) widerstand += eingabe.bremse * c.bremse * Math.min(1, boden.grip + 0.2);
     if (eingabe.gas > 0 && vVor < -0.5) widerstand += eingabe.gas * c.bremse * 0.6;

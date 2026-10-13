@@ -7,15 +7,17 @@
 
 import { CONFIG } from '../js/config.js';
 import { Fahrphysik } from '../js/physics.js';
+import { Getriebe } from '../js/getriebe.js';
 
 const DT = 1 / 120;
 const BODEN = { ...CONFIG.untergrund.asphalt, steigung: 0 };
 const GRAD = 180 / Math.PI;
 const fmt = (n, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toFixed(d);
 
-// Ein Physik-Schritt (wie im Spiel)
+// Ein Physik-Schritt wie im Spiel: das Getriebe liefert Antrieb und Motorbremse
 function schritt(p, e) {
-  p.schritt(DT, e, BODEN);
+  if (!p.getriebe) p.getriebe = new Getriebe();
+  p.schritt(DT, e, BODEN, p.getriebe.schritt(DT, e, p.vVor, p.tempo, BODEN.grip));
 }
 
 // Kreisfahrt mit Tempo kmh (negativ = rückwärts), vollem Einschlag nach rechts.
@@ -46,6 +48,7 @@ function einlenken(kmh) {
   const p = new Fahrphysik();
   p.reset(0, 0, 0);
   p.vz = kmh / 3.6;
+  p.vVor = p.vz;
   let lenk = 0, dreh = 0;
   for (let t = 0; t < 1 - 1e-9; t += DT) {
     schritt(p, { gas: 1, bremse: 0, lenkung: 1, handbremse: false });
