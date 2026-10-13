@@ -8,7 +8,9 @@ import { bauePflanzen } from './sprites.js';
 import { baueAuto } from './car.js';
 import { Fahrphysik } from './physics.js';
 import { leseEingabe } from './input.js';
-import { baueHud } from './hud.js';
+import { baueHud, formatZeit } from './hud.js';
+import { baueKollision } from './kollision.js';
+import { baueCheckpointTore } from './checkpoints.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -56,6 +58,8 @@ const kamera = new THREE.PerspectiveCamera(CONFIG.kamera.sichtfeld, B / H, 0.3, 
 const strecke = baueStrecke();
 const welt = baueWelt(szene, strecke);
 const pflanzen = bauePflanzen(szene, strecke, welt);
+const kollision = baueKollision(pflanzen.hindernisse);
+const checkpoints = baueCheckpointTore(szene, strecke);
 const auto = baueAuto();
 szene.add(auto.objekt);
 const physik = new Fahrphysik();
@@ -63,13 +67,21 @@ const hud = baueHud(document.getElementById('hud'));
 
 // --- Rennzustand ---
 // bereit = vor der Startlinie, laeuft = Zeit läuft, ziel = durchs Ziel
-const rennen = { zustand: 'bereit', zeit: 0, endZeit: 0, letztesS: 0, hilfe: true };
+const rennen = {
+  zustand: 'bereit', zeit: 0, endZeit: 0, letztesS: 0, hilfe: true,
+  naechsterCp: 0,        // welcher Checkpoint als nächster kommt (0 = der erste)
+  zwischenzeiten: [],    // Zeit bei jedem Checkpoint (null = verpasst)
+  meldung: null,         // Text oben im Bild: { text, farbe, bis }
+  uhr: 0,                // läuft immer (für die Anzeigedauer der Meldungen)
+};
 let debugAn = false;
 
 const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
 
 function setzeAuf(s, seite = 0) {
+  kollision.restRuck = 0;
+  kollision.ruhigZeit = 0;
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
   rennen.letztesS = s;
@@ -81,6 +93,13 @@ function neustart() {
   rennen.zustand = 'bereit';
   rennen.zeit = 0;
   rennen.endZeit = 0;
+  rennen.naechsterCp = 0;
+  rennen.zwischenzeiten = [];
+  rennen.meldung = null;
+}
+
+function zeigeMeldung(text, farbe) {
+  rennen.meldung = { text, farbe, bis: rennen.uhr + CONFIG.checkpoints.anzeigeDauer };
 }
 
 // Taste R: zurück auf die Strassenmitte an der aktuellen Stelle
@@ -88,6 +107,8 @@ function aufStrasse() {
   const q = strecke.abfrage(physik.x, physik.z);
   const s = begrenze(q.s, 2, strecke.laenge - 2);
   const p = strecke.punktBei(s);
+  kollision.restRuck = 0;
+  kollision.ruhigZeit = 0;
   physik.reset(p.x, p.z, Math.atan2(p.tx, p.tz));
   rennen.letztesS = s;
   kameraSofort();
@@ -114,7 +135,7 @@ function physikSchritt(dt, e) {
   let eingabe = e;
   if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: Math.max(e.bremse, 0.35) };
 
-  const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h;
+  const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
   });
@@ -143,6 +164,9 @@ function physikSchritt(dt, e) {
     physik.vz *= 0.985;
   }
 
+  // Bäume und Steine
+  kollision.loese(physik, xAlt, zAlt, wAlt, dt);
+
   // Begrenzungen: Felswand, Abhang, zu weit weg
   const q2 = strecke.abfrage(physik.x, physik.z, qAuto);
   const rx = -q2.tz, rz = q2.tx; // rechts
@@ -161,15 +185,43 @@ function physikSchritt(dt, e) {
     physik.anGrenze(nx, nz, q2.abstand - g.maxAbstand);
   }
 
-  // Zeitmessung
+  // Zeitmessung und Checkpoints
+  rennen.uhr += dt;
   const s = q2.s;
   const nahe = q2.abstand < 12;
-  if (rennen.zustand === 'bereit' && rennen.letztesS < strecke.startS && s >= strecke.startS && nahe) {
+  // Fährt das Auto "am Stück" vorwärts? (Ein Sprung von einem Ast der
+  // Strecke auf einen anderen, z. B. über den Hang zwischen zwei Kehren,
+  // zählt nicht als Durchfahrt.)
+  const amStueck = Math.abs(s - rennen.letztesS) < 5;
+  if (rennen.zustand === 'bereit' && rennen.letztesS < strecke.startS && s >= strecke.startS && nahe && amStueck) {
     rennen.zustand = 'laeuft';
     rennen.zeit = 0;
   } else if (rennen.zustand === 'laeuft') {
     rennen.zeit += dt;
-    if (rennen.letztesS < strecke.zielS && s >= strecke.zielS && nahe) {
+    const cp = CONFIG.checkpoints;
+    const n = rennen.naechsterCp;
+    if (n < checkpoints.length) {
+      const cpS = checkpoints[n].s;
+      if (amStueck && rennen.letztesS < cpS && s >= cpS && q2.abstand < cp.durchfahrtBreite) {
+        // sauber durchs Tor gefahren
+        rennen.zwischenzeiten[n] = rennen.zeit;
+        rennen.naechsterCp++;
+        zeigeMeldung(`CP ${n + 1}  ${formatZeit(rennen.zeit)}`, 'gelb');
+      } else if (s > cpS + 5) {
+        // schon hinter dem Tor, ohne durchgefahren zu sein
+        zeigeMeldung('CHECKPOINT VERPASST', 'rot');
+        if (cp.abkuerzungenVerhindern) {
+          // zurück auf die Strassenmitte beim letzten erreichten Checkpoint
+          setzeAuf(n > 0 ? checkpoints[n - 1].s + 1 : strecke.startS + 1);
+          return;
+        }
+        rennen.zwischenzeiten[n] = null;
+        rennen.naechsterCp++;
+      }
+    }
+    // Das Ziel zählt nur, wenn alle Checkpoints passiert wurden
+    const alleCps = !cp.abkuerzungenVerhindern || rennen.naechsterCp >= checkpoints.length;
+    if (rennen.letztesS < strecke.zielS && s >= strecke.zielS && nahe && amStueck && alleCps) {
       rennen.zustand = 'ziel';
       rennen.endZeit = rennen.zeit;
     }
@@ -274,6 +326,8 @@ function schleife(jetzt) {
 
   const xVor = physik.x, zVor = physik.z;
   akku += dt;
+  // nur für automatische Tests: Physik von aussen gesteuert
+  if (window.__alpineRally && window.__alpineRally.anhalten) akku = 0;
   while (akku >= SCHRITT) {
     physikSchritt(SCHRITT, e);
     akku -= SCHRITT;
@@ -283,6 +337,7 @@ function schleife(jetzt) {
 
   autoZeichnen(dt, weg);
   kameraFuehren(dt);
+  welt.aktualisiere(kamera.position);
   renderer.render(szene, kamera);
 
   hud.zeichne({
@@ -290,6 +345,12 @@ function schleife(jetzt) {
     kmh: physik.tempo * 3.6, debug: debugAn, fps,
     meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
     untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS' }[untergrund],
+    hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
+    meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
+    zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
+    naechsterCp: rennen.naechsterCp < checkpoints.length
+      ? { nummer: rennen.naechsterCp + 1, abstand: checkpoints[rennen.naechsterCp].s - rennen.letztesS }
+      : { nummer: 0, abstand: strecke.zielS - rennen.letztesS },
   });
 }
 
@@ -298,4 +359,8 @@ lade.style.display = 'none';
 requestAnimationFrame(schleife);
 
 // Für Tests (Screenshots) von aussen erreichbar
-window.__alpineRally = { THREE, physik, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort };
+window.__alpineRally = {
+  THREE, physik, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort, kollision,
+  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG,
+  hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
+};

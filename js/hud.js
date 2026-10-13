@@ -45,6 +45,7 @@ const SCHRIFT = {
   '.': ['.....', '.....', '.....', '.....', '.....', '.##..', '.##..'],
   '/': ['....#', '....#', '...#.', '..#..', '.#...', '#....', '#....'],
   '-': ['.....', '.....', '.....', '.###.', '.....', '.....', '.....'],
+  '>': ['.#...', '..#..', '...#.', '....#', '...#.', '..#..', '.#...'],
   '=': ['.....', '.....', '#####', '.....', '#####', '.....', '.....'],
   '°': ['.##..', '#..#.', '#..#.', '.##..', '.....', '.....', '.....'],
   '+': ['.....', '..#..', '..#..', '#####', '..#..', '..#..', '.....'],
@@ -84,7 +85,10 @@ export function baueHud(canvas) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  const leisten = { weiss: schriftLeiste('#f4f4ee'), schatten: schriftLeiste('#101418'), gelb: schriftLeiste('#ffd23c') };
+  const leisten = {
+    weiss: schriftLeiste('#f4f4ee'), schatten: schriftLeiste('#101418'), gelb: schriftLeiste('#ffd23c'),
+    rot: schriftLeiste('#ff4a3a'),
+  };
 
   function text(t, x, y, groesse = 1, farbe = 'weiss', ausrichtung = 'links') {
     t = String(t).toUpperCase();
@@ -115,12 +119,20 @@ export function baueHud(canvas) {
         text('LEERTASTE: HANDBREMSE', 5, H - 25);
         text('R: AUF STRASSE  F3: DEBUG', 5, H - 16);
       }
+      // Meldung oben (Zwischenzeit oder "Checkpoint verpasst")
+      if (z.meldung && z.zustand !== 'ziel') text(z.meldung.text, B / 2, 25, 2, z.meldung.farbe, 'mitte');
       if (z.zustand === 'ziel') {
         ctx.fillStyle = 'rgba(10,14,20,0.55)';
-        ctx.fillRect(0, 52, B, 78);
-        text('ZIEL!', B / 2, 58, 4, 'gelb', 'mitte');
-        text(formatZeit(z.endZeit), B / 2, 92, 3, 'weiss', 'mitte');
-        text('R ODER START = NEUSTART', B / 2, 119, 1, 'weiss', 'mitte');
+        ctx.fillRect(0, 42, B, 96);
+        text('ZIEL!', B / 2, 47, 4, 'gelb', 'mitte');
+        text(formatZeit(z.endZeit), B / 2, 79, 3, 'weiss', 'mitte');
+        // Zwischenzeiten der Checkpoints
+        for (let n = 0; n < z.anzahlCps; n++) {
+          const zz = z.zwischenzeiten[n];
+          const x = B / 2 + (n - (z.anzahlCps - 1) / 2) * 100;
+          text(`CP ${n + 1}  ${zz == null ? '--:--.--' : formatZeit(zz)}`, x, 107, 1, 'weiss', 'mitte');
+        }
+        text('R ODER START = NEUSTART', B / 2, 124, 1, 'gelb', 'mitte');
       }
       if (z.debug) {
         const zeilen = [
@@ -129,10 +141,17 @@ export function baueHud(canvas) {
           `TEMPO ${Math.round(z.kmh)} KM/H`,
           `DRIFT ${Math.round(z.drift)}°`,
           `UNTERGRUND ${z.untergrund}`,
+          `HINDERNISSE ${z.hindernisse}`,
+          z.naechsterCp.nummer
+            ? `NAECHSTER CP ${z.naechsterCp.nummer} IN ${Math.round(z.naechsterCp.abstand)} M`
+            : `ZIEL IN ${Math.round(z.naechsterCp.abstand)} M`,
+          z.aufprall
+            ? `AUFPRALL ${Math.round(z.aufprall.vorher * 3.6)} -> ${Math.round(z.aufprall.nachher * 3.6)} KM/H`
+            : 'AUFPRALL -',
         ];
         ctx.fillStyle = 'rgba(10,14,20,0.6)';
-        ctx.fillRect(2, 26, 122, zeilen.length * 9 + 4);
-        zeilen.forEach((t, i) => text(t, 5, 29 + i * 9));
+        ctx.fillRect(2, 44, 158, zeilen.length * 9 + 4);
+        zeilen.forEach((t, i) => text(t, 5, 47 + i * 9));
       }
     },
   };

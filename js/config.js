@@ -53,6 +53,9 @@ export const CONFIG = {
     breite: 7,                 // Asphaltbreite
     bankett: 2,                // Breite des erdigen Randstreifens je Seite
     abstandMittellinie: 8,     // Strich + Lücke der Mittellinie zusammen (Meter)
+    mittellinieStrich: 3,      // davon ist so viel Strich (Meter)
+    mittellinieBreite: 0.2,    // Breite der Mittellinie (Meter)
+    mittellinieMinPixel: 1,    // in der Ferne mind. so viele Bildpunkte breit (gegen Flimmern)
     startBeiMeter: 25,         // Startlinie: so viele Meter nach Strassenanfang
     zielVorEnde: 45,           // Ziellinie: so viele Meter vor Strassenende
     spawnBeiMeter: 10,         // hier steht das Auto beim Start
@@ -61,11 +64,22 @@ export const CONFIG = {
   // --- Gelände --------------------------------------------------------
   gelaende: {
     raster: 4,                 // Abstand der Geländepunkte nahe der Strecke (Meter)
-    kernRand: 130,             // so weit um die Strecke herum ist das Gelände fein
-    aussenRand: 1100,          // so weit reicht das Gelände insgesamt (grob, im Dunst)
+    kachel: 64,                // Gelände ist in Kacheln dieser Grösse aufgeteilt (Meter)
+    kernRand: 100,             // bis so weit von der Strecke ist das Gelände fein (raster)
+    mittelRand: 300,           // bis hier halb so fein (2 x raster)
+    fernRand: 800,             // bis hier 4 x raster, danach ganz grob (32 m) – liegt im Dunst
+    aussenRand: 1100,          // so weit über die Strecke hinaus reicht das Gelände
+    stueck: 6,                 // so viele Kacheln (pro Richtung) werden zu einem Stück zusammengefasst
     flachBis: 7.5,             // bis zu diesem Abstand von der Strassenmitte ist es flach
     uebergang: 12,             // danach geht es über so viele Meter ins natürliche Gelände
+    randSteigung: 0.35,        // so steil darf es gleich neben der Strasse höchstens ansteigen
     huegelHoehe: 7,            // Höhe der kleinen Zufallshügel
+    grundWeite: 250,           // Grundhöhe der Landschaft = Strassenhöhe, über so viele Meter gemittelt
+    wandBerg: 75,              // Berg hinter den Felswänden (Höhe über der Grundhöhe)
+    talTiefe: 55,              // Tal unter den Abhängen (Tiefe unter der Grundhöhe)
+    randAnstiegAb: 350,        // ab diesem Abstand von der Strecke steigt das Land an ...
+    randAnstiegBis: 1000,      // ... bis hier ...
+    randHoehe: 170,            // ... um so viele Meter (Talflanken, liegen im Dunst)
     seed: 1987,                // Zufallszahl für Hügel (gleich = gleiches Gelände)
   },
 
@@ -80,10 +94,13 @@ export const CONFIG = {
   // --- Sprites (Bäume, Steine) ----------------------------------------
   sprites: {
     seed: 4242,                // Zufallszahl für die Platzierung (gleich = gleiche Welt)
-    tannen: 1600,              // Anzahl Tannen
-    laubbaeume: 220,           // Anzahl Laubbäume
-    steine: 320,               // Anzahl Steine
+    tannenProKm: 4200,         // Versuche pro km Strecke (wie viele stehen bleiben, hängt vom Abschnitt ab)
+    laubProKm: 2800,
+    steineProKm: 1600,
+    breite: 230,               // so weit links und rechts der Strasse stehen Sprites (Meter)
+    verteilung: 1.8,           // > 1 = nahe der Strasse dichter, weiter weg dünner
     mindestAbstand: 9,         // so nah dürfen Objekte an die Strassenmitte
+    waldAbstand: 7.5,          // im Waldstück dürfen Bäume näher ran
     tannenHoehe: [8, 15],      // Höhe von bis (Meter)
     laubHoehe: [7, 11],
     steinHoehe: [0.8, 2.2],
@@ -93,8 +110,9 @@ export const CONFIG = {
   // --- Hintergrundberge -----------------------------------------------
   berge: {
     anzahl: 34,                // Berge im hinteren Kranz (vorne kommen 70 % dazu)
-    radius: [2900, 3700],      // Entfernung von der Streckenmitte
-    hoehe: [1000, 1750],       // Gipfelhöhe
+    abstand: [1400, 2200],     // Entfernung hinter dem Geländerand (Meter)
+    hoehe: [1000, 1750],       // Gipfelhöhe (bei bezugsAbstand, weiter weg etwas höher)
+    bezugsAbstand: 3300,       // bei dieser Entfernung gilt die Gipfelhöhe
     schneeAb: 0.5,             // Schnee ab diesem Anteil der Höhe
     seed: 77,
   },
@@ -135,6 +153,16 @@ export const CONFIG = {
     gras:    { grip: 0.62, rollen: 2.2, rollenTempo: 0.11 },
   },
 
+  // --- Checkpoints -------------------------------------------------------
+  checkpoints: {
+    beiMeter: [900, 1870, 2880], // wo die Tore stehen (Meter ab Strassenanfang)
+    abkuerzungenVerhindern: true, // true = wer einen Checkpoint auslässt, wird zurückgesetzt
+    anzeigeDauer: 3,           // so lange steht die Zwischenzeit oben im Bild (Sekunden)
+    torBreite: 12.4,           // Abstand der Pfosten (Strasse 7 m + Bankett)
+    torHoehe: 5.2,             // Höhe des Banners über der Strasse
+    durchfahrtBreite: 9,       // so weit von der Strassenmitte zählt die Durchfahrt noch
+  },
+
   // --- Begrenzung ---------------------------------------------------------
   grenze: {
     maxAbstand: 45,            // weiter weg von der Strasse geht es nicht (unsichtbare Wand)
@@ -142,6 +170,34 @@ export const CONFIG = {
     wandGrenze: 4.3,           // an der Felswand: hier stoppt das Auto
     abprallen: 0.2,            // wie stark das Auto von Grenzen abprallt
     steilsterHang: 0.55,       // steiler als das (0.55 = ca. 29°) kommt das Auto nicht hoch
+  },
+
+  // --- Kollision mit Bäumen und Steinen ---------------------------------
+  kollision: {
+    // Das Auto als 3 Kreise: versatz = Abstand vor (+) / hinter (-) der Automitte
+    autoKreise: [
+      { versatz: 1.35, r: 0.9 },  // vorne
+      { versatz: 0, r: 0.9 },     // Mitte
+      { versatz: -1.35, r: 0.9 }, // hinten
+    ],
+    stammRadius: 0.45,         // Bäume: nur der Stamm zählt (Meter)
+    steinFaktor: 0.42,         // Steine: Radius = Breite des Steins mal diesem Wert
+    rueckprall: 0.08,          // wie stark das Auto zurückprallt (0 = gar nicht, 1 = Gummi)
+    reibung: 0.3,              // seitliches Reiben am Hindernis (höher = bremst mehr)
+    ablenkung: 0.42,           // frontaler Aufprall: so viel Tempo bleibt als Rutschen zur Seite
+    drehStoss: 0.15,           // wie stark ein Stoss an der Ecke das Auto dreht
+    drehNachlauf: 0.3,         // nach dem Ruck dreht das Auto noch etwas weiter
+    maxDrehung: 1.8,           // höchstens so schnell dreht ein Aufprall das Auto (rad/s)
+    drehRuck: 0.6,             // Anteil der Drehung Richtung Rutschrichtung (Ruck beim Aufprall)
+    maxRuck: 50,               // höchstens so viel Grad Ruck
+    ruckSofort: 35,            // davon so viel Grad sofort im selben Moment
+    ruckTempo: 6,              // den Rest so schnell (rad/s)
+    ruhigNach: 0.8,            // so lange nach einem harten Aufprall wird das Weiterdrehen gedämpft (s)
+    drehDaempfung: 6,          // wie stark gedämpft wird
+    drehAbTempo: 15,           // ab diesem Aufpralltempo (m/s) volle Drehung, darunter weniger
+    wegDrehen: 0.01,           // Auto drückt ins Hindernis: dreht so viel pro Schritt davon weg (rad)
+    zelle: 8,                  // Rastergrösse für die schnelle Suche (Meter)
+    pruefSchritt: 0.25,        // Weg wird in so kurzen Stücken geprüft (gegen Durchrutschen)
   },
 
   // --- Kamera -----------------------------------------------------------
