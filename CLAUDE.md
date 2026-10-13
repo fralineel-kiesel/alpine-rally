@@ -1,5 +1,6 @@
 # Alpine Rally – Regeln für Claude Code
 
+- Lies zuerst KONZEPT.md und STAND.md.
 - Lino kann nicht programmieren. Er testet über GitHub Pages auf zwei Rechnern (Lenovo-Laptop und Gaming-PC) und gibt Feedback, oft mit Screenshots.
 - Kein Build-Schritt, kein npm im ausgelieferten Spiel. Alles muss direkt über GitHub Pages laufen (index.html + ES-Module).
 - Three.js als gepinnte Version, eingebunden per Import-Map, oder als lokale Datei unter lib/.
