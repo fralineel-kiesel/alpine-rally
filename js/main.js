@@ -7,6 +7,7 @@ import { baueWelt } from './world.js';
 import { bauePflanzen } from './sprites.js';
 import { baueAuto } from './car.js';
 import { Fahrphysik } from './physics.js';
+import { Getriebe } from './getriebe.js';
 import { leseEingabe } from './input.js';
 import { baueHud, formatZeit } from './hud.js';
 import { baueKollision } from './kollision.js';
@@ -63,6 +64,7 @@ const checkpoints = baueCheckpointTore(szene, strecke);
 const auto = baueAuto();
 szene.add(auto.objekt);
 const physik = new Fahrphysik();
+const getriebe = new Getriebe();
 const hud = baueHud(document.getElementById('hud'));
 
 // --- Rennzustand ---
@@ -82,6 +84,7 @@ const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
 function setzeAuf(s, seite = 0) {
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
+  getriebe.reset();
   rennen.letztesS = s;
   kameraSofort();
 }
@@ -106,6 +109,7 @@ function aufStrasse() {
   const s = begrenze(q.s, 2, strecke.laenge - 2);
   const p = strecke.punktBei(s);
   physik.reset(p.x, p.z, Math.atan2(p.tx, p.tz));
+  getriebe.reset();
   rennen.letztesS = s;
   kameraSofort();
 }
@@ -129,12 +133,15 @@ function physikSchritt(dt, e) {
   const u = CONFIG.untergrund[boden.art];
 
   let eingabe = e;
-  if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: Math.max(e.bremse, 0.35) };
+  // Nach dem Ziel bremst das Auto von selbst bis zum Stand (aber nicht weiter in den Rückwärtsgang)
+  if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: physik.vVor > 0.5 ? Math.max(e.bremse, 0.35) : 0 };
 
   const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
+  // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?
+  const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip);
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
-  });
+  }, motor);
 
   // Zu steiler Hang (neben der Strasse): da kommt das Auto nicht hoch
   const g = CONFIG.grenze;
@@ -243,7 +250,8 @@ function autoZeichnen(dt, wegStrecke) {
   optik.nicken += (begrenze(-physik.beschlVor * o.nicken, -0.06, 0.06) - optik.nicken) * k2;
   optik.rollen += (begrenze(physik.beschlSeit * o.rollen, -0.08, 0.08) - optik.rollen) * k2;
   auto.karosse.rotation.set(optik.nicken, 0, optik.rollen);
-  auto.raederBewegen(physik.lenkwinkel, wegStrecke);
+  const radMax = o.radEinschlagMax * Math.PI / 180; // sichtbarer Einschlag begrenzt (Physik unverändert)
+  auto.raederBewegen(begrenze(physik.lenkwinkel, -radMax, radMax), wegStrecke);
 }
 
 // --- Verfolgerkamera ---
@@ -338,7 +346,8 @@ function schleife(jetzt) {
 
   hud.zeichne({
     zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
-    kmh: physik.tempo * 3.6, debug: debugAn, fps,
+    dt, kmh: physik.tempo * 3.6, debug: debugAn, fps,
+    gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
     meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
     untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS' }[untergrund],
     hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
@@ -356,7 +365,7 @@ requestAnimationFrame(schleife);
 
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
-  THREE, physik, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort, kollision,
+  THREE, physik, getriebe, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort, kollision,
   physikSchritt, SCHRITT, neustart, checkpoints, CONFIG,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };

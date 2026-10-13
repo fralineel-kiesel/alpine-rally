@@ -120,9 +120,10 @@ export const CONFIG = {
   // --- Fahrphysik -----------------------------------------------------
   auto: {
     name: 'Ringwerk RT4',
-    beschleunigung: 6.2,       // Grundbeschleunigung (m/s²). Höher = schneller auf 100
-    hoechsttempo: 52.5,        // m/s, dem nähert sich das Auto weich (52.5 = 189 km/h)
-    motorbremse: 0.35,         // Abbremsen ohne Gas (m/s²)
+    // Antrieb und Schalten: siehe "getriebe" weiter unten
+    luftwiderstand: 3.25,      // Bremsung durch die Luft bei 190 km/h (m/s²), wächst mit dem Tempo im Quadrat.
+                               // Zusammen mit dem 5. Gang ergibt das das Höchsttempo (weich, kein harter Anschlag)
+    motorbremse: 0.35,         // Abbremsen ohne Gas (m/s², Mittelwert; je nach Gang und Drehzahl mehr oder weniger)
     bremse: 10,                // Bremskraft (m/s²)
     rueckwaertsTempo: 6,       // max. Tempo rückwärts (m/s)
     rueckwaertsBeschl: 3,      // Beschleunigung rückwärts (m/s²)
@@ -135,6 +136,9 @@ export const CONFIG = {
     lenkwinkelLangsam: 32,     // max. Lenkwinkel im Stand (Grad)
     lenkwinkelSchnell: 4.5,    // max. Lenkwinkel bei Referenztempo (Grad)
     lenkReferenzTempo: 45,     // ab diesem Tempo (m/s) gilt lenkwinkelSchnell
+    lenkwinkelStand: 48,       // max. Lenkwinkel im Schritttempo, z. B. nach einem Aufprall (Grad, 0 = aus)
+    lenkStandBisTempo: 8,      // bis zu diesem Tempo (m/s, 8 = ca. 30 km/h) läuft der Extra-Einschlag weich aus;
+                               // voll gilt er bis zu einem Viertel davon (2 m/s = ca. 7 km/h)
 
     gripVorne: 1.0,            // Haftung Vorderachse (etwas weniger = Auto schiebt eher)
     gripHinten: 1.12,          // Haftung Hinterachse
@@ -144,6 +148,42 @@ export const CONFIG = {
     gasImDrift: 0.12,          // Gas im Drift lockert das Heck etwas (0 = aus)
     stabilitaet: 5,            // zieht das Auto aus dem Drift zurück gerade. 0 = aus, höher = braver
     stabilitaetRueckkehr: 2.5, // wie schnell die Stabilität nach der Handbremse zurückkommt
+  },
+
+  // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
+  // Automatik, die sich wie ein Handschalter mit kurzer Schaltpause anfühlt.
+  // Schaltgefühl anpassen: schaltDauerHoch/-Runter, Schaltpunkte (hoch.../runter...),
+  // Drehmomentkurve (drehmoment) und Schub je Gang (zugkraft).
+  getriebe: {
+    modus: 'automatik',        // 'automatik' (später evtl. 'manuell' mit Tasten)
+    gaenge: [48, 82, 118, 156, 195], // Tempo (km/h) bei nennDrehzahl im 1. bis 5. Gang
+    nennDrehzahl: 7000,        // U/min, auf die sich "gaenge" bezieht
+    leerlauf: 1000,            // U/min im Leerlauf
+    standgas: 4500,            // im Stand mit Vollgas dreht der Motor bis hierhin (Kupplung schleift)
+    kupplungDrehzahl: 3500,    // beim Anfahren im 1. Gang zählt mindestens dieses Drehmoment (kein lahmer Start)
+    // Drehmomentkurve: [U/min, Anteil 0..1]. Unten schwach, 4000–6000 voll, oben leicht abfallend
+    drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [6000, 1.0], [7000, 0.85], [8000, 0.65]],
+    zugkraft: [8.0, 6.55, 5.4, 4.45, 3.65], // Schub (m/s²) bei vollem Drehmoment im 1. bis 5. Gang. Höher = schneller
+    traktion: 8.5,             // mehr Schub geht nicht auf den Boden (mal Grip: Asphalt 1.0, Bankett 0.85, Gras 0.62)
+    schaltDauerHoch: 0.28,     // Schaltpause beim Hochschalten (Sekunden): kein Antrieb, das Auto rollt
+    schaltDauerRunter: 0.18,   // Schaltpause beim Runterschalten (Sekunden)
+    hochWenigGas: 4500,        // hochschalten bei dieser Drehzahl mit wenig Gas ...
+    hochVollgas: 6900,         // ... und bei dieser mit Vollgas (dazwischen gemischt)
+    runterWenigGas: 1800,      // runterschalten unter dieser Drehzahl ohne Gas ...
+    runterVollgas: 2600,       // ... und unter dieser mit Vollgas
+    runterBremsen: 3200,       // beim Bremsen schon unter dieser Drehzahl runterschalten
+    runterReserve: 1.3,        // beim Runterschalten so viel über der Runterschalt-Drehzahl landen (sonst 2 Gänge runter)
+    kickdownGas: 0.9,          // Kickdown: ab so viel Gas ...
+    kickdownUnter: 4200,       // ... und unter dieser Drehzahl in einen tieferen Gang ...
+    kickdownMax: 6500,         // ... wenn die Drehzahl dort unter diesem Wert bleibt
+    gasGlattRauf: 0.1,         // Schaltpunkte folgen dem Gaspedal so schnell (Sekunden), wenn man mehr Gas gibt ...
+    gasGlattRunter: 1.0,       // ... und so langsam, wenn man vom Gas geht (kein Hochschalten beim kurzen Lupfen)
+    schaltSperre: 0.6,         // nach einem Schaltvorgang so lange (Sekunden) nicht wieder schalten
+    leerlaufNach: 0.5,         // so lange (Sekunden) im Stand ohne Gas und Bremse, dann "N"
+    motorbremseBezugGang: 3,   // in diesem Gang ...
+    motorbremseBezugDrehzahl: 4000, // ... und bei dieser Drehzahl gilt auto.motorbremse genau
+    drehzahlFolgen: 14,        // wie schnell die Drehzahl-Anzeige folgt (höher = direkter)
+    drehzahlFolgenSchalten: 9, // ... während der Schaltpause (Nadel fällt sichtbar ab)
   },
 
   // --- Untergrund -------------------------------------------------------
@@ -200,6 +240,22 @@ export const CONFIG = {
                                // zählt eine Linie als Abkürzung – vorher ist es die Ideallinie
     linienAbstand: 2,          // alle so viele Meter beginnt und endet eine geprüfte Linie
     pruefSchritt: 0.25,        // entlang der Linie alle so viele Meter prüfen
+
+    // Welche Kurven werden gesperrt? (Meilenstein 1.2) Schneiden gehört zum Spiel:
+    // nur ein Teil der Kurven bekommt Sperren ("nicht schneiden"), die anderen bleiben
+    // frei ("schneiden"). Nach einer Änderung muss tools/abkuerzungen.mjs neu laufen.
+    sperrQuote: 0.4,           // so ein Anteil der Kurvenzonen wird gesperrt (0.4 = 40 %)
+    sperrQuoteMin: 0.3,        // ... aber mindestens so viel
+    sperrQuoteMax: 0.5,        // ... und höchstens so viel (ausser Pflicht-Sperren)
+    pflichtGewinn: 12,         // spart eine Abkürzung so viele Meter, wird immer gesperrt
+    pflichtZeit: 0.5,          // spart Schneiden mit echter Fahrphysik so viele Sekunden, wird immer gesperrt
+    immerSperren: [],          // Streckenmeter irgendwo in einer Kurve, die immer gesperrt sein soll, z. B. [1520]
+    immerFrei: [],             // Streckenmeter irgendwo in einer Kurve, die immer frei sein soll, z. B. [612]
+    wieseReihe: 16,            // eine Sperre, die länger als das quer in die Wiese ragt, ...
+    wieseDichte: 1.2,          // ... und dort weniger Bäume/Steine pro 100 m² hat, gilt als "offene Wiese"
+    wieseFaktor: 0.35,         // offene Wiese: Kurve wird so viel seltener gesperrt (sieht künstlich aus)
+    waldDichte: 1.5,           // ab so vielen Bäumen/Steinen pro 100 m² wirkt eine Sperre ganz natürlich
+    nachbarFaktor: 0.6,        // ist die Kurve davor/danach schon gesperrt, wird diese seltener gesperrt (Abwechslung)
   },
 
   // --- Abkürzungs-Sperren (Felsbrocken, Tannengruppen, Baumstämme) -------
@@ -255,10 +311,61 @@ export const CONFIG = {
     tastaturRueckTempo: 6,     // Tastatur: wie schnell die Lenkung zurück in die Mitte geht
   },
 
+  // --- Anzeigen (HUD) ----------------------------------------------------
+  // Masse in Pixeln des 320x180-Bildes.
+  hud: {
+    // Zeit oben Mitte auf einer kleinen Tafel, darunter die Checkpoint-Punkte (Meilenstein 1.2)
+    zeit: {
+      oben: 3,                 // Abstand der Tafel vom oberen Bildrand
+      hoehe: 13,               // Höhe der Tafel
+      innen: 3,                // Rand innen links und rechts
+      luecke: 4,               // Abstand zwischen "ZEIT" und der Zeit
+      ecke: 2,                 // so viele Pixel sind die Ecken abgeschrägt
+      farbeTafel: 'rgba(18, 24, 32, 0.74)', // dunkel, halbtransparent (wie die Tachos)
+      farbeRand: '#e6e2d3',    // heller Rand, 1 Pixel
+      farbeBeschriftung: '#e6e2d3', // das winzige "ZEIT"
+      cpGroesse: 4,            // Checkpoint-Punkte: Kantenlänge
+      cpAbstand: 4,            // ... Abstand dazwischen
+      cpUnter: 2,              // ... Abstand unter der Tafel
+      farbeCpLeer: '#e6e2d3',  // Rahmen eines noch nicht erreichten Checkpoints
+      farbeCpErreicht: '#ffd23c', // erreichter Checkpoint (gefüllt)
+      meldungUnter: 4,         // Zwischenzeit-Meldung so weit unter den Punkten
+    },
+    // Analoge Tachos unten rechts (Meilenstein 1.2)
+    tacho: {
+      randRechts: 3,           // Abstand des Tempo-Tachos vom rechten Bildrand
+      randUnten: 3,            // Abstand der Tachos vom unteren Bildrand
+      abstand: 3,              // Abstand zwischen den beiden Tachos
+      tempoRadius: 25,         // Grösse des Tempo-Tachos (Radius, Durchmesser = 2 x Radius + 1)
+      drehzahlRadius: 22,      // Grösse des Drehzahlmessers
+      bogen: 240,              // Nadelbogen in Grad (links unten bis rechts unten)
+      tempoMax: 200,           // Skala Tempo bis (km/h)
+      tempoStrichLang: 20,     // lange Striche alle ... km/h
+      tempoStrichKurz: 10,     // kurze Striche alle ... km/h
+      tempoZahlen: 40,         // Zahlen alle ... km/h
+      drehzahlMax: 8,          // Skala Drehzahl bis (x 1000 U/min)
+      drehzahlRotAb: 7,        // roter Bereich ab (x 1000 U/min)
+      nadelBreite: 1,          // Nadel 1 oder 2 Pixel breit
+      tempoNadelFolgen: 7,     // wie schnell die Tempo-Nadel folgt (höher = direkter, gedämpft)
+      drehzahlNadelFolgen: 22, // Drehzahl-Nadel folgt schneller
+      farbeBlatt: 'rgba(18, 24, 32, 0.74)', // Zifferblatt (halbtransparent dunkel)
+      farbeRand: '#e6e2d3',    // heller Rand
+      farbeRandAussen: 'rgba(8, 10, 14, 0.8)', // dunkler Ring aussen herum
+      farbeStriche: '#e6e2d3', // Skalenstriche
+      farbeZahlen: '#ffd23c',  // Skalenzahlen (gelb)
+      farbeRot: '#d8352a',     // roter Bereich auf dem Drehzahlmesser
+      farbeNadel: '#ff3b2e',   // Nadel
+      farbeSchatten: '#101418', // Schatten von Nadel und Schrift
+      farbeNabe: '#9aa0a6',    // Knopf in der Mitte
+      farbeKasten: 'rgba(0, 0, 0, 0.55)', // Kästchen hinter der Gangzahl
+    },
+  },
+
   // --- Optik am Auto -----------------------------------------------------
   autoOptik: {
     rollen: 0.012,             // Karosserie neigt sich in Kurven (pro m/s²)
     nicken: 0.008,             // Karosserie nickt beim Bremsen/Gas
     blobSchatten: true,        // dunkler Fleck unter dem Auto
+    radEinschlagMax: 35,       // so weit (Grad) drehen die Vorderräder sichtbar höchstens ein (nur Optik)
   },
 };

@@ -8,6 +8,7 @@ import { CONFIG } from './config.js';
 
 const G = 9.81;
 const GRAD = Math.PI / 180;
+const LUFT_BEZUG = 190 / 3.6; // auto.luftwiderstand gilt bei 190 km/h
 
 const begrenze = (w, min, max) => (w < min ? min : w > max ? max : w);
 const glatt = (a, b, x) => {
@@ -44,7 +45,8 @@ export class Fahrphysik {
   // Ein Physik-Schritt.
   // eingabe: { gas 0..1, bremse 0..1, lenkung -1..1 (+ = rechts), handbremse true/false }
   // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus) }
-  schritt(dt, eingabe, boden) {
+  // motor:   vom Getriebe (getriebe.js): { beschl: Antrieb vorwärts (m/s²), motorbremse (m/s²) }
+  schritt(dt, eingabe, boden, motor) {
     const c = CONFIG.auto;
 
     // Blickrichtung und "links" als Vektoren
@@ -56,7 +58,14 @@ export class Fahrphysik {
 
     // --- Lenkung: langsam direkt, schnell ruhiger ---
     const tAnteil = Math.sqrt(begrenze(Math.abs(vVor) / c.lenkReferenzTempo, 0, 1));
-    const maxLenk = (c.lenkwinkelLangsam + (c.lenkwinkelSchnell - c.lenkwinkelLangsam) * tAnteil) * GRAD;
+    const maxLenkAlt = (c.lenkwinkelLangsam + (c.lenkwinkelSchnell - c.lenkwinkelLangsam) * tAnteil) * GRAD;
+    let maxLenk = maxLenkAlt;
+    // Im Schritttempo (vorwärts und rückwärts) zusätzlicher Einschlag: voll bis zu einem
+    // Viertel von lenkStandBisTempo, dann weich auslaufend, darüber wie bisher.
+    if (c.lenkwinkelStand > 0) {
+      const stand = 1 - glatt(c.lenkStandBisTempo * 0.25, c.lenkStandBisTempo, Math.abs(vVor));
+      maxLenk += (c.lenkwinkelStand * GRAD - maxLenk) * stand;
+    }
     const delta = -eingabe.lenkung * maxLenk; // + = links
     this.lenkwinkel = delta;
 
@@ -91,7 +100,7 @@ export class Fahrphysik {
 
     // --- Längs: Antrieb ---
     let antrieb = 0;
-    if (eingabe.gas > 0 && vVor > -0.5) antrieb += eingabe.gas * c.beschleunigung;
+    if (eingabe.gas > 0 && vVor > -0.5) antrieb += motor.beschl;
     if (eingabe.bremse > 0 && vVor <= 0.5 && eingabe.gas < 0.1) {
       // rückwärts fahren
       if (vVor > -c.rueckwaertsTempo) antrieb -= eingabe.bremse * c.rueckwaertsBeschl;
@@ -103,8 +112,8 @@ export class Fahrphysik {
     // --- Längs: Widerstände (bremsen nur bis Stillstand) ---
     let widerstand = 0;
     // Luftwiderstand: sorgt für das weiche Auslaufen beim Höchsttempo
-    widerstand += c.beschleunigung * (vVor / c.hoechsttempo) ** 2;
-    if (eingabe.gas < 0.05) widerstand += c.motorbremse;
+    widerstand += c.luftwiderstand * (vVor / LUFT_BEZUG) ** 2;
+    widerstand += motor.motorbremse;
     widerstand += boden.rollen + boden.rollenTempo * Math.abs(vVor);
     if (eingabe.bremse > 0 && vVor > 0.5) widerstand += eingabe.bremse * c.bremse * Math.min(1, boden.grip + 0.2);
     if (eingabe.gas > 0 && vVor < -0.5) widerstand += eingabe.gas * c.bremse * 0.6;
@@ -112,7 +121,14 @@ export class Fahrphysik {
 
     // --- Beschleunigungen im Auto-Koordinatensystem ---
     const quer = kraftV * Math.cos(delta) + kraftH;
-    const laengsQuer = -kraftV * Math.sin(delta);
+    // Längsanteil der Vorderrad-Seitenkraft: mit dem Einschlag ohne den Extra-Einschlag
+    // im Schritttempo gerechnet, damit Rückwärtsfahren und Anfahren wie bisher bleiben
+    // (der Extra-Einschlag wirkt nur aufs Drehen).
+    // Ohne Pedal und fast im Stand gibt es keinen Längsanteil (sonst kroch das Auto beim
+    // blossen Lenken im Stand von selbst rückwärts).
+    const deltaLaengs = begrenze(delta, -maxLenkAlt, maxLenkAlt);
+    const ohnePedal = eingabe.gas < 0.05 && eingabe.bremse < 0.05;
+    const laengsQuer = -kraftV * Math.sin(deltaLaengs) * (ohnePedal ? glatt(0.5, 2.0, Math.abs(vVor)) : 1);
     const drehBeschl = (a * kraftV * Math.cos(delta) - b * kraftH) / c.traegheit
       + c.stabilitaet * this.stabAnteil * schraeg * Math.min(1, Math.abs(vVor) / 10);
 

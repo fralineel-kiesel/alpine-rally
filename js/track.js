@@ -330,6 +330,8 @@ export function baueStrecke() {
     // Gesperrte Kurven { sVon, sBis, seite } für die Pace-Note "nicht schneiden"
     // (Meilenstein 4). Kommt automatisch aus tools/abkuerzungen.mjs.
     nichtSchneiden: ABKUERZUNGEN.nichtSchneiden,
+    // Freie Kurven { sVon, sBis, seite, gewinn } für die Pace-Note "schneiden" (Meilenstein 4).
+    schneiden: ABKUERZUNGEN.schneiden || [],
 
     // Nächster Streckenpunkt zu (x, z).
     // Ergebnis: s (Meter entlang der Strecke), seite (Abstand zur Mitte, + = rechts),
