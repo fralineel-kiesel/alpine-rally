@@ -124,8 +124,11 @@ export class Fahrphysik {
     // Längsanteil der Vorderrad-Seitenkraft: mit dem Einschlag ohne den Extra-Einschlag
     // im Schritttempo gerechnet, damit Rückwärtsfahren und Anfahren wie bisher bleiben
     // (der Extra-Einschlag wirkt nur aufs Drehen).
+    // Ohne Pedal und fast im Stand gibt es keinen Längsanteil (sonst kroch das Auto beim
+    // blossen Lenken im Stand von selbst rückwärts).
     const deltaLaengs = begrenze(delta, -maxLenkAlt, maxLenkAlt);
-    const laengsQuer = -kraftV * Math.sin(deltaLaengs);
+    const ohnePedal = eingabe.gas < 0.05 && eingabe.bremse < 0.05;
+    const laengsQuer = -kraftV * Math.sin(deltaLaengs) * (ohnePedal ? glatt(0.5, 2.0, Math.abs(vVor)) : 1);
     const drehBeschl = (a * kraftV * Math.cos(delta) - b * kraftH) / c.traegheit
       + c.stabilitaet * this.stabAnteil * schraeg * Math.min(1, Math.abs(vVor) / 10);
 

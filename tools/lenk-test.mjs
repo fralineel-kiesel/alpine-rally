@@ -117,4 +117,12 @@ for (const k of schnell) {
   pruefe(a.lenk === b.lenk && a.dreh === b.dreh && a.tempo === b.tempo && a.drift === b.drift,
     `${k} km/h: genau wie vorher (Einschlag ${fmt(b.lenk)}°, Drehrate ${fmt(b.dreh, 1)}°/s)`);
 }
+{
+  // Im Stand nur lenken (kein Pedal): das Auto darf sich nicht von selbst bewegen
+  const p = new Fahrphysik();
+  p.reset(0, 0, 0);
+  for (let t = 0; t < 2; t += DT) schritt(p, { gas: 0, bremse: 0, lenkung: 1, handbremse: false });
+  pruefe(Math.hypot(p.x, p.z) < 0.01 && Math.abs(p.richtung) < 0.01,
+    `im Stand nur lenken: bleibt stehen (Weg ${fmt(Math.hypot(p.x, p.z), 2)} m, gedreht ${fmt(p.richtung * GRAD, 1)}°, vorher in M1.1: 3.7 m rückwärts gekrochen)`);
+}
 console.log(fehler ? `\n${fehler} Prüfung(en) nicht erfüllt.` : '\nAlle Prüfungen erfüllt.');

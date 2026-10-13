@@ -1,8 +1,9 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 1.1 fertig** – harter Aufprall statt Wegschleudern, und Sperren aus
-Felsbrocken, Tannengruppen und umgefallenen Stämmen gegen Abkürzungen. Dazu die erste Etappe
-„Passstrasse“ aus Meilenstein 1. Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
+Aktuell: **Meilenstein 1.2 fertig** – Sperren nur noch in 4 von 9 Kurven (Schneiden gehört dazu),
+mehr Lenkeinschlag im Schritttempo, Getriebe mit spürbarer Schaltpause, analoge Tachos und eine
+kleinere Zeitanzeige. Dazu alles aus Meilenstein 1 und 1.1 (Etappe „Passstrasse“, harter Aufprall).
+Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 ## Steuerung
 
@@ -16,11 +17,268 @@ Felsbrocken, Tannengruppen und umgefallenen Stämmen gegen Abkürzungen. Dazu di
 | Neustart nach dem Ziel | R | Start / Options |
 | Debug-Anzeige | F3 | – |
 
-Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen.
+Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
 
 ---
 
-## Meilenstein 1.1: Harter Aufprall und Schluss mit Abkürzungen ✅
+## Meilenstein 1.2: Kurven schneiden, Lenken, Schalten, Tachos ✅
+
+### Was neu ist
+
+**1. Sperren nur noch in 4 von 9 Kurven**
+- Vorher standen in **allen 9** Kurven, in denen man abkürzen konnte, Sperren (29 Stück). Jetzt
+  entscheidet das Werkzeug `tools/abkuerzungen.mjs` pro Kurve: **gesperrt** (Sperren stehen, später
+  Pace-Note „nicht schneiden“) oder **frei** (keine Sperren, Schneiden erlaubt, später Pace-Note
+  „schneiden“).
+- Ergebnis: **4 gesperrt, 5 frei = 44 %** (Ziel 40 %, erlaubt 30–50 %).
+- Wie ausgewählt wird (in dieser Reihenfolge):
+  1. **Pflicht:** Spart eine Abkürzung mehr als 12 m Weg oder mit echter Fahrphysik mehr als 0.5 s,
+     wird immer gesperrt. → Das trifft **die Schikane (3196 m)**: Dort spart Schneiden laut
+     Testfahrer ca. 1.5 s (siehe unten).
+  2. **Von Hand:** Listen `immerSperren` / `immerFrei` in `config.js` (zurzeit leer).
+  3. **Grösster Gewinn zuerst**, aber Kurven, in denen die Sperre eine lange Reihe auf offener Wiese
+     wäre, bleiben frei (Talkurve 612 m, Passhöhe 2586 m – Linos „Steinriegel am Feldrand“ sind weg).
+     Wald, Hang oder Felswand in der Nähe machen eine Kurve eher zur gesperrten.
+  4. **Abwechslung:** Ist die Kurve davor oder danach schon gesperrt, wird diese seltener gesperrt.
+
+| Kurve (Streckenmeter) | Innenseite | Gewinn (Weg) | Schneiden spart (Zeit) | jetzt | Grund |
+|---|---|---|---|---|---|
+| 482 – 752 (Talkurve) | links | 7.1 m | −5.9 s (langsamer!) | **frei** | offene Wiese, Sperre wäre eine 21 m lange Reihe |
+| 1085 – 1230 (Waldstück) | rechts | 4.0 m | −0.8 s | **frei** | kleiner Gewinn, Kehre 1 daneben ist schon gesperrt |
+| 1350 – 1415 (Kehre 1) | links | 6.9 m | −0.3 s | gesperrt | grosser Gewinn, dichter Wald, Hang 23 % |
+| 1496 – 1562 (Kehre 2) | rechts | 8.4 m | 0.0 s | gesperrt | grösster Gewinn, Wald, Hang 22 % |
+| 1643 – 1708 (Kehre 3) | links | 7.3 m | −0.3 s | **frei** | beide Nachbarkehren sind gesperrt (Abwechslung) |
+| 1789 – 1854 (Kehre 4) | rechts | 6.3 m | −0.3 s | gesperrt | Gewinn, dichter Wald, Hang 20 % |
+| 1876 – 1955 (nach den Kehren) | links | 4.9 m | −0.9 s | frei* | kleiner Gewinn |
+| 2484 – 2710 (Passhöhe) | links | 5.1 m | −4.8 s (langsamer!) | **frei** | offene Wiese, Sperre wäre eine 16 m lange Reihe |
+| 3196 – 3234 (Schikane) | links | 3.2 m | **+1.5 s** | gesperrt | **Pflicht-Sperre** (spart mehr als 0.5 s) |
+
+\* In der Kurve 1876 – 1955 steht keine eigene Sperre, aber die Sperre von Kehre 4 macht die paar
+geraden Abkürzungen dort trotzdem zu. Sie steht darum nicht in der Liste „schneiden“.
+
+- Reihenfolge entlang der Strecke (G = gesperrt, F = frei): **F F G G F G F F G** – gesperrte und
+  freie Kurven wechseln sich ab, nirgends alle am Stück.
+- **Zeitvergleich mit echter Fahrphysik** (neues Werkzeug `node tools/testfahrer.mjs --schneiden`,
+  inklusive Getriebe): Der Testfahrer fährt jede Kurve einmal auf der Ideallinie (bleibt auf Strasse
+  und Bankett) und einmal quer über die Wiese, von 90 m vor bis 60 m nach der Kurve, je mit den
+  8 besten Abkürzungen. **In allen freien Kurven ist Schneiden gleich schnell oder langsamer** (Spalte
+  „Zeit“ oben, minus = langsamer): Das Gras bremst so stark, dass sich übertriebenes Schneiden nicht
+  lohnt – in den weiten Kurven kostet es sogar 5–6 s. Richtwert „höchstens 0.3 s“: erfüllt.
+- In den gesperrten Kurven kommt man nirgends mehr durch (0 Abkürzungslinien, auch mit 1.8 m
+  Autobreite). In den freien Kurven bleiben 559 Linien offen – gewollt.
+- Sperren sehen aus wie in M1.1 (gleiche Bausteine, grösste Lücke 1.27 m, Strasse und Bankett frei).
+
+| | M1.1 | M1.2 |
+|---|---|---|
+| gesperrte Kurven | 9 von 9 | **4 von 9** |
+| Sperren | 29 | **18** |
+| Felsbrocken / Stämme | 41 / 38 | 22 / 24 |
+| Hindernisse gesamt (F3) | 7607 | **7425** |
+| Ladezeit (Testumgebung) | 1.1–1.6 s | 1.6 s (schwankt je Lauf) |
+
+- **Für die Pace-Notes (Meilenstein 4)** gibt es in `js/abkuerzungen.js` jetzt zwei Listen:
+  `nichtSchneiden` (die 4 gesperrten Kurven) und neu `schneiden` (die 4 freien Kurven, in denen
+  Schneiden Weg spart, mit Meterzahl). Beides erzeugt das Werkzeug automatisch, im Spiel sieht man noch
+  nichts davon.
+
+**2. Mehr Lenkeinschlag im Schritttempo**
+- Unter ca. 7 km/h lenken die Räder jetzt bis **48°** ein (vorher 27°), bis ca. 30 km/h läuft das weich
+  aus. Ab 30 km/h ist alles genau wie vorher. Gilt vorwärts und rückwärts, Tastatur und Gamepad.
+
+| Tempo, voller Einschlag | Einschlag | Wendekreis-Radius | Drehrate |
+|---|---|---|---|
+| 5 km/h | 27° → **48°** | 4.9 m → **2.3 m** | 16°/s → **35°/s** |
+| 10 km/h | 25° → **47°** | 5.4 m → **2.4 m** | 29°/s → **67°/s** |
+| 5 km/h rückwärts | 27° → **48°** | 4.9 m → **2.3 m** | 16°/s → **35°/s** |
+| 20 km/h | 22° → 32° | 6.2 m → 4.4 m | 52°/s → 75°/s |
+| 30 km/h | 20° → 20° | gleich | gleich |
+| 40 / 100 / 150 km/h | 18° / 10° / 5.5° | **genau gleich wie vorher** | **genau gleich** |
+
+- Das Rückwärtsfahren selbst (Tempo, Beschleunigung) ist unverändert – der Extra-Einschlag wirkt nur
+  aufs Drehen.
+- Die Vorderräder drehen sichtbar höchstens 35° ein (bei 48° standen sie unglaubwürdig quer, siehe
+  Screenshots `14a`/`14b`). Die Physik rechnet trotzdem mit 48°.
+
+**3. Getriebe mit Schaltpause**
+- Das Auto hat jetzt **5 Gänge plus R und N**. Geschaltet wird automatisch, aber es fühlt sich an wie
+  ein Handschalter: Bei jedem Gangwechsel gibt es eine kurze Pause (hoch 0.28 s, runter 0.18 s), in der
+  der Motor nicht antreibt – das Auto rollt kurz, dann zieht es wieder.
+- Der Motor hat eine Drehmomentkurve: unter 2000 U/min schwach, 4000–6000 voll, bis 7000 leicht
+  abfallend. In tiefen Gängen zieht das Auto kräftig (1. Gang bis 8 m/s²), in hohen weniger.
+- Anfahren: Kupplung schleift, darum kein lahmer Start. Auf Gras drehen die Räder durch (höchstens
+  5.3 statt 7.5 m/s² Antrieb).
+- Ohne Gas bremst der Motor im tiefen Gang bei hoher Drehzahl spürbar mehr (1. Gang bis 0.7 m/s²) als
+  im 5. Gang (0.2–0.3 m/s²).
+- Automatik: Hochschalten bei 4500 U/min (wenig Gas) bis 6900 U/min (Vollgas), runterschalten unter
+  1800–2600 U/min, beim Bremsen schon unter 3200. **Kickdown:** Gas voll durchtreten bei niedriger
+  Drehzahl → ein oder zwei Gänge tiefer. Nach jedem Schaltvorgang 0.6 s Pause, und kurzes Lupfen am
+  Gas löst kein Hochschalten aus (kein Hin und Her).
+- Rückwärts: „R“, genau wie bisher, ohne Schaltpause. Im Stand ohne Gas und Bremse nach 0.5 s „N“.
+
+| Vollgas aus dem Stand | M1.1 (ohne Getriebe) | M1.2 |
+|---|---|---|
+| 0 auf 100 km/h | 5.03 s | **5.13 s** (mit 2 Schaltpausen) |
+| 0 auf 160 km/h | 10.7 s | 12.8 s |
+| 0 auf 185 km/h | 20.2 s | 24.4 s |
+| Höchsttempo | 188 km/h | **188 km/h** (5. Gang, 6750 U/min, weich auslaufend) |
+
+| Hochschalten (Vollgas) | bei | Tempo während der Pause | Beschleunigung davor → danach |
+|---|---|---|---|
+| 1 → 2 | 47 km/h | −0.1 km/h | 6.7 → 6.3 m/s² |
+| 2 → 3 | 81 km/h | −0.5 km/h | 5.0 → 4.8 m/s² |
+| 3 → 4 | 116 km/h | −1.2 km/h | 3.4 → 3.2 m/s² |
+| 4 → 5 | 154 km/h | −2.2 km/h | 1.7 → 1.5 m/s² |
+
+- Gegenüber „durchgehend Gas ohne Pause“ verliert das Auto pro Hochschaltung 4–7 km/h (siehe
+  Bekannte Probleme).
+- Bremstest (voll bremsen ab 180 km/h): 5 → 3 bei 89 km/h, 3 → 2 bei 54 km/h, 2 → 1 bei 24 km/h,
+  Stand nach 4.4 s.
+- Handbremse in der Kehre (40 und 60 km/h, 0.7 s Handbremse, dann Gas): dreht genau so weit wie
+  vorher (33° bzw. 32°; danach mit Gas 111° statt 114° bzw. 74° wie vorher), bleibt im 1./2. Gang –
+  gut kontrollierbar wie bisher.
+
+**4. Analoge Tachos**
+- Unten rechts zwei runde Pixel-Tachos im 80er-Look statt der grossen Zahl: rechts **Tempo** (0–200,
+  Zahlen alle 40, kleine digitale km/h-Zahl unten drin), links **Drehzahl** (0–8 × 1000 U/min, roter
+  Bereich ab 7, Gangzahl im Kästchen: 1–5, „R“ rot, „N“).
+- Rote Nadeln mit Schatten, die Tempo-Nadel folgt gedämpft, die Drehzahl-Nadel schneller. In der
+  Schaltpause fällt die Drehzahl-Nadel ab, die Gangzahl wechselt erst am Ende der Pause.
+- Die Zifferblätter sind halbdurchsichtig, damit sie nicht zu viel vom Bild zudecken.
+- F3 zeigt zusätzlich `GANG x U/MIN xxxx`.
+
+**5. Zeitanzeige kleiner**
+- Die Zeit steht klein (5 × 7 Pixel) auf einer dunklen Tafel mit hellem Rand und abgeschrägten Ecken,
+  daneben winzig „ZEIT“. Weiss, wenn sie läuft, gelb vor dem Start. Die Breite springt nicht.
+- Darunter drei kleine Quadrate für die Checkpoints: leer = noch nicht, gelb = erreicht.
+- Die Zwischenzeit („CP 1 00:26.33“) erscheint wie bisher 3 Sekunden, jetzt klein und gelb unter
+  der Tafel. Zielanzeige unverändert.
+
+**6. Nebenbei behoben**
+- **Nach dem Ziel rollte das Auto von selbst rückwärts davon** (bis 22 km/h, war schon in M1.1 so):
+  Die automatische Bremse nach dem Ziel ging im Stand in den Rückwärtsgang über. Jetzt bleibt das Auto
+  stehen.
+- **Nur lenken im Stand liess das Auto rückwärts kriechen** (war schon in M1.1 so: 3.7 m in 2 s).
+  Mit dem neuen Einschlag hätte es sich dabei sogar im Kreis gedreht. Jetzt bleibt es stehen, solange
+  kein Pedal gedrückt ist.
+
+### So testest du
+
+1. **Kurven schneiden:** Probier es in den freien Kurven: Talkurve (ca. 600 m), Waldstück (ca. 1150 m),
+   **Kehre 3** (ca. 1675 m), Passhöhe (ca. 2590 m). Lohnt es sich? Ist es zu einfach oder zu
+   bestrafend? In Kehre 1, 2, 4 und in der Schikane sollte es nicht gehen.
+2. **Schaltgefühl:** Vollgas aus dem Stand. Spürst du die kurzen Pausen beim Schalten? Zu lang, zu kurz,
+   zu oft? Schaut auf den Drehzahlmesser: Nadel fällt beim Schalten, Gangzahl springt.
+3. **Kehren:** Bremst du vor der Kehre, schaltet er runter; beim Rausbeschleunigen Kickdown. Fühlt sich
+   das gut an? Schaltet er mal unnötig hin und her?
+4. **Lenken im Schritttempo:** Absichtlich in einen Baum fahren, dann rückwärts und mit vollem Einschlag
+   zurück auf die Strasse. Geht das jetzt besser? Zu viel?
+5. **Tachos und Zeit:** Gut lesbar auf beiden Rechnern? Decken die Tachos etwas Wichtiges zu?
+6. **FPS (F3)** wie bisher auf beiden Rechnern.
+7. **Ganze Etappe:** Deine Zeit im Vergleich zu vorher? (Der Testfahrer ist ca. 1–2 s langsamer.)
+
+### Wo man schrauben kann (alles in `js/config.js`)
+
+- **Schaltgefühl** (Abschnitt `getriebe`):
+  - `schaltDauerHoch` (0.28 s) / `schaltDauerRunter` (0.18 s) – wie lange beim Schalten kein Antrieb
+    wirkt. Kürzer = sportlicher, länger = schwerfälliger. 0 = ohne Pause.
+  - Schaltpunkte: `hochWenigGas` (4500) / `hochVollgas` (6900) = wann hochgeschaltet wird,
+    `runterWenigGas` (1800) / `runterVollgas` (2600) / `runterBremsen` (3200) = wann runter,
+    `kickdownGas` / `kickdownUnter` / `kickdownMax` = Kickdown, `schaltSperre` (0.6 s) = Pause
+    zwischen zwei Schaltvorgängen.
+  - `drehmoment` – die Drehmomentkurve als Liste [U/min, Anteil]. Zum Beispiel unten mehr Kraft:
+    `[2000, 0.7]` statt `[2000, 0.55]`.
+  - `zugkraft` – Schub je Gang (1. bis 5.). Alle etwas höher = schneller, höher in den hohen Gängen =
+    mehr Durchzug über 100 km/h (dann `auto.luftwiderstand` mit erhöhen, sonst steigt das Höchsttempo).
+  - `gaenge` – Tempo je Gang bei 7000 U/min (bestimmt, wann geschaltet wird).
+  - `traktion` – wie viel Schub auf den Boden kommt (mal Grip: Gras weniger).
+- Höchsttempo: `auto.luftwiderstand` (höher = langsamer oben raus).
+- Lenkung im Schritttempo: `auto.lenkwinkelStand` (48°), `auto.lenkStandBisTempo` (8 m/s),
+  sichtbarer Radeinschlag `autoOptik.radEinschlagMax` (35°).
+- Welche Kurven gesperrt sind: Abschnitt `abkuerzung` – `sperrQuote` (0.4), `immerSperren` und
+  `immerFrei` (z. B. `immerFrei: [1520]` für Kehre 2), `pflichtGewinn`, `pflichtZeit`. **Danach muss das
+  Werkzeug neu laufen** (`node tools/abkuerzungen.mjs`) – sag Claude einfach „Kurve bei 1520 m bitte
+  frei“.
+- Tachos: Abschnitt `hud.tacho` (Grösse, Abstände, Farben, Skalen, wie schnell die Nadeln folgen).
+- Zeittafel: Abschnitt `hud.zeit` (Grösse, Farben, Checkpoint-Punkte).
+
+### Selbst getestet
+
+- Spiel startet ohne Fehler in der Browser-Konsole. Etappe, Zeit, Checkpoints, Zwischenzeiten,
+  Zielanzeige und F3 funktionieren (Screenshots).
+- **Automatischer Testfahrer** – neu als Werkzeug im Projekt (`node tools/testfahrer.mjs`), fährt der
+  Strassenmitte nach, bremst vor Kurven, ohne Handbremse. Gleicher Fahrer auf der alten Version (M1.1)
+  und der neuen:
+
+| Profil | M1.1 | M1.2 | Unterschied |
+|---|---|---|---|
+| vorsichtig | 2:32.52 | 2:33.24 | +0.7 s |
+| mittel | 2:17.85 | 2:19.11 (CP 0:26 / 1:22 / 1:54) | +1.3 s |
+| flott | 2:08.35 | 2:10.41 | +2.1 s |
+
+  Etwas langsamer, weil das Auto über 100 km/h weniger zieht und die Schaltpausen Zeit kosten. Kein
+  Aufprall, nirgends hängen geblieben, alle Checkpoints und das Ziel erkannt, nächste Sperre 4.1 m
+  entfernt. 32–47 Gangwechsel pro Etappe, davon 0–1 „hin und her“ (vorher 20, behoben mit dem
+  geglätteten Gaspedal). Die Zeiten aus M1.1 weiter unten stammen von einem anderen Testfahrer und
+  sind nicht direkt vergleichbar.
+- `node tools/getriebe-test.mjs` – Zeitreihe Vollgas alle 0.25 s (Tempo, Gang, Drehzahl, Schaltpause),
+  0–100, Höchsttempo, Bremstest, Motorbremse, Kickdown, Anfahren auf Gras, Leerlauf/Rückwärts.
+- `node tools/lenk-test.mjs` – Lenkwerte vorher/nachher (Tabelle oben), alle Prüfungen erfüllt.
+- `node tools/aufprall-test.mjs` – **Aufprall unverändert**: 100 → 2 km/h frontal, 45° → 30 %,
+  75° → 80 %, nie eingedrungen, alle Prüfungen erfüllt.
+- `node tools/abkuerzungen.mjs` – `js/abkuerzungen.js` neu erzeugt, 0 Abkürzungen in gesperrten Kurven.
+- Leistung im Software-Modus (ohne Grafikkarte), alte und neue Version direkt nacheinander gemessen:
+  gleich viele Zeichenaufrufe, ca. 1400 Dreiecke weniger, FPS gleich (4–6, schwankt). **Echte FPS bitte
+  mit F3 auf beiden Rechnern prüfen.**
+- Screenshots unter `screenshots/m1-2/`:
+  - `01-hud-stand.png`, `02-hud-100kmh.png` (3. Gang), `03-hud-schaltpause.png` (mitten in 2 → 3,
+    Nadel fällt, Gang noch „2“), `04-hud-hoechsttempo.png` (187 km/h, 5. Gang)
+  - `05-zwischenzeit.png`, `06-ziel.png`, `07-f3-debug.png`
+  - `08-gesperrte-kehre-2-innen.png`, `11-gesperrte-kehre-4-innen.png`,
+    `15-gesperrte-schikane-innen.png` – Sperren im Kurveninnern
+  - `09-freie-kehre-3-innen.png`, `10-freie-talkurve-innen.png` – frei, keine Sperren mehr
+  - `12-kehren-von-oben.png`, `13-freie-kehre-3-von-oben.png`
+  - `14a-raeder-48grad-ungebremst.png` / `14b-raeder-sichtbar-35grad.png` – Radeinschlag
+
+### Bekannte Probleme
+
+- **Luftwiderstand geändert** (6.2 → 3.25 bei 190 km/h): Mit Getriebe ging das alte Mass nicht auf –
+  der 5. Gang hätte stärker ziehen müssen als der 1. Das Auslaufen beim Höchsttempo ist weiterhin weich,
+  Spitze 188 km/h wie vorher.
+- **Über 100 km/h zieht das Auto weniger als in M1.1** (0–160 in 12.8 statt 10.7 s), weil hohe Gänge
+  weniger Schub haben. Etappe dadurch 1–2 s langsamer. Wenn dir das zu zäh ist: `zugkraft` der hohen
+  Gänge erhöhen (siehe oben).
+- **Tempoverlust beim Schalten:** Während der Pause fällt das Tempo nur leicht (0.1–2.2 km/h, wie
+  gewünscht). Gegenüber „ohne Pause durchziehen“ fehlen aber 4–7 km/h pro Hochschaltung (gewünscht
+  waren 1–3) – bei 0.28 s ohne Antrieb und 5–7 m/s² Beschleunigung geht es nicht weniger. Das macht
+  0–100 ca. 0.5 s langsamer, ist aber genau das, was man spürt. Zu stark? → `schaltDauerHoch` kürzer.
+- Direkt nach dem Hochschalten ist die Beschleunigung nur wenig geringer als davor (z. B. 6.7 → 6.3
+  m/s²). Spürbar ist vor allem die Pause.
+- **Schikane = Pflicht-Sperre:** Der Testfahrer spart dort beim Schneiden 1.5 s. Wahrscheinlich ist der
+  Wert zu hoch, weil der Testfahrer die Ideallinie durch die S-Kurve nicht optimal fährt. Gesperrt war
+  sie ohnehin.
+- Der Zeitvergleich beim Schneiden stammt von einem einfachen Testfahrer ohne Handbremse. Ein geübter
+  Fahrer findet in **Kehre 3** vielleicht doch ein paar Zehntel (Testfahrer: −0.3 s). Bitte ausprobieren.
+- Rückwärts mit vollem Einschlag und dann Gas bremst das Rückwärtsrollen nur langsam (war schon
+  vorher so, bewusst nicht angefasst, weil sich Rückwärtsfahren richtig anfühlt).
+- Die Tempo-Nadel liegt im Stand über der „0“ – wie bei einem echten Tacho.
+- Leistung nur im Software-Modus messbar (siehe Meilenstein 1).
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Manuelles Schalten auf Tasten (z. B. Q/E, Gamepad LB/RB) – vorbereitet mit `getriebe.modus`.
+- Schaltblitz: Gangzahl blinkt kurz vor dem Hochschalten oder im roten Bereich.
+- Kleiner Ruck der Karosserie (Nicken) beim Schalten – ohne Kamera-Wackeln.
+- Motorsound mit Drehzahl (Sound war hier ausdrücklich nicht dran).
+- Zeittafel: am Ziel oder an Checkpoints die Differenz zur Bestzeit (+/−) anzeigen.
+- In M4 könnten die freien Kurven neben „schneiden“ auch zeigen, wie viel man spart.
+- Testfahrer mit Handbremse in den Kehren (dann sind die Testzeiten näher an einem Menschen).
+
+---
+
+## Meilenstein 1.1: Harter Aufprall und Schluss mit Abkürzungen ✅ (Verlauf, Stand damals)
+
+Hinweis: Seit Meilenstein 1.2 sind nur noch 4 von 9 Kurven gesperrt (18 statt 29 Sperren), und der
+Rückwärtsgang und das Fahren mit Gas laufen über das Getriebe. Der Aufprall ist unverändert.
 
 ### Was neu ist
 
