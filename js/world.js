@@ -3,7 +3,9 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
-import { koernungTextur, strassenTextur, STRASSEN_U, zielTextur } from './pixel.js';
+import {
+  koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
+} from './pixel.js';
 
 // Grobe Landschaftsform: grosse Hügel und Senken, unabhängig von der Strasse.
 // radius = wie breit, hoehe = wie hoch (negativ = Senke)
@@ -209,45 +211,79 @@ export function baueWelt(szene, strecke) {
   szene.add(gelaende);
 
   // ---------------------------------------------------------------
-  // Strasse (Asphalt + Bankett) als Band entlang der Strecke
+  // Strasse als Bänder entlang der Strecke: Asphalt, zwei Bankette und
+  // die Mittellinie, jedes mit eigener Textur (bleibt in der Ferne grau).
   // ---------------------------------------------------------------
   const s = CONFIG.strasse;
   const halb = s.breite / 2, aussen = halb + s.bankett;
-  const quer = [
-    { lat: -aussen, dy: -0.35, u: STRASSEN_U.aussenL },
-    { lat: -halb, dy: 0, u: STRASSEN_U.randL },
-    { lat: halb, dy: 0, u: STRASSEN_U.randR },
-    { lat: aussen, dy: -0.35, u: STRASSEN_U.aussenR },
-  ];
-  {
-    const n = strecke.anzahl, m = quer.length;
-    const pos = new Float32Array(n * m * 3), uv = new Float32Array(n * m * 2);
-    for (let i = 0; i < n; i++) {
-      const rx = -strecke.tz[i], rz = strecke.tx[i];
-      for (let c = 0; c < m; c++) {
-        const k = i * m + c;
-        pos[k * 3] = strecke.px[i] + rx * quer[c].lat;
-        pos[k * 3 + 1] = strecke.py[i] + quer[c].dy;
-        pos[k * 3 + 2] = strecke.pz[i] + rz * quer[c].lat;
-        uv[k * 2] = quer[c].u;
-        uv[k * 2 + 1] = strecke.s[i] / s.abstandMittellinie;
+
+  // Baut ein Band aus Streifen. Jeder Streifen: Liste von Querpunkten
+  // { lat (Abstand zur Mitte, + = rechts), dy (Höhe), u (Textur quer) }.
+  // vLaenge = so viele Meter entspricht eine Texturlänge.
+  function baueBand(streifen, vLaenge, extra) {
+    const n = strecke.anzahl;
+    const pos = [], uv = [], seiteAttr = [], rechtsAttr = [], idx = [];
+    for (const quer of streifen) {
+      const m = quer.length, basis = pos.length / 3;
+      for (let i = 0; i < n; i++) {
+        const rx = -strecke.tz[i], rz = strecke.tx[i];
+        for (let c = 0; c < m; c++) {
+          pos.push(strecke.px[i] + rx * quer[c].lat, strecke.py[i] + quer[c].dy, strecke.pz[i] + rz * quer[c].lat);
+          uv.push(quer[c].u, strecke.s[i] / vLaenge);
+          if (extra) { seiteAttr.push(Math.sign(quer[c].lat)); rechtsAttr.push(rx, 0, rz); }
+        }
       }
-    }
-    const idx = [];
-    for (let i = 0; i < n - 1; i++) {
-      for (let c = 0; c < m - 1; c++) {
-        const a = i * m + c, b = a + 1, cc = a + m, d = cc + 1;
-        idx.push(a, b, cc, b, d, cc);
+      for (let i = 0; i < n - 1; i++) {
+        for (let c = 0; c < m - 1; c++) {
+          const a = basis + i * m + c, b = a + 1, cc = a + m, d = cc + 1;
+          idx.push(a, b, cc, b, d, cc);
+        }
       }
     }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    if (extra) {
+      geo.setAttribute('aSeite', new THREE.Float32BufferAttribute(seiteAttr, 1));
+      geo.setAttribute('aRechts', new THREE.Float32BufferAttribute(rechtsAttr, 3));
+    }
     geo.setIndex(idx);
     geo.computeVertexNormals();
+    return geo;
+  }
+
+  // Asphalt
+  szene.add(new THREE.Mesh(
+    baueBand([[{ lat: -halb, dy: 0, u: 0 }, { lat: halb, dy: 0, u: 1 }]], ASPHALT_LAENGE),
+    new THREE.MeshLambertMaterial({ map: asphaltTextur(f), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+  ));
+  // Bankett links und rechts (fällt nach aussen leicht ab)
+  szene.add(new THREE.Mesh(
+    baueBand([
+      [{ lat: -aussen, dy: -0.35, u: 0 }, { lat: -halb, dy: 0, u: 1 }],
+      [{ lat: halb, dy: 0, u: 1 }, { lat: aussen, dy: -0.35, u: 0 }],
+    ], BANKETT_LAENGE),
+    new THREE.MeshLambertMaterial({ map: bankettTextur(f), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+  ));
+  // Mittellinie: schmaler Streifen. In der Ferne wird er etwas breiter
+  // gezeichnet (mind. mittellinieMinPixel Bildpunkte), damit er nicht
+  // zwischen den groben Pixeln verschwindet und flimmert.
+  {
+    const lb = s.mittellinieBreite / 2;
+    const geo = baueBand([[{ lat: -lb, dy: 0, u: 0 }, { lat: lb, dy: 0, u: 1 }]], s.abstandMittellinie, true);
     const mat = new THREE.MeshLambertMaterial({
-      map: strassenTextur(f), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2,
+      map: mittellinienTextur(f, s.mittellinieStrich / s.abstandMittellinie),
+      transparent: true, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -3,
     });
+    const pixelWinkel = (2 * Math.tan((CONFIG.kamera.sichtfeld * Math.PI) / 360)) / CONFIG.bild.hoehe;
+    mat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float aSeite;\nattribute vec3 aRechts;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          float linieSoll = distance(cameraPosition, transformed) * ${pixelWinkel.toFixed(6)} * ${s.mittellinieMinPixel.toFixed(2)};
+          transformed += aRechts * aSeite * max(0.0, linieSoll - ${s.mittellinieBreite.toFixed(3)}) * 0.5;`);
+    };
     szene.add(new THREE.Mesh(geo, mat));
   }
 

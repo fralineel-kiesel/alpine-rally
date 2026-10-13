@@ -53,6 +53,9 @@ export const CONFIG = {
     breite: 7,                 // Asphaltbreite
     bankett: 2,                // Breite des erdigen Randstreifens je Seite
     abstandMittellinie: 8,     // Strich + Lücke der Mittellinie zusammen (Meter)
+    mittellinieStrich: 3,      // davon ist so viel Strich (Meter)
+    mittellinieBreite: 0.2,    // Breite der Mittellinie (Meter)
+    mittellinieMinPixel: 1,    // in der Ferne mind. so viele Bildpunkte breit (gegen Flimmern)
     startBeiMeter: 25,         // Startlinie: so viele Meter nach Strassenanfang
     zielVorEnde: 45,           // Ziellinie: so viele Meter vor Strassenende
     spawnBeiMeter: 10,         // hier steht das Auto beim Start

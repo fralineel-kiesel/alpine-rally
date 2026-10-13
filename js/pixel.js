@@ -169,34 +169,74 @@ export function koernungTextur(seed = 5) {
   return zuTextur(l, { wiederholen: true });
 }
 
-// Strasse: 64 Pixel breit (Bankett | Asphalt | Bankett), 64 Pixel = 8 Meter lang
-export const STRASSEN_U = { aussenL: 0, randL: 15 / 64, mitte: 31.5 / 64, randR: 48 / 64, aussenR: 1 };
-export function strassenTextur(farben, seed = 9) {
-  const N = 64;
+// Strasse: Asphalt, Bankett und Mittellinie haben je eine eigene Textur.
+// So mischt die Grafikkarte in der Ferne (kleinere Mipmap-Stufen) nie
+// Grau und Braun zusammen – die Strasse bleibt bis zum Horizont grau.
+const variiere = (rgb, s) => rgb.map((c) => Math.max(0, Math.min(255, Math.round(c * s))));
+
+// Asphalt: 32 Pixel quer (= ganze Strassenbreite), 32 Pixel = 7 Meter lang
+export const ASPHALT_LAENGE = 7;
+export function asphaltTextur(farben, seed = 9) {
+  const N = 32;
   const l = leinwand(N, N);
   const rnd = zufall(seed);
-  const asph = hexZuRgb(farben.asphalt), bank = hexZuRgb(farben.bankett), linie = hexZuRgb(farben.mittellinie);
-  const variiere = (rgb, s) => rgb.map((c) => Math.max(0, Math.min(255, Math.round(c * s))));
+  const asph = hexZuRgb(farben.asphalt);
   for (let y = 0; y < N; y++) {
     for (let x = 0; x < N; x++) {
       const r = rnd();
-      if (x < 15 || x >= 48) {
-        // erdiges Bankett mit Kieseln
-        const s = r < 0.1 ? 0.78 : r < 0.2 ? 1.18 : 0.92 + rnd() * 0.12;
-        setze(l, x, y, variiere(bank, s));
-      } else {
-        const s = r < 0.06 ? 0.85 : r < 0.12 ? 1.12 : 0.96 + rnd() * 0.08;
-        let c = variiere(asph, s);
-        // leichter Übergang zum Bankett
-        if (x === 15 || x === 47) c = variiere(asph, 0.88);
-        // dezente, unterbrochene Mittellinie
-        if (x === 31 && y < 24) c = variiere(linie, 0.95 + rnd() * 0.08);
-        setze(l, x, y, c);
-      }
+      const s = r < 0.06 ? 0.85 : r < 0.12 ? 1.12 : 0.96 + rnd() * 0.08;
+      // leicht dunklerer Rand zum Bankett
+      setze(l, x, y, variiere(asph, x === 0 || x === N - 1 ? 0.88 : s));
     }
   }
   const t = zuTextur(l, { wiederholen: true });
   t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter; // in der Ferne ruhig, nah bleiben harte Pixel
+  return t;
+}
+
+// Bankett: 16 Pixel quer (= 2 Meter), 32 Pixel = 4 Meter lang
+export const BANKETT_LAENGE = 4;
+export function bankettTextur(farben, seed = 19) {
+  const B = 16, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const bank = hexZuRgb(farben.bankett);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < B; x++) {
+      // erdiges Bankett mit Kieseln
+      const r = rnd();
+      const s = r < 0.1 ? 0.78 : r < 0.2 ? 1.18 : 0.92 + rnd() * 0.12;
+      setze(l, x, y, variiere(bank, s));
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  return t;
+}
+
+// Mittellinie: 1 Pixel breit, 32 Pixel lang (= ein Strich + eine Lücke).
+// Die Lücke ist durchsichtig. In der Ferne wird daraus eine durchgehende,
+// schwache Linie (statt zu flimmern).
+export function mittellinienTextur(farben, strichAnteil = 0.375, seed = 29) {
+  const H = 32;
+  const daten = new Uint8Array(H * 4);
+  const rnd = zufall(seed);
+  const linie = hexZuRgb(farben.mittellinie);
+  for (let y = 0; y < H; y++) {
+    // Farbe auch in der Lücke setzen, damit die Ferne nicht dunkler wird
+    const c = variiere(linie, 0.95 + rnd() * 0.08);
+    daten.set([c[0], c[1], c[2], y < H * strichAnteil ? 255 : 0], y * 4);
+  }
+  const t = new THREE.DataTexture(daten, 1, H);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.RepeatWrapping;
+  t.needsUpdate = true;
   return t;
 }
 
