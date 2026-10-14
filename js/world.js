@@ -46,6 +46,7 @@ export function baueWelt(szene, strecke) {
   const G = 32;
   const GX = Math.ceil((KX * T) / G) + 1, GZ = Math.ceil((KZ * T) / G) + 1;
   const feldAbstand = new Float32Array(GX * GZ), feldGrund = new Float32Array(GX * GZ);
+  const feldIndex = new Int32Array(GX * GZ); // nächster Streckenpunkt (grob, für den Waldanteil in der Ferne)
   {
     const probe = [];
     for (let i = 0; i < strecke.anzahl; i += 8) probe.push(i);
@@ -56,16 +57,17 @@ export function baueWelt(szene, strecke) {
     for (let j = 0; j < GZ; j++) {
       for (let k = 0; k < GX; k++) {
         const x = X0 + k * G, z = Z0 + j * G;
-        let minD2 = Infinity, sw = 1e-4, sh = 1e-4 * mittelH;
+        let minD2 = Infinity, sw = 1e-4, sh = 1e-4 * mittelH, bestI = 0;
         for (const i of probe) {
           const dx = x - px[i], dz = z - pz[i];
           const d2 = dx * dx + dz * dz;
-          if (d2 < minD2) minD2 = d2;
+          if (d2 < minD2) { minD2 = d2; bestI = i; }
           const w = Math.exp(-d2 / s2);
           sw += w; sh += w * py[i];
         }
         feldAbstand[j * GX + k] = Math.sqrt(minD2);
         feldGrund[j * GX + k] = sh / sw;
+        feldIndex[j * GX + k] = bestI;
       }
     }
   }
@@ -75,6 +77,29 @@ export function baueWelt(szene, strecke) {
     const a = arr[j * GX + k], b = arr[j * GX + k + 1], c = arr[(j + 1) * GX + k], d = arr[(j + 1) * GX + k + 1];
     return (a + (b - a) * ax) * (1 - az) + (c + (d - c) * ax) * az;
   }
+  const fern = CONFIG.fernwald;
+  // Grober Abstand zur Strecke (aus dem 32-m-Raster, auf wenige Meter genau)
+  welt.streckeAbstand = (x, z) => feld(feldAbstand, x, z);
+  // Nächster Streckenpunkt (Index), grob – reicht für den Waldanteil weit weg von der Strasse
+  const naechsterIndex = (x, z) => {
+    const k = begrenze(Math.round((x - X0) / G), 0, GX - 1), j = begrenze(Math.round((z - Z0) / G), 0, GZ - 1);
+    return feldIndex[j * GX + k];
+  };
+
+  // Wie stark steht hier Wald? 0 = Wiese, 1 = dichter Tannenwald (Meilenstein 2b).
+  // Dieselbe Rechnung wie bei den Tannen-Sprites (sprites.js, "verteile"): Waldstücke aus
+  // Rauschen, dazu geschlossener Wald je nach Abschnitt (waldAnteil), mal Baumdichte.
+  // Nur weich statt hart (für die Geländefarbe und die Fernbäume).
+  // k = nächster Streckenpunkt (wenn bekannt, sonst grob aus dem Raster).
+  // d = Abstand zur Strasse (nur für die Ferne): Die Talflanken sind bewaldeter als der Talboden an
+  // der Strasse, darum steigt die Baumdichte weit weg auf "normal" (fernwald.dichteAb).
+  welt.waldBei = function (x, z, k = naechsterIndex(x, z), d = 0) {
+    const sd = CONFIG.sprites.seed;
+    const stueck = glatt(0.5, 0.56, fbm(x / 140, z / 140, sd));
+    const zu = glatt(-0.03, 0.03, fbm(x / 70, z / 70, sd + 9) - (1 - strecke.waldAnteil[k] * 0.75));
+    const dichte = mische(Math.min(1, strecke.baumFaktor[k]), 1, glatt(fern.dichteAb[0], fern.dichteAb[1], d));
+    return Math.max(stueck, zu) * dichte;
+  };
 
   // Berge hinter den Felswänden und Täler unter den Abhängen (automatisch)
   const wandBerge = [];
@@ -218,6 +243,9 @@ export function baueWelt(szene, strecke) {
   const cFels = new THREE.Color(f.fels), cFelsD = new THREE.Color(f.felsDunkel);
   const cErde = new THREE.Color(f.erde);
   const tmp = new THREE.Color();
+  // Fernwald (M2b): weit weg von der Strasse wird das Gelände nach den Waldstücken eingefärbt
+  const cWaldH = new THREE.Color(fern.waldFarbe), cWaldD = new THREE.Color(fern.waldDunkel), cWald = new THREE.Color();
+  const cWiese = new THREE.Color(fern.wiesenFarbe), cGeroell = new THREE.Color(fern.geroellFarbe);
   const jitter = (x, z) => {
     let hsh = Math.imul(Math.round(x * 4), 73856093) ^ Math.imul(Math.round(z * 4), 19349663);
     hsh = Math.imul(hsh ^ (hsh >>> 13), 1274126177);
@@ -248,6 +276,18 @@ export function baueWelt(szene, strecke) {
           tmp.copy(cGras).lerp(cGrasD, glatt(0.45, 0.62, flecken));
           if (ny < 0.86) tmp.lerp(cErde, glatt(0.86, 0.78, ny) * 0.8);
           if (ny < 0.76) tmp.copy(fbm(x / 9, z / 9, 7) > 0.5 ? cFels : cFelsD).lerp(cErde, glatt(0.62, 0.76, ny) * 0.5);
+          // Fernwald: ab ca. 150 m neben der Strasse (dort stehen kaum noch Sprites) Wald dunkel,
+          // Wiese etwas heller, ein paar Geröllflecken. Weicher Übergang, keine Kante.
+          const dStrasse = feld(feldAbstand, x, z);
+          const weit = fern.faerben ? glatt(fern.farbeAb[0], fern.farbeAb[1], dStrasse) : 0;
+          if (weit > 0) {
+            const w = welt.waldBei(x, z, naechsterIndex(x, z), dStrasse) * glatt(0.7, 0.8, ny); // auf steilem Fels kein Wald
+            cWald.copy(cWaldH).lerp(cWaldD, glatt(0.4, 0.6, fbm(x / 18, z / 18, 41))); // fleckige Kronen
+            tmp.lerp(cWiese, weit * (1 - w) * glatt(0.8, 0.9, ny) * fern.wiesenStaerke);
+            tmp.lerp(cWald, weit * w * fern.waldStaerke);
+            const geroell = glatt(fern.geroell, fern.geroell + 0.06, fbm(x / 45, z / 45, 77)) * glatt(0.95, 0.85, ny);
+            tmp.lerp(cGeroell, weit * geroell * 0.7);
+          }
           const jj = 0.94 + jitter(x, z) * 0.1;
           const k = (j * N + i) * 3;
           farben[k] = tmp.r * jj; farben[k + 1] = tmp.g * jj; farben[k + 2] = tmp.b * jj;
@@ -291,6 +331,19 @@ export function baueWelt(szene, strecke) {
     const i = Math.floor(lx), j = Math.floor(lz), fx = lx - i, fz = lz - j;
     const h00 = hs[j * N + i], h10 = hs[j * N + i + 1];
     const h01 = hs[(j + 1) * N + i], h11 = hs[(j + 1) * N + i + 1];
+    if (fx >= fz) return h00 + fx * (h10 - h00) + fz * (h11 - h10);
+    return h00 + fz * (h01 - h00) + fx * (h11 - h01);
+  };
+  // Höhe des groben Geländes (32 m), das weit weg von der Kamera gezeichnet wird (M2b, für Fernbäume)
+  welt.gelaendeHoeheGrob = function (x, z) {
+    const kx = begrenze(Math.floor((x - X0) / T), 0, KX - 1), kz = begrenze(Math.floor((z - Z0) / T), 0, KZ - 1);
+    const kach = kacheln[kz * KX + kx];
+    const { hs, N, schritt } = kach;
+    const v = Math.max(1, 32 / schritt), M = (N - 1) / v + 1, S = schritt * v;
+    const lx = begrenze((x - kach.ox) / S, 0, M - 1.0001), lz = begrenze((z - kach.oz) / S, 0, M - 1.0001);
+    const i = Math.floor(lx), j = Math.floor(lz), fx = lx - i, fz = lz - j;
+    const h = (a, b) => hs[b * v * N + a * v];
+    const h00 = h(i, j), h10 = h(i + 1, j), h01 = h(i, j + 1), h11 = h(i + 1, j + 1);
     if (fx >= fz) return h00 + fx * (h10 - h00) + fz * (h11 - h10);
     return h00 + fz * (h01 - h00) + fx * (h11 - h01);
   };

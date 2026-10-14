@@ -34,8 +34,28 @@ export function randAbstand(s, seite) { // eslint-disable-line no-unused-vars
   return CONFIG.strassenrand.abstand;
 }
 
+// Weidetore (M2b): Prüft, ob ein Kreis (x, z, r) die Durchfahrt eines Tors frei lässt:
+// mindestens "abstand" von der Lücke weg und nicht auf dem Weg "tiefe" Meter ins Feld dahinter.
+// Für Kühe und Büsche. plan = Ergebnis von planeStrassenrand.
+export function torPruefer(plan) {
+  const tore = plan.tore.map((t) => {
+    const s = (t.von + t.bis) / 2;
+    const p = plan.punkt(s, t.seite * (randAbstand(s, t.seite) + CONFIG.strassenrand.zaun.versatz));
+    return { x: p.x, z: p.z, ux: p.tx, uz: p.tz, nx: -p.tz * t.seite, nz: p.tx * t.seite, halb: (t.bis - t.von) / 2 };
+  });
+  return function torFrei(x, z, r, abstand, tiefe) {
+    for (const t of tore) {
+      const dx = x - t.x, dz = z - t.z;
+      const entlang = Math.abs(dx * t.ux + dz * t.uz), quer = dx * t.nx + dz * t.nz;
+      if (Math.hypot(Math.max(0, entlang - t.halb), quer) < abstand + r) return false;
+      if (quer > -2 && quer < tiefe && entlang < t.halb + 1.5 + r) return false;
+    }
+    return true;
+  };
+}
+
 const zwischen = (rnd, [a, b]) => mische(a, b, rnd());
-const nr = (seite) => (seite > 0 ? 1 : 0);
+const nr =(seite) => (seite > 0 ? 1 : 0);
 const SEITEN = [-1, 1];
 
 // Zusammenhängende Stücke (Indizes von..bis), in denen arr[i] gesetzt ist

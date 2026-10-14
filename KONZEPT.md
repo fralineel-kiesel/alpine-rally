@@ -3,7 +3,7 @@
 Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Schweizer Alpenstrassen. Arbeitstitel "Alpine Rally" (Name kann sich noch ändern).
 
 ## Entscheidungen
-- Look: Renderauflösung 320x180, Low-Poly, flat shading, harte Pixel. Bäume, Steine, Kühe als 2D-Sprites (Billboards) im 3D-Raum, spart Leistung und passt zum Retro-Look. Leitplanken, Zäune und Schilder sind kleine Low-Poly-Formen mit Pixel-Textur (seit M2a: sie müssen zur Strasse schauen, nicht zur Kamera).
+- Look: Renderauflösung 320x180, Low-Poly, flat shading, harte Pixel. Bäume, Steine, Kühe als 2D-Sprites (Billboards) im 3D-Raum, spart Leistung und passt zum Retro-Look. Kühe haben 8 Ansichten je nach Blickwinkel (seit M2b), damit sie nicht wie Pappe wirken. Leitplanken, Zäune und Schilder sind kleine Low-Poly-Formen mit Pixel-Textur (seit M2a: sie müssen zur Strasse schauen, nicht zur Kamera).
 - Palette: erdig und rau (Schotterbraun, Steingrau, Tannengrün), aber sattes grünes Gras und blauer Himmel. Sonniger Tag zum Start, anderes Wetter später.
 - Kamera: nur hinter dem Auto (Vorbild V-Rally 3, GBA: dichte Landschaft).
 - Spielziel: Etappe von A nach B gegen die Uhr, mit Checkpoints. Beifahrer-Ansagen (Pace-Notes) kommen als Symbole oben im Bild. Gegner und Geister später.
@@ -31,8 +31,8 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M1.3 Horizont-Dunst: kein hellblauer Nebelstreifen mehr zwischen Bergen und Wald, Dunst nie ganz dicht, Bergfüsse passen zum fernen Gelände (fertig)
 - M2a Strassenrand: Leitplanken an Abhängen und in den Kehren, Holzzäune an den Wiesen mit Weidetoren, Schilder (Kurvenwarnungen, Kehren-Nummern, Richtungstafeln, Steinschlag/Gefälle, Kilometertafeln) (fertig)
 - M2a.1 Sperren natürlicher: pro gesperrter Kurve nur eine Sorte (Felsbrocken, umgefallene Stämme oder Tannen), lockerer, nichts steckt ineinander; mehr Schilder: Tempo-Tafeln 80/60/50 (nur Optik), "Kühe" und "Kreuzung" im Tal, alle Schilder etwas grösser (fertig)
-- M2b Dichtere Landschaft: Kühe, mehr Wald, Wald auch ausserhalb der 230 m neben der Strasse (als Nächstes)
-- M3 Untergründe: Schotter und Wiese, Abzweigung mit Absperrung
+- M2b Leben im Gelände: Kühe in Herden auf Weiden und Alpwiesen (8 Ansichten je Kuh), Büsche, Alpenrosen, Heidelbeeren, Grasbüschel, Jungtannen, Wald auch in der Ferne (Geländefarbe und grosse Fernbäume) (fertig)
+- M3 Untergründe: Schotter und Wiese, Weggabelung mit Rally-Absperrband (als Nächstes)
 - M4 Pace-Notes als Symbole, inkl. "nicht schneiden" an den gesperrten und "schneiden" an den freien Kurven (Daten liegen seit M1.2 bereit)
 - M5 Drumherum: Zielbildschirm, Minimap, Feinschliff (Auto, Fahrphysik)
 

@@ -112,6 +112,95 @@ export const CONFIG = {
     helligkeit: 1.0,           // Helligkeit der Sprites
   },
 
+  // --- Büsche, Jungtannen, Grasbüschel (Meilenstein 2b) -----------------
+  // Reine Deko ohne Kollision (man fährt "drüber"), darum ändern sie nichts an den Abkürzungen.
+  // Eigener seed: die Bäume und Steine von oben bleiben genau gleich.
+  buesche: {
+    an: true,                  // false = keine Büsche, Jungtannen und Grasbüschel
+    seed: 5150,                // Zufallszahl (gleich = gleiche Büsche)
+    mindestAbstand: 6,         // so nah dürfen sie an die Strassenmitte (Bankett endet bei 5.5)
+    hoehe: [0.6, 1.2],         // Büsche: Höhe von bis (Meter)
+    grasHoehe: [0.45, 0.85],   // hohe Gras-/Blumenbüschel
+    jungHoehe: [1.1, 1.9],     // Jungtannen (unter 2 m, darum ohne Kollision)
+    jungAbstand: 9,            // Jungtannen erst ab so vielen Metern neben der Strassenmitte (verdecken keine Schilder)
+    randGruppenProKm: 70,      // Gruppen von Büschen am Strassenrand (Versuche pro km)
+    gruppe: [2, 4],            // ... so viele Büsche pro Gruppe
+    gruppeRadius: 2.2,         // ... so weit verstreut (Meter)
+    randBreite: [6.5, 14],     // ... so weit neben der Strassenmitte
+    zaunProKm: 90,             // Büsche hinter Zäunen und Leitplanken (Versuche pro km, nur wo welche stehen)
+    waldrandProKm: 900,        // Büsche und Jungtannen am Waldrand (Versuche pro km)
+    wieseProKm: 260,           // vereinzelte Büsche und Grasbüschel auf den Wiesen (Versuche pro km)
+    breite: 140,               // Waldrand und Wiese: so weit neben der Strasse (Meter)
+    verteilung: 1.6,           // > 1 = nahe der Strasse dichter
+    blueten: 0.18,             // so ein Anteil der Büsche blüht (rosa Alpenrosen)
+    beeren: 0.15,              // ... so ein Anteil sind Heidelbeer-Sträucher
+    abstandKuh: 1.8,           // so weit weg von Kühen
+    maxSteil: 0.6,             // nicht an steileren Hängen (0.6 = 60 %, dort ist Fels)
+  },
+
+  // --- Wald in der Ferne (Meilenstein 2b) --------------------------------
+  // Hinter der Sprite-Reichweite (sprites.breite = 230 m) war das Gelände kahl. Jetzt:
+  // 1. Geländefarbe nach denselben Waldstücken wie nahe der Strasse (kostet nichts beim Zeichnen)
+  // 2. eine dünne Schicht grosser Tannen zwischen ca. 200 und 700 m (ein Zeichenaufruf)
+  fernwald: {
+    faerben: true,             // false = Gelände in der Ferne wie früher (nur Gras/Fels)
+    farbeAb: [140, 230],       // ab so vielen Metern neben der Strasse wird eingefärbt, voll ab dem zweiten Wert
+    dichteAb: [250, 600],      // Talflanken: ab hier wird der Wald dichter als an der Strasse, ab dem zweiten Wert normal
+                               // (an der Strasse gilt die Baumdichte des Abschnitts, z. B. im Tal nur 35 %)
+    waldFarbe: '#224821',      // Tannengrün der Waldstücke ...
+    waldDunkel: '#163418',     // ... mit dunkleren Flecken (Kronen)
+    waldStaerke: 1.0,          // wie stark der Wald die Grasfarbe ersetzt (0..1)
+    wiesenFarbe: '#5da838',    // offene Wiese in der Ferne: etwas heller
+    wiesenStaerke: 0.35,       // ... so stark (0 = wie früher)
+    geroellFarbe: '#77736a',   // Geröllflecken an Hängen
+    geroell: 0.74,             // Geröll, wo das Rauschen über diesem Wert liegt (höher = weniger Flecken)
+    baeume: true,              // false = keine Fernbäume
+    seed: 2024,                // Zufallszahl für die Fernbäume
+    baeumeProKm: 6500,         // Versuche pro km Strecke (stehen bleiben nur die an Waldstellen)
+    von: 195,                  // Fernbäume ab so vielen Metern neben der Strasse ...
+    voll: 270,                 // ... voll dicht ab hier (weicher Übergang zu den nahen Bäumen)
+    aus: 700,                  // ... ab hier werden sie weniger ...
+    bis: 900,                  // ... und hier hören sie auf (dahinter nur noch die Geländefarbe)
+    hoehe: [12, 22],           // Höhe (Meter), grösser als die nahen Tannen
+    hang: 1.4,                 // an Hängen etwas mehr Bäume (1 = gleich wie flach)
+    einsinken: 0.8,            // so tief stehen sie im Boden (das grobe Gelände weit weg ist ungenau)
+    helligkeit: [0.7, 0.88],   // etwas dunkler als die nahen Bäume (Tiefe)
+  },
+
+  // --- Kühe (Meilenstein 2b) --------------------------------------------
+  // Herden auf den eingezäunten Weiden im Tal und auf den Alpwiesen oben. Jede Kuh hat eine
+  // zufällige Blickrichtung; gezeigt wird die Ansicht, die zum Winkel zur Kamera passt (8 Ansichten).
+  kuehe: {
+    an: true,                  // false = keine Kühe
+    seed: 1291,                // Zufallszahl (gleich = gleiche Kühe an gleicher Stelle)
+    anzahl: 34,                // so viele Kühe insgesamt (ungefähr; passen nicht alle hin, sind es weniger)
+    herde: [2, 6],             // Herdengrösse von bis
+    einzeln: 3,                // dazu so viele Einzeltiere
+    anteilTal: 0.6,            // so ein Anteil der Kühe steht auf den Weiden im Tal (Rest auf den Alpwiesen)
+    alpAb: 120,                // Alpwiese: Strasse höher als so viele Meter über dem Start ...
+    alpBreite: [10, 30],       // ... Kühe so weit neben der Strasse (mehr als 45 m kommt man mit dem Auto nicht hin)
+    passBei: 2586,             // nahe dieser Stelle (Passhöhe, Streckenmeter) steht sicher eine Herde auf der Alpwiese
+    weideTiefe: [3, 25],       // Weide hinter einem Zaun: so weit hinter dem Zaun
+    abstandStrasse: 8,         // nie näher an die Strassenmitte (auch nicht an eine andere Kehre)
+    abstandZaun: 3.5,          // so weit weg von Zaun, Leitplanke und Schildern (nicht in die Pfosten)
+    abstandTor: 5,             // so weit weg von einem Weidetor (die Durchfahrt bleibt frei) ...
+    torTiefe: 20,              // ... und hinter dem Tor bleibt so ein langer Weg ins Feld frei
+    abstandBaum: 2.5,          // so weit weg von Bäumen, Steinen, Sperren
+    abstandKuh: 2.4,           // Kühe untereinander (Mitte zu Mitte)
+    herdeRadius: [4, 12],      // eine Herde verteilt sich so weit um ihre Mitte (mehr Tiere = weiter)
+    herdenAbstand: 45,         // zwei Herden stehen mindestens so weit auseinander (Mitte zu Mitte)
+    sichtVersuche: 4,          // pro Herde so viele Plätze auswürfeln, genommen wird der mit der freiesten Sicht von der Strasse
+    maxSteigung: 0.2,          // nur wo das Gelände flach ist (0.2 = 20 %)
+    maxWald: 0.25,             // nur wo kein Wald ist (0..1)
+    pufferNichtSchneiden: 20,  // Innenseite der gesperrten Kurven (sVon–sBis plus so viele Meter) bleibt frei
+    pufferSchneiden: 50,       // ... und der freien Kurven (lange Abkürzungen kommen erst ca. 50 m danach zurück)
+    posen: [0.45, 0.35, 0.2],  // Anteil stehend, grasend (Kopf unten), liegend (wiederkäuend)
+    gleicheRichtung: 0.5,      // so oft schaut eine Kuh ungefähr in dieselbe Richtung wie ihre Herde
+    groesse: [0.92, 1.06],     // Grösse (1 = 1.4 m hoch, 2.4 m lang)
+    radius: 0.95,              // Kollision: Kreis um den Körper (Meter) ...
+    radiusLiegend: 0.75,       // ... bei liegenden Kühen
+  },
+
   // --- Hintergrundberge -----------------------------------------------
   berge: {
     anzahl: 34,                // Berge im hinteren Kranz (vorne kommen 70 % dazu)

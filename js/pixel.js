@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { zufall } from './util.js';
 
-function leinwand(b, h) {
+export function leinwand(b, h) {
   const c = document.createElement('canvas');
   c.width = b;
   c.height = h;
@@ -13,12 +13,12 @@ function leinwand(b, h) {
   return { c, ctx, bild, b, h };
 }
 
-function hexZuRgb(hex) {
+export function hexZuRgb(hex) {
   const n = parseInt(hex.replace('#', ''), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function setze(l, x, y, rgb, a = 255) {
+export function setze(l, x, y, rgb, a = 255) {
   if (x < 0 || y < 0 || x >= l.b || y >= l.h) return;
   const i = (y * l.b + x) * 4;
   l.bild.data[i] = rgb[0];
@@ -27,7 +27,7 @@ function setze(l, x, y, rgb, a = 255) {
   l.bild.data[i + 3] = a;
 }
 
-function zuTextur(l, { wiederholen = false, mipmaps = true } = {}) {
+export function zuTextur(l, { wiederholen = false, mipmaps = true } = {}) {
   l.ctx.putImageData(l.bild, 0, 0);
   const t = new THREE.CanvasTexture(l.c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -644,4 +644,69 @@ export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61, tempoZah
       return { u0: r.x / N, u1: (r.x + r.b) / N, v0: 1 - (r.y + r.h) / NH, v1: 1 - r.y / NH };
     },
   };
+}
+
+// Büsche und Grasbüschel (Meilenstein 2b), je 16x16 Pixel, Boden unten:
+//   0–2 grüne Sträucher, 3 Alpenrose (rosa Blüten), 4 Heidelbeere (niedrig, blaue Beeren),
+//   5–6 hohes Gras mit ein paar Blumen
+export const BUSCH = { gruen: [0, 1, 2], bluete: 3, beere: 4, gras: [5, 6] };
+const BUSCHGRUEN = ['#24481c', '#335f24', '#4a7e2e', '#679a3a', '#183614'];
+const BLUETE = ['#d0457a', '#e870a0', '#f3a6c4'];
+const BEERE = ['#2c3f6e', '#4a5f9c'];
+const GRAS = ['#2f5a1c', '#4f7f2a', '#6d9a36', '#a3b752'];
+const BLUME = ['#f4f0e0', '#f2d24a', '#9a7ad0'];
+export function buschTextur(seed = 83) {
+  const B = 16, H = 16, N = 7;
+  const l = leinwand(B * N, H);
+  const rnd = zufall(seed);
+  const gruen = BUSCHGRUEN.map(hexZuRgb), bluete = BLUETE.map(hexZuRgb), beere = BEERE.map(hexZuRgb);
+  const gras = GRAS.map(hexZuRgb), blume = BLUME.map(hexZuRgb);
+  // Strauch aus ein paar Kreisen, Licht von links oben
+  function strauch(ox, hoehe, breite, punkte) {
+    const kreise = [];
+    const n = 4 + Math.floor(rnd() * 3);
+    for (let i = 0; i < n; i++) {
+      const r = 2.6 + rnd() * 2.2;
+      kreise.push({ x: 8 + (rnd() - 0.5) * breite, y: H - r * 0.8 - rnd() * (hoehe - r * 1.6), r });
+    }
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < B; x++) {
+        let drin = null;
+        for (const k of kreise) if (Math.hypot(x + 0.5 - k.x, y + 0.5 - k.y) < k.r + (rnd() - 0.5) * 0.8) drin = k;
+        if (!drin) continue;
+        const lx = (x + 0.5 - drin.x) / drin.r, ly = (y + 0.5 - drin.y) / drin.r;
+        const licht = -lx * 0.6 - ly * 0.8 - (y > H - 3 ? 0.4 : 0);
+        let f = licht > 0.5 ? 3 : licht > 0.05 ? 2 : licht > -0.5 ? 1 : 0;
+        if (rnd() < 0.14) f = Math.max(0, f - 1);
+        if (rnd() < 0.04) f = 4;
+        let farbe = gruen[f];
+        // Blüten oder Beeren obenauf (dort, wo Licht hinkommt)
+        if (punkte && licht > -0.2 && rnd() < punkte.anteil) farbe = punkte.farben[Math.floor(rnd() * punkte.farben.length)];
+        setze(l, ox + x, y, farbe);
+      }
+    }
+  }
+  strauch(0, 12, 9);
+  strauch(B, 10, 11);
+  strauch(B * 2, 13, 8);
+  strauch(B * 3, 10, 10, { anteil: 0.22, farben: bluete });   // Alpenrose
+  strauch(B * 4, 7, 12, { anteil: 0.16, farben: beere });     // Heidelbeere (niedrig)
+  // Grasbüschel: Halme von unten Mitte fächerförmig nach oben, ein paar Blumen
+  for (let v = 0; v < 2; v++) {
+    const ox = B * (5 + v);
+    const halme = 18 + Math.floor(rnd() * 5);
+    for (let i = 0; i < halme; i++) {
+      const fuss = 8 + (rnd() - 0.5) * 6, neigung = (rnd() - 0.5) * 0.9, laenge = 5 + rnd() * 10;
+      for (let t = 0; t < laenge; t++) {
+        const x = Math.round(fuss + neigung * t + neigung * neigung * t * 0.15), y = H - 1 - t;
+        setze(l, ox + x, y, gras[t > laenge - 3 ? 3 : t < 3 ? 0 : 1 + Math.floor(rnd() * 2)]);
+      }
+      if (rnd() < 0.4) {
+        const x = Math.round(fuss + neigung * laenge), y = Math.max(0, Math.round(H - 1 - laenge));
+        const b = blume[Math.floor(rnd() * blume.length)];
+        setze(l, ox + x, y, b); setze(l, ox + x + 1, y, b);
+      }
+    }
+  }
+  return { textur: zuTextur(l), varianten: N, seitenVerhaeltnis: B / H };
 }

@@ -1,0 +1,508 @@
+{
+ "ladezeiten": [
+  1275,
+  2561,
+  3213,
+  2324
+ ],
+ "stellen": [
+  {
+   "nr": "01",
+   "name": "start",
+   "s": 12,
+   "zahl": true,
+   "calls": 114,
+   "dreiecke": 122884
+  },
+  {
+   "nr": "02",
+   "name": "weide-tal-hinter-auto",
+   "s": 700,
+   "zahl": true,
+   "calls": 90,
+   "dreiecke": 136880
+  },
+  {
+   "nr": "03",
+   "name": "weide-tal-seitlich",
+   "k": [
+    812,
+    1,
+    2
+   ],
+   "blick": [
+    838,
+    30,
+    0.5
+   ],
+   "calls": 87,
+   "dreiecke": 139548
+  },
+  {
+   "nr": "04",
+   "name": "kehren-hinter-auto",
+   "s": 1400,
+   "zahl": true,
+   "calls": 74,
+   "dreiecke": 130338
+  },
+  {
+   "nr": "05",
+   "name": "kehren-von-oben",
+   "frei": "kehrenOben",
+   "calls": 77,
+   "dreiecke": 136324
+  },
+  {
+   "nr": "06",
+   "name": "passhoehe",
+   "s": 2586,
+   "zahl": true,
+   "calls": 81,
+   "dreiecke": 119822
+  },
+  {
+   "nr": "07",
+   "name": "alpwiese-seitlich",
+   "k": [
+    2596,
+    1,
+    2
+   ],
+   "blick": [
+    2619,
+    30,
+    0.5
+   ],
+   "calls": 65,
+   "dreiecke": 120394
+  },
+  {
+   "nr": "08",
+   "name": "abfahrt",
+   "s": 3080,
+   "calls": 70,
+   "dreiecke": 113684
+  },
+  {
+   "nr": "09",
+   "name": "ziel",
+   "s": 3560,
+   "zahl": true,
+   "calls": 55,
+   "dreiecke": 93314
+  },
+  {
+   "nr": "10",
+   "name": "tal-von-oben",
+   "frei": "talOben",
+   "calls": 92,
+   "dreiecke": 144422
+  },
+  {
+   "nr": "11",
+   "name": "pass-von-oben",
+   "frei": "passOben",
+   "calls": 74,
+   "dreiecke": 133814
+  }
+ ],
+ "durchlauf": [
+  {
+   "s": 10,
+   "calls": 114,
+   "dreiecke": 122884
+  },
+  {
+   "s": 60,
+   "calls": 112,
+   "dreiecke": 124624
+  },
+  {
+   "s": 110,
+   "calls": 110,
+   "dreiecke": 123696
+  },
+  {
+   "s": 160,
+   "calls": 110,
+   "dreiecke": 123696
+  },
+  {
+   "s": 210,
+   "calls": 110,
+   "dreiecke": 125178
+  },
+  {
+   "s": 260,
+   "calls": 110,
+   "dreiecke": 145722
+  },
+  {
+   "s": 310,
+   "calls": 116,
+   "dreiecke": 146108
+  },
+  {
+   "s": 360,
+   "calls": 118,
+   "dreiecke": 138140
+  },
+  {
+   "s": 410,
+   "calls": 117,
+   "dreiecke": 131312
+  },
+  {
+   "s": 460,
+   "calls": 117,
+   "dreiecke": 131312
+  },
+  {
+   "s": 510,
+   "calls": 115,
+   "dreiecke": 130564
+  },
+  {
+   "s": 560,
+   "calls": 111,
+   "dreiecke": 123460
+  },
+  {
+   "s": 610,
+   "calls": 102,
+   "dreiecke": 120040
+  },
+  {
+   "s": 660,
+   "calls": 94,
+   "dreiecke": 132764
+  },
+  {
+   "s": 710,
+   "calls": 89,
+   "dreiecke": 136592
+  },
+  {
+   "s": 760,
+   "calls": 79,
+   "dreiecke": 135166
+  },
+  {
+   "s": 810,
+   "calls": 82,
+   "dreiecke": 115994
+  },
+  {
+   "s": 860,
+   "calls": 85,
+   "dreiecke": 131930
+  },
+  {
+   "s": 910,
+   "calls": 92,
+   "dreiecke": 132222
+  },
+  {
+   "s": 960,
+   "calls": 109,
+   "dreiecke": 139218
+  },
+  {
+   "s": 1010,
+   "calls": 107,
+   "dreiecke": 132676
+  },
+  {
+   "s": 1060,
+   "calls": 86,
+   "dreiecke": 125054
+  },
+  {
+   "s": 1110,
+   "calls": 91,
+   "dreiecke": 129438
+  },
+  {
+   "s": 1160,
+   "calls": 105,
+   "dreiecke": 134852
+  },
+  {
+   "s": 1210,
+   "calls": 110,
+   "dreiecke": 136640
+  },
+  {
+   "s": 1260,
+   "calls": 113,
+   "dreiecke": 137098
+  },
+  {
+   "s": 1310,
+   "calls": 110,
+   "dreiecke": 134874
+  },
+  {
+   "s": 1360,
+   "calls": 105,
+   "dreiecke": 145624
+  },
+  {
+   "s": 1410,
+   "calls": 77,
+   "dreiecke": 143582
+  },
+  {
+   "s": 1460,
+   "calls": 69,
+   "dreiecke": 113526
+  },
+  {
+   "s": 1510,
+   "calls": 59,
+   "dreiecke": 106230
+  },
+  {
+   "s": 1560,
+   "calls": 111,
+   "dreiecke": 135342
+  },
+  {
+   "s": 1610,
+   "calls": 109,
+   "dreiecke": 134894
+  },
+  {
+   "s": 1660,
+   "calls": 98,
+   "dreiecke": 131758
+  },
+  {
+   "s": 1710,
+   "calls": 79,
+   "dreiecke": 130154
+  },
+  {
+   "s": 1760,
+   "calls": 67,
+   "dreiecke": 111752
+  },
+  {
+   "s": 1810,
+   "calls": 59,
+   "dreiecke": 108292
+  },
+  {
+   "s": 1860,
+   "calls": 115,
+   "dreiecke": 137586
+  },
+  {
+   "s": 1910,
+   "calls": 105,
+   "dreiecke": 120898
+  },
+  {
+   "s": 1960,
+   "calls": 93,
+   "dreiecke": 125632
+  },
+  {
+   "s": 2010,
+   "calls": 97,
+   "dreiecke": 139168
+  },
+  {
+   "s": 2060,
+   "calls": 106,
+   "dreiecke": 141980
+  },
+  {
+   "s": 2110,
+   "calls": 107,
+   "dreiecke": 142412
+  },
+  {
+   "s": 2160,
+   "calls": 104,
+   "dreiecke": 128060
+  },
+  {
+   "s": 2210,
+   "calls": 100,
+   "dreiecke": 128168
+  },
+  {
+   "s": 2260,
+   "calls": 90,
+   "dreiecke": 122062
+  },
+  {
+   "s": 2310,
+   "calls": 89,
+   "dreiecke": 121350
+  },
+  {
+   "s": 2360,
+   "calls": 92,
+   "dreiecke": 125510
+  },
+  {
+   "s": 2410,
+   "calls": 91,
+   "dreiecke": 137222
+  },
+  {
+   "s": 2460,
+   "calls": 92,
+   "dreiecke": 138638
+  },
+  {
+   "s": 2510,
+   "calls": 86,
+   "dreiecke": 135790
+  },
+  {
+   "s": 2560,
+   "calls": 84,
+   "dreiecke": 119990
+  },
+  {
+   "s": 2610,
+   "calls": 81,
+   "dreiecke": 119822
+  },
+  {
+   "s": 2660,
+   "calls": 78,
+   "dreiecke": 123278
+  },
+  {
+   "s": 2710,
+   "calls": 78,
+   "dreiecke": 124350
+  },
+  {
+   "s": 2760,
+   "calls": 75,
+   "dreiecke": 122106
+  },
+  {
+   "s": 2810,
+   "calls": 77,
+   "dreiecke": 122682
+  },
+  {
+   "s": 2860,
+   "calls": 78,
+   "dreiecke": 121914
+  },
+  {
+   "s": 2910,
+   "calls": 72,
+   "dreiecke": 125834
+  },
+  {
+   "s": 2960,
+   "calls": 72,
+   "dreiecke": 124298
+  },
+  {
+   "s": 3010,
+   "calls": 74,
+   "dreiecke": 127220
+  },
+  {
+   "s": 3060,
+   "calls": 72,
+   "dreiecke": 114164
+  },
+  {
+   "s": 3110,
+   "calls": 70,
+   "dreiecke": 113770
+  },
+  {
+   "s": 3160,
+   "calls": 66,
+   "dreiecke": 111618
+  },
+  {
+   "s": 3210,
+   "calls": 67,
+   "dreiecke": 112770
+  },
+  {
+   "s": 3260,
+   "calls": 62,
+   "dreiecke": 113746
+  },
+  {
+   "s": 3310,
+   "calls": 61,
+   "dreiecke": 117202
+  },
+  {
+   "s": 3360,
+   "calls": 61,
+   "dreiecke": 117106
+  },
+  {
+   "s": 3410,
+   "calls": 60,
+   "dreiecke": 112410
+  },
+  {
+   "s": 3460,
+   "calls": 58,
+   "dreiecke": 94010
+  },
+  {
+   "s": 3510,
+   "calls": 55,
+   "dreiecke": 93314
+  },
+  {
+   "s": 3560,
+   "calls": 55,
+   "dreiecke": 93314
+  },
+  {
+   "s": 3610,
+   "calls": 55,
+   "dreiecke": 93314
+  }
+ ],
+ "stat": {
+  "kuehe": {
+   "anzahl": 34,
+   "herden": 11,
+   "tal": 19,
+   "alp": 15,
+   "stehend": 13,
+   "grasend": 12,
+   "liegend": 9,
+   "arten": [
+    "braun-weiss mit Hörnern: 8",
+    "braun-weiss ohne Hörner: 5",
+    "schwarz-weiss mit Hörnern: 4",
+    "schwarz-weiss ohne Hörner: 6",
+    "braun mit Hörnern: 6",
+    "braun ohne Hörner: 5"
+   ],
+   "naechsteStrasse": 14.4,
+   "ms": 52,
+   "msPlan": 18,
+   "msBild": 33
+  },
+  "deko": {
+   "buesche": 730,
+   "gras": 358,
+   "jungTannen": 76,
+   "fernbaeume": 6283,
+   "ms": 70
+  },
+  "hindernisse": 11140
+ }
+}
