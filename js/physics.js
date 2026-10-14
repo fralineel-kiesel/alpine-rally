@@ -44,7 +44,8 @@ export class Fahrphysik {
 
   // Ein Physik-Schritt.
   // eingabe: { gas 0..1, bremse 0..1, lenkung -1..1 (+ = rechts), handbremse true/false }
-  // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus), rueckwaerts (Faktor Rückwärtsgang) }
+  // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus), rueckwaerts (Faktor Rückwärtsgang),
+  //           heck (Faktor Grip hinten), stabilitaet (Faktor Stabilitätshilfe) – beide seit M3a, fehlen = 1 }
   // motor:   vom Getriebe (getriebe.js): { beschl: Antrieb vorwärts (m/s²), motorbremse (m/s²) }
   schritt(dt, eingabe, boden, motor) {
     const c = CONFIG.auto;
@@ -77,7 +78,8 @@ export class Fahrphysik {
 
     // --- Grip ---
     let gripV = c.gripVorne * boden.grip;
-    let gripH = c.gripHinten * boden.grip;
+    // heck (seit M3a): auf Schotter hält das Heck etwas weniger als die Front -> driftet früher
+    let gripH = c.gripHinten * boden.grip * (boden.heck ?? 1);
     const schraeg = Math.atan2(vSeit, Math.max(Math.abs(vVor), 0.5));
     if (Math.abs(schraeg) > 0.12) gripH *= 1 - c.gasImDrift * eingabe.gas;
 
@@ -131,7 +133,7 @@ export class Fahrphysik {
     const ohnePedal = eingabe.gas < 0.05 && eingabe.bremse < 0.05;
     const laengsQuer = -kraftV * Math.sin(deltaLaengs) * (ohnePedal ? glatt(0.5, 2.0, Math.abs(vVor)) : 1);
     const drehBeschl = (a * kraftV * Math.cos(delta) - b * kraftH) / c.traegheit
-      + c.stabilitaet * this.stabAnteil * schraeg * Math.min(1, Math.abs(vVor) / 10);
+      + c.stabilitaet * (boden.stabilitaet ?? 1) * this.stabAnteil * schraeg * Math.min(1, Math.abs(vVor) / 10);
 
     // Längs zuerst Antrieb + Querkraft-Anteil, dann Widerstand (ohne Vorzeichenwechsel)
     let vVorNeu = vVor + (antrieb + laengsQuer) * dt;

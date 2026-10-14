@@ -88,6 +88,7 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
   function ok(x, z, r) {
     strecke.abfrage(x, z, q);
     if (q.abstand < c.abstandStrasse + r) return false;
+    if (welt.netz && welt.netz.stummelAbstand(x, z, 60) < c.abstandStrasse + r) return false; // Stummel (M3a)
     if (q.wandSeite && Math.sign(q.seite) === q.wandSeite && q.wandStaerke > 0.05 && q.abstand < 40) return false;
     if (istInnen(q.s, Math.sign(q.seite))) return false;
     // andere Äste der Strecke in der Nähe (z. B. die Kehre darüber): gleiche Regeln
