@@ -1,10 +1,11 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 2a.1 fertig** – die gesperrten Kurven sehen natürlicher aus (pro Kurve nur eine
-Sorte: Felsbrocken, umgefallene Stämme oder Tannen, viel lockerer, nichts steckt mehr ineinander), und es
-gibt 7 neue Schilder (5 Tempo-Tafeln, „Kühe“, „Kreuzung“). Dazu alles aus 2a (Leitplanken, Holzzäune,
-Schilder), 1.3b (kein Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und
-1 (Etappe „Passstrasse“). Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
+Aktuell: **Meilenstein 2b fertig** – Leben im Gelände: 34 Kühe in Herden auf den Weiden im Tal und auf
+den Alpwiesen, Büsche, Alpenrosen, Heidelbeeren, Grasbüschel und Jungtannen am Strassenrand, und Wald auch
+weit weg von der Strasse (die Hänge sind nicht mehr kahl). Dazu alles aus 2a.1 (natürlichere Sperren,
+Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein Dunststreifen), 1.2 (Kurven schneiden,
+Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“). Das Konzept und der Fahrplan stehen
+in `KONZEPT.md`.
 
 ## Steuerung
 
@@ -22,7 +23,208 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 2a.1: Sperren natürlicher, mehr Schilder ✅
+## Meilenstein 2b: Leben im Gelände (Kühe, Büsche, Wald in der Ferne) ✅
+
+### Was gebaut wurde
+
+**1. Kühe** (neue Dateien `js/kuehe.js` und `js/kuhbild.js`, Werte in `config.js` Block `kuehe`)
+
+- **34 Kühe** in 11 Herden (2–6 Tiere) plus ein paar Einzeltiere. 19 stehen auf den eingezäunten Weiden im
+  Tal, 15 auf den Alpwiesen oben (Passhöhe, Hochweide, Zielgerade).
+- Drei Fantasie-Fellarten in Schweizer Art: **braun-weiss gefleckt** (weisser Kopf), **schwarz-weiss
+  gefleckt** (weisse Blesse) und **einfarbig braun** (helles Maul), jeweils mit oder ohne Hörner. Drei Posen:
+  **stehend**, **grasend** (Kopf unten) und **liegend** (wiederkäuend, Kopf oben). Höhe ca. 1.4 m, Länge 2.4 m.
+- **Keine Pappfiguren:** Jede Kuh hat eine eigene Blickrichtung. Je nachdem, von wo man schaut, sieht man sie
+  von vorne, schräg vorne, von der Seite, schräg hinten oder von hinten – insgesamt **8 Ansichten** (wie
+  bei Doom). Fährt man an einer Kuh vorbei, dreht sie sich also nicht mit, man sieht nach und nach ihre
+  Seite und dann ihr Hinterteil.
+- **Wie die Bilder entstehen:** Jede Kuh ist im Code aus einfachen Formen gebaut (eiförmige Teile für Rumpf,
+  Hals, Kopf, Maul, Beine, Hufe, Ohren, Hörner, Schwanz). Beim Laden wird daraus für jede Ansicht ein kleines
+  Pixelbild (32x24 Pixel) „abgetastet“, grob in 4 Helligkeitsstufen schattiert, mit dunkler Kante. So sitzen
+  die Flecken in jeder Ansicht an derselben Stelle. Keine Bilddatei, keine Marke.
+- **Wo:** Die grösste Herde steht auf der Weide hinter dem Schild „Kühe“ (rechts, ca. 830–845 m), eine
+  Herde sicher auf der Alpwiese nahe der Passhöhe (rechts, ca. 2615–2622 m). Pro Herde werden ein paar
+  Plätze ausgewürfelt und der genommen, den man von der Strasse aus am besten sieht (wenigste Baumkronen
+  dazwischen).
+- **Regeln, die nie gebrochen werden** (vom Test `tools/kuh-test.mjs` nachgerechnet):
+  mindestens 8 m von jeder Strassenmitte (auch von anderen Kehren; heute nächste 14.4 m), nie auf Asphalt
+  oder Bankett; hinter einem Zaun im Feld, mindestens 3.5 m weg von Zaun, Planke und Schild (heute
+  nächste 6.8 m Kante zu Kante); 5 m weg von jedem Weidetor und kein Tier auf dem Weg 20 m ins Feld hinter
+  dem Tor; nie auf der Innenseite der Abkürzungs-Kurven („nicht schneiden“ +20 m, „schneiden“ +50 m);
+  nur wo es flach ist (höchstens 20 %) und kein Wald steht; nicht unter Baumkronen.
+- **Füsse auf dem Boden:** Die Kuh steht auf dem tiefsten Punkt unter ihrem Körper (an Hängen schwebt so
+  kein Bein in der Luft).
+- **Aufprall:** Kreis um den Körper (0.95 m, liegend 0.75 m, mal Grösse). Wie bei einem Baum: hart zum Halt,
+  dann rückwärts raus. Die Kuh bewegt sich nicht.
+- **Ein Zeichenaufruf für alle Kühe.** Das Sprite-System ist dafür kaum umgebaut: Die Kühe benutzen dasselbe
+  Material wie die Bäume (`spriteMaterial` in `js/sprites.js`), nur mit einem eigenen Vertex-Shader. Der
+  rechnet aus dem Winkel zwischen Blickrichtung der Kuh und Kamera aus, welche der 8 Ansichten (Spalte im
+  Bild) gezeigt wird. Bäume und Steine sind unverändert.
+
+**2. Büsche und mehr Vielfalt** (`js/sprites.js` Funktion `baueDeko`, `js/pixel.js` `buschTextur`, Block `buesche`)
+
+- **730 Büsche** in drei grünen Sorten, dazu **rosa blühende Alpenrosen** (ca. 18 %) und **niedrige
+  Heidelbeer-Sträucher** mit blauen Beeren (ca. 15 %), 0.6–1.2 m hoch.
+- **358 hohe Gras-/Blumenbüschel** (weiss, gelb, violett blühend) und **76 Jungtannen** (1.1–1.9 m).
+- Verteilt: in Gruppen am Strassenrand (6.5–14 m), hinter Zäunen und Leitplanken, an Waldrändern (dort
+  auch die Jungtannen), vereinzelt auf den Wiesen (eher Grasbüschel). Nie näher als 6 m an der Strassenmitte
+  (Jungtannen 9 m, so verdecken sie keine Schilder), nicht in Weidetoren, nicht in Kühen, nicht an steilen
+  Felshängen.
+- **Keine Kollision** – man fährt „drüber“. Darum ändern sie nichts an den Abkürzungen.
+- Büsche und Grasbüschel sind ein Bild zusammen (ein Zeichenaufruf). Die Jungtannen sind Tannen und kommen
+  in den Zeichenaufruf der Tannen (kein zusätzlicher).
+
+**3. Wald in der Ferne** (`js/world.js` Geländefarbe, `js/sprites.js` Fernbäume, Block `fernwald`)
+
+Vorher endeten Bäume ca. 230 m neben der Strasse, dahinter war alles kahle grüne Fläche. Jetzt, in zwei
+Schritten (wie im Auftrag):
+1. **Geländefarbe:** Ab ca. 140 m neben der Strasse (voll ab 230 m) wird das Gelände nach **denselben
+   Waldstücken** eingefärbt, nach denen nahe der Strasse die Tannen stehen: Wald dunkles, fleckiges
+   Tannengrün, Wiese etwas heller, an Hängen ein paar graue Geröllflecken. Kostet beim Zeichnen nichts.
+   Weiter weg (ab 250 m, voll ab 600 m) sind die Talflanken bewaldeter als der Talboden an der Strasse –
+   im Tal stehen an der Strasse nur 35 % der Bäume, die Hänge dahinter sollen trotzdem nach Wald aussehen.
+2. **Fernbäume:** Weil die Farbe allein am Horizont flach wirkte (siehe Screenshot `10`), dazu **6 283
+   grosse Tannen** (12–22 m) zwischen ca. 200 und 900 m neben der Strasse, nur an Waldstellen, an Hängen
+   etwas mehr. Sie stehen im Boden des groben Geländes (weit weg wird nur das gezeichnet), sind etwas
+   dunkler und haben keine Kollision. Sie kommen in den Zeichenaufruf der Tannen (kein zusätzlicher).
+   Übergang weich: Die Fernbäume werden ab 200 m langsam dichter (die nahen Bäume dort langsam dünner),
+   zwischen 700 und 900 m hören sie langsam auf, dahinter ist nur noch die Geländefarbe.
+
+### So testest du
+
+| Wo | Was |
+|---|---|
+| Start (0–100 m), links | Herden auf der Weide hinter dem Zaun (ca. 25–30 m und 70 m) |
+| 612 m rechts | Schild „Kühe“, dahinter (ca. 830–845 m rechts) die grösste Herde (6 Tiere) |
+| 810–860 m links | weitere Herde |
+| Talabschnitt, von oben/hinten | Hänge links und rechts bewaldet statt kahl |
+| Kehren (1350–1855 m) | Büsche, Jungtannen; von oben: Wald geht weich über die 230 m hinaus |
+| ca. 2615 m rechts | Herde auf der Alpwiese nahe der Passhöhe (liegende und grasende Tiere) |
+| 2780–2840 m links, Zielgerade | weitere Kühe auf der Hochweide |
+
+Bitte ausprobieren:
+1. **Kühe von nahem ansehen** (z. B. durchs Weidetor fahren oder am Start links aufs Feld): Erkennst du
+   sie als Kühe? Drehen sie sich beim Vorbeifahren „richtig“ (Seite, dann Hinterteil)? Flackern sie?
+2. **In eine Kuh fahren:** harter Halt, dann rückwärts raus (siehe aber „Bekannte Probleme“ zu Gras).
+3. **Fernwald:** Achte auf Hänge und Horizont, z. B. am Start, in den Kehren und an der Passhöhe. Wirkt
+   der Wald glaubhaft oder wie aufgemalt? Siehst du irgendwo noch eine Kante, wo der Wald aufhört?
+4. **FPS mit F3** auf beiden Rechnern (besonders am Start und in der Weide bei 700 m).
+
+### Wo man schrauben kann (`js/config.js`)
+
+Block `kuehe`:
+- `an` (false = keine Kühe), `seed` (andere Zahl = andere Kühe), `anzahl` (34), `herde` ([2, 6]),
+  `einzeln` (3), `anteilTal` (0.6 = 60 % im Tal).
+- `posen` ([0.45, 0.35, 0.2] = Anteil stehend, grasend, liegend), `groesse`, `gleicheRichtung`.
+- Abstände: `abstandStrasse` (8), `abstandZaun` (3.5), `abstandTor` (5) / `torTiefe` (20),
+  `abstandBaum`, `abstandKuh`, `herdenAbstand` (45 m zwischen Herden).
+- Wo: `weideTiefe` (3–25 m hinter dem Zaun), `alpAb` (Strasse höher als 120 m = Alpwiese), `alpBreite`
+  (10–30 m neben der Strasse), `passBei` (2586: dort steht sicher eine Herde), `sichtVersuche` (4).
+- `maxSteigung` (0.2), `maxWald` (0.25), `radius` / `radiusLiegend` (Kollision).
+- **Wichtig:** Nach einer Änderung im Block `kuehe` stehen die Kühe anders. Dann
+  `node tools/abkuerzungen.mjs --pruefen` und `node tools/kuh-test.mjs` laufen lassen.
+
+Block `buesche`:
+- `an`, `seed`, `mindestAbstand` (6), `hoehe` ([0.6, 1.2]), `grasHoehe`, `jungHoehe` ([1.1, 1.9]).
+- Wie viele: `randGruppenProKm` (Gruppen am Strassenrand), `zaunProKm` (hinter Zäunen/Planken),
+  `waldrandProKm` (Waldrand, mit Jungtannen), `wieseProKm` (Wiese). Höher = mehr.
+- `blueten` (0.18 Alpenrosen), `beeren` (0.15 Heidelbeeren), `maxSteil` (0.6).
+
+Block `fernwald`:
+- `faerben` (false = Gelände wie früher), `farbeAb` ([140, 230]), `dichteAb` ([250, 600]).
+- Farben: `waldFarbe`, `waldDunkel`, `wiesenFarbe`, `geroellFarbe`; `waldStaerke` (1.0),
+  `wiesenStaerke` (0.35), `geroell` (0.74, höher = weniger Geröllflecken).
+- Fernbäume: `baeume` (false = keine), `baeumeProKm` (6500 Versuche; höher = dichter, kostet Dreiecke),
+  `von`/`voll`/`aus`/`bis` (200/270/700/900 m), `hoehe` ([12, 22]), `hang` (1.4), `helligkeit`.
+
+### Selbst getestet
+
+- **Abkürzungen** (`node tools/abkuerzungen.mjs --pruefen`, vorher und nachher): **gleich.** Offene Linien
+  128 / 5 / 342 / 84, gesperrte Kurven 0. Sogar **genau dieselben 559 Linien** sind offen (Vergleich mit
+  `--offen-merken` vorher/nachher). `js/abkuerzungen.js` wurde nicht angefasst.
+- **`testfahrer.mjs`:** auf die Hundertstel gleich (2:33.24 / 2:19.11 / 2:10.41), kein Aufprall, nirgends
+  hängen geblieben.
+- **`kuh-test.mjs` (neu), alle Prüfungen erfüllt:** Das Auto fährt von der Strasse her mit 40 km/h in jede
+  Kuh, bei der der Weg frei ist (20 Anfahrten an 12 Kühen, auch liegende, mittig und 0.6 m versetzt):
+  jedes Mal die Kuh getroffen, nach 0.4 s 0 km/h (hart zum Halt), nie im Hindernis stecken geblieben
+  (0.00 m), jedes Mal rückwärts raus (mehr als 2 m in 4 s). Dazu: alle Regeln oben für jede Kuh, Füsse
+  nicht über dem Boden, Büsche/Jungtannen/Fernbäume ohne Kollision, Büsche ≥ 6 m von der Strasse und
+  ≤ 1.2 m hoch, Jungtannen < 2 m, Fernbäume ≥ 199 m von jeder Strasse, gleicher seed = gleiche Kühe.
+- `aufprall-test.mjs`, `strassenrand-test.mjs`, `lenk-test.mjs`: alle Prüfungen erfüllt,
+  `getriebe-test.mjs` läuft durch. Keine Fehler in der Browser-Konsole.
+- **Leistung** (Software-Grafik ohne Grafikkarte, Kamera hinter dem Auto, `node tools/m2b-bilder.mjs`):
+
+  | Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+  |---|---|---|
+  | Start (12 m) | 112 → 114 | 107 922 → 122 884 |
+  | Weide im Tal (700 m) | 88 → 90 | 121 918 → 136 880 |
+  | Kehren (1400 m) | 72 → 74 | 115 376 → 130 338 |
+  | Passhöhe (2586 m) | 79 → 81 | 104 860 → 119 822 |
+  | Ziel (3560 m) | 53 → 55 | 78 352 → 93 314 |
+
+  Schlimmste Stelle beim Durchlauf alle 50 m: 116 → **118** Zeichenaufrufe, 131 146 → **146 108** Dreiecke.
+  Also überall **+2 Zeichenaufrufe** (Kühe, Büsche) und **+14 962 Dreiecke** (Budget: +6 und +40 000).
+  Die Dreiecke sind überall gleich viele mehr, weil Sprites immer alle gezeichnet werden (ein Viereck = 2
+  Dreiecke pro Kuh, Busch, Fernbaum). Die meisten davon sind Fernbäume (6 283 x 2).
+- **Ladezeit** (`node tools/ladezeit.mjs <alte Version> 7`: alt und neu abwechselnd je 7 Mal, gemessen im
+  Spiel bis die Welt fertig ist): vorher **1 041 ms**, nachher **1 198 ms** (Median) = **+157 ms**
+  (Budget +300). Davon Kühe ca. 50 ms (Kuh-Bilder ca. 30 ms), Büsche + Fernbäume ca. 50–70 ms, der Rest
+  ist die Geländefarbe.
+- **FPS auf echten Rechnern kann ich hier nicht messen** (nur Software-Grafik). Bitte mit F3 auf beiden
+  Rechnern nachsehen.
+- **Screenshots** (1280x720, ohne HUD) unter `screenshots/m2b/`: `a` = vorher, `b` = nachher, gleiche
+  Kamera. `01` Start, `02` Weide im Tal hinter dem Auto, `03` Weide seitlich (Herde hinter dem Schild),
+  `04` Kehren hinter dem Auto, `05` Kehren von oben, `06` Passhöhe, `07` Alpwiese seitlich, `08` Abfahrt,
+  `09` Ziel, `10` Tal von oben, `11` Passhöhe von oben, `12b-kuh…` Nahaufnahmen von Kühen (vorne,
+  schräg, Seite, hinten; liegend und grasend). Neu erzeugen: `node tools/m2b-bilder.mjs --endung b`
+  (vorher: `--wurzel <alte Version> --endung a`).
+- **Ehrlich zur Optik:**
+  - Die **Kühe** sehen aus der Nähe (5–15 m) wirklich nach Kühen aus, auch von vorne und hinten, und die
+    Ansichten passen zusammen. Beim normalen Fahren sind sie aber **klein** (eine Kuh 25 m weg ist im
+    320x180-Bild nur ca. 8 Pixel hoch) – man erkennt Herden und Fellfarben, Details nicht. Die braunen
+    Kühe gehen auf der Wiese etwas unter.
+  - Der **Fernwald** wirkt von oben und am Horizont deutlich besser als vorher (Bild `10`, `05`: vorher ein
+    Baumband entlang der Strasse mit kahler Fläche dahinter, jetzt Waldstücke und Wiesen an den Hängen).
+    Die eingefärbten Waldflächen ganz weit weg (hinter 900 m, ohne Bäume) sind etwas „weich“ und können
+    aus der Höhe wie aufgemalt wirken. Aus der Fahrersicht fällt das kaum auf.
+  - **Büsche** bringen Abwechslung am Strassenrand, sind aber bewusst klein und dezent.
+  - Zu viel ist es meiner Meinung nach nicht; eher könnte es noch etwas mehr Kühe nahe der Strasse geben.
+
+### Bekannte Probleme
+
+- **Rückwärts auf Gras ist schwach (schon seit M1, gilt auch für Bäume):** Der Rückwärtsgang schiebt mit
+  3 m/s², das Gras bremst mit 2.2 m/s². Auf der flachen Wiese kommt man raus (ca. 2–5 m in 4 s), geht es
+  hinter dem Auto aber mehr als ca. 8 % bergauf, kommt das Auto rückwärts kaum vom Fleck. Fast alle Kühe
+  stehen oberhalb der Strasse, darum geht es nach einem Aufprall von der Strasse her meist bergab
+  rückwärts (im Test 20 von 20). Fährt man von oben in eine Kuh, muss man vorwärts mit Lenken ausweichen.
+  Nicht geändert (Fahrphysik war nicht Teil des Auftrags).
+- **Kühe hinter 45 m sind nicht erreichbar:** Die unsichtbare Grenze (`grenze.maxAbstand`) gilt weiter.
+  Heute stehen alle Kühe näher.
+- **Ansicht springt:** Die Kuh wechselt die Ansicht in 45°-Schritten (wie bei Doom). Fährt man genau auf
+  einer Grenze, kann sie einmal hin- und herspringen.
+- **Auf Hängen sind die Hufe manchmal leicht im Gras versteckt** (bis ca. 20 cm), weil die Kuh auf dem
+  tiefsten Punkt unter dem Körper steht und das Bild eine flache Tafel ist. Dafür schwebt nie ein Bein.
+- **Zwei Büsche stehen auf der Böschung zwischen zwei Kehren** (bei 1400 m rechts, vor dem Fels). Dort
+  lagen schon vorher Steine; glaubhaft, aber nicht schön.
+- **Weit weg ohne Bäume** (hinter 900 m) gibt es nur Farbe; aus grosser Höhe wirkt das weich/aufgemalt.
+- Die Weide 270–430 m rechts hat heute keine Kühe (Zufall). Mit einem anderen `kuehe.seed` ändert sich das.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Kuhglocke / Muhen** als Ton, lauter, je näher man an einer Herde ist.
+- **Tiere, die sich leicht bewegen:** Kopf heben/senken beim Grasen, Schwanz schwingen, ab und zu ein paar
+  Schritte gehen (neue Posen im selben Bild).
+- **Alphütten und Heustadel** als einfache Low-Poly-Gebäude auf den Alpwiesen und an den Weiden.
+- **Gleiten an Leitplanken** (aus M2a, weiter offen): flach an die Planke = entlangschrammen statt bremsen.
+- Rückwärtsgang auf Gras etwas kräftiger (siehe Bekannte Probleme) – nur wenn es Lino stört.
+- Mehr Kühe näher an der Strasse (z. B. eine Weide ohne Zaun direkt am Bankett mit Viehgatter), damit man
+  sie beim Fahren grösser sieht.
+- Fernwald noch weiter hinaus mit „Waldstück“-Sprites (eine Gruppe Tannen in einem Bild), falls der
+  Horizont aus der Höhe zu weich wirkt.
+
+---
+
+## Meilenstein 2a.1: Sperren natürlicher, mehr Schilder ✅ (Verlauf, Stand damals)
 
 ### Was war das Problem?
 

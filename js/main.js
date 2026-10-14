@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { baueStrecke } from './track.js';
 import { baueWelt } from './world.js';
-import { bauePflanzen } from './sprites.js';
+import { bauePflanzen, baueDeko } from './sprites.js';
 import { baueAuto } from './car.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
@@ -13,6 +13,7 @@ import { baueHud, formatZeit } from './hud.js';
 import { baueKollision } from './kollision.js';
 import { baueCheckpointTore } from './checkpoints.js';
 import { baueStrassenrand } from './strassenrand.js';
+import { baueKuehe } from './kuehe.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -67,7 +68,11 @@ const welt = baueWelt(szene, strecke);
 const pflanzen = bauePflanzen(szene, strecke, welt);
 // Leitplanken, Holzzäune, Schilder (Meilenstein 2a) – sind auch Hindernisse
 const strassenrand = baueStrassenrand(szene, strecke, welt, pflanzen);
-const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse]);
+// Kühe auf den Weiden (Meilenstein 2b) – sind auch Hindernisse
+const kuehe = baueKuehe(szene, strecke, welt, pflanzen, strassenrand);
+// Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
+const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe);
+const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse]);
 const checkpoints = baueCheckpointTore(szene, strecke);
 const auto = baueAuto();
 szene.add(auto.objekt);
@@ -375,6 +380,6 @@ requestAnimationFrame(schleife);
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort, kollision,
-  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand,
+  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };
