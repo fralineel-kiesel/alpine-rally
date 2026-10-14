@@ -44,7 +44,7 @@ export class Fahrphysik {
 
   // Ein Physik-Schritt.
   // eingabe: { gas 0..1, bremse 0..1, lenkung -1..1 (+ = rechts), handbremse true/false }
-  // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus) }
+  // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus), rueckwaerts (Faktor Rückwärtsgang) }
   // motor:   vom Getriebe (getriebe.js): { beschl: Antrieb vorwärts (m/s²), motorbremse (m/s²) }
   schritt(dt, eingabe, boden, motor) {
     const c = CONFIG.auto;
@@ -103,7 +103,8 @@ export class Fahrphysik {
     if (eingabe.gas > 0 && vVor > -0.5) antrieb += motor.beschl;
     if (eingabe.bremse > 0 && vVor <= 0.5 && eingabe.gas < 0.1) {
       // rückwärts fahren
-      if (vVor > -c.rueckwaertsTempo) antrieb -= eingabe.bremse * c.rueckwaertsBeschl;
+      // (boden.rueckwaerts: Faktor je Untergrund, auf Gras und Bankett stärker als auf Asphalt)
+      if (vVor > -c.rueckwaertsTempo) antrieb -= eingabe.bremse * c.rueckwaertsBeschl * (boden.rueckwaerts ?? 1);
     }
     // Steigung (im Stand ohne Gas hält das Auto an)
     const stehtFast = Math.abs(vVor) < 0.6 && eingabe.gas < 0.05 && eingabe.bremse < 0.05;

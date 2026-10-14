@@ -2,9 +2,8 @@
 //
 // Im Headless-Browser mit dem echten Spiel (Fahrphysik, Gelände, alle Hindernisse):
 //   1. Auto fährt von der Strasse her in jede Kuh (frontal und etwas versetzt): hart zum Halt,
-//      steckt nicht fest; danach rückwärts raus. Rückwärts auf Gras schafft das Auto seit M1 nur
-//      fast flach (Rückwärts-Antrieb gegen den Rollwiderstand im Gras), bergauf nicht – dort muss
-//      es vorwärts mit Lenken freikommen (gilt genauso für Bäume auf der Wiese)
+//      steckt nicht fest; danach rückwärts raus (seit 2c auch bergauf im Gras, siehe gras-test.mjs);
+//      klappt das nicht, vorwärts mit Lenken
 //   2. Regeln für jede Kuh: Abstand zur Strasse, zu Zaun/Planke/Schild, zu Weidetoren, nicht auf
 //      der Innenseite der Abkürzungs-Kurven, flach, Füsse auf dem Boden (schwebt nicht)
 //   3. Büsche: keine Hindernisse, nicht zu nah an der Strasse, nicht zu hoch;

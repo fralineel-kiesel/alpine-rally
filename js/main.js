@@ -154,13 +154,18 @@ function physikSchritt(dt, e) {
   const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip);
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
+    rueckwaerts: u.rueckwaerts ?? 1,
   }, motor);
 
   // Zu steiler Hang (neben der Strasse): da kommt das Auto nicht hoch
   const g = CONFIG.grenze;
   const bodenNeu = welt.bodenBei(physik.x, physik.z);
   const weg = Math.hypot(physik.x - xAlt, physik.z - zAlt);
-  if (bodenNeu.art === 'gras' && weg > 1e-4 && (bodenNeu.h - hAlt) / weg > g.steilsterHang) {
+  // Steigung im Gelände messen: Stand das Auto vorher auf Asphalt oder Bankett, zählt dort die
+  // Geländehöhe. Sonst wirkte die kleine Stufe vom Bankett auf die Wiese (wenige cm auf wenigen mm
+  // Weg) wie eine senkrechte Wand, und das Auto blieb an der Bankett-Kante hängen.
+  const hVorher = boden.art === 'gras' ? hAlt : welt.gelaendeHoehe(xAlt, zAlt);
+  if (bodenNeu.art === 'gras' && weg > 1e-4 && (bodenNeu.h - hVorher) / weg > g.steilsterHang) {
     // Richtung bergauf (Gefälle zwischen alter und neuer Position messen)
     const mx = (physik.x + xAlt) / 2, mz = (physik.z + zAlt) / 2;
     let nx = welt.gelaendeHoehe(mx + 1, mz) - welt.gelaendeHoehe(mx - 1, mz);

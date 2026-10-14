@@ -282,10 +282,13 @@ export const CONFIG = {
   },
 
   // --- Untergrund -------------------------------------------------------
+  // rueckwaerts: so stark schiebt der Rückwärtsgang hier (mal auto.rueckwaertsBeschl).
+  // 1.0 = wie auf der Strasse. Auf Gras höher, damit man auch bergauf (bis grenze.steilsterHang)
+  // rückwärts aus der Wiese kommt. Wirkt nur im Rückwärtsgang.
   untergrund: {
-    asphalt: { grip: 1.0, rollen: 0.05, rollenTempo: 0.0 },
-    bankett: { grip: 0.85, rollen: 0.6, rollenTempo: 0.02 },
-    gras:    { grip: 0.62, rollen: 2.2, rollenTempo: 0.11 },
+    asphalt: { grip: 1.0, rollen: 0.05, rollenTempo: 0.0, rueckwaerts: 1.0 },
+    bankett: { grip: 0.85, rollen: 0.6, rollenTempo: 0.02, rueckwaerts: 1.5 },
+    gras:    { grip: 0.62, rollen: 2.2, rollenTempo: 0.11, rueckwaerts: 2.2 },
   },
 
   // --- Checkpoints -------------------------------------------------------

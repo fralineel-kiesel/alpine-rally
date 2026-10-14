@@ -1,8 +1,8 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 2b fertig** – Leben im Gelände: 34 Kühe in Herden auf den Weiden im Tal und auf
-den Alpwiesen, Büsche, Alpenrosen, Heidelbeeren, Grasbüschel und Jungtannen am Strassenrand, und Wald auch
-weit weg von der Strasse (die Hänge sind nicht mehr kahl). Dazu alles aus 2a.1 (natürlichere Sperren,
+Aktuell: **Mini-Meilenstein 2c fertig** – raus aus dem Gras und von der Bankett-Kante: Rückwärts kommt
+man jetzt auch bergauf aus der Wiese, und das Auto bleibt nicht mehr an der Kante zwischen Bankett und
+Wiese hängen. Dazu alles aus 2b (Kühe, Büsche, Wald in der Ferne), 2a.1 (natürlichere Sperren,
 Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein Dunststreifen), 1.2 (Kurven schneiden,
 Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“). Das Konzept und der Fahrplan stehen
 in `KONZEPT.md`.
@@ -20,6 +20,104 @@ in `KONZEPT.md`.
 | Debug-Anzeige | F3 | – |
 
 Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
+
+---
+
+## Mini-Meilenstein 2c: Raus aus dem Gras und von der Bankett-Kante ✅
+
+### Was war das Problem?
+
+1. **Rückwärts im Gras ging bergauf kaum.** Der Rückwärtsgang schiebt mit 3 m/s², das Gras bremst mit
+   2.2 m/s², dazu zieht der Hang. Schon ab ca. 8 % bergauf hinter dem Auto kam man rückwärts nicht mehr
+   vom Fleck. Nach einem Aufprall steht man oft genau so in der Wiese.
+2. **An der Bankett-Kante blieb das Auto hängen**, wenn man langsam quer von der Strasse wegfuhr (war
+   seit M1 so). **Ursache:** Die Prüfung „zu steiler Hang, da kommt das Auto nicht hoch“ verglich die
+   Höhe auf dem Bankett mit der Höhe der Wiese. Das Bankett fällt nach aussen um 35 cm ab, die Wiese
+   liegt 30 cm unter der Strasse – an der Kante ist also eine kleine Stufe von ca. 5 cm (an manchen
+   Stellen bis 16 cm). Das Auto kommt pro Rechenschritt (1/120 s) nur ein paar Millimeter weiter. 5 cm
+   Höhe auf ein paar Millimeter Weg sah für die Prüfung aus wie eine senkrechte Wand, also wurde das Auto
+   zurückgeschoben – immer wieder, solange es nicht schnell genug war (je nach Stufe bis über 25 km/h).
+   Die Böschung (`randSteigung`) war nicht schuld.
+
+### Was geändert wurde
+
+1. **Rückwärts-Schub je Untergrund** (`js/config.js`, Block `untergrund`, neuer Wert `rueckwaerts`):
+   Der Rückwärtsgang schiebt auf dem Untergrund so viel mal stärker. Wirkt nur im Rückwärtsgang.
+
+   | Untergrund | `rueckwaerts` | heisst |
+   |---|---|---|
+   | Asphalt | 1.0 | genau wie bisher (3 m/s²) |
+   | Bankett | 1.5 | 4.5 m/s² |
+   | Gras | 2.2 | 6.6 m/s² |
+
+   Sonst ist nichts an der Fahrphysik anders. Das Höchsttempo rückwärts bleibt 6 m/s (ca. 22 km/h).
+2. **Bankett-Kante** (`js/main.js`, eine Zeile): Die Hang-Prüfung misst jetzt die Steigung **im
+   Gelände**: Stand das Auto vorher auf dem Bankett, nimmt sie dort die Höhe der Wiese statt die Höhe
+   des Banketts. So zählt nur noch der echte Hang, nicht die kleine Stufe an der Kante. Gelände und
+   Strasse sind unverändert, steile Hänge bremsen genau wie vorher.
+
+### So testest du (abseits fahren, rückwärts rauskommen)
+
+1. **Langsam quer von der Strasse in die Wiese** (5–25 km/h, z. B. am Start oder im Tal bei 600 m): Das
+   Auto rollt jetzt einfach übers Bankett auf die Wiese, ohne an der Kante zu stoppen.
+2. **Rückwärts raus, auch bergauf:** In der Wiese anhalten, so dass die Strasse **hinter** dir und
+   **oberhalb** ist (z. B. in den Kehren 1400–1800 m auf der Talseite, auf der Passhöhe ab 2480 m oder
+   bei 2930 m links), dann Bremse/Rückwärts halten. Das Auto fährt zügig rückwärts den Hang hinauf auf
+   die Strasse.
+3. **In eine Kuh oder einen Baum fahren** und rückwärts raus – geht jetzt auch, wenn es dahinter
+   bergauf geht.
+4. **Auf der Strasse** soll sich rückwärts **nichts** anders anfühlen als vorher.
+
+### Wo man schrauben kann (`js/config.js`, Block `untergrund`)
+
+- `gras.rueckwaerts` (2.2): höher = rückwärts im Gras kräftiger. **Unter ca. 1.7** kommt das Auto am
+  steilsten Hang, den es überhaupt hochkommt (`grenze.steilsterHang` 0.55), nicht mehr sicher raus.
+  Auf flacher Wiese erreicht man schon ab ca. 1.5 schnell das Höchsttempo rückwärts.
+- `bankett.rueckwaerts` (1.5): dasselbe auf dem Bankett.
+- `asphalt.rueckwaerts` (1.0): bitte so lassen, sonst ändert sich der Rückwärtsgang auf der Strasse.
+
+### Selbst getestet
+
+- **Neuer Test `node tools/gras-test.mjs`** (echtes Spiel im Headless-Browser):
+  - **Im Gras abgestellt, Rückwärtsgang voll: 20 von 20 zurück auf dem Asphalt** (vorher 12 von 20).
+    6 Mal eben (Auto gerade und 30°/50° schräg zur Strasse), 14 Mal bergauf von 5 % bis 46 % (das ist
+    die steilste Stelle neben der Strecke, von der aus der ganze Weg zur Strasse höchstens so steil ist
+    wie `steilsterHang`). Dauer 1.3–8.4 s, nie hängen geblieben.
+  - **Reine Fahrphysik genau an der Grenze** (`steilsterHang`, Gras): nach 2 s 14 km/h rückwärts
+    (vorher 0 km/h). Asphalt: auf die Tausendstel gleich wie ohne den neuen Wert.
+  - **Von der Bankett-Kante mit 5, 10, 15, 20 und 25 km/h seitlich weg: 20 von 20** über die Kante und
+    rückwärts zurück auf den Asphalt (vorher 14 von 20; geprüft an den 4 Stellen mit der grössten Stufe,
+    15–16 cm und 7 cm).
+  - **Dasselbe an allen freien Stellen der ganzen Strecke** (alle 7 m, beide Seiten, ohne Felswand und
+    Hindernisse): **867 von 867** über die Kante und zurück (vorher 542 von 867 über die Kante).
+  - Nicht mitgezählt: bei 1756 m links (zwischen zwei Kehren) rollt das Auto ab 15 km/h über die steile
+    Böschung (über 100 %) Richtung untere Kehre. Dort kommt es absichtlich nicht mehr hoch, siehe unten.
+- **Asphalt unverändert:**
+  - `testfahrer.mjs`: auf die Hundertstel gleich, **2:33.24 / 2:19.11 / 2:10.41**, kein Aufprall,
+    nirgends hängen geblieben.
+  - `node tools/abkuerzungen.mjs --pruefen`: offene Linien **128 / 5 / 342 / 84**, unverändert.
+  - `lenk-test.mjs`, `aufprall-test.mjs`, `kuh-test.mjs`, `strassenrand-test.mjs`: alle Prüfungen
+    erfüllt. `getriebe-test.mjs` läuft durch (Rückwärts auf Asphalt rechnet mit Faktor 1.0, also genau wie
+    vorher). Im `kuh-test` kommt das Auto nach einem Aufprall jetzt 12–20 m rückwärts raus (vorher
+    2–5 m).
+  - Keine Fehler in der Browser-Konsole.
+
+### Bekannte Probleme
+
+- **Rückwärts auf flacher Wiese ist jetzt fast so schnell wie auf der Strasse** (bis ca. 22 km/h nach
+  ca. 1.5 s). Das ist der Preis dafür, dass es bergauf sicher klappt. Wenn es dir zu flott ist:
+  `gras.rueckwaerts` auf 1.8 (unter 1.7 wird es am steilsten Hang knapp).
+- **Steile Böschung zwischen zwei Kehren** (z. B. 1756 m links): Fährt man dort schneller als ca.
+  15 km/h quer runter, rollt man über eine sehr steile Stelle und kommt nicht mehr hoch (gewollt:
+  `grenze.steilsterHang`). Weiter runter zur unteren Kehre fahren oder „R“ drücken.
+- Die übrigen Punkte aus 2b unten gelten weiter.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Kleines Rüttel-/Hüpfgefühl beim Überfahren der Bankett-Kante (Kamera oder Karosserie), damit man
+  spürt, dass man die Strasse verlässt.
+- Rückwärts im Gras eine leichte Staubwolke / Grasbüschel, die hochfliegen (Optik, wenn die Räder
+  durchdrehen).
 
 ---
 
@@ -105,7 +203,7 @@ Schritten (wie im Auftrag):
 Bitte ausprobieren:
 1. **Kühe von nahem ansehen** (z. B. durchs Weidetor fahren oder am Start links aufs Feld): Erkennst du
    sie als Kühe? Drehen sie sich beim Vorbeifahren „richtig“ (Seite, dann Hinterteil)? Flackern sie?
-2. **In eine Kuh fahren:** harter Halt, dann rückwärts raus (siehe aber „Bekannte Probleme“ zu Gras).
+2. **In eine Kuh fahren:** harter Halt, dann rückwärts raus (seit 2c auch bergauf im Gras).
 3. **Fernwald:** Achte auf Hänge und Horizont, z. B. am Start, in den Kehren und an der Passhöhe. Wirkt
    der Wald glaubhaft oder wie aufgemalt? Siehst du irgendwo noch eine Kante, wo der Wald aufhört?
 4. **FPS mit F3** auf beiden Rechnern (besonders am Start und in der Weide bei 700 m).
@@ -192,12 +290,6 @@ Block `fernwald`:
 
 ### Bekannte Probleme
 
-- **Rückwärts auf Gras ist schwach (schon seit M1, gilt auch für Bäume):** Der Rückwärtsgang schiebt mit
-  3 m/s², das Gras bremst mit 2.2 m/s². Auf der flachen Wiese kommt man raus (ca. 2–5 m in 4 s), geht es
-  hinter dem Auto aber mehr als ca. 8 % bergauf, kommt das Auto rückwärts kaum vom Fleck. Fast alle Kühe
-  stehen oberhalb der Strasse, darum geht es nach einem Aufprall von der Strasse her meist bergab
-  rückwärts (im Test 20 von 20). Fährt man von oben in eine Kuh, muss man vorwärts mit Lenken ausweichen.
-  Nicht geändert (Fahrphysik war nicht Teil des Auftrags).
 - **Kühe hinter 45 m sind nicht erreichbar:** Die unsichtbare Grenze (`grenze.maxAbstand`) gilt weiter.
   Heute stehen alle Kühe näher.
 - **Ansicht springt:** Die Kuh wechselt die Ansicht in 45°-Schritten (wie bei Doom). Fährt man genau auf
@@ -216,7 +308,6 @@ Block `fernwald`:
   Schritte gehen (neue Posen im selben Bild).
 - **Alphütten und Heustadel** als einfache Low-Poly-Gebäude auf den Alpwiesen und an den Weiden.
 - **Gleiten an Leitplanken** (aus M2a, weiter offen): flach an die Planke = entlangschrammen statt bremsen.
-- Rückwärtsgang auf Gras etwas kräftiger (siehe Bekannte Probleme) – nur wenn es Lino stört.
 - Mehr Kühe näher an der Strasse (z. B. eine Weide ohne Zaun direkt am Bankett mit Viehgatter), damit man
   sie beim Fahren grösser sieht.
 - Fernwald noch weiter hinaus mit „Waldstück“-Sprites (eine Gruppe Tannen in einem Bild), falls der
