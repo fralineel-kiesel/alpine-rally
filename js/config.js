@@ -266,27 +266,45 @@ export const CONFIG = {
 
   // --- Abkürzungs-Sperren (Felsbrocken, Tannengruppen, Baumstämme) -------
   // Wo Sperren stehen, rechnet tools/abkuerzungen.mjs aus (-> js/abkuerzungen.js).
-  // Wie sie aussehen, steht hier.
+  // Wie sie aussehen, steht hier. WICHTIG: Jede Änderung hier stellt die Teile anders auf. Danach
+  // nachprüfen, ob die Sperren noch halten:  node tools/abkuerzungen.mjs --pruefen
+  // Halten sie nicht mehr, nur die Reihen neu planen (die Wahl der Kurven bleibt gleich):
+  //   node tools/abkuerzungen.mjs --nur-reihen --offen tools/abkuerzungen-offen-m2a.json
   sperren: {
-    seed: 815,                 // Zufallszahl (gleich = gleiche Sperren)
+    seed: 815,                 // Zufallszahl (gleich = gleiche Sperren und gleiche Themen)
+    // Thema pro Kurve (seit M2a.1): 'fels' = nur Felsbrocken mit ein paar kleinen Steinen,
+    // 'staemme' = nur umgefallene Baumstämme, 'baeume' = nur Tannengruppen.
+    // Leer = per Zufall (seed), Nachbarkurven nie gleich. Von Hand: Schlüssel = ein
+    // Streckenmeter in der Kurve, z. B. { 1350: 'fels', 1496: 'staemme', 1789: 'baeume' }
+    themen: {},
+    // Beimischung: in der ersten Kurve mit Thema "in" wird so ein Anteil der Teile durch
+    // "thema" ersetzt (Felsbrocken zwischen den Tannen). anteil: 0 = alle Kurven rein.
+    beimischung: { in: 'baeume', thema: 'fels', anteil: 0.2 },
+    gruppenAbstand: 40,        // Reihen auf derselben Seite, die weniger weit auseinander sind, gehören zur selben Kurve
     abstandMitte: 6,           // Hindernisse halten so viel Abstand zur Strassenmitte (Asphalt endet bei 3.5, Bankett bei 5.5)
-    baumAbstandMitte: 8.5,     // Tannen erst ab hier (sonst hängen die Kronen über die Strasse)
-    reserve: 4,                // Sperre reicht so viel weiter ins Kurveninnere als die tiefste gefundene Abkürzung
+    kroneAbstand: 4.8,         // Tannenkronen bleiben so weit von der Strassenmitte weg (nahe der Strasse nur junge, kleine Tannen)
+    reserve: 2,                // Werkzeug: Sperre reicht so viel weiter ins Kurveninnere als die tiefste gefundene Abkürzung
+                               // (bis M2a.1: 4; weniger = kürzere Reihen, weniger Teile)
     maxTiefe: 40,              // ... aber höchstens so weit weg von der Strassenmitte
     mindestAbstand: 5,         // zwei Sperren auf derselben Seite stehen mindestens so weit auseinander (Meter)
-    luecke: [0.15, 1.0],       // Lücke zwischen zwei Teilen (Meter, Kante zu Kante)
+    luecke: [0.3, 1.2],        // Lücke zwischen zwei Teilen einer Kette (Meter, Kante zu Kante)
     maxLuecke: 1.4,            // nie grösser (das Auto ist 1.8 m breit)
+    abstandTeile: 0.2,         // so viel Luft bleibt mindestens zwischen zwei Teilen (nichts steckt ineinander)
+    korridor: 1.5,             // was so nah neben der Linie einer Reihe schon steht, zählt für deren Kette mit
     seitlich: 1.4,             // so weit pendeln die Teile seitlich (unregelmässig, keine Mauer)
-    schraeg: 18,               // die Sperre verläuft bis so viel Grad schräg statt genau quer
-    begleitChance: 0.35,       // so oft steht neben einem Teil noch ein Brocken oder eine Tanne
-    mischung: { fels: 0.36, baeume: 0.3, stamm: 0.34 }, // Anteile der Bausteine
+    schraeg: 18,               // die Kette verläuft bis so viel Grad schräg statt genau quer
     felsHoehe: [2, 3.5],       // Felsbrocken: Höhe (Meter)
     felsFaktor: 0.4,           // Felsbrocken: Kollisionsradius = Breite mal diesem Wert
-    felsGruppe: [1, 3],        // so viele Brocken pro Gruppe
-    baumGruppe: [3, 6],        // so viele Tannen pro Gruppe
-    baumHoehe: [7, 12],        // Höhe der Tannen in den Gruppen
-    baumAbstand: [1.3, 2.0],   // Abstand der Stämme in der Gruppe
+    felsSicht: 0.45,           // Felsbrocken/Steine: so breit (mal Breite) sieht man sie (für "nichts ineinander")
+    felsBegleit: 0.5,          // so oft liegt neben einem Brocken der Kette ein kleinerer (lockere Gruppe statt Reihe)
+    begleitSteine: [2, 4],     // Felsen-Kurve: so viele kleine Steine rund um die Brocken
+    steinHoehe: [0.5, 1.1],    // ... so hoch
+    baumHoehe: [7, 12],        // Höhe der Tannen in den Gruppen (nahe der Strasse kleiner, siehe kroneAbstand)
+    jungHoehe: 3.5,            // kleinste Tanne (junge Tannen vorne an der Strasse; kleiner geht nicht, dann steht dort keine)
+    baumBegleit: 0.6,          // so oft bekommt eine Tanne der Kette 1–2 Nachbarn (Gruppe statt Reihe)
+    baumAbstand: [1.6, 2.6],   // Abstand der Nachbarn in der Gruppe
     stammLaenge: [4, 8],       // umgefallene Stämme: Länge (Meter)
+    stammKurz: 2.5,            // ... kürzer nie (wenn Platz fehlt, wird gekürzt)
     stammDicke: [0.7, 1.0],    // ... Durchmesser
     stammStapel: [1, 3],       // ... so viele übereinander/nebeneinander
     stammDrehung: 22,          // ... so viel Grad schräg (zufällig)
@@ -294,7 +312,6 @@ export const CONFIG = {
     stammKreisAbstand: 0.6,    // ... Kollision: alle so viele Meter ein Kreis
     stammAufliegen: 0.8,       // ... Achse so viele Radien über dem höchsten Geländepunkt darunter
     aeste: [2, 4],             // ... abgebrochene Äste pro Stamm
-    begleitSteine: [1, 3],     // kleine Steine rund um die Sperre
   },
 
   // --- Strassenrand: Leitplanken, Holzzäune, Schilder (Meilenstein 2a) ---
@@ -376,6 +393,30 @@ export const CONFIG = {
       kmGroesse: [0.65, 0.38], // Kilometertafel (Breite, Höhe)
       kmHoehe: 1.0,
       kreisRadius: 0.15,       // Kollision: Kreis um den Pfosten
+      // --- seit M2a.1 ---
+      groesse: 1.2,            // alle Schilder so viel grösser als oben angegeben (1.2 = +20 %, höchstens 1.25),
+                               // damit man sie im kleinen Bild (320x180) besser erkennt
+      abstandNeu: 60,          // neue Schilder (Tempo, Kühe, Kreuzung) stehen so weit von jedem anderen Schild weg
+      sichtWeite: 30,          // neue Schilder: von so weit davor muss man sie sehen ...
+      sichtFrei: 0.3,          // ... und so viel Luft bleibt zwischen Sichtlinie und Baumkrone
+      talSchilder: true,       // Schilder "Kühe" (vor der grössten Weide im Tal) und "Kreuzung" (vor dem ersten offenen Tor)
+      tempo: {                 // Tempo-Tafeln: reine Optik, KEIN Tempolimit im Spiel
+        an: true,              // false = keine Tempo-Tafeln
+        tal: 80,               // Talabschnitt (kurz nach dem Start)
+        kehren: 60,            // vor einer Kurvenfolge mit Kehre
+        eng: 50,               // vor einer engen Passage (Kurve enger als engRadius, keine Kehre)
+        engRadius: 30,         // ... Meter
+        aufheben: 80,          // nach der Folge wieder, wenn danach mindestens aufhebenNach Meter keine enge Kurve kommt
+        aufhebenNach: 250,
+        startNach: 60,         // Talabschnitt: so viele Meter nach der Startlinie
+        vor: [60, 160],        // vor einer Folge: so viele Meter davor (Wunsch, weitester Abstand)
+        nach: [60, 200],       // aufheben: so viele Meter nach dem Ende der Folge (Wunsch, weitester Abstand)
+        max: 6,                // höchstens so viele Tempo-Tafeln
+        groesse: 0.9,          // Durchmesser (Meter, wird noch mit "groesse" oben malgenommen)
+        hoehe: 1.4,            // Unterkante über dem Boden
+        zurWarnung: true,      // rechts kein Platz (z. B. Felswand)? Dann unter die Kurvenwarnung (gleicher Pfosten)
+        hoehePaar: 1.0,        // ... Unterkante der Tafel dort, die Warnung kommt darüber
+      },
     },
   },
 

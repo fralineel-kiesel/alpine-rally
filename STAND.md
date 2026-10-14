@@ -1,10 +1,10 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 2a fertig** – die Strasse hat jetzt einen Rand: Leitplanken an den Abhängen und
-aussen in den Kehren, Holzzäune an den Wiesen (mit Weidetoren) und ein paar Schilder (Kurvenwarnungen,
-Kehren-Nummern, Richtungstafeln, Steinschlag/Gefälle, Kilometertafeln). Dazu alles aus 1.3b (kein
-Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
-Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
+Aktuell: **Meilenstein 2a.1 fertig** – die gesperrten Kurven sehen natürlicher aus (pro Kurve nur eine
+Sorte: Felsbrocken, umgefallene Stämme oder Tannen, viel lockerer, nichts steckt mehr ineinander), und es
+gibt 7 neue Schilder (5 Tempo-Tafeln, „Kühe“, „Kreuzung“). Dazu alles aus 2a (Leitplanken, Holzzäune,
+Schilder), 1.3b (kein Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und
+1 (Etappe „Passstrasse“). Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 ## Steuerung
 
@@ -22,7 +22,192 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 2a: Strassenrand (Leitplanken, Holzzäune, Schilder) ✅
+## Meilenstein 2a.1: Sperren natürlicher, mehr Schilder ✅
+
+### Was war das Problem?
+
+Die gesperrten Kurven („nicht schneiden“) waren zugemauert: Jede Sperre bestand aus vielen Reihen, und
+jede Reihe mischte Felsen, Tannen und Stämme. In den Kehren laufen diese Reihen alle in die Mitte der
+Kehre zusammen, darum lagen dort Stämme in Felsen und alles dicht an dicht. **Ursache: alles gemischt und
+zu dicht.**
+
+### Was geändert wurde
+
+**Teil 1: Sperren** (`js/sperren.js`, `config.js` Block `sperren`)
+
+1. **Ein Thema pro Kurve.** Die Reihen einer Kurve werden zusammen geplant (gleiche Seite, weniger als
+   40 m auseinander = eine Kurve). Jede Kurve bekommt **eine** Sorte. Nachbarkurven bekommen nie dieselbe.
+   Die Wahl kommt aus dem festen Zufall (`seed`), lässt sich aber pro Kurve von Hand setzen.
+
+   | Kurve | Thema | Reihen vorher → nachher | Teile vorher → nachher | stecken ineinander vorher → nachher |
+   |---|---|---|---|---|
+   | 1350–1415 links (Kehre 1) | **Stämme** | 5 → 3 | 27 → 4 (4 Stämme in 3 Stapeln) | 63 → 0 |
+   | 1496–1562 rechts (Kehre 2) | **Tannen** | 7 → 3 | 31 → 8 (8 Tannen) | 48 → 0 |
+   | 1789–1854 rechts (Kehre 4) | **Felsen** | 5 → 4 | 25 → 9 (6 Brocken, 3 kleine Steine) | 58 → 0 |
+   | 3196–3234 links (Schikane) | **Stämme** | 1 → 1 | 4 → 3 (1 Stapel aus 3 Stämmen) | 1 → 0 |
+
+   („Teile“ = Felsbrocken, Stämme, Tannen und kleine Steine. Vorher waren es in jeder Kehre 2–6 Felsen,
+   6–9 Stämme und 12–13 kleine Steine durcheinander. „stecken ineinander“ = Paare von Teilen, deren
+   Umrisse sich überschneiden.)
+2. **Viel weniger dicht.** Statt 18 Reihen gibt es noch **11**. Eine Reihe reicht jetzt 2 m statt 4 m
+   über die tiefste Abkürzung hinaus (`reserve`). Und: Was schon steht, zählt für die Kette mit – auch
+   Bäume und Steine aus der Landschaft. Treffen sich zwei Reihen in der Kehre, teilen sie sich die Teile,
+   statt nebeneinander je eine eigene Mauer zu bauen. Lücken zwischen Teilen sind erlaubt, aber nie
+   grösser als 1.4 m (das Auto ist 1.8 m breit).
+3. **Nichts steckt ineinander.** Beim Planen hält jedes Teil Abstand zu allen anderen Teilen und zu den
+   Bäumen/Steinen der Landschaft (sichtbare Grösse plus 20 cm, `abstandTeile`). Passt ein Teil nicht,
+   wird es verschoben, kleiner gemacht, gedreht oder ein Stamm gekürzt. Gezählt: **0** Teile ineinander.
+4. **Mehr Abwechslung:** Felsen liegen in lockeren Gruppen (ab und zu ein kleinerer Brocken daneben,
+   dazu 2–4 kleine Steine). Tannen stehen in Gruppen, vorne an der Strasse junge, kleine Tannen (die
+   Kronen hängen nicht über die Strasse), weiter hinten grosse. Stämme liegen schräg, mal einzeln, mal
+   2 oder 3 gestapelt, lieber lang als hoch gestapelt.
+5. **Welche Kurven gesperrt sind, bleibt genau gleich** (`nichtSchneiden` / `schneiden` unverändert, die
+   Pace-Notes aus M4 hängen daran). `js/abkuerzungen.js` wurde neu erzeugt, aber **nur die Liste
+   `sperren`** (die Reihen innerhalb der 4 gesperrten Kurven), mit dem neuen Modus
+   `node tools/abkuerzungen.mjs --nur-reihen --offen tools/abkuerzungen-offen-m2a.json`. Die Datei
+   `tools/abkuerzungen-offen-m2a.json` merkt sich, welche Abkürzungen vor M2a.1 offen waren: Alles, was
+   damals zu war, muss wieder zu sein, und was offen war, muss offen bleiben.
+
+**Teil 2: Schilder** (`js/strassenrand.js`, `js/pixel.js`, `config.js` Block `strassenrand.schilder`)
+
+- **5 Tempo-Tafeln** (rund, weiss, roter Rand, schwarze Zahl, ohne Landes- oder Markenzeichen). **Reine
+  Optik, kein Tempolimit.** Sie werden aus der Strecke abgeleitet (Kurvenfolgen und Krümmung):
+
+  | Wo | Tafel | Warum |
+  |---|---|---|
+  | 85 m rechts | 80 | Talabschnitt (kurz nach dem Start) |
+  | 1206 m **links** | 60 | vor der Kehrengruppe (50 m vor der Doppelkurve-Warnung) |
+  | 1915 m rechts | 80 | nach den Kehren wieder aufheben |
+  | 3061 m **links** | 50 | vor der engen Schikane, **unter** der Doppelkurve-Warnung am selben Pfosten |
+  | 3423 m rechts | 80 | nach der Schikane wieder aufheben |
+
+  Wunsch war „rechts“. Zweimal ging das nicht: Vor den Kehren ist rechts bis 1280 m Sperrzone der
+  freien Kurve 1085–1230 („schneiden“ + 50 m Puffer) und danach zu nah an der Kehren-Nummer; vor der
+  Schikane steht rechts die Felswand. Dann kommt die Tafel unter die Kurvenwarnung (wenn man diese gut
+  sieht) oder auf einen eigenen Pfosten links.
+- **2 weitere Schilder** im Talabschnitt (rotes Dreieck wie die anderen Warnungen):
+  - **„Kreuzung“** (280 m rechts): 60 m vor dem ersten offenen Weidetor (340 m), dort mündet ein Feldweg.
+  - **„Kühe“** (612 m rechts): vor der Wiese mit den meisten Zäunen im Tal (735–870 m), bereitet M2b vor.
+- **Keine Schilderwälder:** Neue Schilder stehen mindestens 60 m von jedem anderen Schild weg (beide
+  Strassenseiten). Ausnahme: Tempo-Tafel und Kurvenwarnung derselben Stelle (bewusst gepaart).
+- **Sichtbar:** Neue Schilder werden nur dort aufgestellt, wo von 30 m davor keine Baumkrone im Weg ist.
+- **Alle Schilder 20 % grösser** (`groesse: 1.2`), Warn-Dreieck jetzt 1.56 m, Tempo-Tafel 1.08 m.
+- Wie bisher: nichts auf der Fahrbahn, nichts in Abkürzungs-Sperren und nichts auf der Innenseite der
+  Abkürzungs-Kurven.
+
+### So testest du
+
+| Wo | Was |
+|---|---|
+| Kehre 1 (1350–1415 m, links) | nur umgefallene Stämme, 3 Stapel |
+| Kehre 2 (1496–1562 m, rechts) | nur Tannen, vorne kleine |
+| Kehre 4 (1789–1854 m, rechts) | nur Felsbrocken mit ein paar kleinen Steinen |
+| Schikane (3196–3234 m, links) | ein Stapel Stämme |
+| 85 m, 1206 m, 1915 m, 3061 m, 3423 m | Tempo-Tafeln 80, 60, 80, 50 (unter der Warnung), 80 |
+| 280 m / 612 m rechts | Schild „Kreuzung“ / „Kühe“ |
+
+Bitte ausprobieren:
+1. Erkennt man in jeder Kehre ein Thema? Wirkt es natürlich oder nur anders künstlich?
+2. **Versuch, die gesperrten Kehren zu schneiden** (vor allem zwischen den Teilen durch). Es sollte nirgends
+   gehen. Wenn doch: Stelle (Kilometertafel/Meter) und Screenshot schicken.
+3. Sind die Schilder jetzt gut zu sehen? Zu gross?
+
+### Wo man schrauben kann (`js/config.js`)
+
+Block `sperren`:
+- `themen` – **Thema pro Kurve von Hand**, z. B. `{ 1350: 'fels', 1496: 'staemme', 1789: 'baeume' }`
+  (Schlüssel = ein Streckenmeter in der Kurve; `'fels'`, `'staemme'` oder `'baeume'`). Leer = Zufall
+  (`seed`). Heute: 1350 Stämme, 1496 Tannen, 1789 Felsen, 3196 Stämme.
+- `beimischung` – in der ersten Tannen-Kurve dürfen 20 % Felsbrocken sein (heute zufällig 0). `anteil: 0`
+  = ganz rein.
+- Dichte: `luecke` (0.3–1.2 m zwischen den Teilen), `abstandTeile` (0.2 m Luft), `felsBegleit`,
+  `begleitSteine`, `baumBegleit`, `stammStapel`, `stammLaenge`.
+- **Wichtig:** Nach jeder Änderung im Block `sperren` stehen die Teile anders. Dann
+  `node tools/abkuerzungen.mjs --pruefen` laufen lassen; meldet es Durchkommen in gesperrten Kurven,
+  `node tools/abkuerzungen.mjs --nur-reihen --offen tools/abkuerzungen-offen-m2a.json`.
+
+Block `strassenrand.schilder`:
+- `groesse` (1.2) – alle Schilder grösser (1.0 = wie M2a, höchstens 1.25).
+- `tempo.an` (false = keine Tempo-Tafeln), `tempo.tal` / `kehren` / `eng` / `aufheben` (80 / 60 / 50 / 80),
+  `tempo.engRadius` (30 m: Kurven enger als das gelten als enge Passage), `tempo.max` (6), `tempo.groesse`
+  (0.9 m Durchmesser, mal `groesse`).
+- `talSchilder` (false = keine Schilder „Kühe“ und „Kreuzung“), `abstandNeu` (60 m).
+
+### Selbst getestet
+
+- **Abkürzungen** (`node tools/abkuerzungen.mjs --pruefen`, vorher und nachher):
+
+  | Kurve | Liste | übrig vorher → nachher |
+  |---|---|---|
+  | 1350–1415 links | nicht schneiden | 0 → 0 |
+  | 1496–1562 rechts | nicht schneiden | 0 → 0 |
+  | 1789–1854 rechts | nicht schneiden | 0 → 0 |
+  | 3196–3234 links | nicht schneiden | 0 → 0 |
+  | 482–752 links | schneiden | 128 → 128 Linien, bis 7.1 m |
+  | 1085–1230 rechts | schneiden | 5 → 5 Linien, bis 3.2 m |
+  | 1643–1708 links | schneiden | 342 → 342 Linien, bis 6.3 m |
+  | 2484–2710 links | schneiden | 84 → 84 Linien, bis 5.1 m |
+
+  Es sind sogar genau dieselben Linien offen wie vorher (Vergleich mit `tools/abkuerzungen-offen-m2a.json`).
+  Grösste Lücke in einer Sperre: 1.22 m (Auto 1.8 m). Nächster sichtbarer Teil zur Strassenmitte:
+  Felsbrocken 5.72 m, Stämme 5.78 m, Tannenstamm 6.45 m (Bankett endet bei 5.5 m).
+- **Schilder** (vorher 28 Pfosten / 29 Tafeln, nachher 34 Pfosten / 36 Tafeln): 12 Chevrons,
+  4 Kehren-Nummern, 3 Doppelkurve, 2 Steinschlag, 1 Gefälle, 7 Kilometertafeln (alles wie vorher), neu
+  5 Tempo-Tafeln (3× 80, 1× 60, 1× 50), 1× Kühe, 1× Kreuzung.
+- **Leistung** (Software-Modus ohne Grafikkarte, hinter dem Auto):
+
+  | Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+  |---|---|---|
+  | Tal (100 m) | 107 → 108 (neue Schilder) | 110 688 → 109 182 |
+  | Kehre 1 (1352 m) | 105 → 105 | 132 658 → 131 110 |
+  | Kehren (1475 m) | 70 → 66 | 96 476 → 94 300 |
+  | Schikane (3175 m) | 64 → 64 | 98 190 → 96 656 |
+
+  Durchlauf alle 50 m: höchstens +2 Zeichenaufrufe (bei 610 m, wegen des Schilds „Kühe“), Dreiecke nirgends
+  mehr als vorher.
+- `testfahrer.mjs`: Zeiten auf die Hundertstel gleich (2:33.24 / 2:19.11 / 2:10.41), kein Aufprall,
+  nirgends hängen geblieben. `aufprall-test.mjs`, `strassenrand-test.mjs`, `lenk-test.mjs`: alle
+  Prüfungen erfüllt, `getriebe-test.mjs` läuft durch. Keine Fehler in der Konsole.
+- **Screenshots** (1280x720, ohne HUD) unter `screenshots/m2a-1/`: `a` = vorher, `b` = nachher.
+  `01`–`04` jede gesperrte Kurve hinter dem Auto und schräg von oben, `05` Kehre 2 von oben,
+  `06b` jedes neue Schild aus 20 m, `07b` Tempo-Tafel aus 15, 30 und 45 m.
+  Neu erzeugen: `node tools/sperren-bilder.mjs --endung b` (vorher: `--wurzel <alte Version> --endung a`).
+- **Ehrlich zur Optik:** Pro Kurve erkennt man ein Thema, und nichts steckt mehr ineinander. Am
+  natürlichsten wirkt die Tannen-Kehre (sieht aus wie ein Wäldchen). Die Felsen-Kehre wirkt wie Geröll,
+  locker, eher etwas klein von weitem. Die Stämme-Kehre ist ok, die Stapel liegen aber sternförmig zur
+  Mitte der Kehre (das kommt von der Geometrie: alle Reihen zeigen in die Mitte der Kehre). Der Stapel
+  in der Schikane sieht eher nach Holzbeige (gesägt, gestapelt) als nach umgefallenem Baum aus.
+
+### Bekannte Probleme
+
+- **Zahl auf der Tempo-Tafel erst ab ca. 15–19 m lesbar**, nicht aus 40–50 m. Im 320x180-Bild ist die
+  Tafel aus 15 m ca. 12 Pixel gross (Zahl gut lesbar), aus 20 m ca. 9 Pixel (gerade noch), aus 30 m ca.
+  6 Pixel (roter Punkt mit grauer Mitte), aus 45 m ca. 4 Pixel. Damit man die Zahl aus 40–50 m liest,
+  müsste die Tafel etwa 3 m gross sein – das wäre Fantasiegrösse, darum nicht gemacht. Aus der Ferne
+  erkennt man: „rundes Schild mit rotem Rand“.
+- **60 und 50 stehen links** statt rechts (Gründe siehe oben).
+- **Die Doppelkurve-Warnung bei 1256 m links** (aus M2a) steht hinter Bäumen und ist kaum zu sehen. Darum
+  hängt die 60 nicht an diesem Pfosten, sondern steht 50 m davor. Die Warnung selbst habe ich nicht
+  verschoben (war nicht Teil des Auftrags).
+- **Die Sperren hängen am festen Zufall.** Jede Änderung am Block `sperren` oder an `js/sperren.js`
+  stellt die Teile anders auf; danach muss die Prüfung laufen (siehe „Wo man schrauben kann“).
+- **Voller Neulauf von `tools/abkuerzungen.mjs`** (ohne `--nur-reihen`) würde heute eine 5. freie Kurve
+  melden (1876–1955 m, eine einzige Linie mit 3.7 m Gewinn), die früher zufällig von einer Sperre
+  mit zugemacht wurde. Mit `--nur-reihen` bleibt alles wie es war. Darum: für Sperren immer `--nur-reihen`.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Die versteckte Doppelkurve-Warnung bei 1256 m an eine besser sichtbare Stelle setzen (rechts ab 1281 m,
+  zusammen mit der 60 an einem Pfosten).
+- Tempo-Zahl aus grösserer Entfernung: eine eigene, schärfere Textur nur für Schilder (andere
+  Mipmap-Stufe). Kostet einen Zeichenaufruf mehr pro Stück, wäre aber ohne Fantasiegrösse.
+- Ein einzelner langer umgefallener Baum mit Wurzelteller (statt gesägter Stämme) für die Stämme-Kurven.
+- Kühe-Schild und Kühe aus M2b zusammen platzieren (Kühe auf der Weide hinter dem Schild).
+- Pace-Notes (M4) könnten die Tempo-Tafeln aus `strassenrand.plan.schilder.tempo` lesen.
+
+---
+
+## Meilenstein 2a: Strassenrand (Leitplanken, Holzzäune, Schilder) ✅ (Verlauf, Stand damals)
 
 ### Was gebaut wurde
 

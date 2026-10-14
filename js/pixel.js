@@ -378,9 +378,11 @@ export function pfostenTextur() {
 // Ergebnis: { textur, kachel(name) -> { u0, v0, u1, v1 } }
 // ---------------------------------------------------------------------
 const ZIFFERN0 = { ...ZIFFERN, 0: ['###', '#.#', '#.#', '#.#', '###'] };
-export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61) {
-  const N = 128, RAND = 2;
-  const l = leinwand(N, N);
+// tempoZahlen: Zahlen für die Tempo-Tafeln (z. B. [50, 60, 80]). Seit M2a.1 ist das Bild 128x256
+// (oben dieselben Kacheln wie bisher, darunter die neuen).
+export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61, tempoZahlen = []) {
+  const N = 128, NH = 256, RAND = 2;
+  const l = leinwand(N, NH);
   const rnd = zufall(seed);
   const rechtecke = {};
   let x0 = 0, y0 = 0, zeileH = 0;
@@ -389,6 +391,7 @@ export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61) {
   // Farbsäume in der Ferne), durchsichtige einen leeren Rand.
   function kachel(name, b, h, malen, durchsichtig = false) {
     if (x0 + b + RAND * 2 > N) { x0 = 0; y0 += zeileH; zeileH = 0; }
+    if (y0 + h + RAND * 2 > NH) throw new Error(`Atlas voll bei Kachel ${name}`);
     const ox = x0 + RAND, oy = y0 + RAND;
     const daten = new Array(b * h).fill(null);
     malen((x, y, rgb, a = 255) => {
@@ -591,6 +594,46 @@ export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61) {
     });
   }
 
+  // --- Meilenstein 2a.1 ---------------------------------------------------------
+  // Weitere Warnschilder: Kühe (Weide/Viehtrieb) und Kreuzung (Feldweg mündet ein)
+  dreieck('warnKuh', [
+    '........',
+    'k.......',
+    'kkkkkkk.',
+    'kkkkkkkk',
+    '..kkkkk.',
+    '..k...k.',
+    '..k...k.',
+  ]);
+  dreieck('warnKreuzung', [
+    '........',
+    '...kk...',
+    '...kk...',
+    '.kkkkkk.',
+    '...kk...',
+    '...kk...',
+    '...kk...',
+  ]);
+  // Tempo-Tafeln: rund, weiss mit rotem Rand, schwarze Zahl (generisch, ohne Landeszeichen). 12x12
+  const imKreis = (x, y) => Math.hypot(x + 0.5 - 6, y + 0.5 - 6);
+  for (const zahl of tempoZahlen) {
+    kachel2(`tempo${zahl}`, 12, 12, (px) => {
+      for (let y = 0; y < 12; y++) {
+        for (let x = 0; x < 12; x++) {
+          const r = imKreis(x, y);
+          if (r < 6.05) px(x, y, r >= 4.3 ? ROT : WEISS);
+        }
+      }
+      const zeichen = String(zahl).split('');
+      let x = Math.floor((12 - (zeichen.length * 4 - 1)) / 2);
+      for (const z of zeichen) { muster(px, ZIFFERN0[z], x, 3, { '#': SCHWARZ }); x += 4; }
+    }, true);
+  }
+  // Rückseite der Tempo-Tafeln: graue Scheibe
+  kachel2('tempoRuecken', 12, 12, (px) => {
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if (imKreis(x, y) < 6.05) px(x, y, hell(GRAU, 0.94 + rnd() * 0.1));
+  }, true);
+
   const textur = zuTextur(l);
   return {
     textur,
@@ -598,7 +641,7 @@ export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61) {
     kachel(name) {
       const r = rechtecke[name];
       if (!r) throw new Error(`Atlas: Kachel ${name} fehlt`);
-      return { u0: r.x / N, u1: (r.x + r.b) / N, v0: 1 - (r.y + r.h) / N, v1: 1 - r.y / N };
+      return { u0: r.x / N, u1: (r.x + r.b) / N, v0: 1 - (r.y + r.h) / NH, v1: 1 - r.y / NH };
     },
   };
 }

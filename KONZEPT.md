@@ -14,9 +14,10 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Version 1 = eine Etappe fahrbar mit Zeitmessung.
 
 ## Was Lino mag / nicht mag
-- Mag: erdiges Bankett statt Randsteinen, Temposchilder, Leitplanke und Holzzaun als durchgehendes Band, Kollision mit Tempoverlust, Fahrgefühl wie ein schweres 80er-Rallyauto.
+- Mag: erdiges Bankett statt Randsteinen, Temposchilder (seit M2a.1 als runde Tafeln 80/60/50, nur Optik), Leitplanke und Holzzaun als durchgehendes Band, Kollision mit Tempoverlust, Fahrgefühl wie ein schweres 80er-Rallyauto.
 - Aufprall: frontal hart zum Halt, danach rückwärts rausfahren (kein Wegschleudern, kein Weiterrutschen).
 - Kurven schneiden gehört dazu: Nur ca. 40 % der Kurven sind mit Steinen, Bäumen oder umgefallenen Stämmen im Kurveninnern gesperrt (Pace-Note "nicht schneiden"), die anderen sind frei (Pace-Note "schneiden"). Gras bremst stark, darum lohnt übertriebenes Schneiden nicht.
+- Sperren sollen natürlich aussehen: pro Kurve nur eine Sorte (nur ein paar Felsen, nur Stämme oder nur Tannen), locker statt Mauer, nichts steckt ineinander (seit M2a.1).
 - Schalten soll man spüren: kurze Pause ohne Antrieb bei jedem Gangwechsel.
 - Analoge Tachos (Drehzahl mit Gangzahl, Tempo mit kleiner Digitalanzeige) im 80er-Look.
 - Mag nicht: Formel-1-Randsteine, Kurvenpfeil-Schilder, zu starkes Beschleunigen bergab, hartes Höchsttempo.
@@ -29,6 +30,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M1.2 Sperren nur noch in ca. 40 % der Kurven, engere Lenkung im Schritttempo, Getriebe mit Schaltpause, analoge Tachos, kleinere Zeitanzeige (fertig)
 - M1.3 Horizont-Dunst: kein hellblauer Nebelstreifen mehr zwischen Bergen und Wald, Dunst nie ganz dicht, Bergfüsse passen zum fernen Gelände (fertig)
 - M2a Strassenrand: Leitplanken an Abhängen und in den Kehren, Holzzäune an den Wiesen mit Weidetoren, Schilder (Kurvenwarnungen, Kehren-Nummern, Richtungstafeln, Steinschlag/Gefälle, Kilometertafeln) (fertig)
+- M2a.1 Sperren natürlicher: pro gesperrter Kurve nur eine Sorte (Felsbrocken, umgefallene Stämme oder Tannen), lockerer, nichts steckt ineinander; mehr Schilder: Tempo-Tafeln 80/60/50 (nur Optik), "Kühe" und "Kreuzung" im Tal, alle Schilder etwas grösser (fertig)
 - M2b Dichtere Landschaft: Kühe, mehr Wald, Wald auch ausserhalb der 230 m neben der Strasse (als Nächstes)
 - M3 Untergründe: Schotter und Wiese, Abzweigung mit Absperrung
 - M4 Pace-Notes als Symbole, inkl. "nicht schneiden" an den gesperrten und "schneiden" an den freien Kurven (Daten liegen seit M1.2 bereit)

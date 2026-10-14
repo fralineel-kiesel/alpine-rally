@@ -1,0 +1,522 @@
+{
+ "kurven": [
+  {
+   "kurve": "1350–1415 links",
+   "sVon": 1350,
+   "sBis": 1415,
+   "seite": -1,
+   "thema": "staemme",
+   "notloesung": 0,
+   "stapel": 3,
+   "reihen": 3,
+   "felsen": 0,
+   "staemme": 4,
+   "tannen": 0,
+   "steine": 0,
+   "teile": 4,
+   "kreise": 32,
+   "ineinander": 0,
+   "tiefstes": 0
+  },
+  {
+   "kurve": "1496–1562 rechts",
+   "sVon": 1496,
+   "sBis": 1562,
+   "seite": 1,
+   "thema": "baeume",
+   "notloesung": 0,
+   "stapel": 0,
+   "reihen": 3,
+   "felsen": 0,
+   "staemme": 0,
+   "tannen": 8,
+   "steine": 0,
+   "teile": 8,
+   "kreise": 8,
+   "ineinander": 0,
+   "tiefstes": 0
+  },
+  {
+   "kurve": "1789–1854 rechts",
+   "sVon": 1789,
+   "sBis": 1854,
+   "seite": 1,
+   "thema": "fels",
+   "notloesung": 0,
+   "stapel": 0,
+   "reihen": 4,
+   "felsen": 6,
+   "staemme": 0,
+   "tannen": 0,
+   "steine": 3,
+   "teile": 9,
+   "kreise": 9,
+   "ineinander": 0,
+   "tiefstes": 0
+  },
+  {
+   "kurve": "3196–3234 links",
+   "sVon": 3196,
+   "sBis": 3234,
+   "seite": -1,
+   "thema": "staemme",
+   "notloesung": 0,
+   "stapel": 1,
+   "reihen": 1,
+   "felsen": 0,
+   "staemme": 3,
+   "tannen": 0,
+   "steine": 0,
+   "teile": 3,
+   "kreise": 15,
+   "ineinander": 0,
+   "tiefstes": 0
+  }
+ ],
+ "schilder": {
+  "pfosten": 34,
+  "tafeln": 36,
+  "arten": {
+   "chevron": 12,
+   "kehre": 4,
+   "warnDoppel": 3,
+   "tempo50": 1,
+   "warnStein": 2,
+   "warnGefaelle": 1,
+   "km": 7,
+   "tempo80": 3,
+   "tempo60": 1,
+   "warnKreuzung": 1,
+   "warnKuh": 1
+  },
+  "liste": [
+   "1370 R chevron",
+   "1383 R chevron",
+   "1396 R chevron",
+   "1516 L chevron",
+   "1529 L chevron",
+   "1542 L chevron",
+   "1663 R chevron",
+   "1676 R chevron",
+   "1689 R chevron",
+   "1809 L chevron",
+   "1822 L chevron",
+   "1835 L chevron",
+   "1359 R kehre1",
+   "1506 L kehre2",
+   "1652 R kehre3",
+   "1799 L kehre4",
+   "678 R warnDoppel",
+   "1256 L warnDoppel",
+   "3061 L tempo50+warnDoppel",
+   "1854 L warnStein",
+   "2828 R warnGefaelle+warnStein",
+   "500 R km0.5",
+   "1003 R km1.0",
+   "1473 R km1.5",
+   "2000 R km2.0",
+   "2500 R km2.5",
+   "3000 L km3.0",
+   "3500 R km3.5",
+   "85 R tempo80",
+   "1206 L tempo60",
+   "1915 R tempo80",
+   "3423 R tempo80",
+   "280 R warnKreuzung",
+   "612 R warnKuh"
+  ]
+ },
+ "leistung": [
+  {
+   "name": "Tal (100 m)",
+   "s": 100,
+   "calls": 108,
+   "dreiecke": 109182
+  },
+  {
+   "name": "Kehre 1 (1352 m)",
+   "s": 1352,
+   "calls": 105,
+   "dreiecke": 131110
+  },
+  {
+   "name": "Kehren (1475 m)",
+   "s": 1475,
+   "calls": 66,
+   "dreiecke": 94300
+  },
+  {
+   "name": "Schikane (3175 m)",
+   "s": 3175,
+   "calls": 64,
+   "dreiecke": 96656
+  }
+ ],
+ "durchlauf": [
+  {
+   "s": 10,
+   "calls": 112,
+   "dreiecke": 107922
+  },
+  {
+   "s": 60,
+   "calls": 110,
+   "dreiecke": 109662
+  },
+  {
+   "s": 110,
+   "calls": 108,
+   "dreiecke": 108734
+  },
+  {
+   "s": 160,
+   "calls": 108,
+   "dreiecke": 108734
+  },
+  {
+   "s": 210,
+   "calls": 108,
+   "dreiecke": 110216
+  },
+  {
+   "s": 260,
+   "calls": 108,
+   "dreiecke": 130760
+  },
+  {
+   "s": 310,
+   "calls": 114,
+   "dreiecke": 131146
+  },
+  {
+   "s": 360,
+   "calls": 116,
+   "dreiecke": 123178
+  },
+  {
+   "s": 410,
+   "calls": 115,
+   "dreiecke": 116350
+  },
+  {
+   "s": 460,
+   "calls": 115,
+   "dreiecke": 116350
+  },
+  {
+   "s": 510,
+   "calls": 113,
+   "dreiecke": 115602
+  },
+  {
+   "s": 560,
+   "calls": 109,
+   "dreiecke": 108498
+  },
+  {
+   "s": 610,
+   "calls": 100,
+   "dreiecke": 105078
+  },
+  {
+   "s": 660,
+   "calls": 92,
+   "dreiecke": 117802
+  },
+  {
+   "s": 710,
+   "calls": 87,
+   "dreiecke": 121630
+  },
+  {
+   "s": 760,
+   "calls": 77,
+   "dreiecke": 120204
+  },
+  {
+   "s": 810,
+   "calls": 80,
+   "dreiecke": 101032
+  },
+  {
+   "s": 860,
+   "calls": 83,
+   "dreiecke": 116968
+  },
+  {
+   "s": 910,
+   "calls": 90,
+   "dreiecke": 117260
+  },
+  {
+   "s": 960,
+   "calls": 107,
+   "dreiecke": 124256
+  },
+  {
+   "s": 1010,
+   "calls": 105,
+   "dreiecke": 117714
+  },
+  {
+   "s": 1060,
+   "calls": 84,
+   "dreiecke": 110092
+  },
+  {
+   "s": 1110,
+   "calls": 89,
+   "dreiecke": 114476
+  },
+  {
+   "s": 1160,
+   "calls": 103,
+   "dreiecke": 119890
+  },
+  {
+   "s": 1210,
+   "calls": 108,
+   "dreiecke": 121678
+  },
+  {
+   "s": 1260,
+   "calls": 111,
+   "dreiecke": 122136
+  },
+  {
+   "s": 1310,
+   "calls": 108,
+   "dreiecke": 119912
+  },
+  {
+   "s": 1360,
+   "calls": 103,
+   "dreiecke": 130662
+  },
+  {
+   "s": 1410,
+   "calls": 75,
+   "dreiecke": 128620
+  },
+  {
+   "s": 1460,
+   "calls": 67,
+   "dreiecke": 98564
+  },
+  {
+   "s": 1510,
+   "calls": 57,
+   "dreiecke": 91268
+  },
+  {
+   "s": 1560,
+   "calls": 109,
+   "dreiecke": 120380
+  },
+  {
+   "s": 1610,
+   "calls": 107,
+   "dreiecke": 119932
+  },
+  {
+   "s": 1660,
+   "calls": 96,
+   "dreiecke": 116796
+  },
+  {
+   "s": 1710,
+   "calls": 77,
+   "dreiecke": 115192
+  },
+  {
+   "s": 1760,
+   "calls": 65,
+   "dreiecke": 96790
+  },
+  {
+   "s": 1810,
+   "calls": 57,
+   "dreiecke": 93330
+  },
+  {
+   "s": 1860,
+   "calls": 113,
+   "dreiecke": 122624
+  },
+  {
+   "s": 1910,
+   "calls": 103,
+   "dreiecke": 105936
+  },
+  {
+   "s": 1960,
+   "calls": 91,
+   "dreiecke": 110670
+  },
+  {
+   "s": 2010,
+   "calls": 95,
+   "dreiecke": 124206
+  },
+  {
+   "s": 2060,
+   "calls": 104,
+   "dreiecke": 127018
+  },
+  {
+   "s": 2110,
+   "calls": 105,
+   "dreiecke": 127450
+  },
+  {
+   "s": 2160,
+   "calls": 102,
+   "dreiecke": 113098
+  },
+  {
+   "s": 2210,
+   "calls": 98,
+   "dreiecke": 113206
+  },
+  {
+   "s": 2260,
+   "calls": 88,
+   "dreiecke": 107100
+  },
+  {
+   "s": 2310,
+   "calls": 87,
+   "dreiecke": 106388
+  },
+  {
+   "s": 2360,
+   "calls": 90,
+   "dreiecke": 110548
+  },
+  {
+   "s": 2410,
+   "calls": 89,
+   "dreiecke": 122260
+  },
+  {
+   "s": 2460,
+   "calls": 90,
+   "dreiecke": 123676
+  },
+  {
+   "s": 2510,
+   "calls": 84,
+   "dreiecke": 120828
+  },
+  {
+   "s": 2560,
+   "calls": 82,
+   "dreiecke": 105028
+  },
+  {
+   "s": 2610,
+   "calls": 79,
+   "dreiecke": 104860
+  },
+  {
+   "s": 2660,
+   "calls": 76,
+   "dreiecke": 108316
+  },
+  {
+   "s": 2710,
+   "calls": 76,
+   "dreiecke": 109388
+  },
+  {
+   "s": 2760,
+   "calls": 73,
+   "dreiecke": 107144
+  },
+  {
+   "s": 2810,
+   "calls": 75,
+   "dreiecke": 107720
+  },
+  {
+   "s": 2860,
+   "calls": 76,
+   "dreiecke": 106952
+  },
+  {
+   "s": 2910,
+   "calls": 70,
+   "dreiecke": 110872
+  },
+  {
+   "s": 2960,
+   "calls": 70,
+   "dreiecke": 109336
+  },
+  {
+   "s": 3010,
+   "calls": 72,
+   "dreiecke": 112258
+  },
+  {
+   "s": 3060,
+   "calls": 70,
+   "dreiecke": 99202
+  },
+  {
+   "s": 3110,
+   "calls": 68,
+   "dreiecke": 98808
+  },
+  {
+   "s": 3160,
+   "calls": 64,
+   "dreiecke": 96656
+  },
+  {
+   "s": 3210,
+   "calls": 65,
+   "dreiecke": 97808
+  },
+  {
+   "s": 3260,
+   "calls": 60,
+   "dreiecke": 98784
+  },
+  {
+   "s": 3310,
+   "calls": 59,
+   "dreiecke": 102240
+  },
+  {
+   "s": 3360,
+   "calls": 59,
+   "dreiecke": 102144
+  },
+  {
+   "s": 3410,
+   "calls": 58,
+   "dreiecke": 97448
+  },
+  {
+   "s": 3460,
+   "calls": 56,
+   "dreiecke": 79048
+  },
+  {
+   "s": 3510,
+   "calls": 53,
+   "dreiecke": 78352
+  },
+  {
+   "s": 3560,
+   "calls": 53,
+   "dreiecke": 78352
+  },
+  {
+   "s": 3610,
+   "calls": 53,
+   "dreiecke": 78352
+  }
+ ]
+}
