@@ -1,12 +1,12 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 3a fertig** – erster Nebenweg: Die Etappe biegt bei 800 m von der Asphaltstrasse
-rechts auf einen Schotterweg durch den Wald ab und mündet bei 1020 m wieder in die Hauptstrasse ein. Die
-Hauptstrasse läuft an beiden Stellen abgesperrt weiter (Flatterband bzw. Reifenstapel), ihr Ende sieht man
-nie. Dazu Schotter-Fahrgefühl und Staub. Davor: 2c (raus aus dem Gras), 2b (Kühe, Büsche, Wald in der
-Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
-Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe
-„Passstrasse“). Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
+Aktuell: **Meilenstein 3a.1 fertig** – Nebenweg-Korrektur nach Linos Feedback: saubere Kreuzungen (kein
+Schotter mehr auf dem Asphalt), keine Stufe mehr an der Einmündung, Staub auf beiden Seiten, grosse
+gebogene Absperrungen mit Verbots-Symbol, Chevrons und Richtungstafel, deutlich weniger Bäume am Nebenweg.
+Davor: 3a (erster Nebenweg: bei 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus
+aus dem Gras), 2b (Kühe, Büsche, Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a
+(Leitplanken, Holzzäune, Schilder), 1.3b (kein Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1
+(harter Aufprall) und 1 (Etappe „Passstrasse“). Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 ## Steuerung
 
@@ -24,7 +24,168 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 3a: Erster Nebenweg (Abzweig, Schotter, Einmündung, Absperrungen) ✅
+## Meilenstein 3a.1: Nebenweg-Korrektur (5 Punkte) ✅
+
+### Was war das Problem – und was wurde gemacht?
+
+**1. Schotter lag auf dem Asphalt (Abzweig und Einmündung)**
+- *Ursache:* Wo der Schotterweg über dem Asphalt der Hauptstrasse liegt, lag er an manchen Stellen 2–3 cm
+  *höher* als der Asphalt. Das Schotterband hatte quer nur zwei Punkte, das Absenken unter dem Asphalt griff
+  darum nur grob. Von weitem rettete das die Zeichen-Reihenfolge (`polygonOffset`), aus der Nähe nicht mehr –
+  darum „je näher, desto mehr Schotter“. Dazu war die Ausfransung zackig (jede Pixelzeile zufällig tief) und
+  dunkel (die durchsichtigen Pixel wurden in der Ferne schwarz eingemischt).
+- *Lösung:* Schotterband quer in 8 Streifen, jeder Punkt unter dem Asphalt liegt 8 cm tiefer (er kann nicht mehr
+  durchschauen). Ausfransung schmaler (0.4 statt 0.7 m), mit weichem, wellenförmigem Rand statt Zacken, als
+  Bild ohne schwarze Ränder, und sie liegt jetzt über dem dunklen Asphaltrand. Die abgerundete Ecke
+  („Trichter“) folgt jetzt genau der gebogenen Kante des Nebenwegs (vorher eine gerade Kante: dazwischen
+  schauten Gras und braune Erdpixel durch).
+
+**2. Staub nur rechts**
+- *Ursache:* Ein Fehler beim Wechsel zwischen den Hinterrädern: Der Zähler „welches Rad ist dran“ fing jedes Bild
+  wieder beim selben Rad an. Bei ruhiger Fahrt entsteht nur etwa ein Wölkchen pro Bild – also immer am
+  selben Rad. Mit Handbremse (mehrere Wölkchen pro Bild) stimmte es zufällig.
+- *Lösung:* Der Zähler wird über die Bilder hinweg gemerkt. Beim Driften wirft jedes Rad den Staub zusätzlich
+  nach aussen (beide Seiten gleich, `staub.driftSeitlich`).
+
+**3. Buckel an der Einmündung**
+- *Ursache:* Die kleine Senke im Nebenweg endete genau in der Einmündungskurve. Der Nebenweg stieg dort mit
+  9–12 % an, die Hauptstrasse (Stummel) nur mit 5 %. Darum lag die Hauptstrasse bis **58 cm** höher als der
+  Schotter – das Auto fuhr auf eine Stufe.
+- *Lösung:* Die Senke liegt jetzt früher (endet ca. 20 m vor der Einmündungskurve), dort hat der Nebenweg
+  die gleiche Steigung wie die Hauptstrasse. Dazu liegt der Stummel an der Kreuzung Punkt für Punkt genau auf
+  der Höhe der Etappe und geht erst danach weich in seine eigene Höhe über (`stummel.hoeheAngleichen`).
+  Die Strecke bleibt genau gleich lang.
+
+**4. Absperrungen: zu klein, falsch platziert, nicht lesbar**
+- *Ursache:* Die Absperrung stand ca. 30 m hinter der Kreuzung quer über dem Stummel – wer geradeaus fährt,
+  sieht die Abbiegung zu spät. Das Schild „STRASSE GESPERRT“ war bei 320x180 Pixeln nicht lesbar.
+- *Lösung:* Die Absperrung ist jetzt eine **gebogene Leitwand direkt an der Kreuzung**: Sie beginnt an der
+  Aussenseite der Kurve (gleich am Rand der Hauptstrasse), schwingt sich über die Geradeaus-Richtung und läuft
+  zum Nebenweg hin. Sie folgt der Kurve (0.5 m neben dem Bankett) und lässt die Fahrbahn frei. An beiden
+  Enden schliesst lückenlos der Seitenschutz (Zaun bzw. Leitplanke) an.
+  - Grösser: Reifenstapel 5 Reifen (1.3 m) in zwei versetzten Reihen, mit hellen Flanken und abwechselnd weiss
+    gestrichenen Stapeln; Strohballen als 1.2-m-Würfel in zwei Lagen; Flatterband (zwei Bänder) an 1.5 m hohen
+    Stangen; Holzböcke 1.3 m mit drei Brettern.
+  - Lesbar: Statt des Schilds ein grosses **Verbots-Symbol** (rotes Rund, weisser Balken, 1.4 m) genau dort, wo
+    die Geradeaus-Richtung die Leitwand kreuzt; **rot-weisse Chevrons** auf der ganzen Leitwand (zeigen in die
+    Abbiegerichtung, halb zum anfahrenden Fahrer gedreht); **grosse gelbe Richtungstafel** mit drei Winkeln ca.
+    70 m vor jeder Kreuzung (Abzweig: 730 m, Pfeil rechts; Einmündung: 923 m, Pfeil links).
+  - Alles zusammen ist weiterhin **ein Zeichenaufruf** (ein Bild, ein Material).
+  - Hinweis: Lino mochte bisher keine Kurvenpfeil-Schilder. Die Chevrons gibt es darum nur an den Absperrungen
+    der Nebenwege (dort wollte Lino sie ausdrücklich), nicht in normalen Kurven.
+
+**5. Zu viele Bäume am Nebenweg**
+- *Ursache:* Der Waldrand aus M3a stellte links und rechts alle 1.5–2.1 m eine Tanne (plus eine zweite Reihe),
+  auch dort, wo man gar nicht abkürzen kann – wie eine Allee.
+- *Lösung:* Messung zuerst: Ganz ohne Waldrand gäbe es 123 Abkürzungs-Linien, mit der Fahrphysik aber alle
+  langsamer als die Strasse – nur knapp (bis −0.01 s). Darum jetzt: **Gruppen mit Lücken**, dazwischen Wiese,
+  ein paar Felsbrocken. Dicht nur auf der **Innenseite der Kurven** (nur dort kann man abkürzen), aussen
+  lockere Gruppen. Eine Gruppe aus Tannen und Felsen vor dem Abzweig (766 m links) hält die Abkürzung aus der
+  freien Kurve davor so zu wie in M3a. Ergebnis: **185 Tannen + 30 Felsbrocken statt 505 Tannen** (−63 % Tannen),
+  0 Abkürzungs-Linien, mit drei verschiedenen Zufallszahlen geprüft.
+
+### Wo man schrauben kann (`js/config.js`)
+
+| Block | Was |
+|---|---|
+| `absperrung` | `abstandWeg` (Abstand der Leitwand zum Bankett), Grössen von `band`, `reifen`, `heu`, `zaun`, `symbol`, `chevron`, `richtungstafel` (`vorher` = Meter vor der Kreuzung) |
+| `kreuzung` | `fransen` (Breite der Ausfransung), `schotterStreifen`, `unterAsphalt`, `eckEinzug` |
+| `stummel.hoeheAngleichen` | bis wie weit der Stummel auf Höhe der Etappe liegt und wo er weich in seine eigene Höhe übergeht |
+| `staub.driftSeitlich` | wie stark der Staub beim Driften seitlich weggeworfen wird |
+| `nebenwegWald` | `innen` / `aussen` (Abstand, Gruppengrösse, Lücken, zweite Reihe), `steinAnteil`, `gruppen` (von Hand gesetzte Gruppen) |
+
+Nach Änderungen am Waldrand: `node tools/nebenweg-wald.mjs` und `node tools/abkuerzungen.mjs --pruefen`.
+
+### So testest du
+
+1. **Kreuzungen aus der Nähe**: langsam auf den Abzweig (800 m) und die Einmündung (ca. 1000 m) zufahren, auch
+   mal anhalten und schauen: Asphalt bleibt Asphalt, der Schotter beginnt an der Kante mit einer leichten,
+   sauberen Ausfransung.
+2. **Einmündung überfahren**: kein Hupfer mehr, das Auto rollt ohne Stufe auf die Hauptstrasse.
+3. **Staub**: ruhig über den Schotter fahren – Staub links und rechts hinter dem Auto. Driften: mehr und breiter.
+4. **Absperrungen**: Siehst du ca. 70 m vorher die gelbe Tafel? Erkennst du an der Kreuzung sofort, dass es
+   nicht geradeaus geht? Fahr absichtlich in die Leitwand (geradeaus) und versuch, aussen herum oder beim
+   Nebenweg vorbei in den Stummel zu kommen – soll nicht gehen.
+5. **Wald**: Wirkt der Nebenweg natürlich (Gruppen, Wiese, Felsen) statt wie eine Allee? Versuch über die
+   Kreuzungsecken oder durch den Wald abzukürzen – lohnt sich das?
+
+### Selbst getestet
+
+- **Streckenlänge** 3667.5869 m (unverändert, Abweichung 0.0000001 m). Checkpoints, Listen `sperren`,
+  `nichtSchneiden`, `schneiden` unverändert.
+- **Abkürzungen** (`node tools/abkuerzungen.mjs --pruefen`): **127 / 2 / 342 / 84** offene Linien in den freien
+  Kurven (gleich wie vorher), 0 in gesperrten Kurven.
+- **Waldrand** (`node tools/nebenweg-wald.mjs`, neu): 0 Abkürzungs-Linien zwischen 735 und 1110 m; mit den
+  Zufallszahlen 6060, 6061, 6062 jedes Mal 0.
+- **Höhe** (Etappe 780–1100 m in 0.5-m-Schritten, Mitte und 2.5 m daneben):
+
+| | vorher | nachher | übrige Strecke |
+|---|---|---|---|
+| grösste Stufe | **58.1 cm** (999.5 m, Einmündung) | 2.4 cm (887 m, nicht an einer Kreuzung) | 3.5 cm |
+| grösste Steigungsänderung auf 2 m | 35.9 % | 3.0 % | 2.8 % |
+| Fahrtest Einmündung: senkrechte Beschleunigung / Nicken | **79.7 m/s² / 124 °/s** | 1.4 m/s² / 1.9 °/s | 6.9 m/s² / 10.7 °/s |
+| Fahrtest Abzweig | 8.1 m/s² / 17.9 °/s | 3.0 m/s² / 1.6 °/s | |
+
+- **`node tools/nebenweg-test.mjs`** (erweitert) – alles bestanden: Etappenlogik; jede Absperrart als Leitwand
+  je 90 Anfahrten (3 Stellen, 40/70/100 km/h, 0°/±20°/±40°): nie durch, frontal Stillstand nach höchstens
+  0.18 s, schräg gleitet das Auto an der Leitwand entlang (nach 0.3 s höchstens 24 % Tempo), rückwärts immer
+  raus; **Umfahren: 2160 Versuche** (auch um beide Enden der Leitwand herum), **0** kamen auf den Stummel;
+  Sichtlinien 0; Leitwand mindestens 0.5 m neben Weg + Bankett; Höhenprofil und Fahrtest wie die übrige
+  Strecke; Staub geradeaus links 7 / rechts 7 Wölkchen.
+- **Testfahrer**: 2:43.28 / 2:27.63 / 2:18.16 (vorher 2:43.25 / 2:27.63 / 2:18.23), keine Aufpralle.
+- `aufprall-test`, `strassenrand-test`, `kuh-test` (25 Kühe wie vorher), `lenk-test`, `gras-test`,
+  `stummel-sicht`: alle Prüfungen erfüllt; `getriebe-test` läuft durch. Keine Fehler in der Browser-Konsole.
+- Ehrlich: Im `strassenrand-test` musste ich eine Prüfung anpassen. Sie verlangt, dass auf der Innenseite
+  freier Kurven (plus 50 m Puffer) nichts steht. Die neue Leitwand beginnt direkt am Abzweig (800 m) – 48 m
+  nach dem Ende der freien Kurve 482–752, aber noch im Puffer. Teile der Absperrung und des Stummel-
+  Seitenschutzes zählen dort jetzt nicht mehr (sie gehören zur Kreuzung, nicht zur Kurve).
+
+**Leistung** (`node tools/m3a1-bilder.mjs`, hinter dem Auto, Headless):
+
+| Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+|---|---|---|
+| Start | 118 → 118 | 128 184 → 137 295 |
+| 60 m vor dem Abzweig | 88 → 89 | 139 822 → 149 453 |
+| 700 m | 94 → 95 | 141 574 → 151 205 |
+| mitten im Nebenweg (900 m) | 93 → 93 | 136 338 → 145 585 |
+| nach der Einmündung (1100 m) | 85 → 85 | 131 786 → 131 220 |
+| Ziel | 55 → 55 | 97 150 → 96 584 |
+| schlimmste Stelle | 121 → 122 | 151 066 → 160 697 |
+
+Also höchstens **+1 Zeichenaufruf** (Budget +4) und ca. **+9 600 Dreiecke** (vor allem die Reifenstapel: zwei
+Reihen à 5 Reifen; dafür nur 8 Ecken pro Reifen). **Ladezeit** (`node tools/ladezeit.mjs`, 7 Messungen
+abwechselnd, Median): 1411 → 1494 ms.
+
+**Screenshots** in `screenshots/m3a-1/` (`a` = vorher, `b` = nachher): 01–05 Abzweig aus 60/30/15/8/4 m,
+06–10 Einmündung aus 60/30/15/8/4 m, 11/12 beide Kreuzungen von oben, 13–20 jede Absperrart aus 20 m und aus
+Fahrersicht 60 m vor dem Abzweig, 21 Staub bei normaler Fahrt, 22/23 Richtungstafeln aus 40 m (nur nachher).
+
+### Ehrlich beurteilt
+
+- **Kreuzungen**: Asphalt bleibt Asphalt, Kante sauber. Ganz aus der Nähe (Kamera 1–2 m über dem Boden)
+  blitzen in der Ecke der Einmündung noch einzelne braune Pixel auf (Rand des Schotterwegs).
+- **Absperrungen** sind aus 20–30 m sehr deutlich. Aus 60 m (Fahrersicht) sind sie bei 320x180 Pixeln nur ein
+  paar Pixel hoch – dort helfen vor allem die gelbe Richtungstafel und die roten Chevrons. Die Leitwand läuft
+  zuerst ein Stück am Rand entlang, die Stelle „quer über die Geradeaus-Richtung“ liegt ca. 19–22 m nach der
+  Kreuzung (das ergibt sich aus der Kurve mit 28 m Radius).
+- **Heu** ist mit 2 Lagen 1.2-m-Würfeln 2.4 m hoch – sehr massiv. Falls zu viel: `absperrung.heu.obenAnteil`.
+- **Staub** bei ruhiger Fahrt ist absichtlich schwach (wenige Wölkchen); jetzt aber links und rechts.
+
+### Bekannte Probleme
+
+- Etwas mehr Dreiecke (+9 600) durch die grossen Reifenstapel; auf dem Laptop bitte prüfen, ob es 60 FPS bleiben.
+- Im Headless-Browser gemessen (Software-Grafik); echte FPS auf Laptop und Gaming-PC bitte selbst prüfen.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Staubschleier, der bei ruhiger Fahrt länger in der Luft hängt (dann sieht man ihn auch aus der Fahrersicht).
+- Pace-Note „Kreuzung rechts/links“ in M4 an derselben Stelle wie die Richtungstafel.
+- Die Leitwand bei Kreuzungen mit flacherem Winkel (grosser Radius) kürzer machen, damit die Stelle quer zur
+  Geradeaus-Richtung näher an die Kreuzung rückt.
+
+---
+
+## Meilenstein 3a: Erster Nebenweg (Abzweig, Schotter, Einmündung, Absperrungen) ✅ (Verlauf, Stand damals)
 
 ### Was gebaut wurde
 

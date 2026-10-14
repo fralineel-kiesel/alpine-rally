@@ -11,6 +11,7 @@
 //     ETAPPE (strecke.abfrage). Ein Stummel zählt dort nie.
 // Werte: config.js, Blöcke "nebenwege", "stummel", "belaege", "kreuzung".
 
+import { ShapeUtils, Vector2 } from 'three';
 import { CONFIG } from './config.js';
 import { glatt, mische } from './util.js';
 
@@ -59,11 +60,21 @@ function baueStummel(strecke, sJ, richtung, form) {
     x += Math.sin(w); z += -Math.cos(w);
     if (imBogen) w += dreh * 0.5;
   }
+  // M3a.1: An der Kreuzung liegt der Stummel überall genau auf der Höhe der Etappe (jeder Punkt
+  // bekommt die Höhe der Etappe an dieser Stelle, auch quer). Sonst entsteht dort, wo Schotter und
+  // Asphalt sich berühren, eine Stufe. Ab "hoeheAngleichen[0]" Metern wird weich zur eigenen Höhe
+  // übergeblendet, ab "hoeheAngleichen[1]" gilt nur noch die eigene.
+  // hoeheBei(x, z, u, hEigen): Höhe an (x, z), u = Meter ab der Kreuzung, hEigen = eigene Höhe dort
+  const q = {};
+  const [a0, a1] = form.hoeheAngleichen || [0, 0];
+  const hoeheBei = (x, z, u, hEigen) => (u >= a1 ? hEigen : mische(strecke.abfrage(x, z, q).h, hEigen, glatt(a0, a1, u)));
+  const pyEigen = py.slice();
+  for (let u = 0; u < n && u < a1; u++) py[u] = hoeheBei(px[u], pz[u], u, pyEigen[u]);
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (let u = 0; u < n; u++) {
     minX = Math.min(minX, px[u]); maxX = Math.max(maxX, px[u]); minZ = Math.min(minZ, pz[u]); maxZ = Math.max(maxZ, pz[u]);
   }
-  return { px, py, pz, tx, tz, anzahl: n, laenge: L, box: { minX, maxX, minZ, maxZ }, sJ, richtung, form };
+  return { px, py, pyEigen, pz, tx, tz, anzahl: n, laenge: L, box: { minX, maxX, minZ, maxZ }, sJ, richtung, form, hoeheBei, angleichenBis: a1 };
 }
 
 // Nächster Punkt eines Stummels zu (x, z) (nur wenn er näher als "weit" ist). Ergebnis in ziel
@@ -91,6 +102,8 @@ function stummelAbfrage(ast, x, z, weit, ziel) {
   ziel.s = i + laengs;
   ziel.seite = ddx * -uz + ddz * ux;
   ziel.h = ast.py[i] + (ast.py[j] - ast.py[i]) * f;
+  // nahe der Kreuzung: Höhe der Etappe genau an diesem Punkt (M3a.1)
+  if (ziel.s < ast.angleichenBis) ziel.h = ast.hoeheBei(x, z, Math.max(0, ziel.s), ast.pyEigen[i] + (ast.pyEigen[j] - ast.pyEigen[i]) * f);
   ziel.tx = ux; ziel.tz = uz;
   ziel.abstand = Math.sqrt(bestD);
   ziel.wandSeite = 0; ziel.wandStaerke = 0;
@@ -178,22 +191,85 @@ export function baueNetz(strecke) {
       const t = k / 10, a = (1 - t) * (1 - t), b = 2 * t * (1 - t), c = t * t;
       rand.push({ x: a * p1.x + b * pc.x + c * p2.x, z: a * p1.z + b * pc.z + c * p2.z, h: mische(p1.h, p2.h, t) });
     }
-    ast.muendung = { c: pc, p1, p2, rand, uC, uP1, sC: ast.sJ + weg * sC, sP2: p2.s, seiteN: ast.seiteN, seiteEtappe: sigma };
-    ast.sperreU = uP1 + C.stummel.sperreNachEinfahrt;
+    // Fläche der Ecke (M3a.1): C -> entlang der (gebogenen!) Kante der Etappe bis P2 -> Rundung
+    // zurück bis P1 -> gerade an der Stummel-Kante zurück zu C. Früher ein Fächer mit gerader Kante
+    // zur Etappe: Dazwischen blieb ein schmaler Streifen, in dem Wegrand und Gras durchschauten.
+    // Die Ecke greift etwas über den Rand der Etappe (deckt deren lockeren Rand mit Erdpixeln zu,
+    // der sonst mitten durch die Kreuzung läuft) – bei C noch nicht (dort liegt der Asphalt).
+    const einzug = C.kreuzung.eckEinzug;
+    const kanteInnen = (s, d) => {
+      const f = Math.min(1, d / 1), p = etappePunkt(strecke, s), hb = halbS - einzug * f;
+      return { x: p.x - p.tz * sigma * hb, z: p.z + p.tx * sigma * hb, h: p.h + 0.03 * f, s }; // 3 cm höher: liegt sicher über dem Rand
+    };
+    const punkte = [pc];
+    const sE = Math.abs(p2.s - pc.s);
+    for (let d = 0.5; d < sE - 0.25; d += 0.5) punkte.push(kanteInnen(pc.s + weg * d, d));
+    punkte.push(kanteInnen(p2.s, sE));
+    for (let k = rand.length - 2; k >= 1; k--) punkte.push(rand[k]);
+    punkte.push(p1);
+    const dreiecke = ShapeUtils.triangulateShape(punkte.map((p) => new Vector2(p.x, p.z)), []);
+    ast.muendung = { c: pc, p1, p2, rand, punkte, dreiecke, uC, uP1, sC: ast.sJ + weg * sC, sP2: p2.s, seiteN: ast.seiteN, seiteEtappe: sigma };
+    // --- Absperrung als Leitwand (M3a.1) ---------------------------------------------------
+    // Sie folgt der Kurven-Aussenseite der Etappe (fester Abstand neben Weg + Bankett): beginnt am
+    // Aussenrand der Hauptstrasse direkt an der Kreuzung, schwingt quer über die Geradeaus-Richtung
+    // und endet auf der Seite des Nebenwegs dort, wo der Seitenschutz des Stummels beginnt.
+    // linie: Punkte alle 0.25 m { x, z, s (Etappe), u, l (Stummel: Meter, Seite; + = Nebenweg-Seite) }
+    const ca = C.absperrung, schutz = C.strassenrand.abstand;
+    const linie = [];
+    for (let d = -6; d < 90; d += 0.25) {
+      const s = ast.sJ + weg * d, p = etappePunkt(strecke, s);
+      const L = halbBei(s) + bank + ca.abstandWeg;
+      const x = p.x - p.tz * sigma * L, z = p.z + p.tx * sigma * L;
+      stummelAbfrage(ast, x, z, 1e6, q);
+      const l = q.seite * ast.seiteN;
+      if (q.s < 0 && !linie.length) continue;         // noch vor der Kreuzung
+      linie.push({ x, z, s, u: q.s, l, tx: p.tx * weg, tz: p.tz * weg, nx: p.tz * sigma, nz: -p.tx * sigma }); // n: zur Etappe hin
+      if (l >= schutz) break;                          // auf der Nebenweg-Seite beim Seitenschutz angekommen
+    }
+    const a0 = linie[0], a1 = linie[linie.length - 1];
+    // Mitte: wo die Leitwand die Mittellinie des Stummels kreuzt (dort steht das Verbots-Symbol)
+    let mitte = a0;
+    for (const p of linie) if (Math.abs(p.l) < Math.abs(mitte.l)) mitte = p;
+    ast.sperre = {
+      linie, mitte, sigma,
+      aussen: { u: Math.max(0, a0.u), l: -ast.seiteN * Math.abs(a0.l) }, // Anfang (Aussenseite der Kurve), Stummel-Seite mit Vorzeichen
+      innen: { u: a1.u, l: ast.seiteN * a1.l },                          // Ende (Seite des Nebenwegs)
+    };
+    // sperreU: hinter diesem Stummel-Meter ist man sicher hinter der Absperrung (Werkzeuge, Sichtlinien)
+    ast.sperreU = Math.max(...linie.map((p) => p.u));
   }
 
-  // Liegt (x, z) in der abgerundeten Ecke einer Einfahrt? (Dreiecksfächer von C aus)
+  // Liegt (x, z) auf dem Stummel hinter der Absperrung (Richtung Stummel-Ende)? Für Tests.
+  // Hinter = auf der anderen Seite der Leitwand als die Kreuzung, auf Asphalt oder Bankett.
+  function hinterSperre(ast, x, z, rand = 0) {
+    const w = stummelAbfrage(ast, x, z, 60, {});
+    if (!w || w.s < 0 || Math.abs(w.seite) > halbA + bank + rand) return false;
+    const l = w.seite * ast.seiteN, li = ast.sperre.linie;
+    // Stummel-Meter der Leitwand auf dieser Seite (sie läuft von l = -6 bis +6 quer)
+    let uS = li[0].u;
+    for (let k = 1; k < li.length; k++) {
+      const a = li[k - 1], b = li[k];
+      if ((a.l - l) * (b.l - l) <= 0 && a.l !== b.l) { uS = a.u + ((l - a.l) / (b.l - a.l)) * (b.u - a.u); break; }
+      if (k === li.length - 1) uS = l > b.l ? b.u : li[0].u;
+    }
+    return w.s > uS;
+  }
+
+  // Liegt (x, z) in der abgerundeten Ecke einer Einfahrt? Ergebnis { h, ast } oder null
+  // (h = Höhe der Fläche genau an dieser Stelle)
   function inEcke(x, z) {
     for (const ast of aeste) {
       const m = ast.muendung;
-      if (!m || Math.hypot(x - m.c.x, z - m.c.z) > r * 1.6) continue;
-      for (let k = 0; k < m.rand.length - 1; k++) {
-        const a = m.c, b = m.rand[k], c = m.rand[k + 1];
-        const d1 = (x - b.x) * (a.z - b.z) - (a.x - b.x) * (z - b.z);
-        const d2 = (x - c.x) * (b.z - c.z) - (b.x - c.x) * (z - c.z);
-        const d3 = (x - a.x) * (c.z - a.z) - (c.x - a.x) * (z - a.z);
-        if ((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)) continue;
-        return { h: (a.h + b.h + c.h) / 3, ast };
+      if (!m || Math.hypot(x - m.c.x, z - m.c.z) > r * 2.2) continue;
+      for (const [ia, ib, ic] of m.dreiecke) {
+        const a = m.punkte[ia], b = m.punkte[ib], c = m.punkte[ic];
+        const det = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
+        if (Math.abs(det) < 1e-9) continue;
+        const l1 = ((b.z - c.z) * (x - c.x) + (c.x - b.x) * (z - c.z)) / det;
+        const l2 = ((c.z - a.z) * (x - c.x) + (a.x - c.x) * (z - c.z)) / det;
+        const l3 = 1 - l1 - l2;
+        if (l1 < -1e-6 || l2 < -1e-6 || l3 < -1e-6) continue;
+        return { h: l1 * a.h + l2 * b.h + l3 * c.h, ast };
       }
     }
     return null;
@@ -201,7 +277,7 @@ export function baueNetz(strecke) {
 
   const qs = {};
   const netz = {
-    aeste, nebenwege, belag, halbBei, inEcke, etappePunkt: (s) => etappePunkt(strecke, s),
+    aeste, nebenwege, belag, halbBei, inEcke, hinterSperre, etappePunkt: (s) => etappePunkt(strecke, s),
     halbAsphalt: halbA, bankett: bank,
 
     // Nächster Punkt eines Stummels (ast = Objekt aus aeste), null wenn weiter als "weit"

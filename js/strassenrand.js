@@ -517,6 +517,8 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
   // 4. Seitenschutz an den Stummeln (M3a): ab der Absperrung links und rechts, bis der
   //    Stummel so weit von der Etappe weg ist, dass man dort ohnehin nicht hinkommt
   //    (grenze.maxAbstand). So kann niemand um die Absperrung herum in den Stummel fahren.
+  //    Seit M3a.1 ist die Absperrung eine gebogene Leitwand (netz.js, ast.sperre): Der Seitenschutz
+  //    beginnt auf jeder Seite genau an ihrem Ende, im selben Abstand zur Stummel-Mitte.
   // =====================================================================
   const astLaeufe = [];
   for (const ast of netz ? netz.aeste : []) {
@@ -529,10 +531,15 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
       });
       if (weit) { bis = u; break; }
     }
-    // fängt etwas vor der Absperrung an: die Planke ist am Anfang abgesenkt (ohne Kollision),
-    // so sitzt der feste Teil direkt neben dem Ende der Absperrung (keine Lücke)
-    const von = ast.sperreU - (f.seitenschutz === 'planke' ? 3 : 0.5);
-    for (const sd of SEITEN) astLaeufe.push({ ast, art: f.seitenschutz, seite: sd, von, bis });
+    // fängt genau am Ende der Leitwand an, ohne abgesenktes Planken-Ende (festAnfang: sonst Lücke)
+    if (ast.sperre) {
+      for (const ende of [ast.sperre.aussen, ast.sperre.innen]) {
+        astLaeufe.push({ ast, art: f.seitenschutz, seite: Math.sign(ende.l), von: ende.u, bis, abstand: Math.abs(ende.l), festAnfang: true });
+      }
+    } else {
+      const von = ast.sperreU - (f.seitenschutz === 'planke' ? 3 : 0.5);
+      for (const sd of SEITEN) astLaeufe.push({ ast, art: f.seitenschutz, seite: sd, von, bis });
+    }
   }
 
   return {
@@ -621,7 +628,7 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
     const punkte = [];
     for (let j = -1; j <= m + 1; j++) {
       const s = j < 0 ? l.von : j > m ? l.bis : l.von + ende + ((laenge - 2 * ende) * j) / m;
-      const amEnde = j < 0 || j > m;
+      const amEnde = (j < 0 && !l.festAnfang) || j > m; // festAnfang (M3a.1): beginnt gleich in voller Höhe
       const L = randAbstand(s, sd) + (amEnde ? cp.endeAbwinkeln : 0);
       const p = punkt(s, sd * L, {});
       const g = gelaende(p.x, p.z);
@@ -650,7 +657,7 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
       // Kollision: Kreise knapp hinter der Vorderkante (am Abschluss nur, solange er hoch genug ist)
       const r = cp.kreisRadius;
       const bis = j === punkte.length - 2 ? 0.4 : 1;
-      const von = j === 0 ? 0.6 : 0;
+      const von = j === 0 && !l.festAnfang ? 0.6 : 0;
       const ax = a.x + (b.x - a.x) * von, az = a.z + (b.z - a.z) * von;
       const bx = a.x + (b.x - a.x) * bis, bz = a.z + (b.z - a.z) * bis;
       kreisLinie(ax + ox * r, az + oz * r, bx + ox2 * r, bz + oz2 * r, r, cp.kreisAbstand, 'planke');
@@ -742,8 +749,9 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
       return ziel;
     };
     const astStueck = (u) => stueck(100000 + ast.nr * 1000 + Math.floor(u / c.stueckLaenge), true);
-    if (l.art === 'planke') bauePlanke(l, astPunkt, () => c.abstand, astStueck);
-    else baueZaun({ ...l, latten: 3, torEnde: false, torAnfang: false }, astPunkt, () => c.abstand, astStueck);
+    const abstand = () => l.abstand ?? c.abstand;
+    if (l.art === 'planke') bauePlanke(l, astPunkt, abstand, astStueck);
+    else baueZaun({ ...l, latten: 3, torEnde: false, torAnfang: false }, astPunkt, (s, sd) => abstand() - cz.versatz, astStueck);
   }
 
   // Weidetore: offenes Tor ist ins Feld gedreht (die Lücke bleibt befahrbar)

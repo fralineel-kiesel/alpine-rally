@@ -89,21 +89,25 @@ export function baueStaub(szene) {
   mesh.name = 'staub';
   szene.add(mesh);
 
-  // Ein Wölkchen an einem Hinterrad starten
-  function starte(x, y, z, ax, az, st) {
+  // Ein Wölkchen an einem Hinterrad starten. wx, wz: zusätzlicher Wurf zur Seite (beim Driften)
+  function starte(x, y, z, ax, az, st, wx = 0, wz = 0) {
     const k = naechster;
     naechster = (naechster + 1) % N;
     px[k] = x + (rnd() - 0.5) * 0.3; py[k] = y + 0.15; pz[k] = z + (rnd() - 0.5) * 0.3;
     // ein Teil des Autotempos, etwas zur Seite, nach oben
-    vx[k] = ax * c.mitnehmen + (rnd() - 0.5) * c.streuung;
-    vz[k] = az * c.mitnehmen + (rnd() - 0.5) * c.streuung;
+    vx[k] = ax * c.mitnehmen + wx + (rnd() - 0.5) * c.streuung;
+    vz[k] = az * c.mitnehmen + wz + (rnd() - 0.5) * c.streuung;
     vy[k] = c.aufsteigen * (0.6 + rnd() * 0.8);
     alter[k] = 0;
     leben[k] = mische(c.leben[0], c.leben[1], rnd());
     staerke[k] = st;
   }
 
-  const zustand = { aktiv: 0 };
+  // M3a.1: Welches Hinterrad ist als Nächstes dran? Wird über die Bilder hinweg gemerkt.
+  // (Vorher fing jedes Bild wieder links an: Bei ruhiger Fahrt entsteht nur etwa ein Wölkchen pro
+  // Bild, darum staubte es immer nur auf einer Seite.)
+  let rad = 0;
+  const zustand = { aktiv: 0, links: 0, rechts: 0 }; // links/rechts: so viele Wölkchen pro Rad (für Tests)
   // Jedes Bild: auto = { x, y, z, richtung, vx, vz, tempo, drift (Grad), gas, handbremse, schotter }
   function aktualisiere(dt, auto) {
     if (c.an && auto.schotter && auto.tempo > 0.8) {
@@ -115,11 +119,14 @@ export function baueStaub(szene) {
       st = Math.min(1.2, st);
       guthaben += st * c.proSekunde * dt;
       const fx = Math.sin(auto.richtung), fz = Math.cos(auto.richtung), lx = fz, lz = -fx;
-      let rad = 0;
+      // beim Driften wirft jedes Rad den Staub zusätzlich nach aussen (beide Seiten gleich)
+      const wurf = begrenze(Math.abs(auto.drift) / 25, 0, 1) * c.driftSeitlich;
       while (guthaben >= 1) {
         guthaben -= 1;
         const seite = rad++ % 2 ? 1 : -1;
-        starte(auto.x - fx * 1.3 + lx * 0.75 * seite, auto.y, auto.z - fz * 1.3 + lz * 0.75 * seite, auto.vx, auto.vz, Math.min(1, 0.35 + st));
+        if (seite > 0) zustand.links++; else zustand.rechts++;
+        starte(auto.x - fx * 1.3 + lx * 0.75 * seite, auto.y, auto.z - fz * 1.3 + lz * 0.75 * seite, auto.vx, auto.vz, Math.min(1, 0.35 + st),
+          lx * seite * wurf, lz * seite * wurf);
       }
     } else guthaben = 0;
     // bewegen, wachsen, verblassen

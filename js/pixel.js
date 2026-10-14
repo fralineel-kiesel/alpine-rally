@@ -333,7 +333,7 @@ export function schotterTextur(farben, seed = 37) {
       else if (r < 0.16 * sprenkel) c = variiere(c, 0.76);
       else c = variiere(c, 0.96 + rnd() * 0.06);
       if (amRand && rnd() < 0.45) c = variiere(bank, 0.9 + rnd() * 0.2);
-      if (!weg && rnd() < 0.08) c = variiere(bank, 0.95 + rnd() * 0.1);
+      // (M3a.1: im Teil für die Ecken keine Erdpixel mehr, sie wurden dort zu langen braunen Strichen gezogen)
       setze(l, x, y, c);
     }
   }
@@ -348,22 +348,34 @@ export function schotterTextur(farben, seed = 37) {
 // Löcher sind durchsichtig (alphaTest). 16x16 Pixel = 2 m lang.
 export const FRANSEN_LAENGE = 2;
 export function fransenTextur(farben, seed = 43) {
-  const N = 16;
-  const l = leinwand(N, N);
+  // M3a.1: weicher, sauberer Rand statt Zacken. Die Tiefe ändert sich entlang der Kante langsam
+  // (zwei überlagerte Wellen, nahtlos wiederholbar), dazu ein paar kleine Krümel knapp davor.
+  // Als DataTexture: Auch die durchsichtigen Pixel behalten die Asphaltfarbe (im Canvas würden sie
+  // schwarz), sonst wird der Rand in der Ferne (verkleinerte Stufen) dunkel.
+  const NX = 16, NY = 32;
+  const daten = new Uint8Array(NX * NY * 4);
   const rnd = zufall(seed);
   const asph = hexZuRgb(farben.asphalt);
-  for (let y = 0; y < N; y++) {
-    // ausgefranster Rand: pro Zeile eine zufällige Tiefe, dazu einzelne Brocken
-    const tiefe = 0.25 + rnd() * 0.5;
-    for (let x = 0; x < N; x++) {
-      const u = (x + 0.5) / N;
-      const drin = u < tiefe || rnd() < 0.35 * (1 - u) * (1 - u);
-      const c = variiere(asph, 0.96 + rnd() * 0.1);
-      setze(l, x, y, c, drin ? 255 : 0);
+  const p1 = rnd() * 6.28, p2 = rnd() * 6.28;
+  for (let y = 0; y < NY; y++) {
+    const w = (y / NY) * Math.PI * 2;
+    const tiefe = 0.62 + 0.1 * Math.sin(w + p1) + 0.05 * Math.sin(3 * w + p2); // innere 43 % = unter der Kante
+    for (let x = 0; x < NX; x++) {
+      const u = (x + 0.5) / NX;
+      const kruemel = u > tiefe && u < tiefe + 0.2 && rnd() < 0.12;
+      const drin = u < tiefe || kruemel;
+      const c = variiere(asph, 0.97 + rnd() * 0.07);
+      daten.set([c[0], c[1], c[2], drin ? 255 : 0], (y * NX + x) * 4);
     }
   }
-  const t = zuTextur(l, { wiederholen: true });
+  const t = new THREE.DataTexture(daten, NX, NY);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestMipmapNearestFilter;
+  t.generateMipmaps = true;
   t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.RepeatWrapping;
+  t.needsUpdate = true;
   return t;
 }
 
@@ -777,13 +789,8 @@ export function buschTextur(seed = 83) {
 // Flatterband, Warnstangen, Schild "STRASSE GESPERRT", Rally-Pfeil, Reifen, Strohballen, Holz.
 // Ergebnis: { textur, kachel(name) -> { u0, v0, u1, v1 } }
 // ---------------------------------------------------------------------
-const BUCHSTABEN = {
-  S: ['###', '#..', '###', '..#', '###'], T: ['###', '.#.', '.#.', '.#.', '.#.'], R: ['##.', '#.#', '##.', '#.#', '#.#'],
-  A: ['.#.', '#.#', '###', '#.#', '#.#'], E: ['###', '#..', '##.', '#..', '###'], G: ['.##', '#..', '#.#', '#.#', '.##'],
-  P: ['##.', '#.#', '##.', '#..', '#..'],
-};
 export function absperrAtlas(seed = 71) {
-  const N = 128, NH = 64, RAND = 2;
+  const N = 128, NH = 128, RAND = 2;
   const l = leinwand(N, NH);
   const rnd = zufall(seed);
   const rechtecke = {};
@@ -808,26 +815,38 @@ export function absperrAtlas(seed = 71) {
   const hell = (rgb, f) => rgb.map((c) => Math.max(0, Math.min(255, Math.round(c * f))));
   const ROT = hexZuRgb('#c8202a'), WEISS = hexZuRgb('#f2f0e8'), SCHWARZ = hexZuRgb('#1c1c1c'), GELB = hexZuRgb('#f0c020');
 
-  // Schild "STRASSE GESPERRT": weiss, roter Rand, rote Schrift in zwei Zeilen. 36x14
-  kachel('schild', 36, 14, (px) => {
-    for (let y = 0; y < 14; y++) for (let x = 0; x < 36; x++) px(x, y, x === 0 || y === 0 || x === 35 || y === 13 ? ROT : hell(WEISS, 0.97 + rnd() * 0.05));
-    [['STRASSE', 2], ['GESPERRT', 8]].forEach(([wort, yy]) => {
-      let x = Math.floor((36 - (wort.length * 4 - 1)) / 2);
-      for (const ch of wort) {
-        BUCHSTABEN[ch].forEach((z, y) => [...z].forEach((c, xx) => { if (c === '#') px(x + xx, yy + y, ROT); }));
-        x += 4;
+  // M3a.1: Verbots-Symbol (rotes Rund, weisser Balken), aus der Fahrt gut lesbar. 24x24, rund (aussen durchsichtig)
+  kachel('verbot', 24, 24, (px) => {
+    for (let y = 0; y < 24; y++) {
+      for (let x = 0; x < 24; x++) {
+        const r = Math.hypot(x + 0.5 - 12, y + 0.5 - 12);
+        if (r > 11.8) continue;
+        const balken = Math.abs(y + 0.5 - 12) <= 2.6 && Math.abs(x + 0.5 - 12) <= 8;
+        px(x, y, balken ? WEISS : r > 11 ? hell(ROT, 0.8) : hell(ROT, 0.97 + rnd() * 0.06));
       }
-    });
+    }
   });
-  // Rally-Richtungspfeil: gelbe Tafel, schwarzer Pfeil nach rechts (für links gespiegelt). 16x12
-  kachel('pfeil', 16, 12, (px) => {
-    for (let y = 0; y < 12; y++) for (let x = 0; x < 16; x++) px(x, y, x === 0 || y === 0 || x === 15 || y === 11 ? SCHWARZ : GELB);
-    for (let y = 0; y < 12; y++) {
-      for (let x = 0; x < 16; x++) {
-        const dy = Math.abs(y + 0.5 - 6);
-        const schaft = x >= 2 && x <= 8 && dy <= 1.5;
-        const spitze = x >= 8 && x <= 13 && dy <= 13.5 - x;
-        if (schaft || spitze) px(x, y, SCHWARZ);
+  kachel('verbotRuecken', 24, 24, (px) => {
+    for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) if (Math.hypot(x + 0.5 - 12, y + 0.5 - 12) <= 11.8) px(x, y, hell(hexZuRgb('#8e9297'), 0.95 + rnd() * 0.08));
+  });
+  // Chevron: rote Tafel, weisser Winkel nach rechts (für links gespiegelt). 12x16
+  kachel('chevron', 12, 16, (px) => {
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 12; x++) {
+        const dy = Math.abs(y + 0.5 - 8);
+        const winkel = Math.abs(x + 0.5 - (3 + (8 - dy) * 0.62)) <= 1.7;
+        px(x, y, winkel ? WEISS : x === 0 || x === 11 || y === 0 || y === 15 ? hell(ROT, 0.75) : ROT);
+      }
+    }
+  });
+  // Grosse Richtungstafel: gelb, schwarzer Rand, drei schwarze Winkel nach rechts. 32x14
+  kachel('richtung', 32, 14, (px) => {
+    for (let y = 0; y < 14; y++) {
+      for (let x = 0; x < 32; x++) {
+        const dy = Math.abs(y + 0.5 - 7);
+        let c = x === 0 || y === 0 || x === 31 || y === 13 ? SCHWARZ : hell(GELB, 0.97 + rnd() * 0.05);
+        for (const x0 of [5, 13, 21]) if (Math.abs(x + 0.5 - (x0 + (6 - dy) * 0.75)) <= 1.9 && dy <= 5.2) c = SCHWARZ;
+        px(x, y, c);
       }
     }
   });
@@ -841,27 +860,38 @@ export function absperrAtlas(seed = 71) {
   kachel('band', 32, 3, (px) => {
     for (let y = 0; y < 3; y++) for (let x = 0; x < 32; x++) px(x, y, Math.floor((x + y) / 4) % 2 ? WEISS : ROT);
   });
-  // Altreifen: Lauffläche schwarzgrau mit Profil und verwitterten, grauen Stellen; oben und
-  // unten eine dunkle Kante, damit man die gestapelten Reifen auseinanderhält. 16x6
-  const GUMMI = ['#18181a', '#2f2f33', '#424246', '#5e5e63'].map(hexZuRgb);
+  // Altreifen (M3a.1): Lauffläche schwarzgrau mit Profil, oben und unten die hellere, gewölbte
+  // Flanke (grauer Ring) – so sieht man im Stapel jeden Reifen einzeln. 16x6
+  const GUMMI = ['#141416', '#2f2f33', '#424246', '#6a6a70', '#85858b'].map(hexZuRgb);
   kachel('reifenSeite', 16, 6, (px) => {
     for (let y = 0; y < 6; y++) {
       for (let x = 0; x < 16; x++) {
-        let c = (x + (y % 2)) % 3 === 0 ? GUMMI[1] : GUMMI[2];
-        if (rnd() < 0.12) c = GUMMI[3];
-        if (rnd() < 0.08) c = GUMMI[1];
-        if (y === 0 || y === 5) c = GUMMI[0];
+        let c = (x + (y % 2)) % 3 === 0 ? GUMMI[0] : GUMMI[1];
+        if (rnd() < 0.08) c = GUMMI[2];
+        if (y === 0 || y === 5) c = rnd() < 0.8 ? GUMMI[4] : GUMMI[3];
+        if (y === 1 || y === 4) c = GUMMI[3];
         px(x, y, c);
       }
     }
   });
-  // Reifen von oben: Gummiring (Flanke), innen ein dunkles Loch. 16x16
+  // weiss gestrichener Reifen (Farbe abgeplatzt, Flanken grau). 16x6
+  kachel('reifenWeiss', 16, 6, (px) => {
+    for (let y = 0; y < 6; y++) {
+      for (let x = 0; x < 16; x++) {
+        let c = hell(WEISS, 0.92 + rnd() * 0.08);
+        if (rnd() < 0.07) c = GUMMI[1];
+        if (y === 0 || y === 5) c = GUMMI[3];
+        px(x, y, c);
+      }
+    }
+  });
+  // Reifen von oben: grauer Gummiring (Flanke), innen ein dunkles Loch. 16x16
   kachel('reifenOben', 16, 16, (px) => {
     for (let y = 0; y < 16; y++) {
       for (let x = 0; x < 16; x++) {
         const r = Math.hypot(x + 0.5 - 8, y + 0.5 - 8);
-        let c = r < 4.2 ? GUMMI[0] : r < 5.2 ? GUMMI[3] : GUMMI[2];
-        if (r >= 4.2 && rnd() < 0.12) c = GUMMI[1];
+        let c = r < 4.4 ? GUMMI[0] : r < 5.4 ? GUMMI[4] : r < 7 ? GUMMI[3] : GUMMI[2];
+        if (r >= 4.4 && rnd() < 0.1) c = GUMMI[1];
         px(x, y, c);
       }
     }
@@ -879,6 +909,9 @@ export function absperrAtlas(seed = 71) {
         px(x, y, c);
       }
     }
+  });
+  kachel('strohOben', 16, 12, (px) => {
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 16; x++) px(x, y, hell(STROH[rnd() < 0.6 ? 2 : 0], 0.95 + rnd() * 0.1));
   });
   kachel('strohEnde', 12, 12, (px) => {
     for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) px(x, y, hell(STROH[rnd() < 0.5 ? 1 : 3], 0.9 + rnd() * 0.2));
