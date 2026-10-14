@@ -32,6 +32,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M2a Strassenrand: Leitplanken an Abhängen und in den Kehren, Holzzäune an den Wiesen mit Weidetoren, Schilder (Kurvenwarnungen, Kehren-Nummern, Richtungstafeln, Steinschlag/Gefälle, Kilometertafeln) (fertig)
 - M2a.1 Sperren natürlicher: pro gesperrter Kurve nur eine Sorte (Felsbrocken, umgefallene Stämme oder Tannen), lockerer, nichts steckt ineinander; mehr Schilder: Tempo-Tafeln 80/60/50 (nur Optik), "Kühe" und "Kreuzung" im Tal, alle Schilder etwas grösser (fertig)
 - M2b Leben im Gelände: Kühe in Herden auf Weiden und Alpwiesen (8 Ansichten je Kuh), Büsche, Alpenrosen, Heidelbeeren, Grasbüschel, Jungtannen, Wald auch in der Ferne (Geländefarbe und grosse Fernbäume) (fertig)
+- M2c Raus aus dem Gras: Rückwärtsgang je Untergrund (auf Gras und Bankett kräftiger, auch bergauf raus), kein Hängenbleiben mehr an der Bankett-Kante (fertig)
 - M3 Untergründe: Schotter und Wiese, Weggabelung mit Rally-Absperrband (als Nächstes)
 - M4 Pace-Notes als Symbole, inkl. "nicht schneiden" an den gesperrten und "schneiden" an den freien Kurven (Daten liegen seit M1.2 bereit)
 - M5 Drumherum: Zielbildschirm, Minimap, Feinschliff (Auto, Fahrphysik)
