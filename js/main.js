@@ -164,7 +164,7 @@ function physikSchritt(dt, e) {
   const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip);
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
-    rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1,
+    rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1, geradeaus: u.geradeaus ?? 1,
   }, motor);
 
   // Zu steiler Hang (neben der Strasse): da kommt das Auto nicht hoch

@@ -7,7 +7,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Palette: erdig und rau (Schotterbraun, Steingrau, Tannengrün), aber sattes grünes Gras und blauer Himmel. Sonniger Tag zum Start, anderes Wetter später.
 - Kamera: nur hinter dem Auto (Vorbild V-Rally 3, GBA: dichte Landschaft).
 - Spielziel: Etappe von A nach B gegen die Uhr, mit Checkpoints. Beifahrer-Ansagen (Pace-Notes) kommen als Symbole oben im Bild. Gegner und Geister später.
-- Fahrphysik: Arcade mit Gewicht (schweres 80er-Rallyauto) und Handbremse für Kehren.
+- Fahrphysik: Arcade mit Gewicht (schweres 80er-Rallyauto) und Handbremse für Kehren. Handbremse: kurz ziehen = Heck kommt, Tempo bleibt; lange halten = Auto wird langsamer und steht (seit M3a.2). Ohne Rutschen fährt das Auto nach dem Lenken schnell wieder geradeaus (seit M3a.2).
 - Fahrphysik mit Automatik-Getriebe (5 Gänge) und kurzer Schaltpause wie bei einem Handschalter (seit M1.2). Manuelles Schalten evtl. später als eigener Meilenstein.
 - Steuerung: Tastatur und Gamepad. Handy evtl. später.
 - Autos: aus einfachen Formen gebaut, Fantasienamen. Erstes Auto: Ringwerk RT4 (Quattro-Typ). Auto-Look und Feinschliff später.
@@ -35,6 +35,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M2c Raus aus dem Gras: Rückwärtsgang je Untergrund (auf Gras und Bankett kräftiger, auch bergauf raus), kein Hängenbleiben mehr an der Bankett-Kante (fertig)
 - M3a Erster Nebenweg: Abzweig von der Hauptstrasse auf Schotter (800–1020 m), Stummel der Hauptstrasse mit Absperrung (Flatterband, Reifen; Heu und Holzbock vorbereitet), Ende nie sichtbar, Schotter-Fahrgefühl und Staub (fertig)
 - M3a.1 Nebenweg-Korrektur: Kreuzungen sauber (kein Schotter auf dem Asphalt, saubere Ausfransung), keine Stufe an der Einmündung, Staub an beiden Hinterrädern, Absperrungen als grosse gebogene Leitwand direkt an der Kreuzung mit Verbots-Symbol, Chevrons und Richtungstafel 70 m vorher, Waldrand am Nebenweg locker in Gruppen (185 statt 505 Tannen) (fertig)
+- M3a.2 Fahrphysik-Feinschliff: Handbremse lange gehalten bremst das Auto bis zum Stand (kein endloses Kreisen mehr, kurz ziehen kostet kaum Tempo), Dreher rutschen weich aus statt schlagartig zu stoppen, nach dem Lenken bei hohem Tempo schnell wieder geradeaus (Geradeauslauf-Hilfe, nicht beim Einlenken und nicht im Drift) (fertig)
 - M3b Weitere Nebenwege (als Nächstes): Wiesenweg-Abschnitt auf der Abfahrt (ca. 2710–3190 m) und ein Schotter-Nebenweg nach den Kehren (ca. 1870–2480 m), mit Heu- und Holzbock-Absperrungen
 - M4 Pace-Notes als Symbole, inkl. "nicht schneiden" an den gesperrten und "schneiden" an den freien Kurven (Daten liegen seit M1.2 bereit)
 - M5 Drumherum: Zielbildschirm, Minimap, Feinschliff (Auto, Fahrphysik)

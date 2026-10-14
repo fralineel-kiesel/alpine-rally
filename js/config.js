@@ -330,10 +330,25 @@ export const CONFIG = {
     gripHinten: 1.12,          // Haftung Hinterachse
     reifenSteifigkeit: 9,      // wie schnell die Reifen Seitenkraft aufbauen
     handbremseGrip: 0.8,       // Reibung der blockierten Hinterräder (seitlich halten sie kaum)
-    handbremseBremse: 3.5,     // Bremswirkung der Handbremse (m/s²)
+    handbremseBremse: 3.5,     // Bremswirkung der Handbremse gleich nach dem Ziehen (m/s²): kurz ziehen kostet wenig Tempo
+    handbremseBremseLang: 5, // M3a.2: ... und lange gehalten (m/s², in jede Rutschrichtung; mal Grip: auf Schotter etwas weniger)
+    handbremseAufbau: 1.2,     // M3a.2: nach so vielen Sekunden Halten gilt handbremseBremseLang und handbremseAntrieb voll
+    handbremseAntrieb: 0.3,    // M3a.2: so viel vom Antrieb kommt bei lange gehaltener Handbremse noch an (1 = alles, vorher so)
     gasImDrift: 0.12,          // Gas im Drift lockert das Heck etwas (0 = aus)
     stabilitaet: 5,            // zieht das Auto aus dem Drift zurück gerade. 0 = aus, höher = braver
     stabilitaetRueckkehr: 2.5, // wie schnell die Stabilität nach der Handbremse zurückkommt
+    // Geradeauslauf (M3a.2): nach dem Loslassen der Lenkung findet das Auto schnell wieder geradeaus,
+    // solange es nicht rutscht. Einlenken und Kurvenfahrt bleiben wie vorher.
+    geradeauslauf: {
+      gier: 8,                 // so schnell (1/s) hört das Auto auf nachzudrehen. 0 = aus (wie vor M3a.2)
+      schwimm: 4,              // so schnell (1/s) dreht die Fahrtrichtung zur Blickrichtung (seitliches Schieben weg)
+      lenkBis: 0.15,           // wirkt voll bei gerader Lenkung, ab so viel Lenkung (0..1) gar nicht mehr
+      rutschAb: 8,             // ab diesem Schwimmwinkel (Grad) wird die Hilfe schwächer ...
+      rutschBis: 15,           // ... ab diesem ist sie aus: das Auto rutscht, es soll weiter schieben (Drift)
+    },
+    // Dreher (M3a.2): rutscht das Auto schneller als abSeit (m/s) seitwärts, rutscht es mit der Reibung der Reifen
+    // weich aus statt schlagartig zu stehen; das Drehen wird dabei höchstens mit drehBremse (rad/s²) gebremst
+    dreher: { abSeit: 1.5, drehBremse: 4 },
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -384,8 +399,10 @@ export const CONFIG = {
     // hält aber deutlich besser als Gras. Startwerte, durch Fahren feinjustieren.
     //   heck: Grip hinten zusätzlich mal diesem Wert (unter 1 = Heck kommt früher, Drift)
     //   stabilitaet: Stabilitätshilfe (auto.stabilitaet) mal diesem Wert (unter 1 = Drift hält länger)
+    //   geradeaus (M3a.2): Geradeauslauf-Hilfe (auto.geradeauslauf) mal diesem Wert (unter 1 = schiebt nach
+    //   dem Loslassen der Lenkung länger seitlich, 0 = wie vor M3a.2)
     // (fehlen sie, gilt 1 = wie bisher; Asphalt, Bankett und Gras sind darum unverändert)
-    schotter: { grip: 0.8, rollen: 0.35, rollenTempo: 0.01, rueckwaerts: 1.2, heck: 0.8, stabilitaet: 0.5 },
+    schotter: { grip: 0.8, rollen: 0.35, rollenTempo: 0.01, rueckwaerts: 1.2, heck: 0.8, stabilitaet: 0.5, geradeaus: 0.4 },
   },
 
   // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------
