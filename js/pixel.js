@@ -306,6 +306,67 @@ export function bankettTextur(farben, seed = 19) {
   return t;
 }
 
+// Schotter (Meilenstein 3a): helles Graubeige mit Kieseln, zwei dunklere, festgefahrene
+// Fahrspuren, am Rand locker (ein paar Erdpixel vom Bankett).
+// Bild 48x32 Pixel: links 32 Pixel = ganze Wegbreite (Teil 0..SCHOTTER_U), rechts 16 Pixel
+// lockerer Kies ohne Fahrspuren (für die abgerundeten Ecken an den Einfahrten). 32 Pixel = 6 m lang.
+export const SCHOTTER_LAENGE = 6;
+export const SCHOTTER_U = 32 / 48;
+export function schotterTextur(farben, seed = 37) {
+  const B = 48, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const kies = hexZuRgb(farben.schotter), spur = hexZuRgb(farben.schotterSpur), bank = hexZuRgb(farben.bankett);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < B; x++) {
+      const weg = x < 32;
+      // Fahrspuren: zwei Streifen, leicht wellig
+      const welle = Math.round(Math.sin((y / H) * Math.PI * 2) * 0.6);
+      const inSpur = weg && ((x >= 10 + welle && x <= 12 + welle) || (x >= 19 + welle && x <= 21 + welle));
+      const amRand = weg && (x <= 1 || x >= 30);
+      let c = inSpur ? spur : kies;
+      const r = rnd();
+      // Kiesel: hell und dunkel gesprenkelt (in den Spuren weniger, dort ist es festgefahren)
+      const sprenkel = inSpur ? 0.5 : 1;
+      if (r < 0.07 * sprenkel) c = variiere(c, 1.1);
+      else if (r < 0.14 * sprenkel) c = variiere(c, 0.88);
+      else if (r < 0.16 * sprenkel) c = variiere(c, 0.76);
+      else c = variiere(c, 0.96 + rnd() * 0.06);
+      if (amRand && rnd() < 0.45) c = variiere(bank, 0.9 + rnd() * 0.2);
+      if (!weg && rnd() < 0.08) c = variiere(bank, 0.95 + rnd() * 0.1);
+      setze(l, x, y, c);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter; // wie Asphalt: in der Ferne ruhig, nah harte Pixel
+  return t;
+}
+
+// Ausfransen (M3a): Asphaltbrocken, die an der Einfahrt in den Schotter auslaufen.
+// u = 0 an der Asphaltkante (fast geschlossen), u = 1 aussen (nur noch einzelne Brocken).
+// Löcher sind durchsichtig (alphaTest). 16x16 Pixel = 2 m lang.
+export const FRANSEN_LAENGE = 2;
+export function fransenTextur(farben, seed = 43) {
+  const N = 16;
+  const l = leinwand(N, N);
+  const rnd = zufall(seed);
+  const asph = hexZuRgb(farben.asphalt);
+  for (let y = 0; y < N; y++) {
+    // ausgefranster Rand: pro Zeile eine zufällige Tiefe, dazu einzelne Brocken
+    const tiefe = 0.25 + rnd() * 0.5;
+    for (let x = 0; x < N; x++) {
+      const u = (x + 0.5) / N;
+      const drin = u < tiefe || rnd() < 0.35 * (1 - u) * (1 - u);
+      const c = variiere(asph, 0.96 + rnd() * 0.1);
+      setze(l, x, y, c, drin ? 255 : 0);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
 // Mittellinie: 1 Pixel breit, 32 Pixel lang (= ein Strich + eine Lücke).
 // Die Lücke ist durchsichtig. In der Ferne wird daraus eine durchgehende,
 // schwache Linie (statt zu flimmern).
@@ -709,4 +770,161 @@ export function buschTextur(seed = 83) {
     }
   }
   return { textur: zuTextur(l), varianten: N, seitenVerhaeltnis: B / H };
+}
+
+// ---------------------------------------------------------------------
+// Absperrungen (Meilenstein 3a): alle Teile auf einem Bild (Atlas), ein Material.
+// Flatterband, Warnstangen, Schild "STRASSE GESPERRT", Rally-Pfeil, Reifen, Strohballen, Holz.
+// Ergebnis: { textur, kachel(name) -> { u0, v0, u1, v1 } }
+// ---------------------------------------------------------------------
+const BUCHSTABEN = {
+  S: ['###', '#..', '###', '..#', '###'], T: ['###', '.#.', '.#.', '.#.', '.#.'], R: ['##.', '#.#', '##.', '#.#', '#.#'],
+  A: ['.#.', '#.#', '###', '#.#', '#.#'], E: ['###', '#..', '##.', '#..', '###'], G: ['.##', '#..', '#.#', '#.#', '.##'],
+  P: ['##.', '#.#', '##.', '#..', '#..'],
+};
+export function absperrAtlas(seed = 71) {
+  const N = 128, NH = 64, RAND = 2;
+  const l = leinwand(N, NH);
+  const rnd = zufall(seed);
+  const rechtecke = {};
+  let x0 = 0, y0 = 0, zeileH = 0;
+  // wie beim Strassenrand-Atlas: Kachel mit Rand aus wiederholten Randpixeln
+  function kachel(name, b, h, malen) {
+    if (x0 + b + RAND * 2 > N) { x0 = 0; y0 += zeileH; zeileH = 0; }
+    if (y0 + h + RAND * 2 > NH) throw new Error(`Atlas voll bei Kachel ${name}`);
+    const ox = x0 + RAND, oy = y0 + RAND;
+    const daten = new Array(b * h).fill(null);
+    malen((x, y, rgb) => { if (x >= 0 && y >= 0 && x < b && y < h) daten[y * b + x] = rgb; });
+    for (let y = -RAND; y < h + RAND; y++) {
+      for (let x = -RAND; x < b + RAND; x++) {
+        const d = daten[Math.min(h - 1, Math.max(0, y)) * b + Math.min(b - 1, Math.max(0, x))];
+        if (d) setze(l, ox + x, oy + y, d);
+      }
+    }
+    rechtecke[name] = { x: ox, y: oy, b, h };
+    x0 += b + RAND * 2;
+    zeileH = Math.max(zeileH, h + RAND * 2);
+  }
+  const hell = (rgb, f) => rgb.map((c) => Math.max(0, Math.min(255, Math.round(c * f))));
+  const ROT = hexZuRgb('#c8202a'), WEISS = hexZuRgb('#f2f0e8'), SCHWARZ = hexZuRgb('#1c1c1c'), GELB = hexZuRgb('#f0c020');
+
+  // Schild "STRASSE GESPERRT": weiss, roter Rand, rote Schrift in zwei Zeilen. 36x14
+  kachel('schild', 36, 14, (px) => {
+    for (let y = 0; y < 14; y++) for (let x = 0; x < 36; x++) px(x, y, x === 0 || y === 0 || x === 35 || y === 13 ? ROT : hell(WEISS, 0.97 + rnd() * 0.05));
+    [['STRASSE', 2], ['GESPERRT', 8]].forEach(([wort, yy]) => {
+      let x = Math.floor((36 - (wort.length * 4 - 1)) / 2);
+      for (const ch of wort) {
+        BUCHSTABEN[ch].forEach((z, y) => [...z].forEach((c, xx) => { if (c === '#') px(x + xx, yy + y, ROT); }));
+        x += 4;
+      }
+    });
+  });
+  // Rally-Richtungspfeil: gelbe Tafel, schwarzer Pfeil nach rechts (für links gespiegelt). 16x12
+  kachel('pfeil', 16, 12, (px) => {
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 16; x++) px(x, y, x === 0 || y === 0 || x === 15 || y === 11 ? SCHWARZ : GELB);
+    for (let y = 0; y < 12; y++) {
+      for (let x = 0; x < 16; x++) {
+        const dy = Math.abs(y + 0.5 - 6);
+        const schaft = x >= 2 && x <= 8 && dy <= 1.5;
+        const spitze = x >= 8 && x <= 13 && dy <= 13.5 - x;
+        if (schaft || spitze) px(x, y, SCHWARZ);
+      }
+    }
+  });
+  // Rückseite der Schilder: grau
+  kachel('blech', 4, 4, (px) => { for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) px(x, y, hell(hexZuRgb('#8e9297'), 0.95 + rnd() * 0.08)); });
+  // Warnstange: rot-weiss geringelt (je 4 Pixel). 4x16
+  kachel('stange', 4, 16, (px) => {
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 4; x++) px(x, y, hell(Math.floor(y / 4) % 2 ? WEISS : ROT, x === 3 ? 0.8 : 1));
+  });
+  // Flatterband: rot-weiss schräg gestreift. 32x3
+  kachel('band', 32, 3, (px) => {
+    for (let y = 0; y < 3; y++) for (let x = 0; x < 32; x++) px(x, y, Math.floor((x + y) / 4) % 2 ? WEISS : ROT);
+  });
+  // Altreifen: Lauffläche schwarzgrau mit Profil und verwitterten, grauen Stellen; oben und
+  // unten eine dunkle Kante, damit man die gestapelten Reifen auseinanderhält. 16x6
+  const GUMMI = ['#18181a', '#2f2f33', '#424246', '#5e5e63'].map(hexZuRgb);
+  kachel('reifenSeite', 16, 6, (px) => {
+    for (let y = 0; y < 6; y++) {
+      for (let x = 0; x < 16; x++) {
+        let c = (x + (y % 2)) % 3 === 0 ? GUMMI[1] : GUMMI[2];
+        if (rnd() < 0.12) c = GUMMI[3];
+        if (rnd() < 0.08) c = GUMMI[1];
+        if (y === 0 || y === 5) c = GUMMI[0];
+        px(x, y, c);
+      }
+    }
+  });
+  // Reifen von oben: Gummiring (Flanke), innen ein dunkles Loch. 16x16
+  kachel('reifenOben', 16, 16, (px) => {
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 16; x++) {
+        const r = Math.hypot(x + 0.5 - 8, y + 0.5 - 8);
+        let c = r < 4.2 ? GUMMI[0] : r < 5.2 ? GUMMI[3] : GUMMI[2];
+        if (r >= 4.2 && rnd() < 0.12) c = GUMMI[1];
+        px(x, y, c);
+      }
+    }
+  });
+  // Strohballen: gelbbeige Halme längs, zwei dunklere Schnüre. 16x12 (Seite) und 12x12 (Stirn)
+  const STROH = ['#d8bd6a', '#c7a955', '#e6d088', '#a98c40'].map(hexZuRgb);
+  kachel('strohSeite', 16, 12, (px) => {
+    for (let y = 0; y < 12; y++) {
+      let f = rnd() < 0.5 ? 0 : 1;
+      for (let x = 0; x < 16; x++) {
+        if (rnd() < 0.25) f = Math.floor(rnd() * 3);
+        let c = STROH[f];
+        if (rnd() < 0.06) c = STROH[3];
+        if (x === 4 || x === 11) c = hell(STROH[3], 0.8); // Schnur
+        px(x, y, c);
+      }
+    }
+  });
+  kachel('strohEnde', 12, 12, (px) => {
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) px(x, y, hell(STROH[rnd() < 0.5 ? 1 : 3], 0.9 + rnd() * 0.2));
+  });
+  // Holz: Brett (Maserung längs) und Pfosten, wie der Holzzaun am Strassenrand. 32x4 / 8x16
+  const HOLZ_L = ['#6b5236', '#8a6b46', '#a1815a', '#4d3b27'].map(hexZuRgb);
+  kachel('brett', 32, 4, (px) => {
+    for (let y = 0; y < 4; y++) {
+      let f = rnd() < 0.5 ? 1 : 2;
+      for (let x = 0; x < 32; x++) {
+        if (rnd() < 0.15) f = f === 1 ? 2 : 1;
+        let c = HOLZ_L[f];
+        if (y === 3) c = HOLZ_L[0];
+        if (rnd() < 0.04) c = HOLZ_L[3];
+        px(x, y, c);
+      }
+    }
+  });
+  // Brett rot-weiss gestrichen (verwittert: hier und da Holz). 32x4
+  kachel('brettRot', 32, 4, (px) => {
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 32; x++) {
+        let c = Math.floor(x / 6) % 2 ? WEISS : ROT;
+        if (y === 3) c = hell(c, 0.8);
+        if (rnd() < 0.07) c = HOLZ_L[1];
+        px(x, y, c);
+      }
+    }
+  });
+  kachel('pfosten', 8, 16, (px) => {
+    for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 16; y++) {
+        let c = HOLZ_L[x < 3 ? 2 : x > 5 ? 0 : 1];
+        if (rnd() < 0.08) c = HOLZ_L[3];
+        px(x, y, c);
+      }
+    }
+  });
+
+  const textur = zuTextur(l);
+  return {
+    textur,
+    kachel(name) {
+      const r = rechtecke[name];
+      if (!r) throw new Error(`Atlas: Kachel ${name} fehlt`);
+      return { u0: r.x / N, u1: (r.x + r.b) / N, v0: 1 - (r.y + r.h) / NH, v1: 1 - r.y / NH };
+    },
+  };
 }

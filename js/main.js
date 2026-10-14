@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { baueStrecke } from './track.js';
 import { baueWelt } from './world.js';
+import { baueNetz } from './netz.js';
 import { bauePflanzen, baueDeko } from './sprites.js';
 import { baueAuto } from './car.js';
 import { Fahrphysik } from './physics.js';
@@ -14,6 +15,8 @@ import { baueKollision } from './kollision.js';
 import { baueCheckpointTore } from './checkpoints.js';
 import { baueStrassenrand } from './strassenrand.js';
 import { baueKuehe } from './kuehe.js';
+import { baueAbsperrungen } from './absperrungen.js';
+import { baueStaub } from './staub.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -64,16 +67,23 @@ const kamera = new THREE.PerspectiveCamera(CONFIG.kamera.sichtfeld, B / H, 0.3, 
 
 // --- Welt aufbauen ---
 const strecke = baueStrecke();
-const welt = baueWelt(szene, strecke);
+// Strassennetz (M3a): Etappe + Stummel an den Nebenwegen (nur für Gelände, Boden, Bäume, Rand)
+const netz = baueNetz(strecke);
+const welt = baueWelt(szene, strecke, netz);
 const pflanzen = bauePflanzen(szene, strecke, welt);
 // Leitplanken, Holzzäune, Schilder (Meilenstein 2a) – sind auch Hindernisse
 const strassenrand = baueStrassenrand(szene, strecke, welt, pflanzen);
+// Absperrungen auf den Stummeln der Nebenwege (M3a) – Hindernisse wie der Strassenrand
+const absperrungen = baueAbsperrungen(szene, welt);
+strassenrand.hindernisse.push(...absperrungen.hindernisse);
 // Kühe auf den Weiden (Meilenstein 2b) – sind auch Hindernisse
 const kuehe = baueKuehe(szene, strecke, welt, pflanzen, strassenrand);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe);
 const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse]);
-const checkpoints = baueCheckpointTore(szene, strecke);
+const checkpoints = baueCheckpointTore(szene, strecke, netz);
+const staub = baueStaub(szene); // Staub auf Schotter (M3a)
+const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false };
 const auto = baueAuto();
 szene.add(auto.objekt);
 const physik = new Fahrphysik();
@@ -154,7 +164,7 @@ function physikSchritt(dt, e) {
   const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip);
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
-    rueckwaerts: u.rueckwaerts ?? 1,
+    rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1,
   }, motor);
 
   // Zu steiler Hang (neben der Strasse): da kommt das Auto nicht hoch
@@ -358,6 +368,12 @@ function schleife(jetzt) {
   const weg = Math.hypot(physik.x - xVor, physik.z - zVor) * Math.sign(physik.vVor || 1);
 
   autoZeichnen(dt, weg);
+  // Staub (nur auf Schotter): Werte ohne neue Objekte übergeben
+  staubAuto.x = physik.x; staubAuto.z = physik.z; staubAuto.y = auto.objekt.position.y;
+  staubAuto.richtung = physik.richtung; staubAuto.vx = physik.vx; staubAuto.vz = physik.vz;
+  staubAuto.tempo = physik.tempo; staubAuto.drift = physik.driftWinkel;
+  staubAuto.gas = e.gas; staubAuto.handbremse = e.handbremse; staubAuto.schotter = untergrund === 'schotter';
+  staub.aktualisiere(dt, staubAuto);
   kameraFuehren(dt);
   welt.aktualisiere(kamera.position);
   strassenrand.aktualisiere(kamera.position);
@@ -368,7 +384,7 @@ function schleife(jetzt) {
     dt, kmh: physik.tempo * 3.6, debug: debugAn, fps,
     gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
     meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
-    untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS' }[untergrund],
+    untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS', schotter: 'SCHOTTER' }[untergrund],
     hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
     meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
     zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
@@ -384,7 +400,7 @@ requestAnimationFrame(schleife);
 
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
-  THREE, physik, getriebe, strecke, welt, rennen, kamera, renderer, szene, setzeAuf, pflanzen, kameraSofort, kollision,
-  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko,
+  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
+  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };

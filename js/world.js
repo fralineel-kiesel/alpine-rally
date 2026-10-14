@@ -7,6 +7,7 @@ import { CONFIG } from './config.js';
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
+  schotterTextur, SCHOTTER_LAENGE, SCHOTTER_U, fransenTextur, FRANSEN_LAENGE,
 } from './pixel.js';
 
 // Zusätzliche Landschaftsformen von Hand: grosse Hügel und Senken.
@@ -20,8 +21,8 @@ export const LANDSCHAFT = [
   { x: 1500, z: -1450, radius: 230, hoehe: 70 },  // Berg zwischen Pass und Abfahrt
 ];
 
-export function baueWelt(szene, strecke) {
-  const welt = {};
+export function baueWelt(szene, strecke, netz) {
+  const welt = { netz };
   const g = CONFIG.gelaende;
   const f = CONFIG.farben;
   const koernung = koernungTextur();
@@ -141,7 +142,7 @@ export function baueWelt(szene, strecke) {
   function profil(i, lat, basis) {
     const a = Math.abs(lat);
     let p = Math.max(0, a - g.flachBis) * 0.1; // leicht ansteigende Böschung
-    const ws = strecke.wandSeite[i];
+    const ws = i < strecke.anzahl ? strecke.wandSeite[i] : 0; // Stummel: keine Felswand
     if (ws) {
       const st = strecke.wandStaerke[i];
       let spezial;
@@ -157,12 +158,23 @@ export function baueWelt(szene, strecke) {
     return p;
   }
 
-  // Stützpunkte der Strecke (alle 3 m) in einem Raster, für die Glättung
+  // Stützpunkte der Strecke (alle 3 m) in einem Raster, für die Glättung.
+  // Seit M3a zählen auch die Stummel an den Nebenwegen mit (Index ab strecke.anzahl,
+  // Daten in sp*: Lage, Höhe, Richtung; Stummel haben keine Felswand).
   const SIGMA = 30, RW = SIGMA * 3, R2 = RW * RW, SZ = 30;
   const SX = Math.ceil((KX * T) / SZ) + 1, SZN = Math.ceil((KZ * T) / SZ) + 1;
   const stuetzZellen = Array.from({ length: SX * SZN }, () => []);
-  for (let i = 0; i < strecke.anzahl; i += 3) {
-    const cx = Math.floor((px[i] - X0) / SZ), cz = Math.floor((pz[i] - Z0) / SZ);
+  const spX = Array.from(px), spY = Array.from(py), spZ = Array.from(pz), spTX = Array.from(tx), spTZ = Array.from(tz);
+  const stuetzen = [];
+  for (let i = 0; i < strecke.anzahl; i += 3) stuetzen.push(i);
+  for (const ast of netz ? netz.aeste : []) {
+    for (let u = 3; u < ast.anzahl; u += 3) {
+      stuetzen.push(spX.length);
+      spX.push(ast.px[u]); spY.push(ast.py[u]); spZ.push(ast.pz[u]); spTX.push(ast.tx[u]); spTZ.push(ast.tz[u]);
+    }
+  }
+  for (const i of stuetzen) {
+    const cx = Math.floor((spX[i] - X0) / SZ), cz = Math.floor((spZ[i] - Z0) / SZ);
     if (cx >= 0 && cz >= 0 && cx < SX && cz < SZN) stuetzZellen[cz * SX + cx].push(i);
   }
 
@@ -183,14 +195,14 @@ export function baueWelt(szene, strecke) {
         const liste = stuetzZellen[jz * SX + jx];
         for (let k = 0; k < liste.length; k++) {
           const i = liste[k];
-          const dx = x - px[i], dz = z - pz[i];
+          const dx = x - spX[i], dz = z - spZ[i];
           const d2 = dx * dx + dz * dz;
           if (d2 < minD2) minD2 = d2;
           if (d2 > R2) continue;
           const w = Math.exp(-d2 / (SIGMA * SIGMA));
-          const lat = dx * -tz[i] + dz * tx[i];
+          const lat = dx * -spTZ[i] + dz * spTX[i];
           summeW += w;
-          summeH += w * (py[i] + profil(i, lat, basis));
+          summeH += w * (spY[i] + profil(i, lat, basis));
         }
       }
     }
@@ -199,8 +211,8 @@ export function baueWelt(szene, strecke) {
     // kleine Hügel, nahe der Strasse schwächer
     h += (fbm(x / 55, z / 55, g.seed + 3) - 0.5) * 2 * g.huegelHoehe * glatt(10, 60, minD);
     if (minD < ZONE) {
-      // ganz nahe: flach auf Strassenhöhe
-      strecke.abfrage(x, z, q);
+      // ganz nahe: flach auf Strassenhöhe (nächste Strasse: Etappe oder Stummel)
+      if (netz) netz.abfrage(x, z, q); else strecke.abfrage(x, z, q);
       // auf der Wandseite steigt es schnell an (dort steht die Felswand)
       const wandSeite = q.wandSeite && Math.sign(q.seite) === q.wandSeite;
       const uber = wandSeite ? mische(g.uebergang, 4, q.wandStaerke) : g.uebergang;
@@ -208,7 +220,7 @@ export function baueWelt(szene, strecke) {
       h = mische(q.h - 0.3, h, t);
       // Liegt ein anderer Ast der Strecke nahe (z. B. die Kehre darüber)?
       // Dann dazwischen eine saubere Böschung von Strasse zu Strasse.
-      if (strecke.andererAst(x, z, q.s, 40, 40, q2)) {
+      if (netz ? netz.zweiteStrasse(x, z, q, 40, q2) : strecke.andererAst(x, z, q.s, 40, 40, q2)) {
         const e1 = Math.max(0, q.abstand - g.flachBis), e2 = Math.max(0, q2.abstand - g.flachBis);
         const rampe = mische(q.h, q2.h, glatt(0, 1, e1 / Math.max(1e-3, e1 + e2))) - 0.3;
         h = mische(h, rampe, 1 - glatt(12, 30, e1 + e2));
@@ -420,32 +432,75 @@ export function baueWelt(szene, strecke) {
   };
 
   // ---------------------------------------------------------------
-  // Strasse als Bänder entlang der Strecke: Asphalt, zwei Bankette und
-  // die Mittellinie, jedes mit eigener Textur (bleibt in der Ferne grau).
+  // Strasse als Bänder entlang der Strecke: Asphalt, Schotter (seit M3a), zwei Bankette
+  // und die Mittellinie, jedes mit eigener Textur (bleibt in der Ferne grau).
+  // Seit M3a gibt es mehrere "Wege": die Etappe (je Belag in Stücke geteilt) und die
+  // Stummel an den Nebenwegen. Wo sich zwei überlagern (Kreuzung), liegt Asphalt oben
+  // (polygonOffset), Schotter darunter, Bankett zuunterst.
   // ---------------------------------------------------------------
   const s = CONFIG.strasse;
   const halb = s.breite / 2, aussen = halb + s.bankett;
-
-  // Baut ein Band aus Streifen. Jeder Streifen: Liste von Querpunkten
-  // { lat (Abstand zur Mitte, + = rechts), dy (Höhe), u (Textur quer) }.
-  // vLaenge = so viele Meter entspricht eine Texturlänge.
-  function baueBand(streifen, vLaenge, extra) {
+  const BL = CONFIG.belaege;
+  const aeste = netz ? netz.aeste : [];
+  // Ein Weg: Punkte (px, py, pz, tx, tz), Texturlänge v(i) in Metern
+  const etappeWeg = { px, py, pz, tx, tz, v: (i) => strecke.s[i] };
+  const astWege = aeste.map((ast) => ({ ...ast, v: (u) => ast.sJ + ast.richtung * u }));
+  // Zusammenhängende Stücke der Etappe mit diesem Belag
+  function etappeStuecke(belag) {
+    const liste = [];
     const n = strecke.anzahl;
+    let start = -1;
+    for (let i = 0; i <= n; i++) {
+      const an = i < n && (netz ? netz.belag[i] : 'asphalt') === belag;
+      if (an && start < 0) start = i;
+      // Asphalt überlappt die Nachbarstücke um einen Punkt (liegt oben), die anderen stossen nur an
+      const plus = belag === 'asphalt' ? 1 : 0;
+      if (!an && start >= 0) { liste.push({ von: Math.max(0, start - plus), bis: Math.min(n - 1, i - 1 + plus) }); start = -1; }
+    }
+    return liste;
+  }
+
+  // Liegt ein Punkt einer Kreuzung auf dem Asphalt eines Stummels / auf dem Schotter der Etappe?
+  // Dann wird ein Band, das darunter liegen soll, dort ein paar cm abgesenkt (kein Flimmern).
+  const qa = {}, qk = {};
+  function unterAsphalt(x, z, y) {
+    for (const ast of aeste) {
+      const w = netz.stummelAbfrage(ast, x, z, 10, qa);
+      if (w && w.s >= -0.2 && w.s <= ast.laenge && Math.abs(w.seite) < ast.halb + 0.15) y = Math.min(y, w.h - 0.06);
+    }
+    return y;
+  }
+  function unterSchotter(x, z, y) {
+    strecke.abfrage(x, z, qk);
+    if (qk.abstand < 12 && netz.belag[qk.i] !== 'asphalt' && Math.abs(qk.seite) < netz.halbBei(qk.s) + 0.15) y = Math.min(y, qk.h - 0.06);
+    return y;
+  }
+  const nahKreuzung = (x, z) => aeste.some((ast) => Math.hypot(x - ast.px[0], z - ast.pz[0]) < 75);
+
+  // Baut ein Band aus Teilen. Teil: { weg, von, bis, quer, anpassen }. quer = Liste von Streifen,
+  // jeder Streifen = Liste von Querpunkten { lat (Abstand zur Mitte, + = rechts), dy (Höhe), u (Textur quer) }.
+  // vLaenge = so viele Meter entspricht eine Texturlänge.
+  function baueBand(teile, vLaenge, extra) {
     const pos = [], uv = [], seiteAttr = [], rechtsAttr = [], idx = [];
-    for (const quer of streifen) {
-      const m = quer.length, basis = pos.length / 3;
-      for (let i = 0; i < n; i++) {
-        const rx = -strecke.tz[i], rz = strecke.tx[i];
-        for (let c = 0; c < m; c++) {
-          pos.push(strecke.px[i] + rx * quer[c].lat, strecke.py[i] + quer[c].dy, strecke.pz[i] + rz * quer[c].lat);
-          uv.push(quer[c].u, strecke.s[i] / vLaenge);
-          if (extra) { seiteAttr.push(Math.sign(quer[c].lat)); rechtsAttr.push(rx, 0, rz); }
+    for (const { weg, von, bis, quer, anpassen } of teile) {
+      for (const streifen of quer) {
+        const m = streifen.length, basis = pos.length / 3;
+        for (let i = von; i <= bis; i++) {
+          const rx = -weg.tz[i], rz = weg.tx[i];
+          for (let c = 0; c < m; c++) {
+            const x = weg.px[i] + rx * streifen[c].lat, z = weg.pz[i] + rz * streifen[c].lat;
+            let y = weg.py[i] + streifen[c].dy;
+            if (anpassen && nahKreuzung(x, z)) y = anpassen(x, z, y);
+            pos.push(x, y, z);
+            uv.push(streifen[c].u, weg.v(i) / vLaenge);
+            if (extra) { seiteAttr.push(Math.sign(streifen[c].lat)); rechtsAttr.push(rx, 0, rz); }
+          }
         }
-      }
-      for (let i = 0; i < n - 1; i++) {
-        for (let c = 0; c < m - 1; c++) {
-          const a = basis + i * m + c, b = a + 1, cc = a + m, d = cc + 1;
-          idx.push(a, b, cc, b, d, cc);
+        for (let i = 0; i < bis - von; i++) {
+          for (let c = 0; c < m - 1; c++) {
+            const a = basis + i * m + c, b = a + 1, cc = a + m, d = cc + 1;
+            idx.push(a, b, cc, b, d, cc);
+          }
         }
       }
     }
@@ -460,30 +515,107 @@ export function baueWelt(szene, strecke) {
     geo.computeVertexNormals();
     return geo;
   }
+  const versatz = (f, u) => ({ polygonOffset: true, polygonOffsetFactor: f, polygonOffsetUnits: u });
+  const asphaltStuecke = etappeStuecke('asphalt');
+  const astTeil = (ast, quer, anpassen) => ({ weg: ast, von: 0, bis: ast.anzahl - 1, quer, anpassen });
 
-  // Asphalt
-  szene.add(new THREE.Mesh(
-    baueBand([[{ lat: -halb, dy: 0, u: 0 }, { lat: halb, dy: 0, u: 1 }]], ASPHALT_LAENGE),
-    new THREE.MeshLambertMaterial({ map: asphaltTextur(f), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
-  ));
-  // Bankett links und rechts (fällt nach aussen leicht ab)
+  // Asphalt (Etappe + Stummel)
+  const asphaltQuer = [[{ lat: -halb, dy: 0, u: 0 }, { lat: halb, dy: 0, u: 1 }]];
   szene.add(new THREE.Mesh(
     baueBand([
-      [{ lat: -aussen, dy: -0.35, u: 0 }, { lat: -halb, dy: 0, u: 1 }],
-      [{ lat: halb, dy: 0, u: 1 }, { lat: aussen, dy: -0.35, u: 0 }],
-    ], BANKETT_LAENGE),
-    new THREE.MeshLambertMaterial({ map: bankettTextur(f), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+      ...asphaltStuecke.map((st) => ({ weg: etappeWeg, ...st, quer: asphaltQuer })),
+      ...astWege.map((w) => astTeil(w, asphaltQuer)),
+    ], ASPHALT_LAENGE),
+    new THREE.MeshLambertMaterial({ map: asphaltTextur(f), ...versatz(-2, -4) }),
   ));
-  // Mittellinie: schmaler Streifen. In der Ferne wird er etwas breiter
-  // gezeichnet (mind. mittellinieMinPixel Bildpunkte), damit er nicht
+  // Schotter (Nebenwege der Etappe) und die abgerundeten Ecken der Einfahrten
+  const schotterStuecke = etappeStuecke('schotter');
+  if (schotterStuecke.length) {
+    const hs = BL.schotter.breite / 2;
+    const geo = baueBand(schotterStuecke.map((st) => ({
+      weg: etappeWeg, ...st, quer: [[{ lat: -hs, dy: 0, u: 0 }, { lat: hs, dy: 0, u: SCHOTTER_U }]], anpassen: unterAsphalt,
+    })), SCHOTTER_LAENGE);
+    // Ecken: Fächer von C aus über die Rundung P1 -> P2 (Textur ohne Fahrspuren)
+    const pos = Array.from(geo.attributes.position.array), uv = Array.from(geo.attributes.uv.array), idx = Array.from(geo.index.array);
+    for (const ast of aeste) {
+      const m = ast.muendung;
+      if (!m) continue;
+      const basis = pos.length / 3;
+      const ux = ast.tx[0], uz = ast.tz[0];
+      const ecke = [m.c, ...m.rand];
+      for (const p of ecke) {
+        pos.push(p.x, p.h + 0.005, p.z);
+        // Textur: quer zum Stummel = u (im Teil ohne Fahrspuren), längs = v
+        const quer = Math.abs((p.x - m.c.x) * -uz + (p.z - m.c.z) * ux);
+        uv.push(SCHOTTER_U + (1 - SCHOTTER_U) * Math.min(1, quer / (CONFIG.kreuzung.eckRadius + 1)), ((p.x - m.c.x) * ux + (p.z - m.c.z) * uz) / SCHOTTER_LAENGE);
+      }
+      for (let k = 1; k < ecke.length - 1; k++) {
+        // Drehsinn so, dass die Fläche nach oben schaut
+        const a = ecke[0], b = ecke[k], c = ecke[k + 1];
+        const oben = (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x) < 0;
+        if (oben) idx.push(basis, basis + k, basis + k + 1); else idx.push(basis, basis + k + 1, basis + k);
+      }
+    }
+    const g2 = new THREE.BufferGeometry();
+    g2.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g2.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g2.setIndex(idx);
+    g2.computeVertexNormals();
+    szene.add(new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ map: schotterTextur(f), ...versatz(-1.5, -3) })));
+  }
+  // Ausfransen: an der Einfahrt hört der Asphalt nicht mit einer harten Kante auf, sondern
+  // franst in den Schotter aus (schmaler Streifen mit Löchern, entlang der Asphaltkante)
+  if (aeste.some((a) => a.muendung)) {
+    const fr = CONFIG.kreuzung.fransen;
+    const teile = [];
+    for (const ast of astWege) {
+      const m = ast.muendung;
+      if (!m) continue;
+      const sd = m.seiteN;
+      const quer = sd > 0
+        ? [[{ lat: ast.halb - 0.15, dy: 0, u: 0 }, { lat: ast.halb + fr, dy: 0, u: 1 }]]
+        : [[{ lat: -ast.halb - fr, dy: 0, u: 1 }, { lat: -ast.halb + 0.15, dy: 0, u: 0 }]];
+      teile.push({ weg: ast, von: 1, bis: Math.min(ast.anzahl - 1, Math.round(m.uP1)), quer, anpassen: (x, z, y) => y + 0.004 });
+    }
+    szene.add(new THREE.Mesh(baueBand(teile, FRANSEN_LAENGE),
+      new THREE.MeshLambertMaterial({ map: fransenTextur(f), alphaTest: 0.5, ...versatz(-1.75, -3.5) })));
+  }
+  // Bankett links und rechts (fällt nach aussen leicht ab), Breite je Belag
+  {
+    const bankQuer = (h) => [
+      [{ lat: -h - s.bankett, dy: -0.35, u: 0 }, { lat: -h, dy: 0, u: 1 }],
+      [{ lat: h, dy: 0, u: 1 }, { lat: h + s.bankett, dy: -0.35, u: 0 }],
+    ];
+    const teile = [];
+    for (const [belag, stuecke] of [['asphalt', asphaltStuecke], ['schotter', schotterStuecke]]) {
+      for (const st of stuecke) teile.push({ weg: etappeWeg, ...st, quer: bankQuer(BL[belag].breite / 2), anpassen: unterAsphalt });
+    }
+    // Stummel: auf der Seite des Nebenwegs erst nach der Einfahrt (dort liegt Schotter)
+    for (const w of astWege) {
+      const [links, rechts] = bankQuer(halb);
+      const ab = w.muendung ? Math.min(w.anzahl - 2, Math.round(w.muendung.uP1)) : 0;
+      teile.push({ weg: w, von: w.muendung && w.muendung.seiteN < 0 ? ab : 0, bis: w.anzahl - 1, quer: [links], anpassen: unterSchotter });
+      teile.push({ weg: w, von: w.muendung && w.muendung.seiteN > 0 ? ab : 0, bis: w.anzahl - 1, quer: [rechts], anpassen: unterSchotter });
+    }
+    szene.add(new THREE.Mesh(baueBand(teile, BANKETT_LAENGE),
+      new THREE.MeshLambertMaterial({ map: bankettTextur(f), ...versatz(-1, -2) })));
+  }
+  // Mittellinie: schmaler Streifen, nur auf Asphalt (Etappe + Stummel). In der Ferne wird er
+  // etwas breiter gezeichnet (mind. mittellinieMinPixel Bildpunkte), damit er nicht
   // zwischen den groben Pixeln verschwindet und flimmert.
   {
     const lb = s.mittellinieBreite / 2;
-    const geo = baueBand([[{ lat: -lb, dy: 0, u: 0 }, { lat: lb, dy: 0, u: 1 }]], s.abstandMittellinie, true);
+    const linieQuer = [[{ lat: -lb, dy: 0, u: 0 }, { lat: lb, dy: 0, u: 1 }]];
+    const teile = [];
+    for (const [belag, stuecke] of [['asphalt', asphaltStuecke], ['schotter', schotterStuecke]]) {
+      if (BL[belag].mittellinie) for (const st of stuecke) teile.push({ weg: etappeWeg, ...st, quer: linieQuer });
+    }
+    for (const w of astWege) teile.push(astTeil(w, linieQuer));
+    const geo = baueBand(teile, s.abstandMittellinie, true);
     const mat = new THREE.MeshLambertMaterial({
       map: mittellinienTextur(f, s.mittellinieStrich / s.abstandMittellinie),
       transparent: true, depthWrite: false,
-      polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -3,
+      ...versatz(-2.5, -5),
     });
     const pixelWinkel = (2 * Math.tan((CONFIG.kamera.sichtfeld * Math.PI) / 360)) / CONFIG.bild.hoehe;
     mat.onBeforeCompile = (shader) => {
@@ -502,7 +634,7 @@ export function baueWelt(szene, strecke) {
     const p = strecke.punktBei(sLinie);
     const geo = new THREE.PlaneGeometry(s.breite, 1.5);
     geo.rotateX(-Math.PI / 2);
-    const mat = new THREE.MeshLambertMaterial({ map: zielTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+    const mat = new THREE.MeshLambertMaterial({ map: zielTex, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 });
     const m = new THREE.Mesh(geo, mat);
     m.position.set(p.x, p.h + 0.02, p.z);
     m.rotation.y = Math.atan2(p.tx, p.tz);
@@ -675,14 +807,35 @@ export function baueWelt(szene, strecke) {
   // ---------------------------------------------------------------
   // Boden unter dem Auto: Strasse genau, sonst Gelände
   // ---------------------------------------------------------------
-  const qb = {};
+  // Seit M3a: Etappe (Asphalt oder Schotter je Abschnitt), Stummel (Asphalt) und die
+  // abgerundeten Ecken der Einfahrten (Schotter). Asphalt geht vor Schotter vor Bankett.
+  const qb = {}, qs2 = {};
+  const kreuzungen = aeste.map((ast) => ({ x: ast.px[0], z: ast.pz[0] }));
   welt.bodenBei = function (x, z, abfrage) {
     const a = abfrage || strecke.abfrage(x, z, qb);
+    let art = null, h = 0, rang = 9;
     const seite = Math.abs(a.seite);
     if (a.abstand <= aussen && a.s > 0.5 && a.s < strecke.laenge - 0.5) {
-      if (seite <= halb) return { h: a.h, art: 'asphalt' };
-      return { h: a.h - ((seite - halb) / s.bankett) * 0.35, art: 'bankett' };
+      const belag = netz ? netz.belag[a.i] : 'asphalt';
+      const hb = netz ? netz.halbBei(a.s) : halb;
+      if (seite <= hb) { art = belag; h = a.h; rang = belag === 'asphalt' ? 0 : 1; } else if (seite <= hb + s.bankett) {
+        art = 'bankett'; h = a.h - ((seite - hb) / s.bankett) * 0.35; rang = 2;
+      }
     }
+    if (rang > 0 && kreuzungen.some((k) => Math.abs(x - k.x) < 260 && Math.abs(z - k.z) < 260)) {
+      for (const ast of aeste) {
+        const w = netz.stummelAbfrage(ast, x, z, aussen, qs2);
+        if (!w || w.s < 0 || w.s > ast.laenge) continue;
+        const ws = Math.abs(w.seite);
+        if (ws <= ast.halb) { art = 'asphalt'; h = w.h; rang = 0; break; }
+        if (ws <= ast.halb + s.bankett && rang > 2) { art = 'bankett'; h = w.h - ((ws - ast.halb) / s.bankett) * 0.35; rang = 2; }
+      }
+      if (rang > 1) {
+        const e = netz.inEcke(x, z);
+        if (e) { art = 'schotter'; h = e.h; rang = 1; }
+      }
+    }
+    if (art) return { h, art };
     return { h: welt.gelaendeHoehe(x, z), art: 'gras' };
   };
 

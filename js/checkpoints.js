@@ -5,14 +5,17 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { checkpointBannerTextur, pfostenTextur } from './pixel.js';
 
-export function baueCheckpointTore(szene, strecke) {
+// netz (seit M3a): kennt den Belag; auf Schotter ist das Tor schmaler (torBreiteSchotter)
+export function baueCheckpointTore(szene, strecke, netz = null) {
   const c = CONFIG.checkpoints;
   const pfostenTex = pfostenTextur();
   const pfostenMat = new THREE.MeshLambertMaterial({ map: pfostenTex });
-  const halb = c.torBreite / 2;
   const liste = [];
   c.beiMeter.forEach((meter, n) => {
     const p = strecke.punktBei(meter);
+    const belag = netz ? netz.belag[p.i] : 'asphalt';
+    const breite = belag === 'schotter' && c.torBreiteSchotter ? c.torBreiteSchotter : c.torBreite;
+    const halb = breite / 2;
     const tor = new THREE.Group();
     // Pfosten links und rechts
     for (const seite of [-1, 1]) {
@@ -26,7 +29,7 @@ export function baueCheckpointTore(szene, strecke) {
     }
     // Banner oben (beidseitig mit Nummer)
     const banner = new THREE.Mesh(
-      new THREE.BoxGeometry(c.torBreite + 0.3, 1.1, 0.12),
+      new THREE.BoxGeometry(breite + 0.3, 1.1, 0.12),
       new THREE.MeshLambertMaterial({ map: checkpointBannerTextur(n + 1) }),
     );
     banner.position.set(0, c.torHoehe - 0.55, 0);

@@ -1,11 +1,12 @@
 # Alpine Rally – Stand
 
-Aktuell: **Mini-Meilenstein 2c fertig** – raus aus dem Gras und von der Bankett-Kante: Rückwärts kommt
-man jetzt auch bergauf aus der Wiese, und das Auto bleibt nicht mehr an der Kante zwischen Bankett und
-Wiese hängen. Dazu alles aus 2b (Kühe, Büsche, Wald in der Ferne), 2a.1 (natürlichere Sperren,
-Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein Dunststreifen), 1.2 (Kurven schneiden,
-Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“). Das Konzept und der Fahrplan stehen
-in `KONZEPT.md`.
+Aktuell: **Meilenstein 3a fertig** – erster Nebenweg: Die Etappe biegt bei 800 m von der Asphaltstrasse
+rechts auf einen Schotterweg durch den Wald ab und mündet bei 1020 m wieder in die Hauptstrasse ein. Die
+Hauptstrasse läuft an beiden Stellen abgesperrt weiter (Flatterband bzw. Reifenstapel), ihr Ende sieht man
+nie. Dazu Schotter-Fahrgefühl und Staub. Davor: 2c (raus aus dem Gras), 2b (Kühe, Büsche, Wald in der
+Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
+Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe
+„Passstrasse“). Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 ## Steuerung
 
@@ -20,6 +21,212 @@ in `KONZEPT.md`.
 | Debug-Anzeige | F3 | – |
 
 Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
+
+---
+
+## Meilenstein 3a: Erster Nebenweg (Abzweig, Schotter, Einmündung, Absperrungen) ✅
+
+### Was gebaut wurde
+
+**1. Neuer Streckenverlauf zwischen 752 und 1085 m** (`js/track.js`, gerechnet mit `tools/nebenweg-bogen.mjs`)
+
+| Streckenmeter | Was |
+|---|---|
+| bis 800 | Hauptstrasse (Asphalt) wie bisher |
+| 800 | **Abzweig**: Kurve rechts 80°, Radius 28 m, auf den Schotterweg |
+| ca. 840–880 | Kurve links 67°, Radius 35 m, leicht bergauf (Kuppe ca. 2.6 m) |
+| ca. 900 | Checkpoint 1 (steht jetzt auf dem Schotter, Tor etwas schmaler) |
+| ca. 930–970 | Kurve rechts 62°, Radius 38 m, leichte Senke |
+| 1020 | **Einmündung**: Kurve links 66°, Radius 28 m, wieder auf die Hauptstrasse (Asphalt) |
+| 1020–1085 | Hauptstrasse, Kurve rechts 28°, dann wie bisher |
+
+Der Nebenweg ist **220 m** lang und liegt im Waldstück. **Die Strecke ist genau gleich lang wie vorher**
+(3667.587 m, Unterschied 0.000002 m). Alles vor 752 m liegt exakt gleich, alles nach 1085 m höchstens
+0.1 mm daneben. Checkpoints (900/1870/2880 m), Sperren, Schilder und Zeitmessung stimmen darum weiter.
+
+**2. Stummel: die Hauptstrasse läuft weiter** (`js/netz.js`)
+
+- Beim Abzweig geht die Asphaltstrasse geradeaus weiter (154 m), nach 30 m ist sie mit **Flatterband**
+  abgesperrt, danach eine Linkskurve (75°, Radius 50 m) über eine kleine Kuppe – dahinter verschwindet sie.
+  Links und rechts davon ein **Holzzaun** (passend zur Wiese).
+- Bei der Einmündung läuft die Hauptstrasse nach hinten weiter (156 m), nach 32 m mit **Reifenstapeln**
+  abgesperrt, dann eine Linkskurve (70°, Radius 55 m) bergab in den Wald. Links und rechts **Leitplanken**.
+- Die Stummel haben Asphalt, Bankett und Mittelstrich wie die Hauptstrasse. Ihr Ende liegt hinter Kuppe
+  und Kurve (vom Gelände verdeckt), dazu stehen dort ein paar Tannen als Waldkante.
+- **Kreuzungen wie echte**: Der Strassenrand der Hauptstrasse geht in den Nebenweg über, die Ecken sind
+  abgerundet (Schotter-„Trichter“), und der Asphalt franst an der Einfahrt leicht in den Schotter aus.
+
+**3. Absperrungen** (`js/absperrungen.js`, ein Bild mit allen Teilen in `js/pixel.js`, ein Zeichenaufruf)
+
+Vier Arten, je Kreuzung eine andere (ohne Angabe reihum, nie zweimal dieselbe hintereinander):
+
+| Art | Aussehen |
+|---|---|
+| `band` | rot-weisses Flatterband an rot-weissen Warnstangen, Schild „STRASSE GESPERRT“, gelber Rally-Pfeil zum Nebenweg |
+| `reifen` | alte Autoreifen, 2–3 übereinander gestapelt, schwarz mit grauen, verwitterten Stellen |
+| `heu` | Strohballen, in der Mitte zwei Lagen |
+| `zaun` | Holzböcke (A-Beine, oben rot-weisses Brett, unten Holz), leicht schief |
+
+Alle gehen quer über die ganze Strasse und 2.8 m über den Asphaltrand hinaus. Aufprall **hart wie beim
+Zaun** (vorwärts Stopp, rückwärts raus). Daneben läuft der Seitenschutz (Zaun bzw. Leitplanke), bis der
+Stummel ausserhalb der unsichtbaren Grenze (45 m) liegt: **Um die Absperrung herum kommt man nicht.**
+Im Spiel stehen heute nur Band und Reifen (zwei Kreuzungen); Heu und Holzbock kommen bei weiteren
+Nebenwegen dran (Bilder 16 und 17 zeigen sie trotzdem).
+
+**4. Schotter** (`js/pixel.js` `schotterTextur`, Physik in `config.js` `untergrund.schotter`, Staub `js/staub.js`)
+
+- Helles Graubeige mit Kieseln, zwei festgefahrene Fahrspuren, lockerer Rand. Weg 6.2 m breit (Asphalt 7 m),
+  kein Mittelstrich. Zäune, Planken und Schilder rücken auf dem schmaleren Weg mit.
+- Fahrgefühl: weniger Grip (0.8), das Heck hält zusätzlich etwas weniger (0.8), die Stabilitätshilfe ist
+  halb so stark. Ergebnis: Unter Gas driftet das Auto etwa doppelt so stark wie auf Asphalt (ca. 10° statt 5°),
+  mit Handbremse dreht es schön ein und lässt sich in knapp 2 s wieder einfangen. Kein Eis.
+- **Staub**: helle, gerasterte Wölkchen hinter den Hinterrädern, nur auf Schotter. Stark beim Driften, mit
+  Handbremse und beim Anfahren mit viel Gas, schwach bei ruhiger Fahrt. Höchstens 60 Wölkchen, ein
+  Zeichenaufruf, kein Speichermüll pro Bild. Durch das Pixelmuster sieht man immer hindurch.
+- F3-Anzeige: „UNTERGRUND SCHOTTER“.
+
+**5. Waldrand am Nebenweg** (`js/sprites.js`, Block `nebenwegWald`)
+
+Damit man im Wald nicht abkürzen kann, stehen am Nebenweg (und an den Innenecken der Kreuzungen) links und
+rechts dicht Tannen, die Lücken sind kleiner als das Auto. So bleiben die freien Kurven davor und danach
+genau so, wie sie waren (siehe Abkürzungen unten).
+
+**6. Hinter den Kulissen**
+
+- **Netz statt nur Strecke** (`js/netz.js`): Gelände, Strassenband, Boden unter dem Auto, Bäume, Büsche,
+  Kühe und Strassenrand kennen jetzt auch die Stummel. Die **Rennlogik** (Fortschritt, Checkpoints, „R“,
+  Zeit, Abkürzungen) kennt **nur die Etappe** – ein Stummel zählt dort nie.
+- **Der Wald bleibt, wo er war** (`js/baumfolge.js`): Bisher hätte jede Änderung an der Strecke ALLE Bäume
+  der Welt neu gewürfelt (die Zufallszahlen rutschten). Jetzt hat jeder Baum-Versuch seinen festen Platz in
+  der Zufallsfolge. Ergebnis: Ausserhalb des Umbaus stehen alle Bäume, Steine und Sperren genau wie vorher.
+  Das hilft auch bei M3b.
+- **Kühe** (`kuehe.seed` 1291 → 1300): Die grösste Weide im Tal (830–845 m) ist jetzt Wald am Nebenweg.
+  Die Kühe sind darum neu verteilt, es sind **25 statt 34** (weniger freie Weide). Mit dem alten seed
+  waren es 29, aber zu wenige frei anfahrbar für den Kuh-Test.
+- Zäune und Schilder nach dem Umbau haben sich neu verteilt (die Zaun-Felder werden der Reihe nach gewürfelt).
+
+### Wo man schrauben kann (`js/config.js`)
+
+| Block | Was |
+|---|---|
+| `nebenwege` | wo abgezweigt und eingemündet wird, Belag, welche Absperrung, Form der Stummel (Kurve, Radius, Seitenschutz) |
+| `stummel` | Standardform der Stummel: Gerade, Kurve, Rest, Kuppe, Gefälle, Seitenschutz, Sichtschutz-Tannen |
+| `absperrung` | Reihenfolge der Arten, Überstand, Kollision, Grösse von Band, Reifen, Heu, Holzböcken |
+| `kreuzung` | Radius der abgerundeten Ecke, wie weit der Asphalt ausfranst |
+| `belaege` | Breite je Belag (Asphalt 7 m, Schotter 6.2 m), Mittelstrich ja/nein |
+| `untergrund.schotter` | `grip`, `heck`, `stabilitaet`, `rollen`, `rollenTempo`, `rueckwaerts` |
+| `staub` | Menge, Grösse, Lebensdauer, Dichte, wann wie stark |
+| `nebenwegWald` | Waldrand am Nebenweg (Abstand, Dichte, Höhe) |
+| `checkpoints.torBreiteSchotter` | Breite des Tors auf Schotter (11.6 m, auf Asphalt 12.4 m) |
+| `farben.schotter`, `farben.schotterSpur` | Farbe des Schotters und der Fahrspuren |
+
+### So testest du
+
+1. **Nebenweg abfahren**: Ab dem Start ca. 40 s. Bei 800 m kommt die Kreuzung, die Absperrung (Flatterband)
+   steht geradeaus, der Schotterweg geht rechts weg. Auf Schotter driften, Handbremse ausprobieren, auf den
+   Staub achten. F3 zeigt „SCHOTTER“.
+2. **In die Absperrung fahren** (geradeaus statt abbiegen, oder bei 1020 m nach rechts in die Reifen):
+   Das Auto stoppt hart, rückwärts kommt man wieder raus. Versuche, links oder rechts um die Absperrung
+   herumzufahren (Zaun/Leitplanke) – das soll nicht gehen.
+3. **Stummel suchen**: Siehst du irgendwo, wo der Asphalt aufhört oder anfängt? (Soll nie der Fall sein.)
+   Auch beim Rückwärtsschauen nach der Einmündung und von den Kehren oben.
+4. **Checkpoint 1** bei 900 m steht auf dem Schotter: Passt das schmalere Tor?
+5. Rest der Etappe: soll sich anfühlen wie vorher.
+
+### Selbst getestet
+
+- **Streckenlänge** vorher 3667.5869 m, nachher 3667.5869 m (Unterschied 0.000002 m).
+- **Abkürzungen** (`node tools/abkuerzungen.mjs --pruefen`): offene Linien **127 / 2 / 342 / 84**
+  (vorher 128 / 5 / 342 / 84). Die Listen `sperren`, `nichtSchneiden`, `schneiden` in `js/abkuerzungen.js`
+  sind **unverändert**, durch gesperrte Kurven kommt man weiterhin nicht (0 Linien). Ursache der kleinen
+  Änderung: Vier alte Linien hatten ein Ende im umgebauten Stück (1 Linie 599–799 m, 3 Linien ab 1017 m auf
+  dem alten Strassenstück, das es nicht mehr gibt). Neue Abkürzungen am Nebenweg: **keine** (Waldrand).
+  In der freien Kurve 1085–1230 ist der grösste Gewinn jetzt 3.1 m statt 3.2 m.
+- **Neuer Test `node tools/nebenweg-test.mjs`** – alles bestanden:
+  1. Etappenlogik: Auto vor der Absperrung hat das s der Etappe (821 m bzw. 997 m), „R“ setzt auf die Etappe,
+     in den Stummel bis zur Absperrung und zurück, dann über den Nebenweg: CP1 zählt, kein „VERPASST“.
+  2. Jede Absperrart: je 90 Anfahrten (40/70/100 km/h, 0°/±20°/±40°, mittig und seitlich): nie durch,
+     frontal Stillstand nach höchstens 0.25 s, schräg nach 0.3 s höchstens 19 % Tempo (gleitet dann am
+     Hindernis entlang wie am Zaun), rückwärts immer raus (mind. 3.2 m). Ehrlich: Die vier Arten haben
+     dieselbe Kollisionslinie, darum sind die Zahlen gleich.
+  3. Umfahren: **2160 Versuche** (Start auf Hauptstrasse und Nebenweg, Ziele hinter und seitlich um die
+     Absperrung, 30/70/110 km/h, mit und ohne Handbremse): **0** kamen auf den Stummel.
+  4. Sichtlinien (`node tools/stummel-sicht.mjs`): 9170 Strahlen von der Etappe (alle 5 m, ±200 m um jede
+     Kreuzung, Mitte und ±2.5 m, Kamera 3.1 m und 6.9 m hinter dem Auto, 2.5 m hoch) zu den letzten 40 m
+     jedes Stummels: **0 sehen das Ende** – schon allein durch das Gelände (Kuppe und Kurve), ohne Bäume.
+- **Testfahrer** (`node tools/testfahrer.mjs`): **2:43.25 / 2:27.63 / 2:18.23** (vorher 2:33.24 / 2:19.11 /
+  2:10.41). Die ganzen ca. 8–10 s gehen auf das Stück bis CP1 und den Nebenweg (enge Abbiege-Kurven statt
+  der schnellen Talkurven, Schotter). Ab CP2 sind die Abschnittszeiten auf die Hundertstel gleich wie vorher.
+  Auf dem Nebenweg höchstens 0.7 m neben der Mitte (nie vom Schotter gerutscht), kein Aufprall.
+  „Vorsichtig“ schaltet am Nebenweg öfter hin und her (6 statt 1 Mal).
+- `lenk-test`, `aufprall-test`, `strassenrand-test`, `kuh-test`, `gras-test`: alle Prüfungen erfüllt,
+  `getriebe-test` läuft durch. Keine Fehler in der Browser-Konsole.
+
+**Leistung** (`node tools/m3a-bilder.mjs`, hinter dem Auto):
+
+| Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+|---|---|---|
+| Start | 114 → 118 | 122 884 → 128 184 |
+| 100 m vor dem Abzweig (700 m) | 90 → 94 | 136 880 → 141 574 |
+| mitten im Nebenweg (900 m) | 89 → 93 | 130 806 → 136 338 |
+| nach der Einmündung (1100 m) | 85 → 85 | 127 526 → 131 786 |
+| Kehren (1400 m) | 74 → 77 | 130 338 → 135 240 |
+| Ziel | 55 → 55 | 93 314 → 97 150 |
+| schlimmste Stelle | 118 → 121 | 146 360 → 151 066 |
+
+Also höchstens **+4 Zeichenaufrufe** und **+5 600 Dreiecke** (Budget +10 / +20 000). Neu sind: Schotter,
+Ausfransen, Absperrungen, Staub (nur wenn es staubt), Seitenschutz an den Stummeln. **Ladezeit**
+(`node tools/ladezeit.mjs`, drei Messreihen, Median): +61 / +86 / +221 ms (Budget +300 ms).
+
+**Screenshots** in `screenshots/m3a/` (`a` = vorher, `b` = nachher): 01 Start, 02–04 200/100/40 m vor
+dem Abzweig, 05 im Abzweig, 06 mitten im Nebenweg, 07 vor der Einmündung, 08/09 nach der Einmündung,
+10/11 beide Kreuzungen von oben, 12 Kehren, 13 Ziel, 14–17 jede Absperrart aus ca. 15 m, 18/19 Blick in
+die Stummel hinein.
+
+### Ehrlich beurteilt
+
+- **Asphalt hört nirgends sichtbar auf**: Laut Sichtlinien-Check nie, auch auf den Bildern nicht. Man sieht
+  den Stummel bis über die Absperrung hinaus in eine Kurve und Kuppe verschwinden.
+- **Kreuzungen** wirken echt (abgerundete Ecken, Bankett läuft herum). Das Ausfransen des Asphalts sieht aus
+  der Nähe etwas zackig/dunkel aus.
+- **Absperrungen**: Band, Holzbock und Heu sind gut erkennbar. Die Reifen sind im kleinen Bild eher eine
+  schwarze Reihe als einzelne Reifen. Das Schild „STRASSE GESPERRT“ ist aus der Fahrt kaum lesbar (zu klein
+  für 320x180), der gelbe Pfeil schon.
+- **Schotter** passt farblich zum Bankett und zum Wald. Aus der Nähe sind die Kiesel recht grob.
+- **Waldrand**: Der Nebenweg ist jetzt ein richtiger Waldweg, die Tannen stehen dicht an beiden Seiten. Das
+  wirkt stellenweise wie eine Allee (sehr regelmässig dicht). Auch die Hauptstrasse 40 m vor dem Abzweig hat
+  jetzt Wald an beiden Seiten (vorher Wiese).
+
+### Bekannte Probleme
+
+- Etappenzeit ca. 8–10 s länger (enger, Schotter) – gewollt, aber anders als vorher.
+- 25 statt 34 Kühe (Weide im Tal ist jetzt Wald).
+- Die Pace-Note-Listen (`nichtSchneiden`/`schneiden`) wissen noch nichts vom Nebenweg; für M4 reicht das, weil
+  man dort nicht schneiden kann.
+- Im Headless-Browser gemessen; bitte auf dem Laptop prüfen, ob es 60 FPS bleiben.
+
+### Weitere Nebenwege hinzufügen (für M3b)
+
+1. In `tools/nebenweg-bogen.mjs` einen Eintrag in `BOGEN_LISTE` anlegen: Start- und Endpunkt (Stützpunkte,
+   die bleiben) und die Stücke dazwischen (Gerade / Kurve mit Radius, je eine Gerade `frei: 'lage'` zweimal,
+   eine Kurve `frei: 'laenge'`, eine `frei: 'richtung'`).
+2. In `js/track.js` die alten Punkte dazwischen durch die zwei Marker-Zeilen `// <nebenweg NAME>` und
+   `// </nebenweg>` ersetzen, dann `node tools/nebenweg-bogen.mjs` laufen lassen (rechnet so lange, bis die
+   Strecke wieder genau gleich lang ist, und schreibt die Punkte hinein).
+3. In `js/config.js` bei `nebenwege` einen Eintrag mit `abzweig`/`einmuendung` (Meter laut Ausgabe des
+   Werkzeugs), `belag` und optional den Absperrungen und der Stummel-Form.
+4. Prüfen: `node tools/nebenweg-test.mjs`, `node tools/stummel-sicht.mjs`,
+   `node tools/abkuerzungen.mjs --pruefen`, `node tools/testfahrer.mjs`, Bilder mit `tools/m3a-bilder.mjs`.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Schild „Kreuzung“ vor dem echten Abzweig (heute steht es vor einem Weidetor im Tal).
+- Reifenstapel abwechselnd weiss/rot gestrichen (in echten Rallyes üblich, im kleinen Bild besser lesbar).
+- Absperrung leicht nachgeben lassen (Strohballen rutschen, Band reisst) statt hart wie ein Zaun.
+- Lockerer Waldrand: ab und zu eine Lichtung oder ein Holzstapel statt durchgehend Tannen.
+- Staub sichtbar bleiben lassen, wenn man langsam hinterherfährt (Staubschleier in der Luft).
+- Pace-Notes für Abzweig und Einmündung („Kreuzung rechts“, „Achtung Schotter“).
+- Schotter-Geräusch/Rütteln, wenn Sound kommt.
 
 ---
 

@@ -4,12 +4,13 @@
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
-import { zufall, fbm, mische, glatt } from './util.js';
+import { zufall, zufallAb, fbm, mische, glatt } from './util.js';
 import { tannenTextur, laubTextur, steinTextur, felsbrockenTextur, buschTextur, BUSCH } from './pixel.js';
 import { baueKollision } from './kollision.js';
 import { randAbstand, torPruefer } from './strassenrand.js';
 import { planeAlleSperren, baueStaemme } from './sperren.js';
 import { ABKUERZUNGEN } from './abkuerzungen.js';
+import { BAUMFOLGE } from './baumfolge.js';
 
 const VERTEX = /* glsl */ `
   #include <common>
@@ -90,9 +91,43 @@ function spriteGruppe(liste, tex) {
   return mesh;
 }
 
+// Feste Zufallsfolge der Baum-Versuche (M3a). In js/baumfolge.js steht für jeden Versuch, ob er
+// beim Einfrieren (Stand M2c) einen Baum gestellt hat (dann brauchte er 8 Zufallszahlen, sonst 4).
+// Daraus ergibt sich, wo in der Zufallsfolge jeder Versuch beginnt. Passt die Datei nicht (seed oder
+// Anzahl Versuche geändert), wird wie früher der Reihe nach gewürfelt (dann ein neuer Wald).
+function folgePlan(baumfolge, seed, anzahl) {
+  if (!baumfolge || baumfolge.seed !== seed || baumfolge.versuche.some((n, k) => n !== anzahl[k])) {
+    if (baumfolge) console.info('js/baumfolge.js passt nicht (seed oder Anzahl Bäume geändert): neuer Wald.');
+    return null;
+  }
+  const bits = Uint8Array.from(atob(baumfolge.bits), (z) => z.charCodeAt(0));
+  const plan = [];
+  let pos = 0, k = 0;
+  for (const n of anzahl) {
+    const start = new Int32Array(n);
+    for (let j = 0; j < n; j++, k++) {
+      start[j] = pos;
+      pos += (bits[k >> 3] >> (k & 7)) & 1 ? 8 : 4;
+    }
+    plan.push(start);
+  }
+  return plan;
+}
+
+// Gegenstück: Bits aus "gestellt" (für das Werkzeug, das die Folge einfriert)
+export function folgeBits(gestellt) {
+  const n = gestellt.reduce((a, g) => a + g.length, 0);
+  const bytes = new Uint8Array(Math.ceil(n / 8));
+  let k = 0;
+  for (const g of gestellt) for (let j = 0; j < g.length; j++, k++) if (g[j]) bytes[k >> 3] |= 1 << (k & 7);
+  let txt = '';
+  for (const b of bytes) txt += String.fromCharCode(b);
+  return btoa(txt);
+}
+
 export function bauePflanzen(szene, strecke, welt) {
   const c = CONFIG.sprites;
-  const rnd = zufall(c.seed);
+  const rndFolge = zufall(c.seed); // nur ohne feste Folge (seed oder Anzahl geändert)
   const q = {};
   const { px, pz, tx, tz } = strecke;
 
@@ -100,6 +135,7 @@ export function bauePflanzen(szene, strecke, welt) {
   function frei(x, z, mindest) {
     strecke.abfrage(x, z, q);
     if (q.abstand < mindest) return false;
+    if (welt.netz && welt.netz.stummelAbstand(x, z, mindest) < mindest) return false; // nicht auf die Stummel (M3a)
     if (q.wandSeite && Math.sign(q.seite) === q.wandSeite && q.wandStaerke > 0.05 && q.abstand < 26) return false;
     return true;
   }
@@ -108,14 +144,24 @@ export function bauePflanzen(szene, strecke, welt) {
     return Math.hypot(welt.gelaendeHoehe(x + 2, z) - h, welt.gelaendeHoehe(x, z + 2) - h) / 2;
   }
 
+  // Feste Zufallsfolge (seit M3a): Jeder Versuch hat seinen festen Platz in der Zufallsfolge
+  // (js/baumfolge.js). Früher hing der Platz davon ab, wie viele Bäume vorher schon standen –
+  // jede Änderung an der Strecke hätte so ALLE Bäume neu gewürfelt. Jetzt ändern sich nur die
+  // Bäume dort, wo sich wirklich etwas geändert hat (z. B. am Nebenweg).
+  const anzahlVersuche = [c.tannenProKm, c.laubProKm, c.steineProKm].map((k) => Math.round((k * strecke.laenge) / 1000));
+  const folge = folgePlan(BAUMFOLGE, c.seed, anzahlVersuche);
+  const gestellt = anzahlVersuche.map((n) => new Uint8Array(n)); // pro Versuch: Baum gestellt? (für Werkzeuge)
+
   // Sprites entlang der Strecke verteilen: zufällige Stelle der Strecke,
   // zufälliger Abstand links oder rechts (nahe der Strasse dichter, weiter weg
   // dünner – dort liegt eh Dunst). Ob dort wirklich etwas steht, entscheidet
   // "chance" zusammen mit der Baumdichte des Abschnitts.
-  function verteile(proKm, tex, hoehe, chance) {
+  // art: 0 = Tannen, 1 = Laubbäume, 2 = Steine (Platz in der festen Zufallsfolge)
+  function verteile(proKm, tex, hoehe, chance, art) {
     const liste = [];
-    const versuche = Math.round((proKm * strecke.laenge) / 1000);
+    const versuche = anzahlVersuche[art];
     for (let n = 0; n < versuche; n++) {
+      const rnd = folge ? zufallAb(c.seed, folge[art][n]) : rndFolge;
       const i = Math.floor(rnd() * strecke.anzahl);
       const seite = rnd() < 0.5 ? -1 : 1;
       const nah = strecke.nahWald[i] > 0.5;
@@ -130,6 +176,7 @@ export function bauePflanzen(szene, strecke, welt) {
       if (fbm(x / 70, z / 70, c.seed + 9) > 1 - strecke.waldAnteil[k] * 0.75) wald = 1;
       if (wurf > chance(wald, q.abstand, steilheit(x, z), x, z) * strecke.baumFaktor[k]) continue;
       const h = mische(hoehe[0], hoehe[1], rnd());
+      gestellt[art][n] = 1;
       liste.push({
         x, z, y: welt.gelaendeHoehe(x, z) - 0.25,
         h, b: h * tex.seitenVerhaeltnis,
@@ -149,20 +196,76 @@ export function bauePflanzen(szene, strecke, welt) {
     if (wald > 0.53) return 0.95;
     if (d < 16) return 0.32;
     return 0.06;
-  });
+  }, 0);
   // Laubbäume: eher am Waldrand und weiter unten
   const laubbaeume = verteile(c.laubProKm, laub, c.laubHoehe, (wald, d, steil, x, z) => {
     if (steil > 0.7) return 0;
     const unten = welt.gelaendeHoehe(x, z) < 60 ? 1 : 0.3;
     if (wald > 0.45 && wald < 0.55) return 0.5 * unten;
     return 0.08 * unten;
-  });
+  }, 1);
   // Steine: am Strassenrand und an steilen Stellen
   const steine = verteile(c.steineProKm, stein, c.steinHoehe, (wald, d, steil) => {
     if (steil > 0.8) return 0.6;
     if (d < 14) return 0.35;
     return 0.06;
-  });
+  }, 2);
+
+  // Sichtschutz am Ende der Stummel (M3a): eine dichte Gruppe Tannen um das Ende (Waldkante).
+  // Eigener Zufall: die übrigen Bäume bleiben gleich. Das Ende liegt schon hinter Kuppe und
+  // Kurve (tools/stummel-sicht.mjs), die Tannen sind die Reserve dazu.
+  for (const ast of welt.netz ? welt.netz.aeste : []) {
+    const f = ast.form, rndS = zufall(f.sichtschutzSeed + ast.nr * 31);
+    let anzahl = 0;
+    for (let v = 0; v < f.sichtschutz * 8 && anzahl < f.sichtschutz; v++) {
+      const u = ast.laenge - 20 + rndS() * 28;
+      const lat = (rndS() < 0.5 ? -1 : 1) * (u > ast.laenge ? rndS() * 9 : 6.5 + rndS() * 7);
+      const i = Math.min(ast.anzahl - 1, Math.round(u)), ueber = u - i;
+      const x = ast.px[i] + ast.tx[i] * ueber - ast.tz[i] * lat, z = ast.pz[i] + ast.tz[i] * ueber + ast.tx[i] * lat;
+      if (strecke.abfrage(x, z, q).abstand < 14) continue;
+      if (tannen.some((t) => Math.hypot(t.x - x, t.z - z) < 1.6)) continue;
+      const h = mische(9, 14, rndS());
+      tannen.push({
+        x, z, y: welt.gelaendeHoehe(x, z) - 0.25, h, b: h * tanne.seitenVerhaeltnis,
+        variante: Math.floor(rndS() * tanne.varianten), hell: 0.8 + rndS() * 0.22, spiegeln: rndS() < 0.5, sichtschutz: true,
+      });
+      anzahl++;
+    }
+  }
+
+  // Waldrand am Nebenweg (M3a): dichte Tannen links und rechts, damit man nicht quer durch den
+  // Wald abkürzt. Nicht in den Einfahrten, nicht auf den Stummeln, nicht bei den Checkpoint-Toren.
+  const nw = CONFIG.nebenwegWald;
+  if (nw && nw.an && welt.netz) {
+    const N = welt.netz, rndW = zufall(nw.seed);
+    const cps = CONFIG.checkpoints.beiMeter;
+    const darf = (x, z, s) => {
+      strecke.abfrage(x, z, q);
+      if (q.abstand < nw.abstand[0] - 0.2 || Math.abs(q.s - s) > 15) return false; // anderes Stück der Etappe zu nah
+      if (N.stummelAbstand(x, z, 20) < nw.stummelFrei || N.inEcke(x, z)) return false; // Stummel, Bankett, Seitenschutz
+      if (cps.some((cp) => Math.abs(cp - s) < nw.checkpointFrei)) return false;
+      return true;
+    };
+    for (const weg of N.nebenwege) {
+      // Mündungen (Einfahrt in den Stummel) auf der Seite der Stummel auslassen
+      const muendungen = N.aeste.filter((a) => a.nebenweg === weg && a.muendung)
+        .map((a) => ({ von: Math.min(a.sJ, a.muendung.sC) - 6, bis: Math.max(a.sJ, a.muendung.sC) + 6, seite: a.muendung.seiteEtappe }));
+      for (const sd of [-1, 1]) {
+        for (let s = weg.abzweig - nw.vor; s < weg.einmuendung + nw.nach; s += mische(nw.schritt[0], nw.schritt[1], rndW())) {
+          const zweite = rndW() < 0.55, lat1 = mische(nw.abstand[0], nw.abstand[1], rndW()), lat2 = mische(nw.zweiteReihe[0], nw.zweiteReihe[1], rndW());
+          const h = mische(nw.hoehe[0], nw.hoehe[1], Math.pow(rndW(), 0.8)), variante = Math.floor(rndW() * tanne.varianten);
+          const hell = 0.8 + rndW() * 0.25, spiegeln = rndW() < 0.5, ds = (rndW() - 0.5) * 0.8;
+          if (muendungen.some((m) => m.seite === sd && s > m.von && s < m.bis)) continue;
+          for (const [lat, hoch] of zweite ? [[lat1, h], [lat2, h * 1.25]] : [[lat1, h]]) {
+            const p = strecke.punktBei(s + ds), f = s + ds - p.i;
+            const x = p.x + p.tx * f - p.tz * sd * lat, z = p.z + p.tz * f + p.tx * sd * lat;
+            if (!darf(x, z, s)) continue;
+            tannen.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.25, h: hoch, b: hoch * tanne.seitenVerhaeltnis, variante, hell, spiegeln, nebenwegWald: true });
+          }
+        }
+      }
+    }
+  }
 
   // Hindernisse für die Kollision: bei Bäumen nur der Stamm, Steine nach Breite
   const k = CONFIG.kollision;
@@ -190,7 +293,10 @@ export function bauePflanzen(szene, strecke, welt) {
   for (const [name, liste, tex] of [['tannen', tannen, tanne], ['laub', laubbaeume, laub], ['steine', steine, stein], ['felsen', sperren.felsen, fels]]) {
     if (liste.length) szene.add(meshes[name] = spriteGruppe(liste, tex));
   }
-  return { tannen, laubbaeume, steine, felsbrocken: sperren.felsen, staemme: sperren.staemme, hindernisse, sperren: sperrenListe, meshes, tanne };
+  return {
+    tannen, laubbaeume, steine, felsbrocken: sperren.felsen, staemme: sperren.staemme, hindernisse, sperren: sperrenListe, meshes, tanne,
+    folge: { fest: !!folge, gestellt, anzahlVersuche },
+  };
 }
 
 // =====================================================================
@@ -218,6 +324,7 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe) {
   function frei(x, z, mindest, r) {
     strecke.abfrage(x, z, q);
     if (q.abstand < mindest) return false;
+    if (welt.netz && welt.netz.stummelAbstand(x, z, mindest) < mindest) return false; // nicht auf die Stummel (M3a)
     if (q.wandSeite && Math.sign(q.seite) === q.wandSeite && q.wandStaerke > 0.05 && q.abstand < 26) return false;
     return kolFest.frei(x, z, r) && torFrei(x, z, r, 1.5, 12);
   }

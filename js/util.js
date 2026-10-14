@@ -12,6 +12,12 @@ export function zufall(seed) {
   };
 }
 
+// Dieselbe Zahlenfolge wie zufall(seed), aber erst ab der (k+1)-ten Zahl
+// (springt direkt hin, ohne die ersten k Zahlen auszurechnen)
+export function zufallAb(seed, k) {
+  return zufall(((seed >>> 0) + Math.imul(k, 0x6d2b79f5)) >>> 0);
+}
+
 // Pseudo-Zufallswert 0..1 für einen Gitterpunkt
 function gitterWert(ix, iz, seed) {
   let h = Math.imul(ix, 374761393) ^ Math.imul(iz, 668265263) ^ Math.imul(seed, 982451653);

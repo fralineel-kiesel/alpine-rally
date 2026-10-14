@@ -23,6 +23,8 @@ export const CONFIG = {
     bankett: '#8b6e4a',        // Schotterbraun neben der Strasse
     asphalt: '#56585b',        // Strassenbelag
     mittellinie: '#c9c9bd',    // dezente Mittellinie
+    schotter: '#ada48f',       // Schotter-Nebenweg: helles Graubeige (seit M3a)
+    schotterSpur: '#968d7a',   // ... festgefahrene Fahrspuren, etwas dunkler
     bergFels: '#596070',         // Hintergrundberge, Fels
     bergFuss: '#3f6a30',       // Hintergrundberge, bewaldeter Fuss (passt zum fernen Gelände)
     schnee: '#f2f5fa',         // Schneekappen
@@ -63,6 +65,81 @@ export const CONFIG = {
     startBeiMeter: 25,         // Startlinie: so viele Meter nach Strassenanfang
     zielVorEnde: 45,           // Ziellinie: so viele Meter vor Strassenende
     spawnBeiMeter: 10,         // hier steht das Auto beim Start
+  },
+
+  // --- Beläge (Meilenstein 3a) ------------------------------------------
+  // Breite der Fahrbahn je Belag. Das Bankett (strasse.bankett) kommt auf beiden Seiten dazu.
+  belaege: {
+    asphalt: { breite: 7, mittellinie: true },     // wie bisher
+    schotter: { breite: 6.2, mittellinie: false }, // Schotter-Nebenweg: etwas schmaler, kein Mittelstrich
+  },
+
+  // --- Nebenwege (Meilenstein 3a) ---------------------------------------
+  // Die Etappe biegt von der Hauptstrasse auf einen Nebenweg ab und mündet später wieder ein.
+  // Die Hauptstrasse läuft an beiden Stellen als Stummel weiter (abgesperrt, Ende versteckt).
+  // Die Stützpunkte des Nebenwegs stehen in js/track.js (gerechnet mit tools/nebenweg-bogen.mjs).
+  // Weiterer Nebenweg (M3b): neuer Eintrag hier + Stützpunkte, sonst nichts.
+  nebenwege: [
+    {
+      name: 'Talschleife',
+      abzweig: 800,            // hier verlässt die Etappe die Hauptstrasse (Streckenmeter, Anfang der Abbiege-Kurve)
+      einmuendung: 1020.5,     // hier ist sie wieder auf der Hauptstrasse (Ende der Einmündungs-Kurve)
+      belag: 'schotter',       // Belag dazwischen
+      sperreAbzweig: 'band',   // Absperrung auf dem Stummel: 'band', 'reifen', 'heu', 'zaun' (leer = reihum)
+      sperreEinmuendung: 'reifen',
+      // Form der Stummel (fehlt etwas, gilt der Wert aus "stummel" unten)
+      stummelAbzweig: { kurve: -75, radius: 50, seitenschutz: 'zaun' },
+      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'planke' },
+    },
+  ],
+  // Standardform eines Stummels (Hauptstrasse, die hinter der Absperrung weiterläuft)
+  stummel: {
+    gerade: 34,                // erst so weit geradeaus (Meter ab Abzweig/Einmündung)
+    sperreNachEinfahrt: 3,     // Absperrung so viele Meter nach dem Ende der Einfahrt in den Nebenweg
+    kurve: -70,                // dann eine Kurve (Grad, - = links, + = rechts) ...
+    radius: 55,                // ... mit diesem Radius (Meter)
+    rest: 55,                  // danach noch so weit geradeaus, dann hört der Stummel (versteckt) auf
+    kuppe: 1.6,                // der Stummel steigt bis zur Kurvenmitte um so viele Meter an ...
+    abfall: 0.07,              // ... und fällt danach so steil ab (0.07 = 7 %): das Ende liegt hinter der Kuppe
+    seitenschutz: 'planke',    // links und rechts hinter der Absperrung: 'planke' (Leitplanke) oder 'zaun' (Holzzaun)
+    schutzBisAbstand: 52,      // Seitenschutz läuft, bis er so weit von der Etappe weg ist (grenze.maxAbstand + Reserve)
+    sichtschutz: 14,           // so viele Tannen stehen dicht quer vor dem Stummel-Ende (Sichtschutz)
+    sichtschutzSeed: 3301,     // Zufallszahl für den Sichtschutz
+  },
+  // Waldrand am Nebenweg (M3a, js/sprites.js): Tannen dicht entlang des Nebenwegs und der
+  // Kreuzungen, damit man dort nicht quer durch den Wald abkürzen kann (Lücken kleiner als
+  // das Auto). Die freien Kurven davor und danach ("schneiden") bleiben genau so offen wie vorher.
+  nebenwegWald: {
+    an: true,
+    seed: 6060,                // Zufallszahl
+    vor: 42,                   // so viele Meter vor dem Abzweig beginnt der Waldrand ...
+    nach: 72,                  // ... und so viele nach der Einmündung hört er auf
+    abstand: [6.4, 7.4],       // erste Reihe: so weit von der Strassenmitte (Meter)
+    schritt: [1.5, 2.1],       // ... Abstand der Stämme entlang des Wegs (Lücke immer kleiner als ein Auto)
+    zweiteReihe: [8.5, 13],    // zweite, lockere Reihe dahinter (nur für das Aussehen)
+    hoehe: [4.5, 11],          // Höhe der Tannen (vorne eher junge, kleine)
+    stummelFrei: 7,            // so viel Platz bleibt um die Mitte der Stummel (Asphalt, Bankett, Seitenschutz)
+    checkpointFrei: 4,         // so viele Meter vor/nach einem Checkpoint-Tor kein Baum (Pfosten)
+  },
+
+  // Absperrungen auf den Stummeln (js/absperrungen.js). Kollision hart wie ein Zaun.
+  absperrung: {
+    reihenfolge: ['band', 'reifen', 'heu', 'zaun'], // ohne Angabe beim Nebenweg: reihum, nie zweimal dieselbe hintereinander
+    ueberstand: 2.8,           // so weit (Meter) über den Asphaltrand hinaus (Asphalt endet bei 3.5, Bankett bei 5.5)
+    kreisRadius: 0.32,         // Kollision: Kreise quer über die Absperrung ...
+    kreisAbstand: 0.5,         // ... alle so viele Meter
+    seed: 4711,                // Zufallszahl (Höhe der Reifenstapel, schiefe Böcke ...)
+    schild: true,              // Flatterband: Schild "STRASSE GESPERRT" am Band
+    pfeil: true,               // Flatterband: gelber Rally-Pfeil daneben (zeigt in den Nebenweg)
+    band: { pfostenAbstand: 3.2, hoehen: [0.95, 0.55], durchhang: 0.07 }, // Warnstangen (m), Bandhöhen, Durchhang
+    reifen: { radius: 0.34, hoehe: 0.25, lagen: [2, 3], hell: 1.7 },       // Altreifen: Grösse, 2-3 übereinander, Helligkeit
+    heu: { laenge: 1.15, tiefe: 0.85, hoehe: 0.6, obenAnteil: 0.55 },      // Strohballen; Anteil mit zweiter Lage
+    zaun: { bockBreite: 2.7, hoehe: 1.0, schief: 4 },                      // Holzböcke: Breite, Höhe, bis so viel Grad schief
+  },
+  // Kreuzungen: Einfahrt in den Nebenweg
+  kreuzung: {
+    eckRadius: 7,              // abgerundete Ecke zwischen Hauptstrasse und Nebenweg (Meter)
+    fransen: 0.7,              // Asphalt franst so weit (Meter) in den Schotter aus
   },
 
   // --- Gelände --------------------------------------------------------
@@ -172,7 +249,7 @@ export const CONFIG = {
   // zufällige Blickrichtung; gezeigt wird die Ansicht, die zum Winkel zur Kamera passt (8 Ansichten).
   kuehe: {
     an: true,                  // false = keine Kühe
-    seed: 1291,                // Zufallszahl (gleich = gleiche Kühe an gleicher Stelle)
+    seed: 1300,                // Zufallszahl (gleich = gleiche Kühe an gleicher Stelle). M3a: 1291 -> 1300, die grösste Weide im Tal ist jetzt Wald am Nebenweg
     anzahl: 34,                // so viele Kühe insgesamt (ungefähr; passen nicht alle hin, sind es weniger)
     herde: [2, 6],             // Herdengrösse von bis
     einzeln: 3,                // dazu so viele Einzeltiere
@@ -289,6 +366,32 @@ export const CONFIG = {
     asphalt: { grip: 1.0, rollen: 0.05, rollenTempo: 0.0, rueckwaerts: 1.0 },
     bankett: { grip: 0.85, rollen: 0.6, rollenTempo: 0.02, rueckwaerts: 1.5 },
     gras:    { grip: 0.62, rollen: 2.2, rollenTempo: 0.11, rueckwaerts: 2.2 },
+    // Schotter (M3a): rutscht früher als Asphalt (mit Handbremse schön quer), bremst etwas mehr,
+    // hält aber deutlich besser als Gras. Startwerte, durch Fahren feinjustieren.
+    //   heck: Grip hinten zusätzlich mal diesem Wert (unter 1 = Heck kommt früher, Drift)
+    //   stabilitaet: Stabilitätshilfe (auto.stabilitaet) mal diesem Wert (unter 1 = Drift hält länger)
+    // (fehlen sie, gilt 1 = wie bisher; Asphalt, Bankett und Gras sind darum unverändert)
+    schotter: { grip: 0.8, rollen: 0.35, rollenTempo: 0.01, rueckwaerts: 1.2, heck: 0.8, stabilitaet: 0.5 },
+  },
+
+  // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------
+  staub: {
+    an: true,                  // false = kein Staub
+    max: 60,                   // höchstens so viele Wölkchen gleichzeitig
+    seed: 909,                 // Zufallszahl
+    farbe: '#d6ccb4',          // helles Staub-Beige
+    proSekunde: 55,            // so viele Wölkchen pro Sekunde bei voller Stärke
+    ruhig: 0.15,               // Stärke bei ruhiger Fahrt (bei 30 m/s = 108 km/h; langsamer weniger)
+    drift: 0.9,                // ... dazu beim Driften (voll ab 25° Driftwinkel)
+    handbremse: 0.6,           // ... dazu mit Handbremse
+    anfahren: 0.7,             // ... dazu beim Anfahren mit viel Gas (unter 40 km/h)
+    leben: [0.8, 1.5],         // so lange (Sekunden) lebt ein Wölkchen
+    groesse: [0.4, 2.0],       // Grösse am Anfang und am Ende (Meter)
+    deckkraft: 0.5,            // höchstens so dicht (0..1): gerastert, man sieht immer durch
+    mitnehmen: 0.25,           // so viel vom Autotempo nimmt der Staub mit
+    streuung: 1.6,             // seitliche Streuung (m/s)
+    aufsteigen: 0.8,           // steigt so schnell auf (m/s)
+    bremsen: 1.8,              // so schnell wird der Staub in der Luft langsamer
   },
 
   // --- Checkpoints -------------------------------------------------------
@@ -297,6 +400,7 @@ export const CONFIG = {
     abkuerzungenVerhindern: true, // true = wer einen Checkpoint auslässt, wird zurückgesetzt
     anzeigeDauer: 3,           // so lange steht die Zwischenzeit oben im Bild (Sekunden)
     torBreite: 12.4,           // Abstand der Pfosten (Strasse 7 m + Bankett)
+    torBreiteSchotter: 11.6,   // ... auf einem Schotter-Nebenweg (schmaler, 6.2 m): Tor passt sich an (M3a)
     torHoehe: 5.2,             // Höhe des Banners über der Strasse
     durchfahrtBreite: 9,       // so weit von der Strassenmitte zählt die Durchfahrt noch
   },

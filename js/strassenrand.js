@@ -28,9 +28,13 @@ import { baueKollision } from './kollision.js';
 
 // Seitlicher Abstand der Randobjekte zur Strassenmitte (Vorderkante der Leitplanke), Meter.
 // s = Streckenmeter, seite = -1 links / +1 rechts.
-// Heute ein fester Wert aus config.js. Ab Meilenstein 3 (Schotter, Wiese, breitere Stellen)
-// kann er hier je Abschnitt wechseln – Planken, Zäune und Schilder wandern dann automatisch mit.
+// Seit Meilenstein 3a je Belag: Auf einem schmaleren Nebenweg (Schotter) rücken Planken, Zäune
+// und Schilder um so viel näher, wie der Weg schmaler ist als die Asphaltstrasse.
 export function randAbstand(s, seite) { // eslint-disable-line no-unused-vars
+  const B = CONFIG.belaege;
+  for (const nw of CONFIG.nebenwege || []) {
+    if (s > nw.abzweig && s < nw.einmuendung) return CONFIG.strassenrand.abstand - (B.asphalt.breite - B[nw.belag || 'schotter'].breite) / 2;
+  }
   return CONFIG.strassenrand.abstand;
 }
 
@@ -138,10 +142,14 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
   }
   // Steht ein Punkt bei Abstand lat wirklich neben DIESEM Stück Strasse (und nicht nahe an
   // einem anderen Ast, z. B. der nächsten Kehre)?
+  const netz = welt.netz;
+  const stummelFrei = CONFIG.belaege.asphalt.breite / 2 + CONFIG.strasse.bankett + 1.2;
   function eigenerAst(s, lat) {
     punkt(s, lat, P);
     strecke.abfrage(P.x, P.z, q);
     if (Math.abs(q.s - s) > 4 || q.abstand < Math.abs(lat) - 0.3) return false;
+    // nicht auf einem Stummel und nicht in der Einfahrt eines Nebenwegs (M3a)
+    if (netz && (netz.stummelAbstand(P.x, P.z, 20) < stummelFrei || netz.inEcke(P.x, P.z))) return false;
     return !strecke.andererAst(P.x, P.z, s, 30, Math.abs(lat) + 2.5, q2);
   }
   const grundFrei = (sd, i) => !wand[nr(sd)][i] && !innenFrei[nr(sd)][i] && !cpZone[i];
@@ -505,8 +513,30 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
     schilder.warnungen = warnungen;
   }
 
+  // =====================================================================
+  // 4. Seitenschutz an den Stummeln (M3a): ab der Absperrung links und rechts, bis der
+  //    Stummel so weit von der Etappe weg ist, dass man dort ohnehin nicht hinkommt
+  //    (grenze.maxAbstand). So kann niemand um die Absperrung herum in den Stummel fahren.
+  // =====================================================================
+  const astLaeufe = [];
+  for (const ast of netz ? netz.aeste : []) {
+    const f = ast.form;
+    let bis = ast.laenge - 1;
+    for (let u = Math.ceil(ast.sperreU); u < ast.laenge; u++) {
+      const weit = SEITEN.every((sd) => {
+        const x = ast.px[u] - ast.tz[u] * sd * (c.abstand + 1), z = ast.pz[u] + ast.tx[u] * sd * (c.abstand + 1);
+        return strecke.abfrage(x, z, q).abstand > f.schutzBisAbstand;
+      });
+      if (weit) { bis = u; break; }
+    }
+    // fängt etwas vor der Absperrung an: die Planke ist am Anfang abgesenkt (ohne Kollision),
+    // so sitzt der feste Teil direkt neben dem Ende der Absperrung (keine Lücke)
+    const von = ast.sperreU - (f.seitenschutz === 'planke' ? 3 : 0.5);
+    for (const sd of SEITEN) astLaeufe.push({ ast, art: f.seitenschutz, seite: sd, von, bis });
+  }
+
   return {
-    plankenLaeufe, zaunLaeufe, tore, schilder, kehren, punkt,
+    plankenLaeufe, zaunLaeufe, tore, schilder, kehren, punkt, astLaeufe,
     wiesenMeter, zaunMeter,
     innenFrei, // für Tests: hier darf nichts stehen
   };
@@ -531,8 +561,8 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
 
   // --- Geometrie in Stücken entlang der Strecke --------------------------------
   const stuecke = new Map();
-  function stueck(s) {
-    const k = Math.max(0, Math.floor(s / c.stueckLaenge));
+  function stueck(s, roh = false) {
+    const k = roh ? s : Math.max(0, Math.floor(s / c.stueckLaenge));
     if (!stuecke.has(k)) stuecke.set(k, { pos: [], uv: [], col: [], idx: [] });
     return stuecke.get(k);
   }
@@ -580,7 +610,8 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
   const cp = c.planke;
   const A = {}, B = {};
   let plankenMeter = 0;
-  for (const l of plan.plankenLaeufe) {
+  // (punkt, randAbstand, stueck: für die Etappe oder einen Stummel, siehe unten)
+  function bauePlanke(l, punkt, randAbstand, stueck) {
     const sd = l.seite;
     const laenge = l.bis - l.von;
     plankenMeter += laenge;
@@ -640,11 +671,13 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
     }
   }
 
+  for (const l of plan.plankenLaeufe) bauePlanke(l, punkt, randAbstand, stueck);
+
   // --- 2. Holzzäune -----------------------------------------------------------
   const cz = c.zaun;
   let zaunMeter = 0;
   const wackeln = (s, sd) => (rauschen(s / 14, sd * 7.3, c.seed) - 0.5) * 0.18;
-  for (const l of plan.zaunLaeufe) {
+  function baueZaun(l, punkt, randAbstand, stueck) {
     const sd = l.seite;
     const laenge = l.bis - l.von;
     zaunMeter += laenge;
@@ -692,6 +725,27 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
       kreisLinie(p.x - ox * f, p.z - oz * f, q.x - ox2 * f, q.z - oz2 * f, r, cz.kreisAbstand, 'zaun');
     }
   }
+  for (const l of plan.zaunLaeufe) baueZaun(l, punkt, randAbstand, stueck);
+
+  // Seitenschutz an den Stummeln (M3a): Leitplanke oder Zaun ab der Absperrung, beidseitig.
+  // Eigene Stücke (Schlüssel ab 100000), damit sie nicht mit der Etappe vermischt werden.
+  for (const l of plan.astLaeufe) {
+    const ast = l.ast;
+    const astPunkt = (u, lat, ziel = {}) => {
+      const f = Math.max(0, Math.min(ast.anzahl - 1.001, u)), i = Math.floor(f), t = f - i, j = i + 1;
+      ziel.tx = ast.tx[i] + (ast.tx[j] - ast.tx[i]) * t; ziel.tz = ast.tz[i] + (ast.tz[j] - ast.tz[i]) * t;
+      const n = Math.hypot(ziel.tx, ziel.tz) || 1;
+      ziel.tx /= n; ziel.tz /= n;
+      ziel.x = ast.px[i] + (ast.px[j] - ast.px[i]) * t - ziel.tz * lat;
+      ziel.z = ast.pz[i] + (ast.pz[j] - ast.pz[i]) * t + ziel.tx * lat;
+      ziel.h = ast.py[i] + (ast.py[j] - ast.py[i]) * t;
+      return ziel;
+    };
+    const astStueck = (u) => stueck(100000 + ast.nr * 1000 + Math.floor(u / c.stueckLaenge), true);
+    if (l.art === 'planke') bauePlanke(l, astPunkt, () => c.abstand, astStueck);
+    else baueZaun({ ...l, latten: 3, torEnde: false, torAnfang: false }, astPunkt, () => c.abstand, astStueck);
+  }
+
   // Weidetore: offenes Tor ist ins Feld gedreht (die Lücke bleibt befahrbar)
   for (const t of plan.tore) {
     if (!t.offen) continue;
