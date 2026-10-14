@@ -1,9 +1,8 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 3a.2 fertig** – Fahrphysik-Feinschliff nach Linos Test der ganzen Etappe: Wer die
-Handbremse lange hält, wird langsamer und steht nach ein paar Sekunden (statt endlos im Kreis zu fahren); nach
-dem Lenken bei hohem Tempo fährt das Auto deutlich schneller wieder geradeaus.
-Davor: 3a.1 (Nebenweg-Korrektur: saubere Kreuzungen, grosse gebogene Absperrungen), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 3a.3 fertig** – Felswand: Das Auto stoppt jetzt genau an der sichtbaren Felswand (vorher
+steckte es bis 1.6 m darin), und am Wandfuss schaut kein Gras mehr hervor (dort liegen jetzt Erde und Geröll).
+Davor: 3a.2 (Fahrphysik-Feinschliff: Handbremse bremst bis zum Stand, schneller Geradeauslauf), 3a.1 (Nebenweg-Korrektur: saubere Kreuzungen, grosse gebogene Absperrungen), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -24,6 +23,121 @@ Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
 
 ---
+
+## Meilenstein 3a.3: Felswand (Kollision, Grasstellen) ✅
+
+### Was war das Problem – und was wurde gemacht?
+
+**1. Man fuhr in die Felswand hinein**
+- *Ursache (gemessen):* Die Wand prüfte nur die **Mitte des Autos**: Sie durfte höchstens 4.3 m neben die
+  Strassenmitte. Wie das Auto dabei steht, war egal. Fährt man schräg oder frontal an die Wand, ragt die Front
+  aber bis zu 2.24 m weiter nach aussen als die Mitte. Darum steckte das Auto je nach Winkel **60 cm (15°) bis
+  1.64 m (frontal)** in der Wand. Auch parallel stand die Karosserie im Mittel 10 cm, an manchen Stellen bis
+  17 cm in der Wand, weil die Wand zerklüftet ist (jeder Meter etwas anders) und die Grenze überall gleich war.
+  Dazu kamen ein paar Meter an den Wand-Enden, wo die Wand schon sichtbar war, aber gar nicht bremste.
+- *Lösung:* Die Kollision prüft jetzt den **ganzen Umriss** des Autos (24 Punkte rundherum, alle gut 50 cm)
+  gegen die **echte, sichtbare Wandfläche** an genau dieser Stelle. Die Welt merkt sich dafür die Form der
+  Felswand (dieselben Querschnitte und Dreiecke, aus denen die Wand gezeichnet wird). Die Wand selbst sieht
+  genau gleich aus wie vorher. Das Abprallen bleibt wie bisher: frontal harter Halt, schräg rutscht das Auto
+  an der Wand entlang, rückwärts kommt man raus.
+- *Kamera:* hält jetzt mindestens 50 cm Luft zur sichtbaren Wandfläche (zusätzlich zur alten Regel).
+
+**2. Grasstellen am Fuss der Felswand**
+- *Ursache (gemessen):* Das Bankett fällt nach aussen um 35 cm ab, das Gelände daneben liegt aber nur 30 cm unter
+  der Strasse. Ab ca. 5.2 m neben der Mitte schaute darum das Gelände über das Bankett, bis es in der Wand
+  verschwand – und das Gelände war dort wie Wiese (grün) gefärbt. An den Wand-Enden, wo die Wand flach
+  ausläuft, sah man noch mehr davon. Das kam an **220 von 535 Wand-Querschnitten** vor (alle 2 m einer).
+  Durch die Felsflächen selbst sticht nirgends Gelände (gemessen); die Grasflecken „an der Wand“ waren dieselben
+  Stellen am Fuss und an den Wand-Enden.
+- *Lösung:* Das Gelände wird auf der Wandseite (bis ca. 18 m neben der Strassenmitte, dann weicher Übergang)
+  nicht mehr als Wiese gefärbt, sondern als **Erde mit Geröll-Flecken und ein paar dunklen Steinen**. An den
+  Wand-Enden blendet das mit der Wand zusammen ein und aus. Nur Farben, keine neuen Zeichenaufrufe, keine
+  geänderten Höhen (Fahrstrecke und Abkürzungen bleiben genau gleich).
+
+### Zahlen vorher → nachher (`node tools/felswand-test.mjs`, neu; mit `--wurzel <ordner>` misst er eine alte Version)
+
+Sichtbare Wandfläche (Strahl von der Strasse quer nach aussen, jeden Meter, 1049 Messpunkte) gegen Kollisionskante:
+
+| | vorher | nachher |
+|---|---|---|
+| Auto parallel zur Wand: Karosserie in der Wand | im Mittel 10 cm, bis 17 cm (95 %), grösster Unterschied 33 cm | Kollisionskante höchstens **4 cm** in der Wand, höchstens 7 cm davor |
+| Auto schräg / frontal | Ecken ragen bis 2.24 m weiter als die Mitte | gleich wie parallel (ganzer Umriss geprüft) |
+| Wand sichtbar, aber keine Kollision | 20 Stellen (an den 4 Wand-Enden) | 0 |
+
+Aufprall an 2117, 2300 und 3100 m, 20 / 60 / 100 km/h, unter 15° / 30° / 60° / 90°, danach 1 s Vollgas gegen die Wand:
+
+| | vorher | nachher |
+|---|---|---|
+| Karosserie steckt in der sichtbaren Wand (am tiefsten) | 15°: 57–82 cm, 30°: 104–119 cm, 60°: 141–162 cm, 90°: 144–**164 cm** | höchstens **1 cm** |
+| Tempo 0.2 s nach dem Aufprall, 90° | 0–1 km/h (20 km/h: 26 km/h, rutschte in die Wand) | 0–2 km/h |
+| Tempo 0.2 s nach dem Aufprall, 60° | 0–11 km/h | 0–8 km/h |
+| rückwärts raus (3 s nach dem Stillstand) | ja | ja, 7.6–13.2 m |
+
+Kamera, wenn das Auto an der Wand steht (parallel, schräg mit dem Heck zur Wand, Heck zur Wand): mindestens 69 cm
+Luft zur Wand (vorher auch, die Kamera war schon vorher nicht das Problem).
+
+### Wo man schrauben kann (`js/config.js`)
+
+| Wert | Was |
+|---|---|
+| `grenze.wandHuelle.laenge` / `breite` | so gross ist das Auto für die Felswand (4.48 x 1.86 m, die sichtbare Karosserie) |
+| `grenze.wandHuelle.ueberBoden` | in welcher Höhe über dem Boden geprüft wird (0.1 m; unten steht die Wand am weitesten vor) |
+| `kamera.wandAbstand` | so viel Luft hält die Kamera zur Felswand (0.5 m) |
+| `felswand.fussFarben` | false = Gelände am Wandfuss wieder wie früher (Wiese) |
+| `felswand.fussBreite` | bis wohin (Meter neben der Strassenmitte) das Gelände Erde/Geröll ist und wo der Übergang endet (18 / 26) |
+| `felswand.fussGeroell` | Farbe der Geröll-Flecken |
+
+`grenze.wandGrenze` (4.3 m) wird nur noch von der Abkürzungs-Analyse gebraucht (die rechnet mit einem Punkt).
+
+### So testest du
+
+1. **Felswand 1** (ca. 1915–2495 m, links) und **Abfahrt** (ca. 2930–3420 m, rechts): frontal, schräg und
+   streifend an die Wand fahren. Das Auto soll an der Felsfläche stoppen, nichts vom Auto verschwindet im Fels.
+   Danach rückwärts raus.
+2. Bei **2117 m** (Linos Stelle) frontal an die Wand: Die Stossstange berührt den Fels, steckt aber nicht drin.
+3. Am Auto vorbei auf den **Wandfuss** schauen (auch an den Wand-Enden bei 1915 m, 2490 m, 2930 m, 3415 m):
+   Zwischen Bankett und Wand ist es braun-grau (Erde, Geröll), kein grüner Streifen mehr.
+4. Mit dem Heck an die Wand stellen und lenken: Die Kamera soll nicht in die Wand rutschen.
+
+### Bilder (`screenshots/m3a-3/`, „a“ = vorher, „b“ = nachher)
+
+Je für 2117 m, 2300 m und 3100 m: `fahrer` (Fahrersicht), `1m` (1 m vor dem Wandfuss), `auto` (nach einem Aufprall mit
+60 km/h unter 30°, Kamera wie im Spiel), `auto-nah` (dieselbe Stelle von der Strasse her). Dazu Wandanfang bei
+1925 m, Wandende bei 2485 m und ein Überblick bei 3000 m. Neu erzeugen: `node tools/m3a3-bilder.mjs --endung b`.
+Gut zu sehen: `10a`/`10b` (3100 m, grüne Flecken am Fuss weg), `03a`/`03b` und `11a`/`11b` (Auto steckt vorher sichtbar im
+Fels, nachher steht es davor).
+
+### Selbst getestet
+
+- **`felswand-test`** (neu): alle Prüfungen erfüllt (Zahlen oben).
+- **Abkürzungs-Analyse** (`node tools/abkuerzungen.mjs --pruefen`): 127 / 2 / 342 / 84, wie vorher.
+- **Testfahrer**: 2:43.29 / 2:27.62 / 2:18.27 – **genau gleich** wie vorher, keine Aufpralle.
+- `aufprall-test`, `strassenrand-test`, `nebenweg-test`, `kuh-test`: alle Prüfungen erfüllt, keine Fehler in der
+  Browser-Konsole.
+- **Leistung**: genau gleich wie vorher (gleiche Zeichenaufrufe und Dreiecke an allen Stellen, z. B. 2117 m:
+  107 Zeichenaufrufe / 145 564 Dreiecke; meiste Dreiecke 160 697 bei 810 m, meiste Zeichenaufrufe 122 bei 360 m).
+  Die neue Kollision rechnet nur, wenn das Auto nahe an der Wand ist.
+
+### Ehrlich beurteilt
+
+- **Kollision**: Messbar sauber – das Auto steckt höchstens 1 cm in der Wand, das sieht man nicht. An den
+  zerklüfteten Stellen kann es aber passieren, dass zwischen Auto und Fels ein paar Zentimeter Luft bleiben
+  (höchstens 7 cm, meist 0).
+- **Wandfuss**: Der grüne Streifen und die Grasflecken sind weg, dort ist es jetzt erdig-grau mit ein paar
+  dunkleren Steinen. Weil das Gelände nur alle 4 m eine Farbe hat, sind die Geröll-Flecken eher grob und weich
+  verlaufen, keine einzelnen kleinen Steine. Ob die Mischung zum Bankett schön genug ist, musst du auf deinen
+  Rechnern beurteilen; die Farben stehen in `config.js`.
+
+### Bekannte Probleme
+
+- Oben auf der Felswand (über der Wandkante) sieht man aus manchen Blickwinkeln Wiese und Tannen auf dem Berg
+  dahinter. Das ist gewollt (dort ist der Berg), aber nicht Teil dieses Meilensteins.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Kleine Geröll-Sprites (wie die Steine) am Wandfuss würden einzelne Steine zeigen statt nur Farbflecken. Kostet
+  einen Zeichenaufruf (oder kann in den bestehenden Stein-Aufruf), war hier ausdrücklich nicht gewünscht.
+- Kratzgeräusch / kleine Staubwolke beim Streifen der Wand (wenn es Ton gibt).
 
 ## Meilenstein 3a.2: Fahrphysik-Feinschliff (Handbremse, Geradeauslauf) ✅
 

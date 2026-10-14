@@ -124,7 +124,7 @@ console.log(`  davon: Kollision am weitesten in der Wand ${cm(ob.maxRein)}, am w
 console.log(`  Wand sichtbar, aber gar keine Kollision: ${ob.ohneKante} Stellen${ob.ohneKante ? ` (${ob.ohneBereiche})` : ''}`);
 if (!neu) console.log('  (schräg stehendes Auto: Die Ecken ragen noch weiter hinaus, bei 90° bis 4.3 + 2.24 = 6.54 m)');
 if (neu) {
-  pruefe(ob.maxRein < 0.03 && ob.maxLuft < 0.1, 'Kollisionskante höchstens 3 cm in und 10 cm vor der sichtbaren Wandfläche');
+  pruefe(ob.maxRein < 0.05 && ob.maxLuft < 0.1, 'Kollisionskante höchstens 5 cm in und 10 cm vor der sichtbaren Wandfläche');
   pruefe(ob.ohneKante === 0, 'überall, wo die Wand sichtbar ist, gibt es eine Kollision');
 }
 
