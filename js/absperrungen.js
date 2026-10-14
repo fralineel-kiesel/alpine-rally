@@ -1,21 +1,27 @@
-// Absperrungen (Meilenstein 3a): Wo die Etappe von der Hauptstrasse abbiegt (oder wieder
-// einmündet), ist die andere Richtung der Hauptstrasse (der Stummel) zu – wie bei einer echten
-// Rallye. Vier Arten, je Kreuzung eine andere (config.js, "absperrung" und "nebenwege"):
-//   band   rot-weisses Flatterband zwischen Warnstangen, Schild "STRASSE GESPERRT", Rally-Pfeil
-//   reifen alte Autoreifen, 2-3 übereinander gestapelt
-//   heu    Strohballen, 1-2 Lagen
-//   zaun   Holzböcke (Absperrzaun aus Brettern), leicht schief
-// Alles quer über die ganze Strasse und ein Stück darüber hinaus. Kollision hart (Kreise wie
-// beim Zaun). Links und rechts davon läuft der Seitenschutz (strassenrand.js), damit niemand
-// um die Absperrung herumfährt.
+// Absperrungen (seit Meilenstein 3a, als Leitwand seit M3a.1): Wo die Etappe von der Hauptstrasse
+// abbiegt (oder wieder einmündet), ist die andere Richtung der Hauptstrasse (der Stummel) zu – wie
+// bei einer echten Rallye. Die Absperrung steht direkt an der Kreuzung und ist gebogen: Sie beginnt
+// an der Aussenseite der Kurve, schwingt sich quer über die Geradeaus-Richtung und läuft zum
+// Nebenweg hin (Linie aus netz.js, "ast.sperre"). So sieht man sofort: hier nicht geradeaus.
+// Vier Arten (config.js, "absperrung" und "nebenwege"):
+//   band   rot-weisses Flatterband (zwei Bänder) an 1.5 m hohen Warnstangen
+//   reifen Reifenstapel (ca. 1.3 m), zwei versetzte Reihen, einzelne Reifen weiss gestrichen
+//   heu    Strohballen (1.2-m-Würfel), zwei Lagen
+//   zaun   Holzböcke (1.3 m, A-Beine, rot-weisse Bretter), leicht schief
+// Dazu: grosses Verbots-Symbol (rotes Rund, weisser Balken) über der Geradeaus-Richtung, rot-weisse
+// Chevrons entlang der Leitwand und ca. 70 m vor der Kreuzung eine grosse Richtungstafel.
+// Kollision hart (Kreise wie beim Zaun). An beiden Enden schliesst der Seitenschutz an
+// (strassenrand.js), damit niemand um die Absperrung herumfährt.
 // Gezeichnet wird alles mit einem Material und einem Bild (pixel.js, absperrAtlas): ein Zeichenaufruf.
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { zufall, mische } from './util.js';
 import { absperrAtlas } from './pixel.js';
+import { ABKUERZUNGEN } from './abkuerzungen.js';
 
-export function baueAbsperrungen(szene, welt) {
+// andere: Hindernisse, die schon stehen (Bäume, Strassenrand) – die Richtungstafel weicht ihnen aus
+export function baueAbsperrungen(szene, welt, andere = []) {
   const t0 = performance.now();
   const netz = welt.netz;
   const c = CONFIG.absperrung;
@@ -23,6 +29,7 @@ export function baueAbsperrungen(szene, welt) {
   const pos = [], uv = [], col = [], idx = [];
   const hindernisse = [];
   const liste = [];
+  const boden = (x, z) => welt.bodenBei(x, z).h;
 
   // --- kleine Bauteile ------------------------------------------------------------
   // Viereck a-b-c-d (unten links, unten rechts, oben rechts, oben links)
@@ -59,9 +66,10 @@ export function baueAbsperrungen(szene, welt) {
       viereck(ecke(a, a1, a2), ecke(a, b1, b2), ecke(b, b1, b2), ecke(b, a1, a2), kachel, hell * (k % 2 ? 0.9 : 1));
     }
   }
-  // Zylinder (Reifen): Mitte unten (x, y, z), Radius r, Höhe h, n Seiten, Drehung w
-  function zylinder(x, y, z, r, h, n, kMantel, kOben, w, hell = 1) {
-    const t = atlas.kachel(kMantel), o = atlas.kachel(kOben);
+  // Reifen (liegend): Mitte unten (x, y, z), Radius r, Höhe h, n Seiten, Drehung w.
+  // deckel = oben ein Ring (nur beim obersten Reifen eines Stapels, die anderen sieht man nicht)
+  function reifen(x, y, z, r, h, n, kMantel, w, hell, deckel) {
+    const t = atlas.kachel(kMantel), o = atlas.kachel('reifenOben');
     const ring = [];
     for (let k = 0; k <= n; k++) {
       const a = w + (k / n) * Math.PI * 2;
@@ -77,7 +85,8 @@ export function baueAbsperrungen(szene, welt) {
       for (let j = 0; j < 4; j++) col.push(hh, hh, hh);
       idx.push(basis, basis + 1, basis + 2, basis, basis + 2, basis + 3);
     }
-    // Deckel als Fächer
+    if (!deckel) return;
+    // Deckel als Fächer (Textur: Gummiring mit Loch)
     const basis = pos.length / 3;
     pos.push(x, y + h, z);
     uv.push((o.u0 + o.u1) / 2, (o.v0 + o.v1) / 2);
@@ -90,145 +99,240 @@ export function baueAbsperrungen(szene, welt) {
     }
     for (let k = 0; k < n; k++) idx.push(basis, basis + 1 + k, basis + 2 + k);
   }
-  // Tafel an einem Pfosten (Schild, Pfeil): Mitte (x, z), Unterkante unten, schaut in Richtung (bx, bz)
-  function tafel(x, y, z, bx, bz, b, h, unten, kachel, spiegeln = false) {
+  // Tafel an einem Pfosten: Mitte (x, z), Unterkante "unten" über y, schaut in Richtung (bx, bz)
+  function tafel(x, y, z, bx, bz, b, h, unten, kachel, spiegeln = false, ruecken = 'blech', pfosten = true) {
     const rx = bz, rz = -bx; // rechts aus Sicht des Betrachters
-    pfostenStahl(x - bx * 0.04, y, z - bz * 0.04, unten + h);
+    if (pfosten) pfostenStahl(x - bx * 0.05, y, z - bz * 0.05, unten + h * 0.8);
     const p = (f, oben, hinten = 0) => [x + rx * (b / 2) * f - bx * hinten, y + unten + (oben ? h : 0), z + rz * (b / 2) * f - bz * hinten];
-    viereck(p(-1, 0), p(1, 0), p(1, 1), p(-1, 1), kachel, 1.1, spiegeln);
-    viereck(p(1, 0, 0.03), p(-1, 0, 0.03), p(-1, 1, 0.03), p(1, 1, 0.03), 'blech', 0.9);
+    viereck(p(-1, 0), p(1, 0), p(1, 1), p(-1, 1), kachel, 1.15, spiegeln);
+    viereck(p(1, 0, 0.03), p(-1, 0, 0.03), p(-1, 1, 0.03), p(1, 1, 0.03), ruecken, 0.9);
   }
-  function pfostenStahl(x, y, z, hoch) {
-    balken([x, y - 0.1, z], [x, y + hoch, z], 0.07, 'blech', 0.7);
+  function pfostenStahl(x, y, z, hoch, dicke = 0.08) {
+    balken([x, y - 0.1, z], [x, y + hoch, z], dicke, 'blech', 0.7);
+  }
+
+  // Linie der Leitwand mit Bogenlänge: punktBei(a) = Punkt a Meter vom Anfang (aussen)
+  function linienLaeufer(li) {
+    const m = [0];
+    for (let k = 1; k < li.length; k++) m.push(m[k - 1] + Math.hypot(li[k].x - li[k - 1].x, li[k].z - li[k - 1].z));
+    const laenge = m[m.length - 1];
+    const punktBei = (a) => {
+      a = Math.max(0, Math.min(laenge, a));
+      let k = 1;
+      while (k < li.length - 1 && m[k] < a) k++;
+      const f = (a - m[k - 1]) / Math.max(1e-6, m[k] - m[k - 1]), p = li[k - 1], q = li[k];
+      const tx = q.x - p.x, tz = q.z - p.z, tl = Math.hypot(tx, tz) || 1;
+      return { x: mische(p.x, q.x, f), z: mische(p.z, q.z, f), tx: tx / tl, tz: tz / tl, nx: mische(p.nx, q.nx, f), nz: mische(p.nz, q.nz, f), s: mische(p.s, q.s, f), l: mische(p.l, q.l, f) };
+    };
+    return { laenge, punktBei };
   }
 
   // --- Kreuzungen ------------------------------------------------------------------
   const rndHaupt = zufall(c.seed);
   for (const ast of netz.aeste) {
+    if (!ast.sperre) continue;
     const art = ast.sperreArt;
-    const u = ast.sperreU;
-    const i = Math.round(u);
-    const tx = ast.tx[i], tz = ast.tz[i];
-    const rx = -tz, rz = tx;                 // quer über die Strasse (rechts im Stummel)
-    const bx = -tx, bz = -tz;                // Blickrichtung der Schilder: zur Kreuzung hin
-    const B = ast.halb + c.ueberstand;       // halbe Breite der Absperrung
-    const mx = ast.px[i] + tx * (u - i), mz = ast.pz[i] + tz * (u - i);
-    const quer = (lat, vor = 0) => [mx + rx * lat + tx * vor, mz + rz * lat + tz * vor];
-    const boden = (x, z) => welt.bodenBei(x, z).h;
+    const sp = ast.sperre;
     const rnd = zufall(c.seed + ast.nr * 97 + Math.floor(rndHaupt() * 1000));
+    const { laenge, punktBei } = linienLaeufer(sp.linie);
+    // vorne = zur Etappe hin (n), hinten = weg von ihr. Die Linie ist die Vorderkante der Absperrung.
+    const hinten = (p, d) => [p.x - p.nx * d, p.z - p.nz * d];
+    let tiefe = 0.15, hoehe = 1.0;     // für die Kollision und die Höhe der Schilder darüber
 
     if (art === 'band') {
       const cb = c.band;
-      const n = Math.max(2, Math.round((2 * B) / cb.pfostenAbstand));
+      const n = Math.max(2, Math.round(laenge / cb.pfostenAbstand));
       const posten = [];
       for (let k = 0; k <= n; k++) {
-        const lat = -B + (2 * B * k) / n;
-        const [x, z] = quer(lat, (rnd() - 0.5) * 0.15);
+        const p = punktBei((laenge * k) / n);
+        const [x, z] = hinten(p, 0.1 + (rnd() - 0.5) * 0.06);
         const y = boden(x, z);
-        posten.push({ x, z, y, lat });
-        quader(x, y - 0.1, z, tx, tz, 0.07, 0.07, 1.25, 'stange', 'stange');
+        posten.push({ x, z, y });
+        quader(x, y - 0.1, z, p.tx, p.tz, 0.09, 0.09, cb.hoehe + 0.1, 'stange', 'stange');
       }
-      // Band in Stücken von ca. 1 m zwischen den Stangen, leicht durchhängend
+      // zwei Bänder zwischen den Stangen, leicht durchhängend
       for (let k = 0; k < n; k++) {
         const a = posten[k], b = posten[k + 1];
-        for (const hoehe of cb.hoehen) {
+        for (const h of cb.hoehen) {
           const m = 3;
           for (let j = 0; j < m; j++) {
             const f0 = j / m, f1 = (j + 1) / m;
             const sag = (f) => cb.durchhang * 4 * f * (1 - f);
-            const p0 = [mische(a.x, b.x, f0), mische(a.y, b.y, f0) + hoehe - sag(f0), mische(a.z, b.z, f0)];
-            const p1 = [mische(a.x, b.x, f1), mische(a.y, b.y, f1) + hoehe - sag(f1), mische(a.z, b.z, f1)];
-            viereck([p0[0], p0[1] - 0.045, p0[2]], [p1[0], p1[1] - 0.045, p1[2]], [p1[0], p1[1] + 0.045, p1[2]], [p0[0], p0[1] + 0.045, p0[2]], 'band', 1.1);
+            const p0 = [mische(a.x, b.x, f0), mische(a.y, b.y, f0) + h - sag(f0), mische(a.z, b.z, f0)];
+            const p1 = [mische(a.x, b.x, f1), mische(a.y, b.y, f1) + h - sag(f1), mische(a.z, b.z, f1)];
+            viereck([p0[0], p0[1] - 0.06, p0[2]], [p1[0], p1[1] - 0.06, p1[2]], [p1[0], p1[1] + 0.06, p1[2]], [p0[0], p0[1] + 0.06, p0[2]], 'band', 1.15);
           }
         }
       }
-      // Schild "STRASSE GESPERRT" mitten am Band, Rally-Pfeil daneben (zeigt in den Nebenweg)
-      if (c.schild) {
-        const [x, z] = quer(-ast.seiteN * 1.2, -0.12);
-        tafel(x, boden(x, z), z, bx, bz, 1.5, 0.6, 1.05, 'schild');
-      }
-      if (c.pfeil) {
-        const [x, z] = quer(ast.seiteN * 1.9, -0.12);
-        tafel(x, boden(x, z), z, bx, bz, 0.9, 0.68, 1.0, 'pfeil', ast.seiteN < 0);
-      }
+      tiefe = 0.2; hoehe = cb.hoehe;
     } else if (art === 'reifen') {
+      // zwei Reihen Stapel, die hintere um einen halben Reifen versetzt (wirkt massiv, nicht wie eine Reihe)
       const cr = c.reifen;
-      const n = Math.floor((2 * B) / (cr.radius * 2)) + 1;
-      for (let k = 0; k < n; k++) {
-        const lat = -B + cr.radius + ((2 * B - 2 * cr.radius) * k) / (n - 1);
-        const [x0, z0] = quer(lat, (rnd() - 0.5) * 0.12);
-        let y = boden(x0, z0);
-        const lagen = cr.lagen[0] + Math.floor(rnd() * (cr.lagen[1] - cr.lagen[0] + 1));
-        for (let j = 0; j < lagen; j++) {
-          const x = x0 + (rnd() - 0.5) * 0.08, z = z0 + (rnd() - 0.5) * 0.08;
-          zylinder(x, y, z, cr.radius * (0.94 + rnd() * 0.1), cr.hoehe, 8, 'reifenSeite', 'reifenOben', rnd() * Math.PI, cr.hell * (0.85 + rnd() * 0.3));
-          y += cr.hoehe;
+      const schritt = cr.radius * 2.04;
+      for (const [reihe, versatz, lagen] of [[0, 0, cr.lagen], [1, 0.5, cr.lagenHinten]]) {
+        const n = Math.floor((laenge - (reihe ? schritt : 0)) / schritt) + 1;
+        for (let k = 0; k < n; k++) {
+          const p = punktBei(cr.radius + (k + versatz) * schritt);
+          const [x0, z0] = hinten(p, cr.radius + reihe * cr.radius * 1.75 + (rnd() - 0.5) * 0.06);
+          let y = boden(x0, z0) - 0.02;
+          const anzahl = lagen[0] + Math.floor(rnd() * (lagen[1] - lagen[0] + 1));
+          // weiss gestrichene Reifen: ganze Stapel im Wechsel (vorne), hinten einzelne
+          const weissStapel = reihe === 0 && k % 2 === 1;
+          for (let j = 0; j < anzahl; j++) {
+            const x = x0 + (rnd() - 0.5) * 0.07, z = z0 + (rnd() - 0.5) * 0.07;
+            const weiss = weissStapel ? rnd() > 0.15 : rnd() < cr.weissAnteil * 0.3;
+            reifen(x, y, z, cr.radius * (0.95 + rnd() * 0.08), cr.hoehe, cr.seiten, weiss ? 'reifenWeiss' : 'reifenSeite', rnd() * Math.PI,
+              (weiss ? 1 : cr.hell) * (0.85 + rnd() * 0.25), j === anzahl - 1);
+            y += cr.hoehe;
+          }
         }
       }
+      tiefe = cr.radius * 3.8; hoehe = cr.hoehe * cr.lagen[1];
     } else if (art === 'heu') {
+      // Strohballen (Würfel), unten durchgehend, oben versetzt mit ein paar Lücken
       const ch = c.heu;
-      const n = Math.ceil((2 * B) / ch.laenge);
-      const lageY = [];
+      const n = Math.max(1, Math.round(laenge / ch.laenge));
+      const unten = [];
       for (let k = 0; k < n; k++) {
-        const lat = -B + ch.laenge / 2 + ((2 * B - ch.laenge) * k) / Math.max(1, n - 1);
-        const [x, z] = quer(lat, (rnd() - 0.5) * 0.2);
-        const w = (rnd() - 0.5) * 0.12;
-        const ux = tx * Math.sin(w) + rx * Math.cos(w), uz = tz * Math.sin(w) + rz * Math.cos(w);
+        const p = punktBei(((k + 0.5) * laenge) / n);
+        const [x, z] = hinten(p, ch.tiefe / 2 + (rnd() - 0.5) * 0.1);
+        const w = (rnd() - 0.5) * 0.1;
+        const ux = p.tx * Math.cos(w) - p.nx * Math.sin(w), uz = p.tz * Math.cos(w) - p.nz * Math.sin(w);
         const y = boden(x, z) - 0.03;
-        lageY.push(y);
-        quader(x, y, z, ux, uz, ch.laenge * (0.96 + rnd() * 0.06), ch.tiefe, ch.hoehe, 'strohSeite', 'strohSeite', 'strohEnde', 0.9 + rnd() * 0.2);
+        unten.push(y);
+        quader(x, y, z, ux, uz, (laenge / n) * (0.97 + rnd() * 0.04), ch.tiefe, ch.hoehe, 'strohSeite', 'strohOben', 'strohEnde', 0.9 + rnd() * 0.2);
       }
-      // zweite Lage in der Mitte (versetzt)
-      const oben = Math.round((n - 1) * ch.obenAnteil);
-      const start = Math.floor((n - 1 - oben) / 2);
-      for (let k = start; k < start + oben; k++) {
-        const lat = -B + ch.laenge + ((2 * B - ch.laenge) * k) / Math.max(1, n - 1);
-        const [x, z] = quer(lat, (rnd() - 0.5) * 0.15);
+      for (let k = 0; k < n - 1; k++) {
+        if (rnd() > ch.obenAnteil) continue;
+        const p = punktBei(((k + 1) * laenge) / n);
+        const [x, z] = hinten(p, ch.tiefe / 2 + 0.08 + (rnd() - 0.5) * 0.12);
         const w = (rnd() - 0.5) * 0.16;
-        const ux = tx * Math.sin(w) + rx * Math.cos(w), uz = tz * Math.sin(w) + rz * Math.cos(w);
-        quader(x, Math.max(lageY[k], lageY[k + 1]) + ch.hoehe - 0.04, z, ux, uz, ch.laenge * (0.96 + rnd() * 0.06), ch.tiefe * 0.95, ch.hoehe, 'strohSeite', 'strohSeite', 'strohEnde', 0.9 + rnd() * 0.2);
+        const ux = p.tx * Math.cos(w) - p.nx * Math.sin(w), uz = p.tz * Math.cos(w) - p.nz * Math.sin(w);
+        quader(x, Math.max(unten[k], unten[k + 1]) + ch.hoehe - 0.05, z, ux, uz, (laenge / n) * (0.95 + rnd() * 0.04), ch.tiefe * 0.95, ch.hoehe,
+          'strohSeite', 'strohOben', 'strohEnde', 0.9 + rnd() * 0.2);
       }
+      tiefe = ch.tiefe; hoehe = ch.hoehe * 2;
     } else {
-      // Holzböcke: zwei A-Beine, zwei Bretter (oben rot-weiss), leicht schief
+      // Holzböcke: zwei A-Beine, drei Bretter (die oberen zwei rot-weiss), leicht schief
       const cz = c.zaun;
-      const n = Math.max(2, Math.round((2 * B) / cz.bockBreite));
-      const breite = (2 * B) / n;
+      const n = Math.max(2, Math.round(laenge / cz.bockBreite));
+      const breite = laenge / n;
       for (let k = 0; k < n; k++) {
-        const lat = -B + breite * (k + 0.5);
-        const [x, z] = quer(lat, (rnd() - 0.5) * 0.3);
+        const p = punktBei(breite * (k + 0.5));
+        const [x, z] = hinten(p, 0.4 + (rnd() - 0.5) * 0.15);
         const w = ((rnd() - 0.5) * 2 * cz.schief * Math.PI) / 180;
-        const ux = rx * Math.cos(w) + tx * Math.sin(w), uz = rz * Math.cos(w) + tz * Math.sin(w);
+        const ux = p.tx * Math.cos(w) - p.nx * Math.sin(w), uz = p.tz * Math.cos(w) - p.nz * Math.sin(w);
         const vx = -uz, vz = ux;
-        const halbB = (breite * 0.92) / 2;
+        const halbB = (breite * 0.94) / 2;
         const enden = [-1, 1].map((sd) => {
           const ex = x + ux * sd * (halbB - 0.15), ez = z + uz * sd * (halbB - 0.15);
           return { x: ex, z: ez, y: boden(ex, ez) };
         });
         const hoch = cz.hoehe + (rnd() - 0.5) * 0.08;
         for (const e of enden) {
-          // A-Bein: zwei Latten vom Boden (vorn/hinten gespreizt) zur Spitze
           const top = [e.x, e.y + hoch, e.z];
-          for (const v of [-1, 1]) balken([e.x + vx * v * 0.32, e.y - 0.05, e.z + vz * v * 0.32], top, 0.06, 'pfosten', 0.85 + rnd() * 0.2);
+          for (const v of [-1, 1]) balken([e.x + vx * v * 0.38, e.y - 0.05, e.z + vz * v * 0.38], top, 0.07, 'pfosten', 0.85 + rnd() * 0.2);
         }
-        // Bretter: leicht schief (ein Ende etwas tiefer)
-        for (const [hoehe, kachel] of [[hoch - 0.05, 'brettRot'], [hoch * 0.55, 'brett']]) {
+        for (const [h, kachel] of [[hoch - 0.08, 'brettRot'], [hoch * 0.68, 'brettRot'], [hoch * 0.36, 'brett']]) {
           const d = (rnd() - 0.5) * 0.08;
           const a = enden[0], b = enden[1];
-          const ax = a.x - ux * 0.15, az = a.z - uz * 0.15, bx2 = b.x + ux * 0.15, bz2 = b.z + uz * 0.15;
-          const ya = a.y + hoehe + d, yb = b.y + hoehe - d;
-          const f = -0.05; // vor den Beinen (zur Kreuzung hin)
-          viereck([ax + bx * -f, ya - 0.09, az + bz * -f], [bx2 + bx * -f, yb - 0.09, bz2 + bz * -f], [bx2 + bx * -f, yb + 0.09, bz2 + bz * -f], [ax + bx * -f, ya + 0.09, az + bz * -f], kachel, 0.95 + rnd() * 0.15);
+          const ax = a.x - ux * 0.18, az = a.z - uz * 0.18, bx2 = b.x + ux * 0.18, bz2 = b.z + uz * 0.18;
+          const ya = a.y + h + d, yb = b.y + h - d;
+          // vor den Beinen (zur Etappe hin)
+          const fx = p.nx * 0.42, fz = p.nz * 0.42;
+          viereck([ax + fx, ya - 0.11, az + fz], [bx2 + fx, yb - 0.11, bz2 + fz], [bx2 + fx, yb + 0.11, bz2 + fz], [ax + fx, ya + 0.11, az + fz], kachel, 0.95 + rnd() * 0.15);
         }
       }
+      tiefe = 0.8; hoehe = cz.hoehe;
     }
-    // Kollision: Kreise quer über die ganze Breite (hart, wie ein Zaun)
-    const m = Math.ceil((2 * B + 0.2) / c.kreisAbstand);
-    for (let k = 0; k <= m; k++) {
-      const [x, z] = quer(-B - 0.1 + ((2 * B + 0.2) * k) / m);
-      hindernisse.push({ x, z, r: c.kreisRadius, rand: 'absperrung' });
+
+    // --- Kollision: Kreise entlang der Leitwand, knapp hinter der Vorderkante (hart, wie ein Zaun)
+    const r = c.kreisRadius;
+    const nK = Math.ceil(laenge / c.kreisAbstand);
+    for (let k = 0; k <= nK; k++) {
+      const p = punktBei((laenge * k) / nK);
+      for (let d = r; d <= Math.max(r, tiefe - r) + 1e-6; d += Math.max(0.5, tiefe - 2 * r)) {
+        const [x, z] = hinten(p, d);
+        hindernisse.push({ x, z, r, rand: 'absperrung' });
+      }
     }
-    const [lx, lz] = quer(-B), [qx, qz] = quer(B);
-    liste.push({ ast: ast.nr, art, u, x: mx, z: mz, links: [lx, lz], rechts: [qx, qz], richtung: [tx, tz], breite: 2 * B });
+
+    // --- Verbots-Symbol über der Geradeaus-Richtung: schaut zum Fahrer, der auf die Kreuzung zufährt
+    const cs = c.symbol;
+    const sAnfahrt = Math.min(sp.linie[0].s, sp.linie[sp.linie.length - 1].s) - 30;
+    const pA = netz.etappePunkt(sAnfahrt);
+    {
+      const m = sp.mitte;
+      const [x, z] = hinten(m, tiefe + 0.15);
+      let bx = pA.x - x, bz = pA.z - z;
+      const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl;
+      tafel(x, boden(x, z), z, bx, bz, cs.durchmesser, cs.durchmesser, hoehe + cs.ueber, 'verbot', false, 'verbotRuecken');
+    }
+    // --- Chevrons entlang der Leitwand (zeigen in Fahrtrichtung), schauen zur Etappe
+    const cc = c.chevron;
+    const nC = Math.max(2, Math.round(laenge / cc.abstand));
+    for (let k = 0; k <= nC; k++) {
+      const a = (laenge * k) / nC;
+      const p = punktBei(a);
+      if (Math.hypot(p.x - sp.mitte.x, p.z - sp.mitte.z) < cs.durchmesser * 0.9) continue; // Platz für das Symbol
+      const [x, z] = hinten(p, Math.min(tiefe, 0.5) + 0.08);
+      // halb zur Etappe, halb zum Fahrer, der auf die Kreuzung zufährt (so liest man sie schon von weitem)
+      let bx = p.nx, bz = p.nz;
+      const ax = pA.x - x, az = pA.z - z, al = Math.hypot(ax, az) || 1;
+      bx += (ax / al) * cc.zumFahrer; bz += (az / al) * cc.zumFahrer;
+      const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl;
+      // Fahrtrichtung der Etappe hier (Pfeil zeigt dorthin)
+      const q = netz.etappePunkt(p.s);
+      const rx = bz, rz = -bx;   // rechts aus Sicht des Fahrers, der auf die Tafel schaut
+      tafel(x, boden(x, z), z, bx, bz, cc.breite, cc.hoehe, hoehe + 0.05, 'chevron', rx * q.tx + rz * q.tz < 0, 'blech');
+    }
+
+    // --- Richtungstafel ca. 70 m vor der Kreuzung (Kurven-Aussenseite), Pfeil in Abbiegerichtung
+    const ct = c.richtungstafel;
+    if (ct.an) {
+      const sKurve = Math.min(sp.linie[0].s, sp.linie[sp.linie.length - 1].s);
+      const frei = (x, z) => andere.every((h) => Math.hypot(h.x - x, h.z - z) > h.r + 1.0);
+      // Seite: Kurven-Aussenseite der Kreuzung – ausser dort ist die Innenseite einer freien Kurve
+      // ("schneiden"): dann auf die andere Seite, sonst stünde die Tafel den Schneidern im Weg
+      const sT = sKurve - ct.vorher;
+      const schneidet = ABKUERZUNGEN.schneiden.some((k) => sT > k.sVon - 10 && sT < k.sBis + 10 && (k.seite === 'rechts' ? 1 : -1) === sp.sigma);
+      const seite = schneidet ? -sp.sigma : sp.sigma;
+      let platz = null;
+      for (const ds of [0, 2, -2, 4, -4, 6, -6, 8, -8, 10, -10, 12, -12]) {
+        const s = sT + ds;
+        const p = netz.etappePunkt(s);
+        const L = netz.halbBei(s) + CONFIG.strasse.bankett + ct.abstand + ct.breite / 2;
+        const x = p.x - p.tz * seite * L, z = p.z + p.tx * seite * L;
+        const ok = [-0.5, 0, 0.5].every((f) => frei(x - p.tz * seite * f * ct.breite, z + p.tx * seite * f * ct.breite));
+        if (ok) { platz = { x, z, p, s }; break; }
+      }
+      if (platz) {
+        const { x, z } = platz;
+        // schaut zum Fahrer, der 40 m davor kommt
+        const q = netz.etappePunkt(platz.s - 40);
+        let bx = q.x - x, bz = q.z - z;
+        const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl;
+        const y = boden(x, z);
+        const rx = bz, rz = -bx;
+        // zwei Pfosten
+        for (const f of [-0.38, 0.38]) {
+          const px = x + rx * f * ct.breite - bx * 0.06, pz = z + rz * f * ct.breite - bz * 0.06;
+          pfostenStahl(px, boden(px, pz), pz, ct.unten + ct.hoehe * 0.9, 0.1);
+          hindernisse.push({ x: px, z: pz, r: 0.15, rand: 'schild' });
+        }
+        // Abbiegerichtung: wohin dreht die Etappe an der Kreuzung? (rechts aus Sicht des Fahrers)
+        const k0 = netz.etappePunkt(sKurve), k1 = netz.etappePunkt(sKurve + 25);
+        const dreh = k0.tx * k1.tz - k0.tz * k1.tx; // > 0: nach rechts (x nach Osten, z nach Süden)
+        tafel(x, y, z, bx, bz, ct.breite, ct.hoehe, ct.unten, 'richtung', dreh < 0, 'blech', false);
+        liste.push({ ast: ast.nr, art: 'richtungstafel', x, z, s: platz.s, links: dreh < 0, seite });
+      }
+    }
+
+    // Für Werkzeuge: Mitte (wo die Geradeaus-Richtung die Leitwand kreuzt) und Blickrichtung dorthin
+    const i = Math.max(0, Math.min(ast.anzahl - 1, Math.round(sp.mitte.u)));
+    const e0 = sp.linie[0], e1 = sp.linie[sp.linie.length - 1];
+    liste.push({ ast: ast.nr, art, u: sp.mitte.u, x: sp.mitte.x, z: sp.mitte.z, links: [e0.x, e0.z], rechts: [e1.x, e1.z],
+      richtung: [ast.tx[i], ast.tz[i]], breite: laenge, hoehe });
   }
 
   let mesh = null;
@@ -246,8 +350,9 @@ export function baueAbsperrungen(szene, welt) {
     mesh.name = 'absperrungen';
     szene.add(mesh);
   }
+  const sperren = liste.filter((e) => e.art !== 'richtungstafel');
   return {
-    liste, hindernisse, mesh,
-    statistik: { anzahl: liste.length, dreiecke: idx.length / 3, kreise: hindernisse.length, ms: Math.round(performance.now() - t0) },
+    liste: sperren, tafeln: liste.filter((e) => e.art === 'richtungstafel'), hindernisse, mesh,
+    statistik: { anzahl: sperren.length, dreiecke: idx.length / 3, kreise: hindernisse.length, ms: Math.round(performance.now() - t0) },
   };
 }

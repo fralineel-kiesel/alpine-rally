@@ -156,6 +156,9 @@ const erg = await spiel.page.evaluate(() => {
       let kreise = 0;
       for (const h of R.hindernisse) {
         if (h.rand === 'schild') continue;
+        // Absperrung und Seitenschutz der Stummel gehören zur Kreuzung, nicht zur Kurve davor (M3a.1:
+        // die Leitwand beginnt direkt am Abzweig, 48 m nach dem Ende der freien Kurve 482-752, aber im Puffer)
+        if (h.rand === 'absperrung' || (A.netz && A.netz.stummelAbstand(h.x, h.z, 10) < 7.5)) continue;
         S.abfrage(h.x, h.z, q);
         if (q.s > von && q.s < bis && Math.sign(q.seite) === sd && q.abstand < 25) kreise++;
       }

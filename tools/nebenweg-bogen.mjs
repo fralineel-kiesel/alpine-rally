@@ -66,7 +66,7 @@ const BOGEN_LISTE = [{
     { kurve: 30, radius: 45, frei: 'richtung', marke: 'Hauptstrasse: Kurve rechts' },
     { gerade: 4 },
   ],
-  huegel: [{ mitte: 0.42, breite: 0.34, hoehe: 2.6 }, { mitte: 0.74, breite: 0.22, hoehe: -1.4 }],
+  huegel: [{ mitte: 0.42, breite: 0.34, hoehe: 2.6 }, { mitte: 0.6, breite: 0.2, hoehe: -1.2 }], // M3a.1: Senke früher (vorher 0.74), damit die Einmündung die Steigung der Hauptstrasse hat
   punktAbstand: 9,   // Abstand der Stützpunkte auf Geraden (m), in Kurven etwas enger
   // So viele Stützpunkte wie das ersetzte Stück hatte (zwischen Start und Ende): Dann rechnet
   // Three.js die Länge der übrigen Strecke genau gleich aus, und alles danach bleibt auf den

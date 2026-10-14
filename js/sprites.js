@@ -233,35 +233,84 @@ export function bauePflanzen(szene, strecke, welt) {
     }
   }
 
-  // Waldrand am Nebenweg (M3a): dichte Tannen links und rechts, damit man nicht quer durch den
-  // Wald abkürzt. Nicht in den Einfahrten, nicht auf den Stummeln, nicht bei den Checkpoint-Toren.
+  // Waldrand am Nebenweg (M3a, seit M3a.1 locker): Tannen in Gruppen mit Lücken, ab und zu ein
+  // Felsbrocken, dazwischen Wiese. Abkürzen kann man nur auf der Innenseite einer Kurve – dort stehen
+  // die Gruppen dicht (Lücken kleiner als das Auto, eine versetzte zweite Reihe). Auf der Aussenseite
+  // und an den Geraden nur lockere Gruppen fürs Auge. Nachgemessen mit tools/nebenweg-wald.mjs
+  // (Abkürzen darf nicht schneller sein als die Strasse). Nicht in den Einfahrten, nicht auf den
+  // Stummeln, nicht bei den Checkpoint-Toren und nicht vor den Richtungstafeln (M3a.1).
   const nw = CONFIG.nebenwegWald;
   if (nw && nw.an && welt.netz) {
     const N = welt.netz, rndW = zufall(nw.seed);
     const cps = CONFIG.checkpoints.beiMeter;
     const darf = (x, z, s) => {
       strecke.abfrage(x, z, q);
-      if (q.abstand < nw.abstand[0] - 0.2 || Math.abs(q.s - s) > 15) return false; // anderes Stück der Etappe zu nah
+      if (q.abstand < nw.innen.abstand[0] - 0.2 || Math.abs(q.s - s) > 15) return false; // anderes Stück der Etappe zu nah
       if (N.stummelAbstand(x, z, 20) < nw.stummelFrei || N.inEcke(x, z)) return false; // Stummel, Bankett, Seitenschutz
       if (cps.some((cp) => Math.abs(cp - s) < nw.checkpointFrei)) return false;
       return true;
     };
+    // Innenseite einer Kurve? +1 = rechts, -1 = links, 0 = (fast) gerade. Auch ein Stück davor und danach.
+    const kurvenSeite = (s) => {
+      let best = 0, staerke = 0;
+      for (let d = -nw.innenVorNach; d <= nw.innenVorNach; d += 3) {
+        const a = strecke.punktBei(s + d - 6), b = strecke.punktBei(s + d + 6);
+        const dreh = Math.asin(Math.max(-1, Math.min(1, a.tx * b.tz - a.tz * b.tx))) / 12; // 1/Radius, + = rechts
+        if (Math.abs(dreh) > staerke) { staerke = Math.abs(dreh); best = Math.sign(dreh); }
+      }
+      return staerke >= nw.innenAbKruemmung ? best : 0;
+    };
+    // frei vor den Richtungstafeln (absperrungen.js stellt sie ca. "vorher" Meter vor die Kreuzung)
+    const tafelFrei = N.aeste.filter((a) => a.sperre).map((a) => {
+      const sK = Math.min(a.sperre.linie[0].s, a.sperre.linie[a.sperre.linie.length - 1].s) - CONFIG.absperrung.richtungstafel.vorher;
+      // gleiche Seite wie in absperrungen.js (Aussenseite, ausser Innenseite einer freien Kurve)
+      const schneidet = ABKUERZUNGEN.schneiden.some((k) => sK > k.sVon - 10 && sK < k.sBis + 10 && (k.seite === 'rechts' ? 1 : -1) === a.sperre.sigma);
+      return { von: sK - 14, bis: sK + 8, seite: schneidet ? -a.sperre.sigma : a.sperre.sigma };
+    });
+    const stelle = (s, sd, lat, h, rnd = rndW, steinAnteil = nw.steinAnteil) => {
+      const p = strecke.punktBei(s), f = s - p.i;
+      const x = p.x + p.tx * f - p.tz * sd * lat, z = p.z + p.tz * f + p.tx * sd * lat;
+      if (!darf(x, z, s)) return;
+      if (rnd() < steinAnteil) {
+        const hs = mische(nw.steinHoehe[0], nw.steinHoehe[1], rnd());
+        steine.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.15, h: hs, b: hs * stein.seitenVerhaeltnis, variante: Math.floor(rnd() * stein.varianten),
+          hell: 0.85 + rnd() * 0.2, spiegeln: rnd() < 0.5, nebenwegWald: true });
+        return;
+      }
+      tannen.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.25, h, b: h * tanne.seitenVerhaeltnis, variante: Math.floor(rnd() * tanne.varianten),
+        hell: 0.8 + rnd() * 0.25, spiegeln: rnd() < 0.5, nebenwegWald: true });
+    };
+    // einzelne, von Hand gesetzte Gruppen (Bäume und Felsen gemischt, eigener Zufall)
+    const rndG = zufall(nw.seed + 77);
+    for (const g of nw.gruppen || []) {
+      for (let k = 0; k < g.anzahl; k++) {
+        const s = g.s + (k / Math.max(1, g.anzahl - 1) - 0.5) * g.laenge + (rndG() - 0.5) * 1.2;
+        stelle(s, g.seite, mische(g.abstand[0], g.abstand[1], rndG()), mische(nw.hoehe[0], nw.hoehe[1], rndG()), rndG, g.steine);
+      }
+    }
     for (const weg of N.nebenwege) {
       // Mündungen (Einfahrt in den Stummel) auf der Seite der Stummel auslassen
       const muendungen = N.aeste.filter((a) => a.nebenweg === weg && a.muendung)
         .map((a) => ({ von: Math.min(a.sJ, a.muendung.sC) - 6, bis: Math.max(a.sJ, a.muendung.sC) + 6, seite: a.muendung.seiteEtappe }));
       for (const sd of [-1, 1]) {
-        for (let s = weg.abzweig - nw.vor; s < weg.einmuendung + nw.nach; s += mische(nw.schritt[0], nw.schritt[1], rndW())) {
-          const zweite = rndW() < 0.55, lat1 = mische(nw.abstand[0], nw.abstand[1], rndW()), lat2 = mische(nw.zweiteReihe[0], nw.zweiteReihe[1], rndW());
-          const h = mische(nw.hoehe[0], nw.hoehe[1], Math.pow(rndW(), 0.8)), variante = Math.floor(rndW() * tanne.varianten);
-          const hell = 0.8 + rndW() * 0.25, spiegeln = rndW() < 0.5, ds = (rndW() - 0.5) * 0.8;
-          if (muendungen.some((m) => m.seite === sd && s > m.von && s < m.bis)) continue;
-          for (const [lat, hoch] of zweite ? [[lat1, h], [lat2, h * 1.25]] : [[lat1, h]]) {
-            const p = strecke.punktBei(s + ds), f = s + ds - p.i;
-            const x = p.x + p.tx * f - p.tz * sd * lat, z = p.z + p.tz * f + p.tx * sd * lat;
-            if (!darf(x, z, s)) continue;
-            tannen.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.25, h: hoch, b: hoch * tanne.seitenVerhaeltnis, variante, hell, spiegeln, nebenwegWald: true });
+        let s = weg.abzweig - nw.vor + rndW() * 4;
+        while (s < weg.einmuendung + nw.nach) {
+          const innen = kurvenSeite(s) === sd;
+          const c = innen ? nw.innen : nw.aussen;
+          // eine Gruppe: so viele Bäume, Abstand in der Gruppe, etwas vor und zurück versetzt
+          const n = Math.round(mische(c.gruppe[0], c.gruppe[1], rndW()));
+          for (let k = 0; k < n; k++) {
+            const lat = mische(c.abstand[0], c.abstand[1], rndW());
+            const h = mische(nw.hoehe[0], nw.hoehe[1], Math.pow(rndW(), 0.8));
+            const gesperrt = muendungen.some((m) => m.seite === sd && s > m.von && s < m.bis) || tafelFrei.some((t) => t.seite === sd && s > t.von && s < t.bis);
+            if (!gesperrt) {
+              stelle(s, sd, lat, h);
+              // zweite, versetzte Reihe dahinter (deckt die Lücken der ersten)
+              if (rndW() < c.zweiteReihe) stelle(s + mische(c.schritt[0], c.schritt[1], rndW()) * 0.5, sd, mische(c.zweiteAbstand[0], c.zweiteAbstand[1], rndW()), h * 1.2);
+            }
+            s += mische(c.schritt[0], c.schritt[1], rndW());
           }
+          s += mische(c.luecke[0], c.luecke[1], rndW()); // Lücke bis zur nächsten Gruppe
         }
       }
     }

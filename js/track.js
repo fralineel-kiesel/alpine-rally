@@ -51,19 +51,19 @@ export const STRECKEN_PUNKTE = [
   // (automatisch von tools/nebenweg-bogen.mjs – Bogen dort ändern, nicht hier)
   { abschnitt: 'Waldstück', baeume: 2.2, wald: 1, nah: true },
   // Kurve rechts 80°, Radius 28 m, Steigung 5 % – Abzweig: rechts auf den Nebenweg (Schotter)
-  { x: 65.8713, z: -761.7100, h: 25.9654 }, { x: 65.3160, z: -776.3532, h: 26.7106 }, { x: 72.2331, z: -789.2715, h: 27.4557 },
+  { x: 65.8730, z: -761.7046, h: 25.9654 }, { x: 65.3135, z: -776.3421, h: 26.7104 }, { x: 72.2215, z: -789.2591, h: 27.4554 },
   // gerade 27 m, Steigung 0 %
-  { x: 85.8626, z: -801.7128, h: 28.3832 },
+  { x: 85.8409, z: -801.6932, h: 28.3825 },
   // Kurve links 67°, Radius 35 m, Steigung 11 % – Nebenweg: Kurve links
-  { x: 98.3855, z: -813.9009, h: 30.1016 }, { x: 104.6912, z: -827.9388, h: 32.2086 }, { x: 104.3658, z: -843.3245, h: 33.3821 },
-  // gerade 24 m, Steigung 0 %
-  { x: 98.4435, z: -860.6619, h: 33.0845 },
-  // Kurve rechts 62°, Radius 38 m, Steigung 2 % – Nebenweg: Kurve rechts
-  { x: 93.5676, z: -877.2256, h: 32.7082 }, { x: 94.9121, z: -892.8024, h: 33.4046 }, { x: 102.4147, z: -906.5194, h: 33.4144 },
-  // Kurve links 66°, Radius 28 m, Steigung 9 % – Einmündung: links auf die Hauptstrasse
-  { x: 114.8848, z: -920.1262, h: 33.8280 }, { x: 121.1463, z: -933.3747, h: 35.5608 }, { x: 119.8584, z: -947.9716, h: 36.6139 },
+  { x: 98.2731, z: -813.8705, h: 30.0910 }, { x: 104.4682, z: -827.9512, h: 32.1990 }, { x: 104.0274, z: -843.3282, h: 33.3798 },
+  // gerade 25 m, Steigung 0 %
+  { x: 98.1053, z: -860.7505, h: 33.0813 },
+  // Kurve rechts 62°, Radius 38 m, Steigung 8 % – Nebenweg: Kurve rechts
+  { x: 93.2583, z: -877.3395, h: 31.7673 }, { x: 94.6104, z: -892.9097, h: 32.4408 }, { x: 102.1151, z: -906.6187, h: 34.1623 },
+  // Kurve links 66°, Radius 28 m, Steigung 5 % – Einmündung: links auf die Hauptstrasse
+  { x: 114.6316, z: -920.1846, h: 35.1247 }, { x: 120.9916, z: -933.3800, h: 35.8697 }, { x: 119.8185, z: -947.9811, h: 36.6147 },
   // Kurve rechts 28°, Radius 45 m, Steigung 0 % – Hauptstrasse: Kurve rechts
-  { x: 114.1048, z: -963.8840, h: 37.4662 },
+  { x: 114.1036, z: -963.8901, h: 37.4663 },
   // </nebenweg>
   // Ende der Kurve links 45°, Radius 70 m (wie vor M3a)
   { x: 113.7, z: -980.4, h: 38.3 }, { x: 114.6, z: -991.4, h: 38.8 },

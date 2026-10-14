@@ -95,51 +95,65 @@ export const CONFIG = {
   // Standardform eines Stummels (Hauptstrasse, die hinter der Absperrung weiterläuft)
   stummel: {
     gerade: 34,                // erst so weit geradeaus (Meter ab Abzweig/Einmündung)
-    sperreNachEinfahrt: 3,     // Absperrung so viele Meter nach dem Ende der Einfahrt in den Nebenweg
     kurve: -70,                // dann eine Kurve (Grad, - = links, + = rechts) ...
     radius: 55,                // ... mit diesem Radius (Meter)
     rest: 55,                  // danach noch so weit geradeaus, dann hört der Stummel (versteckt) auf
     kuppe: 1.6,                // der Stummel steigt bis zur Kurvenmitte um so viele Meter an ...
     abfall: 0.07,              // ... und fällt danach so steil ab (0.07 = 7 %): das Ende liegt hinter der Kuppe
+    hoeheAngleichen: [12, 30], // M3a.1: bis 12 m genau auf Höhe der Etappe (keine Stufe an der Kreuzung), bis 30 m weich zur eigenen Höhe
     seitenschutz: 'planke',    // links und rechts hinter der Absperrung: 'planke' (Leitplanke) oder 'zaun' (Holzzaun)
     schutzBisAbstand: 52,      // Seitenschutz läuft, bis er so weit von der Etappe weg ist (grenze.maxAbstand + Reserve)
     sichtschutz: 14,           // so viele Tannen stehen dicht quer vor dem Stummel-Ende (Sichtschutz)
     sichtschutzSeed: 3301,     // Zufallszahl für den Sichtschutz
   },
-  // Waldrand am Nebenweg (M3a, js/sprites.js): Tannen dicht entlang des Nebenwegs und der
-  // Kreuzungen, damit man dort nicht quer durch den Wald abkürzen kann (Lücken kleiner als
-  // das Auto). Die freien Kurven davor und danach ("schneiden") bleiben genau so offen wie vorher.
+  // Waldrand am Nebenweg (M3a, seit M3a.1 locker; js/sprites.js): Tannen in Gruppen mit Lücken,
+  // ein paar Felsbrocken, dazwischen Wiese. Dicht nur auf der Innenseite der Kurven (nur dort kann man
+  // abkürzen). Nach einer Änderung prüfen: node tools/nebenweg-wald.mjs (Abkürzen nicht schneller als
+  // die Strasse) und node tools/abkuerzungen.mjs --pruefen.
   nebenwegWald: {
     an: true,
     seed: 6060,                // Zufallszahl
     vor: 42,                   // so viele Meter vor dem Abzweig beginnt der Waldrand ...
     nach: 72,                  // ... und so viele nach der Einmündung hört er auf
-    abstand: [6.4, 7.4],       // erste Reihe: so weit von der Strassenmitte (Meter)
-    schritt: [1.5, 2.1],       // ... Abstand der Stämme entlang des Wegs (Lücke immer kleiner als ein Auto)
-    zweiteReihe: [8.5, 13],    // zweite, lockere Reihe dahinter (nur für das Aussehen)
+    innenAbKruemmung: 1 / 90,  // ab dieser Krümmung (1/Radius) gilt eine Seite als Kurven-Innenseite ...
+    innenVorNach: 18,          // ... auch so viele Meter vor und nach der Kurve
+    // Kurven-Innenseite: dichte Gruppen, kleine Lücken (kleiner als das Auto), versetzte zweite Reihe
+    innen: { abstand: [6.2, 6.9], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [9, 12] },
+    // Aussenseite und Geraden: lockere Gruppen, grosse Lücken (Wiese), nur fürs Auge
+    aussen: { abstand: [6.8, 10], gruppe: [1, 4], schritt: [1.8, 3], luecke: [7, 20], zweiteReihe: 0.3, zweiteAbstand: [10, 14] },
+    steinAnteil: 0.1,          // so ein Anteil wird statt einer Tanne ein Felsbrocken
+    // von Hand gesetzte Gruppen (Tannen und Felsen gemischt): s = Streckenmeter (Mitte), seite -1 links / +1 rechts
+    // 766 links: vor dem Abzweig, schliesst wie in M3a die Linien aus der freien Kurve 482-752 bis an den Abzweig
+    gruppen: [{ s: 766, seite: -1, abstand: [7, 10.5], laenge: 12, anzahl: 6, steine: 0.4 }],
+    steinHoehe: [0.9, 1.6],    // Höhe der Felsbrocken (Meter)
     hoehe: [4.5, 11],          // Höhe der Tannen (vorne eher junge, kleine)
     stummelFrei: 7,            // so viel Platz bleibt um die Mitte der Stummel (Asphalt, Bankett, Seitenschutz)
-    checkpointFrei: 4,         // so viele Meter vor/nach einem Checkpoint-Tor kein Baum (Pfosten)
+    checkpointFrei: 2.5,       // so viele Meter vor/nach einem Checkpoint-Tor kein Baum (Pfosten; M3a.1: 4 -> 2.5)
   },
 
   // Absperrungen auf den Stummeln (js/absperrungen.js). Kollision hart wie ein Zaun.
   absperrung: {
     reihenfolge: ['band', 'reifen', 'heu', 'zaun'], // ohne Angabe beim Nebenweg: reihum, nie zweimal dieselbe hintereinander
-    ueberstand: 2.8,           // so weit (Meter) über den Asphaltrand hinaus (Asphalt endet bei 3.5, Bankett bei 5.5)
-    kreisRadius: 0.32,         // Kollision: Kreise quer über die Absperrung ...
+    abstandWeg: 0.5,           // M3a.1: Leitwand steht so weit (Meter) neben dem Bankett der Etappe (Kurven-Aussenseite)
+    kreisRadius: 0.32,         // Kollision: Kreise entlang der Leitwand ...
     kreisAbstand: 0.5,         // ... alle so viele Meter
     seed: 4711,                // Zufallszahl (Höhe der Reifenstapel, schiefe Böcke ...)
-    schild: true,              // Flatterband: Schild "STRASSE GESPERRT" am Band
-    pfeil: true,               // Flatterband: gelber Rally-Pfeil daneben (zeigt in den Nebenweg)
-    band: { pfostenAbstand: 3.2, hoehen: [0.95, 0.55], durchhang: 0.07 }, // Warnstangen (m), Bandhöhen, Durchhang
-    reifen: { radius: 0.34, hoehe: 0.25, lagen: [2, 3], hell: 1.7 },       // Altreifen: Grösse, 2-3 übereinander, Helligkeit
-    heu: { laenge: 1.15, tiefe: 0.85, hoehe: 0.6, obenAnteil: 0.55 },      // Strohballen; Anteil mit zweiter Lage
-    zaun: { bockBreite: 2.7, hoehe: 1.0, schief: 4 },                      // Holzböcke: Breite, Höhe, bis so viel Grad schief
+    // Grössen seit M3a.1 deutlich grösser (aus 60-80 m erkennbar)
+    band: { pfostenAbstand: 2.6, hoehe: 1.5, hoehen: [1.38, 0.9], durchhang: 0.06 },      // Warnstangen (Abstand, Höhe), zwei Bänder, Durchhang
+    reifen: { radius: 0.36, hoehe: 0.26, lagen: [5, 5], lagenHinten: [4, 5], weissAnteil: 0.3, hell: 1.7, seiten: 8 }, // Altreifen: vorne 5 hoch (1.3 m), hinten versetzt; Ecken pro Reifen
+    heu: { laenge: 1.2, tiefe: 1.2, hoehe: 1.2, obenAnteil: 0.8 },                     // Strohballen-Würfel; Anteil mit zweiter Lage
+    zaun: { bockBreite: 2.6, hoehe: 1.3, schief: 4 },                                  // Holzböcke: Breite, Höhe, bis so viel Grad schief
+    symbol: { durchmesser: 1.4, ueber: 0.15 },                                         // Verbots-Symbol (rotes Rund, weisser Balken): Grösse, so hoch über der Absperrung
+    chevron: { abstand: 3.4, breite: 0.8, hoehe: 1.0, zumFahrer: 1.0 },               // rot-weisse Chevrons auf der Leitwand: Abstand, Grösse, wie stark zum anfahrenden Fahrer gedreht (0 = zur Kurvenmitte)
+    richtungstafel: { an: true, vorher: 70, breite: 2.6, hoehe: 1.1, unten: 1.0, abstand: 1.0 }, // grosse Tafel so viele Meter vor der Kreuzung (Kurven-Aussenseite)
   },
   // Kreuzungen: Einfahrt in den Nebenweg
   kreuzung: {
     eckRadius: 7,              // abgerundete Ecke zwischen Hauptstrasse und Nebenweg (Meter)
-    fransen: 0.7,              // Asphalt franst so weit (Meter) in den Schotter aus
+    eckEinzug: 0.45,           // die Ecke greift so weit über den Rand des Nebenwegs (deckt dessen Erdpixel zu)
+    fransen: 0.4,              // Asphalt franst so weit (Meter) in den Schotter aus (M3a.1: 0.7 -> 0.4, sauberer)
+    schotterStreifen: 8,       // Schotterband quer in so viele Streifen geteilt (damit es unter dem Asphalt bleibt)
+    unterAsphalt: 0.08,        // so viel (Meter) liegt der Schotter unter dem Asphalt, wo sich beide überlappen
   },
 
   // --- Gelände --------------------------------------------------------
@@ -390,6 +404,7 @@ export const CONFIG = {
     deckkraft: 0.5,            // höchstens so dicht (0..1): gerastert, man sieht immer durch
     mitnehmen: 0.25,           // so viel vom Autotempo nimmt der Staub mit
     streuung: 1.6,             // seitliche Streuung (m/s)
+    driftSeitlich: 1.5,        // beim Driften (ab 25°) wirft jedes Hinterrad den Staub so schnell (m/s) zusätzlich nach aussen (M3a.1)
     aufsteigen: 0.8,           // steigt so schnell auf (m/s)
     bremsen: 1.8,              // so schnell wird der Staub in der Luft langsamer
   },

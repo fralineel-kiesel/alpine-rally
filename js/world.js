@@ -466,13 +466,23 @@ export function baueWelt(szene, strecke, netz) {
   function unterAsphalt(x, z, y) {
     for (const ast of aeste) {
       const w = netz.stummelAbfrage(ast, x, z, 10, qa);
-      if (w && w.s >= -0.2 && w.s <= ast.laenge && Math.abs(w.seite) < ast.halb + 0.15) y = Math.min(y, w.h - 0.06);
+      if (w && w.s >= -0.2 && w.s <= ast.laenge && Math.abs(w.seite) < ast.halb + 0.15) y = Math.min(y, w.h - CONFIG.kreuzung.unterAsphalt);
     }
     return y;
   }
   function unterSchotter(x, z, y) {
     strecke.abfrage(x, z, qk);
     if (qk.abstand < 12 && netz.belag[qk.i] !== 'asphalt' && Math.abs(qk.seite) < netz.halbBei(qk.s) + 0.15) y = Math.min(y, qk.h - 0.06);
+    return y;
+  }
+  // Bankett der Etappe in der abgerundeten Ecke einer Einfahrt: liegt unter dem Schotter der Ecke
+  // (M3a.1, sonst schauen braune Fetzen durch). Auch knapp daneben (die Kante der Ecke ist die
+  // innere Kante des Banketts).
+  function unterAsphaltOderEcke(x, z, y) {
+    y = unterAsphalt(x, z, y);
+    for (const [dx, dz] of [[0, 0], [0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]]) {
+      if (netz.inEcke(x + dx, z + dz)) return y - CONFIG.kreuzung.unterAsphalt;
+    }
     return y;
   }
   const nahKreuzung = (x, z) => aeste.some((ast) => Math.hypot(x - ast.px[0], z - ast.pz[0]) < 75);
@@ -489,7 +499,8 @@ export function baueWelt(szene, strecke, netz) {
           const rx = -weg.tz[i], rz = weg.tx[i];
           for (let c = 0; c < m; c++) {
             const x = weg.px[i] + rx * streifen[c].lat, z = weg.pz[i] + rz * streifen[c].lat;
-            let y = weg.py[i] + streifen[c].dy;
+            // Stummel nahe der Kreuzung: jeder Punkt auf Höhe der Etappe (M3a.1, netz.js)
+            let y = (weg.hoeheBei && i < weg.angleichenBis ? weg.hoeheBei(x, z, i, weg.pyEigen[i]) : weg.py[i]) + streifen[c].dy;
             if (anpassen && nahKreuzung(x, z)) y = anpassen(x, z, y);
             pos.push(x, y, z);
             uv.push(streifen[c].u, weg.v(i) / vLaenge);
@@ -532,28 +543,31 @@ export function baueWelt(szene, strecke, netz) {
   const schotterStuecke = etappeStuecke('schotter');
   if (schotterStuecke.length) {
     const hs = BL.schotter.breite / 2;
-    const geo = baueBand(schotterStuecke.map((st) => ({
-      weg: etappeWeg, ...st, quer: [[{ lat: -hs, dy: 0, u: 0 }, { lat: hs, dy: 0, u: SCHOTTER_U }]], anpassen: unterAsphalt,
-    })), SCHOTTER_LAENGE);
-    // Ecken: Fächer von C aus über die Rundung P1 -> P2 (Textur ohne Fahrspuren)
+    // quer in mehrere Streifen geteilt (M3a.1): So wird der Schotter unter dem Asphalt der
+    // Stummel Punkt für Punkt abgesenkt und schaut nirgends durch den Asphalt (auch nicht aus der Nähe)
+    const K = CONFIG.kreuzung.schotterStreifen;
+    const schotterQuer = [Array.from({ length: K + 1 }, (_, k) => ({ lat: -hs + (2 * hs * k) / K, dy: 0, u: (SCHOTTER_U * k) / K }))];
+    const geo = baueBand(schotterStuecke.map((st) => ({ weg: etappeWeg, ...st, quer: schotterQuer, anpassen: unterAsphalt })), SCHOTTER_LAENGE);
+    // Ecken: Fläche aus netz.js (folgt der gebogenen Kante der Etappe), Textur ohne Fahrspuren
     const pos = Array.from(geo.attributes.position.array), uv = Array.from(geo.attributes.uv.array), idx = Array.from(geo.index.array);
     for (const ast of aeste) {
       const m = ast.muendung;
       if (!m) continue;
       const basis = pos.length / 3;
       const ux = ast.tx[0], uz = ast.tz[0];
-      const ecke = [m.c, ...m.rand];
-      for (const p of ecke) {
+      for (const p of m.punkte) {
         pos.push(p.x, p.h + 0.005, p.z);
         // Textur: quer zum Stummel = u (im Teil ohne Fahrspuren), längs = v
         const quer = Math.abs((p.x - m.c.x) * -uz + (p.z - m.c.z) * ux);
-        uv.push(SCHOTTER_U + (1 - SCHOTTER_U) * Math.min(1, quer / (CONFIG.kreuzung.eckRadius + 1)), ((p.x - m.c.x) * ux + (p.z - m.c.z) * uz) / SCHOTTER_LAENGE);
+        // (2 Pixel Abstand zum Weg-Teil der Textur: sonst mischt der Filter dessen braunen Rand hinein)
+        const u0 = SCHOTTER_U + 2 / 48, u1 = 1 - 1 / 48;
+        uv.push(u0 + (u1 - u0) * Math.min(1, quer / (CONFIG.kreuzung.eckRadius + 1)), ((p.x - m.c.x) * ux + (p.z - m.c.z) * uz) / SCHOTTER_LAENGE);
       }
-      for (let k = 1; k < ecke.length - 1; k++) {
+      for (const [a0, b0, c0] of m.dreiecke) {
         // Drehsinn so, dass die Fläche nach oben schaut
-        const a = ecke[0], b = ecke[k], c = ecke[k + 1];
+        const a = m.punkte[a0], b = m.punkte[b0], c = m.punkte[c0];
         const oben = (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x) < 0;
-        if (oben) idx.push(basis, basis + k, basis + k + 1); else idx.push(basis, basis + k + 1, basis + k);
+        if (oben) idx.push(basis + a0, basis + b0, basis + c0); else idx.push(basis + a0, basis + c0, basis + b0);
       }
     }
     const g2 = new THREE.BufferGeometry();
@@ -573,12 +587,12 @@ export function baueWelt(szene, strecke, netz) {
       if (!m) continue;
       const sd = m.seiteN;
       const quer = sd > 0
-        ? [[{ lat: ast.halb - 0.15, dy: 0, u: 0 }, { lat: ast.halb + fr, dy: 0, u: 1 }]]
-        : [[{ lat: -ast.halb - fr, dy: 0, u: 1 }, { lat: -ast.halb + 0.15, dy: 0, u: 0 }]];
+        ? [[{ lat: ast.halb - 0.3, dy: 0, u: 0 }, { lat: ast.halb + fr, dy: 0, u: 1 }]]
+        : [[{ lat: -ast.halb - fr, dy: 0, u: 1 }, { lat: -ast.halb + 0.3, dy: 0, u: 0 }]];
       teile.push({ weg: ast, von: 1, bis: Math.min(ast.anzahl - 1, Math.round(m.uP1)), quer, anpassen: (x, z, y) => y + 0.004 });
     }
     szene.add(new THREE.Mesh(baueBand(teile, FRANSEN_LAENGE),
-      new THREE.MeshLambertMaterial({ map: fransenTextur(f), alphaTest: 0.5, ...versatz(-1.75, -3.5) })));
+      new THREE.MeshLambertMaterial({ map: fransenTextur(f), alphaTest: 0.5, ...versatz(-2.25, -4.5) })));  // über dem Asphalt (deckt dessen dunklen Rand)
   }
   // Bankett links und rechts (fällt nach aussen leicht ab), Breite je Belag
   {
@@ -588,7 +602,7 @@ export function baueWelt(szene, strecke, netz) {
     ];
     const teile = [];
     for (const [belag, stuecke] of [['asphalt', asphaltStuecke], ['schotter', schotterStuecke]]) {
-      for (const st of stuecke) teile.push({ weg: etappeWeg, ...st, quer: bankQuer(BL[belag].breite / 2), anpassen: unterAsphalt });
+      for (const st of stuecke) teile.push({ weg: etappeWeg, ...st, quer: bankQuer(BL[belag].breite / 2), anpassen: unterAsphaltOderEcke });
     }
     // Stummel: auf der Seite des Nebenwegs erst nach der Einfahrt (dort liegt Schotter)
     for (const w of astWege) {

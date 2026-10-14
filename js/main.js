@@ -74,7 +74,7 @@ const pflanzen = bauePflanzen(szene, strecke, welt);
 // Leitplanken, Holzzäune, Schilder (Meilenstein 2a) – sind auch Hindernisse
 const strassenrand = baueStrassenrand(szene, strecke, welt, pflanzen);
 // Absperrungen auf den Stummeln der Nebenwege (M3a) – Hindernisse wie der Strassenrand
-const absperrungen = baueAbsperrungen(szene, welt);
+const absperrungen = baueAbsperrungen(szene, welt, [...pflanzen.hindernisse, ...strassenrand.hindernisse]);
 strassenrand.hindernisse.push(...absperrungen.hindernisse);
 // Kühe auf den Weiden (Meilenstein 2b) – sind auch Hindernisse
 const kuehe = baueKuehe(szene, strecke, welt, pflanzen, strassenrand);
