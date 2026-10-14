@@ -263,6 +263,22 @@ export function baueWelt(szene, strecke, netz) {
     hsh = Math.imul(hsh ^ (hsh >>> 13), 1274126177);
     return ((hsh >>> 0) / 4294967296);
   };
+  // Wandfuss-Farbe (M3a.3): Zwischen Bankett und Felswand schaute das Gelände als Wiese hervor
+  // (das Bankett fällt nach aussen ab, das Gelände liegt knapp darüber; an den Wand-Enden, wo die
+  // Wand flach ausläuft, sieht man es breiter). Auf der Wandseite wird es darum zu Erde mit
+  // Geröll-Flecken und ein paar dunklen Steinen. Die Strassenseite und die andere Seite bleiben.
+  const cGeroellFuss = new THREE.Color(fw.fussGeroell), cFussTmp = new THREE.Color();
+  const qf = {};
+  function wandFuss(x, z, farbe) {
+    const q = strecke.abfrage(x, z, qf);
+    if (!q.wandSeite || q.abstand > fw.fussBreite[1] + 2) return;
+    const seite = q.seite * q.wandSeite; // + = zur Wand hin
+    const w = glatt(0.08, 0.35, q.wandStaerke) * glatt(1, 3, seite) * (1 - glatt(fw.fussBreite[0], fw.fussBreite[1], seite));
+    if (w <= 0) return;
+    cFussTmp.copy(cErde).lerp(cGeroellFuss, glatt(0.42, 0.58, fbm(x / 7, z / 7, 31)));
+    cFussTmp.lerp(cFelsD, glatt(0.6, 0.68, fbm(x / 4, z / 4, 57)) * 0.8); // dunkle Steine
+    farbe.lerp(cFussTmp, w);
+  }
   let anzahlPunkte = 0;
   for (let kz = 0; kz < KZ; kz++) {
     for (let kx = 0; kx < KX; kx++) {
@@ -288,6 +304,8 @@ export function baueWelt(szene, strecke, netz) {
           tmp.copy(cGras).lerp(cGrasD, glatt(0.45, 0.62, flecken));
           if (ny < 0.86) tmp.lerp(cErde, glatt(0.86, 0.78, ny) * 0.8);
           if (ny < 0.76) tmp.copy(fbm(x / 9, z / 9, 7) > 0.5 ? cFels : cFelsD).lerp(cErde, glatt(0.62, 0.76, ny) * 0.5);
+          // Felswand (M3a.3): am Wandfuss und hinter der Wand kein Gras, sondern Erde, Geröll und Fels
+          if (fw.fussFarben && feld(feldAbstand, x, z) < fw.fussBreite[1] + 12) wandFuss(x, z, tmp);
           // Fernwald: ab ca. 150 m neben der Strasse (dort stehen kaum noch Sprites) Wald dunkel,
           // Wiese etwas heller, ein paar Geröllflecken. Weicher Übergang, keine Kante.
           const dStrasse = feld(feldAbstand, x, z);
@@ -655,6 +673,7 @@ export function baueWelt(szene, strecke, netz) {
     szene.add(m);
   }
 
+  let wandQuer = null; // Querschnitte der Felswand (unten gefüllt)
   // ---------------------------------------------------------------
   // Felswand: zerklüfteter Block neben der Strasse
   // ---------------------------------------------------------------
@@ -664,6 +683,8 @@ export function baueWelt(szene, strecke, netz) {
     const cF = new THREE.Color(f.fels), cD = new THREE.Color(f.felsDunkel);
     let reiheVorher = -1;
     const PRO = 5; // Punkte pro Querschnitt
+    // Querschnitte merken (M3a.3): Daran prüft die Kollision die echte, sichtbare Wandfläche
+    wandQuer = new Float32Array(strecke.anzahl * PRO * 2).fill(NaN);
     for (let i = 0; i < strecke.anzahl; i += 2) {
       const ws = strecke.wandSeite[i];
       if (!ws) { reiheVorher = -1; continue; }
@@ -679,6 +700,7 @@ export function baueWelt(szene, strecke, netz) {
       ];
       const ox = -strecke.tz[i] * ws, oz = strecke.tx[i] * ws; // nach aussen (zur Wand)
       const basisIdx = pos.length / 3;
+      querschnitt.forEach(([l, y], c) => { wandQuer[(i * PRO + c) * 2] = l; wandQuer[(i * PRO + c) * 2 + 1] = y; });
       for (const [l, y] of querschnitt) {
         pos.push(strecke.px[i] + ox * l, strecke.py[i] + y, strecke.pz[i] + oz * l);
         const c = (rndW() < 0.5 ? cF : cD).clone().multiplyScalar(0.9 + rndW() * 0.2);
@@ -700,9 +722,40 @@ export function baueWelt(szene, strecke, netz) {
       geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       geo.setIndex(idx);
       const mat = new THREE.MeshLambertMaterial({ vertexColors: true, map: koernung, flatShading: true, side: THREE.DoubleSide });
-      szene.add(new THREE.Mesh(geo, mat));
+      welt.felswandMesh = new THREE.Mesh(geo, mat);
+      szene.add(welt.felswandMesh);
     }
   }
+
+  // Sichtbare Felswand-Fläche (M3a.3): Wie weit neben der Strassenmitte steht die Wand in der
+  // Höhe y (Meter über der Strasse)? q = Ergebnis von strecke.abfrage für den Punkt, um den es geht.
+  // Ergebnis: Abstand von der Mitte auf der Wandseite, oder Infinity (dort keine Wand in dieser Höhe).
+  // Rechnet mit denselben Querschnitten und Dreiecken wie das Mesh (alle 2 m ein Querschnitt;
+  // dazwischen hat jedes Viereck eine schräge Kante, darum kommt je Feld ein Punkt dazu).
+  const wandSchritt = strecke.s[1] - strecke.s[0];
+  const qm = new Float32Array(18);
+  welt.wandKante = function (q, y) {
+    if (!wandQuer || !q.wandSeite) return Infinity;
+    const ic = begrenze(q.i + (q.s - strecke.s[q.i]) / wandSchritt, 0, strecke.anzahl - 1);
+    const r0 = Math.floor(ic / 2) * 2, r1 = Math.min(r0 + 2, strecke.anzahl - 1), f = (ic - r0) / 2;
+    if (Number.isNaN(wandQuer[r0 * 10]) || (f > 0 && Number.isNaN(wandQuer[r1 * 10]))) return Infinity;
+    if (strecke.wandSeite[r0] !== q.wandSeite || strecke.wandSeite[r1] !== q.wandSeite) return Infinity;
+    // Querschnitt an dieser Stelle: abwechselnd Punkt auf der Längskante und auf der schrägen Kante
+    const A = r0 * 10, B = r1 * 10;
+    for (let c = 0; c < 5; c++) {
+      for (let k = 0; k < 2; k++) {
+        qm[c * 4 + k] = wandQuer[A + c * 2 + k] + (wandQuer[B + c * 2 + k] - wandQuer[A + c * 2 + k]) * f;
+        if (c < 4) qm[c * 4 + 2 + k] = wandQuer[A + c * 2 + 2 + k] * (1 - f) + wandQuer[B + c * 2 + k] * f;
+      }
+    }
+    if (qm[1] >= y) return qm[0];
+    // von der Strasse her: erste Stelle, wo die Wand die Höhe y erreicht
+    for (let c = 0; c < 8; c++) {
+      const la = qm[c * 2], ya = qm[c * 2 + 1], lb = qm[c * 2 + 2], yb = qm[c * 2 + 3];
+      if (ya < y && yb >= y) return la + ((lb - la) * (y - ya)) / (yb - ya);
+    }
+    return Infinity;
+  };
 
   // ---------------------------------------------------------------
   // Hintergrundberge: Kranz aus Low-Poly-Bergen mit Schneekappen

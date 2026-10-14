@@ -201,14 +201,14 @@ function physikSchritt(dt, e) {
   // Begrenzungen: Felswand, Abhang, zu weit weg
   const q2 = strecke.abfrage(physik.x, physik.z, qAuto);
   const rx = -q2.tz, rz = q2.tx; // rechts
-  if (q2.wandSeite && q2.wandStaerke > 0.3) {
-    const ws = q2.wandSeite;
-    const aufWandSeite = Math.sign(q2.seite) === ws;
-    const ueber = Math.abs(q2.seite) - (aufWandSeite ? g.wandGrenze : g.abhangGrenze);
-    if (ueber > 0) {
-      const r = aufWandSeite ? ws : -ws;
-      physik.anGrenze(rx * r, rz * r, ueber);
-    }
+  if (q2.wandSeite && Math.sign(q2.seite) === q2.wandSeite) {
+    // Felswand (seit M3a.3): die ganze Karosserie gegen die sichtbare Wandfläche
+    const ueber = wandEindringen(q2);
+    if (ueber > 0) physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, ueber);
+  } else if (q2.wandSeite && q2.wandStaerke > 0.3) {
+    // Abhang auf der anderen Seite
+    const ueber = Math.abs(q2.seite) - g.abhangGrenze;
+    if (ueber > 0) physik.anGrenze(-rx * q2.wandSeite, -rz * q2.wandSeite, ueber);
   }
   if (q2.abstand > g.maxAbstand) {
     const p = strecke.punktBei(strecke.s[q2.i]);
@@ -260,6 +260,33 @@ function physikSchritt(dt, e) {
   rennen.letztesS = s;
 }
 
+// Wie tief steckt die Karosserie in der Felswand? (Meter quer zur Strasse, 0 = gar nicht)
+// Geprüft werden Punkte rundherum am Umriss (alle gut 0.5 m), jeder gegen die sichtbare
+// Wandfläche an seiner Stelle, knapp über dem Boden (unten steht die Wand am weitesten vor).
+const qWand = {};
+function wandEindringen(qMitte) {
+  const h = CONFIG.grenze.wandHuelle;
+  const sx = Math.sin(physik.richtung), sz = Math.cos(physik.richtung);
+  // grob: Reicht das Auto überhaupt bis in die Nähe der Wand?
+  const reicht = Math.abs(qMitte.seite) + Math.hypot(h.laenge, h.breite) / 2;
+  if (reicht < CONFIG.felswand.abstand - 0.5) return 0;
+  let max = 0;
+  for (let k = 0; k < WAND_UMRISS.length; k += 2) {
+    const a = WAND_UMRISS[k] * h.laenge / 2, b = WAND_UMRISS[k + 1] * h.breite / 2;
+    const x = physik.x + sx * a + sz * b, z = physik.z + sz * a - sx * b;
+    const q = strecke.abfrage(x, z, qWand);
+    if (q.wandSeite !== qMitte.wandSeite || Math.sign(q.seite) !== q.wandSeite || Math.abs(q.i - qMitte.i) > 20) continue;
+    const boden = welt.bodenBei(x, z, q).h;
+    const tief = Math.abs(q.seite) - welt.wandKante(q, boden - q.h + h.ueberBoden);
+    if (tief > max) max = tief;
+  }
+  return max;
+}
+// Punkte am Umriss (-1..1 längs, -1..1 quer): Seiten 9 Punkte, Front und Heck je 3 dazu
+const WAND_UMRISS = [];
+for (let k = 0; k <= 8; k++) WAND_UMRISS.push(-1 + k / 4, -1, -1 + k / 4, 1);
+for (const b of [-0.5, 0, 0.5]) WAND_UMRISS.push(-1, b, 1, b);
+
 // --- Auto-Optik: Position, Neigung zum Gelände, Rollen in Kurven ---
 function autoZeichnen(dt, wegStrecke) {
   const x = physik.x, z = physik.z, yaw = physik.richtung;
@@ -305,10 +332,12 @@ function kameraFuehren(dt) {
   kam.yaw += winkelNorm(ziel - kam.yaw) * (1 - Math.exp(-c.nachfuehren * dt));
   kameraZiel();
   kam.pos.lerp(kam.ziel, 1 - Math.exp(-c.positionGlaetten * dt));
-  // nicht in die Felswand
+  // nicht in die Felswand: höchstens bis 0.8 m vor den Wandfuss und (seit M3a.3) mit
+  // kamera.wandAbstand Luft zur sichtbaren Wandfläche in Kamerahöhe
   const q = strecke.abfrage(kam.pos.x, kam.pos.z, qKam);
-  if (q.wandSeite && q.wandStaerke > 0.2 && Math.sign(q.seite) === q.wandSeite) {
-    const max = CONFIG.felswand.abstand - 0.8;
+  if (q.wandSeite && Math.sign(q.seite) === q.wandSeite) {
+    let max = welt.wandKante(q, kam.pos.y - q.h - c.wandAbstand) - c.wandAbstand;
+    if (q.wandStaerke > 0.2) max = Math.min(max, CONFIG.felswand.abstand - 0.8);
     const ueber = Math.abs(q.seite) - max;
     if (ueber > 0) {
       kam.pos.x -= -q.tz * q.wandSeite * ueber;
