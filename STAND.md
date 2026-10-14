@@ -1,12 +1,13 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 3a.1 fertig** – Nebenweg-Korrektur nach Linos Feedback: saubere Kreuzungen (kein
-Schotter mehr auf dem Asphalt), keine Stufe mehr an der Einmündung, Staub auf beiden Seiten, grosse
-gebogene Absperrungen mit Verbots-Symbol, Chevrons und Richtungstafel, deutlich weniger Bäume am Nebenweg.
-Davor: 3a (erster Nebenweg: bei 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus
-aus dem Gras), 2b (Kühe, Büsche, Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a
-(Leitplanken, Holzzäune, Schilder), 1.3b (kein Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1
-(harter Aufprall) und 1 (Etappe „Passstrasse“). Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
+Aktuell: **Meilenstein 3a.2 fertig** – Fahrphysik-Feinschliff nach Linos Test der ganzen Etappe: Wer die
+Handbremse lange hält, wird langsamer und steht nach ein paar Sekunden (statt endlos im Kreis zu fahren); nach
+dem Lenken bei hohem Tempo fährt das Auto deutlich schneller wieder geradeaus.
+Davor: 3a.1 (Nebenweg-Korrektur: saubere Kreuzungen, grosse gebogene Absperrungen), 3a (erster Nebenweg: bei
+800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
+Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
+Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
+Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 ## Steuerung
 
@@ -24,7 +25,134 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 3a.1: Nebenweg-Korrektur (5 Punkte) ✅
+## Meilenstein 3a.2: Fahrphysik-Feinschliff (Handbremse, Geradeauslauf) ✅
+
+### Was war das Problem – und was wurde gemacht?
+
+**1. Mit gehaltener Handbremse fuhr das Auto endlos im Kreis**
+- *Ursache (gemessen):* Drei Dinge zusammen.
+  1. Der Motor schob mit gezogener Handbremse **voll weiter**. Im 1. Gang sind das 8 m/s² Schub, die Handbremse
+     bremste nur mit 3.5 m/s². Mit Gas hielt sich das Auto darum ewig bei ca. **18–25 km/h im Kreis**.
+  2. Die Handbremse bremste nur in Längsrichtung. Rutschte das Auto quer, bremste sie fast gar nicht mehr.
+  3. Ohne Gas war es umgekehrt: Sobald sich das Auto quer stellte (Dreher), hielt es **schlagartig** an
+     (von 60 auf 10 km/h in 0.1 s). Ein alter Effekt aus der Langsam-Lenkung: Unter 18 km/h Längstempo wurde
+     das seitliche Rutschen einfach gelöscht – auch wenn das Auto noch mit 60 km/h quer rutschte.
+- *Lösung:*
+  - Je länger man die Handbremse hält, desto stärker bremst sie (von 3.5 auf 5 m/s² in 1.2 s) und desto weniger
+    Antrieb kommt an (nach 1.2 s nur noch 30 %). **Kurz ziehen bleibt fast wie vorher.**
+  - Die Handbremse bremst jetzt in jede Rutschrichtung, auch quer.
+  - Dreher: Rutscht das Auto schnell quer, rutscht es mit der Reibung der Reifen weich aus, statt schlagartig
+    stehen zu bleiben.
+
+**2. Nach dem Lenken bei hohem Tempo dauerte es zu lange, bis das Auto geradeaus fuhr**
+- *Ursache (gemessen):* Nicht die Lenkung selbst – der Radeinschlag ist nach dem Loslassen nach 0.17 s
+  (Tastatur) bzw. sofort (Gamepad) wieder gerade. Es lag am **Auto**: Es dreht nach dem Loslassen noch weiter
+  und schiebt seitlich (der Schwimmwinkel wächst nach dem Loslassen sogar noch von 4° auf über 6°), dann pendelt
+  es leicht zurück. Drehen und seitliches Schieben klangen gemeinsam nur langsam ab (zu wenig Dämpfung).
+- *Lösung:* **Geradeauslauf-Hilfe**: Steht die Lenkung (fast) gerade und das Auto rutscht nicht, hört es schnell
+  auf zu drehen, und die Fahrtrichtung dreht zur Blickrichtung (das Tempo bleibt dabei gleich). Die Hilfe wirkt
+  nur, wenn das Auto stärker dreht, als die Räder vorgeben – **beim Einlenken also nicht**. Einlenkgefühl,
+  Kurvenfahrt und Lenkung im Schritttempo bleiben wie vorher. Nicht bei Handbremse und nicht im Drift (ab 8°
+  Schwimmwinkel schwächer, ab 15° ganz aus): Ein Drift schiebt also weiter wie bisher. Auf Schotter wirkt sie
+  schwächer (40 %), dort schiebt das Auto etwas länger.
+
+### Zahlen vorher → nachher (`node tools/handbremse-test.mjs`, neu)
+
+Handbremse lange halten, ab 80 km/h, voll lenken:
+
+| Untergrund, Gas | Tempo nach 1 / 2 / 3 / 5 s vorher | nachher | unter 10 km/h vorher → nachher |
+|---|---|---|---|
+| Asphalt, ohne Gas | 58 / 2 / 0 / 0 km/h (schlagartig) | 56 / 24 / 0 / 0 km/h | 1.55 s → 2.47 s |
+| Asphalt, mit Gas | 77 / 11 / 18 / **17** km/h (kreist ewig) | 70 / 41 / 12 / 1 km/h | 1.63 s, danach wieder 18 km/h → 3.07 s |
+| Schotter, ohne Gas | 58 / 3 / 0 / 0 km/h (schlagartig) | 56 / 31 / 9 / 0 km/h | 1.62 s → 2.94 s |
+| Schotter, mit Gas | 78 / 11 / 16 / **17** km/h (kreist ewig) | 70 / 48 / 27 / 0 km/h | 1.74 s, danach wieder 17 km/h → 3.82 s |
+
+Stärkstes Abbremsen (über 15 km/h): vorher bis **310 m/s²** (= Ruck), nachher höchstens 9.4 m/s².
+
+Handbremse kurz ziehen (Tempoverlust gegenüber gleichem Lenken ohne Handbremse, 1.5 s nach dem Ziehen):
+0.3 s gezogen vorher −1 bis −2 km/h, nachher −2 bis −3 km/h; 0.5 s gezogen vorher −10 bis −13 km/h, nachher −8
+bis −14 km/h (das meiste davon kommt vom Quer-Rutschen, nicht von der Handbremse).
+
+Geradeaus nach dem Loslassen (0.5 s voll einlenken, loslassen; „gerade“ = Drehen unter 1 °/s und Schwimmwinkel
+unter 0.5°, ab Loslassen der Taste gezählt):
+
+| | Tastatur vorher → nachher | Gamepad vorher → nachher |
+|---|---|---|
+| Asphalt 60 km/h | 0.86 s → **0.46 s** | 0.73 s → 0.31 s |
+| Asphalt 120 km/h | 1.47 s → **0.57 s** | 1.36 s → 0.42 s |
+| Asphalt 180 km/h | 2.35 s → **0.62 s** | 2.28 s → 0.47 s |
+| Schotter 60 km/h | 0.93 s → 0.62 s | 0.76 s → 0.47 s |
+| Schotter 120 km/h | 2.81 s → 0.93 s | 2.70 s → 0.76 s |
+| Schotter 180 km/h | 3.50 s → 1.05 s | 3.50 s → 0.92 s |
+
+Drift mit Handbremse (0.6 s), danach alles los: Schwimmwinkel 0.3 s danach 19.6° (Asphalt) bzw. 20.1° (Schotter)
+– genau wie ohne Geradeauslauf-Hilfe.
+
+### Wo man schrauben kann (`js/config.js`, Block `auto`)
+
+| Wert | Was |
+|---|---|
+| `handbremseBremse` | Bremswirkung gleich nach dem Ziehen (3.5 m/s², wie bisher) – bestimmt, wie viel kurzes Ziehen kostet |
+| `handbremseBremseLang` | Bremswirkung lange gehalten (5 m/s²). Höher = steht schneller |
+| `handbremseAufbau` | nach so vielen Sekunden gilt der Lang-Wert (1.2 s) |
+| `handbremseAntrieb` | so viel Antrieb kommt bei lange gehaltener Handbremse noch an (0.3; 1 = wie vorher, kreist wieder) |
+| `geradeauslauf.gier` | wie schnell das Auto aufhört nachzudrehen (8; 0 = aus, wie vorher) |
+| `geradeauslauf.schwimm` | wie schnell das seitliche Schieben verschwindet (4) |
+| `geradeauslauf.lenkBis` | ab so viel Lenkung wirkt die Hilfe nicht mehr (0.15) |
+| `geradeauslauf.rutschAb` / `rutschBis` | ab diesem Schwimmwinkel (8° / 15°) gilt es als Rutschen, Hilfe schwächer / aus |
+| `dreher.abSeit`, `dreher.drehBremse` | ab welchem Quer-Tempo ein Dreher weich ausrutscht, wie schnell er aufhört zu drehen |
+| `untergrund.schotter.geradeaus` | Geradeauslauf-Hilfe auf Schotter (0.4; 0 = schiebt wie vorher lange weiter) |
+
+### So testest du
+
+1. **Handbremse halten**: Auf der Geraden mit ca. 80 km/h Handbremse ziehen, voll lenken und halten (mit und ohne
+   Gas): Das Auto dreht sich, wird spürbar langsamer und steht nach ca. 2.5–4 s. Kein endloses Kreisen mehr,
+   kein schlagartiges Anhalten.
+2. **Handbremse antippen** vor einer Kehre (unter 0.5 s): Das Heck kommt wie bisher, das Tempo bleibt grösstenteils.
+3. **Geradeauslauf**: Bei 120–180 km/h kurz einlenken und loslassen: Das Auto ist nach gut einer halben Sekunde
+   wieder gerade, kein Nachdrehen und Pendeln mehr. Einlenken soll sich genau gleich anfühlen wie vorher.
+4. **Drift**: Mit Handbremse quer stellen und Lenkung loslassen – das Auto schiebt weiter quer wie bisher.
+5. **Schotter** (Nebenweg 800–1020 m): Nach dem Lenken schiebt das Auto etwas länger als auf Asphalt.
+
+### Selbst getestet
+
+- **`node tools/handbremse-test.mjs`** (neu): alle Prüfungen erfüllt (Zahlen oben). Mit `--wurzel <ordner>` misst er
+  eine alte Version (so sind die Vorher-Zahlen entstanden).
+- **`lenk-test`** und **`getriebe-test`**: Ausgabe **Zeichen für Zeichen gleich** wie vorher.
+- **Testfahrer**: 2:43.29 / 2:27.62 / 2:18.27 (vorher 2:43.28 / 2:27.63 / 2:18.16, im Auftrag genannt 2:43.25 /
+  2:27.63 / 2:18.23): Abweichung höchstens 0.11 s, keine Aufpralle.
+- **`aufprall-test`**: alle Prüfungen erfüllt. Drei Messwerte haben sich leicht verändert, weil das Auto nach einem
+  Streifschuss jetzt schneller wieder geradeaus fährt: Streifen an einem Baum mit 1.2 m Versatz: Drehung 17.0° →
+  13.2°, seitlich 8.1 → 6.7 m; Stamm schräg 45°: 1 s danach 5 → 4 km/h; Stamm schräg 75°: 1 s danach 70 → 66 km/h.
+  Ohne Geradeauslauf (`gier: 0`) ist die Ausgabe genau gleich wie vorher.
+- `strassenrand-test`, `kuh-test`, `nebenweg-test`, `gras-test`: alle Prüfungen erfüllt, keine Fehler in der
+  Browser-Konsole.
+
+### Ehrlich beurteilt
+
+- **Handbremse**: Aus 80 km/h mit Vollausschlag steht das Auto auf Asphalt nach ca. 2.5–3 s, auf Schotter nach
+  3–4 s – mit Vollausschlag dreht es sich dabei fast immer ganz quer (das bremst am meisten). Ohne Gas also
+  etwas schneller als Linos Schätzung von 3–5 s. Wer es länger rutschen lassen will: `handbremseBremseLang`
+  senken (z. B. 4).
+- **Kurz ziehen**: 0.3 s kostet 2–3 km/h (vorher 1–2 km/h), bleibt also fast wie vorher.
+- **Geradeauslauf**: Rein gemessen klar besser (120 km/h: 1.47 → 0.57 s). Wie es sich anfühlt, kann ich nicht
+  fahren – möglich, dass es bei hohem Tempo jetzt etwas „auf Schienen“ wirkt. Dann `geradeauslauf.gier` und
+  `schwimm` etwas senken (z. B. 5 und 2.5).
+
+### Bekannte Probleme
+
+- Mit Vollausschlag und Handbremse dreht sich das Auto sehr leicht ganz herum (war vorher auch so). Danach
+  steht es meistens quer oder leicht rückwärts.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Bei einem ganzen Dreher (Auto rutscht rückwärts) rechnet die Fahrphysik nur grob: kein echtes Reifenmodell
+  für Rückwärts-Rutschen. Könnte man in M5 (Feinschliff Fahrphysik) verbessern.
+- Handbremse am Gamepad analog (halb ziehen = halbe Wirkung), falls Lino einen Controller mit analoger Taste nutzt.
+
+---
+
+## Meilenstein 3a.1: Nebenweg-Korrektur (5 Punkte) ✅ (Verlauf, Stand damals)
 
 ### Was war das Problem – und was wurde gemacht?
 

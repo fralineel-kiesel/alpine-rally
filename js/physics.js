@@ -36,6 +36,7 @@ export class Fahrphysik {
     this.beschlSeit = 0;      // für Karosserie-Rollen
     this.driftWinkel = 0;     // Winkel zwischen Blick- und Fahrtrichtung (Grad)
     this.stabAnteil = 1;      // Stabilitätshilfe (0 während Handbremse)
+    this.hbZeit = 0;          // so lange (s) ist die Handbremse schon gezogen (M3a.2)
   }
 
   get tempo() {
@@ -45,7 +46,8 @@ export class Fahrphysik {
   // Ein Physik-Schritt.
   // eingabe: { gas 0..1, bremse 0..1, lenkung -1..1 (+ = rechts), handbremse true/false }
   // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus), rueckwaerts (Faktor Rückwärtsgang),
-  //           heck (Faktor Grip hinten), stabilitaet (Faktor Stabilitätshilfe) – beide seit M3a, fehlen = 1 }
+  //           heck (Faktor Grip hinten), stabilitaet (Faktor Stabilitätshilfe) – beide seit M3a, fehlen = 1,
+  //           geradeaus (Faktor Geradeauslauf, seit M3a.2, fehlt = 1) }
   // motor:   vom Getriebe (getriebe.js): { beschl: Antrieb vorwärts (m/s²), motorbremse (m/s²) }
   schritt(dt, eingabe, boden, motor) {
     const c = CONFIG.auto;
@@ -90,6 +92,11 @@ export class Fahrphysik {
     const steif = c.reifenSteifigkeit * last;
     const kraftV = begrenze(-steif * schraeglaufV, -gripV * last, gripV * last);
     let kraftH = begrenze(-steif * schraeglaufH, -gripH * last, gripH * last);
+    // Handbremse lange gehalten (M3a.2): je länger gezogen, desto stärker bremsen die blockierten
+    // Hinterräder und desto weniger Antrieb kommt an (0 = gerade gezogen, 1 = voll nach handbremseAufbau)
+    this.hbZeit = eingabe.handbremse ? this.hbZeit + dt : 0;
+    const hbLang = eingabe.handbremse ? glatt(0, c.handbremseAufbau, this.hbZeit) : 0;
+
     if (eingabe.handbremse && vVor > 0.5) {
       // Handbremse: Hinterräder blockieren und rutschen. Sie halten seitlich
       // kaum noch, solange das Heck nicht schon quer steht -> das Heck kommt.
@@ -102,7 +109,8 @@ export class Fahrphysik {
 
     // --- Längs: Antrieb ---
     let antrieb = 0;
-    if (eingabe.gas > 0 && vVor > -0.5) antrieb += motor.beschl;
+    // (mit lange gehaltener Handbremse kommt nur noch handbremseAntrieb an: die Hinterräder stehen)
+    if (eingabe.gas > 0 && vVor > -0.5) antrieb += motor.beschl * (1 - (1 - c.handbremseAntrieb) * hbLang);
     if (eingabe.bremse > 0 && vVor <= 0.5 && eingabe.gas < 0.1) {
       // rückwärts fahren
       // (boden.rueckwaerts: Faktor je Untergrund, auf Gras und Bankett stärker als auf Asphalt)
@@ -120,7 +128,17 @@ export class Fahrphysik {
     widerstand += boden.rollen + boden.rollenTempo * Math.abs(vVor);
     if (eingabe.bremse > 0 && vVor > 0.5) widerstand += eingabe.bremse * c.bremse * Math.min(1, boden.grip + 0.2);
     if (eingabe.gas > 0 && vVor < -0.5) widerstand += eingabe.gas * c.bremse * 0.6;
-    if (eingabe.handbremse && Math.abs(vVor) > 0.3) widerstand += c.handbremseBremse * Math.abs(Math.cos(schraeglaufH));
+    // Handbremse: die blockierten Hinterräder rutschen und bremsen das Auto entlang seiner Fahrtrichtung,
+    // egal ob es gerade oder quer rutscht (vorher nur längs: quer im Kreis rutschte es fast ungebremst).
+    // Wert wächst mit der Haltezeit von handbremseBremse auf handbremseBremseLang (mal Grip: Schotter länger).
+    let hbBrems = 0, hbV = 0;
+    if (eingabe.handbremse) {
+      hbV = Math.hypot(vVor, vSeit);
+      if (hbV > 0.3) {
+        hbBrems = (c.handbremseBremse + (c.handbremseBremseLang - c.handbremseBremse) * hbLang) * Math.min(1, boden.grip + 0.2);
+        widerstand += hbBrems * Math.abs(vVor) / hbV;
+      }
+    }
 
     // --- Beschleunigungen im Auto-Koordinatensystem ---
     const quer = kraftV * Math.cos(delta) + kraftH;
@@ -144,14 +162,47 @@ export class Fahrphysik {
     let vSeitNeu = vSeit + quer * dt;
     let drehrate = this.drehrate + drehBeschl * dt;
 
+    // --- Geradeauslauf (M3a.2): Lenkrad gerade und das Auto rutscht nicht -> schnell wieder geradeaus ---
+    // Vorher drehte das Auto nach dem Loslassen noch lange nach und schob seitlich (bei 120 km/h ca. 1.5 s).
+    // Wirkt nur, wenn das Auto stärker dreht, als die Räder vorgeben (beim Einlenken also nie),
+    // und nicht bei Handbremse oder im Drift (grosser Schwimmwinkel); auf Schotter schwächer (boden.geradeaus).
+    const gl = c.geradeauslauf;
+    if (gl.gier > 0 && vVorNeu > 0 && !eingabe.handbremse) {
+      const w = (1 - glatt(0, gl.lenkBis, Math.abs(eingabe.lenkung))) * this.stabAnteil * (boden.geradeaus ?? 1)
+        * (1 - glatt(gl.rutschAb, gl.rutschBis, Math.abs(schraeg) / GRAD)) * Math.min(1, vVorNeu / 10);
+      if (w > 0) {
+        // Drehen auf das abbremsen, was der Lenkeinschlag vorgibt
+        const drehRad = (vVorNeu * Math.tan(delta)) / L;
+        if ((drehrate - drehRad) * drehrate > 0) drehrate = drehRad + (drehrate - drehRad) * Math.exp(-gl.gier * w * dt);
+        // Fahrtrichtung zur Blickrichtung drehen (Tempo bleibt gleich)
+        const v = Math.hypot(vVorNeu, vSeitNeu);
+        const beta = Math.atan2(vSeitNeu, vVorNeu) * Math.exp(-gl.schwimm * w * dt);
+        vVorNeu = v * Math.cos(beta);
+        vSeitNeu = v * Math.sin(beta);
+      }
+    }
+
     // --- Sehr langsam: einfache Lenkgeometrie statt Reifenmodell (ruhig, kein Zittern) ---
     const k = vVorNeu > 0 ? glatt(1.0, 5.0, vVorNeu) : 0;
     const drehKinematisch = (vVorNeu * Math.tan(delta)) / L;
-    drehrate = drehKinematisch + (drehrate - drehKinematisch) * k;
-    vSeitNeu *= k;
-
+    let drehNormal = drehKinematisch + (drehrate - drehKinematisch) * k;
+    let vSeitNormal = vSeitNeu * k;
     // Rückwärts: auf Rückwärtstempo begrenzen
-    if (vVorNeu < -c.rueckwaertsTempo) vVorNeu = -c.rueckwaertsTempo;
+    const vVorNormal = Math.max(vVorNeu, -c.rueckwaertsTempo);
+    // Dreher (M3a.2): rutscht das Auto schnell quer (z. B. mit Handbremse quergestellt), gilt oben
+    // nicht. Vorher hielt es dann schlagartig an (von 60 auf 10 km/h in 0.1 s). Jetzt rutscht es
+    // mit der Reibung der Reifen aus und hört höchstens mit dreher.drehBremse auf zu drehen.
+    const dreher = glatt(c.dreher.abSeit * 0.5, c.dreher.abSeit, Math.abs(vSeitNeu));
+    if (dreher > 0) {
+      const dw = c.dreher.drehBremse * dt;
+      drehNormal += (begrenze(drehNormal, drehrate - dw, drehrate + dw) - drehNormal) * dreher;
+      vSeitNormal += (vSeitNeu - vSeitNormal) * dreher;
+      vVorNeu = vVorNormal + (vVorNeu - vVorNormal) * dreher;
+    } else {
+      vVorNeu = vVorNormal;
+    }
+    drehrate = drehNormal;
+    vSeitNeu = vSeitNormal;
 
     this.beschlVor = (vVorNeu - vVor) / dt;
     this.beschlSeit = quer * k;
