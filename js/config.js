@@ -25,6 +25,9 @@ export const CONFIG = {
     mittellinie: '#c9c9bd',    // dezente Mittellinie
     schotter: '#ada48f',       // Schotter-Nebenweg: helles Graubeige (seit M3a)
     schotterSpur: '#968d7a',   // ... festgefahrene Fahrspuren, etwas dunkler
+    wiesenweg: '#7c6243',      // Wiesenweg (M3b): erdbraun ...
+    wiesenwegSpur: '#6a523a',  // ... die zwei festgefahrenen Fahrspuren, dunkler
+    wiesenwegGras: '#4e9a2c',  // ... Gras in der Mitte und am Rand (wie farben.gras)
     bergFels: '#596070',         // Hintergrundberge, Fels
     bergFuss: '#3f6a30',       // Hintergrundberge, bewaldeter Fuss (passt zum fernen Gelände)
     schnee: '#f2f5fa',         // Schneekappen
@@ -72,13 +75,14 @@ export const CONFIG = {
   belaege: {
     asphalt: { breite: 7, mittellinie: true },     // wie bisher
     schotter: { breite: 6.2, mittellinie: false }, // Schotter-Nebenweg: etwas schmaler, kein Mittelstrich
+    wiesenweg: { breite: 5.2, mittellinie: false, grasRand: true }, // M3b: Feldweg über die Wiese, schmaler; Rand grasig statt Erde
   },
 
   // --- Nebenwege (Meilenstein 3a) ---------------------------------------
   // Die Etappe biegt von der Hauptstrasse auf einen Nebenweg ab und mündet später wieder ein.
   // Die Hauptstrasse läuft an beiden Stellen als Stummel weiter (abgesperrt, Ende versteckt).
   // Die Stützpunkte des Nebenwegs stehen in js/track.js (gerechnet mit tools/nebenweg-bogen.mjs).
-  // Weiterer Nebenweg (M3b): neuer Eintrag hier + Stützpunkte, sonst nichts.
+  // Weiterer Nebenweg: neuer Eintrag hier + Stützpunkte (Anleitung in STAND.md, Meilenstein 3b).
   nebenwege: [
     {
       name: 'Talschleife',
@@ -90,6 +94,45 @@ export const CONFIG = {
       // Form der Stummel (fehlt etwas, gilt der Wert aus "stummel" unten)
       stummelAbzweig: { kurve: -75, radius: 50, seitenschutz: 'zaun' },
       stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'planke' },
+    },
+    {
+      // M3b: nach den Kehren, ca. 415 m: biegt nach rechts ab (Talseite), lange Gerade über die Alp, kommt von links
+      // (Bergseite) zurück. Die Felswand hört davor auf und beginnt danach wieder.
+      name: 'Almweg',
+      abzweig: 1985.6,         // Werte laut tools/nebenweg-bogen.mjs (Ausgabe "Streckenmeter")
+      einmuendung: 2400.8,
+      belag: 'schotter',
+      // Absperrungen ohne Angabe: reihum (absperrung.reihenfolge), hier Strohballen (heu) und Holzböcke (zaun)
+      // Waldrand (M3b, sonst wie nebenwegWald): Alp und Wiese, nur lockere Gruppen mit viel Wiese dazwischen.
+      // Dichter nur, wo man sonst abkürzen könnte (geprüft mit tools/nebenweg-wald.mjs)
+      wald: {
+        innenAbKruemmung: 1 / 130, // auch die weiten Kurven (Radius bis 130 m) haben eine dichte Innenseite
+        innen: { abstand: [6.2, 6.9], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [9, 12] },
+        aussen: { abstand: [8, 15], gruppe: [1, 3], schritt: [2, 3.5], luecke: [16, 38], zweiteReihe: 0.15, zweiteAbstand: [11, 16] },
+      },
+      // Kreuzungen mit flacherem Winkel (40-45°) als bei der Talschleife: Etappe und Stummel liegen länger
+      // übereinander, darum liegt der Stummel länger genau auf der Höhe der Etappe (hoeheAngleichen)
+      stummelAbzweig: { kurve: -70, radius: 50, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
+      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
+    },
+    {
+      // M3b: auf der Abfahrt, nach rechts über die Wiese (Feldweg), ca. 310 m. Checkpoint 3 liegt darauf.
+      name: 'Wiesenweg',
+      abzweig: 2797.7,
+      einmuendung: 3107.9,
+      belag: 'wiesenweg',
+      // Absperrungen ohne Angabe: reihum (absperrung.reihenfolge), hier Flatterband (band) und Reifen
+      // Waldrand (M3b, sonst wie nebenwegWald): Alp und Wiese, nur lockere Gruppen mit viel Wiese dazwischen.
+      // Dichter nur, wo man sonst abkürzen könnte (geprüft mit tools/nebenweg-wald.mjs)
+      wald: {
+        innenAbKruemmung: 1 / 130, // auch die weiten Kurven (Radius bis 130 m) haben eine dichte Innenseite
+        innen: { abstand: [6.2, 6.9], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [9, 12] },
+        aussen: { abstand: [8, 15], gruppe: [1, 3], schritt: [2, 3.5], luecke: [16, 38], zweiteReihe: 0.15, zweiteAbstand: [11, 16] },
+        steinAnteil: 0.3,          // Wiese: mehr Felsbrocken statt Tannen
+      },
+      // Kreuzungen mit flachem Winkel (36°): Stummel länger auf der Höhe der Etappe (siehe Almweg)
+      stummelAbzweig: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [32, 54] },
+      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [32, 54] },
     },
   ],
   // Standardform eines Stummels (Hauptstrasse, die hinter der Absperrung weiterläuft)
@@ -124,7 +167,15 @@ export const CONFIG = {
     steinAnteil: 0.1,          // so ein Anteil wird statt einer Tanne ein Felsbrocken
     // von Hand gesetzte Gruppen (Tannen und Felsen gemischt): s = Streckenmeter (Mitte), seite -1 links / +1 rechts
     // 766 links: vor dem Abzweig, schliesst wie in M3a die Linien aus der freien Kurve 482-752 bis an den Abzweig
-    gruppen: [{ s: 766, seite: -1, abstand: [7, 10.5], laenge: 12, anzahl: 6, steine: 0.4 }],
+    gruppen: [
+      { s: 766, seite: -1, abstand: [7, 10.5], laenge: 12, anzahl: 6, steine: 0.4 },
+      // M3b: Almweg, Innenseite der grossen Linkskurve (dort blieb eine Lücke für eine Abkürzungs-Linie)
+      { s: 2075, seite: -1, abstand: [9, 22], laenge: 30, anzahl: 10, steine: 0.3 },
+      // M3b: Wiesenweg, kleines Wäldchen in der Ecke rechts vom Abzweig: Die Kreuzung ist flach (36°),
+      // quer über die Wiese sparte man dort sonst bis 8.7 m (1.7 s)
+      { s: 2765, seite: 1, abstand: [7, 22], laenge: 34, anzahl: 18, steine: 0.25 },
+      { s: 2812, seite: 1, abstand: [7, 18], laenge: 30, anzahl: 14, steine: 0.25 },
+    ],
     steinHoehe: [0.9, 1.6],    // Höhe der Felsbrocken (Meter)
     hoehe: [4.5, 11],          // Höhe der Tannen (vorne eher junge, kleine)
     stummelFrei: 7,            // so viel Platz bleibt um die Mitte der Stummel (Asphalt, Bankett, Seitenschutz)
@@ -138,10 +189,11 @@ export const CONFIG = {
     kreisRadius: 0.32,         // Kollision: Kreise entlang der Leitwand ...
     kreisAbstand: 0.5,         // ... alle so viele Meter
     seed: 4711,                // Zufallszahl (Höhe der Reifenstapel, schiefe Böcke ...)
+    sichtweite: 350,           // M3b: Absperrungen der weiteren Nebenwege weiter weg als das nicht zeichnen (dort unter 1 Pixel)
     // Grössen seit M3a.1 deutlich grösser (aus 60-80 m erkennbar)
     band: { pfostenAbstand: 2.6, hoehe: 1.5, hoehen: [1.38, 0.9], durchhang: 0.06 },      // Warnstangen (Abstand, Höhe), zwei Bänder, Durchhang
     reifen: { radius: 0.36, hoehe: 0.26, lagen: [5, 5], lagenHinten: [4, 5], weissAnteil: 0.3, hell: 1.7, seiten: 8 }, // Altreifen: vorne 5 hoch (1.3 m), hinten versetzt; Ecken pro Reifen
-    heu: { laenge: 1.2, tiefe: 1.2, hoehe: 1.2, obenAnteil: 0.8 },                     // Strohballen-Würfel; Anteil mit zweiter Lage
+    heu: { laenge: 1.2, tiefe: 1.1, hoehe: 0.82, obenAnteil: 0.8 },                    // Strohballen (M3b: flacher, zwei Lagen = ca. 1.6 m statt 2.4 m); Anteil mit zweiter Lage
     zaun: { bockBreite: 2.6, hoehe: 1.3, schief: 4 },                                  // Holzböcke: Breite, Höhe, bis so viel Grad schief
     symbol: { durchmesser: 1.4, ueber: 0.15 },                                         // Verbots-Symbol (rotes Rund, weisser Balken): Grösse, so hoch über der Absperrung
     chevron: { abstand: 3.4, breite: 0.8, hoehe: 1.0, zumFahrer: 1.0 },               // rot-weisse Chevrons auf der Leitwand: Abstand, Grösse, wie stark zum anfahrenden Fahrer gedreht (0 = zur Kurvenmitte)
@@ -504,6 +556,12 @@ export const CONFIG = {
     //   dem Loslassen der Lenkung länger seitlich, 0 = wie vor M3a.2)
     // (fehlen sie, gilt 1 = wie bisher; Asphalt, Bankett und Gras sind darum unverändert)
     schotter: { grip: 0.8, rollen: 0.35, rollenTempo: 0.01, rueckwaerts: 1.2, heck: 0.8, stabilitaet: 0.5, geradeaus: 0.4 },
+    // Wiesenweg (M3b): Erde und Gras – stumpfer und schwammiger als Schotter, wenig Haftung, kaum Bremswirkung
+    // (rollen klein), aber nicht wie Eis: Heck und Stabilität so, dass er kontrollierbar driftet.
+    // Gemessen mit tools/belag-test.mjs: weniger Grip allein machte das Auto nur träger (Drift 3° statt 8° auf
+    // Schotter, wie in M3a). Mit heck 0.7 und stabilitaet 0.5 kommt das Heck unter Gas deutlich (ca. 11-16°),
+    // lässt sich nach der Handbremse aber in unter 1 s wieder einfangen.
+    wiesenweg: { grip: 0.64, rollen: 0.9, rollenTempo: 0.03, rueckwaerts: 1.4, heck: 0.7, stabilitaet: 0.5, geradeaus: 0.4 },
   },
 
   // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------
@@ -525,6 +583,11 @@ export const CONFIG = {
     driftSeitlich: 1.5,        // beim Driften (ab 25°) wirft jedes Hinterrad den Staub so schnell (m/s) zusätzlich nach aussen (M3a.1)
     aufsteigen: 0.8,           // steigt so schnell auf (m/s)
     bremsen: 1.8,              // so schnell wird der Staub in der Luft langsamer
+    // je Belag (M3b): Farbe und Stärke (mal die Werte oben). Asphalt staubt nie.
+    belaege: {
+      schotter: { farbe: '#d6ccb4', staerke: 1 },      // helles Staub-Beige
+      wiesenweg: { farbe: '#8c7356', staerke: 0.55 },  // dunkler, erdig, schwächer
+    },
   },
 
   // --- Checkpoints -------------------------------------------------------
@@ -534,6 +597,7 @@ export const CONFIG = {
     anzeigeDauer: 3,           // so lange steht die Zwischenzeit oben im Bild (Sekunden)
     torBreite: 12.4,           // Abstand der Pfosten (Strasse 7 m + Bankett)
     torBreiteSchotter: 11.6,   // ... auf einem Schotter-Nebenweg (schmaler, 6.2 m): Tor passt sich an (M3a)
+    torBreiteWiesenweg: 10.6,  // ... auf dem Wiesenweg (5.2 m) (M3b)
     torHoehe: 5.2,             // Höhe des Banners über der Strasse
     durchfahrtBreite: 9,       // so weit von der Strassenmitte zählt die Durchfahrt noch
   },

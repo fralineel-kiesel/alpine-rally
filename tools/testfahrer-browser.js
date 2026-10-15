@@ -84,6 +84,8 @@ export function fahreEtappe(A, profilName) {
   let maxAbstand = 0, nahSperre = Infinity, schritte = 0, gangWechsel = 0, letzterGang = null, hinUndHer = 0;
   const wechselListe = [], hinUndHerListe = [];
   const q = {};
+  // M3b: je Nebenweg (Abzweig bis Einmündung): grösster Abstand zur Mitte, Zeit neben dem Weg (Bankett, Gras), Zeit dort
+  const wege = (A.netz ? A.netz.nebenwege : []).map((w) => ({ name: w.name, belag: w.belag, von: w.abzweig, bis: w.einmuendung, maxAbstand: 0, daneben: 0, zeit: 0 }));
   while (A.rennen.zustand !== 'ziel' && t < 600) {
     idx = naechster(pfad, A.physik.x, A.physik.z, idx);
     const e = steuere(A, pfad, idx);
@@ -109,6 +111,15 @@ export function fahreEtappe(A, profilName) {
       aufpralle.push(`${Math.round(A.rennen.letztesS)} m (${Math.round(letzter.vorher * 3.6)} -> ${Math.round(letzter.nachher * 3.6)} km/h)`);
     }
     if (A.rennen.zustand === 'laeuft') maxAbstand = Math.max(maxAbstand, S.abfrage(A.physik.x, A.physik.z, q).abstand);
+    if (A.rennen.zustand === 'laeuft') {
+      for (const w of wege) {
+        if (q.s < w.von || q.s > w.bis) continue;
+        w.maxAbstand = Math.max(w.maxAbstand, q.abstand);
+        w.zeit += A.SCHRITT;
+        const art = A.welt.bodenBei(A.physik.x, A.physik.z, q).art;
+        if (art === 'bankett' || art === 'gras') w.daneben += A.SCHRITT;
+      }
+    }
     if (schritte % 6 === 0) {
       for (const h of sperrH) {
         const d = Math.hypot(h.x - A.physik.x, h.z - A.physik.z) - h.r;
@@ -121,7 +132,7 @@ export function fahreEtappe(A, profilName) {
   }
   return {
     profil: profilName, zeit: A.rennen.endZeit, ziel: A.rennen.zustand === 'ziel',
-    cps: A.rennen.zwischenzeiten.slice(), aufpralle, haenger, maxAbstand, nahSperre: nahSperre - 0.9, gangWechsel, hinUndHer, hinUndHerListe,
+    cps: A.rennen.zwischenzeiten.slice(), aufpralle, haenger, maxAbstand, nahSperre: nahSperre - 0.9, gangWechsel, hinUndHer, hinUndHerListe, wege,
   };
 }
 

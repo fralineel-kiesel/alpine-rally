@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { checkpointBannerTextur, pfostenTextur } from './pixel.js';
 
-// netz (seit M3a): kennt den Belag; auf Schotter ist das Tor schmaler (torBreiteSchotter)
+// netz (seit M3a): kennt den Belag; auf Schotter und Wiesenweg ist das Tor schmaler (torBreiteSchotter, torBreiteWiesenweg)
 export function baueCheckpointTore(szene, strecke, netz = null) {
   const c = CONFIG.checkpoints;
   const pfostenTex = pfostenTextur();
@@ -14,7 +14,7 @@ export function baueCheckpointTore(szene, strecke, netz = null) {
   c.beiMeter.forEach((meter, n) => {
     const p = strecke.punktBei(meter);
     const belag = netz ? netz.belag[p.i] : 'asphalt';
-    const breite = belag === 'schotter' && c.torBreiteSchotter ? c.torBreiteSchotter : c.torBreite;
+    const breite = (belag === 'schotter' && c.torBreiteSchotter) || (belag === 'wiesenweg' && c.torBreiteWiesenweg) || c.torBreite;
     const halb = breite / 2;
     const tor = new THREE.Group();
     // Pfosten links und rechts

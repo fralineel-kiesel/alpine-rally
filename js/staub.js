@@ -1,4 +1,5 @@
 // Staub auf Schotter (Meilenstein 3a): helle Wölkchen hinter den Hinterrädern.
+// Seit M3b auch auf dem Wiesenweg: dunkler, erdig und schwächer (Farbe und Stärke je Belag: staub.belaege).
 // Stärker beim Driften, mit Handbremse und beim Anfahren mit viel Gas, schwach bei ruhiger
 // Fahrt, nie auf Asphalt. Höchstens staub.max Wölkchen gleichzeitig (fester Vorrat, der immer
 // wieder benutzt wird: kein Speichermüll pro Bild), ein Zeichenaufruf (instanziert).
@@ -14,11 +15,14 @@ const VERTEX = /* glsl */ `
   #include <fog_pars_vertex>
   attribute vec4 aWolke;     // x, y, z, Grösse (0 = aus)
   attribute float aDichte;   // 0..1
+  attribute vec3 aFarbe;     // Farbe je Wölkchen (je Belag, M3b)
   varying vec2 vUv;
   varying float vDichte;
+  varying vec3 vFarbe;
   void main() {
     vUv = uv;
     vDichte = aDichte;
+    vFarbe = aFarbe;
     // Billboard: Ecke in Kamera-Richtung aufspannen
     vec4 mvPosition = viewMatrix * vec4(aWolke.xyz, 1.0);
     mvPosition.xy += position.xy * aWolke.w;
@@ -29,9 +33,9 @@ const VERTEX = /* glsl */ `
 const FRAGMENT = /* glsl */ `
   #include <common>
   #include <fog_pars_fragment>
-  uniform vec3 uFarbe;
   varying vec2 vUv;
   varying float vDichte;
+  varying vec3 vFarbe;
   // 4x4-Raster (Bayer): je nach Dichte werden mehr oder weniger Pixel gezeichnet
   float raster(vec2 p) {
     vec2 q = mod(floor(p), 4.0);
@@ -48,7 +52,7 @@ const FRAGMENT = /* glsl */ `
     float form = clamp(1.0 - r, 0.0, 1.0);
     float dichte = vDichte * form * (1.2 + 0.25 * sin(vUv.x * 13.0 + vUv.y * 7.0));
     if (dichte * 16.0 <= raster(gl_FragCoord.xy) + 0.5) discard;
-    gl_FragColor = vec4(uFarbe * (0.92 + 0.12 * (1.0 - r)), 1.0);
+    gl_FragColor = vec4(vFarbe * (0.92 + 0.12 * (1.0 - r)), 1.0);
     #include <colorspace_fragment>
     #include <fog_fragment>
   }
@@ -71,17 +75,24 @@ export function baueStaub(szene) {
   geo.setAttribute('uv', basis.attributes.uv);
   const wolke = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4);
   const dichte = new THREE.InstancedBufferAttribute(new Float32Array(N), 1);
+  const farbeAttr = new THREE.InstancedBufferAttribute(new Float32Array(N * 3), 3);
   wolke.setUsage(THREE.DynamicDrawUsage);
   dichte.setUsage(THREE.DynamicDrawUsage);
+  farbeAttr.setUsage(THREE.DynamicDrawUsage);
   geo.setAttribute('aWolke', wolke);
   geo.setAttribute('aDichte', dichte);
+  geo.setAttribute('aFarbe', farbeAttr);
   geo.instanceCount = N;
   const l = CONFIG.licht;
-  const farbe = new THREE.Color(c.farbe).multiply(
-    new THREE.Color(l.umgebungFarbe).multiplyScalar(l.umgebungStaerke).add(new THREE.Color(l.sonneFarbe).multiplyScalar(l.sonneStaerke * 0.5)),
-  );
+  const licht = new THREE.Color(l.umgebungFarbe).multiplyScalar(l.umgebungStaerke).add(new THREE.Color(l.sonneFarbe).multiplyScalar(l.sonneStaerke * 0.5));
+  // Farbe (schon mit Licht) und Stärke je Belag; ohne Angabe gilt staub.farbe und Stärke 1
+  const jeBelag = {};
+  for (const [belag, b] of Object.entries(c.belaege || { schotter: {} })) {
+    jeBelag[belag] = { farbe: new THREE.Color(b.farbe || c.farbe).multiply(licht), staerke: b.staerke ?? 1 };
+  }
+  const standard = jeBelag.schotter || { farbe: new THREE.Color(c.farbe).multiply(licht), staerke: 1 };
   const mat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uFarbe: { value: farbe } }]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog]),
     vertexShader: VERTEX, fragmentShader: FRAGMENT, fog: true,
   });
   const mesh = new THREE.Mesh(geo, mat);
@@ -90,8 +101,10 @@ export function baueStaub(szene) {
   szene.add(mesh);
 
   // Ein Wölkchen an einem Hinterrad starten. wx, wz: zusätzlicher Wurf zur Seite (beim Driften)
-  function starte(x, y, z, ax, az, st, wx = 0, wz = 0) {
+  function starte(x, y, z, ax, az, st, wx = 0, wz = 0, farbe = standard.farbe) {
     const k = naechster;
+    farbeAttr.array[k * 3] = farbe.r; farbeAttr.array[k * 3 + 1] = farbe.g; farbeAttr.array[k * 3 + 2] = farbe.b;
+    farbeAttr.needsUpdate = true;
     naechster = (naechster + 1) % N;
     px[k] = x + (rnd() - 0.5) * 0.3; py[k] = y + 0.15; pz[k] = z + (rnd() - 0.5) * 0.3;
     // ein Teil des Autotempos, etwas zur Seite, nach oben
@@ -108,15 +121,17 @@ export function baueStaub(szene) {
   // Bild, darum staubte es immer nur auf einer Seite.)
   let rad = 0;
   const zustand = { aktiv: 0, links: 0, rechts: 0 }; // links/rechts: so viele Wölkchen pro Rad (für Tests)
-  // Jedes Bild: auto = { x, y, z, richtung, vx, vz, tempo, drift (Grad), gas, handbremse, schotter }
+  // Jedes Bild: auto = { x, y, z, richtung, vx, vz, tempo, drift (Grad), gas, handbremse, schotter, belag }
+  // schotter = true: es staubt (auf Schotter oder Wiesenweg); belag: welcher (Farbe und Stärke, sonst wie Schotter)
   function aktualisiere(dt, auto) {
     if (c.an && auto.schotter && auto.tempo > 0.8) {
+      const art = jeBelag[auto.belag] || standard;
       const v = auto.tempo;
       let st = begrenze(v / 30, 0, 1) * c.ruhig;
       st += begrenze(Math.abs(auto.drift) / 25, 0, 1) * c.drift;
       if (auto.handbremse && v > 3) st += c.handbremse;
       if (auto.gas > 0.6 && v < 11) st += c.anfahren * (1 - v / 11);
-      st = Math.min(1.2, st);
+      st = Math.min(1.2, st) * art.staerke;
       guthaben += st * c.proSekunde * dt;
       const fx = Math.sin(auto.richtung), fz = Math.cos(auto.richtung), lx = fz, lz = -fx;
       // beim Driften wirft jedes Rad den Staub zusätzlich nach aussen (beide Seiten gleich)
@@ -126,7 +141,7 @@ export function baueStaub(szene) {
         const seite = rad++ % 2 ? 1 : -1;
         if (seite > 0) zustand.links++; else zustand.rechts++;
         starte(auto.x - fx * 1.3 + lx * 0.75 * seite, auto.y, auto.z - fz * 1.3 + lz * 0.75 * seite, auto.vx, auto.vz, Math.min(1, 0.35 + st),
-          lx * seite * wurf, lz * seite * wurf);
+          lx * seite * wurf, lz * seite * wurf, art.farbe);
       }
     } else guthaben = 0;
     // bewegen, wachsen, verblassen

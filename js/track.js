@@ -111,20 +111,34 @@ export const STRECKEN_PUNKTE = [
 
   // --- 5. Felswand 1: Felswand links, Abhang ins Tal rechts ---
   { abschnitt: 'Felswand 1', baeume: 1.0, wald: 0.2, wand: 'links' },
-  // Kurve links 30°, Radius 150 m, Steigung 8 %
+  // Kurve links 30°, Radius 150 m, Steigung 8 % (Anfang)
   { x: 276.9, z: -1233.4, h: 106.7 }, { x: 300.6, z: -1244.5, h: 108.8 }, { x: 322.0, z: -1259.5, h: 110.9 },
-  // Kurve rechts 50°, Radius 130 m, Steigung 8.5 %
-  { x: 340.6, z: -1272.5, h: 112.8 }, { x: 361.1, z: -1282.1, h: 114.7 }, { x: 383.0, z: -1287.9, h: 116.6 },
-  { x: 405.6, z: -1289.9, h: 118.6 }, { x: 428.1, z: -1287.9, h: 120.5 },
-  // gerade 80 m, Steigung 8.5 %
-  { x: 454.4, z: -1283.3, h: 122.8 }, { x: 480.6, z: -1278.7, h: 125.0 }, { x: 506.9, z: -1274.0, h: 127.3 },
-  // Kurve links 45°, Radius 160 m, Steigung 8 %
-  { x: 531.9, z: -1271.6, h: 129.3 }, { x: 557.0, z: -1273.2, h: 131.3 }, { x: 581.5, z: -1278.6, h: 133.3 },
-  { x: 604.8, z: -1287.8, h: 135.3 }, { x: 626.5, z: -1300.5, h: 137.3 },
-  // Kurve rechts 25°, Radius 200 m, Steigung 7.5 %
-  { x: 651.4, z: -1315.4, h: 139.5 }, { x: 678.3, z: -1326.6, h: 141.7 }, { x: 706.5, z: -1333.7, h: 143.9 },
-  // gerade 120 m, Steigung 6 %
-  { x: 730.1, z: -1337.8, h: 145.3 }, { x: 753.7, z: -1342.0, h: 146.8 }, { x: 777.4, z: -1346.2, h: 148.2 },
+
+  // --- Seit M3b: Nebenweg "Almweg" (Schotter). Die Felswand hört davor auf und geht nach der
+  //     Einmündung weiter (Abschnitt-Zeile "Felswand 1" im Bogen) ---
+// <nebenweg Almweg>
+  // (automatisch von tools/nebenweg-bogen.mjs – Bogen dort ändern, nicht hier)
+  { abschnitt: 'Almweg', baeume: 0.45, wald: 0.05 },
+  // Kurve rechts 45°, Radius 25 m, Steigung 0 % – Abzweig: rechts auf den Almweg (Schotter)
+  { x: 342.7271, z: -1273.1692, h: 112.8640 },
+  // gerade 15 m, Steigung 0 %
+  { x: 364.5202, z: -1273.0726, h: 114.6140 },
+  // Kurve links 30°, Radius 110 m, Steigung 8 % – Almweg: grosse Kurve links
+  { x: 389.4985, z: -1270.2517, h: 116.6019 }, { x: 414.0419, z: -1272.8767, h: 118.5551 },
+  // gerade 219 m, Steigung 8 % – Almweg: lange Gerade
+  { x: 438.3322, z: -1280.6781, h: 120.5713 }, { x: 463.3037, z: -1289.6503, h: 122.6664 }, { x: 488.2752, z: -1298.6224, h: 124.9183 },
+  { x: 513.2467, z: -1307.5945, h: 127.7702 }, { x: 538.2182, z: -1316.5667, h: 130.6899 }, { x: 563.1898, z: -1325.5388, h: 133.0317 },
+  { x: 588.1613, z: -1334.5110, h: 134.6024 }, { x: 613.1328, z: -1343.4831, h: 135.8128 },
+  // Kurve rechts 45°, Radius 80 m, Steigung 8 % – Almweg: grosse Kurve rechts
+  { x: 637.6979, z: -1352.1635, h: 137.3217 }, { x: 661.5082, z: -1355.4123, h: 139.1996 }, { x: 685.2091, z: -1351.4434, h: 141.1043 },
+  // gerade 20 m, Steigung 0 %
+  { x: 708.5623, z: -1341.1126, h: 143.1221 },
+  // Kurve links 40°, Radius 30 m, Steigung 0 % – Einmündung: links auf die Hauptstrasse
+  { x: 729.5523, z: -1336.7000, h: 144.8468 },
+  { abschnitt: 'Felswand 1', baeume: 1.0, wald: 0.2, wand: 'links' },
+  // </nebenweg>
+  // gerade 120 m, Steigung 6 % (Rest, wie vor M3b)
+  { x: 753.7, z: -1342.0, h: 146.8 }, { x: 777.4, z: -1346.2, h: 148.2 },
   { x: 801.0, z: -1350.3, h: 149.7 }, { x: 824.6, z: -1354.5, h: 151.1 },
 
   // --- 6. Passhöhe: offenes Hochplateau, weite schnelle Kurven ---
@@ -133,19 +147,28 @@ export const STRECKEN_PUNKTE = [
   { x: 849.2, z: -1360.1, h: 151.9 }, { x: 873.1, z: -1368.0, h: 152.6 }, { x: 896.2, z: -1378.2, h: 153.4 },
   { x: 918.1, z: -1390.6, h: 154.1 }, { x: 938.8, z: -1405.1, h: 154.9 }, { x: 957.9, z: -1421.4, h: 155.6 },
   { x: 975.4, z: -1439.6, h: 156.4 }, { x: 991.0, z: -1459.4, h: 157.1 }, { x: 1004.6, z: -1480.6, h: 157.9 },
-  // Kurve rechts 20°, Radius 350 m, Steigung 0 %
+  // Kurve rechts 20°, Radius 350 m, Steigung 0 % (Anfang)
   { x: 1017.6, z: -1501.3, h: 157.9 }, { x: 1032.0, z: -1521.0, h: 157.9 }, { x: 1047.7, z: -1539.8, h: 157.9 },
-  { x: 1064.6, z: -1557.3, h: 157.9 }, { x: 1082.8, z: -1573.7, h: 157.9 },
-  // gerade 60 m, Steigung -2 %
-  { x: 1105.8, z: -1593.0, h: 157.3 }, { x: 1128.7, z: -1612.2, h: 156.7 },
 
-  // --- 7. Abfahrt: Felswand rechts, Abhang links, bergab, Schikane ---
+  // --- Seit M3b: Nebenweg "Wiesenweg" (Feldweg über die Wiese, Checkpoint 3). Die Abfahrt mit der
+  //     Felswand beginnt erst nach der Einmündung (Abschnitt-Zeile "Abfahrt" im Bogen) ---
+// <nebenweg Wiesenweg>
+  // (automatisch von tools/nebenweg-bogen.mjs – Bogen dort ändern, nicht hier)
+  { abschnitt: 'Wiesenweg', baeume: 0.25, wald: 0 },
+  // gerade 26 m, Steigung 0 %
+  { x: 1066.8774, z: -1550.5853, h: 156.6917 },
+  // Kurve links 26°, Radius 80 m, Steigung -5 % – Wiesenweg: Kurve links
+  { x: 1093.1690, z: -1556.3334, h: 155.2523 }, { x: 1115.7781, z: -1566.4827, h: 153.9216 },
+  // gerade 163 m, Steigung -5 %
+  { x: 1137.0966, z: -1582.6174, h: 152.4915 }, { x: 1158.7627, z: -1599.3434, h: 151.0278 }, { x: 1180.4289, z: -1616.0693, h: 149.5640 },
+  { x: 1202.0950, z: -1632.7953, h: 148.1003 }, { x: 1223.7612, z: -1649.5213, h: 146.6365 }, { x: 1245.4273, z: -1666.2472, h: 145.1727 },
+  // Kurve rechts 36°, Radius 70 m, Steigung -5 % – Wiesenweg: Kurve rechts
+  { x: 1266.7586, z: -1679.3950, h: 143.8272 }, { x: 1290.6755, z: -1684.4201, h: 142.5135 },
+  // Kurve links 36°, Radius 25 m, Steigung 0 % – Einmündung: links auf die Hauptstrasse
+  { x: 1313.1636, z: -1688.3784, h: 141.2743 },
   { abschnitt: 'Abfahrt', baeume: 1.0, wald: 0.2, wand: 'rechts' },
-  // Kurve rechts 30°, Radius 250 m, Steigung -7 %
-  { x: 1149.6, z: -1628.0, h: 154.9 }, { x: 1172.1, z: -1641.5, h: 153.0 }, { x: 1195.8, z: -1652.5, h: 151.2 },
-  { x: 1220.5, z: -1661.1, h: 149.4 }, { x: 1246.0, z: -1666.9, h: 147.5 },
-  // Kurve links 25°, Radius 220 m, Steigung -8 %
-  { x: 1269.4, z: -1672.4, h: 145.6 }, { x: 1292.0, z: -1680.3, h: 143.7 }, { x: 1313.6, z: -1690.7, h: 141.8 },
+  // </nebenweg>
+  // Kurve links 25°, Radius 220 m (Ende, wie vor M3b)
   { x: 1334.0, z: -1703.4, h: 139.9 },
   // gerade 40 m, Steigung -6 %
   { x: 1350.4, z: -1714.9, h: 138.7 }, { x: 1366.8, z: -1726.3, h: 137.5 },

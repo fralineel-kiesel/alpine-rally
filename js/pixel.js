@@ -343,6 +343,80 @@ export function schotterTextur(farben, seed = 37) {
   return t;
 }
 
+// Wiesenweg (Meilenstein 3b): Feldweg über die Wiese. Erdbraun mit zwei festgefahrenen, etwas
+// dunkleren Fahrspuren; in der Mitte zwischen den Spuren und am Rand wächst Gras herein (unregelmässig,
+// wellig entlang des Wegs). Kein Mittelstrich.
+// Bild 48x32 Pixel wie der Schotter: links 32 Pixel = ganze Wegbreite (Teil 0..WIESENWEG_U), rechts
+// 16 Pixel Erde mit ein paar Grasbüscheln (für die abgerundeten Ecken an den Einfahrten). 32 Pixel = 6 m lang.
+export const WIESENWEG_LAENGE = 6;
+export const WIESENWEG_U = 32 / 48;
+export function wiesenwegTextur(farben, seed = 53) {
+  const B = 48, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const erde = hexZuRgb(farben.wiesenweg), spur = hexZuRgb(farben.wiesenwegSpur), gras = hexZuRgb(farben.wiesenwegGras);
+  const grasD = variiere(gras, 0.8);
+  // langsame Wellen (nahtlos über die Länge): wie weit das Gras in der Mitte und am Rand hereinwächst
+  const ph = [rnd(), rnd(), rnd(), rnd()].map((p) => p * Math.PI * 2);
+  const welle = (y, k, a) => Math.sin((y / H) * Math.PI * 2 * a + ph[k]);
+  for (let y = 0; y < H; y++) {
+    const mitte = 2.2 + 1.0 * welle(y, 0, 1) + 0.5 * welle(y, 1, 3);    // halbe Breite des Grasstreifens in der Mitte (Pixel)
+    const randL = 3.2 + 1.2 * welle(y, 2, 2) + 0.6 * welle(y, 1, 5);    // so weit wächst das Gras links herein
+    const randR = 3.2 + 1.2 * welle(y, 3, 2) + 0.6 * welle(y, 0, 4);
+    const sw = Math.round(welle(y, 2, 1) * 0.6);                        // Spuren leicht wellig
+    for (let x = 0; x < B; x++) {
+      let c;
+      if (x < 32) {
+        const xm = Math.abs(x + 0.5 - 16);
+        const inSpur = (x >= 8 + sw && x <= 12 + sw) || (x >= 20 + sw && x <= 24 + sw);
+        // Gras: in der Mitte und am Rand sicher, am Übergang ausgefranst
+        const grasMitte = xm < mitte + (rnd() - 0.5) * 1.6;
+        const grasRand = x < randL + (rnd() - 0.5) * 1.8 || 31 - x < randR + (rnd() - 0.5) * 1.8;
+        if ((grasMitte || grasRand) && !(inSpur && rnd() < 0.85)) {
+          c = rnd() < 0.3 ? grasD : variiere(gras, 0.92 + rnd() * 0.16);
+        } else {
+          c = inSpur ? spur : erde;
+          const r = rnd();
+          if (r < 0.08) c = variiere(c, 1.12);            // trockene, helle Krümel
+          else if (r < 0.16) c = variiere(c, 0.85);       // feuchte, dunkle Stellen
+          else c = variiere(c, 0.95 + rnd() * 0.08);
+          if (!inSpur && rnd() < 0.05) c = variiere(gras, 0.85 + rnd() * 0.2); // einzelne Halme
+        }
+      } else {
+        // Ecken: Erde mit ein paar Grasbüscheln (1-2 Pixel)
+        const r = rnd();
+        c = r < 0.12 ? variiere(gras, 0.85 + rnd() * 0.2) : variiere(erde, 0.92 + rnd() * 0.14);
+      }
+      setze(l, x, y, c);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter; // wie Asphalt und Schotter: in der Ferne ruhig, nah harte Pixel
+  return t;
+}
+
+// Rand des Wiesenwegs (M3b, statt des erdigen Banketts): vor allem Gras, zum Weg hin ein paar Erdflecken.
+// 16 Pixel quer (u = 0 aussen, u = 1 am Weg), 32 Pixel = 4 m lang (wie das Bankett).
+export function wiesenwegRandTextur(farben, seed = 59) {
+  const B = 16, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const erde = hexZuRgb(farben.wiesenweg), gras = hexZuRgb(farben.gras), grasD = hexZuRgb(farben.grasDunkel);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < B; x++) {
+      const zumWeg = x / (B - 1);
+      const c = rnd() < 0.22 * zumWeg * zumWeg ? variiere(erde, 0.9 + rnd() * 0.15)
+        : variiere(rnd() < 0.35 ? grasD : gras, 0.9 + rnd() * 0.16);
+      setze(l, x, y, c);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  return t;
+}
+
 // Ausfransen (M3a): Asphaltbrocken, die an der Einfahrt in den Schotter auslaufen.
 // u = 0 an der Asphaltkante (fast geschlossen), u = 1 aussen (nur noch einzelne Brocken).
 // Löcher sind durchsichtig (alphaTest). 16x16 Pixel = 2 m lang.

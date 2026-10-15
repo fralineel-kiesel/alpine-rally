@@ -33,6 +33,11 @@ if (!schneiden) {
       `  Aufpralle: ${r.aufpralle.length ? r.aufpralle.join(', ') : 'keine'}  hängen geblieben: ${r.haenger}` +
       `  max. neben der Mitte ${r.maxAbstand.toFixed(1)} m  nächste Sperre ${r.nahSperre.toFixed(1)} m` +
       (r.gangWechsel ? `  Gangwechsel ${r.gangWechsel} (davon Hin und Her: ${r.hinUndHer})` : ''));
+    // M3b: je Nebenweg
+    for (const w of r.wege || []) {
+      console.log(`             ${w.name} (${w.belag}, ${Math.round(w.von)}-${Math.round(w.bis)} m): ${w.zeit.toFixed(2)} s, ` +
+        `max. ${w.maxAbstand.toFixed(1)} m neben der Mitte, neben dem Weg (Bankett/Gras) ${w.daneben.toFixed(2)} s`);
+    }
   }
 } else {
   // Für jede Kurvenzone (ohne Sperren gemessen): die besten Abkürzungen fahren

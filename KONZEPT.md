@@ -22,7 +22,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Schalten soll man spüren: kurze Pause ohne Antrieb bei jedem Gangwechsel.
 - Analoge Tachos (Drehzahl mit Gangzahl, Tempo mit kleiner Digitalanzeige) im 80er-Look.
 - Mag nicht: Formel-1-Randsteine, Kurvenpfeil-Schilder (Ausnahme seit M3a.1: Chevrons und Richtungstafel an den Absperrungen der Nebenwege), Alleen (gleichmässige Baumreihen), zu starkes Beschleunigen bergab, hartes Höchsttempo.
-- Später gewünscht: Schotter- und Wiesenabschnitte im Wechsel, Abzweigung mit Rally-Absperrung, sichtbare Auto-Seite beim Lenken, Wetter und Tageszeit.
+- Später gewünscht: sichtbare Auto-Seite beim Lenken, Wetter und Tageszeit. (Schotter- und Wiesenabschnitte im Wechsel und Abzweigungen mit Rally-Absperrung gibt es seit M3a/M3b.)
 
 ## Fahrplan
 - M0 Prototyp (fertig)
@@ -39,7 +39,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M3a.2 Fahrphysik-Feinschliff: Handbremse lange gehalten bremst das Auto bis zum Stand (kein endloses Kreisen mehr, kurz ziehen kostet kaum Tempo), Dreher rutschen weich aus statt schlagartig zu stoppen, nach dem Lenken bei hohem Tempo schnell wieder geradeaus (Geradeauslauf-Hilfe, nicht beim Einlenken und nicht im Drift) (fertig)
 - M3a.3 Felswand: Das Auto stoppt an der sichtbaren Wandfläche (geprüft mit dem ganzen Umriss des Autos, nicht nur der Mitte; vorher steckte es bis 1.6 m in der Wand), Kamera hält Abstand zur Wand, am Wandfuss Erde/Geröll statt Gras (fertig)
 - M3c Start- und Zielbereich: Strasse läuft an Start und Ziel weiter (abgesperrt, Ende nie sichtbar), Ausrollstrecke nach dem Ziel, Start- und Zielbogen, Absperrband, Strohballen, Zuschauer, Zeitnahme, Servicezelt, Autos, mehr Bäume (fertig)
-- M3b Weitere Nebenwege (als Nächstes): Wiesenweg-Abschnitt auf der Abfahrt (ca. 2710–3190 m) und ein Schotter-Nebenweg nach den Kehren (ca. 1870–2480 m), mit Heu- und Holzbock-Absperrungen
+- M3b Weitere Nebenwege: Almweg (Schotter, nach den Kehren, 1986–2401 m, lange Gerade über die Alp) und Wiesenweg (neuer Belag: Feldweg mit Fahrspuren und Gras, auf der Abfahrt, 2798–3108 m, mit Checkpoint 3), driftfreudig aber gutmütig; Absperr-Arten wechseln reihum (jetzt auch Heu und Holzböcke im Spiel), Strohballen kleiner (1.64 m) (fertig)
 - M4 Pace-Notes als Symbole, inkl. "nicht schneiden" an den gesperrten und "schneiden" an den freien Kurven (Daten liegen seit M1.2 bereit)
 - M5 Drumherum: Zielbildschirm, Minimap, Feinschliff (Auto, Fahrphysik)
 

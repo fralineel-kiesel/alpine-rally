@@ -59,7 +59,8 @@ const erg = await spiel.page.evaluate(async () => {
     }
     return true;
   };
-  const aufAsphalt = () => W.bodenBei(A.physik.x, A.physik.z).art === 'asphalt';
+  // "auf der Strasse" = Asphalt, seit M3a/M3b auch der Belag der Nebenwege (Schotter, Wiesenweg)
+  const aufAsphalt = () => !['gras', 'bankett'].includes(W.bodenBei(A.physik.x, A.physik.z).art);
   function stelleAuf(s, x, z, richtung, v = 0) {
     A.setzeAuf(s);
     A.physik.reset(x, z, richtung);

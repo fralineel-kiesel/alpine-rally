@@ -1,4 +1,5 @@
-// Test für den Nebenweg (Meilenstein 3a, erweitert in M3a.1):  node tools/nebenweg-test.mjs [--details]
+// Test für die Nebenwege (Meilenstein 3a, erweitert in M3a.1, seit M3b für alle Nebenwege):
+//   node tools/nebenweg-test.mjs [--details]
 //
 // Im Headless-Browser mit dem echten Spiel (Fahrphysik, Gelände, alle Hindernisse):
 //   1. Die Etappenlogik sieht die Stummel nicht: Fortschritt (s), Checkpoints und Zurücksetzen
@@ -14,11 +15,12 @@
 //   4. Sichtlinien-Check (tools/stummel-sicht.js): von der Etappe aus sieht man kein Stummel-Ende.
 //   5. (M3a.1) Leitwand lässt die Fahrbahn frei: kein Teil näher an der Etappe als Weg + Bankett,
 //      Verbots-Symbol und Richtungstafel stehen.
-//   6. (M3a.1) Höhenprofil 780-1100 m in 0.5-m-Schritten (Mitte und 2.5 m daneben): grösste Stufe
-//      und grösste Steigungsänderung, verglichen mit der übrigen Strecke.
-//   7. (M3a.1) Fahrtest über Abzweig und Einmündung: senkrechte Beschleunigung und Nicken des Autos
-//      nicht stärker als auf der übrigen Strecke (kein Hupfer).
-//   8. (M3a.1) Staub bei normaler Fahrt auf Schotter: beide Hinterräder gleich viel.
+//   6. (M3a.1) Höhenprofil je Nebenweg (30 m vor dem Abzweig bis 60 m nach der Einmündung) in
+//      0.5-m-Schritten (Mitte und 2.5 m daneben): grösste Stufe und grösste Steigungsänderung,
+//      verglichen mit der Strecke ohne Nebenwege.
+//   7. (M3a.1) Fahrtest über Abzweig und Einmündung jedes Nebenwegs: senkrechte Beschleunigung und
+//      Nicken des Autos nicht stärker als auf der übrigen Strecke (kein Hupfer).
+//   8. (M3a.1) Staub bei normaler Fahrt auf jedem Belag (Schotter, Wiesenweg): beide Hinterräder gleich viel.
 //   9. Keine Fehler in der Browser-Konsole.
 // Das Spiel selbst lädt diese Datei nicht.
 
@@ -85,33 +87,38 @@ const erg = await spiel.page.evaluate(async () => {
     });
   }
   // Rennen läuft: vor dem Abzweig in den Stummel bis zur Absperrung, zurück, dann über den
-  // Nebenweg durch CP1. Kein "CHECKPOINT VERPASST", CP1 zählt.
-  {
-    const ast = N.stummel[0];
+  // Nebenweg (und durch den Checkpoint darauf, falls einer dort steht) bis nach der Einmündung.
+  // Kein "CHECKPOINT VERPASST", der Checkpoint zählt. (Seit M3b für jeden Nebenweg.)
+  ergebnis.cpTests = [];
+  for (const ast of N.stummel.filter((a) => a.art === 'abzweig')) {
+    const weg = ast.nebenweg, cps = C.checkpoints.beiMeter;
+    const cpVor = cps.filter((c) => c < ast.sJ - 60).length;            // so viele CPs liegen schon hinter uns
+    const cpAuf = cps.filter((c) => c > ast.sJ && c < weg.einmuendung).length; // so viele auf dem Nebenweg
+    const sZiel = Math.max(weg.einmuendung + 10, ...cps.filter((c) => c > ast.sJ && c < weg.einmuendung).map((c) => c + 10));
     A.neustart();
     const p0 = S.punktBei(ast.sJ - 60);
     setze(p0.x, p0.z, Math.atan2(p0.tx, p0.tz), 15);
-    A.rennen.zustand = 'laeuft'; A.rennen.zeit = 0; A.rennen.naechsterCp = 0; A.rennen.letztesS = ast.sJ - 60;
+    A.rennen.zustand = 'laeuft'; A.rennen.zeit = 0; A.rennen.naechsterCp = cpVor; A.rennen.letztesS = ast.sJ - 60;
     A.kollision.letzterAufprall = null;
     const meldungen = new Set();
     let t = 0, phase = 0;
     const ziel = astPunkt(ast, ast.sperre.mitte.u - 3, 0);
-    while (t < 60 && phase < 3) {
+    while (t < 90 && phase < 3) {
       let e;
       if (phase === 0) { e = steuer(ziel.x, ziel.z, 12, false); if (Math.hypot(A.physik.x - ziel.x, A.physik.z - ziel.z) < 4 || A.kollision.letzterAufprall) phase = 1; }
       else if (phase === 1) { e = { ...LEER, bremse: 1 }; if (Math.hypot(A.physik.x - ast.px[0], A.physik.z - ast.pz[0]) < 4) phase = 2; }
       else {
         const pZ = S.punktBei(Math.min(S.laenge - 1, Math.max(A.rennen.letztesS, ast.sJ) + 12));
         e = steuer(pZ.x, pZ.z, 12, false);
-        if (A.rennen.letztesS > C.checkpoints.beiMeter[0] + 10) phase = 3;
+        if (A.rennen.letztesS > sZiel) phase = 3;
       }
       A.physikSchritt(A.SCHRITT, e);
       t += A.SCHRITT;
       const m = A.hudMeldung();
       if (m) meldungen.add(m);
     }
-    ergebnis.cpTest = { meldungen: [...meldungen], naechsterCp: A.rennen.naechsterCp, zustand: A.rennen.zustand, phase, zeit: Math.round(t * 10) / 10,
-      ok: A.rennen.naechsterCp === 1 && ![...meldungen].some((m) => m.includes('VERPASST')) && phase === 3 };
+    ergebnis.cpTests.push({ weg: weg.name, cpAuf, meldungen: [...meldungen], naechsterCp: A.rennen.naechsterCp, zustand: A.rennen.zustand, phase, zeit: Math.round(t * 10) / 10,
+      ok: A.rennen.naechsterCp === cpVor + cpAuf && ![...meldungen].some((m) => m.includes('VERPASST')) && phase === 3 });
     A.neustart();
   }
 
@@ -138,7 +145,16 @@ const erg = await spiel.page.evaluate(async () => {
           for (const winkel of [0, 20, -20, 40, -40]) {
             // Anfahrt von der Etappe her (gegen die Normale n der Leitwand), schräg um "winkel"
             const w = Math.atan2(-p.nx, -p.nz) + winkel * GRAD;
-            const dist = 12;
+            // M3b: Anlauf muss frei sein (bei flachen Kreuzungen steht dort sonst z. B. der Weidezaun des
+            // Nebenwegs: dann prallt das Auto schon dort ab). Erst 12 m, sonst 9 / 7 m; geht keiner, zählt
+            // die Stelle als "nicht anfahrbar" (der Zaun schützt die Leitwand dort zusätzlich).
+            const anlaufFrei = (d) => {
+              // (vom Heck des Autos beim Start bis kurz vor die Leitwand, Autobreite und etwas Luft)
+              for (let f = -2.4; f <= d - 2.6; f += 0.5) if (!kol.frei(p.x - Math.sin(w) * (d - f), p.z - Math.cos(w) * (d - f), 1.3)) return false;
+              return true;
+            };
+            const dist = [12, 9, 7].find(anlaufFrei);
+            if (!dist) { ergebnis.aufprall.push({ art, stummel: ast.nr, anteil, kmh, winkel, nichtAnfahrbar: true }); continue; }
             const x0 = p.x - Math.sin(w) * dist, z0 = p.z - Math.cos(w) * dist;
             setze(x0, z0, w, kmh / 3.6);
             kol.letzterAufprall = null; A.kollision.letzterAufprall = null;
@@ -247,14 +263,15 @@ const erg = await spiel.page.evaluate(async () => {
   // =====================================================================
   // 6. Höhenprofil (Boden, wie die Fahrphysik ihn sieht)
   // =====================================================================
-  function profil(von, bis, lat) {
+  function profil(bereiche, lat) {
+    let stufe = { v: 0, s: 0 }, knick = { v: 0, s: 0 };
+    for (const [von, bis] of bereiche) {
     const h = [];
     for (let s = von; s <= bis; s += 0.5) {
       const p = S.punktBei(s), f = s - p.i, j = Math.min(S.anzahl - 1, p.i + 1);
       const x0 = p.x + (S.px[j] - p.x) * f, z0 = p.z + (S.pz[j] - p.z) * f;
       h.push(A.welt.bodenBei(x0 - p.tz * lat, z0 + p.tx * lat).h);
     }
-    let stufe = { v: 0, s: 0 }, knick = { v: 0, s: 0 };
     for (let n = 1; n < h.length - 1; n++) {
       const d2 = Math.abs(h[n + 1] - 2 * h[n] + h[n - 1]);
       if (d2 > stufe.v) stufe = { v: d2, s: von + n * 0.5 };
@@ -263,9 +280,20 @@ const erg = await spiel.page.evaluate(async () => {
       const g = Math.abs((h[n + 4] - h[n]) / 2 - (h[n] - h[n - 4]) / 2);
       if (g > knick.v) knick = { v: g, s: von + n * 0.5 };
     }
+    }
     return { stufe, knick };
   }
-  ergebnis.hoehe = [-2.5, 0, 2.5].map((lat) => ({ lat, nebenweg: profil(780, 1100, lat), rest: profil(1100, 3500, lat) }));
+  // Vergleich: die Strecke ohne Nebenwege (je 100 m Abstand), ohne Start- und Zielbereich
+  const wege = N.nebenwege.map((w) => [w.abzweig - 30, w.einmuendung + 60]);
+  const rest = [];
+  let r0 = 100;
+  for (const w of N.nebenwege) { if (w.abzweig - 100 > r0) rest.push([r0, w.abzweig - 100]); r0 = w.einmuendung + 100; }
+  rest.push([r0, S.laenge - 100]);
+  ergebnis.restBereiche = rest.map(([a, b]) => `${Math.round(a)}-${Math.round(b)}`).join(', ');
+  ergebnis.hoehe = [];
+  for (let k = 0; k < wege.length; k++) {
+    for (const lat of [-2.5, 0, 2.5]) ergebnis.hoehe.push({ weg: N.nebenwege[k].name, von: Math.round(wege[k][0]), bis: Math.round(wege[k][1]), lat, nebenweg: profil([wege[k]], lat), rest: profil(rest, lat) });
+  }
 
   // =====================================================================
   // 7. Fahrtest: senkrechte Beschleunigung und Nicken (wie autoZeichnen in main.js)
@@ -303,13 +331,16 @@ const erg = await spiel.page.evaluate(async () => {
     }
     return { beschl, nickRate, zeit: t };
   }
-  ergebnis.fahrt = { nebenweg: fahreUndMiss(740, 1100), rest: fahreUndMiss(1100, 1700) };
+  const fahrtRest = fahreUndMiss(1100, 1700);
+  ergebnis.fahrt = N.nebenwege.map((w) => ({ weg: w.name, von: Math.round(w.abzweig - 60), bis: Math.round(w.einmuendung + 80),
+    nebenweg: fahreUndMiss(Math.round(w.abzweig - 60), Math.round(w.einmuendung + 80)), rest: fahrtRest }));
 
   // =====================================================================
   // 8. Staub: geradeaus auf dem Schotter, ruhig (kein Drift, keine Handbremse)
   // =====================================================================
-  {
-    const p = S.punktBei(842);
+  ergebnis.staub = [];
+  for (const [belag, sMess] of [['schotter', 842], ['wiesenweg', 2920]]) {
+    const p = S.punktBei(sMess);
     setze(p.x, p.z, Math.atan2(p.tx, p.tz), 16);
     const z0 = { l: A.staub.zustand.links, r: A.staub.zustand.rechts };
     let maxDrift = 0;
@@ -320,11 +351,11 @@ const erg = await spiel.page.evaluate(async () => {
       A.physikSchritt(A.SCHRITT, e);
       if (k % 2 === 0) {
         A.staub.aktualisiere(A.SCHRITT * 2, { x: A.physik.x, y: 0, z: A.physik.z, richtung: A.physik.richtung, vx: A.physik.vx, vz: A.physik.vz,
-          tempo: A.physik.tempo, drift: A.physik.driftWinkel, gas: e.gas, handbremse: false, schotter: true });
+          tempo: A.physik.tempo, drift: A.physik.driftWinkel, gas: e.gas, handbremse: false, schotter: true, belag });
       }
       maxDrift = Math.max(maxDrift, Math.abs(A.physik.driftWinkel));
     }
-    ergebnis.staub = { links: A.staub.zustand.links - z0.l, rechts: A.staub.zustand.rechts - z0.r, maxDrift: Math.round(maxDrift * 10) / 10 };
+    ergebnis.staub.push({ belag, s: sMess, boden: A.welt.bodenBei(A.physik.x, A.physik.z).art, links: A.staub.zustand.links - z0.l, rechts: A.staub.zustand.rechts - z0.r, maxDrift: Math.round(maxDrift * 10) / 10 });
   }
   A.neustart();
   return ergebnis;
@@ -338,19 +369,23 @@ for (const e of erg.etappe) {
   melde(e.ok1, `Stummel ${e.stummel}: Auto 4 m vor der Absperrung (Stummel-Meter ${Math.round((e.sperreU - 4) * 10) / 10}) hat Etappen-s ${e.sEtappe} (Rennen ${e.sRennen}, Kreuzung bei ${e.sJ}), Netz erkennt Stummel ${e.netzAst}`);
   melde(e.ok2, `Stummel ${e.stummel}: "R" setzt auf die Etappe zurück (Abstand zur Mitte ${e.resetAbstand} m)`);
 }
-melde(erg.cpTest.ok, `In den Stummel bis zur Absperrung und zurück, dann über den Nebenweg: CP1 erreicht (nächster CP ${erg.cpTest.naechsterCp + 1}), Meldungen: ${erg.cpTest.meldungen.join(', ') || 'keine'}`);
+for (const c of erg.cpTests) {
+  melde(c.ok, `${c.weg}: in den Stummel bis zur Absperrung und zurück, dann über den Nebenweg bis nach der Einmündung` +
+    `${c.cpAuf ? ' (mit Checkpoint)' : ''}: nächster CP ${c.naechsterCp + 1}, Meldungen: ${c.meldungen.join(', ') || 'keine'}`);
+}
 
 console.log('2. Absperrungen als Leitwand (hineinfahren, Halt, rückwärts raus)');
 for (const art of ['band', 'reifen', 'heu', 'zaun']) {
-  const l = erg.aufprall.filter((a) => a.art === art);
+  const alle = erg.aufprall.filter((a) => a.art === art);
+  const l = alle.filter((a) => !a.nichtAnfahrbar);
   const durch = l.filter((a) => a.durch).length, nicht = l.filter((a) => !a.getroffen).length;
   // Halt: steht nach spätestens 2.5 s, oder (schräg) hat nach 0.3 s höchstens noch 35 % Tempo und gleitet an der Leitwand entlang
   const hart = l.filter((a) => a.haltNach !== null || a.rest <= 35);
   const stecken = l.filter((a) => a.zurueck < 2).length;
   const frontal = l.filter((a) => a.winkel === 0);
-  if (process.argv.includes('--details')) for (const a of l.filter((a) => a.durch || !a.getroffen || !(a.haltNach !== null || a.rest <= 35) || a.zurueck < 2)) console.log('   ', JSON.stringify(a));
+  if (process.argv.includes('--details')) for (const a of l.filter((a) => a.durch || !a.getroffen || !(a.haltNach !== null || a.rest <= 35) || a.zurueck < 2 || (a.winkel === 0 && !(a.haltNach <= 0.3)))) console.log('   ', JSON.stringify(a));
   melde(!durch && !nicht && hart.length === l.length && !stecken && frontal.every((a) => a.haltNach !== null && a.haltNach <= 0.3),
-    `${art.padEnd(6)}: ${l.length} Anfahrten (3 Stellen der Leitwand, 40/70/100 km/h, 0°/±20°/±40°): durch ${durch}, getroffen ${l.length - nicht}, ` +
+    `${art.padEnd(6)}: ${l.length} Anfahrten (3 Stellen der Leitwand, 40/70/100 km/h, 0°/±20°/±40°; ${alle.length - l.length} nicht anfahrbar, Zaun davor): durch ${durch}, getroffen ${l.length - nicht}, ` +
     `frontal Stillstand nach höchstens ${Math.max(...frontal.map((a) => a.haltNach ?? 9)).toFixed(2)} s, schräg nach 0.3 s höchstens ${Math.max(...l.map((a) => a.rest))} % Tempo, ` +
     `rückwärts raus ${l.length - stecken} (mind. ${Math.min(...l.map((a) => a.zurueck))} m)`);
 }
@@ -366,24 +401,25 @@ for (const f of erg.frei) {
   melde(f.naechst >= 0.2 && f.tafel !== null, `Stummel ${f.stummel} (${f.art}): Leitwand ${f.laenge} m lang, nächster Kollisionskreis ${f.naechst} m ausserhalb von Weg + Bankett; ` +
     `Richtungstafel bei ${f.tafel ?? '-'} m (Pfeil ${f.tafelLinks ? 'links' : 'rechts'})`);
 }
-console.log('6. Höhenprofil 780-1100 m (0.5-m-Schritte), verglichen mit 1100-3500 m');
+console.log(`6. Höhenprofil je Nebenweg (0.5-m-Schritte), verglichen mit der Strecke ohne Nebenwege (${erg.restBereiche} m)`);
 for (const h of erg.hoehe) {
   const n = h.nebenweg, r = h.rest;
   melde(n.stufe.v <= Math.max(0.04, r.stufe.v) && n.knick.v <= Math.max(0.04, r.knick.v * 1.25),
-    `${String(h.lat).padStart(4)} m neben der Mitte: grösste Stufe ${cm(n.stufe.v)} cm bei ${n.stufe.s} m (übrige Strecke ${cm(r.stufe.v)} cm), ` +
+    `${h.weg.padEnd(11)} ${h.von}-${h.bis} m, ${String(h.lat).padStart(4)} m neben der Mitte: grösste Stufe ${cm(n.stufe.v)} cm bei ${n.stufe.s} m (übrige Strecke ${cm(r.stufe.v)} cm), ` +
     `grösste Steigungsänderung ${cm(n.knick.v)} % auf 2 m bei ${n.knick.s} m (übrige Strecke ${cm(r.knick.v)} %)`);
 }
 console.log('7. Fahrtest (Profil "mittel"): Auto über Abzweig und Einmündung');
-{
-  const n = erg.fahrt.nebenweg, r = erg.fahrt.rest;
+for (const f of erg.fahrt) {
+  const n = f.nebenweg, r = f.rest;
   melde(n.beschl.v <= r.beschl.v * 1.25 + 0.5 && n.nickRate.v <= r.nickRate.v * 1.25 + 1,
-    `740-1100 m: senkrechte Beschleunigung höchstens ${n.beschl.v.toFixed(1)} m/s² bei ${Math.round(n.beschl.s)} m, Nicken höchstens ${n.nickRate.v.toFixed(1)} °/s bei ${Math.round(n.nickRate.s)} m ` +
+    `${f.weg.padEnd(11)} ${f.von}-${f.bis} m: senkrechte Beschleunigung höchstens ${n.beschl.v.toFixed(1)} m/s² bei ${Math.round(n.beschl.s)} m, Nicken höchstens ${n.nickRate.v.toFixed(1)} °/s bei ${Math.round(n.nickRate.s)} m ` +
     `(1100-1700 m zum Vergleich: ${r.beschl.v.toFixed(1)} m/s², ${r.nickRate.v.toFixed(1)} °/s)`);
 }
 console.log('8. Staub bei normaler Fahrt');
-{
-  const st = erg.staub, sum = st.links + st.rechts;
-  melde(sum >= 4 && Math.abs(st.links - st.rechts) <= 1, `geradeaus auf Schotter (Drift höchstens ${st.maxDrift}°): links ${st.links}, rechts ${st.rechts} Wölkchen`);
+for (const st of erg.staub) {
+  const sum = st.links + st.rechts;
+  melde(sum >= 3 && Math.abs(st.links - st.rechts) <= 1 && st.boden === st.belag,
+    `geradeaus auf ${st.belag} bei ${st.s} m (Boden: ${st.boden}, Drift höchstens ${st.maxDrift}°): links ${st.links}, rechts ${st.rechts} Wölkchen`);
 }
 melde(!spiel.fehler.length, `Keine Fehler in der Browser-Konsole (${spiel.fehler.length})`);
 console.log(`Dauer ${Math.round((Date.now() - t0) / 1000)} s`);
