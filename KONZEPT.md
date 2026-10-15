@@ -14,7 +14,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Version 1 = eine Etappe fahrbar mit Zeitmessung.
 
 ## Was Lino mag / nicht mag
-- Mag: Rallye-typische Abzweige statt Belagwechsel mitten auf der Strasse (Strasse fängt nie aus dem Nichts an, Absperrung direkt an der Kreuzung als gebogene Leitwand, die auf den Nebenweg leitet; seit M3a.1), erdiges Bankett statt Randsteinen, Temposchilder (seit M2a.1 als runde Tafeln 80/60/50, nur Optik), Leitplanke und Holzzaun als durchgehendes Band, Kollision mit Tempoverlust, Fahrgefühl wie ein schweres 80er-Rallyauto.
+- Mag: Rallye-typische Abzweige statt Belagwechsel mitten auf der Strasse (Strasse fängt nie aus dem Nichts an, Absperrung direkt an der Kreuzung als gebogene Leitwand, die auf den Nebenweg leitet; seit M3a.1), erdiges Bankett statt Randsteinen, Temposchilder (seit M2a.1 als runde Tafeln 80/60/50, nur Optik), Leitplanke und Holzzaun als durchgehendes Band, Kollision mit Tempoverlust, Felswand als feste Fläche (Auto stoppt an der sichtbaren Oberfläche, am Wandfuss Erde und Geröll statt Gras; seit M3a.3), Fahrgefühl wie ein schweres 80er-Rallyauto.
 - Aufprall: frontal hart zum Halt, danach rückwärts rausfahren (kein Wegschleudern, kein Weiterrutschen).
 - Kurven schneiden gehört dazu: Nur ca. 40 % der Kurven sind mit Steinen, Bäumen oder umgefallenen Stämmen im Kurveninnern gesperrt (Pace-Note "nicht schneiden"), die anderen sind frei (Pace-Note "schneiden"). Gras bremst stark, darum lohnt übertriebenes Schneiden nicht.
 - Sperren sollen natürlich aussehen: pro Kurve nur eine Sorte (nur ein paar Felsen, nur Stämme oder nur Tannen), locker statt Mauer, nichts steckt ineinander (seit M2a.1).
@@ -36,6 +36,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M3a Erster Nebenweg: Abzweig von der Hauptstrasse auf Schotter (800–1020 m), Stummel der Hauptstrasse mit Absperrung (Flatterband, Reifen; Heu und Holzbock vorbereitet), Ende nie sichtbar, Schotter-Fahrgefühl und Staub (fertig)
 - M3a.1 Nebenweg-Korrektur: Kreuzungen sauber (kein Schotter auf dem Asphalt, saubere Ausfransung), keine Stufe an der Einmündung, Staub an beiden Hinterrädern, Absperrungen als grosse gebogene Leitwand direkt an der Kreuzung mit Verbots-Symbol, Chevrons und Richtungstafel 70 m vorher, Waldrand am Nebenweg locker in Gruppen (185 statt 505 Tannen) (fertig)
 - M3a.2 Fahrphysik-Feinschliff: Handbremse lange gehalten bremst das Auto bis zum Stand (kein endloses Kreisen mehr, kurz ziehen kostet kaum Tempo), Dreher rutschen weich aus statt schlagartig zu stoppen, nach dem Lenken bei hohem Tempo schnell wieder geradeaus (Geradeauslauf-Hilfe, nicht beim Einlenken und nicht im Drift) (fertig)
+- M3a.3 Felswand: Das Auto stoppt an der sichtbaren Wandfläche (geprüft mit dem ganzen Umriss des Autos, nicht nur der Mitte; vorher steckte es bis 1.6 m in der Wand), Kamera hält Abstand zur Wand, am Wandfuss Erde/Geröll statt Gras (fertig)
 - M3b Weitere Nebenwege (als Nächstes): Wiesenweg-Abschnitt auf der Abfahrt (ca. 2710–3190 m) und ein Schotter-Nebenweg nach den Kehren (ca. 1870–2480 m), mit Heu- und Holzbock-Absperrungen
 - M4 Pace-Notes als Symbole, inkl. "nicht schneiden" an den gesperrten und "schneiden" an den freien Kurven (Daten liegen seit M1.2 bereit)
 - M5 Drumherum: Zielbildschirm, Minimap, Feinschliff (Auto, Fahrphysik)

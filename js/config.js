@@ -185,6 +185,10 @@ export const CONFIG = {
     abstand: 5.2,              // Wandfuss: Abstand von der Strassenmitte
     talBoden: 6,               // Höhe des Talbodens unter dem Abhang
     abhangStart: 7.5,          // ab diesem Abstand fällt der Hang ab
+    // M3a.3: Gelände am Wandfuss (zwischen Bankett und Wand) und hinter der Wand ohne Gras
+    fussFarben: true,          // false = wie früher (Wiese schaut am Wandfuss hervor)
+    fussBreite: [18, 26],      // so weit neben der Strassenmitte (Meter) ist es Erde/Geröll, danach weicher Übergang
+    fussGeroell: '#736e66',    // Farbe der Geröll-Flecken (dazu farben.erde und dunkler Fels)
   },
 
   // --- Sprites (Bäume, Steine) ----------------------------------------
@@ -441,7 +445,13 @@ export const CONFIG = {
   grenze: {
     maxAbstand: 45,            // weiter weg von der Strasse geht es nicht (unsichtbare Wand)
     abhangGrenze: 6.6,         // am Abhang: unsichtbare Grenze (Abstand Strassenmitte)
-    wandGrenze: 4.3,           // an der Felswand: hier stoppt das Auto
+    wandGrenze: 4.3,           // an der Felswand: hier stoppt die Automitte (seit M3a.3 nur noch für die Abkürzungs-Analyse)
+    // Felswand (seit M3a.3): Das Auto stoppt an der sichtbaren Wandfläche, geprüft mit seinem Umriss
+    wandHuelle: {
+      laenge: 4.48,            // so lang ist das Auto für die Felswand (sichtbare Karosserie, Meter)
+      breite: 1.86,            // so breit (mit Kotflügeln)
+      ueberBoden: 0.1,         // geprüft knapp über dem Boden (unten steht die Wand am weitesten vor)
+    },
     abprallen: 0.2,            // wie stark das Auto von Grenzen abprallt
     steilsterHang: 0.55,       // steiler als das (0.55 = ca. 29°) kommt das Auto nicht hoch
   },
@@ -658,6 +668,7 @@ export const CONFIG = {
     nachfuehren: 3.2,          // wie schnell die Kamera der Drehung folgt (höher = direkter)
     fahrtrichtungAnteil: 0.3,  // 0 = nur Blickrichtung des Autos, 1 = nur Fahrtrichtung
     positionGlaetten: 12,      // Glättung der Kameraposition
+    wandAbstand: 0.5,          // so viel Luft (Meter) hält die Kamera mindestens zur Felswand (M3a.3)
     sichtweite: 9000,          // weiter weg wird nichts gezeichnet
   },
 
