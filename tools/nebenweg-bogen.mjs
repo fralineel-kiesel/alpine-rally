@@ -73,6 +73,60 @@ const BOGEN_LISTE = [{
   // Millimeter an seinem Platz. Leer lassen = Abstand nach punktAbstand.
   anzahlPunkte: 15,
   kurveGewicht: 8,   // Meter pro Radiant Drehung (dichter in Kurven)
+}, {
+  // M3b: Almweg nach den Kehren. Verlässt die Hauptstrasse nach links (Bergseite, dort hört die Felswand
+  // auf), steigt leicht über die Alp (lange Gerade, zwei grosse Rechtskurven) und mündet von links wieder ein.
+  name: 'Almweg',
+  start: { x: 322.0, z: -1259.5 },  // bleibt (Felswand 1, Streckenmeter ca. 1966; davor bleibt die Strasse auf den mm gleich)
+  ende: { x: 753.7, z: -1342.0 },   // bleibt (Gerade vor der Passhöhe, ca. 2422)
+  startNach: { x: 340.6, z: -1272.5 }, // alter Punkt nach dem Start (für die Richtung am Start, in einer Kurve)
+  endeVor: { x: 730.1, z: -1337.8 },   // alter Punkt vor dem Ende
+  stuecke: [
+    { gerade: 19, marke: 'Hauptstrasse bis zum Abzweig' },
+    { abschnitt: "{ abschnitt: 'Almweg', baeume: 0.45, wald: 0.05 }" },
+    { kurve: 45, radius: 25, marke: 'Abzweig: rechts auf den Almweg (Schotter)' },
+    { gerade: 30, frei: 'lage' },
+    { kurve: -40, radius: 110, frei: 'laenge', marke: 'Almweg: grosse Kurve links' },
+    { gerade: 90, frei: 'lage', marke: 'Almweg: lange Gerade' },
+    { kurve: 45, radius: 80, marke: 'Almweg: grosse Kurve rechts' },
+    { gerade: 20 },
+    { kurve: -40, radius: 30, marke: 'Einmündung: links auf die Hauptstrasse' },
+    { abschnitt: "{ abschnitt: 'Felswand 1', baeume: 1.0, wald: 0.2, wand: 'links' }" },
+    { gerade: 5, marke: 'Hauptstrasse' },
+    { kurve: 5, radius: 150, frei: 'richtung', marke: 'Hauptstrasse' },
+    { gerade: 4 },
+  ],
+  huegel: [{ mitte: 0.55, breite: 0.4, hoehe: 2 }],
+  punktAbstand: 9,
+  anzahlPunkte: 17,
+  kurveGewicht: 8,
+}, {
+  // M3b: Wiesenweg auf der Abfahrt. Verlässt die Hauptstrasse nach links über die Wiese (Talseite),
+  // Checkpoint 3 liegt darauf, und mündet vor der Felswand der Abfahrt wieder ein.
+  name: 'Wiesenweg',
+  start: { x: 1047.7, z: -1539.8 }, // bleibt (Kurve rechts auf der Passhöhe, ca. 2795; so bleibt die Strasse davor auf den mm gleich)
+  ende: { x: 1334.0, z: -1703.4 },  // bleibt (Ende der Kurve links, ca. 3131)
+  startNach: { x: 1064.6, z: -1557.3 }, // alte Nachbarpunkte (Richtung am Start und am Ende, siehe oben)
+  endeVor: { x: 1313.6, z: -1690.7 },
+  stuecke: [
+    { gerade: 3, marke: 'Hauptstrasse bis zum Abzweig' },
+    { abschnitt: "{ abschnitt: 'Wiesenweg', baeume: 0.25, wald: 0 }" },
+    { kurve: 36, radius: 25, marke: 'Abzweig: rechts auf den Wiesenweg' },
+    { gerade: 20, frei: 'lage' },
+    { kurve: -15, radius: 80, frei: 'laenge', marke: 'Wiesenweg: Kurve links' },
+    { gerade: 40, frei: 'lage' },
+    { kurve: 36, radius: 70, marke: 'Wiesenweg: Kurve rechts' },
+    { gerade: 10 },
+    { kurve: -36, radius: 25, marke: 'Einmündung: links auf die Hauptstrasse' },
+    { abschnitt: "{ abschnitt: 'Abfahrt', baeume: 1.0, wald: 0.2, wand: 'rechts' }" },
+    { gerade: 8, marke: 'Hauptstrasse' },
+    { kurve: 5, radius: 150, frei: 'richtung', marke: 'Hauptstrasse' },
+    { gerade: 4 },
+  ],
+  huegel: [],
+  punktAbstand: 9,
+  anzahlPunkte: 12,
+  kurveGewicht: 8,
 }];
 
 const GRAD = Math.PI / 180;
@@ -155,10 +209,14 @@ function loeseLage(def, start, w0, winkel, ziel) {
 
 const text = fs.readFileSync(TRACK, 'utf8');
 let neuText = text;
+// --nur NAME: nur diesen Nebenweg neu rechnen (die anderen bleiben genau, wie sie im track.js stehen)
+const nurName = process.argv.includes('--nur') ? process.argv[process.argv.indexOf('--nur') + 1] : null;
 for (const def of BOGEN_LISTE) {
+  if (nurName && def.name !== nurName) continue;
   const marke0 = `// <nebenweg ${def.name}>`, marke1 = '// </nebenweg>';
-  // Punkte der Strecke ohne den alten/aktuellen Bogen
-  const alle = lesePunkte(text);
+  // Punkte der Strecke ohne den alten/aktuellen Bogen (M3b: aus dem schon geänderten Text, damit die
+  // Länge auch mit mehreren neu gerechneten Nebenwegen stimmt)
+  const alle = lesePunkte(neuText);
   const iS = alle.findIndex((p) => p.x === def.start.x && p.z === def.start.z);
   const iE = alle.findIndex((p) => p.x === def.ende.x && p.z === def.ende.z);
   if (iS < 0 || iE < 0) throw new Error('Start- oder Endpunkt nicht in track.js gefunden');
@@ -167,8 +225,14 @@ for (const def of BOGEN_LISTE) {
   // Richtung am Start: wie die Spline am Startpunkt (vom Punkt davor zum Startpunkt hin, gemittelt)
   const davor = vor.filter((p) => p.x !== undefined).slice(-2)[0];
   const danach = nach.filter((p) => p.x !== undefined)[1];
-  const w0 = Math.atan2(pS.x - davor.x, -(pS.z - davor.z)) / GRAD;
-  const wE = Math.atan2(danach.x - pE.x, -(danach.z - pE.z)) / GRAD;
+  let w0 = Math.atan2(pS.x - davor.x, -(pS.z - davor.z)) / GRAD;
+  let wE = Math.atan2(danach.x - pE.x, -(danach.z - pE.z)) / GRAD;
+  // M3b: Liegen Start- oder Endpunkt in einer Kurve, ist die Richtung dort nicht die Sehne zum Nachbarpunkt,
+  // sondern die Tangente (Mittel der Sehnen davor und danach im ALTEN Verlauf: startNach / endeVor). Sonst
+  // entsteht am Start-/Endpunkt ein kleiner Knick und die Strasse davor/danach verbiegt sich etwas.
+  const mittel = (a, b) => a + Math.atan2(Math.sin((b - a) * GRAD), Math.cos((b - a) * GRAD)) / GRAD / 2;
+  if (def.startNach) w0 = mittel(w0, Math.atan2(def.startNach.x - pS.x, -(def.startNach.z - pS.z)) / GRAD);
+  if (def.endeVor) wE = mittel(Math.atan2(pE.x - def.endeVor.x, -(pE.z - def.endeVor.z)) / GRAD, wE);
   const iL = def.stuecke.findIndex((st) => st.frei === 'laenge');
   const iR = def.stuecke.findIndex((st) => st.frei === 'richtung');
 
@@ -237,7 +301,7 @@ for (const def of BOGEN_LISTE) {
   let vorher = null;
   for (let a = Math.max(2, Math.abs(basisA) - 20); a <= Math.abs(basisA) + 20; a += 1) {
     const v = versuch(richtungA * a);
-    if (process.argv.includes('--abtasten')) console.log(a, (v.laenge - ZIEL_LAENGE).toFixed(2), Object.values(v.laengen).map((l) => l.toFixed(1)).join(' '));
+    if (process.argv.includes('--abtasten')) console.log(a, (v.laenge - ZIEL_LAENGE).toFixed(2), Object.values(v.laengen).map((l) => l.toFixed(1)).join(' '), 'Richtung', v.winkel[iR].toFixed(1));
     if (vorher && gueltig(v) && gueltig(vorher.v) && Math.sign(v.laenge - ZIEL_LAENGE) !== Math.sign(vorher.v.laenge - ZIEL_LAENGE)) {
       // die Lösung, die dem Wunschwinkel am nächsten liegt
       if (!lo || Math.abs(a - Math.abs(basisA)) < Math.abs(Math.abs(lo) - Math.abs(basisA))) { lo = richtungA * vorher.a; hi = richtungA * a; }
@@ -268,6 +332,37 @@ for (const def of BOGEN_LISTE) {
     console.log(`  ab Bogen-Meter ${mk.von.t.toFixed(1).padStart(6)}: ${txt}${st.marke ? `  (${st.marke})` : ''}`);
   }
   if (Object.values(v.laengen).some((l) => l < 3)) console.log('  ACHTUNG: eine Gerade ist kürzer als 3 m – Bogen anpassen!');
+  // M3b: Wie genau folgt die fertige Strasse (Spline durch die Stützpunkte) dem geplanten Bogen?
+  {
+    const xyz = [...vor, ...v.punkte, ...nach].filter((p) => p.x !== undefined).map((p) => new THREE.Vector3(p.x, 0, p.z));
+    const k = new THREE.CatmullRomCurve3(xyz, false, 'centripetal');
+    const i0 = vor.filter((p) => p.x !== undefined).length - 1, n = xyz.length - 1;
+    const proben = [];
+    for (let t = i0 / n; t <= (i0 + v.punkte.filter((p) => p.x !== undefined).length + 1) / n; t += 0.02 / n) proben.push(k.getPoint(t));
+    const dicht = baueBogen({ ...def, punktAbstand: 0.5 }, pS, w0, v.winkel, v.laengen, true).punkte.filter((p) => p.x !== undefined);
+    let max = 0;
+    for (const p of dicht) max = Math.max(max, Math.min(...proben.map((q) => Math.hypot(q.x - p.x, q.z - p.z))));
+    console.log(`  Strasse weicht höchstens ${max.toFixed(2)} m vom geplanten Bogen ab (${def.anzahlPunkte || 'auto'} Stützpunkte)`);
+    // Streckenmeter der Marken (Anfang jedes Stücks) auf der fertigen Strasse: für "abzweig" und
+    // "einmuendung" in config.js (Abzweig = Anfang der Abbiege-Kurve, Einmündung = Ende der Einmündungs-Kurve)
+    const voll = [...vor, ...v.punkte, ...nach].filter((p) => p.x !== undefined).map((p) => new THREE.Vector3(p.x, p.h, p.z));
+    const kv = new THREE.CatmullRomCurve3(voll, false, 'centripetal');
+    kv.arcLengthDivisions = 20000;
+    const L = kv.getLengths(), ND = L.length - 1, pt = new THREE.Vector3();
+    const sBei = (x, z) => {
+      let best = 0, bd = Infinity;
+      for (let d = 0; d <= ND; d++) {
+        kv.getPoint(d / ND, pt);
+        const dd = (pt.x - x) ** 2 + (pt.z - z) ** 2;
+        if (dd < bd) { bd = dd; best = d; }
+      }
+      return L[best];
+    };
+    for (const mk of v.b.marken) {
+      if (!mk.st.marke) continue;
+      console.log(`  Streckenmeter ${sBei(mk.von.x, mk.von.z).toFixed(1)} bis ${sBei(mk.bis.x, mk.bis.z).toFixed(1)}: ${mk.st.marke}`);
+    }
+  }
 
   // Text für track.js: Kommentar pro Stück wie im Rest der Datei, Punkte 3 pro Zeile
   const zeilen = [marke0, '  // (automatisch von tools/nebenweg-bogen.mjs – Bogen dort ändern, nicht hier)'];
@@ -295,7 +390,7 @@ for (const def of BOGEN_LISTE) {
   zeilen.push('  ' + marke1);
   const block = zeilen.join('\n');
 
-  const a = neuText.indexOf(marke0), e = neuText.indexOf(marke1);
+  const a = neuText.indexOf(marke0), e = neuText.indexOf(marke1, a);
   if (a < 0 || e < 0) throw new Error(`Marker "${marke0}" / "${marke1}" fehlen in js/track.js`);
   const zeilenAnfang = neuText.lastIndexOf('\n', a) + 1;
   neuText = neuText.slice(0, zeilenAnfang) + block + neuText.slice(e + marke1.length);

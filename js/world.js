@@ -8,7 +8,14 @@ import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
   schotterTextur, SCHOTTER_LAENGE, SCHOTTER_U, fransenTextur, FRANSEN_LAENGE,
+  wiesenwegTextur, WIESENWEG_LAENGE, WIESENWEG_U, wiesenwegRandTextur,
 } from './pixel.js';
+
+// Beläge der Nebenwege (seit M3b mehrere): Textur, Länge einer Texturkachel (Meter), Anteil der Wegbreite im Bild
+const NEBEN_BELAEGE = {
+  schotter: { textur: schotterTextur, laenge: SCHOTTER_LAENGE, u: SCHOTTER_U },
+  wiesenweg: { textur: wiesenwegTextur, laenge: WIESENWEG_LAENGE, u: WIESENWEG_U },
+};
 
 // Zusätzliche Landschaftsformen von Hand: grosse Hügel und Senken.
 // radius = wie breit, hoehe = wie hoch (negativ = Senke).
@@ -557,20 +564,37 @@ export function baueWelt(szene, strecke, netz) {
     ], ASPHALT_LAENGE),
     new THREE.MeshLambertMaterial({ map: asphaltTextur(f), ...versatz(-2, -4) }),
   ));
-  // Schotter (Nebenwege der Etappe) und die abgerundeten Ecken der Einfahrten
-  const schotterStuecke = etappeStuecke('schotter');
-  if (schotterStuecke.length) {
-    const hs = BL.schotter.breite / 2;
+  // Schotter und Wiesenweg (Nebenwege der Etappe) und die abgerundeten Ecken der Einfahrten.
+  // Je Belag ein Zeichenaufruf (Band + Ecken der Nebenwege mit diesem Belag).
+  const nebenStuecke = {};
+  for (const [belag, nb] of Object.entries(NEBEN_BELAEGE)) {
+    const stuecke = nebenStuecke[belag] = etappeStuecke(belag);
+    if (!stuecke.length) continue;
+    const hs = BL[belag].breite / 2;
     // quer in mehrere Streifen geteilt (M3a.1): So wird der Schotter unter dem Asphalt der
     // Stummel Punkt für Punkt abgesenkt und schaut nirgends durch den Asphalt (auch nicht aus der Nähe)
     const K = CONFIG.kreuzung.schotterStreifen;
-    const schotterQuer = [Array.from({ length: K + 1 }, (_, k) => ({ lat: -hs + (2 * hs * k) / K, dy: 0, u: (SCHOTTER_U * k) / K }))];
-    const geo = baueBand(schotterStuecke.map((st) => ({ weg: etappeWeg, ...st, quer: schotterQuer, anpassen: unterAsphalt })), SCHOTTER_LAENGE);
+    const streifen = (k) => [Array.from({ length: k + 1 }, (_, j) => ({ lat: -hs + (2 * hs * j) / k, dy: 0, u: (nb.u * j) / k }))];
+    const quer = streifen(K), quer1 = streifen(1);
+    // M3b: Die vielen Streifen braucht es nur an den Kreuzungen (dort liegt der Belag unter dem Asphalt).
+    // Dazwischen reicht einer – spart auf dem langen Almweg und dem Wiesenweg Tausende Dreiecke.
+    const teile = [];
+    for (const st of stuecke) {
+      let a = st.von;
+      for (let i = st.von + 1; i <= st.bis + 1; i++) {
+        const wechsel = i > st.bis || nahKreuzung(px[i], pz[i]) !== nahKreuzung(px[a], pz[a]);
+        if (!wechsel) continue;
+        const b = Math.min(i, st.bis); // Nachbarteile teilen sich einen Punkt (keine Lücke)
+        if (b > a) teile.push({ weg: etappeWeg, von: a, bis: b, quer: nahKreuzung(px[a], pz[a]) ? quer : quer1, anpassen: unterAsphalt });
+        a = b;
+      }
+    }
+    const geo = baueBand(teile, nb.laenge);
     // Ecken: Fläche aus netz.js (folgt der gebogenen Kante der Etappe), Textur ohne Fahrspuren
     const pos = Array.from(geo.attributes.position.array), uv = Array.from(geo.attributes.uv.array), idx = Array.from(geo.index.array);
     for (const ast of aeste) {
       const m = ast.muendung;
-      if (!m) continue;
+      if (!m || (ast.nebenweg.belag || 'schotter') !== belag) continue;
       const basis = pos.length / 3;
       const ux = ast.tx[0], uz = ast.tz[0];
       for (const p of m.punkte) {
@@ -578,8 +602,8 @@ export function baueWelt(szene, strecke, netz) {
         // Textur: quer zum Stummel = u (im Teil ohne Fahrspuren), längs = v
         const quer = Math.abs((p.x - m.c.x) * -uz + (p.z - m.c.z) * ux);
         // (2 Pixel Abstand zum Weg-Teil der Textur: sonst mischt der Filter dessen braunen Rand hinein)
-        const u0 = SCHOTTER_U + 2 / 48, u1 = 1 - 1 / 48;
-        uv.push(u0 + (u1 - u0) * Math.min(1, quer / (CONFIG.kreuzung.eckRadius + 1)), ((p.x - m.c.x) * ux + (p.z - m.c.z) * uz) / SCHOTTER_LAENGE);
+        const u0 = nb.u + 2 / 48, u1 = 1 - 1 / 48;
+        uv.push(u0 + (u1 - u0) * Math.min(1, quer / (CONFIG.kreuzung.eckRadius + 1)), ((p.x - m.c.x) * ux + (p.z - m.c.z) * uz) / nb.laenge);
       }
       for (const [a0, b0, c0] of m.dreiecke) {
         // Drehsinn so, dass die Fläche nach oben schaut
@@ -593,7 +617,7 @@ export function baueWelt(szene, strecke, netz) {
     g2.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g2.setIndex(idx);
     g2.computeVertexNormals();
-    szene.add(new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ map: schotterTextur(f), ...versatz(-1.5, -3) })));
+    szene.add(new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ map: nb.textur(f), ...versatz(-1.5, -3) })));
   }
   // Ausfransen: an der Einfahrt hört der Asphalt nicht mit einer harten Kante auf, sondern
   // franst in den Schotter aus (schmaler Streifen mit Löchern, entlang der Asphaltkante)
@@ -618,9 +642,14 @@ export function baueWelt(szene, strecke, netz) {
       [{ lat: -h - s.bankett, dy: -0.35, u: 0 }, { lat: -h, dy: 0, u: 1 }],
       [{ lat: h, dy: 0, u: 1 }, { lat: h + s.bankett, dy: -0.35, u: 0 }],
     ];
-    const teile = [];
-    for (const [belag, stuecke] of [['asphalt', asphaltStuecke], ['schotter', schotterStuecke]]) {
-      for (const st of stuecke) teile.push({ weg: etappeWeg, ...st, quer: bankQuer(BL[belag].breite / 2), anpassen: unterAsphaltOderEcke });
+    const teile = [], teileGras = [];
+    for (const [belag, stuecke] of [['asphalt', asphaltStuecke], ...Object.entries(nebenStuecke)]) {
+      // M3b: Wiesenweg mit grasigem Rand statt erdigem Bankett (eigenes Band, gleiche Form)
+      for (const st of stuecke) (BL[belag].grasRand ? teileGras : teile).push({ weg: etappeWeg, ...st, quer: bankQuer(BL[belag].breite / 2), anpassen: unterAsphaltOderEcke });
+    }
+    if (teileGras.length) {
+      szene.add(new THREE.Mesh(baueBand(teileGras, BANKETT_LAENGE),
+        new THREE.MeshLambertMaterial({ map: wiesenwegRandTextur(f), ...versatz(-1, -2) })));
     }
     // Stummel: auf der Seite des Nebenwegs erst nach der Einfahrt (dort liegt Schotter)
     for (const w of astWege) {
@@ -639,7 +668,7 @@ export function baueWelt(szene, strecke, netz) {
     const lb = s.mittellinieBreite / 2;
     const linieQuer = [[{ lat: -lb, dy: 0, u: 0 }, { lat: lb, dy: 0, u: 1 }]];
     const teile = [];
-    for (const [belag, stuecke] of [['asphalt', asphaltStuecke], ['schotter', schotterStuecke]]) {
+    for (const [belag, stuecke] of [['asphalt', asphaltStuecke], ...Object.entries(nebenStuecke)]) {
       if (BL[belag].mittellinie) for (const st of stuecke) teile.push({ weg: etappeWeg, ...st, quer: linieQuer });
     }
     for (const w of astWege) teile.push(astTeil(w, linieQuer));
@@ -903,7 +932,7 @@ export function baueWelt(szene, strecke, netz) {
       }
       if (rang > 1) {
         const e = netz.inEcke(x, z);
-        if (e) { art = 'schotter'; h = e.h; rang = 1; }
+        if (e) { art = e.ast.nebenweg.belag || 'schotter'; h = e.h; rang = 1; }
       }
     }
     if (art) return { h, art };

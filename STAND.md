@@ -1,10 +1,9 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 3c fertig** – Start- und Zielbereich: Die Strasse hört an Start und Ziel nicht mehr wie ein
-Stummel auf, sondern läuft weiter (abgesperrt, verschwindet hinter Kurve und Kuppe). Nach dem Ziel gibt es eine
-ca. 200 m lange Ausrollstrecke. Start und Ziel haben jetzt Bögen, Absperrband, Strohballen, rund 100 Zuschauer,
-Zeitnahme, Zelte, Autos und mehr Bäume.
-Davor: 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 3b fertig** – zwei weitere Nebenwege: der **Almweg** (Schotter, nach den Kehren, 1986–2401 m)
+und der **Wiesenweg** (neuer Belag: Feldweg über die Wiese, auf der Abfahrt, 2798–3108 m, mit Checkpoint 3). Dazu kleinere
+Strohballen, und alle vier Absperr-Arten (Band, Reifen, Heu, Holzböcke) stehen jetzt im Spiel.
+Davor: 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -26,7 +25,216 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 3c: Start- und Zielbereich ✅
+## Meilenstein 3b: Zwei weitere Nebenwege (Almweg, Wiesenweg) ✅
+
+### Was wurde gebaut?
+
+**1. Almweg (Schotter) nach den Kehren – 1985.6 bis 2400.8 m (ca. 415 m)**
+- Kurz nach dem Anfang der Felswand (die Wand hört jetzt vor dem Abzweig auf) biegt die Etappe bei **1985.6 m nach
+  rechts** ab (45°, Talseite). Danach eine grosse Linkskurve (Radius 110 m), eine **lange Gerade (ca. 220 m)** leicht
+  bergauf (ca. 8 %, wie die Hauptstrasse, mit einer kleinen Kuppe), eine grosse Rechtskurve (Radius 80 m), und bei
+  **2400.8 m** kommt der Almweg **von links (Bergseite)** zurück auf die Hauptstrasse. Danach geht die Felswand weiter.
+- Abstand zu den Kurven aus `nichtSchneiden`/`schneiden`: Abzweig 131 m nach 1854, Einmündung 83 m vor 2484.
+- Checkpoint 2 (1870 m) steht davor auf Asphalt, unverändert.
+- Absperrungen (automatisch reihum): **Strohballen** am Abzweig, **Holzböcke** an der Einmündung.
+
+**2. Wiesenweg (neuer Belag) auf der Abfahrt – 2797.7 bis 3107.9 m (ca. 310 m)**
+- Bei **2797.7 m** geht es **rechts** weg auf einen **Feldweg über die Wiese** (Kreuzung flacher, 36°), Kurve links,
+  lange Gerade bergab (ca. 5 %), Kurve rechts, bei **3107.9 m** von links zurück auf die Hauptstrasse. Die Felswand der
+  Abfahrt beginnt erst danach.
+- Abstand zu den Kurven: Abzweig 88 m nach 2710, Einmündung 88 m vor 3196.
+- **Checkpoint 3 (2880 m) steht auf dem Wiesenweg**, gleich nach der Linkskurve am Anfang der Geraden. Das Tor ist
+  schmaler (10.6 m statt 12.4 m, `checkpoints.torBreiteWiesenweg`).
+- Absperrungen: **Flatterband** am Abzweig, **Reifen** an der Einmündung.
+- **Aussehen** (`wiesenwegTextur()` in `js/pixel.js`): erdbraun, zwei dunklere festgefahrene **Fahrspuren**, in der
+  Mitte und am Rand wächst **Gras** herein (wellig, ausgefranst), einzelne Halme in der Erde, kein Mittelstrich.
+  Statt des erdigen Banketts hat er einen **grasigen Rand** (`wiesenwegRandTextur()`), damit er wie ein Feldweg in der
+  Wiese aussieht und nicht wie eine Wiese mit braunem Streifen. Breite 5.2 m (Schotter 6.2 m, Asphalt 7 m).
+- **Fahrgefühl** (`untergrund.wiesenweg`): Grip 0.64, Rollen 0.9 / 0.03, dazu Heck 0.7 und Stabilität 0.5. Wie in
+  M3a gelernt: Mit weniger Grip allein wurde das Auto nur träger (Drift 3° statt 8° auf Schotter). Mit dem
+  lockereren Heck driftet es unter Gas jetzt **mehr als auf Schotter**, lässt sich aber immer einfangen (Zahlen unten).
+- **Staub**: dunkler, erdig und schwächer als auf Schotter (`staub.belaege`). F3 zeigt „UNTERGRUND WIESENWEG“.
+
+**3. Was sonst dazugekommen ist**
+- **Strohballen kleiner**: flache Ballen (1.2 x 1.1 x 0.82 m), zwei Lagen = **1.64 m statt 2.4 m**. Das gilt auch für die
+  Strohballen-Wand hinter dem Start (dieselbe Absperrart).
+- Die **Absperr-Arten wechseln automatisch**: Band, Reifen (Talschleife, unverändert) → Heu, Holzböcke (Almweg) →
+  Band, Reifen (Wiesenweg). Nie zweimal dieselbe hintereinander; Heu und Holzböcke stehen jetzt zum ersten Mal im Spiel.
+- **Richtungstafeln** ca. 70 m vor jeder neuen Kreuzung (1916, 2298, 2728, 3018 m). Findet sich auf der üblichen Seite
+  kein Platz (dichter Waldrand), sucht sie weiter vorne/hinten und zuletzt auf der anderen Seite. Steht sie hinter einer
+  freien Kurve („schneiden“), hält sie wie Zäune und Planken 50 m Abstand zu deren Innenseite (sonst stand eine Tafel
+  einer Abkürzungs-Linie im Weg).
+- **Stummel**: Die Hauptstrasse läuft an allen vier neuen Kreuzungen weiter (Asphalt, Mittelstrich, Holzzaun als
+  Seitenschutz), biegt hinter der Absperrung ab und verschwindet hinter Kuppe und Kurve. Weil die neuen Kreuzungen
+  flacher sind (36–45° statt 66–80°), liegen Stummel und Etappe länger übereinander – darum liegt der Stummel länger genau
+  auf der Höhe der Etappe (`hoeheAngleichen` je Stummel). Vorher gab es am Wiesenweg-Abzweig eine **30-cm-Stufe**, jetzt 0.1 cm.
+- **Waldrand** (je Nebenweg eigene Werte, `nebenwege[].wald`): Alp und Wiese mit **lockeren Gruppen und viel Wiese**,
+  dicht nur auf der Innenseite der Kurven (dort könnte man abkürzen). Am Wiesenweg mehr Felsbrocken statt Tannen (30 %).
+  Drei von Hand gesetzte Gruppen: Almweg 2075 m links, Wiesenweg 2765 und 2812 m rechts (ein kleines Wäldchen in der
+  Ecke des flachen Abzweigs: Quer über die Wiese sparte man dort sonst bis 8.7 m = 1.7 s).
+- **Strecke**: Die Etappe ist **genau gleich lang** (3667.587 m, Abweichung 0.000002 m). Alles bis 1966 m liegt auf den
+  Millimeter gleich, alles nach 3150 m höchstens 2 mm daneben. Nur direkt neben den Anschlusspunkten bewegt sich die
+  Strasse ein paar Zentimeter (2422–2470 m bis 8 cm, 3131–3150 m bis 11 cm) – so rechnet die Kurve durch die Punkte.
+- **Abschnitte**: „Felswand 1“ ist jetzt zweigeteilt (vor dem Almweg und danach), die Abfahrt mit Felswand beginnt erst
+  nach dem Wiesenweg (3108 statt 2904 m).
+
+### Wo man schrauben kann (`js/config.js`)
+
+| Wert | Was |
+|---|---|
+| `nebenwege` | die drei Nebenwege: `abzweig`/`einmuendung` (Meter), `belag`, Absperrung (leer = reihum), Stummel-Form, `wald` |
+| `belaege.wiesenweg` | Breite (5.2 m), kein Mittelstrich, `grasRand` (Rand grasig statt Erde) |
+| `untergrund.wiesenweg` | `grip`, `rollen`, `rollenTempo`, `heck`, `stabilitaet`, `geradeaus`, `rueckwaerts` |
+| `farben.wiesenweg`, `.wiesenwegSpur`, `.wiesenwegGras` | Erde, Fahrspuren, Gras des Feldwegs |
+| `staub.belaege` | Staubfarbe und -stärke je Belag (Wiesenweg: dunkler, Stärke 0.55) |
+| `checkpoints.torBreiteWiesenweg` | Torbreite auf dem Wiesenweg (10.6 m) |
+| `absperrung.heu` | Grösse der Strohballen (jetzt 1.2 x 1.1 x 0.82 m) |
+| `absperrung.sichtweite` | Absperrungen der neuen Nebenwege weiter weg als 350 m nicht zeichnen (spart Leistung) |
+| `nebenwegWald.gruppen` | von Hand gesetzte Baumgruppen (jetzt auch am Almweg und Wiesenweg) |
+
+### So testest du
+
+1. **Almweg** (ab dem Start ca. 1:40): Nach den Kehren und dem Anfang der Felswand kommt die gelbe Tafel (Pfeil rechts),
+   dann die Strohballen-Wand. Rechts auf den Schotter, die lange Gerade hoch, bei der Einmündung von links auf den
+   Asphalt (Holzböcke rechts).
+2. **Wiesenweg** (nach der Passhöhe): Tafel mit Pfeil rechts, Flatterband, rechts auf den Feldweg, durch Checkpoint 3.
+   Driften, Handbremse, bremsen, anfahren. F3 zeigt „WIESENWEG“. Ist der Staub dunkler und schwächer als auf Schotter?
+3. **Kreuzungen** langsam anfahren und anschauen (60/30/15 m): Liegt irgendwo Schotter oder Feldweg auf dem Asphalt?
+   Sieht man irgendwo, wo der Asphalt aufhört?
+4. **In die Absperrungen** fahren und versuchen, aussen herum in die Stummel zu kommen – soll nicht gehen.
+5. **Abkürzen** über die Wiese an den Kreuzungen und in den Kurven – soll sich nicht lohnen.
+6. F3: bleibt es auf dem Laptop bei 60 FPS (besonders am Wiesenweg)?
+
+### Bilder (`screenshots/m3b/`, „a“ = vorher, „b“ = nachher)
+
+Je Nebenweg (01–12 Almweg, 13–24 Wiesenweg): Abzweig aus 60/30/15 m, Fahrersicht mit Stummel (25 m vor dem Abzweig,
+Blick in den Stummel), mitten im Weg, Fahrersicht 25 m vor der Einmündung, Einmündung aus 60/30/15 m, Staub bei normaler
+Fahrt, jede Absperrung aus 20 m. Die „a“-Bilder zeigen dieselben Streckenmeter in der alten Version (dort noch Hauptstrasse).
+Neu erzeugen: `node tools/m3b-bilder.mjs --endung b` (und `--wurzel <alter Ordner> --endung a`).
+
+### Selbst getestet
+
+- **Streckenlänge** 3667.5869 m (unverändert), Checkpoints 900/1870/2880, Listen `sperren`, `nichtSchneiden`,
+  `schneiden` unverändert.
+- **Abkürzungen** (`node tools/abkuerzungen.mjs --pruefen`): **127 / 2 / 342 / 84** (genau wie vorher), 0 in gesperrten
+  Kurven, **keine neuen Abkürzungs-Zonen** an den neuen Nebenwegen.
+- **Waldrand** (`node tools/nebenweg-wald.mjs`, jetzt für alle Nebenwege, auch Linien aus einer Kurve davor über die
+  Kreuzungsecke): Talschleife, Almweg und Wiesenweg je **0 Abkürzungs-Linien**. Talschleife unverändert 185 Tannen +
+  30 Felsen; Almweg 201 Tannen + 24 Felsen (auf 415 m), Wiesenweg 132 Tannen + 43 Felsen (auf 310 m).
+- **Sichtlinien** (`node tools/stummel-sicht.mjs`): Stummel 3–6 mit 5540 / 722 / 7169 / 1444 Strahlen – **0** sehen das
+  Ende (auch nur mit dem Gelände, ohne Bäume: 0). Start und Ziel unverändert 0.
+- **`node tools/nebenweg-test.mjs`** (jetzt für alle drei Nebenwege) – alles bestanden:
+  - Rennlogik: an allen 6 Stummeln zählt die Etappe, „R“ setzt auf die Etappe; in jeden Abzweig-Stummel bis zur
+    Absperrung und zurück, dann über den Nebenweg: kein „VERPASST“, CP1 und CP3 zählen.
+  - Jede Absperrart an allen 6 Leitwänden (je 270 Anfahrten, 40/70/100 km/h, 0°/±20°/±40°): nie durch, frontal
+    Stillstand nach höchstens 0.18 s, schräg nach 0.3 s höchstens 24 % Tempo, rückwärts immer raus (mind. 6.8 m).
+  - Umfahren: je Stummel 1080 Versuche (6480 insgesamt) – **0** kamen auf einen Stummel.
+  - Höhenprofil: grösste Stufe am Almweg und Wiesenweg 0.1 cm (übrige Strecke 3.5 cm), Steigungsänderung höchstens 0.9 %
+    auf 2 m (übrige Strecke 2.8 %).
+  - Fahrtest über die Kreuzungen: Almweg 7.5 m/s² / 3.0 °/s, Wiesenweg 4.4 m/s² / 4.6 °/s (übrige Strecke 6.8 m/s² / 9.6 °/s).
+  - Staub geradeaus: Schotter links 7 / rechts 7, Wiesenweg links 3 / rechts 3 Wölkchen (beidseitig gleich, schwächer).
+- **Fahrgefühl je Belag** (`node tools/belag-test.mjs`, neu, ohne Browser):
+
+  | Belag | Drift unter Gas (max / Mittel) | Handbremse: Drift, wieder gerade nach | Bremsweg 80→0 | 80 km/h ausrollen, nach 3 s | 0→50 km/h, 8 % bergauf | engster Radius bei 60 km/h |
+  |---|---|---|---|---|---|---|
+  | Asphalt | 4.7° / 3.7° | 17°, 0.6 s | 23.2 m | 70 km/h | 2.3 s | 32 m |
+  | Schotter | 9.2° / 8.0° | 17°, 0.8 s | 22.2 m | 65 km/h | 2.7 s | 40 m |
+  | **Wiesenweg** | **15.7° / 10.7°** | **15°, 0.8 s** | **23.9 m** | **56 km/h** | **4.0 s** | **52 m** |
+  | Gras | 2.4° / 1.8° | 13°, 0.5 s | 19.6 m | 32 km/h | 9.3 s | 51 m |
+
+  Asphalt und Schotter genau wie vorher. Wiesenweg: driftet am meisten, wird aber in 0.8 s eingefangen (kein Eis),
+  bremst kaum schlechter als Asphalt, hält in Kurven so wenig wie Gras, bremst beim Ausrollen weniger als Gras.
+- **Testfahrer** (`node tools/testfahrer.mjs`): **2:59.33 / 2:42.35 / 2:31.92** (vorher 2:43.28 / 2:27.62 / 2:18.27, also
+  +16.1 / +14.7 / +13.7 s – gewollt, Nebenwege sind langsamer). CP1 und CP2 auf die Hundertstel gleich. Auf beiden
+  neuen Wegen höchstens 0.8 m neben der Mitte, **0 s neben dem Weg**, keine Aufpralle.
+- `aufprall-test`, `strassenrand-test`, `kuh-test`, `lenk-test`, `getriebe-test`, `handbremse-test`, `gras-test`,
+  `startziel-test`, `felswand-test`: alle bestanden, keine Fehler in der Browser-Konsole.
+- Ehrlich zu den Test-Anpassungen:
+  - `felswand-test` prüfte fest bei 2117, 2300 und 3100 m – dort steht jetzt keine Felswand mehr. Er sucht sich die
+    Stellen jetzt selbst (Mitte jedes Wandstücks mit voller Höhe: 2446 und 3275 m).
+  - `gras-test` zählte „zurück auf der Strasse“ nur auf Asphalt. Neben dem Almweg und dem Wiesenweg kommt man rückwärts
+    auf Schotter bzw. den Feldweg zurück – das zählt jetzt auch (807 von 807).
+  - `nebenweg-test`: Bei der flachen Wiesenweg-Kreuzung stand ein Anlauf-Startpunkt im Weidezaun. Der Test sucht jetzt
+    einen freien Anlauf (12, 9 oder 7 m); gefunden wurde überall einer.
+  - `nebenweg-bogen.mjs`: kann jetzt mehrere Nebenwege nacheinander rechnen (`--nur Name`) und nimmt am Start/Ende die
+    Richtung der Kurve statt der Sehne (sonst entstand dort ein kleiner Knick).
+
+**Leistung** (`node tools/m3b-bilder.mjs`, Auto dort, Kamera wie im Spiel, Headless):
+
+| Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+|---|---|---|
+| Start | 120 → 122 | 144 431 → 148 026 (+3 600) |
+| Nebenweg 1 (900 m) | 93 → 94 | 150 189 → 152 696 (+2 500) |
+| Almweg (2150 m) | 105 → 99 | 136 056 → 140 238 (+4 200) |
+| Wiesenweg (2950 m) | 73 → 78 | 134 388 → 149 600 (+15 200, vor allem die Reifenwand der Einmündung) |
+| Ziel (30 m vor der Linie) | 59 → 59 | 108 114 → 107 526 |
+| schlimmste Stelle (alle 25 m) | 122 → 124 | 165 301 → 168 230 (+2 900) |
+
+Budget +10 Zeichenaufrufe / +20 000 Dreiecke: eingehalten (höchstens +5 / +15 200). Damit es reicht, sind zwei Dinge
+neu: Die Absperrungen der neuen Nebenwege sind je eine eigene Geometrie und gehen weiter weg als 350 m aus (vorher
+wären alle Absperrungen überall mitgezeichnet worden, +11 000 Dreiecke schon am Start), und der Belag der Nebenwege ist
+nur noch an den Kreuzungen in 8 Streifen geteilt (dort braucht es sie), sonst in einen. **Ladezeit**
+(`node tools/ladezeit.mjs`, 7 Messungen abwechselnd, Median): 1677 → 1903 ms (+226 ms, Budget +300 ms).
+
+### Ehrlich beurteilt
+
+- **Asphaltanfang/-ende**: Auf keinem Bild und laut Sichtlinien-Check nirgends zu sehen. **Belag auf dem Asphalt**:
+  nein – der Schotter/Feldweg liegt unter dem Asphalt, die Kante ist sauber ausgefranst.
+- **Wiesenweg**: sieht wie ein Feldweg aus (zwei Erdspuren, Grasstreifen in der Mitte, grasiger Rand). Aus der Ferne
+  wird er eher zu einem dunklen, erdigen Band – das ist gewollt (ruhig, kein Flimmern).
+- **Staub**: Bei normaler Fahrt (Bilder 10 und 22) ist er absichtlich schwach, nur ein paar gerasterte Pünktchen –
+  auf dem Wiesenweg noch weniger und erdbraun. Richtig sichtbar wird er beim Driften und mit der Handbremse.
+- **Fahrgefühl Wiesenweg**: rutschig und driftfreudig, aber gutmütig (Zahlen oben). Anfahren am Berg dauert länger
+  (4 s auf 50 km/h statt 2.7 s auf Schotter), das Auto rollt aber nie zurück. Ob es sich *spassig* anfühlt, kann nur
+  Lino am Lenkrad sagen – bitte ausprobieren und Feedback geben (Werte in `untergrund.wiesenweg`).
+- **Kreuzungen am Wiesenweg** sind flacher (36°) als die anderen. Grund: Die Etappe muss genau gleich lang bleiben,
+  und die alte Strasse war dort fast gerade – ein steilerer Abzweig hätte zu viel Umweg gemacht. Darum sind die
+  Leitwände dort länger (ca. 37 m) und Stummel und Feldweg laufen ein Stück nebeneinander.
+- **Almweg und Wiesenweg** sind mit 415 m bzw. 310 m etwas länger als geschätzt (250–400 / 200–300 m) – aus demselben
+  Grund (gleiche Länge, die Kreuzungen brauchen Platz).
+- **Bäume**: Wiese mit Gruppen, kein Allee-Gefühl auf den Geraden; auf der Innenseite der Kurven aber dichte Tannen
+  (sonst könnte man abkürzen). Am Almweg vor der Einmündung wirkt die Innenseite der Rechtskurve recht dicht.
+
+### Bekannte Probleme
+
+- **Kühe neu verteilt**: 44 statt 35 Kühe. Weil die Felswand beim Almweg jetzt eine offene Alpwiese ist und am
+  Wiesenweg mehr Wiese liegt, würfelt der Kuh-Planer alle Herden neu (eine Zufallsfolge für alle). Der Kuh-Test ist
+  erfüllt (alle erreichbar, nicht auf der Strasse), aber sie stehen an anderen Stellen als vorher.
+- Die Strohballen-Wand am Start ist mit den kleineren Ballen auch niedriger (1.64 m statt 2.4 m).
+- Leistung nur im Headless-Browser gemessen; bitte auf dem Laptop mit F3 prüfen (vor allem am Wiesenweg).
+
+### Weitere Nebenwege hinzufügen (aktualisiert für M3b)
+
+1. Ein Stück der Etappe aussuchen. **Wichtig: Der neue Weg muss genau so lang sein wie das ersetzte Stück** – auf einer
+   fast geraden Strasse ist darum nur wenig Umweg möglich (Almweg: ca. 16 m, Wiesenweg: ca. 6 m). Kreuzungen mit 35–50°
+   und kleine Radien (25–30 m) kosten am wenigsten Weg.
+2. In `tools/nebenweg-bogen.mjs` einen Eintrag in `BOGEN_LISTE`: Start- und Endpunkt (Stützpunkte, die bleiben),
+   `startNach`/`endeVor` (die alten Nachbarpunkte, für die Richtung), die Stücke (je eine Gerade `frei: 'lage'` zweimal –
+   **nicht parallel**, eine Kurve `frei: 'laenge'`, eine `frei: 'richtung'`), Abschnitt-Zeilen am Abzweig und nach der
+   Einmündung, `anzahlPunkte` = so viele Punkte, wie zwischen Start und Ende stehen (dann bleibt der Rest auf den mm gleich).
+3. In `js/track.js` die alten Punkte zwischen Start und Ende mit den Zeilen `// <nebenweg NAME>` und `// </nebenweg>`
+   einrahmen (die alten Punkte dazwischen lassen!), dann `node tools/nebenweg-bogen.mjs --nur NAME`. Findet es keine
+   Lösung, zeigt `--zeigen --abtasten` die Längen (zu lang: weniger Umweg, zu kurz: mehr Kurven).
+4. In `js/config.js` bei `nebenwege` den Eintrag mit `abzweig`/`einmuendung` aus der Ausgabe „Streckenmeter“.
+   **Stummel-Kurve**: Biegt die Etappe am Abzweig rechts ab, muss der Abzweig-Stummel nach links (`kurve` negativ);
+   mündet sie mit einer Linkskurve ein, muss der Einmündungs-Stummel ebenfalls nach links (sonst kreuzt er den Nebenweg).
+   Bei flachen Kreuzungen `hoeheAngleichen` vergrössern.
+5. Prüfen: `node tools/stummel-sicht.mjs`, `node tools/nebenweg-wald.mjs`, `node tools/abkuerzungen.mjs --pruefen`,
+   `node tools/nebenweg-test.mjs`, `node tools/testfahrer.mjs`; bei offenen Abkürzungen von Hand Gruppen in
+   `nebenwegWald.gruppen` setzen.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Kuh-Herden „einfrieren“ wie die Bäume (feste Zufallsfolge je Herde), damit Streckenänderungen sie nicht mehr verschieben.
+- Am Wiesenweg ein Weidegatter oder ein Heuschober als Blickfang neben dem Weg.
+- Spritzer aus Erdklumpen statt Staub, wenn es nass ist (mit dem Wetter in einem späteren Meilenstein).
+- Pace-Notes „Achtung Feldweg“ / „Schotter“ an den Abzweigen (M4).
+- Kreuzungen steiler machen, wenn man dafür das ersetzte Stück länger wählt (z. B. mit einer zusätzlichen Kurve der
+  alten Strasse) – braucht etwas Planung, weil die Strecke gleich lang bleiben muss.
+
+---
+
+## Meilenstein 3c: Start- und Zielbereich ✅ (Verlauf, Stand damals)
 
 ### Was war das Problem – und was wurde gemacht?
 
@@ -778,7 +986,7 @@ die Stummel hinein.
   man dort nicht schneiden kann.
 - Im Headless-Browser gemessen; bitte auf dem Laptop prüfen, ob es 60 FPS bleiben.
 
-### Weitere Nebenwege hinzufügen (für M3b)
+### Weitere Nebenwege hinzufügen (für M3b; aktuelle Anleitung: siehe Meilenstein 3b oben)
 
 1. In `tools/nebenweg-bogen.mjs` einen Eintrag in `BOGEN_LISTE` anlegen: Start- und Endpunkt (Stützpunkte,
    die bleiben) und die Stücke dazwischen (Gerade / Kurve mit Radius, je eine Gerade `frei: 'lage'` zweimal,

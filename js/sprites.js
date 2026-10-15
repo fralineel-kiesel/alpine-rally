@@ -251,20 +251,20 @@ export function bauePflanzen(szene, strecke, welt) {
       return true;
     };
     // Innenseite einer Kurve? +1 = rechts, -1 = links, 0 = (fast) gerade. Auch ein Stück davor und danach.
-    const kurvenSeite = (s) => {
+    const kurvenSeite = (s, w = nw) => {
       let best = 0, staerke = 0;
-      for (let d = -nw.innenVorNach; d <= nw.innenVorNach; d += 3) {
+      for (let d = -w.innenVorNach; d <= w.innenVorNach; d += 3) {
         const a = strecke.punktBei(s + d - 6), b = strecke.punktBei(s + d + 6);
         const dreh = Math.asin(Math.max(-1, Math.min(1, a.tx * b.tz - a.tz * b.tx))) / 12; // 1/Radius, + = rechts
         if (Math.abs(dreh) > staerke) { staerke = Math.abs(dreh); best = Math.sign(dreh); }
       }
-      return staerke >= nw.innenAbKruemmung ? best : 0;
+      return staerke >= w.innenAbKruemmung ? best : 0;
     };
     // frei vor den Richtungstafeln (absperrungen.js stellt sie ca. "vorher" Meter vor die Kreuzung)
     const tafelFrei = N.aeste.filter((a) => a.sperre && !a.ende).map((a) => {
       const sK = Math.min(a.sperre.linie[0].s, a.sperre.linie[a.sperre.linie.length - 1].s) - CONFIG.absperrung.richtungstafel.vorher;
       // gleiche Seite wie in absperrungen.js (Aussenseite, ausser Innenseite einer freien Kurve)
-      const schneidet = ABKUERZUNGEN.schneiden.some((k) => sK > k.sVon - 10 && sK < k.sBis + 10 && (k.seite === 'rechts' ? 1 : -1) === a.sperre.sigma);
+      const schneidet = ABKUERZUNGEN.schneiden.some((k) => sK > k.sVon - 10 && sK < k.sBis + CONFIG.strassenrand.pufferSchneiden && (k.seite === 'rechts' ? 1 : -1) === a.sperre.sigma);
       return { von: sK - 14, bis: sK + 8, seite: schneidet ? -a.sperre.sigma : a.sperre.sigma };
     });
     const stelle = (s, sd, lat, h, rnd = rndW, steinAnteil = nw.steinAnteil) => {
@@ -292,19 +292,21 @@ export function bauePflanzen(szene, strecke, welt) {
       // Mündungen (Einfahrt in den Stummel) auf der Seite der Stummel auslassen
       const muendungen = N.aeste.filter((a) => a.nebenweg === weg && a.muendung)
         .map((a) => ({ von: Math.min(a.sJ, a.muendung.sC) - 6, bis: Math.max(a.sJ, a.muendung.sC) + 6, seite: a.muendung.seiteEtappe }));
+      // M3b: je Nebenweg eigene Werte möglich (config.js, nebenwege[].wald), sonst die aus nebenwegWald
+      const ww = { ...nw, ...(weg.wald || {}) };
       for (const sd of [-1, 1]) {
-        let s = weg.abzweig - nw.vor + rndW() * 4;
-        while (s < weg.einmuendung + nw.nach) {
-          const innen = kurvenSeite(s) === sd;
-          const c = innen ? nw.innen : nw.aussen;
+        let s = weg.abzweig - ww.vor + rndW() * 4;
+        while (s < weg.einmuendung + ww.nach) {
+          const innen = kurvenSeite(s, ww) === sd;
+          const c = innen ? ww.innen : ww.aussen;
           // eine Gruppe: so viele Bäume, Abstand in der Gruppe, etwas vor und zurück versetzt
           const n = Math.round(mische(c.gruppe[0], c.gruppe[1], rndW()));
           for (let k = 0; k < n; k++) {
             const lat = mische(c.abstand[0], c.abstand[1], rndW());
-            const h = mische(nw.hoehe[0], nw.hoehe[1], Math.pow(rndW(), 0.8));
+            const h = mische(ww.hoehe[0], ww.hoehe[1], Math.pow(rndW(), 0.8));
             const gesperrt = muendungen.some((m) => m.seite === sd && s > m.von && s < m.bis) || tafelFrei.some((t) => t.seite === sd && s > t.von && s < t.bis);
             if (!gesperrt) {
-              stelle(s, sd, lat, h);
+              stelle(s, sd, lat, h, rndW, ww.steinAnteil);
               // zweite, versetzte Reihe dahinter (deckt die Lücken der ersten)
               if (rndW() < c.zweiteReihe) stelle(s + mische(c.schritt[0], c.schritt[1], rndW()) * 0.5, sd, mische(c.zweiteAbstand[0], c.zweiteAbstand[1], rndW()), h * 1.2);
             }

@@ -1,4 +1,5 @@
-// Waldrand am Nebenweg prüfen (Meilenstein 3a.1):  node tools/nebenweg-wald.mjs [--wurzel <ordner>] [--profile mittel,flott]
+// Waldrand am Nebenweg prüfen (Meilenstein 3a.1):  node tools/nebenweg-wald.mjs [--wurzel <ordner>] [--profile mittel,flott] [--weg Name]
+// Seit M3b für jeden Nebenweg (Bereich: 65 m vor dem Abzweig bis 90 m nach der Einmündung), --weg: nur diesen.
 //
 // Lohnt sich Abkürzen am Nebenweg (über die Kreuzungsecken, durch den Wald auf Gras)?
 //   1. Alle geraden Abkürzungs-Linien im Bereich des Nebenwegs (wie tools/abkuerzungen.mjs: spart
@@ -17,7 +18,7 @@ import { starteSpiel, WURZEL } from './spiel-browser.mjs';
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 const wurzel = arg('--wurzel') ? path.resolve(arg('--wurzel')) : WURZEL;
 const profile = (arg('--profile') || 'mittel,flott').split(',');
-const VON = 735, BIS = 1110;
+const nurWeg = arg('--weg');
 
 const spiel = await starteSpiel({ wurzel });
 await spiel.ladeSpiel();
@@ -25,12 +26,19 @@ const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.j
 const analyseCode = fs.readFileSync(path.join(WURZEL, 'tools/abkuerzungen-analyse.js'), 'utf8');
 await spiel.page.evaluate(([f]) => { window.__fahrerUrl = URL.createObjectURL(new Blob([f], { type: 'text/javascript' })); }, [fahrerCode, analyseCode]);
 
+const wege = await spiel.page.evaluate(() => window.__alpineRally.netz.nebenwege.map((w) => ({ name: w.name, von: w.abzweig, bis: w.einmuendung })));
+let schneller = 0;
+for (const weg of wege) {
+if (nurWeg && weg.name !== nurWeg) continue;
+const VON = Math.round(weg.von - 65), BIS = Math.round(weg.bis + 90);
 const erg = await spiel.page.evaluate(async ({ VON, BIS, profile }) => {
   const A = window.__alpineRally, S = A.strecke;
   const f = await import(window.__fahrerUrl);
   const m = await import('/tools/abkuerzungen-analyse.js');
   // nur Linien, die im Bereich anfangen und aufhören (Analyse über die ganze Strecke, dann filtern)
-  const imBereich = (l) => l.sVon >= VON && l.sBis <= BIS;
+  // (M3b: auch Linien, die vor dem Bereich anfangen und in ihm enden, z. B. aus einer freien Kurve davor
+  // über die Ecke des Abzweigs – sie müssen am Nebenweg liegen: Ende nach dem Abzweig bzw. Anfang vor der Einmündung)
+  const imBereich = (l) => (l.sVon >= VON && l.sBis <= BIS) || (l.sBis > VON + 65 && l.sVon < BIS - 90);
   const linien = m.findeAbkuerzungen(S, A.welt, A.kollision).filter(imBereich)
     .concat(m.findeAbkuerzungen(S, A.welt, A.kollision, { breite: 1.8 }).filter(imBereich));
   const { zonen } = m.kurvenZonen(S, linien);
@@ -63,11 +71,10 @@ const erg = await spiel.page.evaluate(async ({ VON, BIS, profile }) => {
   return { linien: linien.length, zonen: ergebnis, zaehl };
 }, { VON, BIS, profile });
 
-console.log(`Version: ${wurzel === WURZEL ? 'dieses Projekt' : wurzel}`);
+console.log(`Nebenweg "${weg.name}" – Version: ${wurzel === WURZEL ? 'dieses Projekt' : wurzel}`);
 console.log(`Bäume/Steine ${VON}-${BIS} m (bis 40 m neben der Strasse): Waldrand-Tannen ${erg.zaehl.waldrand}, Waldrand-Steine ${erg.zaehl.waldrandSteine}; ` +
   `alle Tannen ${erg.zaehl.tannen}, Laubbäume ${erg.zaehl.laub}, Steine ${erg.zaehl.steine}`);
 console.log(`Abkürzungs-Linien (>= minGewinn, 2.2 m und 1.8 m breit): ${erg.linien}`);
-let schneller = 0;
 for (const z of erg.zonen) {
   const b = z.best;
   if (b && b.gewinn > 0) schneller++;
@@ -75,6 +82,7 @@ for (const z of erg.zonen) {
     (b ? `beste Linie ${Math.round(b.sVon)}–${Math.round(b.sBis)} (${b.profil}): Ideallinie ${b.ideal.toFixed(2)} s, geschnitten ${b.schnitt.toFixed(2)} s, ` +
       `Zeitgewinn ${b.gewinn >= 0 ? '+' : ''}${b.gewinn.toFixed(2)} s, davon auf Gras ${b.grasSchnitt.toFixed(2)} s` : 'keine Linie fahrbar (Aufprall)') +
     (b && b.gewinn > 0 ? '  <- SCHNELLER' : ''));
+}
 }
 console.log(schneller ? `ERGEBNIS: ${schneller} Kurve(n), in denen Abkürzen schneller ist` : 'ERGEBNIS: Abkürzen ist nirgends schneller als die Strasse');
 if (spiel.fehler.length) console.log('Fehler im Spiel:', spiel.fehler);

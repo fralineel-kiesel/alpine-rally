@@ -91,13 +91,21 @@ if (startZiel.tannen.length || startZiel.laub.length) {
   if (m.laub) { szene.remove(m.laub); m.laub.geometry.dispose(); m.laub.material.dispose(); }
   szene.add(m.laub = spriteGruppe(pflanzen.laubbaeume, pflanzen.laubTex));
 }
-startZiel.fern.push(...(absperrungen.meshes || []).filter((m) => m !== absperrungen.mesh));
+startZiel.fern.push(...(absperrungen.meshes || []).filter((m) => m !== absperrungen.mesh && !m.name.startsWith('absperrungen-nebenweg-')));
+// M3b: Absperrungen der weiteren Nebenwege (je eine Geometrie) gehen weiter weg als absperrung.sichtweite aus
+const nebenwegSperren = (absperrungen.meshes || []).filter((m) => m.name.startsWith('absperrungen-nebenweg-'));
+function nebenwegSperrenZeigen(kamPos) {
+  for (const m of nebenwegSperren) {
+    const k = m.geometry.boundingSphere;
+    m.visible = k.center.distanceTo(kamPos) - k.radius < CONFIG.absperrung.sichtweite;
+  }
+}
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, startZiel.buesche);
 const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse]);
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
-const staub = baueStaub(szene); // Staub auf Schotter (M3a)
-const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false };
+const staub = baueStaub(szene); // Staub auf Schotter (M3a) und Wiesenweg (M3b)
+const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false, belag: null };
 const auto = baueAuto();
 szene.add(auto.objekt);
 const physik = new Fahrphysik();
@@ -426,16 +434,18 @@ function schleife(jetzt) {
   const weg = Math.hypot(physik.x - xVor, physik.z - zVor) * Math.sign(physik.vVor || 1);
 
   autoZeichnen(dt, weg);
-  // Staub (nur auf Schotter): Werte ohne neue Objekte übergeben
+  // Staub (nur auf Schotter und Wiesenweg): Werte ohne neue Objekte übergeben
   staubAuto.x = physik.x; staubAuto.z = physik.z; staubAuto.y = auto.objekt.position.y;
   staubAuto.richtung = physik.richtung; staubAuto.vx = physik.vx; staubAuto.vz = physik.vz;
   staubAuto.tempo = physik.tempo; staubAuto.drift = physik.driftWinkel;
-  staubAuto.gas = e.gas; staubAuto.handbremse = e.handbremse; staubAuto.schotter = untergrund === 'schotter';
+  staubAuto.gas = e.gas; staubAuto.handbremse = e.handbremse; staubAuto.belag = untergrund;
+  staubAuto.schotter = !!(CONFIG.staub.belaege && CONFIG.staub.belaege[untergrund]);
   staub.aktualisiere(dt, staubAuto);
   kameraFuehren(dt);
   welt.aktualisiere(kamera.position);
   strassenrand.aktualisiere(kamera.position);
   startZiel.aktualisiere(dt, kamera.position);
+  nebenwegSperrenZeigen(kamera.position);
   renderer.render(szene, kamera);
 
   hud.zeichne({
@@ -443,7 +453,7 @@ function schleife(jetzt) {
     dt, kmh: physik.tempo * 3.6, debug: debugAn, fps,
     gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
     meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
-    untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS', schotter: 'SCHOTTER' }[untergrund],
+    untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS', schotter: 'SCHOTTER', wiesenweg: 'WIESENWEG' }[untergrund],
     hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
     meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
     zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,

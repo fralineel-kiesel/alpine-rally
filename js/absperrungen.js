@@ -6,7 +6,7 @@
 // Vier Arten (config.js, "absperrung" und "nebenwege"):
 //   band   rot-weisses Flatterband (zwei Bänder) an 1.5 m hohen Warnstangen
 //   reifen Reifenstapel (ca. 1.3 m), zwei versetzte Reihen, einzelne Reifen weiss gestrichen
-//   heu    Strohballen (1.2-m-Würfel), zwei Lagen
+//   heu    Strohballen (Quader 1.2 x 1.1 x 0.82 m, seit M3b), zwei Lagen
 //   zaun   Holzböcke (1.3 m, A-Beine, rot-weisse Bretter), leicht schief
 // Dazu: grosses Verbots-Symbol (rotes Rund, weisser Balken) über der Geradeaus-Richtung, rot-weisse
 // Chevrons entlang der Leitwand und ca. 70 m vor der Kreuzung eine grosse Richtungstafel.
@@ -138,7 +138,9 @@ export function baueAbsperrungen(szene, welt, andere = []) {
   const rndHaupt = zufall(c.seed);
   for (const ast of netz.aeste) {
     if (!ast.sperre) continue;
-    gruppe(ast.ende || 'nebenwege');
+    // M3b: jeder weitere Nebenweg eine eigene Geometrie (sonst zählen alle Absperrungen als ein Stück und
+    // werden überall gezeichnet, wo eine davon im Bild ist); weit weg gehen sie aus wie die an Start und Ziel
+    gruppe(ast.ende || (ast.nebenweg && ast.nebenweg.nr > 0 ? `nebenweg-${ast.nebenweg.name}` : 'nebenwege'));
     const art = ast.sperreArt;
     const sp = ast.sperre;
     const rnd = zufall(c.seed + ast.nr * 97 + Math.floor(rndHaupt() * 1000));
@@ -309,10 +311,16 @@ export function baueAbsperrungen(szene, welt, andere = []) {
       // Seite: Kurven-Aussenseite der Kreuzung – ausser dort ist die Innenseite einer freien Kurve
       // ("schneiden"): dann auf die andere Seite, sonst stünde die Tafel den Schneidern im Weg
       const sT = sKurve - ct.vorher;
-      const schneidet = ABKUERZUNGEN.schneiden.some((k) => sT > k.sVon - 10 && sT < k.sBis + 10 && (k.seite === 'rechts' ? 1 : -1) === sp.sigma);
-      const seite = schneidet ? -sp.sigma : sp.sigma;
+      // M3b: hinter einer freien Kurve so weit wie der Strassenrand (strassenrand.pufferSchneiden): lange Abkürzungen kommen erst dort zurück
+      const schneidet = ABKUERZUNGEN.schneiden.some((k) => sT > k.sVon - 10 && sT < k.sBis + CONFIG.strassenrand.pufferSchneiden && (k.seite === 'rechts' ? 1 : -1) === sp.sigma);
+      let seite = schneidet ? -sp.sigma : sp.sigma;
       let platz = null;
-      for (const ds of [0, 2, -2, 4, -4, 6, -6, 8, -8, 10, -10, 12, -12]) {
+      // M3b: findet sich auf dieser Seite kein Platz (z. B. dichter Waldrand innen in einer Kurve des
+      // Nebenwegs), weiter vorne/hinten suchen und zuletzt auf der anderen Seite
+      const versuche = [0, 2, -2, 4, -4, 6, -6, 8, -8, 10, -10, 12, -12].map((ds) => [ds, seite])
+        .concat([14, -14, 16, -16, 18, -18].map((ds) => [ds, seite]), [0, 2, -2, 4, -4, 6, -6, 8, -8].map((ds) => [ds, -seite]));
+      for (const [ds, sd] of versuche) {
+        seite = sd;
         const s = sT + ds;
         const p = netz.etappePunkt(s);
         const L = netz.halbBei(s) + CONFIG.strasse.bankett + ct.abstand + ct.breite / 2;
@@ -367,7 +375,7 @@ export function baueAbsperrungen(szene, welt, andere = []) {
     m.name = name === 'nebenwege' ? 'absperrungen' : `absperrungen-${name}`;
     szene.add(m);
     meshes.push(m);
-    if (name === 'nebenwege') mesh = m;
+    if (name === 'nebenwege' || (!mesh && name.startsWith('nebenweg-'))) mesh = m;
     dreiecke += g.idx.length / 3;
   }
   const sperren = liste.filter((e) => e.art !== 'richtungstafel');

@@ -130,7 +130,21 @@ if (neu) {
 
 // --- 2. Aufprall ------------------------------------------------------------------------------
 console.log('\n2. Aufprall gegen die Wand (danach 1 s Vollgas, bremsen bis zum Stand, dann 3 s rückwärts):');
-const STELLEN = [2117, 2300, 3100];
+// M3b: An 2117 und 2300 m (Almweg) und 3100 m (Wiesenweg) steht keine Felswand mehr. Darum je Felswand-Stück
+// (volle Höhe, mindestens 30 m am Stück) die Mitte; die alte Version misst weiter an den alten Stellen.
+const STELLEN = await page.evaluate((neu) => {
+  const S = window.__alpineRally.strecke;
+  if (!neu || !window.__alpineRally.netz.nebenwege.some((w) => w.name === 'Almweg')) return [2117, 2300, 3100];
+  const liste = [];
+  let von = -1;
+  for (let i = 0; i <= S.anzahl; i++) {
+    const voll = i < S.anzahl && S.wandSeite[i] && S.wandStaerke[i] > 0.99;
+    if (voll && von < 0) von = i;
+    if (!voll && von >= 0) { if (i - von >= 30) liste.push(Math.round(S.s[Math.floor((von + i) / 2)])); von = -1; }
+  }
+  return liste;
+}, neu);
+console.log(`  Stellen: ${STELLEN.join(', ')} m`);
 let maxEin = -Infinity, maxEinText = '';
 for (const s0 of STELLEN) {
   for (const v of [20, 60, 100]) {
