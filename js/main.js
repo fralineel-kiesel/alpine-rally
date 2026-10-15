@@ -5,7 +5,7 @@ import { CONFIG } from './config.js';
 import { baueStrecke } from './track.js';
 import { baueWelt } from './world.js';
 import { baueNetz } from './netz.js';
-import { bauePflanzen, baueDeko } from './sprites.js';
+import { bauePflanzen, baueDeko, spriteGruppe } from './sprites.js';
 import { baueAuto } from './car.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
@@ -17,6 +17,7 @@ import { baueStrassenrand } from './strassenrand.js';
 import { baueKuehe } from './kuehe.js';
 import { baueAbsperrungen } from './absperrungen.js';
 import { baueStaub } from './staub.js';
+import { baueStartZiel } from './startziel.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -78,8 +79,21 @@ const absperrungen = baueAbsperrungen(szene, welt, [...pflanzen.hindernisse, ...
 strassenrand.hindernisse.push(...absperrungen.hindernisse);
 // Kühe auf den Weiden (Meilenstein 2b) – sind auch Hindernisse
 const kuehe = baueKuehe(szene, strecke, welt, pflanzen, strassenrand);
+// Start- und Zielbereich (M3c): Bögen, Band, Stroh, Zuschauer, Zelte, Autos – sind auch Hindernisse.
+// Nach den Kühen (weicht ihnen aus); die Bäume kommen zu den anderen Bäumen (gleiche Zeichenaufrufe)
+const startZiel = baueStartZiel(szene, strecke, welt, { pflanzen, rand: strassenrand, kuehe });
+strassenrand.hindernisse.push(...startZiel.hindernisse);
+if (startZiel.tannen.length || startZiel.laub.length) {
+  pflanzen.tannen.push(...startZiel.tannen);
+  pflanzen.laubbaeume.push(...startZiel.laub);
+  pflanzen.hindernisse.push(...startZiel.hindernisseBaeume);
+  const m = pflanzen.meshes;
+  if (m.laub) { szene.remove(m.laub); m.laub.geometry.dispose(); m.laub.material.dispose(); }
+  szene.add(m.laub = spriteGruppe(pflanzen.laubbaeume, pflanzen.laubTex));
+}
+startZiel.fern.push(...(absperrungen.meshes || []).filter((m) => m !== absperrungen.mesh));
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
-const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe);
+const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, startZiel.buesche);
 const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse]);
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
 const staub = baueStaub(szene); // Staub auf Schotter (M3a)
@@ -138,7 +152,7 @@ function aufStrasse() {
 }
 
 // --- Physik-Schritt mit Untergrund, Steigung und Begrenzungen ---
-const qAuto = {};
+const qAuto = {}, qGrenze = {};
 const SCHRITT = 1 / 120;
 let untergrund = 'asphalt';
 
@@ -157,7 +171,9 @@ function physikSchritt(dt, e) {
 
   let eingabe = e;
   // Nach dem Ziel bremst das Auto von selbst bis zum Stand (aber nicht weiter in den Rückwärtsgang)
-  if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: physik.vVor > 0.5 ? Math.max(e.bremse, 0.35) : 0 };
+  // (M3c: Stärke in config.js, startZiel.zielBremse – das Auto steht vor der Absperrung der Ausrollstrecke)
+  const zb = CONFIG.startZiel && CONFIG.startZiel.an !== false ? CONFIG.startZiel.zielBremse : 0.35;
+  if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: physik.vVor > 0.5 ? Math.max(e.bremse, zb) : 0 };
 
   const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?
@@ -211,9 +227,12 @@ function physikSchritt(dt, e) {
     if (ueber > 0) physik.anGrenze(-rx * q2.wandSeite, -rz * q2.wandSeite, ueber);
   }
   if (q2.abstand > g.maxAbstand) {
-    const p = strecke.punktBei(strecke.s[q2.i]);
-    const nx = (physik.x - p.x) / q2.abstand, nz = (physik.z - p.z) / q2.abstand;
-    physik.anGrenze(nx, nz, q2.abstand - g.maxAbstand);
+    // nächster Punkt, der als Strasse zählt: Etappe, seit M3c auch die Ausrollstrecke nach dem Ziel
+    const p = netz.grenzPunkt(physik.x, physik.z, qGrenze);
+    if (p.abstand > g.maxAbstand) {
+      const nx = (physik.x - p.x) / p.abstand, nz = (physik.z - p.z) / p.abstand;
+      physik.anGrenze(nx, nz, p.abstand - g.maxAbstand);
+    }
   }
 
   // Zeitmessung und Checkpoints
@@ -321,7 +340,9 @@ function kameraSofort() {
   kameraZiel();
   kam.pos.copy(kam.ziel);
 }
-const qKam = {};
+const qKam = {}, qKamS = {};
+// Absperrungen an Start und Ziel mit ihrer Höhe (für die Kamera)
+const endSperren = netz.enden.map((ast) => ({ ast, hoehe: (absperrungen.liste.find((e) => e.ast === ast.nr) || { hoehe: 1.5 }).hoehe }));
 function kameraFuehren(dt) {
   const c = CONFIG.kamera;
   let ziel = physik.richtung;
@@ -343,6 +364,14 @@ function kameraFuehren(dt) {
       kam.pos.x -= -q.tz * q.wandSeite * ueber;
       kam.pos.z -= q.tx * q.wandSeite * ueber;
     }
+  }
+  // M3c: Steht die Kamera in oder hinter der Absperrung an Start oder Ziel (Auto fährt rückwärts hinein),
+  // wird sie über die Absperrung gehoben (sonst sieht man ins Stroh)
+  for (const { ast, hoehe } of endSperren) {
+    const w = netz.stummelAbfrage(ast, kam.pos.x, kam.pos.z, 15, qKamS);
+    const sp = ast.sperre;
+    if (!w || Math.abs(w.seite) > sp.breite + 1.5) continue;
+    if (w.s > sp.bogenU(begrenze(w.seite, -sp.breite, sp.breite)) - 1.5) kam.pos.y = Math.max(kam.pos.y, w.h + hoehe + 0.7);
   }
   // nicht unter das Gelände
   const boden = bodenHoehe(kam.pos.x, kam.pos.z) + 1.0;
@@ -406,6 +435,7 @@ function schleife(jetzt) {
   kameraFuehren(dt);
   welt.aktualisiere(kamera.position);
   strassenrand.aktualisiere(kamera.position);
+  startZiel.aktualisiere(dt, kamera.position);
   renderer.render(szene, kamera);
 
   hud.zeichne({
@@ -430,6 +460,6 @@ requestAnimationFrame(schleife);
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
-  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub,
+  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };

@@ -223,6 +223,16 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
     if (herde(herdenMitte(w), 1, w.zaun ? 'tal' : 'alp')) k++;
   }
 
+  // Zusätzliche Herden (M3c, beim Start- und Zielbereich): erst ganz am Schluss, damit alle anderen Kühe
+  // genau gleich bleiben. Ein paar Plätze würfeln, den ersten nehmen, an dem eine Kuh stehen darf.
+  for (const z of c.zusatzHerden || []) {
+    for (let v = 0; v < 16; v++) {
+      const m = P.punkt(z.s + (rnd() - 0.5) * 30, z.seite * mische(z.lat[0], z.lat[1], rnd()));
+      if (!ok(m.x, m.z, c.radius)) continue;
+      if (herde(m, z.anzahl, 'tal')) break;
+    }
+  }
+
   // Füsse auf den Boden: tiefster Punkt unter dem Körper (an Hängen schwebt sonst ein Bein)
   for (const k of kuehe) {
     const fx = Math.sin(k.blick), fz = Math.cos(k.blick), sx = fz, sz = -fx;

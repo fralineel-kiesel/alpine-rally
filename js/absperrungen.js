@@ -26,7 +26,14 @@ export function baueAbsperrungen(szene, welt, andere = []) {
   const netz = welt.netz;
   const c = CONFIG.absperrung;
   const atlas = absperrAtlas();
-  const pos = [], uv = [], col = [], idx = [];
+  // M3c: eine Geometrie je Gruppe (Nebenwege, Start, Ziel), damit weit weg Liegendes nicht gezeichnet wird
+  const gruppen = new Map();
+  let pos, uv, col, idx;
+  const gruppe = (name) => {
+    if (!gruppen.has(name)) gruppen.set(name, { pos: [], uv: [], col: [], idx: [] });
+    ({ pos, uv, col, idx } = gruppen.get(name));
+  };
+  gruppe('nebenwege');
   const hindernisse = [];
   const liste = [];
   const boden = (x, z) => welt.bodenBei(x, z).h;
@@ -131,6 +138,7 @@ export function baueAbsperrungen(szene, welt, andere = []) {
   const rndHaupt = zufall(c.seed);
   for (const ast of netz.aeste) {
     if (!ast.sperre) continue;
+    gruppe(ast.ende || 'nebenwege');
     const art = ast.sperreArt;
     const sp = ast.sperre;
     const rnd = zufall(c.seed + ast.nr * 97 + Math.floor(rndHaupt() * 1000));
@@ -264,9 +272,15 @@ export function baueAbsperrungen(szene, welt, andere = []) {
     {
       const m = sp.mitte;
       const [x, z] = hinten(m, tiefe + 0.15);
-      let bx = pA.x - x, bz = pA.z - z;
+      const blick = sp.blick || pA; // Sackgasse (M3c, Start/Ziel): zum Fahrer auf der Verlängerung
+      let bx = blick.x - x, bz = blick.z - z;
       const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl;
       tafel(x, boden(x, z), z, bx, bz, cs.durchmesser, cs.durchmesser, hoehe + cs.ueber, 'verbot', false, 'verbotRuecken');
+    }
+    // Sackgasse (M3c): keine Chevrons und keine Richtungstafel (es gibt keine Abbiegung)
+    if (sp.sackgasse) {
+      liste.push({ ast: ast.nr, art, u: sp.mitte.u, x: sp.mitte.x, z: sp.mitte.z, ende: ast.ende, breite: laenge, hoehe });
+      continue;
     }
     // --- Chevrons entlang der Leitwand (zeigen in Fahrtrichtung), schauen zur Etappe
     const cc = c.chevron;
@@ -335,24 +349,30 @@ export function baueAbsperrungen(szene, welt, andere = []) {
       richtung: [ast.tx[i], ast.tz[i]], breite: laenge, hoehe });
   }
 
-  let mesh = null;
-  if (idx.length) {
+  let mesh = null, dreiecke = 0;
+  const meshes = [];
+  const material = new THREE.MeshLambertMaterial({
+    map: atlas.textur, vertexColors: true, flatShading: true, side: THREE.DoubleSide, alphaTest: 0.5,
+  });
+  for (const [name, g] of gruppen) {
+    if (!g.idx.length) continue;
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    geo.setIndex(idx);
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(g.pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(g.col, 3));
+    geo.setIndex(g.idx);
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
-    mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({
-      map: atlas.textur, vertexColors: true, flatShading: true, side: THREE.DoubleSide, alphaTest: 0.5,
-    }));
-    mesh.name = 'absperrungen';
-    szene.add(mesh);
+    const m = new THREE.Mesh(geo, material);
+    m.name = name === 'nebenwege' ? 'absperrungen' : `absperrungen-${name}`;
+    szene.add(m);
+    meshes.push(m);
+    if (name === 'nebenwege') mesh = m;
+    dreiecke += g.idx.length / 3;
   }
   const sperren = liste.filter((e) => e.art !== 'richtungstafel');
   return {
-    liste: sperren, tafeln: liste.filter((e) => e.art === 'richtungstafel'), hindernisse, mesh,
-    statistik: { anzahl: sperren.length, dreiecke: idx.length / 3, kreise: hindernisse.length, ms: Math.round(performance.now() - t0) },
+    liste: sperren, tafeln: liste.filter((e) => e.art === 'richtungstafel'), hindernisse, mesh, meshes,
+    statistik: { anzahl: sperren.length, dreiecke, kreise: hindernisse.length, ms: Math.round(performance.now() - t0) },
   };
 }

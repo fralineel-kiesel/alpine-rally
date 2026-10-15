@@ -10,6 +10,12 @@
 //   - Rennlogik (Fortschritt, Checkpoints, Zurücksetzen, Zeit, Abkürzungen) fragt weiter nur die
 //     ETAPPE (strecke.abfrage). Ein Stummel zählt dort nie.
 // Werte: config.js, Blöcke "nebenwege", "stummel", "belaege", "kreuzung".
+//
+// Seit M3c gibt es zwei weitere Nebenäste: die Verlängerungen hinter dem Strassenanfang (Start) und
+// hinter dem Strassenende (Ziel). Sie gehören wie die Stummel zum Netz (Asphalt, Gelände, Boden),
+// sind abgesperrt und verschwinden hinter Kurve und Kuppe. Die Rennlogik kennt sie nicht.
+// Einzige Ausnahme: Die unsichtbare Grenze (grenze.maxAbstand) zählt die Ziel-Verlängerung bis zur
+// Absperrung mit (Ausrollstrecke, netz.grenzPunkt). Werte: config.js, Block "startZiel".
 
 import { ShapeUtils, Vector2 } from 'three';
 import { CONFIG } from './config.js';
@@ -33,8 +39,8 @@ function etappePunkt(strecke, s) {
 
 // Ein Stummel: Linie mit Punkten alle 1 m (wie die Etappe). richtung: +1 = in Fahrtrichtung der
 // Etappe weiter (beim Abzweig), -1 = entgegen (bei der Einmündung)
-function baueStummel(strecke, sJ, richtung, form) {
-  const p0 = etappePunkt(strecke, sJ);
+// p0 (M3c): Anfangspunkt genau vorgeben (Verlängerung am ersten/letzten Streckenpunkt)
+function baueStummel(strecke, sJ, richtung, form, p0 = etappePunkt(strecke, sJ)) {
   const dx0 = p0.tx * richtung, dz0 = p0.tz * richtung;
   // Steigung der Etappe an der Kreuzung (in Richtung des Stummels)
   const pa = etappePunkt(strecke, sJ - 3), pb = etappePunkt(strecke, sJ + 3);
@@ -239,11 +245,62 @@ export function baueNetz(strecke) {
     ast.sperreU = Math.max(...linie.map((p) => p.u));
   }
 
+  // --- Verlängerungen an Start und Ziel (M3c) -------------------------------------------
+  // Form wie ein Stummel (gerade, Kurve, Rest, Kuppe), Anfang genau am ersten bzw. letzten Streckenpunkt.
+  // Die Absperrung ist ein flacher Bogen quer über Strasse und Bankett (Mitte etwas weiter weg als die
+  // Enden); an beiden Enden schliesst der Seitenschutz an (strassenrand.js, wie bei den Stummeln).
+  const sz = C.startZiel;
+  const enden = [];
+  const astPunkt = (ast, u, lat = 0) => {
+    const f = Math.max(0, Math.min(ast.anzahl - 1.001, u)), i = Math.floor(f), t = f - i, j = i + 1;
+    let ux = ast.tx[i] + (ast.tx[j] - ast.tx[i]) * t, uz = ast.tz[i] + (ast.tz[j] - ast.tz[i]) * t;
+    const l = Math.hypot(ux, uz) || 1;
+    ux /= l; uz /= l;
+    return {
+      x: ast.px[i] + (ast.px[j] - ast.px[i]) * t - uz * lat, z: ast.pz[i] + (ast.pz[j] - ast.pz[i]) * t + ux * lat,
+      h: ast.py[i] + (ast.py[j] - ast.py[i]) * t, tx: ux, tz: uz,
+    };
+  };
+  if (sz && sz.an !== false) {
+    const iE = n - 1;
+    for (const [ende, sJ, richtung, cfg, k] of [['start', 0, -1, sz.start, 0], ['ziel', strecke.laenge, 1, sz.ziel, iE]]) {
+      const form = { ...C.stummel, ...cfg.form };
+      const p0 = { x: strecke.px[k], z: strecke.pz[k], h: strecke.py[k], tx: strecke.tx[k], tz: strecke.tz[k] };
+      const ast = baueStummel(strecke, sJ, richtung, form, p0);
+      Object.assign(ast, {
+        art: ende === 'start' ? 'startVerl' : 'zielVerl', ende, nr: aeste.length + 1, belag: 'asphalt', halb: halbA,
+        sperreArt: cfg.sperreArt, muendung: null, seiteN: 1,
+      });
+      // Absperrung: Punkte alle 0.25 m von links (l < 0) nach rechts, n = zur Etappe hin
+      const B = halbA + bank + C.absperrung.abstandWeg + cfg.sperreUeber;
+      const bogenU = (l) => cfg.sperreBei + cfg.sperreBogen * (1 - (l / B) ** 2);
+      const linie = [];
+      for (let l = -B; l <= B + 1e-6; l += 0.25) {
+        const u = bogenU(l), p = astPunkt(ast, u, l);
+        linie.push({ x: p.x, z: p.z, s: sJ + richtung * u, u, l, nx: -p.tx, nz: -p.tz });
+      }
+      let mitte = linie[0];
+      for (const p of linie) if (Math.abs(p.l) < Math.abs(mitte.l)) mitte = p;
+      ast.sperre = {
+        linie, mitte, sigma: 1, sackgasse: true, bogenU, breite: B,
+        blick: astPunkt(ast, Math.max(0, cfg.sperreBei - 30)),           // dorthin schaut das Verbots-Symbol (zum Fahrer)
+        aussen: { u: bogenU(-B), l: -B }, innen: { u: bogenU(B), l: B }, // Enden: hier beginnt der Seitenschutz
+      };
+      ast.sperreU = cfg.sperreBei + cfg.sperreBogen;
+      // Grenze: bis hier zählt die Verlängerung wie die Strasse (nur Ziel: Ausrollstrecke)
+      ast.grenzeBis = ende === 'ziel' ? ast.sperreU : 0;
+      ast.punkt = (u, lat) => astPunkt(ast, u, lat);
+      aeste.push(ast);
+      enden.push(ast);
+    }
+  }
+
   // Liegt (x, z) auf dem Stummel hinter der Absperrung (Richtung Stummel-Ende)? Für Tests.
   // Hinter = auf der anderen Seite der Leitwand als die Kreuzung, auf Asphalt oder Bankett.
   function hinterSperre(ast, x, z, rand = 0) {
     const w = stummelAbfrage(ast, x, z, 60, {});
     if (!w || w.s < 0 || Math.abs(w.seite) > halbA + bank + rand) return false;
+    if (ast.ende) return w.s > ast.sperre.bogenU(Math.max(-ast.sperre.breite, Math.min(ast.sperre.breite, w.seite)));
     const l = w.seite * ast.seiteN, li = ast.sperre.linie;
     // Stummel-Meter der Leitwand auf dieser Seite (sie läuft von l = -6 bis +6 quer)
     let uS = li[0].u;
@@ -275,10 +332,30 @@ export function baueNetz(strecke) {
     return null;
   }
 
-  const qs = {};
+  const qs = {}, qg = {};
   const netz = {
     aeste, nebenwege, belag, halbBei, inEcke, hinterSperre, etappePunkt: (s) => etappePunkt(strecke, s),
     halbAsphalt: halbA, bankett: bank,
+    // M3c: nur die Stummel der Nebenwege / nur die Verlängerungen an Start und Ziel
+    stummel: aeste.filter((a) => !a.ende), enden,
+    ende: (art) => enden.find((a) => a.ende === art) || null,
+    astPunkt,
+
+    // Unsichtbare Grenze (M3c): nächster Punkt, der als Strasse zählt – ein Streckenpunkt der Etappe
+    // (wie bisher) oder die Ziel-Verlängerung bis zur Absperrung. Ergebnis { x, z, abstand } in ziel.
+    grenzPunkt(x, z, ziel = {}) {
+      strecke.abfrage(x, z, qg);
+      ziel.x = strecke.px[qg.i]; ziel.z = strecke.pz[qg.i]; ziel.abstand = qg.abstand;
+      for (const ast of enden) {
+        if (!ast.grenzeBis) continue;
+        const w = stummelAbfrage(ast, x, z, ziel.abstand + ast.grenzeBis, qs);
+        if (!w) continue;
+        const p = astPunkt(ast, Math.max(0, Math.min(ast.grenzeBis, w.s)));
+        const d = Math.hypot(x - p.x, z - p.z);
+        if (d < ziel.abstand) { ziel.x = p.x; ziel.z = p.z; ziel.abstand = d; }
+      }
+      return ziel;
+    },
 
     // Nächster Punkt eines Stummels (ast = Objekt aus aeste), null wenn weiter als "weit"
     stummelAbfrage: (ast, x, z, weit = 1e6, ziel = {}) => stummelAbfrage(ast, x, z, weit, ziel),
@@ -300,10 +377,12 @@ export function baueNetz(strecke) {
       return ziel;
     },
 
-    // Abstand zum nächsten Stummel (nur Stummel, ab der Kreuzung), Infinity wenn keiner nahe
-    stummelAbstand(x, z, weit = 60) {
+    // Abstand zum nächsten Stummel (nur Stummel, ab der Kreuzung), Infinity wenn keiner nahe.
+    // Seit M3c zählen die Verlängerungen an Start und Ziel mit (ohneEnden = true: nur die Stummel)
+    stummelAbstand(x, z, weit = 60, ohneEnden = false) {
       let best = Infinity;
       for (const ast of aeste) {
+        if (ohneEnden && ast.ende) continue;
         const w = stummelAbfrage(ast, x, z, weit, qs);
         if (w && w.s >= -0.5 && w.abstand < best) best = w.abstand;
       }

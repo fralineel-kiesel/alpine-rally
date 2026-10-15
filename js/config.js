@@ -156,6 +156,97 @@ export const CONFIG = {
     unterAsphalt: 0.08,        // so viel (Meter) liegt der Schotter unter dem Asphalt, wo sich beide überlappen
   },
 
+  // --- Start- und Zielbereich (Meilenstein 3c, js/startziel.js) ----------
+  // Hinter dem Strassenanfang und hinter dem Strassenende läuft die Strasse weiter (Nebenast wie die
+  // Stummel: Rennlogik, Zeit, Checkpoints und "R" kennen ihn nicht), ist abgesperrt und verschwindet
+  // hinter Kurve und Kuppe. Dazu Bögen, Absperrband, Strohballen, Zuschauer, Zelte, Autos, Bäume.
+  // Alle Mengen fest gewürfelt (seed): gleiche Zahl = gleicher Aufbau. Nach Änderungen an der Form
+  // der Verlängerungen prüfen: node tools/stummel-sicht.mjs (Ende darf man nie sehen).
+  startZiel: {
+    an: true,                  // false = alles wie vor M3c (Strasse hört an Start und Ziel auf)
+    seed: 3030,                // Zufallszahl für Zuschauer, Strohballen, Bäume
+    zielBremse: 0.6,           // nach dem Ziel bremst das Auto von selbst so stark (0..1; bis M3c 0.35). Aus 180 km/h
+                               // steht es so nach ca. 130 m (Ausrollstrecke bis zur Absperrung: ca. 200 m)
+    // Verlängerung hinter dem Start (Richtung Strassenanfang, hinter dem Auto)
+    start: {
+      form: { gerade: 80, kurve: 75, radius: 45, rest: 50, kuppe: 1.8, abfall: 0.08, seitenschutz: 'zaun', sichtschutz: 16, sichtschutzSeed: 3401 },
+      sperreBei: 34,           // Absperrung so viele Meter hinter dem Strassenanfang (Auto steht 10 m davor)
+      sperreBogen: 1.6,        // ... Mitte der Absperrung so viel weiter hinten als die Enden (gebogen)
+      sperreUeber: 0.3,        // ... reicht so weit über das Bankett hinaus (dort beginnt der Seitenschutz)
+      sperreArt: 'heu',        // 'band', 'reifen', 'heu', 'zaun' (wie bei den Nebenwegen)
+    },
+    // Verlängerung hinter dem Ziel: Ausrollstrecke, dann Absperrung, Kurve, versteckt
+    ziel: {
+      form: { gerade: 175, kurve: -80, radius: 50, rest: 55, kuppe: 2.4, abfall: 0.09, seitenschutz: 'zaun', sichtschutz: 18, sichtschutzSeed: 3402 },
+      sperreBei: 155,          // Absperrung so viele Meter nach dem Strassenende (Ziellinie 45 m davor: ca. 200 m Ausrollen)
+      sperreBogen: 2.0,
+      sperreUeber: 0.3,
+      sperreArt: 'reifen',
+    },
+    bereich: { vor: 70, nach: 70 }, // Absperrband und Zuschauer so viele Meter vor und nach der Linie (Start: ab der Absperrung)
+    sichtweite: 650,           // weiter weg von der Kamera wird der Aufbau nicht gezeichnet (unter 1 Pixel)
+    // Bögen über Start- und Ziellinie (Alu-Gerüst). Pfosten ausserhalb von Band und Zaun, Banner hoch über Auto und Kamera
+    bogen: { hoehe: 6.6, dicke: 0.5, pfosten: 7.4, bannerBreite: 8.6 }, // Höhe Oberkante, Dicke Gerüst, Pfosten so weit neben der Mitte, Breite Banner (Unterkante ca. 4.1 m)
+    // Absperrband an rot-weissen Stangen, nur wo kein Weidezaun steht (Zäune bleiben, Tore werden mit Stroh zu)
+    band: { abstand: 6.3, pfostenAbstand: 3, hoehe: 1.05, baender: [0.95, 0.55], durchhang: 0.05 },
+    stroh: { abstand: 5.95, alle: [11, 19], ballen: [0.95, 0.48, 0.42], obenAnteil: 0.5 }, // Kleinballen vor Band/Zaun: Abstand zur Mitte, alle so viele Meter, Grösse (L, T, H)
+    bande: { abstand: 6.75, alle: [18, 30] },  // Werbebanden hinter dem Band (erfundene Sponsoren)
+    fahne: { hoehe: 6, breite: 1.5, hoehe2: 1.0, // Fahnenmasten: Höhe, Grösse der Fahne
+      plaetze: [[2, -8.8, 'kreuz'], [-4, 9.2, 'karo'], [-24, 9.6, 'farbe'], [28, -9.2, 'kreuz'], [44, 9.6, 'farbe']] }, // [Meter ab Linie, seitlich, Art]
+    // Plätze (Meter ab der Linie, seitlich: + rechts / - links in Fahrtrichtung)
+    platz: {
+      uhr: 7.2,                // Startuhr (rechts, kurz vor der Startlinie)
+      zeitzelt: 10.8,          // Zeitnahme-Zelt am Start (rechts)
+      servicezelt: 11.5,       // Servicezelt hinter der Absperrung am Start (rechts), davor der Transporter auf der Strasse
+      container: -11.6,        // Zeitnahme-Container am Ziel (links)
+      zielzelt: 10.8,          // Zelt am Ziel (rechts, vor der Linie)
+      autoStart: [33, 19, 35], // parkiertes Auto am Start: Meter, seitlich, Drehung (Grad)
+      autoZiel: [36, 20, -25], // ... am Ziel
+      beachflags: [[-3, 7.7], [3, -7.7], [-8, -7.8]],
+    },
+    autoFarben: ['#2f5fb0', '#e0b020'],
+    // Zuschauer (Pixel-Figuren, schauen zur Strasse): hinter Band und Zaun, nie näher als abstand[0] an einer Strassenmitte
+    zuschauer: {
+      start: 50, ziel: 46,      // so viele (ungefähr; passen nicht alle hin, sind es weniger)
+      abstand: [7.4, 13],       // so weit neben der Strassenmitte (vorne dichter)
+      gruppe: [3, 8],           // Grösse der Gruppen
+      gruppeLaenge: 7,          // eine Gruppe steht über so viele Meter verteilt
+      radius: 0.35,             // Kollision (hart wie ein Baum) und Platzbedarf
+      dicht: 0.75,              // so nah stehen zwei Zuschauer höchstens (Mitte zu Mitte)
+      blickStreuung: 0.7,       // Blick zur Strasse, so viel (Bogenmass) zufällig daneben
+      posen: [0.22, 0.16, 0.12, 0.1, 0.1, 0.18, 0.12], // Anteil: stehend, winkend, jubelnd, Schweizer Fahne, Fotograf, Mütze, Fahne einfarbig
+      kinder: 0.12,             // so ein Anteil sind Kinder (kleiner)
+      groesse: [1.6, 1.88],     // Grösse der Erwachsenen (Meter)
+      winken: [1.5, 3],         // Winken und Fahnen: so oft pro Sekunde wechselt das Bild
+      jacken: ['#d23b2c', '#2b5fc2', '#f0c020', '#2f9a48', '#ef7d22', '#8a3fb5', '#f2f0e8', '#1f9aa0', '#c43a7a', '#3a3f48'],
+      hosen: ['#2a3550', '#26262a', '#5a5f66', '#5b4632', '#3d5a8a'],
+      muetzen: ['#d0202a', '#f2f0e8', '#f0c020', '#2b5fc2', '#2f9a48', '#ef7d22'],
+      haare: ['#3b2a1c', '#1c1714', '#c9a24a', '#7a3b1e', '#9a9a9a'],
+      fahnenRot: '#d0202a',     // die meisten Fahnen sind rot (Schweizer Kreuz)
+    },
+    // Bäume und Büsche: Übergang zur Landschaft. gruppen: bereich, seite, Meter ab der Linie (von, bis), seitlich (von, bis), Anzahl Gruppen
+    landschaft: {
+      gruppen: [
+        { bereich: 'start', seite: 1, m: [-90, 120], lat: [22, 70], anzahl: 8 },
+        { bereich: 'start', seite: -1, m: [-110, -30], lat: [16, 60], anzahl: 5 },
+        { bereich: 'start', seite: -1, m: [-230, -110], lat: [12, 50], anzahl: 6 },
+        { bereich: 'start', seite: 1, m: [-230, -110], lat: [12, 50], anzahl: 6 },
+        { bereich: 'ziel', seite: 1, m: [-90, 120], lat: [24, 70], anzahl: 8 },
+        { bereich: 'ziel', seite: -1, m: [-90, 120], lat: [22, 70], anzahl: 7 },
+        { bereich: 'ziel', seite: 1, m: [80, 190], lat: [14, 40], anzahl: 4 },   // entlang der Ausrollstrecke
+        { bereich: 'ziel', seite: -1, m: [80, 190], lat: [14, 40], anzahl: 4 },
+        { bereich: 'ziel', seite: 1, m: [190, 350], lat: [12, 50], anzahl: 8 },
+        { bereich: 'ziel', seite: -1, m: [190, 350], lat: [12, 50], anzahl: 8 },
+      ],
+      proGruppe: [3, 7],        // Bäume pro Gruppe
+      gruppeRadius: 7,          // ... so weit verstreut
+      laubAnteil: 0.3,          // so ein Anteil Laubbäume (Rest Tannen)
+      strasse: 11,              // Bäume mindestens so weit von jeder Strassenmitte
+      buesche: 45,              // Büsche je Bereich (Versuche)
+      buschLat: [8, 30],        // ... so weit neben der Strasse
+    },
+  },
+
   // --- Gelände --------------------------------------------------------
   gelaende: {
     raster: 4,                 // Abstand der Geländepunkte nahe der Strecke (Meter)
@@ -294,6 +385,12 @@ export const CONFIG = {
     groesse: [0.92, 1.06],     // Grösse (1 = 1.4 m hoch, 2.4 m lang)
     radius: 0.95,              // Kollision: Kreis um den Körper (Meter) ...
     radiusLiegend: 0.75,       // ... bei liegenden Kühen
+    // M3c: zusätzliche Herden beim Start und beim Ziel (s = Streckenmeter, seite -1 links / +1 rechts,
+    // lat = so weit neben der Strasse). Werden zuletzt geplant: alle anderen Kühe bleiben gleich.
+    zusatzHerden: [
+      { s: 150, seite: 1, lat: [26, 40], anzahl: 5 },   // Start: Wiese rechts, nach dem Zuschauerbereich
+      { s: 3505, seite: 1, lat: [20, 34], anzahl: 5 },  // Ziel: Weide rechts hinter dem Zaun, vor dem Zuschauerbereich
+    ],
   },
 
   // --- Hintergrundberge -----------------------------------------------

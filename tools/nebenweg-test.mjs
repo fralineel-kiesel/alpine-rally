@@ -66,7 +66,7 @@ const erg = await spiel.page.evaluate(async () => {
   // =====================================================================
   // 1. Etappenlogik
   // =====================================================================
-  for (const ast of N.aeste) {
+  for (const ast of N.stummel) {
     const vor = astPunkt(ast, ast.sperre.mitte.u - 4, 0);
     // Auto steht 4 m vor der Absperrung (Mitte des Stummels): welche Meter zählen?
     setze(vor.x, vor.z, Math.atan2(vor.tx, vor.tz), 0);
@@ -87,7 +87,7 @@ const erg = await spiel.page.evaluate(async () => {
   // Rennen läuft: vor dem Abzweig in den Stummel bis zur Absperrung, zurück, dann über den
   // Nebenweg durch CP1. Kein "CHECKPOINT VERPASST", CP1 zählt.
   {
-    const ast = N.aeste[0];
+    const ast = N.stummel[0];
     A.neustart();
     const p0 = S.punktBei(ast.sJ - 60);
     setze(p0.x, p0.z, Math.atan2(p0.tx, p0.tz), 15);
@@ -122,7 +122,7 @@ const erg = await spiel.page.evaluate(async () => {
   const originalLoese = A.kollision.loese;
   const schutz = A.strassenrand.hindernisse.filter((h) => h.rand === 'planke' || h.rand === 'zaun');
   for (const art of ['band', 'reifen', 'heu', 'zaun']) {
-    for (const ast of N.aeste) {
+    for (const ast of N.stummel) {
       const alt = ast.sperreArt;
       ast.sperreArt = art;
       const b = baueAbsperrungen(A.szene, { ...A.welt, netz: { ...N, aeste: [ast] } });
@@ -176,7 +176,7 @@ const erg = await spiel.page.evaluate(async () => {
   // =====================================================================
   // 3. Umfahren: Fächer aus Startpunkten, Zielen, Tempo, Handbremse (echte Kollision)
   // =====================================================================
-  for (const ast of N.aeste) {
+  for (const ast of N.stummel) {
     const sp = ast.sperre;
     const starts = [];
     for (const ds of [-60, -30, -12, 15, 35, 60]) {
@@ -231,7 +231,7 @@ const erg = await spiel.page.evaluate(async () => {
   // =====================================================================
   // 5. Leitwand lässt die Fahrbahn frei, Symbol und Richtungstafel stehen
   // =====================================================================
-  ergebnis.frei = N.aeste.map((ast) => {
+  ergebnis.frei = N.stummel.map((ast) => {
     let naechst = Infinity;
     for (const h of A.absperrungen.hindernisse) {
       if (Math.hypot(h.x - ast.px[0], h.z - ast.pz[0]) > 80) continue;
