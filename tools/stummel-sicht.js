@@ -11,6 +11,94 @@
 // Ein Strahl ist verdeckt, wenn das Gelände (welt.gelaendeHoehe) oder die Strasse darüber liegt
 // oder er durch die Krone eines Baums geht (Tannen und Laubbäume, schmaler gerechnet als ihr Bild).
 
+function sichtWerkzeug(A, mitBaeumen) {
+  const W = A.welt;
+  const baeume = [...A.pflanzen.tannen, ...A.pflanzen.laubbaeume].filter((b) => b.h > 2.5);
+  const Z = 16, raster = new Map();
+  for (const b of baeume) {
+    const k = `${Math.floor(b.x / Z)},${Math.floor(b.z / Z)}`;
+    if (!raster.has(k)) raster.set(k, []);
+    raster.get(k).push(b);
+  }
+  const krone = (x, y, z) => {
+    const liste = raster.get(`${Math.floor(x / Z)},${Math.floor(z / Z)}`);
+    if (!liste) return false;
+    for (const b of liste) {
+      if (y < b.y + b.h * 0.18 || y > b.y + b.h * 0.92) continue;
+      const f = (y - b.y) / b.h;
+      const r = b.b * 0.5 * 0.6 * Math.min(1, (1 - f) * 1.4);
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 < r * r) return true;
+    }
+    return false;
+  };
+  const boden = (x, z) => Math.max(W.gelaendeHoehe(x, z), W.bodenBei(x, z).h);
+  return function frei(a, b) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+    const L = Math.hypot(dx, dz);
+    const n = Math.ceil(L / 0.8);
+    for (let k = 1; k < n; k++) {
+      const f = k / n;
+      if (L * (1 - f) < 1.5) break;
+      const x = a[0] + dx * f, y = a[1] + dy * f, z = a[2] + dz * f;
+      if (boden(x, z) > y) return { frei: false, grund: 'gelaende', bei: L * f };
+      if (mitBaeumen && krone(x, y, z)) return { frei: false, grund: 'baum', bei: L * f };
+    }
+    return { frei: true };
+  };
+}
+
+// M3c: Sieht man das Ende der Verlängerungen an Start und Ziel? Kameras (2.5 m hoch, 3.1 m und 6.9 m
+// hinter dem Auto, Auto auf der Mitte und 2.5 m daneben) auf der Etappe bis "weit" Meter vor dem Ende
+// und auf der Verlängerung bis zur Absperrung, das Auto schaut in Fahrtrichtung UND gewendet (rückwärts
+// zum Strassenende). Ziele: die letzten 40 m der Verlängerung (Mitte und Asphaltkanten, 0.3 m hoch).
+export function pruefeSichtEnden(A, { weit = 400, schritt = 5, abstaende = [3.1, 6.9], hoehe = 2.5, seiten = [-2.5, 0, 2.5], letzte = 40, baeume = true } = {}) {
+  const S = A.strecke, N = A.netz;
+  const frei = sichtWerkzeug(A, baeume);
+  const halbFov = Math.atan(Math.tan((A.CONFIG.kamera.sichtfeld * Math.PI) / 360) * (16 / 9)) + (10 * Math.PI) / 180;
+  const ergebnis = [];
+  for (const ast of N.enden || []) {
+    const ziele = [];
+    for (let u = Math.max(ast.sperreU + 5, ast.laenge - letzte); u <= ast.laenge; u += 5) {
+      const i = Math.min(ast.anzahl - 1, Math.round(u));
+      for (const lat of [-ast.halb, 0, ast.halb]) ziele.push({ u: i, lat, p: [ast.px[i] - ast.tz[i] * lat, ast.py[i] + 0.3, ast.pz[i] + ast.tx[i] * lat] });
+    }
+    // Fahrpositionen: Punkt + Richtung (Fahrtrichtung der Etappe), dazu wo
+    const posten = [];
+    const vonS = ast.ende === 'start' ? 0 : S.laenge - weit, bisS = ast.ende === 'start' ? weit : S.laenge;
+    for (let s = vonS; s <= bisS; s += schritt) { const p = S.punktBei(s); posten.push({ x: p.x, z: p.z, h: p.h, tx: p.tx, tz: p.tz, wo: `Etappe ${Math.round(s)} m` }); }
+    for (let u = 1; u < ast.sperreU - 1; u += 3) {
+      const p = ast.punkt(u, 0), r = ast.ende === 'start' ? -1 : 1;
+      posten.push({ x: p.x, z: p.z, h: p.h, tx: p.tx * r, tz: p.tz * r, wo: `Verlängerung ${u} m` });
+    }
+    let strahlen = 0, sichtbar = 0;
+    const gesehen = [];
+    for (const p of posten) {
+      for (const richtung of [1, -1]) {
+        const fx = p.tx * richtung, fz = p.tz * richtung;
+        for (const lat of seiten) {
+          for (const d of abstaende) {
+            const ax = p.x - p.tz * lat - fx * d, az = p.z + p.tx * lat - fz * d;
+            const kam = [ax, p.h + hoehe, az];
+            const wf = Math.atan2(fx, fz);
+            for (const z of ziele) {
+              let dw = Math.atan2(z.p[0] - ax, z.p[2] - az) - wf;
+              dw = Math.atan2(Math.sin(dw), Math.cos(dw));
+              if (Math.abs(dw) > halbFov) continue;
+              strahlen++;
+              if (frei(kam, z.p).frei) {
+                sichtbar++;
+                gesehen.push({ wo: p.wo, richtung: richtung > 0 ? 'vorwärts' : 'gewendet', lat, d, u: z.u, zielLat: z.lat, entfernung: Math.round(Math.hypot(z.p[0] - ax, z.p[2] - az)) });
+              }
+            }
+          }
+        }
+      }
+    }
+    ergebnis.push({ ende: ast.ende, laenge: ast.laenge, sperreU: ast.sperreU, posten: posten.length, strahlen, sichtbar, gesehen });
+  }
+  return ergebnis;
+}
+
 export function pruefeSicht(A, { vorNach = 200, schritt = 5, abstaende = [3.1, 6.9], hoehe = 2.5, seiten = [-2.5, 0, 2.5], letzte = 40, stummel = null, baeume: mitBaeumen = true } = {}) {
   const S = A.strecke, W = A.welt, N = A.netz;
   const q = {};
@@ -55,7 +143,7 @@ export function pruefeSicht(A, { vorNach = 200, schritt = 5, abstaende = [3.1, 6
   }
   const halbFov = Math.atan(Math.tan((A.CONFIG.kamera.sichtfeld * Math.PI) / 360) * (16 / 9)) + (10 * Math.PI) / 180;
   const ergebnis = [];
-  for (const ast of N.aeste) {
+  for (const ast of N.stummel || N.aeste) {
     if (stummel != null && ast.nr !== stummel) continue;
     // Ziele
     const ziele = [];

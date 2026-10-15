@@ -69,7 +69,7 @@ export function spriteMaterial(textur, varianten, vertex = VERTEX, extraUniforms
   });
 }
 
-function spriteGruppe(liste, tex) {
+export function spriteGruppe(liste, tex) {
   const basis = new THREE.PlaneGeometry(1, 1);
   basis.translate(0, 0.5, 0);
   const geo = new THREE.InstancedBufferGeometry();
@@ -261,7 +261,7 @@ export function bauePflanzen(szene, strecke, welt) {
       return staerke >= nw.innenAbKruemmung ? best : 0;
     };
     // frei vor den Richtungstafeln (absperrungen.js stellt sie ca. "vorher" Meter vor die Kreuzung)
-    const tafelFrei = N.aeste.filter((a) => a.sperre).map((a) => {
+    const tafelFrei = N.aeste.filter((a) => a.sperre && !a.ende).map((a) => {
       const sK = Math.min(a.sperre.linie[0].s, a.sperre.linie[a.sperre.linie.length - 1].s) - CONFIG.absperrung.richtungstafel.vorher;
       // gleiche Seite wie in absperrungen.js (Aussenseite, ausser Innenseite einer freien Kurve)
       const schneidet = ABKUERZUNGEN.schneiden.some((k) => sK > k.sVon - 10 && sK < k.sBis + 10 && (k.seite === 'rechts' ? 1 : -1) === a.sperre.sigma);
@@ -343,7 +343,7 @@ export function bauePflanzen(szene, strecke, welt) {
     if (liste.length) szene.add(meshes[name] = spriteGruppe(liste, tex));
   }
   return {
-    tannen, laubbaeume, steine, felsbrocken: sperren.felsen, staemme: sperren.staemme, hindernisse, sperren: sperrenListe, meshes, tanne,
+    tannen, laubbaeume, steine, felsbrocken: sperren.felsen, staemme: sperren.staemme, hindernisse, sperren: sperrenListe, meshes, tanne, laubTex: laub,
     folge: { fest: !!folge, gestellt, anzahlVersuche },
   };
 }
@@ -355,10 +355,12 @@ export function bauePflanzen(szene, strecke, welt) {
 // Jungtannen und Fernbäume sind Tannen: Sie kommen in denselben Zeichenaufruf wie die Tannen.
 // Büsche und Grasbüschel sind ein Bild zusammen: ein Zeichenaufruf.
 // =====================================================================
-export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe) {
+// extra (M3c): Büsche an Start und Ziel { x, z, gras } – kommen mit eigenem Zufall dazu (die übrigen bleiben gleich)
+export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe, extra = []) {
   const t0 = performance.now();
   const c = CONFIG.buesche;
   const rnd = zufall(c.seed); // eigener Zufall: die Bäume und Steine bleiben genau gleich
+  const rndDeko = rnd;
   const q = {};
   const { px, pz, tx, tz } = strecke;
   const busch = buschTextur();
@@ -382,7 +384,7 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe) {
     return Math.hypot(welt.gelaendeHoehe(x + 2, z) - h, welt.gelaendeHoehe(x, z + 2) - h) / 2;
   }
   // Ein Busch (art: 'gruen', 'gras' oder zufällig blühend/Beeren)
-  function setzeBusch(x, z, art) {
+  function setzeBusch(x, z, art, rnd = rndDeko) {
     const gras = art === 'gras';
     let variante;
     if (gras) variante = BUSCH.gras[Math.floor(rnd() * BUSCH.gras.length)];
@@ -453,6 +455,10 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe) {
       setzeBusch(x, z, gras ? 'gras' : 'gruen');
     }
   }
+
+  // 5. Start und Ziel (M3c): eigener Zufall, damit alle anderen Büsche gleich bleiben
+  const rndExtra = zufall(c.seed + 303);
+  for (const e of extra) setzeBusch(e.x, e.z, e.gras ? 'gras' : 'gruen', rndExtra);
 
   // --- Wald in der Ferne: grosse Tannen zwischen fw.von und fw.bis neben der Strasse ---
   const fw = CONFIG.fernwald;

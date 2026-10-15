@@ -149,7 +149,8 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
     strecke.abfrage(P.x, P.z, q);
     if (Math.abs(q.s - s) > 4 || q.abstand < Math.abs(lat) - 0.3) return false;
     // nicht auf einem Stummel und nicht in der Einfahrt eines Nebenwegs (M3a)
-    if (netz && (netz.stummelAbstand(P.x, P.z, 20) < stummelFrei || netz.inEcke(P.x, P.z))) return false;
+    // (M3c: die Verlängerungen an Start und Ziel nicht – sie laufen gerade aus der Etappe heraus)
+    if (netz && (netz.stummelAbstand(P.x, P.z, 20, true) < stummelFrei || netz.inEcke(P.x, P.z))) return false;
     return !strecke.andererAst(P.x, P.z, s, 30, Math.abs(lat) + 2.5, q2);
   }
   const grundFrei = (sd, i) => !wand[nr(sd)][i] && !innenFrei[nr(sd)][i] && !cpZone[i];
@@ -525,9 +526,10 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
     const f = ast.form;
     let bis = ast.laenge - 1;
     for (let u = Math.ceil(ast.sperreU); u < ast.laenge; u++) {
+      // (M3c: bei den Verlängerungen an Start und Ziel zählt auch die Ausrollstrecke als Strasse)
       const weit = SEITEN.every((sd) => {
         const x = ast.px[u] - ast.tz[u] * sd * (c.abstand + 1), z = ast.pz[u] + ast.tx[u] * sd * (c.abstand + 1);
-        return strecke.abfrage(x, z, q).abstand > f.schutzBisAbstand;
+        return (ast.ende ? netz.grenzPunkt(x, z, q) : strecke.abfrage(x, z, q)).abstand > f.schutzBisAbstand;
       });
       if (weit) { bis = u; break; }
     }

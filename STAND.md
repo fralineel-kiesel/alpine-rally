@@ -1,8 +1,10 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 3a.3 fertig** – Felswand: Das Auto stoppt jetzt genau an der sichtbaren Felswand (vorher
-steckte es bis 1.6 m darin), und am Wandfuss schaut kein Gras mehr hervor (dort liegen jetzt Erde und Geröll).
-Davor: 3a.2 (Fahrphysik-Feinschliff: Handbremse bremst bis zum Stand, schneller Geradeauslauf), 3a.1 (Nebenweg-Korrektur: saubere Kreuzungen, grosse gebogene Absperrungen), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 3c fertig** – Start- und Zielbereich: Die Strasse hört an Start und Ziel nicht mehr wie ein
+Stummel auf, sondern läuft weiter (abgesperrt, verschwindet hinter Kurve und Kuppe). Nach dem Ziel gibt es eine
+ca. 200 m lange Ausrollstrecke. Start und Ziel haben jetzt Bögen, Absperrband, Strohballen, rund 100 Zuschauer,
+Zeitnahme, Zelte, Autos und mehr Bäume.
+Davor: 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -24,7 +26,175 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 3a.3: Felswand (Kollision, Grasstellen) ✅
+## Meilenstein 3c: Start- und Zielbereich ✅
+
+### Was war das Problem – und was wurde gemacht?
+
+**1. Die Strasse hörte an Start und Ziel abrupt auf („Stummel“)**
+- *Lösung:* Hinter dem Strassenanfang und hinter dem Strassenende läuft die Strasse jetzt weiter – mit Asphalt,
+  Bankett und Mittelstrich, genau wie die Stummel am Nebenweg (M3a). Es sind **Nebenäste**: Rennlogik, Zeit,
+  Checkpoints und „R“ kennen sie nicht. Die Etappe selbst ist **genau gleich** (3667.587 m, alle Streckenmeter,
+  Checkpoints, Abkürzungs-Listen und Sperren unverändert).
+  - **Start:** Hinter dem Auto läuft die Strasse 80 m geradeaus, dann eine Rechtskurve (75°) über eine kleine Kuppe.
+    34 m hinter dem Strassenanfang (44 m hinter dem Auto) ist sie mit einer **gebogenen Wand aus Strohballen** zu,
+    dahinter parkt der **Service-Transporter** auf der Strasse, daneben das **Servicezelt**. Links und rechts der
+    Absperrung geht ein Holzzaun weiter, so kommt niemand aussen herum.
+  - **Ziel:** Hinter der Ziellinie läuft die Strasse noch **ca. 200 m** als Ausrollstrecke weiter, dann kommt eine
+    **gebogene Wand aus Reifenstapeln**, dahinter eine Linkskurve (80°) über eine Kuppe in den Wald.
+  - **Ausrollen:** Nach dem Ziel bremst das Auto wie bisher von selbst, jetzt etwas kräftiger (`startZiel.zielBremse`
+    0.35 → 0.6), damit es auch aus 180 km/h sicher vor der Absperrung steht (siehe Zahlen unten). Die Zeit ist zu
+    diesem Moment schon gestoppt – an der Fahrzeit ändert das nichts.
+  - **Unsichtbare Grenze:** Die Ausrollstrecke zählt bis zur Absperrung wie die Strasse (sonst hätte die alte
+    45-m-Grenze das Auto nach dem Ziel abgefangen).
+  - **Boden:** Auf den Verlängerungen ist es Asphalt, am Übergang gibt es keine Gras-Lücke mehr (vorher waren die
+    letzten 0.5 m der Strasse und alles dahinter „Gras“).
+  - **Kamera:** Fährt man rückwärts in die Absperrung, hebt sich die Kamera über die Strohballen (sonst sah man ins Stroh).
+
+**2. Am Start und im Ziel war fast nichts los**
+- **Startbogen und Zielbogen** über der Linie: Alu-Gerüst mit Banner „START“ (blau, Zielflaggen) bzw. „ZIEL“
+  (Schachbrett). Das Banner hängt mindestens 4.1 m über der Strasse, die Pfosten stehen ausserhalb von Band/Zaun.
+- **Absperrband** an rot-weissen Stangen entlang beider Seiten (ca. 70 m vor und nach den Linien, am Start ab der
+  Absperrung). Wo schon ein **Weidezaun** steht, bleibt der Zaun (die Zuschauer stehen dahinter), und die
+  **Weidetore** sind mit **Strohballen** zu. Dazu lockere Strohballen-Stapel vor Band und Zaun.
+- **96 Zuschauer** (Start 50, Ziel 46) in Gruppen: Pixel-Figuren mit bunten Jacken, Hosen, Mützen und Haaren,
+  7 Posen (stehend, winkend, jubelnd, Schweizer Fahne, einfarbige Fahne, Fotograf, Mütze/Hände in den Taschen),
+  ein paar Kinder. Sie **schauen zur Strasse** (4 Ansichten je nach Blickwinkel, wie die Kühe), wer winkt oder eine
+  Fahne hat, bewegt sich (2 Bilder). Immer mindestens 7.4 m neben der Strassenmitte.
+- **Start:** Startuhr (0:30, Lampen), rotes Zeitnahme-Zelt mit Schild „ZEITNAHME“, Servicezelt + Transporter hinter
+  der Absperrung, ein parkiertes Auto (blau).
+- **Ziel:** Zeitnahme-Container mit Fenstern, Tür, Treppe und Schild, gelb-blaues Zelt, ein parkiertes Auto (gelb).
+- Fahnenmasten (Schweizer Kreuz, Zielflagge, farbig), Beachflags und Werbebanden mit **erfundenen Sponsoren**
+  (BERGKRAFT, SENNHOF, RINGWERK, PASSGOLD).
+- **Landschaft:** 222 Bäume mehr (148 Tannen, 74 Laubbäume) (Tannen und Laubbäume in Gruppen, auch entlang der Ausrollstrecke und um die
+  versteckten Enden), Büsche hinter den Zuschauern, **2 neue Kuhherden** (je 5 Kühe: Start rechts bei ca. 150 m,
+  Ziel rechts auf der Weide vor dem Zuschauerbereich). Alle 25 bisherigen Kühe stehen genau gleich wie vorher.
+- Alles, was man anfahren kann, ist ein **Hindernis** (hart zum Halt wie ein Zaun), nichts steht auf Fahrbahn oder
+  Bankett. Alle Mengen und Abstände in `config.js`, Block `startZiel`, fest gewürfelt (seed).
+
+### Wo man schrauben kann (`js/config.js`)
+
+| Wert | Was |
+|---|---|
+| `startZiel.an` | false = alles wie vor M3c |
+| `startZiel.zielBremse` | so stark bremst das Auto nach dem Ziel von selbst (0.6; vorher 0.35) |
+| `startZiel.start` / `.ziel` | Form der Verlängerung (`form`: gerade, Kurve, Radius, Kuppe), wo die Absperrung steht (`sperreBei`), wie gebogen, welche Art |
+| `startZiel.bereich` | wie weit vor/nach der Linie Band und Zuschauer gehen (70 / 70 m) |
+| `startZiel.bogen` | Höhe, Pfostenabstand, Bannerbreite der Bögen |
+| `startZiel.band`, `.stroh`, `.bande`, `.fahne` | Absperrband, Strohballen, Werbebanden, Fahnenmasten |
+| `startZiel.platz` | wo Startuhr, Zelte, Container, Autos, Beachflags stehen (Meter ab der Linie, seitlich) |
+| `startZiel.zuschauer` | Anzahl, Abstand zur Strasse, Gruppen, Posen-Anteile, Kinder, Farben |
+| `startZiel.landschaft` | Baumgruppen (wo, wie viele), Büsche |
+| `kuehe.zusatzHerden` | die zwei neuen Herden bei Start und Ziel |
+
+Nach Änderungen an der Form der Verlängerungen: `node tools/stummel-sicht.mjs` (Ende darf man nie sehen) und
+`node tools/startziel-test.mjs`.
+
+### So testest du
+
+1. **Start:** Schau dich in der Startaufstellung um. Fahr **rückwärts** nach hinten: Nach ca. 44 m kommt die
+   Strohballen-Wand, dahinter Transporter und Servicezelt. Kommst du irgendwo vorbei (Band, Zaun)? Soll nicht gehen.
+   Wenden und zurückschauen: Die Strasse läuft weiter und verschwindet in einer Kurve – siehst du irgendwo ihr Ende?
+2. **Zeit:** Die Zeit startet weiterhin erst an der Startlinie.
+3. **Ziel:** Mit Vollgas durchs Ziel und Gas gedrückt halten: Das Auto bremst von selbst und steht deutlich vor der
+   Reifenwand (aus 180 km/h ca. 165 m nach der Linie, Wand bei ca. 200 m).
+4. Zuschauer anschauen: Winken sie, schauen sie zur Strasse? Wirkt es lebendig, aber nicht überladen?
+5. Leistung: Bleibt es an Start und Ziel bei 60 FPS (F3)?
+
+### Bilder (`screenshots/m3c/`, „a“ = vorher, „b“ = nachher)
+
+01 Startaufstellung (Fahrersicht), 02 Start von hinten/oben, 03 Blick rückwärts (Auto gewendet), 04/05 Zieleinfahrt
+aus 100 m / 30 m, 06 nach dem Ziel beim Ausrollen, 07 Ende der Ausrollzone, 08 Start von der Seite, 09 Ziel von oben,
+10 Servicepark hinter der Absperrung, 11 Zeitnahme-Container, 12 Zuschauer aus der Nähe, 13 Zielbogen aus 12 m.
+Neu erzeugen: `node tools/m3c-bilder.mjs --endung b`.
+
+### Selbst getestet
+
+- **Etappe unverändert:** Länge 3667.5869 m, Startlinie 25 m, Ziellinie 45 m vor dem Ende, Checkpoints 900/1870/2880,
+  Abkürzungs-Listen unverändert. **Abkürzungen** (`--pruefen`): **127 / 2 / 342 / 84**, 0 in gesperrten Kurven.
+- **Testfahrer:** mittel **2:27.62**, flott **2:18.27** (genau gleich), vorsichtig **2:43.28** (vorher 2:43.29).
+  Ehrlich zu den 0.01 s: Der Testfahrer plant sein Tempo bis ans Strassenende. Der letzte Strassenpunkt war vorher
+  „Gras“, jetzt Asphalt – darum plant er dort minim später zu bremsen und ist an der Ziellinie 0.04 m/s schneller.
+  Fahrphysik und Etappe sind gleich (alle Zwischenzeiten auf die Hundertstel gleich).
+- **Neuer Test `node tools/startziel-test.mjs`** – alles bestanden:
+  - Rennlogik: Auto auf der Verlängerung hat das s der Etappe (vor 0 bzw. nach dem Ende), „R“ setzt auf die Etappe,
+    vom Start rückwärts bis zur Absperrung und zurück: Zeit startet erst an der Startlinie (bei 25.1 m), keine Meldung;
+    nach dem Ziel bleibt die Endzeit, auch auf der Ausrollstrecke.
+  - Ausrollen (Auto lenkt der Strasse nach, Bremshilfe):
+
+    | Tempo vor dem Ziel | mit Gas gedrückt: steht nach … hinter der Linie | ohne Gas |
+    |---|---|---|
+    | 120 km/h | 95 m | 72 m |
+    | 150 km/h | 127 m | 109 m |
+    | 180 km/h | 164 m (34 m vor der Reifenwand) | 149 m |
+
+    Nie ein Aufprall.
+  - Rückwärts am Start: 45 Versuche (3 Spuren, gerade und schräg bis 35°, mit voll eingeschlagener Lenkung, 14 s voll
+    rückwärts): nie hinter die Absperrung, danach immer wieder weg.
+  - Vorwärts in die Reifenwand am Ende der Ausrollstrecke (ohne Bremshilfe, 40–100 km/h, 0°/±20°/±40°): nie hindurch,
+    frontal Stillstand nach höchstens 0.19 s, rückwärts raus.
+  - Umfahren: Start 1800, Ziel 1440 Versuche (von der Strasse und der Wiese, um beide Enden herum, mit/ohne
+    Handbremse): **0** kamen hinter eine Absperrung.
+  - Kein Hängenbleiben: Bögen, Zuschauer, Strohballen, Band, Zelte, Container, Autos, Banden, Fahnen mit 45 km/h
+    angefahren (von der Strasse und von der Wiese): steckt nie drin, rückwärts immer raus.
+  - Regeln: 96 Zuschauer, mindestens 7.42 m neben jeder Strassenmitte, schauen zur Strasse; nächstes Hindernis
+    5.65 m neben der Mitte (Bankett endet bei 5.5 m); tiefster Teil über der Strasse 4.1 m (Banner); Boden auf den
+    Verlängerungen und an den Übergängen überall Asphalt; gleicher seed = gleicher Aufbau.
+- **Sichtlinien** (`node tools/stummel-sicht.mjs`, erweitert): Kameras 2.5 m hoch, 3.1 m und 6.9 m hinter dem Auto,
+  auf der Etappe bis 400 m vor Start/Ende und auf der Verlängerung bis zur Absperrung, das Auto in Fahrtrichtung
+  **und gewendet**: Start 15 066, Ziel 21 546 Strahlen – **0** sehen das Ende. Schon allein durch das Gelände (ohne
+  Bäume) 0. Zur Kontrolle: Der Check sieht die Verlängerung bis 121 m (Start, Länge 189 m) bzw. 222 m (Ziel, 300 m) –
+  das Ende ist also mit Abstand versteckt.
+- `aufprall-test`, `strassenrand-test`, `kuh-test`, `nebenweg-test`, `gras-test`, `lenk-test`, `getriebe-test`,
+  `felswand-test`, `handbremse-test`: alle bestanden, keine Fehler in der Browser-Konsole.
+- Ehrlich zu den Test-Anpassungen: Im `kuh-test` plant die Prüfung „gleicher seed = gleiche Kühe“ die Kühe jetzt mit
+  denselben Eingaben wie das Spiel (ohne den Start- und Zielbereich, der erst nach den Kühen aufgebaut wird). Im
+  `nebenweg-test` werden nur noch die Stummel der Nebenwege geprüft (nicht die neuen Verlängerungen, die hat ihr eigener Test).
+
+**Leistung** (`node tools/m3c-bilder.mjs`, Kamera wie im Spiel, Headless):
+
+| Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+|---|---|---|
+| Start (Startaufstellung) | 118 → 120 | 137 295 → 144 431 (+7 100) |
+| Ziel (30 m vor der Linie) | 55 → 59 | 96 584 → 108 114 (+11 500) |
+| Mitte (1835 m) | 99 → 99 | 118 526 → 123 130 (+4 600, die Asphaltbänder der Verlängerungen) |
+| Start von der Seite (am meisten im Bild) | 124 → 126 | 135 714 → 142 850 |
+
+Budget +8 Zeichenaufrufe / +25 000 Dreiecke: eingehalten (höchstens +4 / +11 500). Weit weg (über 650 m) wird der
+Aufbau gar nicht gezeichnet. **Ladezeit** (`node tools/ladezeit.mjs`, 7 Messungen abwechselnd, Median):
+1488 → 1605 ms (+117 ms, Budget +250 ms).
+
+### Ehrlich beurteilt
+
+- **Asphalt-Ende:** Auf keinem Bild und laut Sichtlinien-Check nirgends zu sehen. Am Start sieht man beim
+  Zurückschauen die Strohballen-Wand und dahinter die Strasse in eine Kurve verschwinden, am Ziel die Reifenwand
+  und dahinter Kuppe und Wald.
+- **Leben:** Am Ziel wirkt es jetzt richtig nach Rallye (Bogen, Zuschauer dicht am Band, Fahnen, Container). Am Start
+  ist es aus der Fahrersicht etwas ruhiger: Links steht der Weidezaun mit der Kuhherde (die gab es schon), die
+  Zuschauer stehen vor allem rechts und um den Bogen; aus 15–25 m sind sie nur ein paar Pixel gross. Überladen
+  wirkt es nicht.
+- Das Banner „ZIEL“ ist ab ca. 20 m gut lesbar, aus 30 m nur gerade noch zu erkennen (das Bild hat nur 320x180
+  Pixel); „START“ ist aus der Startaufstellung gut lesbar. Die Werbebanden sind
+  im 320x180-Bild eher Farbflecken.
+- Die Ausrollstrecke selbst ist eher kahl (Wiese, ein paar Baumgruppen) – absichtlich ruhig nach dem Trubel im Ziel.
+
+### Bekannte Probleme
+
+- Leistung nur im Headless-Browser gemessen; bitte auf dem Laptop an Start und Ziel mit F3 prüfen, ob es 60 FPS bleiben.
+- Die Zuschauer haben 4 Ansichten (vorne, seitlich, hinten), keine Schrägansichten – von schräg vorne springt das
+  Bild je nach Winkel von „vorne“ auf „seitlich“.
+- Die Zuschauer reagieren nicht auf das Auto (z. B. jubeln, wenn es vorbeifährt).
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Zuschauer jubeln/winken stärker, wenn das Auto nah vorbeifährt; Kamerablitze beim Fotografen.
+- Startampel, die vor dem Losfahren rot-rot-grün zählt (heute steht die Startuhr nur da).
+- Zielbildschirm mit Zeit (M5) direkt unter dem Zielbogen.
+- Streckenposten mit Flagge an der Absperrung der Ausrollstrecke.
+- Lautsprecher-Durchsagen / Publikumsjubel, wenn es Ton gibt.
+
+---
+
+## Meilenstein 3a.3: Felswand (Kollision, Grasstellen) ✅ (Verlauf, Stand damals)
 
 ### Was war das Problem – und was wurde gemacht?
 

@@ -876,20 +876,24 @@ export function baueWelt(szene, strecke, netz) {
   // ---------------------------------------------------------------
   // Seit M3a: Etappe (Asphalt oder Schotter je Abschnitt), Stummel (Asphalt) und die
   // abgerundeten Ecken der Einfahrten (Schotter). Asphalt geht vor Schotter vor Bankett.
+  // Seit M3c auch die Verlängerungen an Start und Ziel (Asphalt statt Gras hinter dem Strassenende).
   const qb = {}, qs2 = {};
-  const kreuzungen = aeste.map((ast) => ({ x: ast.px[0], z: ast.pz[0] }));
+  const nahAst = (x, z) => aeste.some((ast) => x > ast.box.minX - aussen && x < ast.box.maxX + aussen && z > ast.box.minZ - aussen && z < ast.box.maxZ + aussen);
+  // Etappe bis ganz ans Ende (mit Verlängerung lückenlos, sonst wie früher 0.5 m davor Gras)
+  const sMin = netz && netz.ende && netz.ende('start') ? -0.05 : 0.5;
+  const sMax = strecke.laenge - (netz && netz.ende && netz.ende('ziel') ? -0.05 : 0.5);
   welt.bodenBei = function (x, z, abfrage) {
     const a = abfrage || strecke.abfrage(x, z, qb);
     let art = null, h = 0, rang = 9;
     const seite = Math.abs(a.seite);
-    if (a.abstand <= aussen && a.s > 0.5 && a.s < strecke.laenge - 0.5) {
+    if (a.abstand <= aussen && a.s > sMin && a.s < sMax) {
       const belag = netz ? netz.belag[a.i] : 'asphalt';
       const hb = netz ? netz.halbBei(a.s) : halb;
       if (seite <= hb) { art = belag; h = a.h; rang = belag === 'asphalt' ? 0 : 1; } else if (seite <= hb + s.bankett) {
         art = 'bankett'; h = a.h - ((seite - hb) / s.bankett) * 0.35; rang = 2;
       }
     }
-    if (rang > 0 && kreuzungen.some((k) => Math.abs(x - k.x) < 260 && Math.abs(z - k.z) < 260)) {
+    if (rang > 0 && nahAst(x, z)) {
       for (const ast of aeste) {
         const w = netz.stummelAbfrage(ast, x, z, aussen, qs2);
         if (!w || w.s < 0 || w.s > ast.laenge) continue;
