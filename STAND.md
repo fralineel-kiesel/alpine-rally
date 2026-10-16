@@ -1,11 +1,10 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 4 fertig** – **Pace-Notes**: Wie in einer echten Rallye sagt der Beifahrer an, was als Nächstes
-kommt – oben im Bild, unter der Zeit: kleines Symbol, kurzer Text, Distanz in Metern. Kurven mit Stufe 1–6, Kehren
-(1/4 … 4/4), Schikane, Gerade, Kuppe, Senke, Abzweig/Einmündung mit Belag, Felswand, Ziel und „schneiden“ /
-„nicht schneiden“. Alles wird beim Laden aus der Strecke berechnet; die Stufen sind an der echten Fahrphysik gemessen.
-Taste **N** schaltet die Ansagen aus und ein.
-Davor: 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 4.1 fertig** – **Pace-Notes kleiner, nur Symbole, später; R mit Wartezeit**: Die Zeit steht
+jetzt oben links, die Ansagen ganz oben in der Mitte als kleine Kacheln (Symbol + Stufen-Zahl, keine Wörter, keine
+Meter), höchstens 2 gleichzeitig und erst ca. 4 Sekunden vorher. Taste **R** bringt das Auto erst nach 4 Sekunden
+Wartezeit auf die Strasse zurück.
+Davor: 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -19,7 +18,7 @@ Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 | Bremse / Rückwärts | Pfeil runter oder S | LT / L2 |
 | Lenken | Pfeil links/rechts oder A/D | linker Stick |
 | Handbremse | Leertaste | A / Kreuz |
-| Zurück auf die Strasse | R | Start / Options |
+| Zurück auf die Strasse (im Rennen nach 4 s Wartezeit) | R | Start / Options |
 | Neustart nach dem Ziel | R | Start / Options |
 | Debug-Anzeige | F3 | – |
 | Pace-Notes (Ansagen) aus/ein | N | – |
@@ -29,7 +28,193 @@ Die Einstellung von N merkt sich der Browser (beim nächsten Start gleich wie vo
 
 ---
 
-## Meilenstein 4: Pace-Notes (Ansagen oben im Bild) ✅
+## Meilenstein 4.1: Pace-Notes kleiner, nur Symbole, später; R mit Wartezeit ✅
+
+### Was wurde gebaut?
+
+**1. Neue Aufteilung oben im Bild**
+- Die **Zeit-Tafel** steht jetzt **oben links**, die Checkpoint-Punkte direkt darunter (mittig unter der Tafel), die
+  Zwischenzeit („CP 1 …“) und Meldungen wie „ANSAGEN AUS“ links darunter. Die Tachos bleiben unten rechts.
+- Die **Pace-Notes** stehen **ganz oben am Bildrand in der Mitte** als kleine **Kacheln nebeneinander** auf einem
+  dunklen, halbdurchsichtigen Feld, das nur so gross ist wie die Kacheln.
+- **Grösse** (Pixel im 320x180-Bild): Feld **17 Pixel hoch**. Eine Kachel: **21 px** breit (mit Schneiden-Zeichen
+  27 px, Kuppe 15 px, Ziel 15 px). Zwei Kacheln: **36–48 px** (Ziel war höchstens ca. 60 von 320).
+- **Keine Wörter, keine Meter mehr.** Die Kachel erscheint, bleibt an ihrem Platz stehen und verschwindet.
+  Die nächste (dringendste) Kachel steht genau in der Mitte, eine zweite rechts daneben. Verschwindet die erste,
+  rutscht die zweite weich in die Mitte.
+
+**2. Die Kacheln (Symbol-Legende)**
+
+Jede Kachel: grosses Symbol (11x13 Pixel, für links gespiegelt) + rechts daneben die Stufen-Zahl (farbig) +
+darunter höchstens **ein** kleines Zusatz-Zeichen + ganz rechts ggf. das Schneiden-Zeichen.
+
+| Symbol (beschrieben) | Bedeutung |
+|---|---|
+| Pfeil, der leicht schräg nach oben abbiegt, **grün**, Zahl 5 oder 6 | sanfte Kurve, Stufe 5–6 (6 = Vollgas) |
+| Pfeil mit rechtem Winkel, **gelb**, Zahl 3 oder 4 | Kurve Stufe 3–4 |
+| Pfeil, der über 90° hinaus schräg nach unten biegt, **rot**, Zahl 1 oder 2 | enge Kurve, Stufe 1–2 |
+| schmales **U**, Pfeil gerade nach unten, **rot**, daneben ein kleiner Bruch (z. B. 1 über 4) | **Kehre** (Spitzkehre), Nummer in der Kehren-Folge (1/4 … 4/4) |
+| Versatz: hoch, kurz zur Seite, wieder hoch (Pfeil gerade nach oben), Farbe nach Stufe | **Schikane** (Richtung = erste Kurve) |
+| Buckel über einem Strich, weiss | **Kuppe** (Blindkuppe, dahinter sieht man die Strasse nicht) |
+| Strasse mit Ast zur Seite (Pfeil in Stufen-Farbe), geradeaus **grauer** Stummel mit **rot-weisser** Absperrung | **Abzweig**: die Etappe biegt ab, geradeaus ist gesperrt |
+| T-Kreuzung: von unten kommend, Pfeil zur Seite, die andere Seite grau mit rot-weisser Absperrung | **Einmündung**: die Etappe biegt auf die Querstrasse, die andere Richtung ist gesperrt |
+| Schachbrett-Fahne | **Ziel** |
+| **grüner** schräger Pfeil (ganz rechts in der Kachel) | **schneiden** lohnt sich (Kurveninneres frei) |
+| **rotes ✗** (ganz rechts in der Kachel) | **nicht schneiden** (Steine/Bäume/Stämme im Kurveninnern) |
+| kleines **−** unter der Zahl | eng (enger als die Stufe sonst, wie „4 minus“) |
+| kleines **+** unter der Zahl | weit (wie „4 plus“) |
+| kleines **\|–\|** (Mass-Strich) | lang (mehr als 100° oder länger als 130 m) |
+| kleines **<** (geht auf) | öffnet (wird gegen Ende weiter) |
+| kleines **>** (geht zu) | zieht zu (wird gegen Ende enger) |
+| beige Körner (nur beim Abzweig) | Schotter |
+| grüne Grasbüschel (nur beim Abzweig) | Wiesenweg |
+
+Farben der Stufen wie bisher: rot 1–2, gelb 3–4, grün 5–6.
+
+**Nicht mehr angezeigt** (werden weiter berechnet, in `config.js` unter `pacenotes.anzeigen` wieder einschaltbar,
+Standard aus): **Felswand**, **Senke**, **Gerade** und Belagwechsel als eigene Ansage.
+Die Wort-Texte (z. B. `RECHTS 4 LANG`) gibt es nur noch **intern**: im Test und in der **F3-Anzeige** (dort stehen
+unten die nächsten drei Ansagen als Text, mit „>“ davor).
+
+**Meine Entscheidung beim Abzweig:** Im Auftrag stand „Geradeaus-Pfeil = bleib auf der Strasse“. Auf unserer
+Strecke **biegt die Etappe an jedem Abzweig und jeder Einmündung ab**, geradeaus (bzw. die andere Seite) ist mit
+Reifen/Heu/Holzböcken **abgesperrt**. Ein Geradeaus-Pfeil würde dich in die Absperrung schicken. Darum zeigt der
+helle Pfeil (in der Farbe der Stufe, mit Zahl) in die Richtung der Etappe, und der gesperrte Ast ist grau mit einer
+kleinen rot-weissen Absperrung als „Vorsicht“-Zeichen. Statt eines Warndreiecks – das wäre bei 13 Pixeln zusammen
+mit Pfeil nicht lesbar gewesen. Falls du es anders willst, sag es.
+
+**3. Timing: später und höchstens 2**
+- Eine Kachel erscheint ca. **4 Sekunden** vorher (beim aktuellen Tempo), aber **mindestens 50 m** und **höchstens
+  160 m** vorher. Bei **Kehren, Abzweigen und Einmündungen 25 % früher** (also 62–200 m), weil man dort vorher
+  bremsen muss. Beispiele: bei 50 km/h ca. 56 m, bei 90 km/h 100 m (Kehre 125 m), bei 140 km/h 156 m.
+- **Höchstens 2 Kacheln** gleichzeitig. Die zweite kommt erst, wenn **sie selbst** in ihrem Zeitfenster ist – nie
+  nur, weil Platz ist. Liegen zwei Ansagen **weniger als 40 m** auseinander, kommen sie **zusammen** (z. B. Kuppe +
+  Rechts 2 in der Talschleife, Abzweig Wiesenweg + Kuppe) und zählen als die zwei.
+- **Verschwinden**: beim Passieren der **Kurvenmitte** (Kuppe: auf der Kuppe, Ziel: an der Linie), weich in ca.
+  **0.3 s**; danach rutscht die nächste in die Mitte. Nichts springt hin und her.
+- **Kehren** (4 in Folge): Es steht immer nur die nächste Kehre da, mit ihrer Nummer als kleinem Bruch (1/4 …).
+  Die nächste kommt erst ca. 60–80 m vorher.
+- Taste **N** (an/aus), die Stufen-Grenzen und die Stufen-Messung (`js/pacenotes-tempo.js`) sind unverändert.
+
+**4. Taste R mit Wartezeit**
+- **Im Rennen** startet R einen **Countdown von 4 Sekunden** (`config.js`, `zurueck.wartezeit`, 3–5 sinnvoll).
+  Währenddessen ist das Auto **gesperrt**: es bremst bis zum Stand, Gas und Lenkung wirken nicht. Die **Rennzeit
+  läuft weiter**. Anzeige: kleines Reset-Zeichen (Kreispfeil) und eine gelbe Zahl (4, 3, 2, 1) mittig knapp unter
+  den Pace-Notes. Danach wie bisher: Auto auf der Strassenmitte, Blickrichtung der Strasse, Tempo 0.
+- **Nochmals R** während des Countdowns ändert nichts (kein Neustart des Countdowns). Abbrechen geht nicht.
+- **Vor dem Start** (Zeit läuft noch nicht): R setzt wie bisher **sofort** auf die Strasse zurück.
+  **Nach dem Ziel**: R ist wie bisher der **Neustart** der Etappe. Beides ist unverändert.
+- Ein laufender Countdown wird abgebrochen, wenn das Auto sowieso zurückgesetzt wird („Checkpoint verpasst“) oder
+  ins Ziel rollt.
+
+### Werte zum Drehen (`js/config.js`)
+
+| Wert | Was | heute |
+|---|---|---|
+| `pacenotes.vorlaufZeit` | Sekunden vorher | 4 |
+| `pacenotes.vorlaufMin`, `vorlaufMax` | frühestens/spätestens (Meter) | 50 / 160 |
+| `pacenotes.vorlaufBremsen` | Faktor für Kehren, Abzweige, Einmündungen | 1.25 |
+| `pacenotes.maxKacheln` | höchstens so viele gleichzeitig | 2 |
+| `pacenotes.gruppeAbstand` | näher beisammen = erscheinen zusammen (Meter) | 40 |
+| `pacenotes.einblenden`, `ausblenden`, `nachruecken` | weiche Übergänge | 0.2 s / 0.3 s / 10 |
+| `pacenotes.anzeigen` | Felswand, Senke, Gerade, Belag wieder einschalten | alle aus |
+| `pacenotes.oben`, `innen`, `luecke` | Lage und Ränder der Tafel (Pixel) | 1 / 1 / 3 |
+| `pacenotes.farben`, `farbeTafel`, `farbeRand`, `farbeZeichen`, `farbeGesperrt`, `farbeSchotter`, `farbeWiese` | Farben | |
+| `pacenotes.zielVor` | Ziel fest so viele Meter vorher (null = wie alle) | null |
+| `zurueck.wartezeit` | R-Wartezeit (Sekunden, 0 = sofort wie früher) | 4 |
+| `zurueck.bremse` | so stark bremst das gesperrte Auto | 0.7 |
+| `zurueck.oben`, `zurueck.farbe` | Lage und Farbe der Countdown-Anzeige | 3 px / gelb |
+| `hud.zeit.links`, `hud.zeit.oben` | Lage der Zeit-Tafel | 3 / 3 |
+
+Die Pixel-Symbole selbst stehen in `js/pacenotesbild.js` (als kleine Bilder aus Zeichen, gut von Hand änderbar).
+
+### So testest du
+
+1. Start: Zeit oben links, Mitte oben leer. Losfahren: bei ca. 130 m vor der ersten Kurve kommt eine grüne **6** mit
+   Mass-Strich (lang).
+2. **Talschleife**: Abzweig-Symbol mit roter **2** und Schotter-Körnern. Danach Links 2 mit **>** (zieht zu), dann
+   Kuppe + Rechts 2, dann Einmündung.
+3. **Kehren**: rotes U mit **1/4** und rotem **✗**, bei Kehre 3 ein **grüner Pfeil** (schneiden lohnt sich).
+4. Fahr bewusst ins Gras und drück **R**: Auto bremst, Zahl 4–3–2–1 unter den Kacheln, Gas/Lenken wirken nicht,
+   die Zeit läuft. Danach steht das Auto auf der Strasse. Nochmals R während der Zahl: nichts passiert.
+5. **N**: Kacheln weg / wieder da. **F3**: unten im Debug-Feld stehen die nächsten Ansagen als Text.
+6. Fragen an dich: Erkennst du die Symbole ohne Nachdenken? Kommt die Kachel früh genug, um zu bremsen? Sind 4 s
+   Wartezeit bei R richtig?
+
+### Bilder (`screenshots/m4-1/`, neu erzeugen: `node tools/m41-bilder.mjs`)
+
+Je Stelle 1280x720 und dieselbe Stelle in Originalgrösse (`…-320x180.png`): 01 Start (Zeit links), 02 vor Kurve
+Stufe 6 (Rechts 6 lang), 03 vor Kurve Stufe 2 (Links 2 zieht zu), 04 vor Kehre 1 (1/4, nicht schneiden),
+05 vor „schneiden“ (Rechts 6 + Rechts 4 lang mit grünem Pfeil, zwei Kacheln), 06 vor „nicht schneiden“ (Schikane),
+07 vor dem Abzweig Talschleife, 08 vor der Kuppe (Abzweig Wiesenweg + Kuppe), 09 vor dem Ziel, 10 R-Countdown
+(steht auf 3, über Kehre 1), 11 Notes ausgeschaltet (N).
+
+### Selbst getestet
+
+- **`node tools/pacenotes-test.mjs`** – alles bestanden:
+  - (a)–(f) wie bisher auf der internen Liste (Texte): alle bestanden, Liste unverändert (30 Ansagen).
+  - (g) ganze Testfahrt „mittel“: **nie mehr als 2 Kacheln**, nichts verschwindet vor der Kurvenmitte, nichts kommt
+    wieder, alle 27 Kacheln erscheinen, nach dem Ziel keine, nach dem Neustart wieder von vorn.
+    **Gezählt:** 27-mal wechselte die Anzeige auf **eine** Kachel, 16-mal auf **zwei**. Zeitanteil der Fahrt
+    (2:42): ca. 91 s eine Kachel, 41 s zwei, 32 s keine.
+  - (h) keine Kachel erscheint weiter als 160 m (Kehre/Abzweig/Einmündung 200 m) vor ihrer Stelle – in der Testfahrt
+    (weitester: Abzweig Talschleife 179 m bei 129 km/h, Ziel 160 m bei 149 km/h) und bei festem Tempo
+    50 / 90 / 140 km/h (weitester Vorlauf 69 / 125 / 194 m). Keine Kachel kommt vor ihrem eigenen Zeitfenster.
+  - (i) R im Rennen: Reset genau nach **4.000 s** (nicht früher), genau **ein** Reset, zweites R nach 2 s startet den
+    Countdown nicht neu; während der Wartezeit steht das Auto trotz Vollgas und Lenken; danach Strassenmitte,
+    Tempo 0, Blickrichtung der Strasse; Rennzeit lief weiter; danach fährt es wieder. Vor dem Start: sofort zurück.
+    Nach dem Ziel: Neustart.
+- **Testfahrer unverändert**: 2:59.33 / 2:42.35 / 2:31.92 (vorher und nachher Zeichen für Zeichen gleich). Der
+  Testfahrer drückt nie R; die Tests, die das Auto zurücksetzen (`nebenweg`, `startziel`), rufen direkt
+  `aufStrasse()` auf (das sofortige Zurücksetzen) – das ist dasselbe wie vorher, darum musste dort nichts geändert
+  werden. Die Wartezeit hängt nur an der Taste (`rTaste()`).
+- Ebenfalls bestanden: `aufprall`, `nebenweg`, `startziel`, `handbremse`, `lenk`, `getriebe`, `felswand`, `gras`,
+  `belag`, `kuh`, `leben`, `strassenrand`. Keine Konsolenfehler.
+- **Strecke, Physik, Sperren, Abkürzungen, Checkpoints** nicht angefasst (3667.587 m, 127 / 2 / 342 / 84).
+- **Zeichenaufrufe** (3D-Szene, an 8 Stellen gemessen, alte Version gegen neue): vorher = nachher, z. B. vor dem
+  Abzweig Talschleife 98 → 98, vor Kehre 1 120 → 120, vor dem Ziel 61 → 61. Die Kacheln werden auf das HUD-Bild
+  gemalt; alle Kacheln der Etappe werden **einmal** beim ersten Bild auf ein gemeinsames kleines Bild vorgezeichnet,
+  pro Bild kommt je Kachel nur ein Bildausschnitt dazu, ohne neue Objekte.
+
+### Ehrlich beurteilt (bei 320x180, in Originalgrösse angeschaut)
+
+- **Kurven**: Stufe 6 (schräger grüner Pfeil), 3–4 (Winkel) und 1–2 (rote Schlaufe nach unten) sind auf einen Blick
+  verschieden, die Zahl daneben ist gut lesbar.
+- **Kehre gegen enge Kurve**: unterscheidbar – die Kehre ist ein U mit Pfeil gerade nach unten und hat statt einer
+  Zahl den kleinen Bruch 1/4; die enge Kurve ist eine Schlaufe mit schrägem Pfeil und einer roten 2. Beide sind rot;
+  auf den ersten Blick hilft vor allem „Zahl oder Bruch“.
+- **SCHNEIDEN / NICHT SCHNEIDEN**: eindeutig – grüner schräger Pfeil gegen rotes ✗, in einer eigenen Spalte. Mein
+  erster Versuch (Zeichen im Kurveninnern) war es **nicht**: in einer grünen 6er-Kurve verschwand der grüne Pfeil in
+  der Kurvenlinie. Darum die eigene Spalte (macht die Kachel 6 Pixel breiter).
+- **Abzweig/Einmündung**: als Kreuzung erkennbar; der graue gesperrte Ast ist bei 320x180 eher schwach, die rot-weisse
+  Absperrung nur 5 Pixel breit. Die Richtung (heller Pfeil) ist klar.
+- **Schikane**: erster Entwurf sah aus wie eine schräge 6er-Kurve, jetzt ein Versatz mit Pfeil gerade nach oben –
+  unterscheidbar, aber nicht das schönste Symbol.
+- **Kleine Zeichen** (−, +, |–|, <, >): klar zu sehen, aber man muss die Bedeutung einmal gelernt haben (Legende).
+- **Kehren-Bruch** 1/4 ist mit 3x5-Ziffern sehr klein, lesbar, wenn man hinschaut.
+- **Breite**: eine Kachel 21 px, zwei 36–48 px von 320, Höhe 17 px.
+
+### Bekannte Probleme
+
+- **Dichte Stellen** kommen teils spät, weil höchstens 2 Kacheln stehen: in der Talschleife (Links 2 → Kuppe →
+  Rechts 2) erscheint Rechts 2 in der Testfahrt nur ca. 31 m vorher, Links 3 nach dem Wiesenweg-Abzweig ca. 33 m
+  vorher. Bei 3 statt 2 Kacheln (`maxKacheln: 3`) wäre es früher, aber voller.
+- Mit zwei Kacheln steht die Tafel nicht genau mittig (die erste steht in der Mitte, die zweite rechts daneben) –
+  so bewegt sich die erste nicht, wenn die zweite dazukommt.
+- Die Countdown-Zahl hat nur eine Ziffer (bis 9 s Wartezeit).
+- Rot/Grün: wer rot-grün-schwach sieht, muss sich an der Form orientieren (✗ gegen Pfeil) – das geht.
+- Stufe 5 gibt es auf dieser Strecke weiterhin nicht (siehe M4).
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Das grosse Symbol für Kehren etwas dicker (2 Pixel), damit es sich noch stärker von der engen Kurve abhebt.
+- Eine Einstellung „früh / normal / spät“ für die Vorlaufzeit im Spiel.
+- Beim R-Countdown die Kamera langsam etwas anheben (zeigt, dass „etwas passiert“).
+- Ein Gamepad-Knopf für N.
+
+---
+
+## Meilenstein 4: Pace-Notes (Ansagen oben im Bild) ✅ (Verlauf, Stand damals – Aussehen und Timing seit M4.1 anders)
 
 ### Was wurde gebaut?
 

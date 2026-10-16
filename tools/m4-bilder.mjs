@@ -1,4 +1,5 @@
-// Screenshots für Meilenstein 4 (Pace-Notes), 1280x720 mit HUD.
+// Screenshots für Meilenstein 4 (Pace-Notes), 1280x720 mit HUD. (Seit M4.1 sieht die Anzeige anders aus,
+// neue Bilder: tools/m41-bilder.mjs)
 //
 //   node tools/m4-bilder.mjs       Bilder nach screenshots/m4/<nr>-<stelle>.png
 //
@@ -57,7 +58,7 @@ for (const [name, s, kmh, aus] of STELLEN) {
   await page.waitForTimeout(1500); // Ansagen einblenden lassen
   const zeilen = await page.evaluate(() => {
     const a = window.__alpineRally.paceNotes.anzeige;
-    return a.zeilen.slice(0, a.anzahl).map((z) => `${a.notes[z.nr].text} (${z.distanz} m)`);
+    return a.kacheln.slice(0, a.anzahl).map((z) => a.notes[a.alle[z.nr].note].text);
   });
   // Zeichenaufrufe der 3D-Szene (die Ansagen liegen auf dem HUD-Bild und dürfen keine dazu bringen)
   const calls = await page.evaluate(() => window.__alpineRally.renderer.info.render.calls);

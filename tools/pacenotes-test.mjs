@@ -1,4 +1,4 @@
-// Pace-Notes prüfen (Meilenstein 4).
+// Pace-Notes prüfen (Meilenstein 4, Anzeige seit M4.1 als Kacheln).
 //
 //   node tools/pacenotes-test.mjs             komplette Liste ausgeben, Grenztempo jeder Kurve mit der echten
 //                                             Fahrphysik messen, Prüfungen (a) bis (f)
@@ -12,9 +12,15 @@
 //   (d) keine zwei Ansagen näher als 25 m (sonst müssen sie zusammengefasst sein)
 //   (e) Abzweig/Einmündung stimmen mit "nebenwege" überein (Meter und Richtung aus dem Strassennetz)
 //   (f) die Liste ist bei zwei Läufen (auch nach neuem Laden) genau gleich
-//   (g) Anzeige während einer Testfahrt (Profil "mittel"): nie mehr als 3 Zeilen, nichts verschwindet vor dem
-//       Passieren (kein Flackern), jede Ansage erscheint rechtzeitig (Vorlauf), nach dem Ziel keine, nach dem
-//       Neustart wieder von vorn
+//   (a)-(f) laufen auf der internen Liste (mit Texten), die Anzeige zeigt seit M4.1 nur Symbole.
+//   (g) Anzeige während einer Testfahrt (Profil "mittel", ganze Etappe): nie mehr als maxKacheln (2) Kacheln
+//       gleichzeitig, nichts verschwindet vor der Kurvenmitte (kein Flackern), jede Kachel erscheint, nach dem
+//       Ziel keine, nach dem Neustart wieder von vorn; dazu: wie oft 1 bzw. 2 Kacheln zu sehen waren
+//   (h) keine Kachel erscheint weiter als 160 m (Kehre/Abzweig/Einmündung: 200 m) vor ihrer Stelle – in der
+//       Testfahrt und bei festem Tempo 50, 90 und 140 km/h; und keine erscheint vor ihrem eigenen Zeitfenster
+//   (i) Taste R im Rennen: Reset erst nach der Wartezeit (zurueck.wartezeit), nicht früher, nicht doppelt;
+//       Auto ist dabei gesperrt (bremst bis zum Stand), Rennzeit läuft weiter; vor dem Start sofort, nach dem
+//       Ziel Neustart
 //   Stichproben: jede Kurven-Ansage gegen die Testfahrt (gelenkte Richtung, Tempo in der Kurve)
 // Dazu: Ladezeit der Berechnung, Fehler in der Browser-Konsole.
 
@@ -238,25 +244,42 @@ melde(d.json === d.json2 && d.json === dNeu.json, `(f) Liste bei zwei Läufen gl
   const r = await spiel.page.evaluate(async () => {
     const A = window.__alpineRally;
     const f = await import('/tools/testfahrer-browser.js');
-    const PN = A.paceNotes;
+    const PN = A.paceNotes, P = A.CONFIG.pacenotes;
     if (!PN.anzeige.an) PN.umschalten();
-    const notes = PN.notes, N = notes.length;
-    const erst = new Array(N).fill(null), war = new Uint8Array(N), weg = new Uint8Array(N);
-    const flackern = [];
-    let maxZeilen = 0;
+    const notes = PN.notes, N = notes.length, kacheln = PN.kacheln, K = kacheln.length;
+    const gruppeVon = new Array(K);
+    PN.gruppen.forEach((g, n) => { for (let i = g.von; i <= g.bis; i++) gruppeVon[i] = g; });
+    const erst = new Array(K).fill(null), war = new Uint8Array(K), weg = new Uint8Array(K);
+    const flackern = [], zuFrueh = [];
+    let maxK = 0, vorher = 0;
+    const episoden = { 1: 0, 2: 0 }, zeit = { 0: 0, 1: 0, 2: 0 };
     const fahrt = notes.map(() => ({ vMin: Infinity, lenk: 0, n: 0 }));
     A.neustart();
     const ergebnis = f.fahreEtappe(A, 'mittel', (e) => {
       const s = A.rennen.letztesS, v = A.physik.tempo;
       const a = PN.aktualisiere(A.SCHRITT, s, v, A.rennen.zustand);
-      if (a.anzahl > maxZeilen) maxZeilen = a.anzahl;
-      const jetzt = new Uint8Array(N);
-      for (let k = 0; k < a.anzahl; k++) jetzt[a.zeilen[k].nr] = 1;
+      if (a.anzahl > maxK) maxK = a.anzahl;
+      if (a.anzahl !== vorher && a.anzahl > 0) episoden[a.anzahl] = (episoden[a.anzahl] || 0) + 1;
+      vorher = a.anzahl;
+      zeit[Math.min(2, a.anzahl)] += A.SCHRITT;
+      const jetzt = new Uint8Array(K);
+      for (let k = 0; k < a.anzahl; k++) jetzt[a.kacheln[k].nr] = 1;
+      for (let i = 0; i < K; i++) {
+        const kk = kacheln[i];
+        if (jetzt[i] && erst[i] == null) {
+          erst[i] = { d: kk.s - s, kmh: v * 3.6 };
+          // eigenes Zeitfenster (Gruppe): die hinterste Kachel der Gruppe muss im Fenster sein
+          const g = gruppeVon[i];
+          const fenster = Math.min(P.vorlaufMax, Math.max(P.vorlaufMin, v * P.vorlaufZeit)) * (g.bremsen ? P.vorlaufBremsen : 1);
+          if (g.anker - s > fenster + 1) zuFrueh.push(`${notes[kk.note].text} ${Math.round(g.anker - s)} m (Fenster ${Math.round(fenster)} m)`);
+        }
+        if (jetzt[i] && weg[i]) flackern.push(`${notes[kk.note].text} bei ${Math.round(s)} m wieder da`);
+        // nicht mehr ganz sichtbar (blendet aus), obwohl die Kurvenmitte noch nicht erreicht ist
+        const steht = jetzt[i] && a.kacheln.slice(0, a.anzahl).some((x) => x.nr === i && x.alpha >= 0.999);
+        if (war[i] === 2 && !steht && kk.mitte - s > 1 && !weg[i]) { weg[i] = 1; flackern.push(`${notes[kk.note].text} bei ${Math.round(s)} m weg, ${Math.round(kk.mitte - s)} m vor der Mitte`); }
+        war[i] = steht ? 2 : jetzt[i];
+      }
       for (let j = 0; j < N; j++) {
-        if (jetzt[j] && erst[j] == null) erst[j] = { d: notes[j].s - s, kmh: v * 3.6 };
-        if (jetzt[j] && weg[j]) flackern.push(`${notes[j].text} bei ${Math.round(s)} m wieder da`);
-        if (!jetzt[j] && war[j] && notes[j].s - s > 1) { weg[j] = 1; flackern.push(`${notes[j].text} bei ${Math.round(s)} m weg, ${Math.round(notes[j].s - s)} m vorher`); }
-        war[j] = jetzt[j];
         // Stichprobe: in der (ersten) Kurve dieser Ansage
         const c = notes[j].teile.find((t) => t.kurven && t.kurven.length);
         if (c && s >= c.kurven[0].von && s <= c.kurven[c.kurven.length - 1].bis) {
@@ -269,30 +292,56 @@ melde(d.json === d.json2 && d.json === dNeu.json, `(f) Liste bei zwei Läufen gl
     // nach dem Ziel: 1 s weiter
     let nachZiel = 0;
     for (let t = 0; t < 1; t += A.SCHRITT) nachZiel = PN.aktualisiere(A.SCHRITT, A.rennen.letztesS, A.physik.tempo, A.rennen.zustand).anzahl;
-    // Neustart: wieder von vorn
+    // Neustart: wieder von vorn (kurz vor der ersten Kachel, 70 km/h)
     A.neustart();
     let nachNeustart = null;
-    for (let t = 0; t < 0.5; t += A.SCHRITT) nachNeustart = PN.aktualisiere(A.SCHRITT, A.rennen.letztesS, 0, A.rennen.zustand);
-    const ersteNachNeustart = nachNeustart.anzahl ? notes[nachNeustart.zeilen[0].nr].text : null;
+    for (let t = 0; t < 0.5; t += A.SCHRITT) nachNeustart = PN.aktualisiere(A.SCHRITT, kacheln[0].s - 40, 20, 'laeuft');
+    const ersteNachNeustart = nachNeustart.anzahl ? nachNeustart.kacheln[0].nr : null;
+    // (h) festes Tempo: Etappe "abfahren" (nur Anzeige)
+    const festeFahrt = {};
+    for (const kmh of [50, 90, 140]) {
+      PN.zuruecksetzen();
+      const d = new Array(K).fill(null);
+      let mk = 0;
+      for (let s = A.strecke.startS - 50; s <= A.strecke.zielS + 5; s += kmh / 3.6 / 60) {
+        const a = PN.aktualisiere(1 / 60, s, kmh / 3.6, 'laeuft');
+        mk = Math.max(mk, a.anzahl);
+        for (let k = 0; k < a.anzahl; k++) { const i = a.kacheln[k].nr; if (d[i] == null) d[i] = kacheln[i].s - s; }
+      }
+      festeFahrt[kmh] = { d, maxK: mk };
+    }
+    PN.zuruecksetzen();
     return {
-      ziel: ergebnis.ziel, zeit: ergebnis.zeit, maxZeilen, flackern, nachZiel, ersteNachNeustart, ersteNote: notes[0].text,
+      ziel: ergebnis.ziel, zeit: ergebnis.zeit, maxK, maxKacheln: P.maxKacheln, flackern, zuFrueh, nachZiel, ersteNachNeustart, episoden, zeitAnteil: zeit,
+      festeFahrt, vorlaufMax: P.vorlaufMax,
+      kacheln: kacheln.map((k, i) => ({ s: k.s, art: k.art, text: notes[k.note].text, erst: erst[i], bremsen: gruppeVon[i].bremsen })),
       liste: notes.map((n, j) => ({
-        s: n.s, text: n.text, stufe: n.stufe, erst: erst[j], ziel: n.arten.includes('ziel'),
-        kurve: n.teile.find((t) => t.kurven && t.kurven.length) || null,
+        s: n.s, text: n.text, kurve: n.teile.find((t) => t.kurven && t.kurven.length) || null,
         vMin: fahrt[j].vMin, lenk: fahrt[j].n ? fahrt[j].lenk / fahrt[j].n : 0,
       })).map((x) => ({ ...x, richtung: x.kurve ? x.kurve.richtung : null, kurve: !!x.kurve })),
     };
   });
-  const P = { min: 100, max: 350 };
-  const zuSpaet = r.liste.filter((n) => !n.ziel && n.erst && n.erst.d < Math.min(P.min, n.s - 10) - 1);
-  const nie = r.liste.filter((n) => !n.erst);
+  const nie = r.kacheln.filter((k) => !k.erst);
   console.log(`       Testfahrt "mittel": ${r.ziel ? 'im Ziel' : 'NICHT im Ziel'}, Zeit ${(r.zeit / 60 | 0)}:${(r.zeit % 60).toFixed(2).padStart(5, '0')}`);
-  console.log('       Vorlauf (Distanz beim Erscheinen, Tempo dabei): ' + r.liste.map((n) => `${Math.round(n.s)} ${n.erst ? `${Math.round(n.erst.d)} m/${Math.round(n.erst.kmh)}` : 'nie'}`).join(', '));
-  melde(r.maxZeilen <= 3, `(g) höchstens ${r.maxZeilen} Zeilen gleichzeitig`);
-  melde(!r.flackern.length, `(g) nichts verschwindet vor dem Passieren${r.flackern.length ? ': ' + r.flackern.slice(0, 4).join('; ') : ''}`);
-  melde(!nie.length && !zuSpaet.length, `(g) jede Ansage erscheint (nie: ${nie.length}) und rechtzeitig (mind. 100 m bzw. ab Start; zu spät: ${zuSpaet.map((n) => `${n.text} ${Math.round(n.erst.d)} m`).join(', ') || 'keine'})`);
-  melde(r.nachZiel === 0, `(g) nach dem Ziel keine Ansage (${r.nachZiel} Zeilen nach 1 s)`);
-  melde(r.ersteNachNeustart === r.ersteNote, `(g) nach dem Neustart wieder von vorn ("${r.ersteNachNeustart}")`);
+  console.log(`       ${r.kacheln.length} Kacheln. Erscheinen (Meter vor der Stelle / Tempo): ` + r.kacheln.map((k) => `${Math.round(k.s)} ${k.art} ${k.erst ? `${Math.round(k.erst.d)} m/${Math.round(k.erst.kmh)}` : 'nie'}`).join(', '));
+  console.log(`       Gezählt: ${r.episoden[1] || 0}x eine Kachel, ${r.episoden[2] || 0}x zwei Kacheln gleichzeitig (Zeitanteil: keine ${r.zeitAnteil[0].toFixed(0)} s, eine ${r.zeitAnteil[1].toFixed(0)} s, zwei ${r.zeitAnteil[2].toFixed(0)} s)`);
+  melde(r.maxK <= r.maxKacheln, `(g) höchstens ${r.maxK} Kacheln gleichzeitig (erlaubt ${r.maxKacheln}), ganze Etappe`);
+  melde(!r.flackern.length, `(g) nichts verschwindet vor der Kurvenmitte, nichts kommt wieder${r.flackern.length ? ': ' + r.flackern.slice(0, 4).join('; ') : ''}`);
+  melde(!nie.length, `(g) jede Kachel erscheint (nie: ${nie.map((k) => `${Math.round(k.s)} ${k.art}`).join(', ') || 'keine'})`);
+  melde(r.nachZiel === 0, `(g) nach dem Ziel keine Kachel (${r.nachZiel} nach 1 s)`);
+  melde(r.ersteNachNeustart === 0, `(g) nach dem Neustart wieder von vorn (erste Kachel: ${r.ersteNachNeustart})`);
+  // (h)
+  const grenze = (k) => (k.bremsen ? 200 : 160);
+  const zuWeit = r.kacheln.filter((k) => k.erst && k.erst.d > grenze(k) + 0.5).map((k) => `${Math.round(k.s)} ${k.art} ${Math.round(k.erst.d)} m`);
+  for (const [kmh, ff] of Object.entries(r.festeFahrt)) {
+    const max = Math.max(...ff.d.filter((x) => x != null));
+    const maxB = Math.max(...ff.d.filter((x, i) => x != null && r.kacheln[i].bremsen));
+    ff.d.forEach((x, i) => { if (x != null && x > grenze(r.kacheln[i]) + 0.5) zuWeit.push(`${kmh} km/h: ${Math.round(r.kacheln[i].s)} ${r.kacheln[i].art} ${Math.round(x)} m`); });
+    console.log(`       Festes Tempo ${kmh} km/h: weitester Vorlauf ${Math.round(max)} m (Kehre/Abzweig/Einmündung ${Math.round(maxB)} m), höchstens ${ff.maxK} Kacheln, nie gezeigt: ${ff.d.filter((x) => x == null).length}`);
+    if (ff.maxK > r.maxKacheln) zuWeit.push(`${kmh} km/h: ${ff.maxK} Kacheln`);
+  }
+  melde(!zuWeit.length, `(h) keine Kachel weiter als 160 m (Kehre/Abzweig/Einmündung 200 m) vor der Stelle${zuWeit.length ? ': ' + zuWeit.slice(0, 5).join('; ') : ''}`);
+  melde(!r.zuFrueh.length, `(h) keine Kachel vor ihrem eigenen Zeitfenster (nie "weil Platz ist")${r.zuFrueh.length ? ': ' + r.zuFrueh.slice(0, 4).join('; ') : ''}`);
   // Stichproben
   console.log('       Stichproben (Testfahrt "mittel"): | Ansage | gelenkt | Tempo in der Kurve |');
   let falsch = 0;
@@ -302,6 +351,61 @@ melde(d.json === d.json2 && d.json === dNeu.json, `(f) Liste bei zwei Läufen gl
     console.log(`         ${String(Math.round(n.s)).padStart(4)} m  ${n.text.padEnd(25)} ${gelenkt > 0 ? 'rechts' : gelenkt < 0 ? 'links ' : 'gerade'} ${gelenkt === n.richtung ? 'ok' : 'FALSCH'}  ${Number.isFinite(n.vMin) ? Math.round(n.vMin) + ' km/h' : '-'}`);
   }
   melde(falsch === 0, `Stichproben: Richtung der Ansage = gelenkte Richtung bei allen ${r.liste.filter((x) => x.kurve).length} Kurven-Ansagen (falsch: ${falsch})`);
+}
+
+// --- (i) Taste R mit Wartezeit ---
+{
+  const r = await spiel.page.evaluate(() => {
+    const A = window.__alpineRally, p = A.physik, W = A.CONFIG.zurueck.wartezeit, dt = A.SCHRITT;
+    const q = {};
+    A.neustart();
+    // Auto im Rennen bei 1250 m, 6 m neben der Strassenmitte, 15 m/s
+    A.setzeAuf(1250, 6);
+    A.rennen.zustand = 'laeuft'; A.rennen.zeit = 60;
+    A.rennen.zwischenzeiten = A.checkpoints.filter((c) => c.s < 1250).map(() => 30);
+    A.rennen.naechsterCp = A.rennen.zwischenzeiten.length;
+    p.vx = Math.sin(p.richtung) * 15; p.vz = Math.cos(p.richtung) * 15; p.vVor = 15;
+    const anzahl0 = A.rueck.anzahl, zeit0 = A.rennen.zeit;
+    const erster = A.rTaste();
+    const spieler = { gas: 1, bremse: 0, lenkung: 1, handbremse: false, reset: false, debug: false };
+    let t = 0, resetBei = null, nochmal = null, restNachNochmal = null, vorReset = null, maxTempoSpaeter = 0;
+    while (t < W + 2) {
+      if (Math.abs(t - W / 2) < dt / 2) { const rest = A.rueck.rest; nochmal = A.rTaste(); restNachNochmal = [rest, A.rueck.rest]; }
+      const vorher = A.rueck.anzahl;
+      if (resetBei == null) vorReset = { tempo: p.tempo, abstand: A.strecke.abfrage(p.x, p.z, q).abstand };
+      A.physikSchritt(dt, spieler);
+      t += dt;
+      if (A.rueck.anzahl !== vorher && resetBei == null) {
+        resetBei = t;
+        const a = A.strecke.abfrage(p.x, p.z, q);
+        var nachReset = { tempo: p.tempo, abstand: a.abstand, richtung: Math.abs(Math.atan2(Math.sin(p.richtung - Math.atan2(a.tx, a.tz)), Math.cos(p.richtung - Math.atan2(a.tx, a.tz)))) };
+      }
+      if (resetBei != null && t > resetBei + 0.5) maxTempoSpaeter = Math.max(maxTempoSpaeter, p.tempo); // danach wieder frei
+    }
+    const ergebnis = {
+      W, erster, nochmal, restNachNochmal, resetBei, anzahl: A.rueck.anzahl - anzahl0, vorReset, nachReset,
+      zeitGelaufen: A.rennen.zeit - zeit0, freiDanach: maxTempoSpaeter,
+    };
+    // vor dem Start: sofort; nach dem Ziel: Neustart
+    A.neustart();
+    A.setzeAuf(A.rennen.letztesS, 4);
+    ergebnis.bereit = A.rTaste();
+    ergebnis.bereitAbstand = A.strecke.abfrage(p.x, p.z, q).abstand;
+    A.rennen.zustand = 'ziel';
+    ergebnis.ziel = A.rTaste();
+    ergebnis.zielZustand = A.rennen.zustand;
+    A.neustart();
+    return ergebnis;
+  });
+  console.log(`       R im Rennen (Wartezeit ${r.W} s): "${r.erster}", nochmal R nach ${r.W / 2} s: "${r.nochmal}" (Rest ${r.restNachNochmal.map((x) => x.toFixed(2)).join(' -> ')} s), Reset nach ${r.resetBei?.toFixed(3)} s, Anzahl Resets ${r.anzahl}`);
+  console.log(`       kurz vor dem Reset: ${(r.vorReset.tempo * 3.6).toFixed(1)} km/h (Spieler gibt Vollgas und lenkt), ${r.vorReset.abstand.toFixed(1)} m neben der Mitte; danach: ${(r.nachReset.tempo * 3.6).toFixed(1)} km/h, ${r.nachReset.abstand.toFixed(2)} m neben der Mitte, Blickrichtung ${(r.nachReset.richtung * 180 / Math.PI).toFixed(1)}° neben der Strasse; Rennzeit lief ${r.zeitGelaufen.toFixed(2)} s`);
+  const SCHRITT = 1 / 120;
+  melde(r.erster === 'countdown' && r.resetBei != null && r.resetBei >= r.W - SCHRITT / 2 && r.resetBei <= r.W + SCHRITT * 1.5, `(i) Reset nach der Wartezeit (${r.resetBei?.toFixed(3)} s, eingestellt ${r.W} s), nicht früher`);
+  melde(r.anzahl === 1 && r.nochmal === 'laeuft schon' && Math.abs(r.restNachNochmal[0] - r.restNachNochmal[1]) < 1e-9, '(i) nicht doppelt: genau ein Reset, zweites R startet den Countdown nicht neu');
+  melde(r.vorReset.tempo < 0.6 && r.vorReset.abstand > 3, `(i) während der Wartezeit gesperrt: steht (${(r.vorReset.tempo * 3.6).toFixed(1)} km/h) trotz Vollgas, noch neben der Strasse`);
+  melde(r.nachReset.abstand < 0.3 && r.nachReset.tempo < 0.01 && r.nachReset.richtung < 0.05, '(i) danach auf der Strassenmitte, Tempo 0, Blickrichtung der Strasse');
+  melde(Math.abs(r.zeitGelaufen - (r.W + 2)) < 0.02 && r.freiDanach > 1, `(i) Rennzeit läuft weiter (${r.zeitGelaufen.toFixed(2)} s), danach fährt das Auto wieder (${(r.freiDanach * 3.6).toFixed(0)} km/h)`);
+  melde(r.bereit === 'sofort' && r.bereitAbstand < 0.3 && r.ziel === 'neustart' && r.zielZustand === 'bereit', `(i) vor dem Start sofort zurück ("${r.bereit}"), nach dem Ziel Neustart ("${r.ziel}")`);
 }
 
 melde(spiel.fehler.length === 0, `keine Fehler in der Browser-Konsole (${spiel.fehler.length})`);

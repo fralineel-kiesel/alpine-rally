@@ -958,8 +958,9 @@ export const CONFIG = {
   // --- Anzeigen (HUD) ----------------------------------------------------
   // Masse in Pixeln des 320x180-Bildes.
   hud: {
-    // Zeit oben Mitte auf einer kleinen Tafel, darunter die Checkpoint-Punkte (Meilenstein 1.2)
+    // Zeit oben links auf einer kleinen Tafel, darunter die Checkpoint-Punkte (seit M4.1 links, vorher Mitte)
     zeit: {
+      links: 3,                // Abstand der Tafel vom linken Bildrand
       oben: 3,                 // Abstand der Tafel vom oberen Bildrand
       hoehe: 13,               // Höhe der Tafel
       innen: 3,                // Rand innen links und rechts
@@ -1058,37 +1059,49 @@ export const CONFIG = {
     wandMaxStufe: 4,
 
     // --- Ziel ---
-    zielVor: 200,              // "ZIEL" erscheint so viele Meter vor der Ziellinie
+    zielVor: null,             // "ZIEL" so viele Meter vorher (null = wie alle anderen Ansagen, nach Vorlaufzeit)
 
     // --- Zusammenfassen ---
-    zusammen: 28,              // Ansagen näher beisammen (Meter) werden zu einer mit "UND"
+    zusammen: 28,              // Ansagen näher beisammen (Meter) werden intern eine Ansage (Text mit "UND")
     abzweigFang: 30,           // Abzweig/Einmündung: Kurve so nah an der Kreuzung (Meter) gehört dazu
-    maxZeichen: 24,            // längster Text einer Zeile (sonst werden Zusätze weggelassen)
+    maxZeichen: 24,            // längster Text einer Ansage (nur intern und für F3)
 
-    // --- Wann erscheint eine Ansage ---
-    vorlaufZeit: 7,            // so viele Sekunden vorher (bei der aktuellen Geschwindigkeit) ...
-    vorlaufMin: 100,           // ... aber mindestens so viele Meter vorher ...
-    vorlaufMax: 350,           // ... und höchstens so viele
-    maxZeilen: 3,              // höchstens so viele Ansagen gleichzeitig
-    einblenden: 0.25,          // Sekunden zum Einblenden
-    ausblenden: 0.45,          // Sekunden zum Ausblenden beim Passieren
-    nachruecken: 10,           // wie schnell die Zeilen nach oben rücken (höher = schneller)
-    distanzRunden: 10,         // Distanz auf so viele Meter runden (zählt in 10er-Schritten herunter)
+    // --- Was wird angezeigt (M4.1: knapper) ---
+    // Diese Ansagen werden weiter berechnet, aber nur gezeigt, wenn hier true steht
+    anzeigen: {
+      felswand: false,         // Warndreieck "Felswand"
+      senke: false,            // Mulde
+      gerade: false,           // Pfeil "Gerade"
+      belag: false,            // Belagwechsel als eigene Ansage (beim Abzweig steht er immer als kleines Zeichen)
+    },
+
+    // --- Wann erscheint eine Kachel (M4.1: später, höchstens 2) ---
+    vorlaufZeit: 4,            // so viele Sekunden vorher (bei der aktuellen Geschwindigkeit) ...
+    vorlaufMin: 50,            // ... aber mindestens so viele Meter vorher ...
+    vorlaufMax: 160,           // ... und höchstens so viele
+    vorlaufBremsen: 1.25,      // bei Kehren, Abzweigen und Einmündungen so viel mal früher (dort muss man vorher bremsen)
+    maxKacheln: 2,             // höchstens so viele Kacheln gleichzeitig
+    gruppeAbstand: 40,         // Ansagen näher beisammen (Meter) erscheinen zusammen (z. B. links 3, rechts 4)
+    einblenden: 0.2,           // Sekunden zum Einblenden
+    ausblenden: 0.3,           // Sekunden zum Ausblenden (beim Passieren der Kurvenmitte)
+    nachruecken: 10,           // wie schnell die nächste Kachel nach links rutscht (höher = schneller)
 
     // --- Aussehen (Pixel im 320x180-Bild) ---
-    unterPunkte: 3,            // Abstand unter den Checkpoint-Punkten
-    zeilenHoehe: 10,           // Höhe einer Zeile
-    innen: 2,                  // Rand innen
-    distanzAbstand: 9,         // Platz zwischen Text/Zeichen und der Distanz
-    farbeTafel: 'rgba(18, 24, 32, 0.62)', // dunkel, halbtransparent (wie die Zeit-Tafel, etwas durchsichtiger)
-    farbeRand: 'rgba(230, 226, 211, 0.55)', // dezenter heller Rand
-    farbeText: '#f4f4ee',      // Text
-    farbeDistanz: '#a9b4bd',   // Distanz in Metern (graublau, damit man sie nicht mit Zahlen im Text verwechselt)
-    farben: {                  // Farben der Symbole
-      rot: '#ff4a3a',          // Stufe 1-2, Kehre, "NICHT SCHNEIDEN"
-      gelb: '#ffd23c',         // Stufe 3-4, Felswand, Abzweig
+    oben: 1,                   // Abstand der Tafel vom oberen Bildrand (Tafel ist mittig)
+    innen: 1,                  // Rand innen (zwischen Tafel-Rand und Kachel), Tafel ist dann 17 Pixel hoch
+    luecke: 3,                 // Platz zwischen zwei Kacheln
+    farbeTafel: 'rgba(18, 24, 32, 0.62)', // dunkel, halbtransparent
+    farbeRand: 'rgba(230, 226, 211, 0.35)', // sehr dezenter heller Rand
+    farbeSchatten: '#101418',  // Schatten unter den Symbolen
+    farbeZeichen: '#f4f4ee',   // kleine Zeichen (eng, weit, lang, öffnet, zieht zu, Kehren-Nummer)
+    farbeGesperrt: '#8a9096',  // abgesperrter Ast beim Abzweig/bei der Einmündung (grau)
+    farbeSchotter: '#d8c08a',  // Zeichen "Schotter" beim Abzweig
+    farbeWiese: '#9be07a',     // Zeichen "Wiesenweg" beim Abzweig
+    farben: {                  // Farben der Symbole und der Stufen-Zahl
+      rot: '#ff4a3a',          // Stufe 1-2, Kehre, "NICHT SCHNEIDEN", Absperrung
+      gelb: '#ffd23c',         // Stufe 3-4
       gruen: '#7ee05a',        // Stufe 5-6, "SCHNEIDEN"
-      weiss: '#f4f4ee',        // Gerade, Kuppe, Senke, Belag, Ziel
+      weiss: '#f4f4ee',        // Kuppe, Ziel (und die abschaltbaren: Gerade, Senke, Belag)
     },
     // Texte (Grossbuchstaben)
     texte: {
@@ -1098,6 +1111,17 @@ export const CONFIG = {
       schneiden: 'SCHNEIDEN', nichtSchneiden: 'NICHT SCHNEIDEN',
       eng: 'ENG', weit: 'WEIT', lang: 'LANG', oeffnet: 'ÖFFNET', ziehtZu: 'ZIEHT ZU',
     },
+  },
+
+  // --- Taste R: zurück auf die Strasse (M4.1: mit Wartezeit) -------------------------
+  // Während der Wartezeit ist das Auto gesperrt (bremst bis zum Stand, kein Gas, keine Lenkung),
+  // die Rennzeit läuft weiter. Danach steht das Auto auf der Strassenmitte, Tempo 0.
+  // Vor dem Start (sofort zurück) und nach dem Ziel (Neustart) gilt die Wartezeit nicht.
+  zurueck: {
+    wartezeit: 4,              // Sekunden (3-5 sinnvoll; 0 = sofort wie früher)
+    bremse: 0.7,               // so stark bremst das gesperrte Auto (0..1, wie das Bremspedal)
+    oben: 3,                   // Anzeige "Zeichen + Zahl" so viele Pixel unter der Pace-Notes-Tafel (mittig)
+    farbe: '#ffd23c',          // Farbe von Zeichen und Zahl
   },
 
   // --- Optik am Auto -----------------------------------------------------
