@@ -39,7 +39,7 @@ Zeit-Tafel. Kein Ton, nur Symbol und Text. Zeit, Checkpoint-Punkte und Tachos si
 
 Jede Zeile: **Symbol** (Pixel-Pfeil in der Form der Kurve, farbig nach Schwierigkeit) + **Text** (z. B.
 `RECHTS 4 LANG`, die Stufen-Zahl in der Farbe des Symbols) + kleine **Zusatz-Zeichen** (schneiden / nicht schneiden)
-+ rechts die **Distanz** in Metern mit kleinem „m“, die in 10-m-Schritten herunterzählt.
++ rechts die **Distanz** in Metern (graublau, mit kleinem „m“), die in 10-m-Schritten herunterzählt.
 
 - **Höchstens 3 Zeilen**, die dringendste (nächste) oben.
 - **Wann erscheint eine Ansage?** Etwa **7 Sekunden** vorher beim aktuellen Tempo, aber mindestens **100 m** und
@@ -214,7 +214,7 @@ schreibt `js/pacenotes-tempo.js`. Ohne Messung schätzt das Spiel das Tempo aus 
   - (a) 898 Stellen, an denen die Strasse auf 50 m mehr als 25° dreht: alle haben eine Kurven-Ansage.
   - (b) alle 8 Einträge aus `schneiden`/`nichtSchneiden` genau einmal in den Ansagen, an der richtigen Kurve und Seite.
   - (c) Stufen monoton zum gemessenen Grenztempo (Tabelle oben), alle 25 Kurven gemessen, Datei aktuell.
-  - (d) kleinster Abstand zweier Ansagen 36 m (nie unter 25 m), längste Zeile 24 Zeichen.
+  - (d) kleinster Abstand zweier Ansagen 29 m (Felswand → Schikane; nie unter 25 m), längste Zeile 24 Zeichen.
   - (e) alle 3 Abzweige und 3 Einmündungen: Meter wie in `nebenwege`, Richtung wie im Strassennetz (alle Abzweige
     rechts, alle Einmündungen links). Die Ansage gilt ab 4–40 m vor der Kreuzung (ab dem Anfang der Abbiege-Kurve)
     und erscheint bei 50–75 km/h ca. 100–150 m vor der Kreuzung; wer schneller kommt, sieht sie früher (7 s
@@ -236,7 +236,9 @@ schreibt `js/pacenotes-tempo.js`. Ohne Messung schätzt das Spiel das Tempo aus 
 - **Leistung**: Die Tafel wird auf das HUD-Bild gemalt (2D), also **keine neuen Zeichenaufrufe** in der 3D-Szene
   (gleiche Zahl mit Ansagen an und aus). Jede Ansage wird einmal als kleines Bild gemalt, wenn sie zum ersten Mal
   kommt; pro Bild kommen nur dieses Bild und die Distanz dazu, ohne neue Objekte (kein Müll für den Speicher).
-  **Ladezeit**: LADEZEIT_PLATZHALTER
+  **Zeichenaufrufe** vor dem Abzweig Talschleife: 96 mit Ansagen, 96 ohne (N).
+  **Ladezeit** (`node tools/ladezeit.mjs`, 9 Messungen abwechselnd, Median): 1547 → 1469 ms – der Unterschied ist
+  Messrauschen; die Berechnung selbst dauert im Spiel 3–5 ms (beim allerersten Mal bis ca. 20 ms), Budget +50 ms.
 
 ### Ehrlich beurteilt
 
