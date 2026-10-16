@@ -131,5 +131,5 @@ export function baueDemo({ strecke, welt, physik, getriebe, kamera, fahrSchritt,
     return schwarz;
   }
 
-  return { start, schritt, bild, eingabe: e, get kameraNr() { return kam.nr; }, get index() { return idx; } };
+  return { start, schritt, bild, eingabe: e, get kameraNr() { return kam.nr; }, get index() { return idx; }, get schwarz() { return schwarz; }, get ende() { return ende; } };
 }

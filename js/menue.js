@@ -65,11 +65,12 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     blende = 0;
     schmutzig = true;
     warten = null; meldung = null; ziehen = null; druckNr = -1;
+    treffer = []; // alte Trefferflächen gelten nicht mehr (neue nach dem nächsten Zeichnen)
   }
   function oeffne(seite, ohneBlende = false) {
     const l = liste(seite);
     const start = seite.start != null && waehlbar(l[seite.start]) ? seite.start : erster(seite);
-    if (!ohneBlende) wechselBild(); else schmutzig = true;
+    if (!ohneBlende) wechselBild(); else { schmutzig = true; treffer = []; }
     stapel.push({ seite, wahl: start, scroll: 0, platz: 0 });
   }
   function schliesse() {

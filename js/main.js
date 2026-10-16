@@ -570,7 +570,8 @@ const nach = (w, ziel, schritt) => (w < ziel ? Math.min(ziel, w + schritt) : Mat
 
 function schleife(jetzt) {
   requestAnimationFrame(schleife);
-  const dt = Math.min(0.1, (jetzt - letzte) / 1000);
+  // nie negativ (M5a): beim ersten Bild liegt der Zeitstempel des Browsers manchmal vor dem Ende des Ladens
+  const dt = Math.max(0, Math.min(0.1, (jetzt - letzte) / 1000));
   letzte = jetzt;
 
   fpsZaehler++;
@@ -690,4 +691,5 @@ window.__alpineRally = {
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
   ablauf, menue, seiten, demo, einstellungen, start: starten, pausieren, weiter, zumHauptmenue, menueAn,
+  get blenden() { return { sicht, dunkel }; },
 };

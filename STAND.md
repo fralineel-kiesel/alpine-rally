@@ -218,19 +218,81 @@ Jede Seite in 1280x720 und in Originalgrösse (`…-320x180.png`), Deutsch (`de-
 Sprache), 09 Tastenbelegung, 10 Tastenbelegung mitten im Belegen („TASTE DRÜCKEN…“), 11 Steuerung, 12–13
 Pace-Notes-Symbole (oben / weiter unten), 14 Credits, 15 Pause, 16 Rückfrage. Dazu
 `rennen-pixelgroesse-320x180.png`, `…-480x270.png`, `…-640x360.png`: dieselbe Stelle (Kehren) in den drei
-Pixelgrössen.
+Pixelgrössen. `demo-kamera-1…4-….png`: die vier Kameras der Demo-Fahrt (ohne Menü, nicht abgedunkelt).
 
 ### Selbst getestet
 
-??TESTS??
+- **Neuer Test `node tools/menue-test.mjs`** – **alle 40 Prüfungen bestanden**, keine Konsolenfehler:
+  - (a) Tastatur: Titel → beliebige Taste → Hauptmenü; jede Seite öffnen, alle Einträge einmal durch (auch Rollen),
+    Unterseiten (Tasten belegen, Symbole), zurück mit Esc und Rücktaste; ZURÜCK ist überall der letzte Punkt;
+    Esc im Hauptmenü → Titel; Pause → Einstellungen → zurück; Rückfrage: NEIN vorgewählt, NEIN → Pause, JA →
+    Hauptmenü. Maus: Zeigen wählt, Klick öffnet, Regler ziehen (Lautstärke auf 50 %).
+  - (b) Pixelgrösse 480x270, Pace-Notes aus, mph, FPS an, Lenkung Stufe 4, Totzone Stufe 2, Lautstärke 50 %,
+    Englisch → Seite neu laden → alles gleich (3D-Bild wirklich 480 Pixel breit).
+  - (c) localStorage blockiert: Standardwerte, Einstellungen ändern geht trotzdem, Rennen startet.
+  - (d) Pause: Rennzeit vor/nach 3 s gleich (0.850 → 0.850 s), Auto, R-Countdown (3.80 s), Zuschauer/Rauch stehen;
+    nach WEITER +0.100 s im ersten Bild (ein Bild, kein Sprung), dann läuft sie weiter.
+  - (e) Fenster verliert Fokus → Pause; Tab wird versteckt → Pause.
+  - (f) alle 164 Texte haben Deutsch und Englisch, keiner leer, kein ß, gleiche Platzhalter, jedes Zeichen gibt es in
+    der Pixelschrift.
+  - (g) Gas auf G: G beschleunigt (ca. 80 km/h), Pfeil hoch nicht mehr (0 km/h); Enter ist reserviert; Esc bricht ab;
+    G auf Bremse → getauscht (Gas bekommt Pfeil runter), auch bei Taste 2; nie doppelt; STANDARD stellt zurück.
+  - (h) Checkpoint 1 echt durchfahren (Zeit 28.6 s), Pause → NEUSTART: Zeit 0, kein Checkpoint, Auto am Start.
+  - (i) Demo fährt, Rennstand (Zeit, Checkpoints, R-Countdown, Pace-Notes) bleibt Zeichen für Zeichen gleich; im
+    Zeitraffer fährt die Demo die ganze Etappe (168 s bis hinter das Ziel, nie hängen geblieben) und beginnt von vorn;
+    keine Bestzeit gespeichert; STARTEN: Auto 0.000 m von der Startposition, Zeit 0, Gang N.
+- **Alle bisherigen Tests laufen unverändert** (über `?menue=aus`), alte und neue Version nacheinander laufen gelassen
+  und die Ausgaben verglichen: **Zeile für Zeile gleich** (nur die Bauzeiten in ms schwanken): `pacenotes`,
+  `aufprall`, `belag`, `felswand`, `getriebe`, `gras`, `handbremse`, `kuh`, `leben`, `lenk`, `nebenweg`,
+  `startziel`, `strassenrand`, `stummel-sicht`, `testfahrer`, `abkuerzungen --pruefen`. Alle bestanden.
+- **Testfahrer**: **2:59.33 / 2:42.35 / 2:31.92** (gleich). **Abkürzungen** 127 / 2 / 342 / 84 (gleich).
+  Strecke, Physik, Sperren, Pace-Notes-Berechnung, Checkpoints nicht angefasst.
+- **Zeichenaufrufe** (3D, durch die echte Spielschleife gemessen, alte gegen neue Version an 9 Stellen): **genau
+  gleich**, z. B. Start 123 → 123, Talschleife 98 → 98, Kehren 64 → 64, Ziel 56 → 56; in der Pause 56 (gleich wie
+  davor). Das Menü wird auf das HUD-Bild (2D) gemalt, nicht in die 3D-Szene.
+- **Abfall pro Bild im Rennen**: Im Rennen läuft vom Menü nichts (es wird erst wieder gezeichnet, wenn es sichtbar
+  ist); die Gamepad-Abfrage benutzt feste Felder. Menüseiten werden nur bei einer Änderung neu gemalt (sonst wird ein
+  fertiges Bild kopiert).
+- **Ladezeit** (`node tools/ladezeit.mjs`, 3 Durchgänge mit 9–11 Ladungen, Median alt → neu): 1299 → 1355 ms,
+  1330 → 1329 ms, 1467 → 1526 ms. Im Mittel etwa **+38 ms**, also knapp unter dem Budget von +50 ms – aber die
+  einzelnen Ladungen schwanken um ±120 ms, die Messung ist hier ungenau. Der Weg des Demo-Fahrers (7 ms) wird erst
+  beim ersten Bild berechnet, nicht beim Laden.
+- **Pixelgrössen**: gleiche Stelle in 320x180, 480x270, 640x360 verglichen: Auto, Bäume, Schilder, HUD stehen gleich
+  gross am gleichen Platz; Nebel/Dunst gleich; nur Kanten werden feiner (die Texturen bleiben pixelig).
+- **Nebenbei gefunden**: Beim allerersten Bild lag der Zeitstempel des Browsers manchmal *vor* dem Ende des Ladens,
+  die Zeit pro Bild war dann negativ (alte, harmlose Eigenheit, sie verzögerte nur den Start der Physik um ein paar
+  Bilder). Für die Überblendungen des Menüs war das schlecht (Titel erschien erst nach Sekunden). Jetzt wird sie bei 0
+  begrenzt.
 
 ### Ehrlich beurteilt
 
-??BEURTEILUNG??
+- **Lesbar?** Ja, auch in Originalgrösse 320x180: 5x7-Schrift mit Schatten auf dunkler Tafel. Am knappsten sind
+  die Einstellungen (15 Zeilen, die Seite rollt) und die Symbol-Legende (lange Sätze, Tafel fast bildschirmbreit).
+- **Passt der Stil zum HUD?** Ja: gleiche Tafel (dunkelblau, heller Rand, abgeschrägte Ecken), gleiche Schrift,
+  Gelb wie die Zeit. Orange für die Auswahl hebt sich klar ab, zusammen mit dem Pfeil ▶ und dem hinterlegten Balken.
+- **Demo-Fahrt**: schön ruhig. Die weiten Bilder (Berge mit Auto klein, Verfolger) sehen am besten aus. Die
+  Front-Kamera knapp über der Strasse wirkt in Kurven manchmal seltsam (sie steht 8 m vor dem Auto in Richtung des
+  Autos, in engen Kurven also neben der Strasse, dann sieht man das Auto von schräg vorne). In den Kehren schwenkt
+  die seitliche Kamera spürbar mit. Kein Ruckeln durch das Menü; der Neubeginn am Ende ist eine kurze Schwarzblende.
+- **Höhere Auflösungen**: stimmig – es wird nur schärfer, nichts verrutscht. 640x360 verliert aber einiges vom
+  Retro-Look (Kanten glatt, Texturen grob): Der Unterschied „glatte Kanten, grobe Texturen“ ist sichtbar.
+- **Titel**: „ALPINE RALLY“ steht über dem Start-Bogen der Demo-Fahrt; das ist etwas unruhig, aber lesbar.
 
 ### Bekannte Probleme
 
-??PROBLEME??
+- In **Firefox und Safari** geht Esc im Vollbild zuerst ans Vollbild (der Browser verlässt das Vollbild). Das Spiel
+  pausiert dann trotzdem (Verlassen des Vollbilds = Pause). In Chrome/Edge geht Esc ans Spiel (Tastatur-Sperre), zum
+  Verlassen Esc lange halten.
+- Vollbild kann ein Browser nur nach einem Tastendruck oder Klick einschalten; mit dem Gamepad klappt es evtl. nicht
+  (dann springt die Einstellung zurück auf AUS).
+- Die **3D-Welt** bleibt deutsch (START/ZIEL-Banner, Schilder, Sponsoren) – das ist Teil der Schweizer Landschaft,
+  nicht der Menüs.
+- In der **F3-Anzeige** stehen die Pace-Notes-Texte (z. B. „> RECHTS 4 LANG“) weiter nur auf Deutsch (intern).
+- Die **Gamepad-Knöpfe** kann man (noch) nicht umbelegen; Pace-Notes haben keinen Gamepad-Knopf.
+- Die **Front-Kamera** der Demo steht in engen Kurven neben der Strasse (siehe oben), manchmal mit Bäumen davor.
+- Im Testbrowser (ohne Grafikkarte) dauern die ersten Bilder lang; auf echten Rechnern sollte der Titel nach
+  ca. 0.6 s voll da sein – bitte auf beiden Rechnern anschauen.
+- Gamepad, Maus und Vollbild habe ich nur im Testbrowser geprüft (Maus ja, Gamepad und Vollbild nicht echt).
 
 ### Ideen/Vorschläge (nicht umgesetzt)
 
