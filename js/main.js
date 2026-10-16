@@ -251,6 +251,7 @@ function physikSchritt(dt, e, nurFahren = false) {
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
     rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1, geradeaus: u.geradeaus ?? 1,
+    rueckwaertsMax: u.rueckwaertsMax ?? 1,
   }, motor);
 
   // Zu steiler Hang (neben der Strasse): da kommt das Auto nicht hoch
@@ -287,11 +288,14 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Begrenzungen: Felswand, Abhang, zu weit weg
   const q2 = strecke.abfrage(physik.x, physik.z, qAuto);
   const rx = -q2.tz, rz = q2.tx; // rechts
-  if (q2.wandSeite && Math.sign(q2.seite) === q2.wandSeite) {
-    // Felswand (seit M3a.3): die ganze Karosserie gegen die sichtbare Wandfläche
-    const ueber = wandEindringen(q2);
-    if (ueber > 0) physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, ueber);
-  } else if (q2.wandSeite && q2.wandStaerke > 0.3) {
+  // Felswand (seit M3a.3): die ganze Karosserie gegen die sichtbare Wandfläche.
+  // M5a.1: Nur wer von der Strasse her an die Wand fährt, wird quer zur Strasse zurückgeschoben (wie bisher).
+  // Wer von der Wiese her auf Anfang oder Ende der Wand zufährt (also schon "hinter" der Wandfläche ist),
+  // wurde früher in einem Schritt Meter weit auf die Strasse geworfen; jetzt hält ihn der Fels wie ein Hang auf.
+  const wk = wandKontakt(q2, xAlt, zAlt, wAlt);
+  if (wk.strasse > 0) physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
+  else if (wk.fels > 0) physik.anGrenze(wk.nx, wk.nz, wk.fels);
+  if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
     // Abhang auf der anderen Seite
     const ueber = Math.abs(q2.seite) - g.abhangGrenze;
     if (ueber > 0) physik.anGrenze(-rx * q2.wandSeite, -rz * q2.wandSeite, ueber);
@@ -361,27 +365,86 @@ function physikSchritt(dt, e, nurFahren = false) {
   }
 }
 
-// Wie tief steckt die Karosserie in der Felswand? (Meter quer zur Strasse, 0 = gar nicht)
-// Geprüft werden Punkte rundherum am Umriss (alle gut 0.5 m), jeder gegen die sichtbare
-// Wandfläche an seiner Stelle, knapp über dem Boden (unten steht die Wand am weitesten vor).
-const qWand = {};
-function wandEindringen(qMitte) {
-  const h = CONFIG.grenze.wandHuelle;
+// Wie tief steckt die Karosserie in der Felswand? Geprüft werden Punkte rundherum am Umriss (alle gut 0.5 m),
+// jeder gegen die sichtbare Wandfläche an seiner Stelle, knapp über dem Boden (unten steht die Wand am weitesten vor).
+// M5a.1: Jeder Punkt wird auch dort geprüft, wo er vor diesem Schritt war (xAlt, zAlt, wAlt):
+//  - War er vor der Wandfläche und ist er selbst quer zur Strasse hineingefahren (von der Strasse her):
+//    Ergebnis "strasse" = so weit (Meter quer zur Strasse) muss das Auto zurück, wie bisher (M3a.3).
+//  - Kam er von hinten oder vom Wand-Ende (stand schon hinter der Fläche, die Wand war dort noch flach, oder die
+//    Wandfläche kommt beim Längsfahren am weichen Wand-Ende auf ihn zu) und steckt jetzt im Fels: Ergebnis "fels"
+//    mit Richtung nx/nz (in den Fels hinein). Der Teil der Bewegung in den Fels wird zurückgenommen, entlang darf
+//    das Auto weiter (wie am zu steilen Hang). Nie zur Strasse geworfen.
+//  Beides höchstens so weit, wie das Auto in diesem Schritt gefahren ist, plus grenze.wandSprungMax (vorher konnte
+//  die Korrektur mehrere Meter auf einmal sein: das Auto wurde von der Wiese auf die Strasse "geworfen").
+const qWand = {}, qWandAlt = {};
+const wandErg = { strasse: 0, fels: 0, nx: 0, nz: 0 };
+// Wo hat es nahe der Strecke überhaupt Felswand (±40 Punkte)? Sonst wird nichts gerechnet.
+const wandNah = new Uint8Array(strecke.anzahl);
+for (let i = 0; i < strecke.anzahl; i++) {
+  if (strecke.wandSeite[i]) for (let k = Math.max(0, i - 40); k <= Math.min(strecke.anzahl - 1, i + 40); k++) wandNah[k] = 1;
+}
+// Wie weit steckt der Punkt (x, z) quer zur Strasse hinter der Wandfläche? (-Infinity = keine Wand dort)
+function wandTiefe(x, z, qMitte, q) {
+  strecke.abfrage(x, z, q);
+  if (q.wandSeite !== qMitte.wandSeite || Math.sign(q.seite) !== q.wandSeite || Math.abs(q.i - qMitte.i) > 20) return -Infinity;
+  const boden = welt.bodenBei(x, z, q).h;
+  return Math.abs(q.seite) - welt.wandKante(q, boden - q.h + CONFIG.grenze.wandHuelle.ueberBoden);
+}
+// Wie weit ragt die Felsfläche bei (x, z) über die Prüfhöhe (Gelände + ueberBoden)? > 0 = Punkt steckt im Fels
+// (unter dem Fels ist immer Gelände, die Strasse mit Bankett endet vor dem Wandfuss)
+function felsUeber(x, z) {
+  const f = welt.felsHoehe(x, z);
+  if (f === -Infinity) return -5;
+  return Math.max(-5, f - welt.gelaendeHoehe(x, z) - CONFIG.grenze.wandHuelle.ueberBoden);
+}
+function wandKontakt(qMitte, xAlt, zAlt, wAlt) {
+  const g = CONFIG.grenze, h = g.wandHuelle;
+  wandErg.strasse = 0; wandErg.fels = 0;
+  if (!wandNah[qMitte.i]) return wandErg;
   const sx = Math.sin(physik.richtung), sz = Math.cos(physik.richtung);
-  // grob: Reicht das Auto überhaupt bis in die Nähe der Wand?
-  const reicht = Math.abs(qMitte.seite) + Math.hypot(h.laenge, h.breite) / 2;
-  if (reicht < CONFIG.felswand.abstand - 0.5) return 0;
-  let max = 0;
+  const ax = Math.sin(wAlt), az = Math.cos(wAlt);
+  // von der Strasse her nur prüfen, wenn die Automitte auf der Wandseite ist (wie bisher)
+  const wandSeite = qMitte.wandSeite && Math.sign(qMitte.seite) === qMitte.wandSeite
+    && Math.abs(qMitte.seite) + Math.hypot(h.laenge, h.breite) / 2 >= CONFIG.felswand.abstand - 0.5;
+  let strasse = 0, weg = 0, fels = 0, fx = 0, fz = 0;
   for (let k = 0; k < WAND_UMRISS.length; k += 2) {
     const a = WAND_UMRISS[k] * h.laenge / 2, b = WAND_UMRISS[k + 1] * h.breite / 2;
     const x = physik.x + sx * a + sz * b, z = physik.z + sz * a - sx * b;
-    const q = strecke.abfrage(x, z, qWand);
-    if (q.wandSeite !== qMitte.wandSeite || Math.sign(q.seite) !== q.wandSeite || Math.abs(q.i - qMitte.i) > 20) continue;
-    const boden = welt.bodenBei(x, z, q).h;
-    const tief = Math.abs(q.seite) - welt.wandKante(q, boden - q.h + h.ueberBoden);
-    if (tief > max) max = tief;
+    const xa = xAlt + ax * a + az * b, za = zAlt + az * a - ax * b; // derselbe Punkt vor diesem Schritt
+    const dx = x - xa, dz = z - za;
+    weg = Math.max(weg, Math.hypot(dx, dz));
+    let vonStrasse = false;
+    if (wandSeite) {
+      const tief = wandTiefe(x, z, qMitte, qWand);
+      if (tief > 0) {
+        const tiefAlt = wandTiefe(xa, za, qMitte, qWandAlt);
+        // vorher vor der Wandfläche (kleine Toleranz: die Wand dreht das Auto am Ende des Schritts noch etwas) und
+        // die Tiefe kommt von der eigenen Bewegung nach aussen (nicht davon, dass die Wand beim Längsfahren näher kommt)
+        const raus = Math.abs(qWand.seite) - Math.abs(qWandAlt.seite);
+        if (tiefAlt > -Infinity && tiefAlt <= g.wandVorneToleranz && tief <= Math.max(0, raus) + g.wandSprungMax) {
+          vonStrasse = true;
+          if (tief > strasse) strasse = tief;
+        }
+      }
+    }
+    if (vonStrasse) continue;
+    // von hinten / vom Wand-Ende: steckt der Punkt jetzt im Fels?
+    const e = felsUeber(x, z);
+    if (e <= 0) continue;
+    // Richtung in den Fels (wo er höher über die Prüfhöhe ragt), wie ein Hang
+    let nx = felsUeber(x + 0.4, z) - felsUeber(x - 0.4, z), nz = felsUeber(x, z + 0.4) - felsUeber(x, z - 0.4);
+    let l = Math.hypot(nx, nz);
+    if (l < 1e-4) { nx = dx; nz = dz; l = Math.hypot(nx, nz); }
+    if (l < 1e-6) continue;
+    nx /= l; nz /= l;
+    const rein = dx * nx + dz * nz; // so weit ist der Punkt in diesem Schritt in den Fels gefahren
+    if (rein > fels) { fels = rein; fx = nx; fz = nz; }
   }
-  return max;
+  const max = weg + g.wandSprungMax; // nie ein Sprung: höchstens so weit, wie das Auto gefahren ist, plus wenig
+  wandErg.strasse = Math.min(strasse, max);
+  wandErg.fels = Math.min(fels, max);
+  wandErg.nx = fx; wandErg.nz = fz;
+  return wandErg;
 }
 // Punkte am Umriss (-1..1 längs, -1..1 quer): Seiten 9 Punkte, Front und Heck je 3 dazu
 const WAND_UMRISS = [];
@@ -422,7 +485,7 @@ function kameraSofort() {
   kameraZiel();
   kam.pos.copy(kam.ziel);
 }
-const qKam = {}, qKamS = {};
+const qKam = {}, qKamS = {}, qKamAuto = {};
 // Absperrungen an Start und Ziel mit ihrer Höhe (für die Kamera)
 const endSperren = netz.enden.map((ast) => ({ ast, hoehe: (absperrungen.liste.find((e) => e.ast === ast.nr) || { hoehe: 1.5 }).hoehe }));
 function kameraFuehren(dt) {
@@ -457,7 +520,16 @@ function kameraKorrektur(pos, ueberBoden = 1.0) {
   // nicht in die Felswand: höchstens bis 0.8 m vor den Wandfuss und (seit M3a.3) mit
   // kamera.wandAbstand Luft zur sichtbaren Wandfläche in Kamerahöhe
   const q = strecke.abfrage(pos.x, pos.z, qKam);
-  if (q.wandSeite && Math.sign(q.seite) === q.wandSeite) {
+  // M5a.1: Steht das Auto selbst hinter der Wandfläche (von der Wiese her an Anfang/Ende der Wand oder am Hang
+  // dahinter), sprang die Kamera sonst quer vor die Wand auf die Strasse. Dann nur: nicht im Fels (zum Auto hin).
+  const qa = strecke.abfrage(physik.x, physik.z, qKamAuto);
+  const autoHinten = q.wandSeite && Math.sign(qa.seite) === q.wandSeite && Math.abs(qa.seite) > CONFIG.felswand.abstand;
+  if (autoHinten) {
+    const dx = physik.x - pos.x, dz = physik.z - pos.z, l = Math.hypot(dx, dz);
+    for (let k = 0; k < 40 && l > 0.5 && welt.felsHoehe(pos.x, pos.z) > pos.y - c.wandAbstand; k++) {
+      pos.x += (dx / l) * 0.25; pos.z += (dz / l) * 0.25; // Schritt für Schritt zum Auto hin, bis die Kamera frei ist
+    }
+  } else if (q.wandSeite && Math.sign(q.seite) === q.wandSeite) {
     let max = welt.wandKante(q, pos.y - q.h - c.wandAbstand) - c.wandAbstand;
     if (q.wandStaerke > 0.2) max = Math.min(max, CONFIG.felswand.abstand - 0.8);
     const ueber = Math.abs(q.seite) - max;

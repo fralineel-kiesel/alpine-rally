@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.5A';
+export const VERSION = '0.5A.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -450,6 +450,9 @@ export const CONFIG = {
     fussFarben: true,          // false = wie früher (Wiese schaut am Wandfuss hervor)
     fussBreite: [18, 26],      // so weit neben der Strassenmitte (Meter) ist es Erde/Geröll, danach weicher Übergang
     fussGeroell: '#736e66',    // Farbe der Geröll-Flecken (dazu farben.erde und dunkler Fels)
+    // M5a.1: Bäume, Büsche, Steine usw. nicht im Fels. Ein Objekt steht im Fels, wenn die Felsfläche an seinem
+    // Stamm höher ist als das Gelände (plus diese Toleranz in Metern; hinter der Wand am Berg ist das Gelände höher).
+    imFelsToleranz: 0.05,
   },
 
   // --- Sprites (Bäume, Steine) ----------------------------------------
@@ -582,7 +585,7 @@ export const CONFIG = {
                                // Zusammen mit dem 5. Gang ergibt das das Höchsttempo (weich, kein harter Anschlag)
     motorbremse: 0.35,         // Abbremsen ohne Gas (m/s², Mittelwert; je nach Gang und Drehzahl mehr oder weniger)
     bremse: 10,                // Bremskraft (m/s²)
-    rueckwaertsTempo: 6,       // max. Tempo rückwärts (m/s)
+    rueckwaertsTempo: 6,       // max. Tempo rückwärts (m/s); auf Asphalt mal untergrund.asphalt.rueckwaertsMax (M5a.1)
     rueckwaertsBeschl: 3,      // Beschleunigung rückwärts (m/s²)
     steigungsFaktor: 0.45,     // wie stark Steigung/Gefälle wirkt (1 = voll, 0 = gar nicht)
 
@@ -662,8 +665,12 @@ export const CONFIG = {
   // rueckwaerts: so stark schiebt der Rückwärtsgang hier (mal auto.rueckwaertsBeschl).
   // 1.0 = wie auf der Strasse. Auf Gras höher, damit man auch bergauf (bis grenze.steilsterHang)
   // rückwärts aus der Wiese kommt. Wirkt nur im Rückwärtsgang.
+  // rueckwaertsMax (M5a.1): Rückwärts-Höchsttempo hier = auto.rueckwaertsTempo mal diesem Wert (fehlt er, gilt 1).
+  // Nur Asphalt ist schneller (1.5 = 9 m/s = ca. 32 km/h); Bankett, Gras, Schotter, Wiesenweg bleiben bei 6 m/s
+  // (sonst ändert sich das "Raus aus dem Gras"). Wechselt man schnell rückwärts vom Asphalt aufs Gras, läuft das
+  // Tempo über die Reibung des Untergrunds aus (kein Ruck).
   untergrund: {
-    asphalt: { grip: 1.0, rollen: 0.05, rollenTempo: 0.0, rueckwaerts: 1.0 },
+    asphalt: { grip: 1.0, rollen: 0.05, rollenTempo: 0.0, rueckwaerts: 1.0, rueckwaertsMax: 1.5 },
     bankett: { grip: 0.85, rollen: 0.6, rollenTempo: 0.02, rueckwaerts: 1.5 },
     gras:    { grip: 0.62, rollen: 2.2, rollenTempo: 0.11, rueckwaerts: 2.2 },
     // Schotter (M3a): rutscht früher als Asphalt (mit Handbremse schön quer), bremst etwas mehr,
@@ -731,6 +738,9 @@ export const CONFIG = {
       breite: 1.86,            // so breit (mit Kotflügeln)
       ueberBoden: 0.1,         // geprüft knapp über dem Boden (unten steht die Wand am weitesten vor)
     },
+    // M5a.1: Felswand von der Wiese her (Anfang/Ende der Wand): kein Wurf mehr auf die Strasse
+    wandSprungMax: 0.03,       // so viel (Meter) darf die Wand das Auto pro Schritt mehr verschieben, als es gefahren ist
+    wandVorneToleranz: 0.1,    // stand ein Punkt des Autos vorher höchstens so tief (m) in der Wand, kam er von der Strasse her
     abprallen: 0.2,            // wie stark das Auto von Grenzen abprallt
     steilsterHang: 0.55,       // steiler als das (0.55 = ca. 29°) kommt das Auto nicht hoch
   },
@@ -1198,6 +1208,14 @@ export const CONFIG = {
     blende: 0.2,               // Übergang zwischen Seiten (Sekunden, aus- und einblenden zusammen)
     blinken: 0.55,             // "TASTE DRÜCKEN" blinkt so schnell (Sekunden an / aus)
     meldungDauer: 2.2,         // Warnung in der Tastenbelegung bleibt so lange stehen (Sekunden)
+    rollenSchritt: 10,         // Textseiten (Credits): so viele Pixel rollt die Seite pro Tastendruck (M5a.1)
+
+    // Credits (M5a.1): Namen unter "Gebaut mit Claude", ein Name pro Zeile, werden nicht übersetzt.
+    // Hier weitere Namen eintragen, Grossbuchstaben, ohne Sonderzeichen. Leere Liste [] = Gruppe erscheint nicht.
+    credits: {
+      mitwirkende: ['LOUIS'],      // Überschrift MITWIRKENDE / CONTRIBUTORS
+      unterstuetzer: ['SHAI-RON'], // Überschrift UNTERSTÜTZER / SUPPORTERS
+    },
 
     // Demo-Fahrt hinter Titel und Hauptmenü: der Testfahrer fährt die Etappe, die Kamera wechselt
     demo: {

@@ -56,6 +56,8 @@ const erg = await spiel.page.evaluate(async () => {
     for (let t = von; t <= bis; t += 0.5) {
       const px = x0 + fx * t, pz = z0 + fz * t;
       for (const h of alle) if (Math.hypot(h.x - px, h.z - pz) < h.r + rand) return false;
+      // M5a.1: auch kein Fels auf dem Weg (an den Wand-Enden ging es früher nur dank des "Wurfs" durch die Wand)
+      if (W.imFels && W.imFels(px, pz, rand)) return false;
     }
     return true;
   };

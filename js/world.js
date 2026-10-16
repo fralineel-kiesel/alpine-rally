@@ -786,6 +786,75 @@ export function baueWelt(szene, strecke, netz) {
     return Infinity;
   };
 
+  // Felswand von oben gesehen (M5a.1): Wie hoch ist die Felsfläche an der Stelle (x, z)? Dieselben Dreiecke
+  // wie das Mesh (Querschnitte alle 2 m), unabhängig davon, welcher Strassenpunkt der nächste ist (in Kurven
+  // und an den Wand-Enden ist das oft nicht der, aus dem die Wand dort gebaut wurde).
+  // Ergebnis: Höhe (Welt-y) der höchsten Felsfläche über diesem Punkt, oder -Infinity (dort ist kein Fels).
+  const felsDreiecke = [];           // je Dreieck 9 Zahlen: x, y, z der drei Ecken
+  if (wandQuer) {
+    const PRO = 5, ecke = (i, c) => {
+      const ws = strecke.wandSeite[i], l = wandQuer[(i * PRO + c) * 2], y = wandQuer[(i * PRO + c) * 2 + 1];
+      return [strecke.px[i] - strecke.tz[i] * ws * l, strecke.py[i] + y, strecke.pz[i] + strecke.tx[i] * ws * l];
+    };
+    let vorher = -1;
+    for (let i = 0; i < strecke.anzahl; i += 2) {
+      if (!strecke.wandSeite[i]) { vorher = -1; continue; }
+      if (vorher >= 0) {
+        for (let c = 0; c < PRO - 1; c++) {
+          const a = ecke(vorher, c), b = ecke(vorher, c + 1), cc = ecke(i, c), d = ecke(i, c + 1);
+          felsDreiecke.push(...a, ...b, ...cc, ...b, ...d, ...cc);
+        }
+      }
+      vorher = i;
+    }
+  }
+  const felsD = Float32Array.from(felsDreiecke);
+  // Raster (8 m) für die schnelle Suche: welche Dreiecke liegen (mit ihrem Rechteck) in welcher Zelle?
+  const FZ = 8, felsZellen = new Map();
+  for (let k = 0; k < felsD.length; k += 9) {
+    const x0 = Math.floor(Math.min(felsD[k], felsD[k + 3], felsD[k + 6]) / FZ), x1 = Math.floor(Math.max(felsD[k], felsD[k + 3], felsD[k + 6]) / FZ);
+    const z0 = Math.floor(Math.min(felsD[k + 2], felsD[k + 5], felsD[k + 8]) / FZ), z1 = Math.floor(Math.max(felsD[k + 2], felsD[k + 5], felsD[k + 8]) / FZ);
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cz = z0; cz <= z1; cz++) {
+        const key = cx * 100003 + cz;
+        if (!felsZellen.has(key)) felsZellen.set(key, []);
+        felsZellen.get(key).push(k);
+      }
+    }
+  }
+  welt.felsHoehe = function (x, z) {
+    const liste = felsZellen.get(Math.floor(x / FZ) * 100003 + Math.floor(z / FZ));
+    if (!liste) return -Infinity;
+    let best = -Infinity;
+    for (let n = 0; n < liste.length; n++) {
+      const k = liste[n];
+      const ax = felsD[k], az = felsD[k + 2], bx = felsD[k + 3], bz = felsD[k + 5], cx = felsD[k + 6], cz = felsD[k + 8];
+      const det = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      if (Math.abs(det) < 1e-9) continue;
+      const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / det;
+      const v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / det;
+      if (u < -1e-6 || v < -1e-6 || u + v > 1 + 1e-6) continue;
+      const y = u * felsD[k + 1] + v * felsD[k + 4] + (1 - u - v) * felsD[k + 7];
+      if (y > best) best = y;
+    }
+    return best;
+  };
+  // Steht ein Objekt (Fuss bei x, z, Stamm-Radius r) im Fels? Ja, wenn an der Mitte oder rundherum am Stamm
+  // die Felsfläche höher ist als das Gelände (dann steckt der Stamm im Fels und schaut oben heraus).
+  // Auf dem Berg hinter der Wand (Gelände über der Felsfläche) steht es nicht im Fels.
+  const STAMM = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [0.71, 0.71], [-0.71, 0.71], [0.71, -0.71], [-0.71, -0.71]];
+  welt.imFels = function (x, z, r = 0) {
+    if (!felsZellen.size) return false;
+    const toleranz = CONFIG.felswand.imFelsToleranz;
+    for (const [a, b] of STAMM) {
+      const px = x + a * r, pz = z + b * r;
+      const fels = welt.felsHoehe(px, pz);
+      if (fels > -Infinity && fels > welt.gelaendeHoehe(px, pz) + toleranz) return true;
+      if (r === 0) break;
+    }
+    return false;
+  };
+
   // ---------------------------------------------------------------
   // Hintergrundberge: Kranz aus Low-Poly-Bergen mit Schneekappen
   // ---------------------------------------------------------------
