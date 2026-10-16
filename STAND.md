@@ -163,9 +163,60 @@ Alle Einstellungen (auch N) merkt sich der Browser.
   Strasse vor der Wand (in 3 Physik-Schritten, also 0.025 s, gut 10 m zur Strasse hin, auf 5 m neben der Mitte). Nachher (b): es prallt seitlich an den Fels
   und bleibt auf der Wiese stehen.
 
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/world.js` | `welt.felsHoehe(x, z)` und `welt.imFels(x, z, r)`: Felsfläche aus den Wand-Dreiecken (Raster, schnell) |
+| `js/sprites.js` | Nebenweg-Wald, Bäume/Steine und Büsche prüfen die echte Felsfläche (erst nach dem Würfeln) |
+| `js/main.js` | Wand-Kollision `wandKontakt` (von der Strasse her / von der Wiese her, nie ein Sprung), Kamera hinter der Wand |
+| `js/physics.js` | Rückwärts-Höchsttempo je Untergrund, weicher Übergang beim Belagwechsel |
+| `js/menue.js`, `js/menueseiten.js` | Credits mit Namenslisten, Textseiten rollen |
+| `js/config.js`, `js/texte.js` | neue Werte (siehe oben), Überschriften, Version 0.5A.1 |
+| `tools/felswand-sprites-test.mjs` | **neu**: (a) Objekte im Fels, (b) Wurf-Test |
+| `tools/rueckwaerts-test.mjs` | **neu**: Rückwärts-Tempo je Untergrund, Übergang ohne Ruck, Gang R und Tacho |
+| `tools/menue-test.mjs` | neuer Teil (j): Credits |
+| `tools/gras-test.mjs` | Prüfstellen nur, wenn auf dem Weg zur Strasse kein Fels steht (siehe unten) |
+| `tools/m5a1-bilder.mjs` | **neu**: Bilder für diesen Meilenstein |
+
 ### Selbst getestet
 
-(siehe unten, Abschnitt wird nach den Testläufen ausgefüllt)
+- **`node tools/felswand-sprites-test.mjs`** (neu, den alten `felswand-test` habe ich nicht verändert):
+  - (a) 25 621 Objekte geprüft, 1548 bis 30 m an einer Wand, 1327 Grenzfälle: **0 im Fels** (vorher 29). Gegenprobe
+    `welt.imFels` gegen den Strahl auf das Mesh: 0 Abweichungen.
+  - (b) 162 Fahrten von der Wiese (8 / 12 / 18 m neben der Strasse, 30 / 60 / 100 km/h, 0° / 15° / 45°, Anfang und Ende
+    aller drei Wände): grösster Überschuss pro Schritt **3 cm** (vorher **7.7 m**), **0** Fahrten nur wegen der Wand auf
+    der Strasse (vorher 38). Karosserie im Fels: Median 0 cm, 90 % höchstens 5 cm, am meisten 20 cm.
+- **`node tools/felswand-test.mjs`** (Strassenseite, M3a.3): **Zeile für Zeile gleich** wie vorher, ausser den
+  Rückwärts-Metern nach dem Aufprall (bis +1.1 m, schnellerer Rückwärtsgang). Gegenprobe mit Rückwärts-Faktor 1:
+  ganz gleich. Kamera an der Wand: mindestens 63 cm Luft (gleich).
+- **`node tools/rueckwaerts-test.mjs`** (neu): Asphalt 9.00 m/s, 99 % davon nach 3.47 s; Bankett, Gras, Schotter,
+  Wiesenweg 6.00 m/s; Untergrund ohne `rueckwaertsMax` 6.00 m/s; Übergang Asphalt → Gras höchstens 3.6 m/s²,
+  → Bankett 1.2 m/s² (harter Deckel wären 360 m/s²); Gang R, 4724 U/min, 32 km/h / 20 mph. Alles erfüllt.
+- **`node tools/menue-test.mjs`**: **alle 50 Prüfungen bestanden** (neu (j): Deutsch und Englisch die richtigen
+  Überschriften und Namen, ein Name pro Zeile; leere Liste = keine Gruppe; 2 Namen passen ohne Rollen
+  (Tafel 259x149 Pixel), 6 und 12 Namen rollen bis ganz unten und zurück, Tafel bleibt im Bild; Enter nach dem Rollen
+  = ZURÜCK; Namen nur mit Zeichen der Pixelschrift; neue Schlüssel in de und en). Keine Konsolenfehler.
+- **Unverändert** (alte und neue Version laufen gelassen, Ausgaben verglichen): `testfahrer` **2:59.33 / 2:42.35 /
+  2:31.92** (gleich), `pacenotes-test` (gleich, nur die Rechenzeit in ms schwankt), `abkuerzungen --pruefen`
+  **127 / 2 / 342 / 84** (gleich; nur 29 Hindernisse weniger), `belag-test`, `getriebe-test`, `handbremse-test`
+  (gleich). Strecke 3667.587 m, Sperren, Checkpoints, Pace-Notes-Berechnung nicht angefasst.
+- **Abweichungen, alle vom schnelleren Rückwärtsgang** (Prüfungen weiter erfüllt): `aufprall-test` (rückwärts weg
+  8.28 → 8.39 m), `kuh-test` und `leben-test` (rückwärts 19.1 → 20.3 m usw.), `strassenrand-test` (8.8 → 8.9 m),
+  `lenk-test` (rückwärts 21.6 → 25.1 km/h nach 1.5 s), `startziel-test` (nach dem Rückwärtsfahren mind. 7.5 statt
+  3.3 m weg), `nebenweg-test` (Stummel-Manöver 20.64 → 21.47 s; mit Rückwärts-Faktor 1 Zeile für Zeile gleich).
+- **`gras-test`** fiel zuerst durch (18 von 20): Durch die 29 entfernten Objekte gibt es andere freie Wiesenstellen,
+  und der Test wählte zwei Stellen direkt hinter Wand-Enden (2495 m links, 3420 m rechts), wo zwischen Auto und Strasse
+  **bis 12 m hoher Fels** steht. Die alte Version kam dort nur **dank des Wurf-Bugs** raus (Sprünge von 7 m durch die
+  Wand, nachgemessen). Der Test wählte diese Stellen, weil er (wie die Bäume) nur den nächsten Strassenpunkt fragte.
+  Jetzt nimmt er nur Stellen, deren Weg zur Strasse frei von Fels ist: **20 von 20 raus**, alle anderen Prüfungen wie
+  vorher (die Physik-Werte am Anfang sind gleich).
+- **`nebenweg-wald`**: „Abkürzen ist nirgends schneller als die Strasse“ (gleich); Almweg 354 statt 372 Tannen, Wiesenweg
+  271 statt 277 Tannen im Messbereich.
+- **Leistung**: Zeichenaufrufe an 6 Stellen **genau gleich** (Start 123, 900 m 98, 1948 m 108, 2430 m 104, 3170 m 70,
+  Ziel 59), 58 Dreiecke weniger (die 29 Sprites). Die Wand-Prüfung rechnet nur nahe einer Wand (±40 m) und braucht
+  keine neuen Objekte pro Bild. **Ladezeit** (`node tools/ladezeit.mjs`, je 9 Ladungen, Median): alt 1528 ms, neu
+  1471 ms – kein messbarer Unterschied (Schwankung ±200 ms).
 
 ### Ehrlich beurteilt
 
