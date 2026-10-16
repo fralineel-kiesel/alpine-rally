@@ -1,9 +1,10 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 3b fertig** – zwei weitere Nebenwege: der **Almweg** (Schotter, nach den Kehren, 1986–2401 m)
-und der **Wiesenweg** (neuer Belag: Feldweg über die Wiese, auf der Abfahrt, 2798–3108 m, mit Checkpoint 3). Dazu kleinere
-Strohballen, und alle vier Absperr-Arten (Band, Reifen, Heu, Holzböcke) stehen jetzt im Spiel.
-Davor: 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 3d fertig** – Leben an der Strecke: Der **Wiesenweg** ist jetzt eine Alpweide (Holzzaun mit
+Weidetor, neue Kühe, Alphütte, Heustadel, Brunnen, Steinmännchen, Wegweiser, Heurollen, Findlinge), es gibt **drei
+Fan-Spots** (Kehre 3, Passhöhe, Almweg-Abzweig) und **zwei Unfallautos** (Fantasie-Rallyeautos im 80er-Stil) mit
+Warndreieck, gelber Flagge und Streckenposten.
+Davor: 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -25,7 +26,185 @@ Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird au
 
 ---
 
-## Meilenstein 3b: Zwei weitere Nebenwege (Almweg, Wiesenweg) ✅
+## Meilenstein 3d: Leben an der Strecke (Wiesenweg, Fan-Spots, Unfallautos) ✅
+
+### Was wurde gebaut?
+
+**1. Wiesenweg als Alpweide (2798–3108 m)**
+- **Holzzaun mit Weidetor** links von 2888 bis 2952 m (nach Checkpoint 3), gebaut wie die Zäune von M2a (Abstand
+  per `randAbstand` an den schmalen Feldweg angepasst, Tor bei 2905 m steht offen ins Feld). Zusammen mit dem
+  Zaun von M2a rechts (2931–3068 m) gibt es nur ein kurzes Stück (ca. 20 m) mit Zaun auf beiden Seiten – kein Korridor.
+- **Kühe**: Die 44 Kühe von vorher stehen genau gleich (siehe unten, eingefroren). Dazu **3 neue kleine Herden**
+  (10 Kühe, eigener seed): vor der Alphütte (ca. 3000 m links), rechts hinter dem alten Zaun (ca. 2990 m) und am
+  Hang rechts beim Abzweig (ca. 2858 m). Alle mindestens 11 m neben der Wegmitte.
+- **Alphütte** bei **2988 m links, 38 m neben dem Weg**: Steinsockel, dunkle Bretterwände, Satteldach mit
+  Schindeln, Kamin, kleine Fenster mit rot-weissen Läden, Tür, Bank, Holzstapel unter einem Vordach.
+  Daneben ein **Brunnentrog** mit Brunnenstock und Röhre (2979 m, 31 m).
+- **Heustadel** (kleiner, auf Steinblöcken) bei **2900 m rechts, 52 m** am Hang.
+- **Kleinigkeiten**: gelber **Wegweiser** (ALP 1 STD / FURGGA 2 STD / SEELI 40 MIN, erfundene Ziele) bei 2957 m
+  links am Wegrand, **3 Steinmännchen**, **5 Heurollen** (3 rechts beim Abzweig, 2 links vor der Einmündung),
+  **3 Findlinge**. Bewusst wenig: Der Wiesenweg bleibt offen und weit.
+
+**2. Drei Fan-Spots** (Zuschauer-System von M3c: Pixel-Figuren, schauen zur Strasse, manche winken / schwenken
+Fahnen; alle hinter einem Absperrband, mindestens 8.1 m neben jeder Strassenmitte)
+
+| Spot | Wo | Fans | Dazu |
+|---|---|---|---|
+| **Kehren** | 1694–1716 m rechts, aussen an **Kehre 3** am Hang hinter der Leitplanke (man sieht die Kehre und die Strasse darüber) | 22 | Banner „FANCLUB KEHRE 3“, 2 Fahnen, 3 Klappstühle mit sitzenden Fans |
+| **Passhöhe** | 2590–2652 m rechts (grösster Spot) | 28 | **Wohnmobil** mit Markise, Pavillon mit Tisch, Banner „HOPP HOPP PASSFANS“ und „TURBO SENN“, 3 Fahnen, 4 Klappstühle |
+| **Almweg-Abzweig** | 1970–1990 m links, bei der Strohballen-Wand am Abzweig | 14 | **Pickup**, Banner „ALMRAUSCH FANS“, Fahne, 2 Klappstühle |
+
+Die vorgeschlagenen Orte passten: Kehren-Spot 1694–1716 m (statt „1450–1800“ irgendwo: Kehre 3 hat aussen einen
+Hang, der ansteigt), Passhöhe ca. 30 m später als vorgeschlagen (2590–2652 statt 2540–2620, damit der Spot nicht
+gleich neben dem Wrack der Abfahrt steht), Almweg genau am Abzweig.
+
+**3. Zwei Unfallautos (stehende Wracks)** – Fantasie-Rallyeautos im Stil der 80er-Gruppe B, **keine echten Modelle**:
+kantige Karosserie, stark ausgestellte eckige Radkästen, Heckflügel, Dachhutze, Zusatzscheinwerfer-Leiste (4 Lampen),
+Überrollkäfig (sieht man durch die kaputten Scheiben), Schmutzfänger, helle Rallye-Felgen, Startnummern an beiden
+Türen und auf dem Dach, erfundene Sponsoren. Kein Mensch im Auto, kein Blut (die Splitter am Boden sind bewusst
+nur hell/glasig – rote Splitter sahen auf dem Gras wie Blutstropfen aus).
+
+| Wrack | Wo | Typ / Look | Schaden |
+|---|---|---|---|
+| **Tal** | **637 m rechts, 10.7 m** neben der Mitte, mit der Front an einem einzeln stehenden Laubbaum (der Baum stand schon da), aussen an der langen Linkskurve | „Brunnwald“ (Keil-Coupé, Flügel hoch auf Stützen), weiss-rot, **Nr. 14**, Sponsor FIRNWERK | Front eingedrückt (seitlich versetzt), Motorhaube aufgesprungen und geknickt, rechtes Vorderrad schief, Front- und Seitenscheibe zerbrochen, 2 Zusatzlampen kaputt |
+| **Abfahrt** | **2488 m rechts, 9.6 m**, an der Böschung gleich nach dem Ende der Leitplanke (vor dem Weidezaun) | „Vallora“ (kantiger Kompakter, Flügel auf der Heckklappe, grosse Hutze), blau-gelb, **Nr. 23**, Sponsor MURMELI OEL | linke Seite eingedrückt, linkes Vorderrad ab (liegt daneben), Fahrertür abgesprungen (liegt im Gras), Heckflügel schief, Scheiben kaputt, Auto hängt schief |
+
+- Je Wrack eine **dezente Rauchfahne** (6 gerasterte Wölkchen wie der Staub, laufen im Shader: kein Rechnen pro Bild).
+- **Warndreieck** 24 m (Tal) bzw. 26 m (Abfahrt) vor dem Wrack am Strassenrand, **gelbe Flagge** 18–20 m davor,
+  je **2 Streckenposten** (Warnweste orange/gelb mit Reflexstreifen, gelbe Fahne) 12.5–15.5 m neben der Strasse.
+  Das Warndreieck hat keine Kollision (steht neben dem Bankett, blockiert nichts).
+- **Kollision**: drei Kreise (Radius 0.92 m) entlang der Karosserie, hart wie die anderen Hindernisse.
+- Abstand zur nächsten Kreuzung 163 m (Tal) bzw. 87 m (Abfahrt), beide weit weg von Start und Ziel.
+
+**4. Kühe eingefroren** (`js/kuhfolge.js`, wie `js/baumfolge.js` bei den Bäumen): In M3b wurden alle Kühe neu
+verteilt, weil eine Zufallsfolge für alle Herden galt. Jetzt stehen die 44 Kühe vom Stand M3b als feste Liste
+in der Datei. Beim Laden wird jede noch mit den Regeln geprüft (Strasse, Zäune, Innenseiten …) – passt eine nicht
+mehr, fällt sie weg (heute: keine). Neue Herden kommen mit eigenem seed dazu. Neu schreiben (nur wenn man die
+Kühe absichtlich neu verteilen will): `node tools/kuhfolge-schreiben.mjs`.
+
+**Regeln, die überall gelten** (prüft `tools/leben-test.mjs`): nichts Neues näher als 6.5 m (Kante) an einer
+Strassenmitte (auch an den Stummeln), Fans mindestens 7.2 m und hinter dem Band, nichts auf der Innenseite der
+Kurven aus `nichtSchneiden`/`schneiden` (plus 20 bzw. 50 m Puffer) und keiner Kurve enger als 130 m Radius (auch auf
+den Nebenwegen), nichts auf Bäumen, Zäunen, Kühen. Passt ein Objekt nicht genau an die Wunschstelle, sucht der Code
+ein paar Meter daneben und meldet das (heute: alles an der Wunschstelle).
+
+### Wo man schrauben kann (`js/config.js`, Block `leben`)
+
+| Wert | Was |
+|---|---|
+| `leben.an` | false = alles wie vor M3d |
+| `leben.zaeune`, `torAlle`, `tor` | neue Zäune am Wiesenweg (von, bis, Seite, Tore) |
+| `leben.kuehe` | neue Herden (wo, wie viele, wie weit verstreut), eigener seed |
+| `leben.wiesenweg` | Alphütte, Heustadel, Brunnen, Wegweiser, Steinmännchen, Heurollen, Findlinge (je s, Seite, Abstand) |
+| `leben.fans` | Abstand, Gruppen, Posen; je Spot: Bereich, Anzahl, Band, Banner, Fahnen, Stühle, Wohnmobil/Zelt/Pickup |
+| `leben.wracks` | je Wrack: Typ, Farben, Startnummer, Sponsor, Ort (am Baum oder frei), Schaden, Warndreieck, Flagge, Posten |
+| `leben.rauch` | Anzahl Wölkchen, Lebensdauer, Steigen, Grösse, Dichte, Farbe, Wind |
+| `leben.sichtweite` | weiter weg als 600 m wird ein Ort nicht gezeichnet |
+
+Erfundene Namen (Fanclubs, Sponsoren, Wegweiser-Ziele) stehen in `js/lebenbild.js`.
+
+### So testest du
+
+1. **Wiesenweg** (nach der Passhöhe, durch Checkpoint 3): links der neue Zaun mit Kühen dahinter, weiter vorne links
+   die Alphütte mit Brunnen, rechts am Hang der Heustadel und Heurollen, gelber Wegweiser am Wegrand.
+   Wirkt es nach Alpweide – und trotzdem noch offen?
+2. **Kehre 3** (ca. 1:20 nach dem Start): aussen am Hang hinter der Leitplanke stehen die Fans.
+3. **Almweg-Abzweig**: hinter der Strohballen-Wand links stehen Fans mit einem Pickup.
+4. **Passhöhe**: rechts der grosse Spot mit Wohnmobil und Pavillon.
+5. **Wracks**: im Tal (ca. 25 s nach dem Start, 637 m) rechts am Baum, auf der Abfahrt nach der Leitplanke rechts.
+   Reinfahren: hart zum Halt, rückwärts wieder raus.
+6. F3: bleibt es auf dem Laptop bei 60 FPS (Kehren, Passhöhe, Wiesenweg)?
+
+### Bilder (`screenshots/m3d/`, „a“ = vorher, „b“ = nachher)
+
+01/02 Wiesenweg Fahrersicht, 03 Wiesenweg von weitem, 04 Alphütte aus der Nähe, 05 Heustadel und Heurollen,
+06/07 Kehren-Fans (Fahrersicht, aus 30 m), 08/09 Passhöhe, 10/11 Almweg-Abzweig, 12–15 Wrack Tal (aus 60/30/10 m,
+Fahrersicht), 16–19 Wrack Abfahrt. Neu erzeugen: `node tools/m3d-bilder.mjs --endung b`
+(und `--wurzel <alter Ordner> --endung a`).
+
+### Selbst getestet
+
+- **Etappe unverändert**: An Strecke, Checkpoints und Listen wurde nichts geändert: Länge 3667.587 m, Checkpoints
+  900/1870/2880, `sperren`/`nichtSchneiden`/`schneiden` gleich. **Abkürzungen** (`node tools/abkuerzungen.mjs --pruefen`):
+  **127 / 2 / 342 / 84**, 0 in gesperrten Kurven (genau wie vorher – die neuen Objekte sperren und öffnen keine Linie).
+- **Testfahrer** (`node tools/testfahrer.mjs`): **2:59.33 / 2:42.35 / 2:31.92** (auf die Hundertstel gleich), keine Aufpralle.
+- **Sichtlinien** (`node tools/stummel-sicht.mjs`): alle 6 Stummel und beide Verlängerungen **0** sichtbare Enden.
+- **Neuer Test `node tools/leben-test.mjs`** – alles bestanden:
+  - Je Wrack 8 Anfahrten (von der Strasse gerade, ±30° schräg, aufs Heck; je 30 und 50 km/h; von der Seite war der
+    Weg durch Baum/Zaun versperrt): immer Aufprall, **nach 0.4 s 0 km/h** (aus 53 km/h), nie mehr als 0 cm im
+    Wrack, rückwärts immer raus (9–20 m).
+  - Regeln: nächste Kante eines neuen Hindernisses **6.48 m** neben einer Strassenmitte (Bankett endet bei 5.5 m),
+    nächster Fan/Posten **8.09 m**, alle Fans hinter ihrem Band, nichts auf einer Kurven-Innenseite, Wracks
+    10.7 / 9.6 m neben der Mitte, 163 / 87 m bis zur nächsten Kreuzung, nichts weggelassen oder verschoben.
+  - Kühe: 44 von 44 alten Kühen genau an ihrem Platz, 10 neue (mindestens 11 m von der Strasse).
+  - Sichtlinien wie oben, gleicher seed = gleicher Aufbau, keine Fehler in der Browser-Konsole.
+- `aufprall`, `strassenrand`, `kuh`, `nebenweg`, `startziel`, `felswand`, `gras`, `belag`, `lenk`, `getriebe`,
+  `handbremse`: alle bestanden, keine Konsolenfehler.
+- Ehrlich zu den Test-Anpassungen:
+  - `kuh-test`: Die Prüfung „gleicher seed = gleiche Kühe“ plant die Kühe jetzt mit denselben Eingaben wie das Spiel
+    (ohne die Hindernisse von M3d, die erst nach den Kühen gebaut werden, und mit den freien Plätzen für die neuen Herden).
+  - Im `leben-test` gilt „Innenseite“ bezogen auf das nächste Stück Etappe (und einen zweiten Ast daneben). Eine
+    grobere Prüfung („irgendein Kurvenpunkt in 45 m“) meldete die Fans an Kehre 3 als Innenseite, obwohl sie aussen
+    an der Kehre stehen: In einer Haarnadel liegt alles neben dem Ausgangs-Ast auch „links“ vom Eingangs-Ast. Dass
+    sie keine Abkürzung stören, zeigen die unveränderten 342 Linien genau in dieser Kurve. Das Absperrband an Kehre 3
+    beginnt deshalb erst bei 1692 m (davor hätte es diese Regel verletzt).
+
+**Leistung** (`node tools/m3d-bilder.mjs`, Auto dort, Kamera wie im Spiel, Headless):
+
+| Stelle | Zeichenaufrufe vorher → nachher | Dreiecke vorher → nachher |
+|---|---|---|
+| Start | 122 → 123 | 148 026 → 148 522 (+500) |
+| Kehren (1650 m) | 114 → 117 | 153 772 → 154 276 (+500) |
+| Kehren-Fans (1690 m) | 75 → 77 | 141 594 → 142 046 (+450) |
+| Passhöhe (2590 m) | 89 → 92 | 142 592 → 145 262 (+2 700) |
+| Abfahrt mit Wrack und Pass-Spot im Bild (2470 m) | 97 → 103 | 160 764 → 163 902 (+3 100) |
+| Wiesenweg (2950 m) | 78 → 79 | 149 600 → 151 242 (+1 600) |
+| Tal mit Wrack (610 m) | 108 → 111 | 142 424 → 142 936 (+500) |
+| Ziel (30 m vor der Linie) | 59 → 59 | 107 526 → 107 562 |
+| schlimmste Stelle (alle 25 m) | 124 → 128 | 168 230 → 171 228 (+3 000) |
+
+Budget +8 Zeichenaufrufe / +30 000 Dreiecke: eingehalten (höchstens +6 / +3 100). Je Ort ein Teil, Figuren und
+Rauch instanziert, weiter weg als 600 m wird nichts davon gezeichnet. Zäune und Kühe kommen in die schon
+bestehenden Zeichenaufrufe. **Ladezeit** (`node tools/ladezeit.mjs`, 9 Messungen abwechselnd, Median): 2211 → 2297 ms
+(+86 ms, Budget +300 ms; die eingefrorenen Kühe sparen etwas Rechenzeit).
+
+### Ehrlich beurteilt
+
+- **Lebendig, aber nicht überladen?** Ja, meistens. Der **Kehren-Spot** wirkt am besten: Fans an der Leitplanke und
+  verteilt am Hang, das sieht nach Rallye aus. Die **Passhöhe** ist der belebteste Ort ausser Start/Ziel. Der
+  **Wiesenweg** wirkt jetzt nach Alp (Hütte, Zaun, Kühe), bleibt aber weit – aus der Fahrersicht sieht man die Hütte
+  links und Kühe, der Rest ist Wiese. Am **Almweg** ist der Spot klein und steht etwas hinter Tannen: aus der
+  Fahrersicht sieht man die Fans erst kurz vor der Strohballen-Wand.
+- **Sehen die Wracks nach Group-B-Rallyeautos aus?** Aus 10–30 m: ja – breite eckige Radkästen, Flügel, Hutze,
+  Lampenleiste, Startnummer und die rot-weisse bzw. blau-gelbe Lackierung sind klar zu erkennen, und sie sehen nicht
+  nach einem echten Modell aus (keine Grill-/Logo-Kopie, eigene Proportionen). Ehrlich: Aus 60 m sind sie im
+  320x180-Bild nur ein kleiner farbiger Fleck, und die Sponsor-Schrift ist auch aus der Nähe eher Pixel-Muster.
+  Die Startnummern sieht man erst aus ca. 10 m.
+- **Rauch**: dezent, als gerastertes Pünktchen-Muster wie der Staub. Aus der Nähe sieht man das Raster deutlich
+  (passt zum Pixel-Look, ist aber nicht „weich“).
+- **Stört etwas das Fahren oder die Sicht?** Nein: Abkürzungen, Testfahrer-Zeiten und Sichtlinien sind exakt gleich,
+  nichts steht auf Fahrbahn oder Bankett. Das Warndreieck an der Abfahrt steht direkt vor der Leitplanke am Rand des
+  Banketts (ohne Kollision).
+
+### Bekannte Probleme
+
+- Leistung nur im Headless-Browser gemessen; bitte auf dem Laptop mit F3 an der Passhöhe (Fans + Wrack im Bild)
+  und an Kehre 3 prüfen.
+- Die Streckenposten und Fans reagieren nicht auf das Auto.
+- Die Figuren haben wie in M3c 4 Ansichten; sitzende Fans auf den Klappstühlen sieht man von schräg hinten etwas flach.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Streckenposten schwenken die gelbe Flagge schneller, wenn das Auto naht; Fans jubeln beim Vorbeifahren.
+- Pace-Note „Achtung, Wrack“ / gelbe Flagge als Symbol (M4).
+- Rauch etwas weicher (z. B. zwei Grautöne statt Raster), wenn es auf dem Laptop gut läuft.
+- Ein drittes, ausgebranntes Wrack als Hingucker an einer Kehre.
+- Heuballen-Stapel und ein Melkstand an der Alphütte; Glockengeläut der Kühe, wenn es Ton gibt.
+- Fan-Spot an Kehre 1 oder 2 (Platz wäre da) für mehr Stimmung in der Kehrengruppe.
+
+---
+
+## Meilenstein 3b: Zwei weitere Nebenwege (Almweg, Wiesenweg) ✅ (Verlauf, Stand damals)
 
 ### Was wurde gebaut?
 
@@ -225,8 +404,8 @@ nur noch an den Kreuzungen in 8 Streifen geteilt (dort braucht es sie), sonst in
 
 ### Ideen/Vorschläge (nicht umgesetzt)
 
-- Kuh-Herden „einfrieren“ wie die Bäume (feste Zufallsfolge je Herde), damit Streckenänderungen sie nicht mehr verschieben.
-- Am Wiesenweg ein Weidegatter oder ein Heuschober als Blickfang neben dem Weg.
+- Kuh-Herden „einfrieren“ wie die Bäume (feste Zufallsfolge je Herde), damit Streckenänderungen sie nicht mehr verschieben. (umgesetzt in M3d)
+- Am Wiesenweg ein Weidegatter oder ein Heuschober als Blickfang neben dem Weg. (umgesetzt in M3d)
 - Spritzer aus Erdklumpen statt Staub, wenn es nass ist (mit dem Wetter in einem späteren Meilenstein).
 - Pace-Notes „Achtung Feldweg“ / „Schotter“ an den Abzweigen (M4).
 - Kreuzungen steiler machen, wenn man dafür das ersetzte Stück länger wählt (z. B. mit einer zusätzlichen Kurve der

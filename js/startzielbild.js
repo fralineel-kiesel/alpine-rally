@@ -10,7 +10,7 @@ import { leinwand, setze, zuTextur, hexZuRgb } from './pixel.js';
 import { zufall } from './util.js';
 
 // Kleine Schrift 3x5 (Sponsoren, Schilder)
-const KLEIN = {
+export const KLEIN = {
   A: ['.#.', '#.#', '###', '#.#', '#.#'], B: ['##.', '#.#', '##.', '#.#', '##.'], C: ['.##', '#..', '#..', '#..', '.##'],
   D: ['##.', '#.#', '#.#', '#.#', '##.'], E: ['###', '#..', '##.', '#..', '###'], F: ['###', '#..', '##.', '#..', '#..'],
   G: ['.##', '#..', '#.#', '#.#', '.##'], H: ['#.#', '#.#', '###', '#.#', '#.#'], I: ['###', '.#.', '.#.', '.#.', '###'],
@@ -29,7 +29,7 @@ const GROSS = {
   Z: ['#####', '....#', '...#.', '..#..', '.#...', '#....', '#####'], I: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '#####'],
   E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'], L: ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
 };
-function schreibe(px, text, x0, y0, rgb, schrift = KLEIN) {
+export function schreibe(px, text, x0, y0, rgb, schrift = KLEIN) {
   let x = x0;
   for (const z of text) {
     const m = schrift[z] || schrift[' '] || KLEIN[' '];
@@ -37,7 +37,7 @@ function schreibe(px, text, x0, y0, rgb, schrift = KLEIN) {
     x += m[0].length + 1;
   }
 }
-const textBreite = (text, schrift = KLEIN) => [...text].reduce((b, z) => b + ((schrift[z] || KLEIN[' '])[0].length + 1), 0) - 1;
+export const textBreite = (text, schrift = KLEIN) => [...text].reduce((b, z) => b + ((schrift[z] || KLEIN[' '])[0].length + 1), 0) - 1;
 
 // Erfundene Sponsoren: Name, Grundfarbe, Schriftfarbe
 export const SPONSOREN = [
@@ -185,7 +185,9 @@ export function startZielAtlas(seed = 91) {
 // Farbschlüssel (Helligkeit im Kanal = Schattierung): Jacke magenta, Hose cyan, Mütze/Fahne gelb,
 // Haare grün. Der Shader ersetzt sie durch die Farben des einzelnen Zuschauers.
 // ---------------------------------------------------------------------
-export const ZUSCHAUER_POSEN = ['stehend', 'winkend', 'jubelnd', 'fahneKreuz', 'fotograf', 'muetze', 'fahne'];
+// M3d: 'posten' (Streckenposten mit Warnweste und gelber Fahne) und 'sitzend' (auf dem Klappstuhl) kommen
+// hinten dazu – die Zeilen davor bleiben gleich (Start und Ziel nehmen nur die ersten 7)
+export const ZUSCHAUER_POSEN = ['stehend', 'winkend', 'jubelnd', 'fahneKreuz', 'fotograf', 'muetze', 'fahne', 'posten', 'sitzend'];
 export function zuschauerAtlas() {
   const ZB = 16, ZH = 28, ANSICHTEN = 4, BILDER = 2;
   const l = leinwand(ZB * ANSICHTEN * BILDER, ZH * ZUSCHAUER_POSEN.length);
@@ -193,6 +195,7 @@ export function zuschauerAtlas() {
   const MUETZE = [255, 255, 0], MUETZE_D = [170, 170, 0], HAAR = [0, 255, 0], HAAR_D = [0, 170, 0];
   const HAUT = [232, 186, 148], HAUT_D = [200, 150, 115], SCHUH = [46, 38, 32], AUGE = [40, 30, 30];
   const HOLZ = [120, 86, 52], WEISS = [244, 242, 236], SCHWARZ = [28, 28, 30];
+  const REFLEX = [222, 226, 214]; // M3d: Reflexstreifen der Warnweste
 
   ZUSCHAUER_POSEN.forEach((pose, zeile) => {
     for (let ansicht = 0; ansicht < ANSICHTEN; ansicht++) {
@@ -213,6 +216,8 @@ export function zuschauerAtlas() {
   // Eine Figur zeichnen (Mitte bei x = 7.5). seite: Profil (schaut nach rechts), hinten: Rücken
   function figur(px, pose, seite, hinten, bild) {
     const rechteck = (x0, x1, h0, h1, rgb) => { for (let h = h0; h <= h1; h++) for (let x = x0; x <= x1; x++) px(x, h, rgb); };
+    // M3d: sitzend – alles 4 Pixel tiefer, Oberschenkel nach vorne, Unterschenkel hängen (der Stuhl ist Geometrie)
+    if (pose === 'sitzend') { sitzFigur(px, seite, hinten); return; }
     // Beine und Schuhe
     if (seite) {
       rechteck(7, 8, 1, 6, HOSE); px(8, 1, HOSE_D); px(8, 2, HOSE_D);
@@ -263,7 +268,7 @@ export function zuschauerAtlas() {
       if (pose === 'winkend') armHoch(8, bild === 1);
       else if (pose === 'jubelnd') armHoch(8, bild === 1);
       else if (pose === 'fotograf') { rechteck(9, 10, 11, 12, JACKE_D); rechteck(10, 11, 14, 15, SCHWARZ); px(10, 13, HAUT); }
-      else if (pose === 'fahneKreuz' || pose === 'fahne') fahne(pose === 'fahneKreuz');
+      else if (pose === 'fahneKreuz' || pose === 'fahne' || pose === 'posten') fahne(pose === 'fahneKreuz');
       else armUnten(8);
     } else {
       // vorne/hinten: zwei Arme (hinten gespiegelt: rechter Arm erscheint links)
@@ -274,11 +279,35 @@ export function zuschauerAtlas() {
         rechteck(4, 4, 10, 12, JACKE_D); rechteck(11, 11, 10, 12, JACKE_D);
         if (!hinten) { rechteck(6, 9, 14, 15, SCHWARZ); px(7, 15, [90, 90, 96]); px(5, 14, HAUT); px(10, 14, HAUT); }
         else { px(5, 13, HAUT); px(10, 13, HAUT); }
-      } else if (pose === 'fahneKreuz' || pose === 'fahne') { armUnten(li); fahne(pose === 'fahneKreuz'); }
+      } else if (pose === 'fahneKreuz' || pose === 'fahne' || pose === 'posten') { armUnten(li); fahne(pose === 'fahneKreuz'); }
       else if (pose === 'muetze') { rechteck(4, 4, 9, 12, JACKE_D); rechteck(11, 11, 9, 12, JACKE_D); } // Hände in den Taschen
       else { armUnten(4); armUnten(11); }
     }
     if (pose === 'muetze' || pose === 'fotograf') muetze();
+    // M3d: Warnweste der Streckenposten – zwei helle Reflexstreifen quer über die Jacke
+    if (pose === 'posten') {
+      const x0 = seite ? 6 : 5, x1 = seite ? 9 : 10;
+      for (const h of [9, 11]) for (let x = x0; x <= x1; x++) px(x, h, REFLEX);
+    }
+  }
+
+  // Sitzende Figur (M3d, Klappstuhl): Kopf und Jacke 4 Pixel tiefer, Knie vorne
+  function sitzFigur(px, seite, hinten) {
+    const rechteck = (x0, x1, h0, h1, rgb) => { for (let h = h0; h <= h1; h++) for (let x = x0; x <= x1; x++) px(x, h, rgb); };
+    if (seite) {
+      rechteck(7, 11, 4, 5, HOSE); rechteck(10, 11, 1, 3, HOSE_D); rechteck(10, 12, 0, 0, SCHUH); // Oberschenkel, Unterschenkel
+      rechteck(6, 9, 6, 10, JACKE); rechteck(6, 6, 6, 10, JACKE_D);
+      rechteck(8, 9, 6, 7, JACKE_D); px(10, 6, HAUT);                                               // Arm auf dem Knie
+      rechteck(6, 9, 11, 14, HAUT); rechteck(6, 7, 12, 14, HAAR); rechteck(6, 9, 14, 14, HAAR); px(9, 13, AUGE);
+      return;
+    }
+    if (!hinten) { rechteck(6, 9, 3, 5, HOSE); rechteck(6, 7, 0, 2, HOSE_D); rechteck(8, 9, 0, 2, HOSE_D); px(6, 0, SCHUH); px(7, 0, SCHUH); px(8, 0, SCHUH); px(9, 0, SCHUH); }
+    else rechteck(6, 9, 3, 4, HOSE_D);
+    rechteck(5, 10, 5, 10, JACKE); rechteck(5, 10, 5, 5, JACKE_D);
+    rechteck(4, 4, 6, 9, JACKE_D); rechteck(11, 11, 6, 9, JACKE_D); px(4, 5, HAUT); px(11, 5, HAUT);
+    if (hinten) { rechteck(6, 9, 11, 14, HAAR); rechteck(6, 9, 11, 11, HAAR_D); return; }
+    rechteck(6, 9, 11, 14, HAUT); rechteck(6, 9, 14, 14, HAAR); px(6, 13, HAAR); px(9, 13, HAAR);
+    px(7, 12, AUGE); px(8, 12, AUGE); rechteck(6, 9, 11, 11, HAUT_D);
   }
 
   return { textur: zuTextur(l, { mipmaps: false }), spalten: ANSICHTEN * BILDER, zeilen: ZUSCHAUER_POSEN.length, zelleM: [1.6, 2.8], pixelM: 0.1 };

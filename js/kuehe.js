@@ -21,6 +21,7 @@ import { baueKollision } from './kollision.js';
 import { kuhAtlas, KUH_ARTEN, KUH_BILD } from './kuhbild.js';
 import { spriteMaterial } from './sprites.js';
 import { randAbstand, torPruefer } from './strassenrand.js';
+import { KUHFOLGE } from './kuhfolge.js';
 
 // Wie die Bäume (sprites.js), aber die Ansicht (Spalte im Bild) hängt vom Winkel ab
 const VERTEX = /* glsl */ `
@@ -54,9 +55,10 @@ const VERTEX = /* glsl */ `
 // =====================================================================
 // Plan: wo steht welche Kuh (ohne 3D; die Tests brauchen das auch)
 // =====================================================================
-export function planeKuehe(strecke, welt, pflanzen, rand) {
+// frei: optional weitere Kreise { x, z, r }, wo keine (neue) Kuh hin darf (M3d: Hütte, Details am Wiesenweg)
+export function planeKuehe(strecke, welt, pflanzen, rand, frei = []) {
   const c = CONFIG.kuehe;
-  const rnd = zufall(c.seed);
+  let rnd = zufall(c.seed);
   const n = strecke.anzahl;
   const P = rand.plan;
   const q = {}, q2 = {};
@@ -82,8 +84,11 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
 
   // Weidetore: Lücke und Weg ins Feld bleiben frei
   const torFrei = torPruefer(P);
+  // M3d: Tore der neuen Zäune am Wiesenweg ebenso
+  const torFreiZusatz = torPruefer({ ...P, tore: P.zusatzTore || [] });
 
   const kuehe = [];
+  let kolFrei = null; // M3d: Plätze der neuen Objekte am Wiesenweg (nur für die neuen Herden)
   // Darf eine Kuh mit Radius r hier stehen?
   function ok(x, z, r) {
     strecke.abfrage(x, z, q);
@@ -100,7 +105,8 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
     if (welt.waldBei(x, z, q.i) > c.maxWald) return false;
     if (!kolBaum.frei(x, z, r + c.abstandBaum)) return false;
     if (!kolRand.frei(x, z, r + c.abstandZaun)) return false;
-    if (!torFrei(x, z, r, c.abstandTor, c.torTiefe)) return false;
+    if (!torFrei(x, z, r, c.abstandTor, c.torTiefe) || !torFreiZusatz(x, z, r, c.abstandTor, c.torTiefe)) return false;
+    if (kolFrei && !kolFrei.frei(x, z, r + c.abstandBaum)) return false;
     if (kuehe.some((k) => Math.hypot(k.x - x, k.z - z) < c.abstandKuh)) return false;
     return true;
   }
@@ -160,10 +166,11 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
   // Eine Herde (oder ein Einzeltier) um die Mitte m aufstellen
   const posen = KUH_BILD.posen;
   const mitten = [];
-  function herde(m, anzahl, wo) {
+  // abstand, radius, leben (M3d): eigener Herdenabstand und -radius für die neuen Herden, Kühe markieren
+  function herde(m, anzahl, wo, abstand = c.herdenAbstand, radius0 = null, leben = false) {
     if (!m) return 0;
-    if (anzahl > 1 && mitten.some((h) => Math.hypot(h.x - m.x, h.z - m.z) < c.herdenAbstand)) return 0;
-    const radius = mische(c.herdeRadius[0], c.herdeRadius[1], Math.min(1, (anzahl - 1) / 5));
+    if (anzahl > 1 && mitten.some((h) => Math.hypot(h.x - m.x, h.z - m.z) < abstand)) return 0;
+    const radius = radius0 ?? mische(c.herdeRadius[0], c.herdeRadius[1], Math.min(1, (anzahl - 1) / 5));
     const richtung = rnd() * Math.PI * 2;
     const fell = (herdenNr + fellStart) % 3; // eine Fellart herrscht in der Herde vor (reihum, damit alle vorkommen)
     let gestellt = 0;
@@ -179,7 +186,7 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
         const art = f * 2 + (rnd() < 0.5 ? 0 : 1); // mit oder ohne Hörner
         const g = mische(c.groesse[0], c.groesse[1], rnd());
         if (!ok(x, z, r)) continue;
-        kuehe.push({ x, z, blick, pose, art, groesse: g, r, wo, herde: herdenNr });
+        kuehe.push({ x, z, blick, pose, art, groesse: g, r, wo, herde: herdenNr, ...(leben ? { leben: true } : {}) });
         gestellt++;
         break;
       }
@@ -190,46 +197,78 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
   let herdenNr = 0;
   const fellStart = Math.floor(rnd() * 3);
 
-  const ziel = Math.max(0, c.anzahl - c.einzeln);
-  const zielTal = tal.length ? Math.round(ziel * (alp.length ? c.anteilTal : 1)) : 0;
-  const zielAlp = ziel - zielTal;
-  const groesse = () => c.herde[0] + Math.floor(rnd() * (c.herde[1] - c.herde[0] + 1));
-  // Zuerst die Weide hinter dem Schild "Kühe" (M2a.1): dort steht sicher eine grosse Herde
-  const kuhSchild = P.schilder.find((s) => s.tafeln.some((t) => t.kachel === 'warnKuh'));
-  if (kuhSchild && tal.length) {
-    const weide = tal.filter((w) => w.bis > kuhSchild.s && w.von > kuhSchild.s - 20).sort((a, b) => a.von - b.von)[0];
-    if (weide) for (let v = 0; v < 8 && !herde(herdenMitte(weide), c.herde[1], 'tal'); v++);
-  }
-  // Auf der Alpwiese nahe der Passhöhe steht sicher auch eine Herde
-  const passWiesen = alp.filter((w) => w.von <= c.passBei && w.bis >= c.passBei);
-  if (passWiesen.length) {
-    for (let v = 0; v < 12; v++) {
-      const w = passWiesen[Math.floor(rnd() * passWiesen.length)];
-      if (herde(herdenMitte(w, c.passBei), c.herde[0] + 2, 'alp')) break;
+  // M3d: eingefrorene Kühe (js/kuhfolge.js): stehen genau dort wie beim Stand M3b. Jede wird noch geprüft.
+  const folge = KUHFOLGE && KUHFOLGE.seed === c.seed ? KUHFOLGE.kuehe : null;
+  let weggefallen = 0;
+  if (folge) {
+    const gruppen = new Map();
+    for (const [x, z, blick, pose, art, groesse, wo, nr] of folge) {
+      const r = pose === 2 ? c.radiusLiegend : c.radius;
+      if (!ok(x, z, r)) { weggefallen++; continue; }
+      kuehe.push({ x, z, blick, pose, art, groesse, r, wo: wo ? 'alp' : 'tal', herde: nr });
+      if (!gruppen.has(nr)) gruppen.set(nr, []);
+      gruppen.get(nr).push({ x, z });
+      herdenNr = Math.max(herdenNr, nr + 1);
     }
-  }
-  for (const [liste, zielN, wo] of [[tal, zielTal, 'tal'], [alp, zielAlp, 'alp']]) {
-    if (!liste.length) continue;
-    for (let v = 0; v < 80; v++) {
-      const da = kuehe.filter((k) => k.wo === wo).length;
-      if (da >= zielN) break;
-      herde(herdenMitte(waehle(liste)), Math.min(groesse(), zielN - da), wo);
+    // Herden-Mitten (für den Abstand der neuen Herden)
+    for (const g of gruppen.values()) if (g.length > 1) mitten.push({ x: g.reduce((a, k) => a + k.x, 0) / g.length, z: g.reduce((a, k) => a + k.z, 0) / g.length });
+  } else {
+    const ziel = Math.max(0, c.anzahl - c.einzeln);
+    const zielTal = tal.length ? Math.round(ziel * (alp.length ? c.anteilTal : 1)) : 0;
+    const zielAlp = ziel - zielTal;
+    const groesse = () => c.herde[0] + Math.floor(rnd() * (c.herde[1] - c.herde[0] + 1));
+    // Zuerst die Weide hinter dem Schild "Kühe" (M2a.1): dort steht sicher eine grosse Herde
+    const kuhSchild = P.schilder.find((s) => s.tafeln.some((t) => t.kachel === 'warnKuh'));
+    if (kuhSchild && tal.length) {
+      const weide = tal.filter((w) => w.bis > kuhSchild.s && w.von > kuhSchild.s - 20).sort((a, b) => a.von - b.von)[0];
+      if (weide) for (let v = 0; v < 8 && !herde(herdenMitte(weide), c.herde[1], 'tal'); v++);
     }
-  }
-  // Einzeltiere irgendwo auf den Weiden
-  const alle = [...tal, ...alp];
-  for (let k = 0, v = 0; k < c.einzeln && v < 40 && alle.length; v++) {
-    const w = waehle(alle);
-    if (herde(herdenMitte(w), 1, w.zaun ? 'tal' : 'alp')) k++;
+    // Auf der Alpwiese nahe der Passhöhe steht sicher auch eine Herde
+    const passWiesen = alp.filter((w) => w.von <= c.passBei && w.bis >= c.passBei);
+    if (passWiesen.length) {
+      for (let v = 0; v < 12; v++) {
+        const w = passWiesen[Math.floor(rnd() * passWiesen.length)];
+        if (herde(herdenMitte(w, c.passBei), c.herde[0] + 2, 'alp')) break;
+      }
+    }
+    for (const [liste, zielN, wo] of [[tal, zielTal, 'tal'], [alp, zielAlp, 'alp']]) {
+      if (!liste.length) continue;
+      for (let v = 0; v < 80; v++) {
+        const da = kuehe.filter((k) => k.wo === wo).length;
+        if (da >= zielN) break;
+        herde(herdenMitte(waehle(liste)), Math.min(groesse(), zielN - da), wo);
+      }
+    }
+    // Einzeltiere irgendwo auf den Weiden
+    const alle = [...tal, ...alp];
+    for (let k = 0, v = 0; k < c.einzeln && v < 40 && alle.length; v++) {
+      const w = waehle(alle);
+      if (herde(herdenMitte(w), 1, w.zaun ? 'tal' : 'alp')) k++;
+    }
+
+    // Zusätzliche Herden (M3c, beim Start- und Zielbereich): erst ganz am Schluss, damit alle anderen Kühe
+    // genau gleich bleiben. Ein paar Plätze würfeln, den ersten nehmen, an dem eine Kuh stehen darf.
+    for (const z of c.zusatzHerden || []) {
+      for (let v = 0; v < 16; v++) {
+        const m = P.punkt(z.s + (rnd() - 0.5) * 30, z.seite * mische(z.lat[0], z.lat[1], rnd()));
+        if (!ok(m.x, m.z, c.radius)) continue;
+        if (herde(m, z.anzahl, 'tal')) break;
+      }
+    }
   }
 
-  // Zusätzliche Herden (M3c, beim Start- und Zielbereich): erst ganz am Schluss, damit alle anderen Kühe
-  // genau gleich bleiben. Ein paar Plätze würfeln, den ersten nehmen, an dem eine Kuh stehen darf.
-  for (const z of c.zusatzHerden || []) {
-    for (let v = 0; v < 16; v++) {
-      const m = P.punkt(z.s + (rnd() - 0.5) * 30, z.seite * mische(z.lat[0], z.lat[1], rnd()));
-      if (!ok(m.x, m.z, c.radius)) continue;
-      if (herde(m, z.anzahl, 'tal')) break;
+  // M3d: neue Herden (am Wiesenweg) mit eigenem Zufall: die Kühe oben bleiben genau gleich.
+  // Nie auf den Plätzen der neuen Objekte (Hütte, Brunnen, Heurollen ..., Liste "frei").
+  const L = CONFIG.leben && CONFIG.leben.an !== false ? CONFIG.leben.kuehe : null;
+  if (L && L.herden) {
+    rnd = zufall(L.seed);
+    kolFrei = frei.length ? baueKollision(frei) : null;
+    for (const z of L.herden) {
+      for (let v = 0; v < 24; v++) {
+        const m = P.punkt(z.s + (rnd() - 0.5) * (z.streuung ?? 20), z.seite * mische(z.lat[0], z.lat[1], rnd()));
+        if (!ok(m.x, m.z, c.radius)) continue;
+        if (herde(m, z.anzahl, 'alp', L.herdenAbstand, z.radius, true)) break;
+      }
     }
   }
 
@@ -245,17 +284,17 @@ export function planeKuehe(strecke, welt, pflanzen, rand) {
     strecke.abfrage(k.x, k.z, q);
     k.s = q.s; k.abstand = q.abstand; k.seite = Math.sign(q.seite);
   }
-  return { kuehe, weiden: { tal, alp } };
+  return { kuehe, weiden: { tal, alp }, eingefroren: !!folge, weggefallen };
 }
 
 // =====================================================================
 // Aufbau: Sprites und Kollisionskreise
 // =====================================================================
-export function baueKuehe(szene, strecke, welt, pflanzen, rand) {
+export function baueKuehe(szene, strecke, welt, pflanzen, rand, frei = []) {
   const t0 = performance.now();
   const c = CONFIG.kuehe;
   if (!c.an) return { kuehe: [], hindernisse: [], statistik: { anzahl: 0 } };
-  const plan = planeKuehe(strecke, welt, pflanzen, rand);
+  const plan = planeKuehe(strecke, welt, pflanzen, rand, frei);
   const { kuehe } = plan;
   const tPlan = performance.now() - t0;
   const atlas = kuhAtlas();
@@ -291,6 +330,7 @@ export function baueKuehe(szene, strecke, welt, pflanzen, rand) {
   const zaehle = (f) => kuehe.filter(f).length;
   const statistik = {
     anzahl: kuehe.length, herden: new Set(kuehe.map((k) => k.herde)).size,
+    eingefroren: plan.eingefroren, weggefallen: plan.weggefallen, neu: zaehle((k) => k.leben), // M3d
     tal: zaehle((k) => k.wo === 'tal'), alp: zaehle((k) => k.wo === 'alp'),
     stehend: zaehle((k) => k.pose === 0), grasend: zaehle((k) => k.pose === 1), liegend: zaehle((k) => k.pose === 2),
     arten: KUH_ARTEN.map((a, i) => `${a.name}: ${zaehle((k) => k.art === i)}`),

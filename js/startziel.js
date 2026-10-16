@@ -717,3 +717,6 @@ export function baueStartZiel(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     aktualisiere, statistik, ort, objekte,
   };
 }
+
+// M3d: Zuschauer-Shader auch für die Fan-Spots und Streckenposten (js/leben.js)
+export { VERTEX as ZUSCHAUER_VERTEX, FRAGMENT as ZUSCHAUER_FRAGMENT };
