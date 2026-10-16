@@ -4,7 +4,10 @@
 //   { [etappe]: [{ zeit, cps: [...], datum, auto, aufpralle, resets, hoechstTempo }] }
 //   zeit, cps: Sekunden (cps: Zwischenzeiten der Checkpoints, null = verpasst), datum: Zeitpunkt (ISO-Text),
 //   auto: Auto-Id aus js/inhalte.js, aufpralle/resets: Anzahl, hoechstTempo: m/s.
-// Einträge im alten Format (nur zeit, cps, datum) werden genauso gelesen.
+//   spur (seit M6): Fahrspur für den Live-Vergleich, Rennzeit alle 10 Streckenmeter (js/vergleich.js), auf 0.01 s.
+// Einträge im alten Format (nur zeit, cps, datum; oder ohne spur) werden genauso gelesen.
+// Seit M6 auch der letzte fertige Lauf je Etappe (CONFIG.menue.letzterLaufName, "alpineRally.letzterLauf"):
+//   { [etappe]: { zeit, cps, spur, datum } } – jeder Lauf, der ins Ziel kommt, auch ausserhalb der Top 10.
 // Ohne Browser-Speicher (blockiert, privat) läuft alles weiter: Die Zeiten gelten dann nur bis zum Neuladen.
 
 import { CONFIG } from './config.js';
@@ -53,7 +56,12 @@ function sauber(e) {
     aufpralle: Number.isFinite(e.aufpralle) ? e.aufpralle : null,
     resets: Number.isFinite(e.resets) ? e.resets : null,
     hoechstTempo: Number.isFinite(e.hoechstTempo) ? e.hoechstTempo : null,
+    spur: sauberSpur(e.spur),
   };
+}
+// Fahrspur nur, wenn sie aus lauter Zahlen besteht (sonst null = keine, der Vergleich nähert dann)
+function sauberSpur(sp) {
+  return Array.isArray(sp) && sp.length > 1 && sp.every(Number.isFinite) ? sp : null;
 }
 // Sortiert (schnellste zuerst; bei gleicher Zeit bleibt die Reihenfolge, die ältere steht vorn), höchstens 10
 function ordne(liste) {
@@ -102,6 +110,40 @@ export function loescheBestzeiten() {
     speicherOk = false;
     return true; // ohne Browser-Speicher: die Zeiten dieser Sitzung sind weg
   }
+}
+
+// --- Letzter Lauf (M6) ---------------------------------------------------------------------------
+// Eigener Schlüssel, gleiche Vorsicht wie bei den Bestzeiten: ohne Browser-Speicher gilt er bis zum Neuladen.
+const LETZTER_SCHLUESSEL = CONFIG.menue.letzterLaufName;
+let ersatzLetzter = {};
+function letzteLesen() {
+  try {
+    const roh = window.localStorage.getItem(LETZTER_SCHLUESSEL);
+    const d = roh ? JSON.parse(roh) : {};
+    return d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+  } catch (e) {
+    return e instanceof SyntaxError ? {} : ersatzLetzter;
+  }
+}
+// eintrag: { zeit, cps, spur }; Ergebnis: true = im Browser gespeichert
+export function speichereLetztenLauf(etappe, eintrag) {
+  const d = letzteLesen();
+  d[etappe] = { zeit: eintrag.zeit, cps: Array.isArray(eintrag.cps) ? eintrag.cps.slice() : [], spur: sauberSpur(eintrag.spur), datum: new Date().toISOString() };
+  try {
+    window.localStorage.setItem(LETZTER_SCHLUESSEL, JSON.stringify(d));
+    return true;
+  } catch {
+    ersatzLetzter = d;
+    return false;
+  }
+}
+// Der letzte fertige Lauf dieser Etappe { zeit, cps, spur, datum } oder null
+export function ladeLetztenLauf(etappe) {
+  try {
+    const e = letzteLesen()[etappe];
+    if (!e || !Number.isFinite(e.zeit)) return null;
+    return { zeit: e.zeit, cps: Array.isArray(e.cps) ? e.cps.map((c) => (Number.isFinite(c) ? c : null)) : [], spur: sauberSpur(e.spur), datum: e.datum ?? null };
+  } catch { return null; }
 }
 
 // Datum für die Anzeige: Deutsch 16.10.26, Englisch 2026-10-16 (unbekannt: --)

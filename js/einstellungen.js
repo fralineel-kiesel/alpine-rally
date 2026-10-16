@@ -5,7 +5,7 @@ import { CONFIG } from './config.js';
 
 const M = CONFIG.menue;
 const STANDARD = M.standard;
-export const AKTIONEN = Object.keys(STANDARD.tasten); // gas, bremse, links, rechts, handbremse, zurueck, notes
+export const AKTIONEN = Object.keys(STANDARD.tasten); // gas, bremse, links, rechts, handbremse, zurueck, notes, hud (M6)
 
 const kopieTasten = (q) => Object.fromEntries(AKTIONEN.map((a) => [a, [...q[a]]]));
 
@@ -31,13 +31,18 @@ function uebernimm(d) {
   if (ganz(d.totzoneStufe, M.totzonen.length)) einstellungen.totzoneStufe = d.totzoneStufe;
   if (Number.isFinite(d.lautstaerke)) einstellungen.lautstaerke = Math.max(0, Math.min(100, Math.round(d.lautstaerke)));
   if (d.sprache === 'de' || d.sprache === 'en') einstellungen.sprache = d.sprache;
+  // M6: Anzeige
+  if (typeof d.minimap === 'boolean') einstellungen.minimap = d.minimap;
+  if (typeof d.vergleich === 'boolean') einstellungen.vergleich = d.vergleich;
+  if (d.vergleichMit === 'best' || d.vergleichMit === 'letzter') einstellungen.vergleichMit = d.vergleichMit;
   if (d.tasten && typeof d.tasten === 'object') {
     const neu = kopieTasten(STANDARD.tasten);
     const gesehen = new Set();
+    const fehlen = []; // Aktionen, die es beim Speichern noch nicht gab (z. B. "hud" seit M6)
     let ok = true;
     for (const a of AKTIONEN) {
       const w = d.tasten[a];
-      if (!Array.isArray(w)) continue;
+      if (!Array.isArray(w)) { fehlen.push(a); continue; }
       for (let k = 0; k < 2; k++) {
         const c = w[k] ?? null;
         if (c !== null && (typeof c !== 'string' || M.reserviert.includes(c))) ok = false;
@@ -45,11 +50,23 @@ function uebernimm(d) {
         neu[a][k] = c;
       }
     }
+    // Neue Aktion, deren Standardtaste schon eine gespeicherte Aktion hat (z. B. H selbst belegt):
+    // die gespeicherte Belegung bleibt, die neue Aktion bekommt die erste freie Buchstabentaste
+    const belegt = new Set();
+    for (const a of AKTIONEN) if (!fehlen.includes(a)) for (const c of neu[a]) if (c) belegt.add(c);
+    for (const a of fehlen) {
+      neu[a][1] = null;
+      if (belegt.has(neu[a][0])) neu[a][0] = FREI.find((c) => !belegt.has(c)) || neu[a][0];
+      belegt.add(neu[a][0]);
+    }
     // nie doppelt: sonst lieber alles auf Standard
     for (const a of AKTIONEN) for (const c of neu[a]) { if (c === null) continue; if (gesehen.has(c)) ok = false; gesehen.add(c); }
     if (ok) einstellungen.tasten = neu;
   }
 }
+
+// Ersatztasten für neue Aktionen (nur wenn die Standardtaste schon vergeben ist)
+const FREI = [...'HJKUIOPGFTYZXCVBMLQE'].map((b) => `Key${b}`);
 
 export function ladeEinstellungen() {
   try {

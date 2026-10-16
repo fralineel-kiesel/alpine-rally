@@ -168,6 +168,15 @@ export function baueSeiten(api) {
         lesen: () => einstellungen.einheit, setzen: (w) => setze('einheit', w),
       },
       { typ: 'umschalter', text: 'einst.fps', lesen: () => einstellungen.fps, setzen: (b) => setze('fps', b) },
+      // M6: Minimap und Live-Vergleich (sofort wirksam)
+      { typ: 'gruppe', text: 'einst.anzeige' },
+      { typ: 'umschalter', text: 'einst.minimap', lesen: () => einstellungen.minimap, setzen: (b) => setze('minimap', b) },
+      { typ: 'umschalter', text: 'einst.vergleich', hinweis: 'einst.vergleichHinweis', lesen: () => einstellungen.vergleich, setzen: (b) => setze('vergleich', b) },
+      {
+        typ: 'auswahl', text: 'einst.vergleichMit',
+        optionen: () => [{ wert: 'best', text: 'wert.bestzeit' }, { wert: 'letzter', text: 'wert.letzterLauf' }],
+        lesen: () => einstellungen.vergleichMit, setzen: (w) => setze('vergleichMit', w),
+      },
       { typ: 'gruppe', text: 'einst.steuerung' },
       { typ: 'aktion', text: 'einst.tasten', aktion: () => menue.oeffne(tastenSeite) },
       {
@@ -206,6 +215,7 @@ export function baueSeiten(api) {
     ['aktion.handbremse', tastenVon('handbremse'), knopfName(G.handbremse)],
     ['aktion.zurueck', tastenVon('zurueck'), knopfName(G.zurueck)],
     ['aktion.notes', tastenVon('notes'), t('pad.keiner')],
+    ['aktion.hud', tastenVon('hud'), t('pad.keiner')],
     ['aktion.pause', tastenName('Escape'), knopfName(G.pause)],
     ['aktion.debug', 'F3', t('pad.keiner')],
   ];
@@ -218,6 +228,7 @@ export function baueSeiten(api) {
   };
   const steuerZeile = (n) => ({
     typ: 'info', hoehe: n < 0 ? 10 : 9, breite: () => spalten().breite,
+    inhalt: () => (n < 0 ? '' : steuerZeilen()[n].map((w, i) => (i ? w : t(w))).join(' | ')), // (für Tests)
     zeichne(c, x, y) {
       const s = spalten();
       if (n < 0) {

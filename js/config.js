@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.5B';
+export const VERSION = '0.6';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -987,7 +987,52 @@ export const CONFIG = {
       cpUnter: 2,              // ... Abstand unter der Tafel
       farbeCpLeer: '#e6e2d3',  // Rahmen eines noch nicht erreichten Checkpoints
       farbeCpErreicht: '#ffd23c', // erreichter Checkpoint (gefüllt)
-      meldungUnter: 4,         // Zwischenzeit-Meldung so weit unter den Punkten
+      meldungUnter: 4,         // Zwischenzeit-Meldung so weit unter den Punkten (bzw. unter dem Live-Vergleich, M6)
+    },
+    // Minimap oben rechts (Meilenstein 6): ganze Etappe, Norden oben, das Auto als Punkt
+    minimap: {
+      maxBreite: 64,           // Tafel höchstens so breit (Pixel, mit Rand) ...
+      maxHoehe: 46,            // ... und so hoch; das Seitenverhältnis kommt aus der Streckenform
+      rand: 3,                 // Abstand der Strecke vom Tafelrand (Pixel)
+      rechts: 3,               // Abstand der Tafel vom rechten Bildrand
+      oben: 3,                 // Abstand der Tafel vom oberen Bildrand
+      ecke: 2,                 // abgeschrägte Ecken der Tafel (wie die Zeit-Tafel)
+      punktAbstand: 8,         // die Karte nimmt alle ... Streckenmeter einen Punkt
+      neuFaerbenAb: 15,        // die gefahrene Strecke wird erst neu gefärbt, wenn das Auto ... Meter weiter ist
+      farbeTafel: 'rgba(18, 24, 32, 0.74)', // dunkelblaue Tafel (wie die Zeit-Tafel)
+      farbeRand: '#e6e2d3',    // heller Rand
+      farbeOffen: '#8796a6',   // noch nicht gefahrene Strecke (helles Blaugrau)
+      farbeGefahren: '#ffa62e', // schon gefahrene Strecke (Gelb/Orange)
+      farbeStart: '#5fe35a',   // Start (2x2 Pixel, grün)
+      farbeZielHell: '#f4f4ee', // Ziel: Karo 3x3 Pixel, helle Felder ...
+      farbeZielDunkel: '#101418', // ... und dunkle Felder
+      farbeCpOffen: '#f4f4ee', // Checkpoint-Strich: noch nicht durchfahren (weiss)
+      farbeCpDurch: '#5fe35a', // ... durchfahren (grün)
+      farbeCpVerpasst: '#ff4a3a', // ... verpasst (rot)
+      cpLaenge: 3,             // Checkpoint-Strich quer zur Strecke, so viele Pixel lang
+      farbeAuto: '#ffffff',    // Auto: Punkt 2x2 Pixel, hell
+      farbeAutoRand: 'rgba(10, 14, 20, 0.7)', // ... mit dunklem Rand (damit man ihn auf der Linie sieht)
+      blinkenHz: 2,            // der Punkt pulsiert leicht so oft pro Sekunde ...
+      blinkenTiefe: 0.35,      // ... und wird dabei höchstens so viel dunkler (0 = gar nicht, 1 = ganz weg)
+    },
+    // Live-Vergleich unter der Zeit-Tafel (Meilenstein 6): "-0.8" grün = schneller, "+1.2" rot = langsamer
+    vergleich: {
+      unter: 2,                // Tafel so viele Pixel unter den Checkpoint-Punkten
+      hoehe: 18,               // Höhe der Tafel (Schrift Grösse 2 = 14 Pixel)
+      groesse: 2,              // Pixelschrift-Grösse der Zahl (2 = gut lesbar bei 320x180)
+      zeichenPlatz: 5,         // die Tafel ist so breit, dass "+99.9" (5 Zeichen) Platz hat (bleibt immer gleich breit)
+      aktualisieren: 0.2,      // die Zahl wird höchstens alle ... Sekunden neu angezeigt (5 Mal pro Sekunde)
+      nullBis: 0.05,           // Unterschied unter so vielen Sekunden: weiss "0.0"
+      hysterese: 0.02,         // gegen Flackern: Farbe/Vorzeichen wechselt erst ... Sekunden über/unter der Grenze
+      farbeSchneller: '#5fe35a', // schneller als die Referenz (grün, "-0.8")
+      farbeLangsamer: '#ff5a46', // langsamer (rot, "+1.2")
+      farbeGleich: '#f4f4ee',  // gleich schnell (weiss, "0.0")
+      farbeEtikett: '#e6e2d3', // das kleine "BEST" / "LETZT" davor
+    },
+    // Taste H (Meilenstein 6): ganzes HUD aus/an, kurzer Hinweis unten in der Mitte
+    hudSchalter: {
+      hinweisDauer: 1.5,       // so lange steht "HUD AUS" / "HUD AN" (Sekunden)
+      hinweisUnten: 12,        // Hinweis so viele Pixel über dem unteren Bildrand
     },
     // Analoge Tachos unten rechts (Meilenstein 1.2)
     tacho: {
@@ -1146,7 +1191,8 @@ export const CONFIG = {
   menue: {
     an: true,                  // false = Spiel startet direkt ohne Titel und Menü (wie ?menue=aus in der Adresse)
     speicherName: 'alpineRally.einstellungen', // unter diesem Namen merkt sich der Browser die Einstellungen
-    bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten (Top 10 je Etappe, seit M5b gefüllt)
+    bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten (Top 10 je Etappe, seit M5b gefüllt; seit M6 mit Fahrspur)
+    letzterLaufName: 'alpineRally.letzterLauf', // der letzte fertige Lauf je Etappe (M6, für den Live-Vergleich)
     // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
     standard: {
       vollbild: false,         // Vollbild an/aus (wird beim ersten Tastendruck auf dem Titel wieder eingeschaltet)
@@ -1166,7 +1212,12 @@ export const CONFIG = {
         handbremse: ['Space', null],
         zurueck: ['KeyR', null],    // zurück auf die Strasse (R)
         notes: ['KeyN', null],      // Pace-Notes an/aus (N)
+        hud: ['KeyH', null],        // ganzes HUD aus/an (H, M6; wird nicht gespeichert, jeder Start mit HUD)
       },
+      // Anzeige (M6)
+      minimap: true,           // Minimap oben rechts an/aus
+      vergleich: true,         // Live-Vergleich unter der Zeit an/aus
+      vergleichMit: 'best',    // 'best' = Platz 1 der Bestzeiten, 'letzter' = der letzte fertige Lauf
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1263,6 +1314,9 @@ export const CONFIG = {
     // Statistik (nur im Rennen, zwischen GO und Ziel; die Demo-Fahrt zählt nichts)
     aufprallSchwelle: 3,       // Aufprall zählt ab diesem Tempo Richtung Hindernis (m/s; 3 m/s = 11 km/h)
     aufprallSperre: 0.6,       // nach einem gezählten Aufprall zählt so lange (Sekunden) kein weiterer (Entlangschleifen)
+
+    // Fahrspur (M6): alle ... Streckenmeter wird die Rennzeit notiert (für den Live-Vergleich, mit der Bestzeit gespeichert)
+    spurAbstand: 10,
   },
 
   // --- Optik am Auto -----------------------------------------------------

@@ -1,11 +1,11 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 5b fertig** – das Rennen hat jetzt einen Anfang und ein Ende: **Countdown 3 – 2 – 1 – GO!**
-(Auto steht mit der Schnauze an der Startlinie, Zeit startet bei GO), nach der Ziellinie ein **Zielbildschirm** mit
-Endzeit, Vergleich zur Bestzeit (grün schneller / rot langsamer), Zwischenzeiten und **Statistik** (Aufpralle, Resets,
-Höchsttempo), dazu **Bestzeiten Top 10** pro Etappe (im Browser gespeichert) und **BESTZEITEN LÖSCHEN** in den
-Einstellungen.
-Davor: 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 6 fertig** – das HUD hat jetzt eine **Minimap oben rechts** (ganze Etappe, Norden oben,
+gefahrene Strecke orange, Start, Ziel, Checkpoints, das Auto als Punkt) und einen **Live-Vergleich** unter der Zeit
+(**grün „-0.8“** = so viel schneller als die Bestzeit, **rot „+1.2“** = langsamer, ständig aktuell). Verglichen wird
+mit der **Bestzeit oder dem letzten Lauf** (Einstellungen → neue Gruppe **ANZEIGE**). **Taste H** blendet das ganze HUD
+aus und wieder ein (für Screenshots).
+Davor: 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -24,17 +24,268 @@ Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 | **Pause** (neu) | **Esc** | **Start / Options** |
 | Debug-Anzeige | F3 | – |
 | Pace-Notes (Ansagen) aus/ein | N | – |
+| **HUD aus/an** (neu in M6, für Screenshots) | **H** | – |
 
 Im Menü: Pfeile oder WASD (bzw. Steuerkreuz/linker Stick) zum Wählen, **Enter/Leertaste** (A / Kreuz) zum
 Bestätigen, **Esc/Rücktaste** (B / Kreis) für zurück. Die Maus geht auch (zeigen = wählen, klicken = bestätigen,
 Regler ziehen). Tastatur, Gamepad und Maus gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
 Alle Tasten ausser Esc, Enter und F3 kann man unter EINSTELLUNGEN → TASTEN BELEGEN ändern.
 
-Alle Einstellungen (auch N) merkt sich der Browser.
+Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start ist das HUD wieder an.
 
 ---
 
-## Meilenstein 5b: Countdown, Zielbildschirm, Bestzeiten, Statistik ✅
+## Meilenstein 6: Minimap, Live-Vergleich zur Bestzeit, HUD-Schalter ✅
+
+### Was ist neu?
+
+**1. Minimap oben rechts**
+- Kleine Tafel im HUD-Stil (dunkelblau, heller Rand), **45 x 46 Pixel** (bei 320x180). Die Etappe ist fast so hoch
+  wie breit, darum ist die Tafel fast quadratisch (erlaubt waren höchstens 64 x 46).
+- **Ganze Strecke, Norden oben**, die Karte dreht sich nicht mit. Massstab: 21 Pixel pro Kilometer.
+- **Noch nicht gefahren**: helles Blaugrau. **Schon gefahren**: Orange – bis zum **weitesten Punkt**, den das Auto in
+  diesem Lauf erreicht hat. Rückwärtsfahren, R und „Checkpoint verpasst“ machen die orange Linie **nicht** kürzer.
+- **Start**: grünes Quadrat (2x2 Pixel), **Ziel**: kleines Karo (3x3 Pixel, schwarz/weiss).
+- **Checkpoints**: kurzer Querstrich (3 Pixel) – **weiss** = noch nicht durch, **grün** = durchfahren (wie die gelben
+  Punkte unter der Zeit), **rot** = verpasst (solange „CHECKPOINT VERPASST“ steht; danach steht das Auto wieder vor
+  dem Tor und der Strich wird wieder weiss).
+- **Auto**: heller Punkt (2x2 Pixel) mit dunklem Rand, pulsiert ganz leicht (2 Mal pro Sekunde etwas dunkler, kein
+  hartes Blinken). Er sitzt immer **auf der Linie** (an der Stelle der Strecke, die dem Auto am nächsten ist), auch
+  wenn man über die Wiese fährt.
+- Sichtbar im **Countdown, im Rennen und in der Pause**. Nicht im Titel, Menü, Demo-Fahrt, nicht nach der Ziellinie
+  („ZIEL!“ und Zielbildschirm: dort zählen die Zeiten).
+
+**2. Live-Vergleich unter der Zeit**
+- Kleine Tafel direkt unter den Checkpoint-Punkten, gleich breit wie die Zeit-Tafel: links klein **BEST** (oder
+  **LETZT**), rechts gross (doppelte Schrift) die Zahl mit einer Nachkommastelle:
+  **grün „-0.8“** = so viel schneller, **rot „+1.2“** = so viel langsamer, **weiss „0.0“** = weniger als 0.05 s Unterschied.
+- **Ständig aktuell**, nicht nur an den Checkpoints. Die Zahl ändert sich aber **höchstens 5 Mal pro Sekunde** und
+  springt erst um, wenn der Unterschied deutlich (0.02 s) über der Grenze liegt – kein Flackern zwischen „0.0“ und
+  „+0.1“ oder zwischen „0.4“ und „0.5“.
+- Die **Meldung** (Zwischenzeit am Checkpoint, „CHECKPOINT VERPASST“, „ANSAGEN AN/AUS“) rutscht eine Zeile tiefer,
+  unter den Vergleich (ohne Vergleich steht sie wie bisher direkt unter den Punkten).
+- Sichtbar **nur im Rennen und in der Pause**, nicht im Countdown und nicht nach der Ziellinie (dort vergleicht wie
+  bisher der Zielbildschirm, und zwar **immer mit der Bestzeit**).
+- **Keine Referenz** (erste Fahrt, Speicher leer, „Letzter Lauf“ gewählt, aber noch keiner gefahren): **nichts**
+  (keine „0.0“, keine Platzhalter).
+
+**3. Einstellungen → neue Gruppe ANZEIGE** (zwischen Grafik und Steuerung, alles sofort wirksam, im Browser gespeichert)
+
+| Einstellung | Standard | Was es macht |
+|---|---|---|
+| MINIMAP | AN | Minimap oben rechts an/aus |
+| LIVE-VERGLEICH | AN | Vergleich unter der Zeit an/aus (Hinweis unten: „GRÜN = SCHNELLER, ROT = LANGSAMER“) |
+| VERGLEICH MIT | BESTZEIT | **BESTZEIT** = Platz 1 der Top 10 dieser Etappe, **LETZTER LAUF** = der zuletzt beendete Lauf (auch ein langsamer, der nicht in die Top 10 kam). Wirkt sofort (auch mitten im Lauf aus der Pause) und bei jedem Start |
+
+**4. Taste H: ganzes HUD aus / an**
+- Blendet **Zeit-Tafel, Punkte, Meldungen, Live-Vergleich, Minimap, Tachos und Pace-Notes** aus (auch das kleine
+  R-Zeichen und die Tasten-Hilfe vor dem Start).
+- Es bleiben: **Countdown**, **„ZIEL!“**, **Zielbildschirm**, **Pause**, **Menü** und unten in der Mitte für 1.5 s ein
+  kleiner Hinweis **„HUD AUS  H = AN“** bzw. **„HUD AN“** (damit man weiss, wie man es zurückholt). Die F3-Anzeige
+  bleibt, wenn man sie eingeschaltet hat (sie ist ja selbst ein Schalter).
+- **Nicht gespeichert**: Bei jedem Start der Seite ist das HUD wieder an.
+- Nur Tastatur. Unter **TASTEN BELEGEN** frei belegbar wie die anderen (Doppelbelegung wird getauscht), auf der Seite
+  **STEUERUNG** steht „HUD AUS/AN | H“.
+- Hattest du H schon selbst für etwas anderes belegt, bleibt deine Belegung, und HUD aus/an bekommt die erste freie
+  Buchstabentaste (meist J). Unter TASTEN BELEGEN kannst du es ändern.
+
+### Wie rechnet der Vergleich?
+
+1. **Fahrspur**: Während die Zeit läuft, wird **alle 10 Meter** Strecke notiert, wann das Auto diese Stelle **zum
+   ersten Mal** erreicht hat (ab der Startlinie). Fährt man zurück und wieder vor, wird nichts überschrieben. Am Ende
+   kommt die Endzeit dazu: **361 Zahlen** pro Lauf, auf 0.01 s gerundet. Der Zeitpunkt wird zwischen zwei
+   Rechenschritten (1/120 s) eingepasst, er stimmt auf 0.005 s.
+2. Im Ziel wird die Fahrspur **mit der Bestzeit gespeichert** (neues Feld `spur` im Eintrag) und jeder fertige Lauf
+   zusätzlich als **„letzter Lauf“** (eigener Speicher `alpineRally.letzterLauf`, je Etappe einer).
+3. **Beim Start** wird die Referenz geladen (Platz 1 oder der letzte Lauf, je nach Einstellung).
+4. **Jedes Bild**: An der Stelle, wo das Auto gerade ist, wird die Zeit der Referenz nachgeschaut (zwischen zwei
+   10-m-Werten gerade verbunden). **Unterschied = deine Rennzeit minus die Zeit der Referenz an dieser Stelle.**
+   Minus = du bist früher dort = schneller.
+5. R-Reset und „Checkpoint verpasst“ werden nicht extra behandelt: Der Vergleich geht einfach über die Stelle weiter
+   (die verlorene Zeit zeigt sich als grösseres Plus).
+
+**Alte Bestzeiten** (aus M5b, ohne Fahrspur): Der Vergleich nimmt dann nur Start (0 s), die drei Zwischenzeiten und
+die Endzeit und verbindet sie gerade. **An den Checkpoints stimmt der Vergleich dann genau, dazwischen ist er nur
+grob** – gemessen mit dem gleichen Lauf: bis **4.7 s** daneben (bei den Kehren, wo man viel langsamer ist als im
+Schnitt). **Einfach einmal eine neue Bestzeit fahren, dann ist der Vergleich genau** (ab dann hat Platz 1 eine Spur).
+Die alten Zeiten bleiben in der Liste und funktionieren wie bisher.
+
+**Speicherbedarf**: Eine Bestzeiten-Liste mit **10 Spuren** braucht **24 KB** Text (der Browser rechnet 2 Byte pro
+Zeichen, also ca. **48 KB**; erlaubt sind je Website meist 5 MB). Der letzte Lauf noch einmal ca. 2.4 KB.
+
+### Werte zum Drehen (`js/config.js`)
+
+| Wert | Was | heute |
+|---|---|---|
+| `hud.minimap.maxBreite`, `maxHoehe` | grösste Tafel (Pixel, mit Rand) | 64 x 46 |
+| `hud.minimap.rand`, `rechts`, `oben` | Abstand Strecke–Tafelrand, Tafel–Bildrand | 3 / 3 / 3 px |
+| `hud.minimap.punktAbstand` | die Karte nimmt alle … m einen Streckenpunkt | 8 m |
+| `hud.minimap.neuFaerbenAb` | orange Linie wird erst nach … m neu gemalt | 15 m |
+| `hud.minimap.farbeOffen`, `farbeGefahren` | Strecke: noch nicht / schon gefahren | Blaugrau / Orange |
+| `hud.minimap.farbeStart`, `farbeZielHell/Dunkel` | Start, Ziel-Karo | grün / weiss-schwarz |
+| `hud.minimap.farbeCpOffen/Durch/Verpasst`, `cpLaenge` | Checkpoint-Strich | weiss / grün / rot, 3 px |
+| `hud.minimap.farbeAuto`, `farbeAutoRand`, `blinkenHz`, `blinkenTiefe` | Auto-Punkt und sein Pulsieren | weiss, 2 Mal/s, 35 % dunkler |
+| `hud.vergleich.groesse`, `hoehe`, `unter` | Schriftgrösse der Zahl, Tafelhöhe, Abstand unter den Punkten | 2 / 18 px / 2 px |
+| `hud.vergleich.aktualisieren` | Zahl höchstens alle … s neu | 0.2 s (5 Mal pro Sekunde) |
+| `hud.vergleich.nullBis` | darunter weiss „0.0“ | 0.05 s |
+| `hud.vergleich.hysterese` | gegen Flackern: so weit über die Grenze, bevor die Anzeige wechselt | 0.02 s |
+| `hud.vergleich.farbeSchneller/Langsamer/Gleich/Etikett` | Farben | grün / rot / weiss / hell |
+| `hud.hudSchalter.hinweisDauer`, `hinweisUnten` | Hinweis „HUD AUS/AN“: Dauer, Abstand vom unteren Rand | 1.5 s / 12 px |
+| `rennablauf.spurAbstand` | Fahrspur: alle … m eine Zeit | 10 m |
+| `menue.standard.minimap`, `vergleich`, `vergleichMit` | Standard der neuen Einstellungen | an / an / 'best' |
+| `menue.standard.tasten.hud` | Taste für HUD aus/an | H |
+| `menue.letzterLaufName` | Speichername des letzten Laufs | `alpineRally.letzterLauf` |
+| `VERSION` (ganz oben) | Versionsnummer | 0.6 |
+
+Texte (Deutsch/Englisch) in `js/texte.js`: `einst.anzeige`, `einst.minimap`, `einst.vergleich`,
+`einst.vergleichHinweis`, `einst.vergleichMit`, `wert.bestzeit`, `wert.letzterLauf`, `aktion.hud`,
+`hud.vergleichBest` (BEST), `hud.vergleichLetzter` (LETZT / LAST), `hud.hudAus`, `hud.hudAn`.
+
+### So testest du
+
+1. **STARTEN**: Im Countdown oben rechts die Minimap, alles blaugrau, Punkt beim grünen Start. Noch kein Vergleich
+   (beim allerersten Mal gibt es ja keine Bestzeit).
+2. Fahren: Die Linie hinter dir wird orange, beim Checkpoint wird der Strich grün. Kurz rückwärts fahren oder R:
+   Das Orange bleibt.
+3. Ins Ziel fahren (das ist jetzt deine Bestzeit mit Fahrspur). **NEU STARTEN**: Jetzt steht unter der Zeit
+   „BEST“ mit einer Zahl. Langsamer fahren → rot mit Plus, Kurven besser → die Zahl wird kleiner oder grün.
+4. Eine Zwischenzeit abwarten: Die Meldung „CP 1 …“ steht unter dem Vergleich, nichts überlappt.
+5. Taste **H**: alles weg, unten kurz „HUD AUS  H = AN“. Nochmals H: alles wieder da.
+6. Pause → EINSTELLUNGEN → ANZEIGE: Minimap aus (sofort weg), VERGLEICH MIT → LETZTER LAUF (Etikett „LETZT“).
+7. Fragen an dich: Erkennst du auf der Minimap die Strecke und dich selbst (auf beiden Rechnern)? Ist dir die
+   grosse Zahl zu dominant, oder genau richtig? Hilft „Letzter Lauf“ beim Üben?
+
+### Bilder (`screenshots/m6/`, 1280x720, dazu je `-320x180`; neu erzeugen: `node tools/m6-bilder.mjs`)
+
+- `01-countdown-minimap-beginn` (Minimap zu Beginn, im Countdown, noch kein Vergleich)
+- `02-vergleich-rot-minimap-mitte` (langsamerer Lauf, 90 % Gas, bei 1650 m: rot, Minimap halb orange)
+- `03-vergleich-mit-checkpoint-meldung` (direkt nach CP 2: Meldung unter dem Vergleich, Überlappungstest)
+- `04-pause`, `05-minimap-kurz-vor-dem-ziel`
+- `06-vergleich-gruen-letzter-lauf` (schnellerer Lauf gegen den letzten Lauf: grün, Etikett „LETZT“)
+- `07-hud-aus` (Taste H, mit Hinweis), `08-hud-aus-ohne-hinweis` (der „Clean Look“)
+- `09-einstellungen-anzeige`, `10-englisch-rennen`, `11-englisch-einstellungen`
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/minimap.js` | **neu**: Minimap (Karte beim Laden einmal gemalt, Färben nur bei Änderung, Punkt) |
+| `js/vergleich.js` | **neu**: Fahrspur aufzeichnen, Referenz (Spur oder Näherung), ruhige Anzeige mit Hysterese |
+| `js/hud.js` | Minimap und Live-Vergleich einbinden, Meldung rutscht unter den Vergleich, Taste H, Hinweis |
+| `js/main.js` | Fahrspur nach jedem Physik-Schritt (nur lesen), Referenz beim Start laden, Spur und letzten Lauf im Ziel speichern, Taste H |
+| `js/bestzeiten.js` | Feld `spur` im Eintrag (alte Einträge ohne werden gelesen), letzter Lauf speichern/laden (mit Ersatzspeicher) |
+| `js/einstellungen.js` | neue Einstellungen; neue Aktion `hud` (alte gespeicherte Belegungen bleiben gültig) |
+| `js/input.js` | Taste für `hud` |
+| `js/menueseiten.js` | Gruppe ANZEIGE, Zeile HUD auf der Seite STEUERUNG |
+| `js/tacho.js` | kleine Schrift: A, B, L, S dazu (für BEST / LETZT / LAST) |
+| `js/config.js`, `js/texte.js` | Blöcke `hud.minimap`, `hud.vergleich`, `hud.hudSchalter`, neue Texte, Version 0.6 |
+| `tools/overlay-test.mjs` | **neu**: Test (a)–(i) |
+| `tools/m6-bilder.mjs` | **neu**: Bilder für diesen Meilenstein |
+| `tools/testfahrer-browser.js` | neue Hilfe `fahreBis` (im Spiel fahren bis zu einer Stelle, auch mit weniger Gas); die bisherigen Fahrten sind unverändert |
+
+### Selbst getestet
+
+- **Neuer Test `node tools/overlay-test.mjs`** – **alle 84 Prüfungen bestanden**, keine Konsolenfehler:
+  - (a) Minimap 45 x 46 Pixel, gebaut in 5–10 ms. Punkt bei Start / Mitte / Ziel / 40 m neben der Strasse höchstens
+    **0.63 Pixel** neben der Projektion des Streckenpunkts (das 2x2-Quadrat liegt auf ganzen Pixeln); auf der Wiese
+    bleibt er auf der Linie. Die ganze Strecke liegt innerhalb des Tafelrandes. Keine Überlappung bei 320x180:
+    Pace-Notes reichen im breitesten Fall (zwei breite Kacheln) bis x 200, die Minimap beginnt bei x 272; Zeit-Tafel
+    bis x 77, Live-Vergleich höchstens bis x 104 (auch mit „+99.9“), Pace-Notes beginnen frühestens bei x 146;
+    die längste Meldung (de/en) endet bei x 116.
+  - (b) Nach 600 m 15 Pixel orange; 25 m rückwärts, dann R und ein Sprung 80 m zurück: gleich viele Pixel, maxS
+    unverändert. Weiter vorwärts: 22 Pixel. Checkpoint 1 durchfahren: grün; Checkpoint 2 ausgelassen: rot, solange
+    „CHECKPOINT VERPASST“ steht, danach wieder weiss (Auto steht davor); mit abgeschalteter Zurücksetz-Regel bleibt er
+    rot. Neuer Lauf: alles blaugrau. Die Karte wurde auf 307 m **15 Mal** neu gefärbt (in 36 Bildern), nicht jedes Bild.
+  - (c) Testfahrer „flott“ **2:31.92** (unverändert), Fahrspur **361 Werte**, streng aufsteigend, letzter = Endzeit
+    (151.92), alle auf 0.01 s. Jeder Wert höchstens **0.005 s** neben der echten Zeit beim Erreichen der Stelle.
+    Gleicher Lauf auch als „letzter Lauf“ gespeichert. **Speicher: 10 Spuren = 23.9 KB Text (ca. 48 KB im Browser).**
+  - (d) **Identischer zweiter Lauf: höchstens 0.045 s Unterschied** (in den Kehren bei 1510 m, sonst weniger), angezeigt
+    immer weiss „0.0“. Langsamer (90 % Gas, 2:34.14): +0.41 → +0.92 → +1.63 → +2.22, rot, richtig gerundet, nie ein
+    Vorzeichenwechsel; im HUD 172 rote, 0 grüne Pixel. Schneller (gegen den langsamen letzten Lauf): „-0.7“ grün.
+    Konstanter Abstand 0.5 s bzw. -0.3 s über die ganze Etappe: **0 Vorzeichenwechsel, die Zahl wechselte 0 Mal**.
+    Rundung: 0.84 → +0.8, 0.86 → +0.9, -1.26 → -1.3, 0.04 → 0.0, 0.06 → +0.1. Rauschen um 0.05 bzw. um 0.45: kein
+    Wechsel. Höchstens 5 neue Anzeigen pro Sekunde.
+  - (e) Keine Referenz / „Letzter Lauf“ ohne Lauf / nur andere Etappe: nichts angezeigt. Alte Bestzeit ohne Spur:
+    Näherung mit 5 Punkten, am Checkpoint **-0.004 / -0.002 / -0.003 s** (genau), dazwischen bis 4.68 s daneben
+    (siehe oben). „Bestzeit“ = Platz 1 (auch wenn er nicht zuerst im Speicher steht), „Letzter Lauf“ = der letzte
+    Lauf, Wechsel wirkt sofort und beim nächsten Start. Der Zielbildschirm vergleicht weiter mit der Bestzeit.
+  - (f) Browser-Speicher blockiert: keine Fehler, Vergleich innerhalb der Sitzung (höchstens 0.045 s beim gleichen
+    Lauf), „Letzter Lauf“ der Sitzung ebenso.
+  - (g) H: Zeit-Tafel, Minimap, Tachos weg, Hinweis unten, nach 1.5 s ist das ganze HUD leer; Pause, Countdown,
+    „ZIEL!“ und Zielbildschirm bleiben sichtbar; nochmals H: wieder da. Auf J umgelegt: H tut nichts, J schaltet.
+    Auf N gelegt: getauscht (Pace-Notes bekommt J). In TASTEN BELEGEN und STEUERUNG dabei. Nach dem Neuladen wieder an.
+    Alte gespeicherte Belegung mit H auf der Handbremse: bleibt, HUD bekommt J.
+  - (h) Gruppe ANZEIGE zwischen GRAFIK und STEUERUNG, Standardwerte an / an / Bestzeit, aus = im nächsten Bild weg,
+    nach dem Neuladen noch so. 12 neue Texte in de und en, kein ß, alle Zeichen in der Pixelschrift (für BEST / LETZT /
+    LAST bekam die kleine Tacho-Schrift A, B, L, S; `+` gab es schon).
+  - (i) siehe Zahlen unten.
+- **Zahlen**:
+  - **Zeichenaufrufe (3D) vorher → nachher, gleiche Stellen: Start 123 → 123, 900 m 98 → 98, 1948 m 108 → 108,
+    3170 m 70 → 70, Ziel 59 → 59** – gleich, mit und ohne Minimap. Minimap und Vergleich werden auf das HUD-Bild (2D)
+    gemalt, nicht in die 3D-Szene.
+  - **HUD zeichnen pro Bild**: mit Minimap ca. **0.18 ms**, ohne **0.15 ms** (+0.03 ms). Das ganze Bild dauert im Test
+    mit Software-Grafik ca. 230 ms mit und ohne Minimap (gleich; die echte Grafikkarte ist viel schneller).
+    Im Bildtakt entstehen durch Minimap und Vergleich keine neuen Objekte (Karte und Zahl werden nur bei einer Änderung
+    neu gemalt, Zahlen-Puffer sind beim Laden angelegt).
+  - **Ladezeit** (`node tools/ladezeit.mjs`, 2 x 9 Ladungen, Median alt → neu): 1406 → 1397 ms und 1361 → 1363 ms,
+    also **kein messbarer Unterschied** (Budget +30 ms; die Karte selbst braucht 5–10 ms, das geht im Rauschen von
+    ±150 ms unter).
+- **Alle bisherigen Tests unverändert** (alte und neue Version gleichzeitig laufen gelassen, Ausgaben verglichen):
+  Zeile für Zeile gleich bis auf Bauzeiten in ms, Datum und Zeitpunkte der Echtzeit-Tests: `testfahrer` **2:59.33 /
+  2:42.35 / 2:31.92**, `abkuerzungen --pruefen` **127 / 2 / 342 / 84**, `pacenotes-test`, `startziel-test`, `aufprall`,
+  `belag`, `felswand`, `felswand-sprites`, `getriebe`, `gras`, `handbremse`, `kuh`, `leben`, `lenk`, `nebenweg`,
+  `rueckwaerts`, `strassenrand`, `stummel-sicht`, `nebenweg-wald`. **`menue-test` und `rennablauf-test` laufen ohne
+  Anpassung durch** (im Menü-Test stehen jetzt die neuen Einstellungen in der Liste und 196 statt 184 Texte).
+  Strecke, Physik, Sperren, Abkürzungen, Pace-Notes-Berechnung, Checkpoints, Rennzeit nicht angefasst (die Fahrspur
+  liest nur Stelle und Zeit).
+
+### Ehrlich beurteilt (bei 320x180 in Originalgrösse angeschaut)
+
+- **Ist die Minimap bei 320x180 lesbar?** Teilweise. Man erkennt die **Form** der Etappe (unten links los, lange
+  hinauf, oben nach rechts zum Ziel), **Start** (grün) und **Ziel** (Karo) sofort, das **Auto** dank dunklem Rand gut
+  und die orange Linie zeigt klar, wie weit man ist. Die **Kehren** sieht man aber nicht einzeln: 1.8 x 1.9 km passen
+  in 39 x 40 Pixel, eine Kehre ist kleiner als ein Pixel – sie werden zu einem kleinen Zickzack. Die
+  **Checkpoint-Striche** sind klein (3 Pixel); weiss auf Blaugrau sieht man, grün auf Orange nur, wenn man hinschaut.
+- **Stört sie das Bild oder die Pace-Notes?** Nein. Sie sitzt im Himmel/Berg-Bereich oben rechts, weit weg von den
+  Pace-Notes (über 70 Pixel Abstand) und vom Auto. Die Tafel ist leicht durchsichtig wie die Zeit-Tafel; bei hellem
+  Hintergrund (Fels, Schnee) scheint er etwas durch, die Linie bleibt aber lesbar.
+- **Ist „-0.8“ auf einen Blick lesbar?** Ja, sehr: doppelte Schrift, grün/rot, mit Vorzeichen. Ehrlich: Die Zahl ist
+  **grösser als die Zeit selbst** und zieht den Blick an – das ist Absicht (sie ist die wichtigere Information),
+  kann aber dominant wirken. Wer das nicht mag, schaltet sie unter ANZEIGE aus.
+- **Ruhig oder nervös?** Ruhig. Höchstens 5 Mal pro Sekunde, beim konstanten Abstand im Test wechselte die Zahl über
+  die ganze Etappe kein einziges Mal. Nur wenn man **genau an der Grenze** fährt (z. B. konstant 0.06 s schneller),
+  wechselt sie ein paar Mal zwischen weiss „0.0“ und grün „-0.1“ (im Test 4 Mal in 2.5 Minuten) – nie zwischen grün
+  und rot.
+
+### Bekannte Probleme
+
+- **Alte Bestzeiten ohne Fahrspur** (aus M5b): Der Vergleich ist nur an den Checkpoints genau, dazwischen bis zu
+  4.7 s daneben (bei den Kehren). Lösung: einmal eine neue Bestzeit fahren.
+- Der Vergleich ist zwischen zwei 10-m-Werten gerade verbunden. Beim gleichen Lauf macht das höchstens 0.045 s aus
+  (in den Kehren, wo das Tempo stark wechselt) – die Anzeige zeigt dann „0.0“.
+- Bestzeiten des Testfahrers (fliegender Start) und Spielzeiten (Stehstart) sind wie bisher nicht direkt
+  vergleichbar; in der ersten Sekunde nach GO ist der Vergleich gegen so eine Zeit etwas daneben.
+- Minimap: Kehren nicht einzeln zu sehen (Massstab), Checkpoint-Striche klein.
+- In den 3 s „ZIEL!“ verschwinden Minimap und Vergleich schon (die Zeiten zeigt dann der Zielbildschirm).
+- Die Tachos schauen weiterhin unter dem Zielbildschirm hervor (mit H kann man sie jetzt ausblenden).
+- Der „letzte Lauf“ wird bei BESTZEITEN LÖSCHEN nicht gelöscht.
+- Gamepad hat keinen Knopf für HUD aus/an (wie gewünscht nur Tastatur).
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Geisterauto aus der Fahrspur**: Die Spur sagt, wann die Bestzeit an jeder Stelle war – daraus lässt sich ein
+  halbdurchsichtiges Auto fahren lassen (als nächster möglicher Schritt; Position alle 10 m reicht, dazwischen auf der
+  Strassenmitte).
+- Die Näherung für alte Bestzeiten besser machen: statt gerade zwischen den Checkpoints mit dem Tempo-Profil der
+  Pace-Notes (in den Kehren langsamer) verteilen.
+- Live-Vergleich kurz einblenden, wenn er sich stark ändert (z. B. nach einem Aufprall), sonst kleiner.
+- In der Minimap die Nebenwege (Stummel) oder die Kehren-Nummern andeuten, oder eine grössere Karte in der Pause.
+- „BESTZEITEN LÖSCHEN“ könnte auch den letzten Lauf löschen (heute bleibt er).
+- Am Zielbildschirm wahlweise auch gegen den letzten Lauf vergleichen.
+
+---
+
+## Meilenstein 5b: Countdown, Zielbildschirm, Bestzeiten, Statistik ✅ (Verlauf, Stand damals)
 
 ### So läuft ein Rennen jetzt
 
