@@ -19,6 +19,7 @@ import { baueAbsperrungen } from './absperrungen.js';
 import { baueStaub } from './staub.js';
 import { baueStartZiel } from './startziel.js';
 import { baueLeben, lebenPlaetze } from './leben.js';
+import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -116,6 +117,8 @@ szene.add(auto.objekt);
 const physik = new Fahrphysik();
 const getriebe = new Getriebe();
 const hud = baueHud(document.getElementById('hud'));
+// Pace-Notes (M4): Ansagen oben im Bild, beim Laden aus der Strecke berechnet
+const paceNotes = bauePaceNotes(strecke, netz);
 
 // --- Rennzustand ---
 // bereit = vor der Startlinie, laeuft = Zeit läuft, ziel = durchs Ziel
@@ -147,6 +150,7 @@ function neustart() {
   rennen.naechsterCp = 0;
   rennen.zwischenzeiten = [];
   rennen.meldung = null;
+  paceNotes.zuruecksetzen();
 }
 
 function zeigeMeldung(text, farbe) {
@@ -422,6 +426,10 @@ function schleife(jetzt) {
   const te = window.__alpineRally && window.__alpineRally.testEingabe;
   if (te) e = { ...e, ...te };
   if (e.debug) debugAn = !debugAn;
+  if (e.notes) {
+    paceNotes.umschalten();
+    zeigeMeldung(paceNotes.anzeige.an ? 'ANSAGEN AN' : 'ANSAGEN AUS', 'gelb');
+  }
   if (e.reset) {
     if (rennen.zustand === 'ziel') neustart();
     else aufStrasse();
@@ -454,7 +462,9 @@ function schleife(jetzt) {
   nebenwegSperrenZeigen(kamera.position);
   renderer.render(szene, kamera);
 
+  const notes = paceNotes.aktualisiere(dt, rennen.letztesS, physik.tempo, rennen.zustand);
   hud.zeichne({
+    notes,
     zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
     dt, kmh: physik.tempo * 3.6, debug: debugAn, fps,
     gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
@@ -476,6 +486,6 @@ requestAnimationFrame(schleife);
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
-  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben,
+  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };

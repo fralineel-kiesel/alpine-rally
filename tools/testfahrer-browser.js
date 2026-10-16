@@ -74,7 +74,8 @@ function steuere(A, pfad, idx) {
 }
 
 // Die ganze Etappe fahren. Ergebnis: Zeit, Zwischenzeiten, Aufpralle, ...
-export function fahreEtappe(A, profilName) {
+// proSchritt (seit M4, optional): wird nach jedem Physik-Schritt mit der Eingabe aufgerufen (z. B. Pace-Notes-Test)
+export function fahreEtappe(A, profilName, proSchritt = null) {
   const profil = PROFILE[profilName];
   const S = A.strecke;
   const pfad = bauePfad(A, Array.from(S.px), Array.from(S.pz), profil);
@@ -90,6 +91,7 @@ export function fahreEtappe(A, profilName) {
     idx = naechster(pfad, A.physik.x, A.physik.z, idx);
     const e = steuere(A, pfad, idx);
     A.physikSchritt(A.SCHRITT, e);
+    if (proSchritt) proSchritt(e);
     t += A.SCHRITT; schritte++;
     if (A.getriebe && A.rennen.zustand === 'laeuft') {
       const g = A.getriebe.anzeige;

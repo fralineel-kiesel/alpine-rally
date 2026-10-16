@@ -1,6 +1,6 @@
 // Steuerung: Tastatur und Gamepad gleichzeitig.
 // Liefert pro Bild: gas, bremse (0..1), lenkung (-1..1, + = rechts),
-// handbremse, und einmalige Tasten-Ereignisse (reset, debug).
+// handbremse, und einmalige Tasten-Ereignisse (reset, debug, notes = Pace-Notes an/aus).
 
 import { CONFIG } from './config.js';
 
@@ -9,6 +9,7 @@ const einmal = new Set(); // Tasten, die seit dem letzten Abfragen neu gedrückt
 
 const SPIELTASTEN = new Set([
   'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyR', 'F3',
+  CONFIG.pacenotes.taste,
 ]);
 
 window.addEventListener('keydown', (e) => {
@@ -52,6 +53,7 @@ export function leseEingabe(dt) {
   let handbremse = t('Space');
   let reset = einmal.has('KeyR');
   const debug = einmal.has('F3');
+  const notes = einmal.has(CONFIG.pacenotes.taste); // Pace-Notes an/aus (M4)
   einmal.clear();
 
   // Gamepad (Standard-Belegung, Xbox/PlayStation)
@@ -70,5 +72,5 @@ export function leseEingabe(dt) {
   if (startJetzt && !startVorher) reset = true;
   startVorher = startJetzt;
 
-  return { gas, bremse, lenkung, handbremse, reset, debug };
+  return { gas, bremse, lenkung, handbremse, reset, debug, notes };
 }

@@ -1005,6 +1005,101 @@ export const CONFIG = {
     },
   },
 
+  // --- Pace-Notes: Ansagen des Beifahrers oben im Bild (Meilenstein 4) ----------
+  // Alles wird beim Laden aus der Strecke berechnet (js/pacenotes.js), nichts von Hand pro Kurve.
+  // Prüfen und Liste ansehen: node tools/pacenotes-test.mjs
+  pacenotes: {
+    an: true,                  // Standard beim ersten Start (danach merkt sich der Browser die Taste)
+    taste: 'KeyN',             // Taste zum Ein-/Ausschalten (N)
+    speicherName: 'alpineRally.paceNotes', // unter diesem Namen merkt sich der Browser "an/aus"
+
+    // --- Kurven finden ---
+    glaetten: 4,               // Krümmung über so viele Meter vor und nach jedem Punkt mitteln
+    minKruemmung: 1 / 350,     // flacher als Radius 350 m zählt nicht als Kurve
+    lueckeFuellen: 12,         // zwei Stücke in die gleiche Richtung mit kürzerer Lücke (Meter) = eine Kurve
+    minWinkel: 15,             // Kurven mit weniger Richtungsänderung (Grad) bekommen keine Ansage
+    kehreRadius: 18,           // enger als das (Meter) und ...
+    kehreWinkel: 120,          // ... mindestens so viel Richtungsänderung (Grad) = Kehre (wie die Kehren-Schilder)
+    kehrenGruppe: 300,         // Kehren mit weniger Abstand (Meter) gehören zur selben Gruppe (1/4, 2/4 ...)
+
+    // --- Kurventempo -> Stufe (kalibriert mit tools/pacenotes-test.mjs an der echten Fahrphysik) ---
+    // Kurventempo = Grenztempo: so schnell kommt der Testfahrer gerade noch durch die Kurve (Automitte höchstens
+    // 1 m auf dem Bankett, kein Aufprall). Gemessen auf dem Belag der Kurve (auf Schotter langsamer) und
+    // gespeichert in js/pacenotes-tempo.js (neu messen: node tools/pacenotes-test.mjs --schreiben).
+    // Stufen-Grenzen (km/h): unter dem 1. Wert Stufe 1, ab dem letzten Wert Stufe 6 (= Vollgas)
+    stufenGrenzen: [50, 70, 85, 100, 125],
+    // Nur Reserve, falls eine Kurve nicht gemessen ist: geschätztes Tempo = Wurzel(querBeschl x Grip des
+    // Belags x wirksamer Radius); wirksamer Radius = kleinster Radius + etwas Strassenbreite zum Begradigen
+    querBeschl: 8.5,           // so viel Querbeschleunigung (m/s²) hält das Auto auf Asphalt (aus den Messungen)
+    breiteNutzen: 1.5,         // so viel Strassenbreite (Meter) nutzt man zum Begradigen der Kurve
+    engWeitAnteil: 0.2,        // im untersten 20 % des Tempobereichs der Stufe "ENG", im obersten "WEIT"
+    langWinkel: 100,           // Kurve mit mehr Richtungsänderung (Grad, keine Kehre) = "LANG"
+    langLaenge: 130,           // ... oder länger als so viele Meter = "LANG"
+    oeffnetFaktor: 1.7,        // Radius am Ende so viel grösser als der kleinste = "ÖFFNET" (am Anfang: "ZIEHT ZU")
+
+    // --- Schikane ---
+    schikaneLuecke: 15,        // zwei Gegenkurven mit höchstens so viel Gerade dazwischen (Meter) ...
+    schikaneWinkel: 75,        // ... je höchstens so viel Richtungsänderung (Grad) ...
+    schikaneLaenge: 100,       // ... und zusammen höchstens so lang (Meter) = eine Schikane
+
+    // --- Gerade, Kuppe, Senke ---
+    geradeMin: 180,            // so lange (Meter) ohne angesagte Kurve = "GERADE" mit Länge
+    geradeRunden: 50,          // Länge der Geraden auf so viele Meter abrunden
+    kuppeAugHoehe: 1.3,        // Kuppe: Augenhöhe des Fahrers über der Strasse (Meter) ...
+    kuppeSicht: [25, 70],      // ... die Strasse so weit voraus (Meter) muss hinter der Kuppe verschwinden
+    kuppeMinKnick: 0.05,       // ... und die Steigung muss um mindestens so viel kippen (0.05 = 5 %)
+    senkeMinKnick: 0.06,       // Senke: Gefälle kippt um mindestens so viel in Steigung (0.06 = 6 %) ...
+    senkeVorGefaelle: 0.01,    // ... und vorher geht es bergab (Steigung höchstens 1 %): echte Mulde
+    knickStrecke: 25,          // Steigung vor und nach dem Knick über so viele Meter gemessen
+
+    // --- Felswand ---
+    // "FELSWAND" nur, wenn in einem Felswand-Stück eine Kurve liegt, die die Wand AUSSEN hat
+    // (wer zu weit rausträgt, landet an der Wand), und ihre Ansage höchstens diese Stufe hat
+    wandMaxStufe: 4,
+
+    // --- Ziel ---
+    zielVor: 200,              // "ZIEL" erscheint so viele Meter vor der Ziellinie
+
+    // --- Zusammenfassen ---
+    zusammen: 28,              // Ansagen näher beisammen (Meter) werden zu einer mit "UND"
+    abzweigFang: 30,           // Abzweig/Einmündung: Kurve so nah an der Kreuzung (Meter) gehört dazu
+    maxZeichen: 24,            // längster Text einer Zeile (sonst werden Zusätze weggelassen)
+
+    // --- Wann erscheint eine Ansage ---
+    vorlaufZeit: 7,            // so viele Sekunden vorher (bei der aktuellen Geschwindigkeit) ...
+    vorlaufMin: 100,           // ... aber mindestens so viele Meter vorher ...
+    vorlaufMax: 350,           // ... und höchstens so viele
+    maxZeilen: 3,              // höchstens so viele Ansagen gleichzeitig
+    einblenden: 0.25,          // Sekunden zum Einblenden
+    ausblenden: 0.45,          // Sekunden zum Ausblenden beim Passieren
+    nachruecken: 10,           // wie schnell die Zeilen nach oben rücken (höher = schneller)
+    distanzRunden: 10,         // Distanz auf so viele Meter runden (zählt in 10er-Schritten herunter)
+
+    // --- Aussehen (Pixel im 320x180-Bild) ---
+    unterPunkte: 3,            // Abstand unter den Checkpoint-Punkten
+    zeilenHoehe: 10,           // Höhe einer Zeile
+    innen: 2,                  // Rand innen
+    distanzAbstand: 9,         // Platz zwischen Text/Zeichen und der Distanz
+    farbeTafel: 'rgba(18, 24, 32, 0.62)', // dunkel, halbtransparent (wie die Zeit-Tafel, etwas durchsichtiger)
+    farbeRand: 'rgba(230, 226, 211, 0.55)', // dezenter heller Rand
+    farbeText: '#f4f4ee',      // Text
+    farbeDistanz: '#a9b4bd',   // Distanz in Metern (graublau, damit man sie nicht mit Zahlen im Text verwechselt)
+    farben: {                  // Farben der Symbole
+      rot: '#ff4a3a',          // Stufe 1-2, Kehre, "NICHT SCHNEIDEN"
+      gelb: '#ffd23c',         // Stufe 3-4, Felswand, Abzweig
+      gruen: '#7ee05a',        // Stufe 5-6, "SCHNEIDEN"
+      weiss: '#f4f4ee',        // Gerade, Kuppe, Senke, Belag, Ziel
+    },
+    // Texte (Grossbuchstaben)
+    texte: {
+      links: 'LINKS', rechts: 'RECHTS', und: 'UND', kehre: 'KEHRE', schikane: 'SCHIKANE',
+      gerade: 'GERADE', kuppe: 'KUPPE', senke: 'SENKE', abzweig: 'ABZWEIG', einmuendung: 'EINMÜNDUNG',
+      schotter: 'SCHOTTER', wiesenweg: 'WIESENWEG', felswand: 'FELSWAND', ziel: 'ZIEL',
+      schneiden: 'SCHNEIDEN', nichtSchneiden: 'NICHT SCHNEIDEN',
+      eng: 'ENG', weit: 'WEIT', lang: 'LANG', oeffnet: 'ÖFFNET', ziehtZu: 'ZIEHT ZU',
+    },
+  },
+
   // --- Optik am Auto -----------------------------------------------------
   autoOptik: {
     rollen: 0.012,             // Karosserie neigt sich in Kurven (pro m/s²)

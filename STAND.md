@@ -1,10 +1,11 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 3d fertig** – Leben an der Strecke: Der **Wiesenweg** ist jetzt eine Alpweide (Holzzaun mit
-Weidetor, neue Kühe, Alphütte, Heustadel, Brunnen, Steinmännchen, Wegweiser, Heurollen, Findlinge), es gibt **drei
-Fan-Spots** (Kehre 3, Passhöhe, Almweg-Abzweig) und **zwei Unfallautos** (Fantasie-Rallyeautos im 80er-Stil) mit
-Warndreieck, gelber Flagge und Streckenposten.
-Davor: 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 4 fertig** – **Pace-Notes**: Wie in einer echten Rallye sagt der Beifahrer an, was als Nächstes
+kommt – oben im Bild, unter der Zeit: kleines Symbol, kurzer Text, Distanz in Metern. Kurven mit Stufe 1–6, Kehren
+(1/4 … 4/4), Schikane, Gerade, Kuppe, Senke, Abzweig/Einmündung mit Belag, Felswand, Ziel und „schneiden“ /
+„nicht schneiden“. Alles wird beim Laden aus der Strecke berechnet; die Stufen sind an der echten Fahrphysik gemessen.
+Taste **N** schaltet die Ansagen aus und ein.
+Davor: 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -21,12 +22,257 @@ Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 | Zurück auf die Strasse | R | Start / Options |
 | Neustart nach dem Ziel | R | Start / Options |
 | Debug-Anzeige | F3 | – |
+| Pace-Notes (Ansagen) aus/ein | N | – |
 
 Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
+Die Einstellung von N merkt sich der Browser (beim nächsten Start gleich wie vorher).
 
 ---
 
-## Meilenstein 3d: Leben an der Strecke (Wiesenweg, Fan-Spots, Unfallautos) ✅
+## Meilenstein 4: Pace-Notes (Ansagen oben im Bild) ✅
+
+### Was wurde gebaut?
+
+Wie in einer echten Rallye sagt der Beifahrer an, was als Nächstes kommt. Bei uns steht das **oben in der Mitte,
+direkt unter der Zeit und den Checkpoint-Punkten**, auf einer kleinen halbdurchsichtigen dunklen Tafel im Stil der
+Zeit-Tafel. Kein Ton, nur Symbol und Text. Zeit, Checkpoint-Punkte und Tachos sind unverändert.
+
+Jede Zeile: **Symbol** (Pixel-Pfeil in der Form der Kurve, farbig nach Schwierigkeit) + **Text** (z. B.
+`RECHTS 4 LANG`, die Stufen-Zahl in der Farbe des Symbols) + kleine **Zusatz-Zeichen** (schneiden / nicht schneiden)
++ rechts die **Distanz** in Metern mit kleinem „m“, die in 10-m-Schritten herunterzählt.
+
+- **Höchstens 3 Zeilen**, die dringendste (nächste) oben.
+- **Wann erscheint eine Ansage?** Etwa **7 Sekunden** vorher beim aktuellen Tempo, aber mindestens **100 m** und
+  höchstens **350 m** vorher (bei 50 km/h also ca. 100 m, bei 140 km/h ca. 270 m). „ZIEL“ immer 200 m vorher.
+- **Beim Passieren** (Kurvenanfang erreicht) blendet die Zeile weich aus, die anderen rutschen weich nach oben,
+  erst dann kommt eine neue dazu. Eine Ansage, die einmal steht, bleibt bis zum Passieren (auch wenn man bremst) –
+  so flackert nichts.
+- Steht gerade eine **Zwischenzeit** („CP 1 …“) unter den Punkten, rutscht die Tafel weich darunter.
+- **Nach dem Ziel** keine Ansagen mehr, nach dem **Neustart** (R) geht es wieder von vorn los.
+- **Taste N** schaltet die Ansagen aus und ein (kurze Meldung „ANSAGEN AUS“ / „ANSAGEN AN“). Der Browser merkt sich
+  die Einstellung (falls der Browser-Speicher gesperrt ist, sind sie beim Start einfach an). Steht auch in der
+  Start-Hilfe unten links und in der F3-Anzeige („ANSAGEN AN (TASTE N)“).
+- Die Schrift hat dafür jetzt **Ä, Ö, Ü** (z. B. `EINMÜNDUNG`, `ÖFFNET`).
+
+**Alles wird beim Laden automatisch aus der Strecke berechnet** (`js/pacenotes.js`, ca. 3–5 ms): Krümmung,
+Höhenprofil, Felswand, Nebenwege, Beläge und die Abkürzungs-Listen. Nichts ist von Hand pro Kurve eingetragen. Nur
+das **Kurventempo** jeder Kurve kommt aus einer Messung mit der echten Fahrphysik (siehe unten), gespeichert in
+`js/pacenotes-tempo.js` (erzeugt vom Werkzeug, wie `js/abkuerzungen.js`).
+
+### Die Symbole
+
+| Symbol | Bedeutung | Farbe |
+|---|---|---|
+| Pfeil schräg nach oben | sanfte Kurve, Stufe 5–6 | grün |
+| Pfeil rechtwinklig | Kurve Stufe 3–4 | gelb |
+| Pfeil, der über 90° hinaus und nach unten biegt | enge Kurve, Stufe 1–2 | rot |
+| schmales U mit Pfeil ganz nach unten | **Kehre** (Spitzkehre, immer Stufe 1), mit Nummer `(1/4)` … `(4/4)` wie die Kehren-Schilder | rot |
+| Versatz rechts-links | **Schikane** (zwei kurze Gegenkurven als eine Ansage) | nach Stufe |
+| Pfeil gerade nach oben | **Gerade** mit Länge (`GERADE 200`) | weiss |
+| Buckel | **Kuppe** (die Strasse verschwindet dahinter) | weiss |
+| Mulde | **Senke** | weiss |
+| Warndreieck mit ! | **Felswand** (nur wo man in einer Kurve aussen an die Wand getragen wird) | gelb |
+| Zielflagge | **Ziel** | weiss |
+| kleiner grüner Pfeil quer | Zusatz: **schneiden** lohnt sich (frei) | grün |
+| kleiner roter Verbotskreis | Zusatz: **nicht schneiden** (Sperren im Kurveninnern) | rot |
+| Körner | Belagwechsel (nur als Zeichen, wenn das Wort nicht mehr in die Zeile passt) | beige |
+
+Für Linkskurven ist der Pfeil gespiegelt. Zusätze im Text (höchstens einer pro Kurve): **ZIEHT ZU** (wird gegen Ende
+enger), **ÖFFNET** (wird gegen Ende weiter), **LANG** (mehr als 100° oder länger als 130 m), **ENG** / **WEIT**
+(im untersten / obersten Fünftel des Tempobereichs der Stufe, wie „minus“/„plus“ bei echten Notes).
+
+### Die Stufen (gemessen mit der echten Fahrphysik)
+
+Für jede Kurve misst `node tools/pacenotes-test.mjs`, wie schnell man **gerade noch** durchkommt: Der Testfahrer
+startet kurz vor der Kurve mit festem Tempo, hält es und folgt der Strassenmitte. Geschafft heisst: kein Aufprall,
+Automitte höchstens 1 m auf dem Bankett, nie im Gras. Das grösste Tempo, das klappt, ist das **Grenztempo**. Folgt
+eine Kurve direkt auf eine andere, fährt der Testfahrer durch die erste höchstens mit deren Grenztempo an.
+
+| Stufe | Bedeutung | Grenze (config) | gemessen | Kurven |
+|---|---|---|---|---|
+| 1 | Haarnadel/Kehre, fast Schritttempo | unter 50 km/h | 43 km/h | 4 (die vier Kehren) |
+| 2 | sehr eng | 50–70 km/h | 59–68 km/h | 4 (Talschleife: Abzweig, 850, 917, Einmündung) |
+| 3 | eng | 70–85 km/h | 73–83 km/h | 6 (Almweg-Abzweig, 2027, Almweg-Einmündung, 2833, Wiesenweg-Einmündung, Schikane) |
+| 4 | mittel | 85–100 km/h | 86–99 km/h | 4 (1088, 2288, Wiesenweg-Abzweig, 3022) |
+| 5 | schnell | 100–125 km/h | – | 0 |
+| 6 | fast gerade, **Vollgas** | ab 125 km/h | 142 km/h bis Vollgas | 6 (265, 504, 1028, 1879, 2508, 3292) |
+
+Die Zuordnung ist **monoton**: schnellere Kurve = gleiche oder höhere Stufe (prüft der Test). Ehrlich: **Stufe 5
+kommt auf dieser Strecke nicht vor** – zwischen 99 und 142 km/h gibt es keine Kurve. Die Strecke hat entweder
+richtige Kurven (bis ca. 100 km/h) oder Bögen, durch die man mit Vollgas fährt. Bei „Vollgas“ bremst die Kurve gar
+nicht (selbst mit 198 km/h Anlauf kommt man durch); das gilt z. B. für die Rechts nach der Talschleifen-Einmündung
+(1028 m) und die Links nach Kehre 4 (1879 m) – man kommt ja aus einer langsamen Stelle.
+
+**Belag (Schotter, Wiesenweg) – meine Entscheidung:** Beides. Die Stufe gilt für den **Belag, auf dem die Kurve
+liegt** (gemessen auf Schotter bzw. Wiesenweg, dieselbe Kurve wäre auf Asphalt schneller) – sonst würde eine „4“
+auf Schotter lügen. Und am **Anfang** des Abschnitts steht das Wort dabei: `ABZWEIG RECHTS SCHOTTER`,
+`ABZWEIG RECHTS WIESENWEG`. So weiss man beim ersten Mal, warum es rutschiger wird, und die Zahl stimmt trotzdem.
+
+### Die Ansagen dieser Etappe (30 Zeilen)
+
+| Meter | Ansage | Zusatz |
+|---|---|---|
+| 25 | GERADE 200 | |
+| 265 | RECHTS 6 LANG | |
+| 504 | LINKS 6 LANG | schneiden |
+| 796 | ABZWEIG RECHTS SCHOTTER (Stufe 2) | |
+| 850 | LINKS 2 ZIEHT ZU | |
+| 905 | KUPPE UND RECHTS 2 | |
+| 945 | SENKE | |
+| 981 | EINMÜNDUNG LINKS 2 | |
+| 1028 | RECHTS 6 | |
+| 1088 | RECHTS 4 LANG | schneiden |
+| 1353 | KEHRE LINKS (1/4) | nicht schneiden |
+| 1499 | KEHRE RECHTS (2/4) | nicht schneiden |
+| 1645 | KEHRE LINKS (3/4) | schneiden |
+| 1792 | KEHRE RECHTS (4/4) | nicht schneiden |
+| 1879 | LINKS 6 | |
+| 1976 | ABZWEIG RECHTS SCHOTTER (Stufe 3) | |
+| 2027 | LINKS 3 | |
+| 2078 | GERADE 200 | |
+| 2288 | RECHTS 4 | |
+| 2365 | EINMÜNDUNG LINKS 3 | |
+| 2508 | LINKS 6 LANG | schneiden |
+| 2779 | ABZWEIG RECHTS WIESENWEG (Stufe 4) + Kuppe-Zeichen | |
+| 2833 | LINKS 3 | |
+| 3022 | RECHTS 4 ENG | |
+| 3092 | EINMÜNDUNG LINKS 3 | |
+| 3132 | FELSWAND RECHTS | |
+| 3161 | SCHIKANE RECHTS-LINKS (Stufe 3) | nicht schneiden |
+| 3292 | RECHTS 6 | |
+| 3374 | GERADE 200 | |
+| 3623 | ZIEL (erscheint 200 m vorher) | |
+
+Nach Art: 13 Kurven, 4 Kehren, 1 Schikane, 3 Abzweige, 3 Einmündungen, 3 Geraden, 2 Kuppen, 1 Senke, 1 Felswand,
+1 Ziel; 4× „schneiden“ und 4× „nicht schneiden“ (genau die 8 Einträge aus `js/abkuerzungen.js`, alle an ihrer
+Kurve – keine brauchte eine eigene Ansage).
+
+Regeln dahinter (alle Zahlen in `config.js`, Block `pacenotes`):
+- **Kurve** = Stück, das enger ist als Radius 350 m und die Richtung um mindestens 15° ändert. Flachere Bögen
+  bekommen keine Ansage.
+- **Kehre** = enger als 18 m Radius und mindestens 120° (wie die Kehren-Schilder). Kehren mit weniger als 300 m
+  Abstand bilden eine Gruppe (1/4 … 4/4).
+- **Schikane** = zwei Gegenkurven mit höchstens 15 m Gerade dazwischen, je höchstens 75°, zusammen höchstens 100 m.
+  Stufe = die langsamere der beiden.
+- **Gerade** = mindestens 180 m ohne angesagte Kurve, Länge auf 50 m abgerundet.
+- **Kuppe** = die Steigung kippt um mindestens 5 % **und** aus Augenhöhe (1.3 m) verschwindet die Strasse dahinter
+  (Sichtlinie übers Höhenprofil). **Senke** = am Ende eines Gefälles kippt es um mindestens 6 % in Steigung.
+- **Abzweig / Einmündung** an den Metern aus `nebenwege` (800/1020.5, 1985.6/2400.8, 2797.7/3107.9). Liegt dort
+  eine Kurve, wird sie zur Abzweig-Ansage (Richtung und Stufe von dieser Kurve).
+- **Felswand** nur, wenn in einem Felswand-Stück eine Kurve höchstens Stufe 4 die Wand **aussen** hat (wer zu weit
+  rausträgt, landet an der Wand). Das ist auf dieser Strecke nur die Schikane auf der Abfahrt.
+- **Schneiden / nicht schneiden**: Jeder Eintrag aus `schneiden` / `nichtSchneiden` kommt an die Kurve, deren
+  Meter sich am meisten mit `sVon`–`sBis` überschneiden und deren Innenseite die Seite des Eintrags ist.
+- **Zusammenfassen**: Zwei Ansagen näher als 28 m werden eine Zeile mit „UND“. Wird die Zeile länger als
+  24 Zeichen, fallen erst Zusätze weg (z. B. die Stufen-Zahl beim Abzweig – die Farbe des Pfeils zeigt sie
+  trotzdem), eine Kuppe bleibt dann nur als Zeichen.
+
+### Wo man schrauben kann (`js/config.js`, Block `pacenotes`)
+
+| Wert | Was |
+|---|---|
+| `an`, `taste` | Standard beim ersten Start, Taste (N) |
+| `stufenGrenzen` | km/h-Grenzen der Stufen 1–6 (heute 50 / 70 / 85 / 100 / 125) |
+| `minKruemmung`, `minWinkel` | ab wann eine Kurve angesagt wird |
+| `kehreRadius`, `kehreWinkel`, `kehrenGruppe` | was eine Kehre ist |
+| `engWeitAnteil`, `langWinkel`, `langLaenge`, `oeffnetFaktor` | Zusätze ENG/WEIT, LANG, ÖFFNET/ZIEHT ZU |
+| `schikane…` | was als Schikane zählt |
+| `geradeMin`, `geradeRunden` | ab welcher Länge „GERADE“ |
+| `kuppe…`, `senke…`, `knickStrecke` | Kuppe und Senke |
+| `wandMaxStufe` | Felswand-Ansage nur bei Kurven bis zu dieser Stufe |
+| `zielVor` | „ZIEL“ so viele Meter vorher |
+| `zusammen`, `maxZeichen` | Zusammenfassen mit „UND“, längste Zeile |
+| `vorlaufZeit`, `vorlaufMin`, `vorlaufMax` | wann eine Ansage erscheint (7 s, 100–350 m) |
+| `maxZeilen`, `einblenden`, `ausblenden`, `nachruecken`, `distanzRunden` | Anzeige |
+| `farbeTafel`, `farbeRand`, `farbeText`, `farbeDistanz`, `farben` | Farben (rot / gelb / grün / weiss) |
+| `texte` | alle Wörter (LINKS, RECHTS, KEHRE, …) |
+
+Nach Änderungen an Strecke oder Fahrphysik: `node tools/pacenotes-test.mjs --schreiben` misst die Kurven neu und
+schreibt `js/pacenotes-tempo.js`. Ohne Messung schätzt das Spiel das Tempo aus Radius und Belag (Reserve, ungenauer).
+
+### So testest du
+
+1. Start: oben unter der Zeit steht `GERADE 200`, nach dem Losfahren kommt `RECHTS 6 LANG`.
+2. **Talschleife** (ca. 30 s nach dem Start): `ABZWEIG RECHTS SCHOTTER` – fährst du rechts ab und nicht in die Absperrung?
+   Danach `LINKS 2 ZIEHT ZU`, `KUPPE UND RECHTS 2`, `SENKE`, `EINMÜNDUNG LINKS 2`.
+3. **Kehren**: `KEHRE LINKS (1/4)` mit rotem Verbotskreis, bei Kehre 3 der grüne Pfeil (schneiden lohnt sich).
+4. **Abfahrt**: `FELSWAND RECHTS`, dann `SCHIKANE RECHTS-LINKS` mit rotem Verbotskreis.
+5. **N** drücken: Tafel weg („ANSAGEN AUS“), nochmal N: wieder da. Seite neu laden: Einstellung bleibt.
+6. Stimmen die Stufen mit deinem Gefühl? Eine 6 sollte Vollgas gehen, eine 2 deutlich bremsen.
+7. Lesbar auf beiden Rechnern? Stört die Tafel die Sicht?
+
+### Bilder (`screenshots/m4/`, 1280x720, neu erzeugen: `node tools/m4-bilder.mjs`)
+
+01 Start, 02 vor Kehre 1, 03 vor der Schikane (mit Einmündung und Felswand), 04 vor „nicht schneiden“ (Kehre 2),
+05 vor „schneiden“ (Rechts 4 lang), 06 vor dem Abzweig Talschleife (3 Zeilen), 07 vor der Einmündung Almweg,
+08 auf der Passhöhe, 09 kurz vor dem Ziel, 10 ausgeschaltet (N), 11 nach dem Ziel (keine Ansagen),
+12/13 dieselben Stellen in Originalgrösse 320x180.
+
+### Selbst getestet
+
+- **Neuer Test `node tools/pacenotes-test.mjs`** – alles bestanden:
+  - (a) 898 Stellen, an denen die Strasse auf 50 m mehr als 25° dreht: alle haben eine Kurven-Ansage.
+  - (b) alle 8 Einträge aus `schneiden`/`nichtSchneiden` genau einmal in den Ansagen, an der richtigen Kurve und Seite.
+  - (c) Stufen monoton zum gemessenen Grenztempo (Tabelle oben), alle 25 Kurven gemessen, Datei aktuell.
+  - (d) kleinster Abstand zweier Ansagen 36 m (nie unter 25 m), längste Zeile 24 Zeichen.
+  - (e) alle 3 Abzweige und 3 Einmündungen: Meter wie in `nebenwege`, Richtung wie im Strassennetz (alle Abzweige
+    rechts, alle Einmündungen links). Die Ansage gilt ab 4–40 m vor der Kreuzung (ab dem Anfang der Abbiege-Kurve)
+    und erscheint bei 50–75 km/h ca. 100–150 m vor der Kreuzung; wer schneller kommt, sieht sie früher (7 s
+    Vorlauf). In der Testfahrt: Abzweige 250 / 128 / 258 m vorher (bei 127 / 61 / 123 km/h), Einmündungen
+    140 / 251 / 185 m vorher.
+  - (f) die Liste ist bei zwei Läufen und nach neuem Laden genau gleich.
+  - (g) während einer ganzen Testfahrt: nie mehr als 3 Zeilen, nichts verschwindet vor dem Passieren, jede Ansage
+    erscheint 100–276 m vorher (ausser `GERADE 200` direkt an der Startlinie: sie steht schon beim Warten da),
+    nach dem Ziel keine, nach dem Neustart wieder `GERADE 200`.
+- **Stichproben** (Testfahrt „mittel“, 24 Kurven-Ansagen): Bei allen 24 lenkt der Testfahrer in die angesagte
+  Richtung. Beispiele (Ansage → Tempo des Testfahrers in der Kurve): `KEHRE LINKS (1/4)` → 30 km/h,
+  `ABZWEIG RECHTS SCHOTTER` (Stufe 2) → 38 km/h, `LINKS 3` (2027 m, Schotter) → 62 km/h, `RECHTS 4 LANG` → 76 km/h,
+  `LINKS 6 LANG` (Passhöhe) → 115 km/h, `RECHTS 6 LANG` (Tal) → 128 km/h. Ehrlich: Der Testfahrer „mittel“ fährt
+  vorsichtiger als das Grenztempo (z. B. Schikane mit 41 km/h statt der möglichen 83) und richtet sein Tempo nur
+  nach der Krümmung, darum ist seine Reihenfolge nicht ganz dieselbe (z. B. `RECHTS 4 ENG` mit 46 km/h langsamer als
+  `LINKS 3` mit 62 km/h). Massgeblich für die Stufen ist das gemessene Grenztempo.
+- **Unverändert**: Streckenlänge 3667.587 m, Abkürzungen (`node tools/abkuerzungen.mjs --pruefen`) **127 / 2 / 342 / 84**,
+  Testfahrer **2:59.33 / 2:42.35 / 2:31.92**, Sichtlinien 0. Alle bisherigen Tests bestanden, keine Konsolenfehler.
+- **Leistung**: Die Tafel wird auf das HUD-Bild gemalt (2D), also **keine neuen Zeichenaufrufe** in der 3D-Szene
+  (gleiche Zahl mit Ansagen an und aus). Jede Ansage wird einmal als kleines Bild gemalt, wenn sie zum ersten Mal
+  kommt; pro Bild kommen nur dieses Bild und die Distanz dazu, ohne neue Objekte (kein Müll für den Speicher).
+  **Ladezeit**: LADEZEIT_PLATZHALTER
+
+### Ehrlich beurteilt
+
+- **Lesbar bei 320x180?** Ja: gleiche 5x7-Schrift wie die Zeit, Zeilen 10 Pixel hoch, heller Text auf dunkler Tafel.
+  Die Symbole sind 9 Pixel hoch und gut zu unterscheiden; die feinen Unterschiede (enge Kurve gegen Kehre) sieht man
+  eher an der Farbe und am Text als an der Form.
+- **Verdeckt es etwas?** Die Zeit und die Punkte nicht (Tafel beginnt 3 Pixel darunter). Bei 3 langen Zeilen ist die
+  Tafel bis ca. 200 von 320 Pixeln breit und ca. 34 Pixel hoch – sie liegt dann über Bergen und Wald, nicht über der
+  Strasse. Mit einer kurzen Zeile (`RECHTS 6`) ist sie klein. Ehrlich: Bei drei Zeilen ist sie schon präsent.
+- **Stimmen Stufen und Richtungen?** Richtungen: bei allen 24 Kurven-Ansagen ja. Stufen: nach dem gemessenen
+  Grenztempo ja; ob sie sich für dich richtig anfühlen, musst du sagen – die Messung fährt stur der Mitte nach.
+
+### Bekannte Probleme
+
+- Stufe 5 gibt es auf dieser Strecke nicht (siehe oben). Wenn sich eine 6 nicht nach Vollgas anfühlt, kann man
+  `stufenGrenzen` anpassen.
+- Die Kurven direkt nach langsamen Stellen (z. B. `RECHTS 6` nach der Talschleife, `LINKS 6` nach Kehre 4) sind
+  „Vollgas“, weil man aus einer langsamen Stelle kommt. Wer dort schon schnell ankommt (z. B. abgekürzt), kann sich
+  wundern.
+- Kuppe bei 2779 m (Wiesenweg-Abzweig) steht nur als Zeichen, das Wort passt nicht mehr in die Zeile.
+- Wer weit neben der Strasse fährt (z. B. quer über eine Wiese), bekommt die Ansagen nach dem nächsten
+  Streckenpunkt – auf einem Hang zwischen zwei Kehren kann das kurz springen.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Sprachausgabe des Beifahrers („Rechts vier lang!“), z. B. mit der Sprachausgabe des Browsers – Lino wollte vorerst
+  keinen Ton.
+- „Achtung Wrack“ / gelbe Flagge als Ansage an den zwei Unfallautos.
+- „ASPHALT“ beim Zurückkommen auf die Hauptstrasse (mehr Grip).
+- Ein Gamepad-Knopf für N.
+- Eine Einstellung „früh / normal / spät“ für den Vorlauf (heute 7 s).
+- Kehren-Fans, Zuschauer und Absperrungen als „ACHTUNG ZUSCHAUER“ (für später, wenn es mehr Etappen gibt).
+
+---
+
+## Meilenstein 3d: Leben an der Strecke (Wiesenweg, Fan-Spots, Unfallautos) ✅ (Verlauf, Stand damals)
 
 ### Was wurde gebaut?
 
