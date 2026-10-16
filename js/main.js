@@ -18,6 +18,7 @@ import { baueKuehe } from './kuehe.js';
 import { baueAbsperrungen } from './absperrungen.js';
 import { baueStaub } from './staub.js';
 import { baueStartZiel } from './startziel.js';
+import { baueLeben, lebenPlaetze } from './leben.js';
 import { winkelNorm, begrenze } from './util.js';
 
 const lade = document.getElementById('lade');
@@ -78,7 +79,8 @@ const strassenrand = baueStrassenrand(szene, strecke, welt, pflanzen);
 const absperrungen = baueAbsperrungen(szene, welt, [...pflanzen.hindernisse, ...strassenrand.hindernisse]);
 strassenrand.hindernisse.push(...absperrungen.hindernisse);
 // Kühe auf den Weiden (Meilenstein 2b) – sind auch Hindernisse
-const kuehe = baueKuehe(szene, strecke, welt, pflanzen, strassenrand);
+// (M3d: die neuen Herden am Wiesenweg lassen die Plätze von Hütte und Details frei)
+const kuehe = baueKuehe(szene, strecke, welt, pflanzen, strassenrand, lebenPlaetze(netz));
 // Start- und Zielbereich (M3c): Bögen, Band, Stroh, Zuschauer, Zelte, Autos – sind auch Hindernisse.
 // Nach den Kühen (weicht ihnen aus); die Bäume kommen zu den anderen Bäumen (gleiche Zeichenaufrufe)
 const startZiel = baueStartZiel(szene, strecke, welt, { pflanzen, rand: strassenrand, kuehe });
@@ -100,8 +102,11 @@ function nebenwegSperrenZeigen(kamPos) {
     m.visible = k.center.distanceTo(kamPos) - k.radius < CONFIG.absperrung.sichtweite;
   }
 }
+// Leben an der Strecke (M3d): Alphütte und Details am Wiesenweg, Fan-Spots, Unfallautos – sind auch Hindernisse
+const leben = baueLeben(szene, strecke, welt, { pflanzen, rand: strassenrand, kuehe });
+strassenrand.hindernisse.push(...leben.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
-const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, startZiel.buesche);
+const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
 const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse]);
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
 const staub = baueStaub(szene); // Staub auf Schotter (M3a) und Wiesenweg (M3b)
@@ -445,6 +450,7 @@ function schleife(jetzt) {
   welt.aktualisiere(kamera.position);
   strassenrand.aktualisiere(kamera.position);
   startZiel.aktualisiere(dt, kamera.position);
+  leben.aktualisiere(dt, kamera.position);
   nebenwegSperrenZeigen(kamera.position);
   renderer.render(szene, kamera);
 
@@ -470,6 +476,6 @@ requestAnimationFrame(schleife);
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
-  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel,
+  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };

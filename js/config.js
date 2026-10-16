@@ -299,6 +299,121 @@ export const CONFIG = {
     },
   },
 
+  // --- Leben an der Strecke (Meilenstein 3d, js/leben.js) --------------
+  // Wiesenweg als Alpweide (Zaun, Kühe, Alphütte, Heustadel, Brunnen, Steinmännchen, Wegweiser, Heurollen,
+  // Findlinge), drei Fan-Spots und zwei Unfallautos (stehende Wracks). Alles hat eigene seeds: Bäume, Kühe,
+  // Zäune und Schilder von vorher bleiben genau, wo sie sind. Orte: s = Streckenmeter, seite -1 links / +1
+  // rechts (in Fahrtrichtung), lat = so weit neben der Strassenmitte (Meter), drehung in Grad.
+  // Regeln (prüft tools/leben-test.mjs): nie näher als abstandStrasse an einer Strassenmitte (auch Stummel),
+  // nie auf der Innenseite einer Kurve (Abkürzungs-Kurven plus Puffer, dazu jede engere Kurve der Etappe).
+  leben: {
+    an: true,                  // false = alles wie vor M3d
+    seed: 3131,                // Zufallszahl für Fans, Stühle, Steine, Schäden (gleich = gleicher Aufbau)
+    sichtweite: 600,           // weiter weg von der Kamera wird ein Ort nicht gezeichnet (unter 1 Pixel)
+    abstandStrasse: 6.5,       // Hütten, Details, Wracks mindestens so weit neben jeder Strassenmitte
+    pufferNichtSchneiden: 20,  // Innenseite der gesperrten Kurven (sVon–sBis plus so viel) bleibt frei
+    pufferSchneiden: 50,       // ... und der freien Kurven
+    innenRadius: 130,          // dazu jede Kurve enger als das (auch auf den Nebenwegen): Innenseite frei ...
+    innenVorNach: 20,          // ... auch so viele Meter vor und nach der Kurve ...
+    innenBreite: 60,           // ... bis so weit neben der Strasse
+
+    // Holzzaun am Wiesenweg (dazu der Zaun von M2a rechts bei 2931–3068 m). Gebaut wie die anderen Zäune
+    // (Abstand per randAbstand an die schmale Strasse angepasst), mit Weidetoren (Lücken wie in M2a)
+    zaeune: [
+      { seite: -1, von: 2888, bis: 2952, latten: 3, tore: [2905] },  // links nach Checkpoint 3: Weide mit der Herde von vorher; tore: Lücke ab diesem Meter (leer = reihum)
+    ],
+    zaunSeed: 3132,            // Zufall für Tore, Latten, schiefe Pfosten der neuen Zäune
+    torAlle: [24, 40],         // ein Weidetor alle so viele Meter Zaun
+    tor: [4, 5.5],             // Breite der Lücke (Meter)
+
+    // Neue Kühe (eigene Herden mit eigenem seed; die alten Kühe sind in js/kuhfolge.js eingefroren)
+    kuehe: {
+      seed: 3133,
+      herdenAbstand: 26,       // neue Herden mindestens so weit von jeder anderen Herde (Mitte zu Mitte)
+      herden: [
+        { s: 3008, seite: -1, lat: [13, 24], anzahl: 4, radius: 6 },   // vor der Alphütte
+        { s: 2985, seite: 1, lat: [11, 18], anzahl: 3, radius: 5 },    // rechts hinter dem Zaun von M2a
+        { s: 2862, seite: 1, lat: [26, 36], anzahl: 3, radius: 6 },    // rechts am Hang beim Abzweig
+      ],
+    },
+
+    // Wiesenweg (2798–3108 m): Alphütte, Heustadel, Kleinigkeiten
+    wiesenweg: {
+      huette: { s: 2988, seite: -1, lat: 38, drehung: 12, laenge: 7.6, tiefe: 5.6, hoehe: 2.5 }, // Alphütte (laenge entlang der Strasse)
+      stadel: { s: 2900, seite: 1, lat: 52, drehung: -18, laenge: 5.2, tiefe: 4.2, hoehe: 2.3 },  // kleiner Heustadel weiter weg
+      brunnen: { s: 2979, seite: -1, lat: 31, drehung: 20 },       // Brunnentrog mit Röhre
+      holzstapel: true,                                           // Holzstapel an der Hüttenwand
+      wegweiser: { s: 2957, seite: -1, lat: 7.4 },                // gelber Wanderwegweiser (erfundene Ziele)
+      steinmaennchen: [[2852, 1, 21], [2918, 1, 31], [3043, -1, 20]], // [s, seite, lat]
+      heurollen: [[2866, 1, 19], [2869.5, 1, 22.2], [2862, 1, 23.5], [3057, -1, 25], [3062.5, -1, 28]],
+      findlinge: [[2908, -1, 25, 2.0], [3000, 1, 13, 1.6], [2945, 1, 42, 2.6]], // [s, seite, lat, Höhe]
+    },
+
+    // Fan-Spots (Zuschauer wie in M3c: Pixel-Figuren, schauen zur Strasse, hinter dem Absperrband)
+    fans: {
+      abstand: 7.2,            // Zuschauer mindestens so weit neben jeder Strassenmitte
+      gruppe: [3, 7],          // Grösse der Gruppen
+      gruppeLaenge: 6,         // eine Gruppe steht über so viele Meter verteilt
+      radius: 0.35,            // Kollision und Platzbedarf je Zuschauer
+      dicht: 0.75,             // so nah stehen zwei Zuschauer höchstens
+      blickStreuung: 0.6,      // Blick zur Strasse, so viel (Bogenmass) zufällig daneben
+      posen: [0.22, 0.18, 0.14, 0.14, 0.1, 0.12, 0.1], // stehend, winkend, jubelnd, Schweizer Fahne, Fotograf, Mütze, Fahne
+      kinder: 0.1,
+      spots: [
+        {
+          name: 'kehren', s: [1694, 1716], seite: 1, lat: [8.5, 19], anzahl: 22, blickS: 1668, // am Hang aussen an Kehre 3
+          band: [[1692, 1718, 7.9]],               // Absperrband: von, bis, lat
+          banner: [[1704.5, 9.6, 'kehre']],          // Fan-Banner auf zwei Pfosten: s, lat, Name (lebenbild.js)
+          fahnen: [[1697, 16, 'kreuz'], [1706, 13.5, 'gruen']],
+          stuehle: 3,                              // Klappstühle (mit sitzenden Fans)
+        },
+        {
+          name: 'pass', s: [2590, 2652], seite: 1, lat: [8, 17], anzahl: 28, blickS: null,   // Passhöhe, grösster Spot
+          band: [[2596, 2656, 7.2]],
+          banner: [[2616, 9.2, 'pass'], [2641, 9.4, 'turbo']],
+          fahnen: [[2600, 11, 'kreuz'], [2624, 12.5, 'kreuz'], [2646, 11.5, 'rot']],
+          stuehle: 4,
+          camper: [2630, 21.5, 14],                // Wohnmobil: s, lat, Drehung
+          zelt: [2609, 17.5],                      // Pavillon
+        },
+        {
+          name: 'alm', s: [1970, 1990], seite: -1, lat: [8.5, 14], anzahl: 14, blickS: 1984,  // hinter der Strohballen-Wand am Almweg-Abzweig
+          band: [[1968, 1986, 7.8]],
+          banner: [[1977, 9.4, 'alm']],
+          fahnen: [[1984, 12.5, 'kreuz']],
+          stuehle: 2,
+          pickup: [1979, 18.5, -60],               // parkierter Pickup: s, lat, Drehung
+        },
+      ],
+    },
+
+    // Unfallautos (stehende Wracks, Fantasie-Rallyeautos im Stil der 80er-Gruppe B, keine echten Modelle)
+    //   typ 'brunnwald' (Keil-Coupé) oder 'vallora' (kantiger Kompakter), Farben, Startnummer, Sponsor
+    //   baum: [s, seite, lat] = das Auto steckt mit der Front am nächsten Baum dort (Baum bleibt, wo er ist)
+    //   sonst s/seite/lat/drehung (Grad: 0 = in Fahrtrichtung, 90 = schaut von der Strasse weg)
+    //   warndreieck: so viele Meter davor am Strassenrand (lat), posten: Streckenposten [s, lat]
+    wracks: [
+      {
+        name: 'tal', typ: 'brunnwald', lack: '#f2f0e8', akzent: '#c8202a', nummer: '14', sponsor: 'firn',
+        baum: [638, 1, 12.2], anstoss: 0.28, winkel: 42,   // Front 0.28 m neben der Mitte am Stamm, so schräg zur Strasse
+        schaden: 'front',                                   // Front eingedrückt, Haube offen, Rad schief
+        warndreieck: { vor: 24, lat: 6.3 }, flagge: { vor: 20, lat: 7.0 },
+        posten: [[651, 13.5], [626, 15.5]],
+      },
+      {
+        name: 'abfahrt', typ: 'vallora', lack: '#2f62c8', akzent: '#f0c020', nummer: '23', sponsor: 'murmeli',
+        s: 2488, seite: 1, lat: 9.6, drehung: 62,           // an der Böschung gleich nach dem Ende der Leitplanke (vor dem Weidezaun)
+        schaden: 'seite',                                   // Seite eingedrückt, Rad ab, Tür abgesprungen, Flügel schief
+        warndreieck: { vor: 26, lat: 5.85 }, flagge: { vor: 18, lat: 6.6 },
+        posten: [[2503, 13.5], [2474, 12.5]],
+      },
+    ],
+    kreisRadius: 0.92,         // Wrack-Kollision: drei Kreise entlang der Karosserie mit diesem Radius
+    postenJacken: ['#ff6a10', '#e2f02a'], // Warnwesten (orange, gelb)
+    postenFahne: '#f4d21a',    // gelbe Flagge
+    rauch: { anzahl: 6, leben: 5, steigen: 0.5, groesse: [0.5, 1.9], dichte: 0.38, farbe: '#a9a7a2', wind: [0.35, 0.15] }, // dezente Rauchfahne je Wrack (Wölkchen, Lebensdauer s, Steigen m/s, Grösse m, Dichte 0..1)
+  },
+
   // --- Gelände --------------------------------------------------------
   gelaende: {
     raster: 4,                 // Abstand der Geländepunkte nahe der Strecke (Meter)

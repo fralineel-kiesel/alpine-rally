@@ -374,12 +374,13 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe, extra = []
     ...kuehe.hindernisse.map((k) => ({ x: k.x, z: k.z, r: k.r + c.abstandKuh })),
   ]);
   const torFrei = torPruefer(rand.plan);
+  const torFreiZusatz = torPruefer({ ...rand.plan, tore: rand.plan.zusatzTore || [] }); // M3d: Tore am Wiesenweg
   function frei(x, z, mindest, r) {
     strecke.abfrage(x, z, q);
     if (q.abstand < mindest) return false;
     if (welt.netz && welt.netz.stummelAbstand(x, z, mindest) < mindest) return false; // nicht auf die Stummel (M3a)
     if (q.wandSeite && Math.sign(q.seite) === q.wandSeite && q.wandStaerke > 0.05 && q.abstand < 26) return false;
-    return kolFest.frei(x, z, r) && torFrei(x, z, r, 1.5, 12);
+    return kolFest.frei(x, z, r) && torFrei(x, z, r, 1.5, 12) && torFreiZusatz(x, z, r, 1.5, 12);
   }
   function steilheit(x, z) {
     const h = welt.gelaendeHoehe(x, z);

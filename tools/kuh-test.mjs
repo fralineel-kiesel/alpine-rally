@@ -160,10 +160,12 @@ const erg = await spiel.page.evaluate(async () => {
   // 4. gleicher seed = gleiche Kühe
   const { planeKuehe } = await import('/js/kuehe.js');
   // (M3c: mit denselben Eingaben wie im Spiel – der Start- und Zielbereich kommt erst nach den Kühen dazu)
-  const SZ = A.startZiel, eigene = new Set(SZ ? [...SZ.hindernisse, ...SZ.hindernisseBaeume, ...SZ.tannen, ...SZ.laub] : []);
+  // (M3d: ohne die Hindernisse von "Leben an der Strecke", mit den freien Plätzen für die neuen Herden)
+  const SZ = A.startZiel, eigene = new Set(SZ ? [...SZ.hindernisse, ...SZ.hindernisseBaeume, ...SZ.tannen, ...SZ.laub, ...(A.leben ? A.leben.hindernisse : [])] : []);
+  const { lebenPlaetze } = await import('/js/leben.js');
   const ohne = (l) => l.filter((h) => !eigene.has(h));
   const pfl = { ...A.pflanzen, tannen: ohne(A.pflanzen.tannen), laubbaeume: ohne(A.pflanzen.laubbaeume), hindernisse: ohne(A.pflanzen.hindernisse) };
-  const nochmal = planeKuehe(S, A.welt, pfl, { ...R, hindernisse: ohne(R.hindernisse) }).kuehe;
+  const nochmal = planeKuehe(S, A.welt, pfl, { ...R, hindernisse: ohne(R.hindernisse) }, lebenPlaetze(A.netz)).kuehe;
   ergebnis.gleich = nochmal.length === kuehe.length && nochmal.every((k, i) => k.x === kuehe[i].x && k.z === kuehe[i].z && k.pose === kuehe[i].pose && k.art === kuehe[i].art);
   return ergebnis;
 });

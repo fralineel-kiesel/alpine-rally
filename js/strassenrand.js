@@ -544,8 +544,32 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
     }
   }
 
+  // --- M3d: neue Holzzäune am Wiesenweg (config.js, leben.zaeune): eigene Listen und eigener Zufall,
+  // damit alles oben (und was davon abhängt: Büsche hinter den Zäunen, Kühe) genau gleich bleibt
+  const zusatzZaunLaeufe = [], zusatzTore = [];
+  const L = CONFIG.leben;
+  if (L && L.an !== false && cz.an) {
+    const rndZ = zufall(L.zaunSeed);
+    for (const z of L.zaeune || []) {
+      const sd = z.seite, latten = z.latten || 3;
+      // Tore: von Hand (z.tore = Liste der Meter, wo eine Lücke beginnt) oder reihum wie in M2a
+      const vonHand = z.tore ? [...z.tore] : null;
+      let start = z.von, tor = vonHand ? vonHand.shift() : start + zwischen(rndZ, L.torAlle);
+      while (tor !== undefined && tor + L.tor[1] + 8 < z.bis) {
+        const b = zwischen(rndZ, L.tor);
+        if (tor - start >= 6) {
+          zusatzZaunLaeufe.push({ seite: sd, von: start, bis: tor, latten, torEnde: true, torAnfang: start !== z.von, leben: true });
+          zusatzTore.push({ seite: sd, von: tor, bis: tor + b, offen: rndZ() < cz.torOffen, winkel: zwischen(rndZ, [80, 105]), anfang: rndZ() < 0.5, leben: true });
+          start = tor + b;
+        }
+        tor = vonHand ? vonHand.shift() : tor + b + zwischen(rndZ, L.torAlle);
+      }
+      zusatzZaunLaeufe.push({ seite: sd, von: start, bis: z.bis, latten, torEnde: false, torAnfang: start !== z.von, leben: true });
+    }
+  }
+
   return {
-    plankenLaeufe, zaunLaeufe, tore, schilder, kehren, punkt, astLaeufe,
+    plankenLaeufe, zaunLaeufe, tore, schilder, kehren, punkt, astLaeufe, zusatzZaunLaeufe, zusatzTore,
     wiesenMeter, zaunMeter,
     innenFrei, // für Tests: hier darf nichts stehen
   };
@@ -561,7 +585,8 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
     pflanzen ? [...pflanzen.tannen, ...pflanzen.laubbaeume] : []);
   const tPlan = performance.now() - t0;
   const { punkt } = plan;
-  const rndPlanke = zufall(c.seed + 1), rnd = zufall(c.seed + 2); // Helligkeit, kaputte Latten, schiefe Pfosten
+  const rndPlanke = zufall(c.seed + 1);
+  let rnd = zufall(c.seed + 2); // Helligkeit, kaputte Latten, schiefe Pfosten
   const kmZahlen = plan.schilder.filter((s) => s.art === 'km').map((s) => s.tafeln[0].zahl);
   const tempoZahlen = [...new Set(plan.schilder.flatMap((s) => s.tafeln.filter((t) => t.form === 'kreis').map((t) => t.zahl)))];
   const atlas = strassenrandAtlas(kmZahlen, Math.max(4, plan.kehren.length), 61, tempoZahlen);
@@ -757,8 +782,8 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
   }
 
   // Weidetore: offenes Tor ist ins Feld gedreht (die Lücke bleibt befahrbar)
-  for (const t of plan.tore) {
-    if (!t.offen) continue;
+  function baueTor(t) {
+    if (!t.offen) return;
     const sd = t.seite;
     const sAngel = t.anfang ? t.von : t.bis, sAndere = t.anfang ? t.bis : t.von;
     const L = randAbstand(sAngel, sd) + cz.versatz + wackeln(sAngel, sd);
@@ -784,6 +809,15 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
     viereck(st, [sb[0], sb[1] - 0.05, sb[2]], [sa[0], sa[1] - 0.05, sa[2]], [sa[0], sa[1] + 0.05, sa[2]], [sb[0], sb[1] + 0.05, sb[2]], 'latte', [-nx, 0, -nz], 0.7);
     pfosten(st, ex, ge + 0.2, ez, dx, dz, 0.08, 0.85, 'holzpfosten', 0.9);
     kreisLinie(p.x + dx * 0.3, p.z + dz * 0.3, ex, ez, 0.15, 0.6, 'tor');
+  }
+  for (const t of plan.tore) baueTor(t);
+  // M3d: neue Zäune am Wiesenweg (eigener Zufall für Latten und Pfosten, die Zäune oben bleiben gleich)
+  {
+    const rndAlt = rnd;
+    rnd = zufall((CONFIG.leben && CONFIG.leben.zaunSeed || 0) + 7);
+    for (const l of plan.zusatzZaunLaeufe) baueZaun(l, punkt, randAbstand, stueck);
+    for (const t of plan.zusatzTore) baueTor(t);
+    rnd = rndAlt;
   }
 
   // --- 3. Schilder ---------------------------------------------------------------
@@ -842,7 +876,7 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
   const statistik = {
     ms: Math.round(performance.now() - t0), msPlan: Math.round(tPlan),
     plankenMeter: Math.round(plankenMeter), plankenStuecke: plan.plankenLaeufe.length,
-    zaunMeter: Math.round(zaunMeter), zaunStuecke: plan.zaunLaeufe.length,
+    zaunMeter: Math.round(zaunMeter), zaunStuecke: plan.zaunLaeufe.length, zusatzZaun: plan.zusatzZaunLaeufe.length, zusatzTore: plan.zusatzTore.length,
     tore: plan.tore.length, toreOffen: plan.tore.filter((t) => t.offen).length,
     wiesenAnteilMitZaun: plan.wiesenMeter ? Math.round((plan.zaunMeter / plan.wiesenMeter) * 100) : 0,
     schilder: plan.schilder.length,
