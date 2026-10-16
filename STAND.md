@@ -101,12 +101,12 @@ Ohne Browser-Speicher steht klein „ZEIT WIRD NICHT GESPEICHERT“ über den Kn
 
 | Wert | Definition | Standard |
 |---|---|---|
-| Aufpralle | jeder harte Kontakt mit Baum, Stein, Stamm, Absperrung, Zaun, Leitplanke, Kuh, Felswand und den unsichtbaren Grenzen (Abhang, 45 m neben der Strasse), wenn das Tempo **Richtung Hindernis** über der Schwelle liegt. Ein Aufprall zählt **einmal**: Danach zählt eine kurze Sperrzeit lang nichts (Entlangschleifen, Kleben mit Gas) | Schwelle 3 m/s (11 km/h), Sperrzeit 0.6 s |
+| Aufpralle | jeder harte Kontakt mit Baum, Stein, Stamm, Absperrung, Zaun, Leitplanke, Kuh und Felswand, wenn das Tempo **Richtung Hindernis** über der Schwelle liegt. Die **unsichtbaren Grenzen** (Abhang ohne Leitplanke, 45 m neben der Strasse) zählen **nicht** (Linos Entscheidung nach dem ersten Stand von M5b). Ein Aufprall zählt **einmal**: Danach zählt eine kurze Sperrzeit lang nichts (Entlangschleifen, Kleben mit Gas) | Schwelle 3 m/s (11 km/h), Sperrzeit 0.6 s |
 | Resets | wie oft R wirklich ausgelöst hat (erst, wenn die Wartezeit durch ist und das Auto zurückgesetzt wurde) | – |
 | Höchsttempo | höchstes Tempo zwischen GO und Ziel | – |
 
 Alles wird bei jedem Start auf 0 gesetzt (auch NEUSTART aus der Pause). Gemessen wird an den Stellen, die es schon gab
-(Kollision mit Hindernissen, Felswand, Grenzen); die Physik selbst ist unverändert.
+(Kollision mit Hindernissen, Felswand); die Physik selbst ist unverändert.
 
 ### Testweg ohne Countdown (für die Test-Werkzeuge)
 
@@ -153,7 +153,7 @@ Texte (Deutsch/Englisch) in `js/texte.js`: `ziel.*`, `bestzeiten.platz/zeit/datu
 5. **HAUPTMENÜ** → BESTZEITEN: dein Lauf ist orange hinterlegt.
 6. EINSTELLUNGEN → DATEN → BESTZEITEN LÖSCHEN → NEIN (nichts passiert) / JA (Liste leer).
 7. Fragen an dich: Passt der Countdown zur Stimmung (oder lieber Ampel / Rallye-Startuhr)? Ist der Zielbildschirm
-   auf beiden Rechnern gut lesbar? Sollen die Aufpralle an den unsichtbaren Grenzen mitzählen?
+   auf beiden Rechnern gut lesbar? (Die unsichtbaren Grenzen zählen nicht als Aufprall, wie gewünscht.)
 
 ### Bilder (`screenshots/m5b/`, 1280x720, dazu je `-320x180`; neu erzeugen: `node tools/m5b-bilder.mjs`)
 
@@ -183,7 +183,7 @@ Texte (Deutsch/Englisch) in `js/texte.js`: `ziel.*`, `bestzeiten.platz/zeit/datu
 
 ### Selbst getestet
 
-- **Neuer Test `node tools/rennablauf-test.mjs`** – **alle 74 Prüfungen bestanden**, keine Konsolenfehler:
+- **Neuer Test `node tools/rennablauf-test.mjs`** – **alle 75 Prüfungen bestanden**, keine Konsolenfehler:
   - (a) Countdown in der echten Spielschleife mit gehaltenem Gas, Lenken, Handbremse und Bremse: Auto bewegt sich
     **keinen Millimeter** (genau gleiche Position), Zeit 0, R und N tun nichts (`rTaste()` = „gesperrt“). Auto steht
     mit der Schnauze bei 24.90 m (Startlinie 25 m). Dauer im Zeitraffer: **360 Schritte = 3.000 s** (eingestellt 3 s).
@@ -203,7 +203,8 @@ Texte (Deutsch/Englisch) in `js/texte.js`: `ziel.*`, `bestzeiten.platz/zeit/datu
     89 mph.
   - (f) localStorage blockiert: kein Fehler, „ZEIT WIRD NICHT GESPEICHERT“, Vergleich in der Sitzung geht, NEU STARTEN
     geht, BESTZEITEN zeigt die Zeiten der Sitzung.
-  - (g) Baumaufprall (61 → 1 km/h, danach gut 1 s Vollgas am Baum): **genau 1**; R-Reset: 1; Höchsttempo = höchstes
+  - (g) Baumaufprall (61 → 1 km/h, danach gut 1 s Vollgas am Baum): **genau 1**; mit 72 km/h in die unsichtbare
+    Grenze 45 m neben der Strasse: **0**; R-Reset: 1; Höchsttempo = höchstes
     `physik.tempo` (108.2 km/h); Neustart: alles 0; Demo-Fahrt 60 s (auch mit erzwungenem Aufprall): 0.
   - (h) NEU STARTEN mit Enter, Taste R und Maus: Countdown, Zeit 0, Checkpoints zurück. HAUPTMENÜ: ohne Rückfrage,
     Demo fährt. **Gamepad** (simuliert): A auf STARTEN, A = NEU STARTEN, Y = Neu starten, B und Start tun im
@@ -257,8 +258,6 @@ Texte (Deutsch/Englisch) in `js/texte.js`: `ziel.*`, `bestzeiten.platz/zeit/datu
 - Im Countdown ist noch **keine Pace-Notes-Kachel** zu sehen (die erste Kurve ist im Stand weiter als 50 m weg; so war
   es auch früher vor dem Start). Sie kommt kurz nach GO.
 - Spielzeiten (Stehstart) sind ca. **1.7 s langsamer** als die Testfahrer-Zeiten (fliegender Start), siehe oben.
-- Als Aufprall zählen auch die **unsichtbaren Grenzen** (Abhang ohne Leitplanke, 45 m neben der Strasse), wenn man
-  schneller als 11 km/h hineinfährt. Falls das nicht gewünscht ist: sag es, dann zählen nur sichtbare Hindernisse.
 - Die Tachos schauen unten rechts unter der Zielbildschirm-Tafel hervor.
 - Die Hilfe unten links erscheint nur vor dem **ersten** Start einer Sitzung (wie bisher: sie verschwindet, sobald man
   einmal gefahren ist).

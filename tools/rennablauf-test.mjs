@@ -400,6 +400,32 @@ console.log('(g) Statistik');
     let maxV = 0;
     for (let k = 0; k < 120 * 2; k++) { A.rennSchritt(A.SCHRITT, gas); if (A.rennen.zustand === 'laeuft') maxV = Math.max(maxV, p.tempo); }
     const nachBaum = { aufpralle: A.stat.aufpralle, auf: A.kollision.letzterAufprall, v: p.tempo };
+    // Unsichtbare Grenze (45 m neben der Strasse): 41 m neben der Strasse mit 20 m/s quer nach aussen -> zählt nicht.
+    // Stelle suchen: keine Felswand, auf dem Weg nichts im Weg, die Grenze wird wirklich erreicht
+    const G = A.CONFIG.grenze.maxAbstand;
+    let grenze = null;
+    for (let s = 150; s < 3500 && !grenze; s += 37) {
+      for (const seite of [1, -1]) {
+        const lp = S.punktBei(s);
+        if (S.abfrage(lp.x, lp.z, q).wandSeite) continue;
+        const rx = -lp.tz * seite, rz = lp.tx * seite; // nach aussen
+        let frei = true;
+        for (let d = 39; d <= G + 3 && frei; d += 0.5) if (!A.kollision.frei(lp.x + rx * d, lp.z + rz * d, 3)) frei = false;
+        if (!frei) continue;
+        const vor = A.stat.aufpralle;
+        p.reset(lp.x + rx * 41, lp.z + rz * 41, Math.atan2(rx, rz));
+        A.rennen.letztesS = s;
+        p.vx = rx * 20; p.vz = rz * 20; p.vVor = 20;
+        let maxAb = 0, wucht = 0;
+        for (let k = 0; k < 120; k++) {
+          const vn = p.vx * rx + p.vz * rz;
+          A.rennSchritt(A.SCHRITT, gas);
+          const ab = S.abfrage(p.x, p.z, q).abstand;
+          if (ab > maxAb) { maxAb = ab; wucht = Math.max(wucht, vn); }
+        }
+        if (maxAb > G - 0.2 && A.rennen.zustand === 'laeuft') grenze = { s, maxAb, wucht, gezaehlt: A.stat.aufpralle - vor };
+      }
+    }
     // R-Reset (Wartezeit ganz abwarten)
     const r0 = A.statResets();
     A.rTaste();
@@ -424,10 +450,12 @@ console.log('(g) Statistik');
     const demo = { aufpralle: A.stat.aufpralle, resets: A.statResets(), hoechst: A.stat.hoechstTempo, demoAuf, erzwungen: A.kollision.letzterAufprall !== letzter };
     A.rennen.zustand = 'bereit';
     A.anhalten = false;
-    return { baum, nachBaum, resets, stat, neu, demo };
+    return { baum, nachBaum, grenze, resets, stat, neu, demo };
   });
   pruefe(g.baum && g.nachBaum.auf && g.nachBaum.aufpralle === 1, 'Baumaufprall (54 km/h, danach gut 1 s Vollgas am Baum) zählt genau 1',
     g.baum ? `Baum bei ${Math.round(g.baum.s)} m, ${g.baum.abstand.toFixed(1)} m neben der Strasse, ${(g.nachBaum.auf.vorher * 3.6).toFixed(0)} -> ${(g.nachBaum.auf.nachher * 3.6).toFixed(0)} km/h, Zähler ${g.nachBaum.aufpralle}` : 'kein Baum gefunden');
+  pruefe(g.grenze && g.grenze.gezaehlt === 0 && g.grenze.wucht > 10, 'unsichtbare Grenze (45 m neben der Strasse) mit Tempo: zählt NICHT als Aufprall',
+    g.grenze ? `bei ${g.grenze.s} m, ${(g.grenze.wucht * 3.6).toFixed(0)} km/h hinein, bis ${g.grenze.maxAb.toFixed(1)} m neben der Strasse` : 'keine freie Stelle gefunden');
   pruefe(g.resets === 1 && g.stat.resets === 1, 'R-Reset zählt 1 (nach der Wartezeit)');
   pruefe(g.stat.hoechst > 20 && Math.abs(g.stat.hoechst - g.stat.maxV) < 1e-9, 'Höchsttempo = höchstes physik.tempo zwischen GO und Ziel', `${(g.stat.hoechst * 3.6).toFixed(1)} km/h`);
   pruefe(g.stat.aufpralle === 1, 'Vollgas auf der Strasse: kein weiterer Aufprall');

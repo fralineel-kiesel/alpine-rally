@@ -336,7 +336,8 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Wer von der Wiese her auf Anfang oder Ende der Wand zufährt (also schon "hinter" der Wandfläche ist),
   // wurde früher in einem Schritt Meter weit auf die Strasse geworfen; jetzt hält ihn der Fels wie ein Hang auf.
   const wk = wandKontakt(q2, xAlt, zAlt, wAlt);
-  // (M5b: vor jeder Grenze das Tempo hinein messen, für die Statistik; die Grenze selbst ist unverändert)
+  // (M5b: vor der Felswand das Tempo hinein messen, für die Statistik; die Wand selbst ist unverändert.
+  //  Die unsichtbaren Grenzen weiter unten zählen nicht als Aufprall, Linos Wunsch)
   if (wk.strasse > 0) {
     wucht = Math.max(wucht, grenzWucht(rx * q2.wandSeite, rz * q2.wandSeite));
     physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
@@ -347,17 +348,13 @@ function physikSchritt(dt, e, nurFahren = false) {
   if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
     // Abhang auf der anderen Seite
     const ueber = Math.abs(q2.seite) - g.abhangGrenze;
-    if (ueber > 0) {
-      wucht = Math.max(wucht, grenzWucht(-rx * q2.wandSeite, -rz * q2.wandSeite));
-      physik.anGrenze(-rx * q2.wandSeite, -rz * q2.wandSeite, ueber);
-    }
+    if (ueber > 0) physik.anGrenze(-rx * q2.wandSeite, -rz * q2.wandSeite, ueber);
   }
   if (q2.abstand > g.maxAbstand) {
     // nächster Punkt, der als Strasse zählt: Etappe, seit M3c auch die Ausrollstrecke nach dem Ziel
     const p = netz.grenzPunkt(physik.x, physik.z, qGrenze);
     if (p.abstand > g.maxAbstand) {
       const nx = (physik.x - p.x) / p.abstand, nz = (physik.z - p.z) / p.abstand;
-      wucht = Math.max(wucht, grenzWucht(nx, nz));
       physik.anGrenze(nx, nz, p.abstand - g.maxAbstand);
     }
   }
