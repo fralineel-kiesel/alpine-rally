@@ -4,6 +4,7 @@
 // ohne Kantenglättung. Masse und Farben: config.js "hud.tacho".
 
 import { CONFIG } from './config.js';
+import { t as tx } from './texte.js';
 
 // Winzige Schrift, 3x5 Pixel ('#' = Pixel an), für Skalenzahlen und Beschriftung
 const MINI = {
@@ -23,6 +24,7 @@ const MINI = {
   'K': ['#.#', '#.#', '##.', '#.#', '#.#'],
   'M': ['#.#', '###', '###', '#.#', '#.#'],
   'N': ['##.', '#.#', '#.#', '#.#', '#.#'],
+  'P': ['##.', '#.#', '##.', '#..', '#..'],
   'T': ['###', '.#.', '.#.', '.#.', '.#.'],
   'U': ['#.#', '#.#', '#.#', '#.#', '###'],
   'X': ['#.#', '#.#', '.#.', '#.#', '#.#'],
@@ -125,13 +127,16 @@ export function baueTachos(ctx, text) {
   const B = CONFIG.bild.breite, H = CONFIG.bild.hoehe;
   const rT = t.tempoRadius, rD = t.drehzahlRadius;
   // Mittelpunkte: Tempo ganz rechts, Drehzahl links daneben, unten bündig
-  const tempo = {
-    cx: B - t.randRechts - rT - 2, cy: H - t.randUnten - rT - 2, r: rT,
-    ...maleBlatt(rT, { max: t.tempoMax, lang: t.tempoStrichLang, kurz: t.tempoStrichKurz, zahlen: t.tempoZahlen, teiler: 1, zahlAbstand: 11, beschriftung: ['KM/H', 18] }),
-  };
+  // Tempo-Zifferblatt je Einheit (seit M5a auch mph), wird erst bei Bedarf gemalt
+  const blaetter = {};
+  const tempoBlatt = (einheit) => blaetter[einheit] || (blaetter[einheit] = einheit === 'mph'
+    ? maleBlatt(rT, { max: t.tempoMaxMph, lang: t.tempoStrichLangMph, kurz: t.tempoStrichKurzMph, zahlen: t.tempoZahlenMph, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.mph'), 18] })
+    : maleBlatt(rT, { max: t.tempoMax, lang: t.tempoStrichLang, kurz: t.tempoStrichKurz, zahlen: t.tempoZahlen, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.kmh'), 18] }));
+  const tempo = { cx: B - t.randRechts - rT - 2, cy: H - t.randUnten - rT - 2, r: rT, ...tempoBlatt('kmh') };
+  let einheit = 'kmh', faktor = 1, skalaMax = t.tempoMax;
   const dreh = {
     cx: B - t.randRechts - 2 * rT - 5 - t.abstand - rD - 2, cy: H - t.randUnten - rD - 2, r: rD,
-    ...maleBlatt(rD, { max: t.drehzahlMax * 1000, lang: 1000, kurz: 500, zahlen: 1000, teiler: 1000, zahlAbstand: 9, rotAb: t.drehzahlRotAb * 1000, beschriftung: ['X1000', 14] }),
+    ...maleBlatt(rD, { max: t.drehzahlMax * 1000, lang: 1000, kurz: 500, zahlen: 1000, teiler: 1000, zahlAbstand: 9, rotAb: t.drehzahlRotAb * 1000, beschriftung: [tx('tacho.drehzahl'), 14] }),
   };
   const anzeige = { kmh: 0, drehzahl: 0 };
 
@@ -150,8 +155,18 @@ export function baueTachos(ctx, text) {
   }
 
   return {
+    // Einheit des Tempo-Tachos: 'kmh' oder 'mph' (M5a)
+    setzeEinheit(e) {
+      if (e === einheit) return;
+      einheit = e;
+      Object.assign(tempo, tempoBlatt(e));
+      faktor = e === 'mph' ? 1 / 1.609344 : 1;
+      skalaMax = e === 'mph' ? t.tempoMaxMph : t.tempoMax;
+      anzeige.kmh *= e === 'mph' ? faktor : 1.609344;
+    },
     // dt: Sekunden seit dem letzten Bild, kmh, drehzahl (U/min), gang: 'R', 'N', '1'..'5'
     zeichne(dt, kmh, drehzahl, gang) {
+      kmh *= faktor; // (bei mph: Meilen pro Stunde)
       // Nadeln gedämpft nachführen; im Stand ganz ruhig
       anzeige.kmh += (kmh - anzeige.kmh) * (1 - Math.exp(-t.tempoNadelFolgen * dt));
       if (kmh < 0.5 && anzeige.kmh < 0.5) anzeige.kmh = 0;
@@ -168,7 +183,7 @@ export function baueTachos(ctx, text) {
       ctx.fillRect(dreh.cx - 4, dreh.cy + 3, 9, 10);
       text(gang, dreh.cx - 2, dreh.cy + 5, 1, gang === 'R' ? 'rot' : 'gelb');
 
-      nadel(tempo, anzeige.kmh / t.tempoMax);
+      nadel(tempo, anzeige.kmh / skalaMax);
       nadel(dreh, anzeige.drehzahl / (t.drehzahlMax * 1000));
     },
   };

@@ -48,7 +48,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(datei).pipe(res);
 });
 await new Promise((r) => server.listen(0, r));
-const URL_SPIEL = `http://localhost:${server.address().port}/index.html`;
+const URL_SPIEL = `http://localhost:${server.address().port}/index.html?menue=aus`; // am Menü vorbei (M5a)
 
 const pw = await ladePlaywright();
 const { chromium } = pw.chromium ? pw : pw.default;

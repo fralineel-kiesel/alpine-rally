@@ -42,10 +42,11 @@ export async function starteSpiel({ wurzel = WURZEL, breite = 640, hoehe = 360 }
   page.on('console', (m) => { if (m.type() === 'error') { fehler.push(m.text()); console.log('Konsole:', m.text()); } });
   return {
     page, url, fehler,
-    // Spiel laden; anhalten = Physik läuft nur, wenn das Werkzeug sie aufruft
-    async ladeSpiel(anhalten = true) {
+    // Spiel laden; anhalten = Physik läuft nur, wenn das Werkzeug sie aufruft.
+    // menue = false (Standard): am Titel und Menü vorbei direkt ins Rennen (?menue=aus, seit M5a)
+    async ladeSpiel(anhalten = true, { menue = false } = {}) {
       const t0 = Date.now();
-      await page.goto(`${url}/index.html`);
+      await page.goto(`${url}/index.html${menue ? '' : '?menue=aus'}`);
       await page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
       const ms = Date.now() - t0;
       if (anhalten) await page.evaluate(() => { window.__alpineRally.anhalten = true; });
