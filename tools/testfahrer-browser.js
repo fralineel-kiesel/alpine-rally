@@ -138,6 +138,25 @@ export function fahreEtappe(A, profilName, proSchritt = null) {
   };
 }
 
+// M6: Im Spiel fahren wie ein Spieler (A.rennSchritt: Countdown, Zeitmessung, Ziel eintragen) bis zur Stelle bisS
+// oder ins Ziel. gas: Faktor fürs Gaspedal (0.9 = höchstens 90 % Gas), proSchritt wie bei fahreEtappe.
+// Startet nicht neu (vorher A.start(...) aufrufen). Ergebnis: Anzahl Schritte
+export function fahreBis(A, profilName, { bisS = Infinity, gas = 1, proSchritt = null, maxSchritte = 120 * 600 } = {}) {
+  const S = A.strecke;
+  const pfad = A.__pfade && A.__pfade[profilName] || bauePfad(A, Array.from(S.px), Array.from(S.pz), PROFILE[profilName]);
+  (A.__pfade ||= {})[profilName] = pfad;
+  let idx = 0, n = 0;
+  while (n < maxSchritte && A.rennen.zustand !== 'ziel' && A.rennen.letztesS < bisS) {
+    idx = naechster(pfad, A.physik.x, A.physik.z, idx);
+    const e = steuere(A, pfad, idx);
+    e.gas = Math.min(e.gas, gas);
+    A.rennSchritt(A.SCHRITT, e);
+    if (proSchritt) proSchritt(e);
+    n++;
+  }
+  return n;
+}
+
 // Ein Stück Pfad fahren (für den Zeitvergleich beim Schneiden).
 // Start bei Pfadpunkt 0 mit dem Zieltempo dort, Ende bei Pfadpunkt "ende".
 export function fahreStueck(A, pfad, ende) {

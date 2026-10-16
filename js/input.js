@@ -1,6 +1,6 @@
 // Steuerung: Tastatur und Gamepad gleichzeitig.
 // Liefert pro Bild: gas, bremse (0..1), lenkung (-1..1, + = rechts),
-// handbremse, und einmalige Tasten-Ereignisse (reset, debug, notes = Pace-Notes an/aus, pause).
+// handbremse, und einmalige Tasten-Ereignisse (reset, debug, notes = Pace-Notes an/aus, pause, hud = HUD aus/an seit M6).
 // Seit M5a: Tasten frei belegbar (einstellungen.tasten), Lenkempfindlichkeit und Totzone einstellbar,
 // Gamepad-Start = Pause (zurück auf die Strasse: Y / Dreieck). Das Menü kann Tasten abfangen.
 
@@ -109,6 +109,7 @@ export function leseEingabe(dt) {
   let reset = neu('zurueck');
   const debug = einmal.has('F3');
   const notes = neu('notes'); // Pace-Notes an/aus (M4)
+  const hud = neu('hud'); // ganzes HUD aus/an (M6, nur Tastatur)
   let pause = einmal.has('Escape');
   einmal.clear();
 
@@ -126,7 +127,7 @@ export function leseEingabe(dt) {
     if (pad.neu[G.pause]) pause = true;
   }
 
-  return { gas, bremse, lenkung, handbremse, reset, debug, notes, pause };
+  return { gas, bremse, lenkung, handbremse, reset, debug, notes, pause, hud };
 }
 
 // --- Namen für die Anzeige ---------------------------------------------------------------------

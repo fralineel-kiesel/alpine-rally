@@ -6,7 +6,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Look: Renderauflösung 320x180, Low-Poly, flat shading, harte Pixel. Bäume, Steine, Kühe als 2D-Sprites (Billboards) im 3D-Raum, spart Leistung und passt zum Retro-Look. Kühe haben 8 Ansichten je nach Blickwinkel (seit M2b), damit sie nicht wie Pappe wirken. Leitplanken, Zäune und Schilder sind kleine Low-Poly-Formen mit Pixel-Textur (seit M2a: sie müssen zur Strasse schauen, nicht zur Kamera).
 - Palette: erdig und rau (Schotterbraun, Steingrau, Tannengrün), aber sattes grünes Gras und blauer Himmel. Sonniger Tag zum Start, anderes Wetter später.
 - Kamera: nur hinter dem Auto (Vorbild V-Rally 3, GBA: dichte Landschaft).
-- Spielziel: Etappe von A nach B gegen die Uhr, mit Checkpoints. Start mit Rally-Countdown 3-2-1-GO (Stehstart, kein Frühstart), am Ziel ein Zielbildschirm mit Vergleich zur Bestzeit und Statistik; Bestzeiten Top 10 pro Etappe und Gerät (seit M5b, ohne Kürzel, ohne Export). Beifahrer-Ansagen (Pace-Notes) kommen als Symbole oben im Bild. Gegner und Geister später.
+- Spielziel: Etappe von A nach B gegen die Uhr, mit Checkpoints. Start mit Rally-Countdown 3-2-1-GO (Stehstart, kein Frühstart), am Ziel ein Zielbildschirm mit Vergleich zur Bestzeit und Statistik; Bestzeiten Top 10 pro Etappe und Gerät (seit M5b, ohne Kürzel, ohne Export). Beifahrer-Ansagen (Pace-Notes) kommen als Symbole oben im Bild. Live-Vergleich zur Bestzeit seit M6. Gegner und Geister später.
 - Fahrphysik: Arcade mit Gewicht (schweres 80er-Rallyauto) und Handbremse für Kehren. Handbremse: kurz ziehen = Heck kommt, Tempo bleibt; lange halten = Auto wird langsamer und steht (seit M3a.2). Ohne Rutschen fährt das Auto nach dem Lenken schnell wieder geradeaus (seit M3a.2).
 - Fahrphysik mit Automatik-Getriebe (5 Gänge) und kurzer Schaltpause wie bei einem Handschalter (seit M1.2). Manuelles Schalten evtl. später als eigener Meilenstein.
 - Steuerung: Tastatur und Gamepad (seit M5a Tasten frei belegbar, Esc / Start = Pause). Menüs auch mit Maus. Handy (Touch) evtl. später, das Menü ist dafür vorbereitet.
@@ -25,6 +25,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Sperren sollen natürlich aussehen: pro Kurve nur eine Sorte (nur ein paar Felsen, nur Stämme oder nur Tannen), locker statt Mauer, nichts steckt ineinander (seit M2a.1).
 - Schalten soll man spüren: kurze Pause ohne Antrieb bei jedem Gangwechsel.
 - Analoge Tachos (Drehzahl mit Gangzahl, Tempo mit kleiner Digitalanzeige) im 80er-Look.
+- HUD (seit M6): Zeit oben links, darunter der Live-Vergleich ("-0.8" grün / "+1.2" rot, wahlweise gegen Bestzeit oder letzten Lauf), Pace-Notes oben Mitte, Minimap oben rechts (ganze Strecke, Norden oben, kein Fortschrittsbalken, keine Meter), Tachos unten rechts. Taste H blendet alles aus (Clean Look, für Screenshots).
 - Mag nicht: Formel-1-Randsteine, Kurvenpfeil-Schilder (Ausnahme seit M3a.1: Chevrons und Richtungstafel an den Absperrungen der Nebenwege), Alleen (gleichmässige Baumreihen), zu starkes Beschleunigen bergab, hartes Höchsttempo.
 - Später gewünscht: sichtbare Auto-Seite beim Lenken, Wetter und Tageszeit. (Schotter- und Wiesenabschnitte im Wechsel und Abzweigungen mit Rally-Absperrung gibt es seit M3a/M3b.)
 
@@ -50,6 +51,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M5a Menüs: Titelbildschirm („TASTE DRÜCKEN“), Hauptmenü (Starten, Auto, Etappe, Bestzeiten, Einstellungen, Steuerung mit Symbol-Legende, Credits) mit Demo-Fahrt dahinter (Testfahrer, 4 weiche Kameras), Pause (Esc / Start, auch automatisch beim Tab-Wechsel; alles eingefroren), Einstellungen (Vollbild, Pixelgrösse 320x180/480x270/640x360, Pace-Notes, km/h/mph, FPS, Tasten belegen, Lenkempfindlichkeit, Gamepad-Totzone, Lautstärke, Sprache) im Browser gespeichert, Deutsch/Englisch (alle Texte in js/texte.js), Zustandsmaschine für M5b (fertig)
 - M5a.1 Credits mit Mitwirkenden und Unterstützern (Namen in config.js), Rückwärts auf Asphalt schneller (ca. 32 statt 22 km/h, auf Gras/Bankett/Schotter/Wiesenweg wie bisher), Felswand: keine Bäume und Steine mehr im Fels, kein "Wurf" auf die Strasse mehr, wenn man von der Wiese her an den Anfang oder das Ende der Wand fährt (fertig)
 - M5b Rennen drumherum: Rally-Countdown 3-2-1-GO (Auto mit der Schnauze an der Startlinie, gesperrt, Zeit ab GO, kein Frühstart), Zielbildschirm nach 3 s (Endzeit, Vergleich zur Bestzeit grün/rot, Zwischenzeiten, Statistik Aufpralle/Resets/Höchsttempo, NEU STARTEN / HAUPTMENÜ), Bestzeiten Top 10 pro Etappe im Browser, Bestzeiten löschen in den Einstellungen (fertig)
-- M6 (als Nächstes) Minimap und Overlay
-- Danach: Feinschliff (Auto, Fahrphysik), Ton (M7)
+- M6 Minimap und Overlay: Minimap oben rechts (ganze Etappe, Norden oben, gefahrene Strecke orange, Start, Ziel, Checkpoints weiss/grün/rot, Auto als Punkt), Live-Vergleich unter der Zeit (grün "-0.8" / rot "+1.2", ständig aktuell, gegen Bestzeit oder letzten Lauf, Fahrspur alle 10 m mit der Bestzeit gespeichert), Einstellungen ANZEIGE, Taste H blendet das HUD aus (fertig)
+- M7 (als Nächstes) Ton
+- Danach: Feinschliff (Auto, Fahrphysik), evtl. Geisterauto aus der Fahrspur
 

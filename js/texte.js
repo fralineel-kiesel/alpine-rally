@@ -71,6 +71,14 @@ export const TEXTE = {
   'sprache.en': { de: 'ENGLISH', en: 'ENGLISH' },
   'einheit.kmh': { de: 'KM/H', en: 'KM/H' },
   'einheit.mph': { de: 'MPH', en: 'MPH' },
+  // M6: Gruppe ANZEIGE
+  'einst.anzeige': { de: 'ANZEIGE', en: 'DISPLAY' },
+  'einst.minimap': { de: 'MINIMAP', en: 'MINIMAP' },
+  'einst.vergleich': { de: 'LIVE-VERGLEICH', en: 'LIVE DELTA' },
+  'einst.vergleichHinweis': { de: 'GRÜN = SCHNELLER, ROT = LANGSAMER', en: 'GREEN = FASTER, RED = SLOWER' },
+  'einst.vergleichMit': { de: 'VERGLEICH MIT', en: 'COMPARE WITH' },
+  'wert.bestzeit': { de: 'BESTZEIT', en: 'BEST TIME' },
+  'wert.letzterLauf': { de: 'LETZTER LAUF', en: 'LAST RUN' },
   // M5b: Gruppe DATEN
   'einst.daten': { de: 'DATEN', en: 'DATA' },
   'einst.bestzeitenLoeschen': { de: 'BESTZEITEN LÖSCHEN', en: 'DELETE BEST TIMES' },
@@ -101,6 +109,7 @@ export const TEXTE = {
   'aktion.handbremse': { de: 'HANDBREMSE', en: 'HANDBRAKE' },
   'aktion.zurueck': { de: 'ZURÜCK AUF STRASSE', en: 'BACK ON ROAD' },
   'aktion.notes': { de: 'PACE-NOTES AN/AUS', en: 'PACE NOTES ON/OFF' },
+  'aktion.hud': { de: 'HUD AUS/AN', en: 'HUD OFF/ON' },
   'aktion.pause': { de: 'PAUSE', en: 'PAUSE' },
   'aktion.debug': { de: 'FPS/DEBUG', en: 'FPS/DEBUG' },
 
@@ -199,6 +208,11 @@ export const TEXTE = {
   'hud.ansagenAn': { de: 'ANSAGEN AN', en: 'PACE NOTES ON' },
   'hud.ansagenAus': { de: 'ANSAGEN AUS', en: 'PACE NOTES OFF' },
   'hud.ziel': { de: 'ZIEL!', en: 'FINISH!' },
+  // M6: Live-Vergleich (kleines Etikett vor der Zahl) und Taste H
+  'hud.vergleichBest': { de: 'BEST', en: 'BEST' },
+  'hud.vergleichLetzter': { de: 'LETZT', en: 'LAST' },
+  'hud.hudAus': { de: 'HUD AUS  {taste} = AN', en: 'HUD OFF  {taste} = ON' },
+  'hud.hudAn': { de: 'HUD AN', en: 'HUD ON' },
   'hud.hilfeFahren': { de: '{tasten}: FAHREN', en: '{tasten}: DRIVE' },
   'hud.hilfeHandbremse': { de: '{taste}: HANDBREMSE', en: '{taste}: HANDBRAKE' },
   'hud.hilfeZurueck': { de: '{taste}: AUF STRASSE  F3: DEBUG', en: '{taste}: BACK ON ROAD  F3: DEBUG' },

@@ -1,6 +1,7 @@
 // Start des Spiels und Spielschleife.
 // Seit M5a mit Ablauf: Titel -> Hauptmenü (Demo-Fahrt dahinter) -> Rennen <-> Pause (js/ablauf.js).
 // Seit M5b: STARTEN -> Countdown 3-2-1-GO -> Rennen -> Ziel ("ZIEL!", 3 s) -> Zielbildschirm (Bestzeiten, Statistik).
+// Seit M6: Minimap und Live-Vergleich im HUD (Fahrspur alle 10 m, js/vergleich.js), Taste H = HUD aus/an.
 // Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
 // (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
@@ -13,7 +14,8 @@ import { baueMenue } from './menue.js';
 import { baueSeiten } from './menueseiten.js';
 import { baueDemo } from './demofahrt.js';
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
-import { speichereBestzeit, hundertstel } from './bestzeiten.js';
+import { speichereBestzeit, hundertstel, ladeBestzeiten, speichereLetztenLauf, ladeLetztenLauf } from './bestzeiten.js';
+import { baueVergleich } from './vergleich.js';
 import { zeichneCountdown } from './rennablauf.js';
 import { baueStrecke } from './track.js';
 import { baueWelt } from './world.js';
@@ -146,7 +148,12 @@ const auto = baueAuto();
 szene.add(auto.objekt);
 const physik = new Fahrphysik();
 const getriebe = new Getriebe();
-const hud = baueHud(document.getElementById('hud'));
+// HUD mit Minimap (M6: die Karte wird hier einmal aus der Strecke gemalt)
+const minimapT0 = performance.now();
+const hud = baueHud(document.getElementById('hud'), strecke, checkpoints);
+const minimapMs = performance.now() - minimapT0;
+// Live-Vergleich (M6): Fahrspur dieses Laufs und Referenz (Bestzeit oder letzter Lauf)
+const vergleich = baueVergleich(strecke, checkpoints);
 // Pace-Notes (M4): Ansagen oben im Bild, beim Laden aus der Strecke berechnet
 const paceNotes = bauePaceNotes(strecke, netz);
 
@@ -156,7 +163,7 @@ const rennen = {
   zustand: 'bereit', zeit: 0, endZeit: 0, letztesS: 0, hilfe: true,
   naechsterCp: 0,        // welcher Checkpoint als nächster kommt (0 = der erste)
   zwischenzeiten: [],    // Zeit bei jedem Checkpoint (null = verpasst)
-  meldung: null,         // Text oben im Bild: { text, farbe, bis }
+  meldung: null,         // Text oben im Bild: { text, farbe, bis, verpasstCp } (verpasstCp: M6, Minimap färbt ihn rot)
   uhr: 0,                // läuft immer (für die Anzeigedauer der Meldungen)
 };
 let debugAn = einstellungen.fps; // F3 (seit M5a auch in den Einstellungen, wird gespeichert)
@@ -212,13 +219,24 @@ function neustart() {
   rennen.zwischenzeiten = [];
   rennen.meldung = null;
   paceNotes.zuruecksetzen();
+  // M6: Fahrspur leeren, Referenz für den Live-Vergleich laden (nur hier, nicht jedes Bild)
+  vergleich.zuruecksetzen();
+  referenzLaden();
   // M5b: Statistik und Ziel zurück
   stat.aufpralle = 0; stat.hoechstTempo = 0; stat.resetsBasis = rueck.anzahl; stat.letzterAufprall = -1e9;
   lauf.countdown = 0; lauf.go = 0; lauf.zielWarte = 0; lauf.zielErledigt = false; lauf.ergebnis = null;
 }
 
-function zeigeMeldung(text, farbe) {
-  rennen.meldung = { text, farbe, bis: rennen.uhr + CONFIG.checkpoints.anzeigeDauer };
+function zeigeMeldung(text, farbe, verpasstCp = -1) {
+  rennen.meldung = { text, farbe, bis: rennen.uhr + CONFIG.checkpoints.anzeigeDauer, verpasstCp };
+}
+
+// Referenz für den Live-Vergleich (M6): Platz 1 der Bestzeiten oder der letzte Lauf dieser Etappe (Einstellung)
+function referenzLaden() {
+  const etappe = ETAPPEN[auswahl.etappe].id;
+  const quelle = einstellungen.vergleichMit === 'letzter' ? 'letzter' : 'best';
+  const eintrag = quelle === 'letzter' ? ladeLetztenLauf(etappe) : (ladeBestzeiten(etappe)[0] || null);
+  vergleich.setzeReferenz(eintrag, quelle);
 }
 
 // Taste R (seit M4.1): Während des Rennens erst eine Wartezeit (config.js, zurueck.wartezeit), in der das
@@ -253,7 +271,7 @@ function aufStrasse() {
 const qAuto = {}, qGrenze = {};
 const SPERRE = { gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false };
 // leere Eingabe (nichts gedrückt); wird nie verändert
-const LEER = Object.freeze({ gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false, pause: false });
+const LEER = Object.freeze({ gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false, pause: false, hud: false });
 const SCHRITT = 1 / 120;
 let untergrund = 'asphalt';
 
@@ -387,7 +405,7 @@ function physikSchritt(dt, e, nurFahren = false) {
         zeigeMeldung(t('hud.cp', { n: n + 1, zeit: formatZeit(rennen.zeit) }), 'gelb');
       } else if (s > cpS + 5) {
         // schon hinter dem Tor, ohne durchgefahren zu sein
-        zeigeMeldung(t('hud.cpVerpasst'), 'rot');
+        zeigeMeldung(t('hud.cpVerpasst'), 'rot', n);
         if (cp.abkuerzungenVerhindern) {
           // zurück auf die Strassenmitte beim letzten erreichten Checkpoint
           setzeAuf(n > 0 ? checkpoints[n - 1].s + 1 : strecke.startS + 1);
@@ -404,6 +422,8 @@ function physikSchritt(dt, e, nurFahren = false) {
       rennen.endZeit = rennen.zeit;
     }
   }
+  // M6: Fahrspur (nur lesen: Stelle und Rennzeit, die Physik merkt nichts)
+  vergleich.schritt(s, rennen.zeit, rennen.zustand);
   rennen.letztesS = s;
 
   // R-Countdown abgelaufen: zurück auf die Strassenmitte, Tempo 0
@@ -669,11 +689,14 @@ function zielErreicht() {
   lauf.zielErledigt = true;
   const etappe = ETAPPEN[auswahl.etappe];
   const cps = checkpoints.map((_, n) => (rennen.zwischenzeiten[n] == null ? null : rennen.zwischenzeiten[n]));
+  // M6: Fahrspur (Rennzeit alle 10 m) mit der Bestzeit speichern; jeder fertige Lauf ist auch der "letzte Lauf"
+  const spur = vergleich.fertigeSpur(rennen.endZeit);
   const eintrag = {
     zeit: rennen.endZeit, cps, auto: AUTOS[auswahl.auto].id,
-    aufpralle: stat.aufpralle, resets: statResets(), hoechstTempo: stat.hoechstTempo,
+    aufpralle: stat.aufpralle, resets: statResets(), hoechstTempo: stat.hoechstTempo, spur,
   };
   const erg = speichereBestzeit(etappe.id, eintrag);
+  speichereLetztenLauf(etappe.id, { zeit: rennen.endZeit, cps, spur });
   lauf.ergebnis = {
     ...eintrag, platz: erg.platz, anzahl: erg.anzahl, bisher: erg.bisher, gespeichert: erg.gespeichert,
     neueBest: !!erg.bisher && hundertstel(eintrag.zeit) < hundertstel(erg.bisher.zeit), // nur echte Verbesserung
@@ -727,6 +750,7 @@ ablauf.registriere('ziel', { welt: 'rennen', hud: true, menue: true, abdunkeln: 
 beiAenderung((name, wert) => {
   if (name === 'aufloesung') aufloesungSetzen();
   if (name === 'fps') debugAn = wert;
+  if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
   menue.neuZeichnen();
 });
 document.addEventListener('fullscreenchange', () => {
@@ -752,6 +776,12 @@ window.addEventListener('blur', pausieren);
 document.addEventListener('visibilitychange', () => { if (document.hidden) pausieren(); });
 
 let sicht = 0, dunkel = 0; // Menü sichtbar (0..1), Abdunkeln der Szene (0..1)
+// Taste H (M6): ganzes HUD aus/an, nicht gespeichert (jeder Start der Seite mit HUD); hinweis = Sekunden "HUD AUS/AN"
+const hudSchalter = { an: true, hinweis: 0 };
+function hudUmschalten() {
+  hudSchalter.an = !hudSchalter.an;
+  hudSchalter.hinweis = CONFIG.hud.hudSchalter.hinweisDauer;
+}
 const nach = (w, ziel, schritt) => (w < ziel ? Math.min(ziel, w + schritt) : Math.max(ziel, w - schritt));
 
 function schleife(jetzt) {
@@ -792,6 +822,7 @@ function schleife(jetzt) {
       zeigeMeldung(t(paceNotes.anzeige.an ? 'hud.ansagenAn' : 'hud.ansagenAus'), 'gelb');
     }
     if (e.reset && !imCountdown) rTaste();
+    if (e.hud) hudUmschalten(); // (geht auch im Countdown)
     akku += dt;
     if (anhalten) akku = 0;
     while (akku >= SCHRITT) {
@@ -839,8 +870,11 @@ function schleife(jetzt) {
   renderer.render(szene, kamera);
 
   // HUD (im Rennen und eingefroren in der Pause), darüber Abdunkeln und Menü
+  if (hudSchalter.hinweis > 0) hudSchalter.hinweis = Math.max(0, hudSchalter.hinweis - dt);
   if (def.hud) {
     const notes = def.welt === 'rennen' ? paceNotes.aktualisiere(dt, rennen.letztesS, physik.tempo, rennen.zustand) : paceNotes.anzeige;
+    // M6: Live-Vergleich (rechnet höchstens 5 Mal pro Sekunde neu, in der Pause eingefroren)
+    const vgl = vergleich.aktualisiere(dtWelt, rennen.letztesS, rennen.zeit, rennen.zustand === 'laeuft');
     hud.zeichne({
       notes,
       zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
@@ -851,6 +885,9 @@ function schleife(jetzt) {
       hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
       meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
       zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
+      // M6: Minimap, Live-Vergleich, Taste H
+      maxS: vergleich.spur.maxS, cpNaechster: rennen.naechsterCp, vergleich: vgl, vergleichQuelle: vergleich.ref.quelle,
+      hudAus: !hudSchalter.an, hudHinweis: hudSchalter.hinweis,
       naechsterCp: rennen.naechsterCp < checkpoints.length
         ? { nummer: rennen.naechsterCp + 1, abstand: checkpoints[rennen.naechsterCp].s - rennen.letztesS }
         : { nummer: 0, abstand: strecke.zielS - rennen.letztesS },
@@ -889,5 +926,6 @@ window.__alpineRally = {
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
   ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,
   rennSchritt, lauf, stat, statResets, neuStarten,
+  hud, vergleich, referenzLaden, hudSchalter, hudUmschalten, minimapMs, // M6
   get blenden() { return { sicht, dunkel }; },
 };
