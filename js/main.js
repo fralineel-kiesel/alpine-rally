@@ -135,6 +135,7 @@ const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
 
 function setzeAuf(s, seite = 0) {
+  rueck.rest = 0; // ein laufender R-Countdown ist damit erledigt
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
   getriebe.reset();
@@ -157,7 +158,21 @@ function zeigeMeldung(text, farbe) {
   rennen.meldung = { text, farbe, bis: rennen.uhr + CONFIG.checkpoints.anzeigeDauer };
 }
 
-// Taste R: zurück auf die Strassenmitte an der aktuellen Stelle
+// Taste R (seit M4.1): Während des Rennens erst eine Wartezeit (config.js, zurueck.wartezeit), in der das
+// Auto gesperrt ist und bis zum Stand bremst; die Rennzeit läuft weiter. Erst dann aufStrasse().
+// Vor dem Start: sofort zurück auf die Strasse (wie bisher). Nach dem Ziel: Neustart (wie bisher).
+// Nochmals R während der Wartezeit ändert nichts.
+// Ergebnis (für Tests): 'neustart', 'sofort', 'countdown' oder 'laeuft schon'
+const rueck = { rest: 0, anzahl: 0 }; // rest = verbleibende Wartezeit (s, 0 = kein Countdown), anzahl = ausgelöste Resets
+function rTaste() {
+  if (rennen.zustand === 'ziel') { neustart(); return 'neustart'; }
+  if (rennen.zustand !== 'laeuft' || !(CONFIG.zurueck.wartezeit > 0)) { aufStrasse(); return 'sofort'; }
+  if (rueck.rest > 0) return 'laeuft schon';
+  rueck.rest = CONFIG.zurueck.wartezeit;
+  return 'countdown';
+}
+
+// Zurück auf die Strassenmitte an der aktuellen Stelle (Blickrichtung der Strasse, Tempo 0)
 function aufStrasse() {
   const q = strecke.abfrage(physik.x, physik.z);
   const s = begrenze(q.s, 2, strecke.laenge - 2);
@@ -170,6 +185,7 @@ function aufStrasse() {
 
 // --- Physik-Schritt mit Untergrund, Steigung und Begrenzungen ---
 const qAuto = {}, qGrenze = {};
+const SPERRE = { gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false };
 const SCHRITT = 1 / 120;
 let untergrund = 'asphalt';
 
@@ -187,6 +203,16 @@ function physikSchritt(dt, e) {
   const u = CONFIG.untergrund[boden.art];
 
   let eingabe = e;
+  // R-Countdown (M4.1): Auto gesperrt, bremst bis zum Stand (zurück auf die Strasse am Ende des Schritts)
+  if (rueck.rest > 0) {
+    if (rennen.zustand !== 'laeuft') rueck.rest = 0; // (z. B. im Ziel ausgerollt)
+    else {
+      const zb = CONFIG.zurueck.bremse;
+      eingabe = SPERRE;
+      SPERRE.bremse = physik.vVor > 0.5 ? zb : 0;
+      SPERRE.gas = physik.vVor < -0.5 ? zb : 0; // rückwärts rollend: Gas bremst
+    }
+  }
   // Nach dem Ziel bremst das Auto von selbst bis zum Stand (aber nicht weiter in den Rückwärtsgang)
   // (M3c: Stärke in config.js, startZiel.zielBremse – das Auto steht vor der Absperrung der Ausrollstrecke)
   const zb = CONFIG.startZiel && CONFIG.startZiel.an !== false ? CONFIG.startZiel.zielBremse : 0.35;
@@ -294,6 +320,16 @@ function physikSchritt(dt, e) {
     }
   }
   rennen.letztesS = s;
+
+  // R-Countdown abgelaufen: zurück auf die Strassenmitte, Tempo 0
+  if (rueck.rest > 0) {
+    rueck.rest -= dt;
+    if (rueck.rest <= 1e-9) {
+      rueck.rest = 0;
+      aufStrasse();
+      rueck.anzahl++;
+    }
+  }
 }
 
 // Wie tief steckt die Karosserie in der Felswand? (Meter quer zur Strasse, 0 = gar nicht)
@@ -430,10 +466,7 @@ function schleife(jetzt) {
     paceNotes.umschalten();
     zeigeMeldung(paceNotes.anzeige.an ? 'ANSAGEN AN' : 'ANSAGEN AUS', 'gelb');
   }
-  if (e.reset) {
-    if (rennen.zustand === 'ziel') neustart();
-    else aufStrasse();
-  }
+  if (e.reset) rTaste();
 
   const xVor = physik.x, zVor = physik.z;
   akku += dt;
@@ -466,7 +499,7 @@ function schleife(jetzt) {
   hud.zeichne({
     notes,
     zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
-    dt, kmh: physik.tempo * 3.6, debug: debugAn, fps,
+    dt, kmh: physik.tempo * 3.6, debug: debugAn, fps, countdown: rueck.rest,
     gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
     meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
     untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS', schotter: 'SCHOTTER', wiesenweg: 'WIESENWEG' }[untergrund],
@@ -486,6 +519,6 @@ requestAnimationFrame(schleife);
 // Für Tests (Screenshots) von aussen erreichbar
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
-  physikSchritt, SCHRITT, neustart, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
+  physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
 };

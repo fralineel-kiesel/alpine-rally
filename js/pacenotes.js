@@ -9,6 +9,7 @@
 
 import { CONFIG } from './config.js';
 import { KURVEN_TEMPO } from './pacenotes-tempo.js';
+import { kachelBreite } from './pacenotesbild.js';
 
 const GRAD = 180 / Math.PI;
 
@@ -97,18 +98,17 @@ export function findeKurven(strecke, netz, k = kruemmung(strecke), P = CONFIG.pa
   return kurven;
 }
 
-// Zusatz zur Kurve (höchstens einer): ZIEHT ZU, ÖFFNET, LANG, ENG oder WEIT
+// Zusatz zur Kurve (höchstens einer): ziehtZu, oeffnet, lang, eng oder weit (Schlüssel in pacenotes.texte)
 function formZusatz(c, P) {
-  const T = P.texte;
   // (bei Vollgas-Kurven, Stufe 6, sagt "zieht zu"/"öffnet" nichts)
-  if (c.ziehtZu && c.stufe < 6) return T.ziehtZu;
-  if (c.oeffnet && c.stufe < 6) return T.oeffnet;
-  if (c.winkel >= P.langWinkel || c.laenge >= P.langLaenge) return T.lang;
+  if (c.ziehtZu && c.stufe < 6) return 'ziehtZu';
+  if (c.oeffnet && c.stufe < 6) return 'oeffnet';
+  if (c.winkel >= P.langWinkel || c.laenge >= P.langLaenge) return 'lang';
   const g = P.stufenGrenzen, st = c.stufe;
   if (st <= 1 || st >= 6) return null;
   const unten = g[st - 2], oben = g[st - 1], anteil = (c.kmh - unten) / (oben - unten);
-  if (anteil < P.engWeitAnteil) return T.eng;
-  if (anteil > 1 - P.engWeitAnteil) return T.weit;
+  if (anteil < P.engWeitAnteil) return 'eng';
+  if (anteil > 1 - P.engWeitAnteil) return 'weit';
   return null;
 }
 
@@ -228,7 +228,7 @@ export function berechnePaceNotes(strecke, netz, P = CONFIG.pacenotes) {
     teile.push({
       art: 'kurve', s: c.von, sEnde: c.bis, richtung: c.richtung, stufe: c.stufe, form: zusatz,
       symbol: c.stufe <= 2 ? 'kurve12' : c.stufe <= 4 ? 'kurve34' : 'kurve56', farbe: farbeStufe(c.stufe),
-      varianten: zusatz ? [`${basis} ${zusatz}`, basis] : [basis], kurven: [c],
+      varianten: zusatz ? [`${basis} ${T[zusatz]}`, basis] : [basis], kurven: [c],
     });
   }
   for (const sk of schikanen) {
@@ -407,16 +407,79 @@ function fertigeNote(nt, P) {
 }
 
 // =====================================================================
-// Anzeige im Spiel: welche Ansagen gerade oben stehen (ohne neue Objekte pro Bild)
+// Anzeige im Spiel (seit M4.1): kleine Kacheln nur mit Symbolen, höchstens maxKacheln gleichzeitig
 // =====================================================================
+
+// Kacheln einer Ansage (eine je angezeigtem Teil). Felswand, Senke, Gerade und Belag nur mit
+// config.pacenotes.anzeigen. Ergebnis je Kachel: was zeichneKachel() braucht, dazu s (Anfang) und
+// mitte (beim Passieren dieser Stelle blendet die Kachel aus).
+export function kachelnAusNote(nt, P = CONFIG.pacenotes) {
+  const SYMBOL = { kuppe: 'kuppe', ziel: 'ziel', senke: 'senke', gerade: 'gerade', felswand: 'gefahr', belag: 'belag' };
+  const aus = [];
+  for (const t of nt.teile) {
+    if (P.anzeigen[t.art] === false) continue;
+    const c = t.kurven && t.kurven.length ? t.kurven[0] : null;
+    const k = {
+      art: t.art, symbol: SYMBOL[t.art] || null, richtung: t.richtung || 1, farbe: t.farbe, stufe: null,
+      form: null, schneiden: t.schneiden || null, belag: null, kehrenNr: null, kehrenAnzahl: null,
+      s: t.s, mitte: (t.s + t.sEnde) / 2,
+    };
+    if (t.art === 'kurve') {
+      k.symbol = t.stufe <= 2 ? 'kurve12' : t.stufe <= 4 ? 'kurve34' : 'kurve56';
+      k.stufe = t.stufe; k.form = t.form || null;
+    } else if (t.art === 'kehre') {
+      k.symbol = 'kehre';
+      if (c.kehrenAnzahl > 1) { k.kehrenNr = c.kehrenNr; k.kehrenAnzahl = c.kehrenAnzahl; }
+    } else if (t.art === 'schikane') {
+      k.symbol = 'schikane'; k.stufe = t.stufe;
+    } else if (t.art === 'abzweig' || t.art === 'einmuendung') {
+      k.symbol = t.art; k.stufe = t.stufe;
+      k.mitte = c ? (c.von + c.bis) / 2 : t.sKreuzung;
+      // Belag als kleines Zeichen nur beim Abzweig
+      if (t.art === 'abzweig' && t.belag) k.belag = t.belag;
+    } else if (t.art === 'schneiden' || t.art === 'nichtSchneiden') {
+      k.farbe = t.farbe;
+    }
+    if (!k.symbol && !k.schneiden) continue;
+    aus.push(k);
+  }
+  return aus;
+}
+
 export function bauePaceNotes(strecke, netz) {
   const P = CONFIG.pacenotes;
   const t0 = performance.now();
   const daten = berechnePaceNotes(strecke, netz, P);
   const notes = daten.notes;
   const N = notes.length;
+
+  // Alle Kacheln der Etappe, der Reihe nach, mit Note-Nummer
+  const kacheln = [];
+  notes.forEach((nt, j) => { for (const k of kachelnAusNote(nt, P)) { k.note = j; kacheln.push(k); } });
+  const K = kacheln.length;
+  for (const k of kacheln) k.breite = kachelBreite(k);
+  // Gruppen: Kacheln näher als gruppeAbstand erscheinen zusammen (höchstens maxKacheln je Gruppe)
+  const gruppen = [];
+  for (let i = 0; i < K; i++) {
+    const g = gruppen[gruppen.length - 1];
+    const k = kacheln[i];
+    if (g && g.bis - g.von + 1 < P.maxKacheln && k.s - kacheln[g.bis].s < P.gruppeAbstand) g.bis = i;
+    else gruppen.push({ von: i, bis: i });
+  }
+  for (const g of gruppen) {
+    g.anker = kacheln[g.bis].s; // Zeitfenster: die hinterste Kachel der Gruppe muss im Fenster sein
+    g.letzteMitte = Math.max(...kacheln.slice(g.von, g.bis + 1).map((k) => k.mitte));
+    g.bremsen = kacheln.slice(g.von, g.bis + 1).some((k) => k.art === 'kehre' || k.art === 'abzweig' || k.art === 'einmuendung');
+    g.vorlauf = notes[kacheln[g.von].note].vorlauf; // fester Vorlauf (nur wenn zielVor gesetzt)
+  }
+  const G = gruppen.length;
+  // Ende jeder Ansage (für die F3-Liste "nächste Ansagen")
+  const noteEnde = notes.map((nt) => Math.max(...nt.teile.map((t) => t.sEnde)));
   const ms = performance.now() - t0;
-  const alpha = new Float32Array(N), yPos = new Float32Array(N), gezeigt = new Uint8Array(N);
+
+  // Zustand je Kachel: 0 = kommt noch, 1 = steht, 2 = passiert
+  const status = new Uint8Array(K), alpha = new Float32Array(K), xPos = new Float32Array(K);
+  const gStatus = new Uint8Array(G);
 
   // An/Aus merken (Browser-Speicher darf fehlen)
   let an = P.an;
@@ -426,60 +489,85 @@ export function bauePaceNotes(strecke, netz) {
   } catch { /* kein Speicher: Standard */ }
 
   // Ergebnis für das HUD (immer dieselben Objekte)
-  const zeilen = [];
-  for (let z = 0; z < P.maxZeilen + 1; z++) zeilen.push({ nr: -1, alpha: 0, y: 0, distanz: 0 });
-  const anzeige = { an, zeilen, anzahl: 0, notes };
+  const sichtbare = [];
+  for (let z = 0; z < P.maxKacheln + 2; z++) sichtbare.push({ nr: -1, alpha: 0, x: 0 });
+  const anzeige = { an, kacheln: sichtbare, anzahl: 0, alle: kacheln, notes, naechste: 0 };
+  const mitteX = CONFIG.bild.breite / 2;
+
+  function zurueck() {
+    status.fill(0); alpha.fill(0); gStatus.fill(0);
+  }
 
   let sVorher = -1e9;
   return {
-    notes, daten, anzeige, ms,
+    notes, kacheln, gruppen, daten, anzeige, ms,
     umschalten() {
       an = !an;
       anzeige.an = an;
       try { window.localStorage.setItem(P.speicherName, an ? '1' : '0'); } catch { /* egal */ }
     },
     // Alles von vorn (Neustart)
-    zuruecksetzen() {
-      alpha.fill(0); gezeigt.fill(0); sVorher = -1e9;
-    },
+    zuruecksetzen() { zurueck(); sVorher = -1e9; },
     // s = Streckenmeter des Autos, v = Tempo (m/s), zustand = Rennzustand
     aktualisiere(dt, s, v, zustand) {
       const sichtbar = an && zustand !== 'ziel';
-      // Sprung zurück (Taste R): was vor dem Auto liegt, kommt neu
-      if (s < sVorher - 15) for (let j = 0; j < N; j++) if (notes[j].s > s) gezeigt[j] = 0;
-      sVorher = s;
-      const vorlauf = Math.min(P.vorlaufMax, Math.max(P.vorlaufMin, v * P.vorlaufZeit));
-      // Zeilen von oben: zuerst die gerade passierten (blenden aus), dann die nächsten vor dem Auto.
-      // Eine neue Ansage kommt nur, wenn eine Zeile frei ist; was schon steht, bleibt (kein Flackern).
-      let reihe = 0;
-      for (let j = 0; j < N; j++) {
-        const nt = notes[j];
-        const d = nt.s - s;
-        if (d > P.vorlaufMax + 60) { gezeigt[j] = 0; if (alpha[j] === 0) break; }
-        let soll = false;
-        if (sichtbar && d > 0) {
-          if (!gezeigt[j] && reihe < P.maxZeilen && d <= (nt.vorlauf || vorlauf)) gezeigt[j] = 1;
-          soll = gezeigt[j] === 1 && (alpha[j] > 0 || reihe < P.maxZeilen);
-        }
-        const vorher = alpha[j];
-        if (soll) alpha[j] = Math.min(1, alpha[j] + dt / P.einblenden);
-        else if (alpha[j] > 0) alpha[j] = Math.max(0, alpha[j] - dt / P.ausblenden);
-        if (alpha[j] > 0) {
-          if (vorher === 0) yPos[j] = reihe; // neue Zeile erscheint an ihrem Platz
-          else yPos[j] += (reihe - yPos[j]) * Math.min(1, dt * P.nachruecken); // rückt weich nach
-          reihe++;
+      // Sprung zurück (z. B. Taste R in einer Kehre): was vor dem Auto liegt, kommt neu
+      if (s < sVorher - 15) {
+        for (let g = 0; g < G; g++) {
+          const gr = gruppen[g];
+          if (gr.letzteMitte <= s) continue;
+          let steht = false;
+          for (let i = gr.von; i <= gr.bis; i++) if (status[i] === 1) steht = true;
+          for (let i = gr.von; i <= gr.bis; i++) if (status[i] === 2 && kacheln[i].mitte > s) status[i] = steht ? 1 : 0;
+          if (!steht) gStatus[g] = 0;
         }
       }
-      // Für das HUD: höchstens maxZeilen (+1 ausblendende) Zeilen, oben die dringendste
-      let z = 0;
-      for (let j = 0; j < N && z < zeilen.length; j++) {
-        if (alpha[j] <= 0) continue;
-        const zl = zeilen[z++];
-        zl.nr = j; zl.alpha = alpha[j]; zl.y = yPos[j];
-        const d = Math.max(0, notes[j].s - s);
-        zl.distanz = Math.round(d / P.distanzRunden) * P.distanzRunden;
+      sVorher = s;
+      // Passieren: Kurvenmitte erreicht -> ausblenden
+      let belegt = 0;
+      for (let i = 0; i < K; i++) {
+        if (status[i] === 1 && s >= kacheln[i].mitte) status[i] = 2;
+        if (alpha[i] > 0 || status[i] === 1) belegt++;
+      }
+      // Nächste Gruppe: erst wenn sie selbst im Zeitfenster ist (der Reihe nach). Ist nicht für alle ihre
+      // Kacheln Platz, kommen sie nacheinander, sobald ein Platz frei wird (nie mehr als maxKacheln).
+      const vorlauf = Math.min(P.vorlaufMax, Math.max(P.vorlaufMin, v * P.vorlaufZeit));
+      for (let g = 0; g < G; g++) {
+        if (gStatus[g]) continue;
+        const gr = gruppen[g];
+        const fenster = gr.vorlauf || vorlauf * (gr.bremsen ? P.vorlaufBremsen : 1);
+        // schon vorbei, ohne gezeigt zu werden (z. B. nach einem Sprung), oder im Fenster
+        const vorbei = gr.letzteMitte <= s;
+        if (!vorbei && !(sichtbar && gr.anker - s <= fenster)) break; // spätere Gruppen warten
+        let fertig = true;
+        for (let i = gr.von; i <= gr.bis; i++) {
+          if (status[i]) continue;
+          if (kacheln[i].mitte <= s) status[i] = 2;
+          else if (belegt < P.maxKacheln) { status[i] = 1; belegt++; } else fertig = false;
+        }
+        if (!fertig) break;
+        gStatus[g] = 1;
+      }
+      // Ein-/Ausblenden und Platz: die erste sichtbare Kachel mittig, die nächste rechts daneben
+      let z = 0, x = 0;
+      for (let i = 0; i < K; i++) {
+        const vorher = alpha[i];
+        if (status[i] === 1 && sichtbar) alpha[i] = Math.min(1, alpha[i] + dt / P.einblenden);
+        else if (alpha[i] > 0) alpha[i] = Math.max(0, alpha[i] - dt / P.ausblenden);
+        if (alpha[i] <= 0 || z >= sichtbare.length) continue;
+        const k = kacheln[i];
+        if (z === 0) x = mitteX - Math.round(k.breite / 2);
+        if (vorher === 0) xPos[i] = x; // neue Kachel erscheint an ihrem Platz
+        else xPos[i] += (x - xPos[i]) * Math.min(1, dt * P.nachruecken); // rutscht weich nach
+        const e = sichtbare[z++];
+        e.nr = i; e.alpha = alpha[i]; e.x = xPos[i];
+        x += k.breite + P.luecke;
       }
       anzeige.anzahl = z;
+      // nächste Ansage (für F3)
+      let n = 0;
+      while (n < N && noteEnde[n] < s) n++;
+      anzeige.naechste = n;
       return anzeige;
     },
   };
