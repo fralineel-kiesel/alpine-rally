@@ -1,16 +1,17 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 4.1 fertig** – **Pace-Notes kleiner, nur Symbole, später; R mit Wartezeit**: Die Zeit steht
-jetzt oben links, die Ansagen ganz oben in der Mitte als kleine Kacheln (Symbol + Stufen-Zahl, keine Wörter, keine
-Meter), höchstens 2 gleichzeitig und erst ca. 4 Sekunden vorher. Taste **R** bringt das Auto erst nach 4 Sekunden
-Wartezeit auf die Strasse zurück.
-Davor: 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 5a fertig** – **Menüs**: Beim Start kommt ein **Titelbildschirm** („TASTE DRÜCKEN“), dann das
+**Hauptmenü**. Dahinter fährt der Testfahrer die Etappe als **Demo-Fahrt** mit wechselnden Kameras. Mit **Esc**
+(Gamepad: Start) gibt es im Rennen eine **Pause**. Neu sind die **Einstellungen** (Grafik, Tasten belegen,
+Lenkempfindlichkeit, Gamepad-Totzone, Lautstärke, Sprache) – alles wird im Browser gespeichert. Das Spiel kann
+**Deutsch und Englisch**.
+Davor: 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
 Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
-## Steuerung
+## Steuerung (Standard-Belegung, Tasten seit M5a frei belegbar)
 
 | Aktion | Tastatur | Gamepad (Xbox / PlayStation) |
 |---|---|---|
@@ -18,17 +19,231 @@ Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 | Bremse / Rückwärts | Pfeil runter oder S | LT / L2 |
 | Lenken | Pfeil links/rechts oder A/D | linker Stick |
 | Handbremse | Leertaste | A / Kreuz |
-| Zurück auf die Strasse (im Rennen nach 4 s Wartezeit) | R | Start / Options |
-| Neustart nach dem Ziel | R | Start / Options |
+| Zurück auf die Strasse (im Rennen nach 4 s Wartezeit) | R | **Y / Dreieck** (neu, Start ist jetzt die Pause) |
+| Neustart nach dem Ziel | R | Y / Dreieck (oder Pause → Neustart) |
+| **Pause** (neu) | **Esc** | **Start / Options** |
 | Debug-Anzeige | F3 | – |
 | Pace-Notes (Ansagen) aus/ein | N | – |
 
-Tastatur und Gamepad gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
-Die Einstellung von N merkt sich der Browser (beim nächsten Start gleich wie vorher).
+Im Menü: Pfeile oder WASD (bzw. Steuerkreuz/linker Stick) zum Wählen, **Enter/Leertaste** (A / Kreuz) zum
+Bestätigen, **Esc/Rücktaste** (B / Kreis) für zurück. Die Maus geht auch (zeigen = wählen, klicken = bestätigen,
+Regler ziehen). Tastatur, Gamepad und Maus gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
+Alle Tasten ausser Esc, Enter und F3 kann man unter EINSTELLUNGEN → TASTEN BELEGEN ändern.
+
+Alle Einstellungen (auch N) merkt sich der Browser.
 
 ---
 
-## Meilenstein 4.1: Pace-Notes kleiner, nur Symbole, später; R mit Wartezeit ✅
+## Meilenstein 5a: Menüs (Titel, Hauptmenü, Pause, Einstellungen, Sprache) ✅
+
+### Was wurde gebaut?
+
+**1. Ablauf**
+- **Laden** → **Titelbildschirm**: gross „ALPINE RALLY“, darunter blinkend „TASTE DRÜCKEN“, unten rechts die
+  Versionsnummer. Jede Taste, jeder Mausklick und jeder Gamepad-Knopf geht weiter (dieser erste Tastendruck wird
+  später gebraucht, damit der Browser Ton erlaubt).
+- **Hauptmenü** → **STARTEN** → Rennen wie bisher (noch **ohne** Countdown, der kommt in M5b).
+- Im Rennen: **Esc** (Gamepad: **Start**) = **Pause**. Wechselt man den Browser-Tab oder klickt in ein anderes
+  Fenster, kommt die Pause **von selbst**. Verlässt man das Vollbild, ebenso.
+- Esc im Hauptmenü geht zurück zum Titel.
+
+**2. Demo-Fahrt hinter Titel und Hauptmenü**
+- Hinter dem Menü läuft die echte 3D-Welt: Der **Testfahrer** (gleiche Lenk- und Tempo-Logik wie
+  `tools/testfahrer-browser.js`, Fahrstil „mittel“) fährt die Etappe mit der echten Fahrphysik. Staub,
+  Zuschauer, Rauch bewegen sich wie im Spiel.
+- Die Kamera wechselt alle 7–9 Sekunden **weich** (1.6 s Überblendung der Kameraposition, kein Schnitt) zwischen
+  4 Blickwinkeln: **Verfolger seitlich**, **Front tief** (vor dem Auto, knapp über der Strasse), **von vorn oben**,
+  **Berge mit Auto klein** (weit hinten seitlich, Blick über das Auto hinweg in die Berge). Die Kameras gehen nicht
+  in die Felswand und nicht unter das Gelände (gleiche Regeln wie die Spielkamera).
+- Nach dem Ziel rollt das Auto aus, das Bild blendet kurz ab und die Fahrt beginnt von vorn.
+- Die Szene ist leicht abgedunkelt (32 %), damit die Menütafeln gut lesbar sind.
+- Die Demo-Fahrt schreibt **nichts** in den Rennstand (keine Zeit, keine Checkpoints, keine Pace-Notes, keine
+  Bestzeit). Technisch: sie benutzt nur den Fahr-Teil des Physik-Schritts, die Zeitmessung läuft gar nicht.
+  **STARTEN** setzt das Auto sauber an die Startposition (Zeit 0, alles zurück).
+- Kein HUD, keine Pace-Notes während der Demo. Es kommen keine neuen 3D-Objekte dazu.
+
+**3. Hauptmenü und Seiten**
+
+STARTEN · AUTO · ETAPPE · BESTZEITEN · EINSTELLUNGEN · STEUERUNG · CREDITS
+
+- **AUTO**: das eine Auto (Ringwerk RT4, „Allrad · 5 Gänge Automatik“, „Schweres Rallyauto der 80er“), mit „GEWÄHLT“.
+  **ETAPPE**: Passstrasse, **3.6 km** (Startlinie bis Ziellinie, aus der Strecke gerechnet), **3 Checkpoints**,
+  Beläge. Beides sind Listen (`js/inhalte.js`): ein weiteres Auto oder eine weitere Etappe ist ein neuer Eintrag,
+  das Menü zeigt dann alle untereinander.
+- **BESTZEITEN**: zeigt „NOCH KEINE ZEITEN“. Die Seite liest schon den Speicher `alpineRally.bestzeiten`; M5b muss
+  dort nur noch Zeiten hineinschreiben.
+- **STEUERUNG**: Tabelle der **aktuell** belegten Tasten und Gamepad-Knöpfe (aus der Belegung gelesen, ändert sich
+  mit), darunter **PACE-NOTES-SYMBOLE**: alle 18 Symbole, gemalt mit **denselben Zeichenfunktionen** wie im Rennen
+  (`js/pacenotesbild.js`), je mit einem kurzen Satz. Die Liste rollt (Pfeile).
+- **CREDITS**: Titel, Version (`VERSION` oben in `js/config.js`, jetzt „0.5A“), „Idee und Design: Lino“, „Gebaut mit
+  Claude“, „Alle Autos, Namen und Orte sind erfunden.“
+- Jede Seite hat eine Titelzeile und **ZURÜCK** als letzten Punkt.
+
+**4. Aussehen**
+- Tafeln wie die Zeit-Tafel des HUDs: dunkelblau, heller 1-Pixel-Rand, abgeschrägte Ecken. Titelzeile gelb.
+- Der **gewählte Eintrag**: **Pfeil ▶ davor** + **orange** Schrift + leicht orange hinterlegt (nicht nur Farbe).
+  Gruppen-Überschriften hellblau, Werte gelb, Hinweise grau.
+- Alles im 320x180-Raster mit der eigenen 5x7-Pixelschrift. Die Schrift steht jetzt in `js/pixel.js` (vorher in
+  `js/hud.js`) und hat neue Zeichen bekommen: ? % < … ' & · Pfeile (↑ ↓ ← →) und ▲ ▼ ▶. Ä Ö Ü gab es schon.
+- Seitenwechsel: kurz ausblenden und einblenden (0.2 s zusammen). Tafeln sind nur so breit wie nötig.
+- Ist eine Seite länger als der Bildschirm (Einstellungen, Symbole), rollt sie mit; gelbe ▲/▼ am rechten Rand
+  zeigen, dass es weitergeht.
+
+**5. Einstellungen** (alle sofort wirksam, alle im Browser gespeichert unter `alpineRally.einstellungen`;
+ohne Browser-Speicher läuft alles mit den Standardwerten)
+
+| Gruppe | Einstellung | Standard | Was es macht |
+|---|---|---|---|
+| Grafik | Vollbild | aus | an/aus; ist es gespeichert, geht es beim ersten Tastendruck auf dem Titel wieder an (Browser erlauben Vollbild nur nach einem Tastendruck) |
+| Grafik | Pixelgrösse | 320x180 | 320x180 (Original-Look), 480x270, 640x360. Nur das 3D-Bild wird feiner, HUD und Menü bleiben im 320x180-Raster. Hinweis im Menü: „Schärfer = weniger Retro und mehr Last“ |
+| Grafik | Pace-Notes | an | gleich wie Taste N (beide bleiben gleich) |
+| Grafik | Einheiten | km/h | km/h oder mph: Tacho (eigenes Zifferblatt bis 120 mph), Digitalzahl und F3-Anzeige |
+| Grafik | FPS-Anzeige (F3) | aus | gleich wie Taste F3 (wird jetzt auch gemerkt) |
+| Steuerung | Tasten belegen | siehe Tabelle oben | eigene Seite, siehe unten |
+| Steuerung | Lenkempfindlichkeit | 100 % (Mitte) | 5 Stufen: 60 / 80 / **100** / 125 / 150 %. Tastatur: so schnell baut sich der Lenkeinschlag auf. Stick: bei mehr als 100 % lenkt schon wenig Ausschlag stärker. 100 % = genau wie bisher |
+| Steuerung | Gamepad-Totzone | 12 % (Mitte) | 5 Stufen: 4 / 8 / **12** / 18 / 25 %. 12 % = genau wie bisher |
+| Ton | Lautstärke | 70 % | 0–100 % in 5er-Schritten. Wirkt erst, wenn es Ton gibt (M7), wird aber schon gespeichert |
+| Sprache | Sprache | Deutsch | Deutsch / English, sofort |
+
+**Tasten belegen**: Tabelle mit Gas, Bremse/Rückwärts, Links, Rechts, Handbremse, Zurück auf Strasse, Pace-Notes,
+je **Taste 1** und **Taste 2**. Mit Pfeil links/rechts das Feld wählen, Enter → „TASTE DRÜCKEN…“ → neue Taste.
+- **Esc** bricht ab, **Entf** leert das Feld (nur bei Taste 2; Taste 1 darf nicht leer sein).
+- Ist die Taste schon vergeben, wird **getauscht** (die andere Aktion bekommt die alte Taste von hier), Meldung
+  „GETAUSCHT MIT …“. Eine Taste ist **nie doppelt** belegt. Geht ein Tausch nicht (die andere Aktion hätte gar keine
+  Taste mehr), kommt „SCHON BELEGT: …“.
+- **Esc, Enter und F3** sind reserviert („… IST RESERVIERT“).
+- **STANDARD** stellt alle Tasten zurück.
+- Die Hilfe vor dem Start (unten links) und „R oder Y = Neustart“ im Ziel zeigen die aktuelle Belegung.
+- Das Gamepad ist fest belegt (Standard-Belegung, Knopf-Nummern in `config.js`, `menue.gamepad`).
+
+**6. Pause**
+- WEITER · NEUSTART DER ETAPPE · EINSTELLUNGEN · ZUM HAUPTMENÜ (mit Rückfrage „SICHER?“, NEIN ist vorgewählt).
+- **Alles friert ein**: Rennzeit, Physik, R-Countdown, Staub, winkende Zuschauer, Rauch, Tacho-Nadeln, Pace-Notes.
+  Die Zeit läuft in der Pause nicht weiter; nach WEITER geht es nahtlos weiter (kein Sprung).
+- Hintergrund: das eingefrorene Bild, abgedunkelt (45 %), das HUD bleibt sichtbar.
+- NEUSTART setzt Zeit, Checkpoints, Pace-Notes und Auto wie ein frischer Start zurück, ohne die Seite neu zu laden.
+- Esc oder Start in der Pause = WEITER.
+
+**7. Sprache**
+- Alle sichtbaren Texte stehen jetzt in **einer** Datei: **`js/texte.js`**, Deutsch und Englisch nebeneinander
+  (163 Texte), Deutsch in Schweizer Schreibweise (ss). Auch die HUD-Texte („ZEIT“/„TIME“, „ZIEL!“, „CHECKPOINT
+  VERPASST“, F3-Anzeige, Tacho-Beschriftung „KM/H“/„MPH“, Lade-Text) kommen von dort.
+- **Texte ändern**: in `js/texte.js` den Text zwischen den Anführungszeichen ändern. `{taste}` usw. sind Platzhalter
+  und müssen stehen bleiben. Die Pixelschrift kennt nur Grossbuchstaben, Ziffern, Ä Ö Ü und ein paar Zeichen – der
+  Test meldet, wenn ein Zeichen fehlt.
+- Die Pace-Notes sind Symbole und bleiben gleich.
+
+**8. Bedienung (Tastatur, Gamepad, Maus gleichzeitig)**
+- Tastatur: Pfeile/WASD, Enter/Leertaste = bestätigen, Esc/Rücktaste = zurück. Links/rechts ändert Werte.
+- Gamepad: Steuerkreuz oder linker Stick (gehalten = wiederholt), A/Kreuz = bestätigen, B/Kreis = zurück,
+  Start = Pause/Weiter.
+- Maus: zeigen = wählen, klicken = bestätigen (bei Auswahl: linke Hälfte = zurück, rechte = weiter), Regler ziehen,
+  Mausrad = rauf/runter.
+- **Touch vorbereitet**: Das Menü ist ein kleiner Baustein (`js/menue.js`) mit Einträgen vom Typ Aktion,
+  Umschalter, Regler, Auswahl, Tastenbelegung (dazu Überschrift und freie Zeile). Er kennt keine Eingabeart, nur
+  „hoch, runter, links, rechts, bestätigen, zurück, Zeiger bei x/y“. Jede Zeile ist eine Trefferfläche über die
+  ganze Tafelbreite und 11 Pixel hoch (bei 1280x720 also 44 Bildschirm-Pixel). Touch muss später nur noch die
+  Finger-Ereignisse an dieselben Funktionen geben.
+
+**9. Vorbereitung für M5b**
+- **Zustandsmaschine** in `js/ablauf.js`: Zustände titel, menue, rennen, pause. Jeder Zustand sagt, ob die Welt läuft
+  (Rennen, Demo oder eingefroren), ob HUD und Menü sichtbar sind und wie stark abgedunkelt wird. M5b hängt
+  „countdown“ und „ziel“ mit `ablauf.registriere(...)` ein, ohne die Spielschleife umzubauen.
+- Bestzeiten: Seite `bestzeiten`, Speicher `alpineRally.bestzeiten`, Lesen in `js/bestzeiten.js` (Top 10 je Etappe).
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/ablauf.js` | Zustandsmaschine (titel, menue, rennen, pause; M5b: countdown, ziel) |
+| `js/menue.js` | Menü-Baustein: Seiten, Einträge, Zeichnen, Bedienung, Trefferflächen |
+| `js/menueseiten.js` | alle Menüseiten |
+| `js/texte.js` | alle sichtbaren Texte Deutsch/Englisch |
+| `js/einstellungen.js` | Einstellungen laden/speichern, Tastenbelegung (tauschen, nie doppelt) |
+| `js/demofahrt.js` | Demo-Fahrt und Demo-Kameras |
+| `js/inhalte.js` | Listen der Autos und Etappen fürs Menü |
+| `js/bestzeiten.js` | Bestzeiten lesen (für M5b) |
+| `js/pixel.js` | Pixelschrift (von `hud.js` hierher, mit neuen Zeichen) und Tafel-Zeichnen |
+| `js/input.js` | Tasten frei belegbar, Lenkempfindlichkeit, Totzone, Esc/Start = Pause, Gamepad-Knöpfe einmal pro Bild |
+| `js/hud.js`, `js/tacho.js` | Texte aus `texte.js`, Tacho in km/h oder mph |
+| `js/main.js` | Ablauf, Demo, Pause, Einstellungen; der Physik-Schritt kann „nur fahren“ (Demo) |
+| `js/config.js` | neuer Block `menue`, Konstante `VERSION`, mph-Skala beim Tacho |
+
+### Werte zum Drehen (`js/config.js`, Block `menue`)
+
+| Wert | Was | heute |
+|---|---|---|
+| `menue.an` | false = ohne Titel/Menü starten (wie `?menue=aus`) | true |
+| `menue.standard` | alle Standardwerte der Einstellungen inkl. Tastenbelegung | siehe Tabelle oben |
+| `menue.aufloesungen` | die Pixelgrössen zur Auswahl | 320x180, 480x270, 640x360 |
+| `menue.lenkStufen`, `menue.totzonen` | Stufen der zwei Regler (Mitte = wie bisher) | 0.6–1.5 / 0.04–0.25 |
+| `menue.reserviert` | Tasten, die man nicht belegen kann | Esc, Enter, F3 |
+| `menue.gamepad` | Knopf-Nummern (Gas, Bremse, Handbremse, Zurück, Pause, Menü) | Standard-Belegung |
+| `menue.farbe…` | Farben der Tafeln, Auswahl (orange), Titel (gelb), Gruppen (hellblau) | |
+| `menue.zeile`, `menue.innen`, `menue.ecke` | Zeilenhöhe (auch Trefferfläche), Rand, Ecken | 11 / 6 / 2 px |
+| `menue.abdunkeln`, `menue.abdunkelnPause` | Szene hinter Menü / Pause abdunkeln | 0.32 / 0.45 |
+| `menue.blende`, `menue.blinken` | Seitenwechsel, Blinken von „TASTE DRÜCKEN“ | 0.2 s / 0.55 s |
+| `menue.demo.kameras` | die 4 Demo-Kameras: Lage zum Auto, Blickziel, Dauer | 9 / 7 / 7 / 9 s |
+| `menue.demo.wechsel` | Dauer der weichen Kamera-Überblendung | 1.6 s |
+| `menue.demo.quer`, `menue.demo.bremsen` | Fahrstil des Demo-Fahrers | 6 / 6.5 (wie „mittel“) |
+| `VERSION` (ganz oben) | Versionsnummer in den Credits und auf dem Titel | 0.5A |
+
+### Für Tests: am Menü vorbei
+
+- In der Adresse **`?menue=aus`** anhängen (z. B. `…/alpine-rally/index.html?menue=aus`): Das Spiel startet wie
+  früher direkt im Rennen (ohne Titel und Menü). Die Pause mit Esc gibt es trotzdem.
+- Oder im Browser: `window.__alpineRally.start()` – wie „STARTEN“ im Menü.
+- Die Test-Werkzeuge laden das Spiel über `tools/spiel-browser.mjs`; dort hängt `ladeSpiel()` jetzt `?menue=aus`
+  an (und `tools/abkuerzungen.mjs`, das einen eigenen Server hat). Die Tests selbst sind unverändert.
+  Mit `ladeSpiel(false, { menue: true })` lädt ein Werkzeug das Spiel mit Menü (so macht es der neue Menü-Test).
+
+### So testest du
+
+1. Spiel öffnen: Titel „ALPINE RALLY“, darunter blinkt „TASTE DRÜCKEN“, dahinter fährt das Auto. Eine Taste drücken.
+2. Im Hauptmenü ein paar Sekunden nichts tun: Die Kamera wechselt weich, das Auto fährt die ganze Etappe.
+3. Alle Seiten anschauen (Pfeile + Enter, Esc zurück), auch mit Maus und Gamepad.
+4. EINSTELLUNGEN: Pixelgrösse auf 640x360 stellen, starten, vergleichen. Einheiten auf mph: Tacho zeigt bis 120.
+   Sprache auf English: alles sofort Englisch. Seite neu laden: alles ist noch so eingestellt.
+5. TASTEN BELEGEN: z. B. Gas auf G legen, starten, mit G fahren. Eine schon vergebene Taste nehmen: wird getauscht.
+6. Im Rennen Esc: Pause, Zeit steht. Ein paar Sekunden warten, WEITER: Zeit läuft ohne Sprung weiter. Während der
+   Fahrt den Tab wechseln: beim Zurückkommen ist Pause.
+7. Pause → NEUSTART DER ETAPPE: Zeit 0, Auto am Start. Pause → ZUM HAUPTMENÜ → SICHER? → JA.
+8. Fragen an dich: Ist die Schrift auf beiden Rechnern gut lesbar? Gefällt dir die Demo-Fahrt? Ist Orange als
+   Auswahlfarbe gut? Lohnt sich 480x270 oder 640x360 auf dem Lenovo (Leistung)?
+
+### Bilder (`screenshots/m5a/`, neu erzeugen: `node tools/m5a-bilder.mjs`)
+
+Jede Seite in 1280x720 und in Originalgrösse (`…-320x180.png`), Deutsch (`de-…`) und Englisch (`en-…`):
+01 Titel, 02 Hauptmenü, 03 Etappe, 04 Auto, 05 Bestzeiten, 06–08 Einstellungen (Grafik / Steuerung / Ton und
+Sprache), 09 Tastenbelegung, 10 Tastenbelegung mitten im Belegen („TASTE DRÜCKEN…“), 11 Steuerung, 12–13
+Pace-Notes-Symbole (oben / weiter unten), 14 Credits, 15 Pause, 16 Rückfrage. Dazu
+`rennen-pixelgroesse-320x180.png`, `…-480x270.png`, `…-640x360.png`: dieselbe Stelle (Kehren) in den drei
+Pixelgrössen.
+
+### Selbst getestet
+
+??TESTS??
+
+### Ehrlich beurteilt
+
+??BEURTEILUNG??
+
+### Bekannte Probleme
+
+??PROBLEME??
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Ein kleines 3D-Vorschaubild des Autos auf der Seite AUTO (drehend).
+- Auf der Etappen-Seite eine kleine Streckenkarte (passt zur Minimap-Idee).
+- Gamepad-Knöpfe ebenfalls frei belegbar.
+- Demo-Fahrt: ab und zu die Handbremse in den Kehren ziehen (sieht spektakulärer aus); der Testfahrer fährt ohne.
+- Eine Einstellung „Bildschirm-Rand“ (ganzzahliges Skalieren an/aus, gibt es schon in `config.js`).
+- Pace-Notes-Texte in der F3-Anzeige auch auf Englisch.
+
+---
+
+## Meilenstein 4.1: Pace-Notes kleiner, nur Symbole, später; R mit Wartezeit ✅ (Verlauf, Stand damals – Gamepad-Start ist seit M5a die Pause)
 
 ### Was wurde gebaut?
 

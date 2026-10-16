@@ -1,84 +1,15 @@
 // HUD: Tachos, Zeit (oben links), Pace-Notes (oben Mitte, seit M4.1 als Kacheln), R-Countdown,
 // Zielanzeige und Debug-Panel.
-// Gezeichnet mit einer eigenen 5x7-Pixelschrift (keine externen Fonts).
+// Gezeichnet mit einer eigenen 5x7-Pixelschrift (keine externen Fonts, seit M5a in js/pixel.js).
+// Alle Texte kommen aus js/texte.js (Deutsch/Englisch).
 
 import { CONFIG } from './config.js';
 import { baueTachos, miniText, miniBreite } from './tacho.js';
 import { zeichneKachel, zeichneReset, KACHEL_HOEHE } from './pacenotesbild.js';
-
-// Pixelschrift: jedes Zeichen 5 Pixel breit, 7 hoch ('#' = Pixel an)
-const SCHRIFT = {
-  '0': ['.###.', '#...#', '#..##', '#.#.#', '##..#', '#...#', '.###.'],
-  '1': ['..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'],
-  '2': ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'],
-  '3': ['#####', '...#.', '..#..', '...#.', '....#', '#...#', '.###.'],
-  '4': ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'],
-  '5': ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
-  '6': ['..##.', '.#...', '#....', '####.', '#...#', '#...#', '.###.'],
-  '7': ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
-  '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
-  '9': ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
-  'A': ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
-  'B': ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
-  'C': ['.###.', '#...#', '#....', '#....', '#....', '#...#', '.###.'],
-  'D': ['###..', '#..#.', '#...#', '#...#', '#...#', '#..#.', '###..'],
-  'E': ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
-  'F': ['#####', '#....', '#....', '####.', '#....', '#....', '#....'],
-  'G': ['.###.', '#...#', '#....', '#.###', '#...#', '#...#', '.####'],
-  'H': ['#...#', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
-  'I': ['.###.', '..#..', '..#..', '..#..', '..#..', '..#..', '.###.'],
-  'J': ['..###', '...#.', '...#.', '...#.', '...#.', '#..#.', '.##..'],
-  'K': ['#...#', '#..#.', '#.#..', '##...', '#.#..', '#..#.', '#...#'],
-  'L': ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
-  'M': ['#...#', '##.##', '#.#.#', '#.#.#', '#...#', '#...#', '#...#'],
-  'N': ['#...#', '#...#', '##..#', '#.#.#', '#..##', '#...#', '#...#'],
-  'O': ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
-  'P': ['####.', '#...#', '#...#', '####.', '#....', '#....', '#....'],
-  'Q': ['.###.', '#...#', '#...#', '#...#', '#.#.#', '#..#.', '.##.#'],
-  'R': ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
-  'S': ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
-  'T': ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
-  'U': ['#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
-  'V': ['#...#', '#...#', '#...#', '#...#', '#...#', '.#.#.', '..#..'],
-  'W': ['#...#', '#...#', '#...#', '#.#.#', '#.#.#', '#.#.#', '.#.#.'],
-  'X': ['#...#', '#...#', '.#.#.', '..#..', '.#.#.', '#...#', '#...#'],
-  'Y': ['#...#', '#...#', '.#.#.', '..#..', '..#..', '..#..', '..#..'],
-  'Z': ['#####', '....#', '...#.', '..#..', '.#...', '#....', '#####'],
-  // Umlaute (M4, für die Pace-Notes): zwei Punkte oben, Buchstabe etwas kürzer
-  'Ä': ['.#.#.', '.....', '.###.', '#...#', '#####', '#...#', '#...#'],
-  'Ö': ['.#.#.', '.....', '.###.', '#...#', '#...#', '#...#', '.###.'],
-  'Ü': ['.#.#.', '.....', '#...#', '#...#', '#...#', '#...#', '.###.'],
-  ':': ['.....', '.##..', '.##..', '.....', '.##..', '.##..', '.....'],
-  '.': ['.....', '.....', '.....', '.....', '.....', '.##..', '.##..'],
-  '/': ['....#', '....#', '...#.', '..#..', '.#...', '#....', '#....'],
-  '-': ['.....', '.....', '.....', '.###.', '.....', '.....', '.....'],
-  '>': ['.#...', '..#..', '...#.', '....#', '...#.', '..#..', '.#...'],
-  '=': ['.....', '.....', '#####', '.....', '#####', '.....', '.....'],
-  '°': ['.##..', '#..#.', '#..#.', '.##..', '.....', '.....', '.....'],
-  '+': ['.....', '..#..', '..#..', '#####', '..#..', '..#..', '.....'],
-  '(': ['...#.', '..#..', '.#...', '.#...', '.#...', '..#..', '...#.'],
-  ')': ['.#...', '..#..', '...#.', '...#.', '...#.', '..#..', '.#...'],
-  ',': ['.....', '.....', '.....', '.....', '.##..', '..#..', '.#...'],
-  '!': ['..#..', '..#..', '..#..', '..#..', '..#..', '.....', '..#..'],
-  ' ': ['.....', '.....', '.....', '.....', '.....', '.....', '.....'],
-};
-
-const ZEICHEN = Object.keys(SCHRIFT);
-
-// Schrift einmal in eine Bildleiste malen, je Farbe
-function schriftLeiste(farbe) {
-  const c = document.createElement('canvas');
-  c.width = ZEICHEN.length * 6;
-  c.height = 7;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = farbe;
-  ZEICHEN.forEach((z, n) => {
-    const zeilen = SCHRIFT[z];
-    for (let y = 0; y < 7; y++)
-      for (let x = 0; x < 5; x++) if (zeilen[y][x] === '#') ctx.fillRect(n * 6 + x, y, 1, 1);
-  });
-  return c;
-}
+import { pixelText, zeichneTafel } from './pixel.js';
+import { t, beiSprachwechsel } from './texte.js';
+import { einstellungen, beiAenderung } from './einstellungen.js';
+import { tastenName, knopfName } from './input.js';
 
 export function formatZeit(sek) {
   const ms = Math.floor(sek * 100);
@@ -92,62 +23,51 @@ export function baueHud(canvas) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  const leisten = {
-    weiss: schriftLeiste('#f4f4ee'), schatten: schriftLeiste('#101418'), gelb: schriftLeiste('#ffd23c'),
-    rot: schriftLeiste('#ff4a3a'),
-  };
+  const FARBEN = { weiss: '#f4f4ee', gelb: '#ffd23c', rot: '#ff4a3a' };
   const PN = CONFIG.pacenotes;
 
-  // Text zeichnen (auf ctx oder ein anderes Bild c)
-  function textAuf(c, t, x, y, groesse = 1, farbe = 'weiss', ausrichtung = 'links') {
-    t = String(t).toUpperCase();
-    const breite = t.length * 6 * groesse - groesse;
-    if (ausrichtung === 'mitte') x = Math.round(x - breite / 2);
-    if (ausrichtung === 'rechts') x = Math.round(x - breite);
-    const schatten = Math.max(1, Math.floor(groesse / 2));
-    for (const [leiste, d] of [[leisten.schatten, schatten], [leisten[farbe], 0]]) {
-      for (let i = 0; i < t.length; i++) {
-        let n = ZEICHEN.indexOf(t[i]);
-        if (n < 0) n = ZEICHEN.indexOf(' ');
-        c.drawImage(leiste, n * 6, 0, 5, 7, x + i * 6 * groesse + d, y + d, 5 * groesse, 7 * groesse);
-      }
-    }
-  }
-  const text = (t, x, y, groesse, farbe, ausrichtung) => textAuf(ctx, t, x, y, groesse, farbe, ausrichtung);
+  // Text zeichnen (Pixelschrift aus js/pixel.js, mit Schatten)
+  const text = (tx, x, y, groesse = 1, farbe = 'weiss', ausrichtung = 'links') =>
+    pixelText(ctx, tx, x, y, groesse, FARBEN[farbe] || farbe, ausrichtung);
 
   const tachos = baueTachos(ctx, text);
+  tachos.setzeEinheit(einstellungen.einheit);
 
-  // Rechteck mit pixelig abgeschrägten Ecken (e = so viele Pixel abgeschrägt)
-  function tafel(x, y, b, h, e, fuellung, rand) {
-    for (let i = 0; i < h; i++) {
-      const ein = Math.max(0, e - i, e - (h - 1 - i)); // Einzug dieser Zeile
-      ctx.fillStyle = fuellung;
-      ctx.fillRect(x + ein, y + i, b - 2 * ein, 1);
-      ctx.fillStyle = rand;
-      if (i === 0 || i === h - 1) ctx.fillRect(x + ein, y + i, b - 2 * ein, 1);
-      else {
-        ctx.fillRect(x + ein, y + i, 1, 1);
-        ctx.fillRect(x + b - 1 - ein, y + i, 1, 1);
-        // Schräge: Pixel zwischen dieser und der Zeile darüber/darunter schliessen
-        const einOben = Math.max(0, e - (i - 1), e - (h - i)), einUnten = Math.max(0, e - (i + 1), e - (h - 2 - i));
-        for (const n of [einOben, einUnten]) {
-          if (n > ein + 1) { ctx.fillRect(x + ein + 1, y + i, n - ein - 1, 1); ctx.fillRect(x + b - n, y + i, n - ein - 1, 1); }
-        }
-      }
-    }
+  // Feste Texte mit Tastennamen (Hilfe vor dem Start, Neustart im Ziel): nur bei Änderung neu bauen
+  const feste = { hilfe: [], zielNeustart: '', zeit: '' };
+  function festeTexte() {
+    const T = einstellungen.tasten;
+    const fahren = ['gas', 'bremse', 'links', 'rechts'].map((a) => tastenName(T[a][0])).join('');
+    const fahren2 = ['gas', 'bremse', 'links', 'rechts'].every((a) => T[a][1]) ? `/${['gas', 'bremse', 'links', 'rechts'].map((a) => tastenName(T[a][1])).join('')}` : '';
+    feste.hilfe = [
+      t('hud.hilfeFahren', { tasten: fahren + fahren2 }),
+      t('hud.hilfeHandbremse', { taste: tastenName(T.handbremse[0]) }),
+      t('hud.hilfeZurueck', { taste: tastenName(T.zurueck[0]) }),
+      t('hud.hilfeNotes', { taste: tastenName(T.notes[0]) }),
+    ];
+    feste.zielNeustart = t('hud.zielNeustart', { taste: tastenName(T.zurueck[0]), knopf: knopfName(CONFIG.menue.gamepad.zurueck) });
+    feste.zeit = t('hud.zeit');
   }
+  festeTexte();
+  beiSprachwechsel(festeTexte);
+  beiAenderung((name, wert) => {
+    if (name === 'tasten') festeTexte();
+    if (name === 'einheit') tachos.setzeEinheit(wert);
+  });
+
+  // Rechteck mit pixelig abgeschrägten Ecken (seit M5a in js/pixel.js, auch für die Menüs)
+  const tafel = (x, y, b, h, e, fuellung, rand) => zeichneTafel(ctx, x, y, b, h, e, fuellung, rand);
 
   // Zeit-Tafel oben links (seit M4.1, vorher Mitte). Ergebnis: y unter den Checkpoint-Punkten
-  const zeitBreite = CONFIG.hud.zeit.innen * 2 + miniBreite('ZEIT') + CONFIG.hud.zeit.luecke + 8 * 6 - 1 + 2;
   function zeitTafel(z) {
     const c = CONFIG.hud.zeit;
     const zeit = formatZeit(z.zeit);           // immer 8 Zeichen -> feste Breite
-    const bWort = miniBreite('ZEIT');
-    const b = zeitBreite;
+    const bWort = miniBreite(feste.zeit);
+    const b = c.innen * 2 + bWort + c.luecke + 8 * 6 - 1 + 2;
     const x = c.links, y = c.oben;
     tafel(x, y, b, c.hoehe, c.ecke, CONFIG.hud.tacho.farbeBlatt, c.farbeRand);
     const yText = y + Math.round((c.hoehe - 7) / 2);
-    miniText(ctx, 'ZEIT', x + 1 + c.innen, yText + 1, c.farbeBeschriftung);
+    miniText(ctx, feste.zeit, x + 1 + c.innen, yText + 1, c.farbeBeschriftung);
     text(zeit, x + 1 + c.innen + bWort + c.luecke, yText, 1, z.zustand === 'laeuft' ? 'weiss' : 'gelb');
     // Checkpoint-Punkte mittig unter der Tafel: leer = noch nicht erreicht, gelb gefüllt = erreicht
     const n = z.anzahlCps, g = c.cpGroesse;
@@ -237,17 +157,14 @@ export function baueHud(canvas) {
       tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang);
 
       if (z.zustand === 'bereit' && z.hilfe) {
-        text('PFEILE/WASD: FAHREN', 5, H - 43);
-        text('LEERTASTE: HANDBREMSE', 5, H - 34);
-        text('R: AUF STRASSE  F3: DEBUG', 5, H - 25);
-        text('N: ANSAGEN AN/AUS', 5, H - 16);
+        for (let i = 0; i < 4; i++) text(feste.hilfe[i], 5, H - 43 + i * 9);
       }
       // Meldung oben (Zwischenzeit oder "Checkpoint verpasst")
       if (z.meldung && z.zustand !== 'ziel') text(z.meldung.text, CONFIG.hud.zeit.links, unterTafel + CONFIG.hud.zeit.meldungUnter, 1, z.meldung.farbe);
       if (z.zustand === 'ziel') {
         ctx.fillStyle = 'rgba(10,14,20,0.55)';
         ctx.fillRect(0, 42, B, 96);
-        text('ZIEL!', B / 2, 47, 4, 'gelb', 'mitte');
+        text(t('hud.ziel'), B / 2, 47, 4, 'gelb', 'mitte');
         text(formatZeit(z.endZeit), B / 2, 79, 3, 'weiss', 'mitte');
         // Zwischenzeiten der Checkpoints
         for (let n = 0; n < z.anzahlCps; n++) {
@@ -255,24 +172,26 @@ export function baueHud(canvas) {
           const x = B / 2 + (n - (z.anzahlCps - 1) / 2) * 100;
           text(`CP ${n + 1}  ${zz == null ? '--:--.--' : formatZeit(zz)}`, x, 107, 1, 'weiss', 'mitte');
         }
-        text('R ODER START = NEUSTART', B / 2, 124, 1, 'gelb', 'mitte');
+        text(feste.zielNeustart, B / 2, 124, 1, 'gelb', 'mitte');
       }
       if (z.debug) {
+        // Tempo in der gewählten Einheit (km/h oder mph)
+        const mph = einstellungen.einheit === 'mph', f = mph ? 1 / 1.609344 : 1, einheit = t(mph ? 'einheit.mph' : 'einheit.kmh');
         const zeilen = [
-          `FPS ${Math.round(z.fps)}`,
-          `METER ${Math.max(0, Math.round(z.meter))} / ${Math.round(z.laenge)}`,
-          `TEMPO ${Math.round(z.kmh)} KM/H`,
-          `GANG ${z.gang} U/MIN ${Math.round(z.drehzahl)}`,
-          `DRIFT ${Math.round(z.drift)}°`,
-          `UNTERGRUND ${z.untergrund}`,
-          `HINDERNISSE ${z.hindernisse}`,
+          t('debug.fps', { n: Math.round(z.fps) }),
+          t('debug.meter', { a: Math.max(0, Math.round(z.meter)), b: Math.round(z.laenge) }),
+          t('debug.tempo', { v: Math.round(z.kmh * f), einheit }),
+          t('debug.gang', { g: z.gang, d: Math.round(z.drehzahl) }),
+          t('debug.drift', { d: Math.round(z.drift) }),
+          t('debug.untergrund', { u: t(`untergrund.${z.untergrund}`) }),
+          t('debug.hindernisse', { n: z.hindernisse }),
           z.naechsterCp.nummer
-            ? `NAECHSTER CP ${z.naechsterCp.nummer} IN ${Math.round(z.naechsterCp.abstand)} M`
-            : `ZIEL IN ${Math.round(z.naechsterCp.abstand)} M`,
+            ? t('debug.naechsterCp', { n: z.naechsterCp.nummer, m: Math.round(z.naechsterCp.abstand) })
+            : t('debug.zielIn', { m: Math.round(z.naechsterCp.abstand) }),
           z.aufprall
-            ? `AUFPRALL ${Math.round(z.aufprall.vorher * 3.6)} -> ${Math.round(z.aufprall.nachher * 3.6)} KM/H`
-            : 'AUFPRALL -',
-          `ANSAGEN ${z.notes && z.notes.an ? 'AN' : 'AUS'} (TASTE N)`,
+            ? t('debug.aufprall', { a: Math.round(z.aufprall.vorher * 3.6 * f), b: Math.round(z.aufprall.nachher * 3.6 * f), einheit })
+            : t('debug.aufprallKein'),
+          t('debug.ansagen', { an: t(z.notes && z.notes.an ? 'wert.an' : 'wert.aus'), taste: tastenName(einstellungen.tasten.notes[0]) }),
         ];
         // die nächsten Ansagen als Text (intern, nur hier)
         const a = z.notes;

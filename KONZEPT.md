@@ -9,7 +9,8 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Spielziel: Etappe von A nach B gegen die Uhr, mit Checkpoints. Beifahrer-Ansagen (Pace-Notes) kommen als Symbole oben im Bild. Gegner und Geister später.
 - Fahrphysik: Arcade mit Gewicht (schweres 80er-Rallyauto) und Handbremse für Kehren. Handbremse: kurz ziehen = Heck kommt, Tempo bleibt; lange halten = Auto wird langsamer und steht (seit M3a.2). Ohne Rutschen fährt das Auto nach dem Lenken schnell wieder geradeaus (seit M3a.2).
 - Fahrphysik mit Automatik-Getriebe (5 Gänge) und kurzer Schaltpause wie bei einem Handschalter (seit M1.2). Manuelles Schalten evtl. später als eigener Meilenstein.
-- Steuerung: Tastatur und Gamepad. Handy evtl. später.
+- Steuerung: Tastatur und Gamepad (seit M5a Tasten frei belegbar, Esc / Start = Pause). Menüs auch mit Maus. Handy (Touch) evtl. später, das Menü ist dafür vorbereitet.
+- Menüs (seit M5a): im selben Pixel-Look wie das HUD (dunkelblaue Tafeln, heller Rand, Auswahl orange mit Pfeil), dahinter fährt das Auto als Demo. Deutsch (Schweizer Schreibweise) und Englisch.
 - Autos: aus einfachen Formen gebaut, Fantasienamen. Erstes Auto: Ringwerk RT4 (Quattro-Typ). Auto-Look und Feinschliff später.
 - Version 1 = eine Etappe fahrbar mit Zeitmessung.
 
@@ -46,5 +47,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M3d Leben an der Strecke: Wiesenweg als Alpweide (Holzzaun mit Weidetor, neue Kühe, Alphütte, Heustadel, Brunnen, Steinmännchen, Wegweiser, Heurollen, Findlinge), drei Fan-Spots, zwei Unfallautos mit Rauch, Warndreieck und Streckenposten; Kühe eingefroren wie die Bäume (fertig)
 - M4 Pace-Notes oben im Bild unter der Zeit: Symbol + kurzer Text + Distanz, höchstens 3 Zeilen. Kurven mit Stufe 1–6 (an der echten Fahrphysik gemessen) und Zusatz (eng, weit, lang, öffnet, zieht zu), Kehren mit Nummer (1/4 …), Schikane, Gerade mit Länge, Kuppe, Senke, Abzweig/Einmündung mit Belag (Schotter, Wiesenweg), Felswand, Ziel, "schneiden"/"nicht schneiden" als grünes/rotes Zeichen. Alles automatisch aus der Strecke, Taste N aus/ein (fertig)
 - M4.1 Pace-Notes kleiner und knapper: Zeit nach oben links, Ansagen als kleine Symbol-Kacheln ganz oben mittig (Symbol + Stufen-Zahl + höchstens ein Zusatzzeichen, schneiden grün / nicht schneiden rot, eigene Symbole für Kehre, Kuppe, Abzweig/Einmündung, Ziel, Schikane), keine Wörter und keine Meter mehr, höchstens 2 Kacheln, ca. 4 s vorher (50–160 m, bei Kehren/Abzweigen bis 25 % mehr); R mit 4 s Wartezeit (fertig)
-- M5 Drumherum: Zielbildschirm, Minimap, Feinschliff (Auto, Fahrphysik)
+- M5a Menüs: Titelbildschirm („TASTE DRÜCKEN“), Hauptmenü (Starten, Auto, Etappe, Bestzeiten, Einstellungen, Steuerung mit Symbol-Legende, Credits) mit Demo-Fahrt dahinter (Testfahrer, 4 weiche Kameras), Pause (Esc / Start, auch automatisch beim Tab-Wechsel; alles eingefroren), Einstellungen (Vollbild, Pixelgrösse 320x180/480x270/640x360, Pace-Notes, km/h/mph, FPS, Tasten belegen, Lenkempfindlichkeit, Gamepad-Totzone, Lautstärke, Sprache) im Browser gespeichert, Deutsch/Englisch (alle Texte in js/texte.js), Zustandsmaschine für M5b (fertig)
+- M5b (als Nächstes) Rennen drumherum: Countdown vor dem Start, Zielbildschirm, Bestzeiten (Top 10), Statistik
+- Danach: Minimap, Feinschliff (Auto, Fahrphysik), Ton (M7)
 

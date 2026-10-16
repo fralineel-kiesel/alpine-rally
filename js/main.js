@@ -1,7 +1,16 @@
 // Start des Spiels und Spielschleife.
+// Seit M5a mit Ablauf: Titel -> Hauptmenü (Demo-Fahrt dahinter) -> Rennen <-> Pause (js/ablauf.js).
+// Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start()
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { t, setzeSprache, beiSprachwechsel } from './texte.js';
+import { einstellungen, ladeEinstellungen, setze, beiAenderung, belegeTaste } from './einstellungen.js';
+import { baueAblauf } from './ablauf.js';
+import { baueMenue } from './menue.js';
+import { baueSeiten } from './menueseiten.js';
+import { baueDemo } from './demofahrt.js';
+import { ETAPPEN } from './inhalte.js';
 import { baueStrecke } from './track.js';
 import { baueWelt } from './world.js';
 import { baueNetz } from './netz.js';
@@ -9,7 +18,7 @@ import { bauePflanzen, baueDeko, spriteGruppe } from './sprites.js';
 import { baueAuto } from './car.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
-import { leseEingabe } from './input.js';
+import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
 import { baueHud, formatZeit } from './hud.js';
 import { baueKollision } from './kollision.js';
 import { baueCheckpointTore } from './checkpoints.js';
@@ -22,10 +31,22 @@ import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 
+// Einstellungen laden (fehlt der Browser-Speicher: Standardwerte) und Sprache setzen
+ladeEinstellungen();
+setzeSprache(einstellungen.sprache);
+function dokumentSprache() {
+  document.documentElement.lang = einstellungen.sprache;
+  document.title = t('dokument.titel');
+}
+dokumentSprache();
+beiSprachwechsel(dokumentSprache);
+const menueAn = CONFIG.menue.an && new URLSearchParams(window.location.search).get('menue') !== 'aus';
+
 const lade = document.getElementById('lade');
+lade.innerHTML = `${t('lade.titel')}<br><small>${t('lade.bauen')}</small>`;
 function zeigeFehler(text) {
   lade.style.display = 'flex';
-  lade.innerHTML = `Fehler beim Starten:<br><small>${text}</small>`;
+  lade.innerHTML = `${t('lade.fehler')}<br><small>${text}</small>`;
 }
 window.addEventListener('error', (e) => zeigeFehler(e.message));
 
@@ -40,7 +61,12 @@ const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('spiel'), antialias: false, powerPreference: 'high-performance',
 });
 renderer.setPixelRatio(1);
-renderer.setSize(B, H, false);
+// Pixelgrösse (M5a): nur das 3D-Bild wird feiner, HUD und Menü bleiben im 320x180-Raster
+function aufloesungSetzen() {
+  const [rb, rh] = CONFIG.menue.aufloesungen[einstellungen.aufloesung] || [B, H];
+  renderer.setSize(rb, rh, false);
+}
+aufloesungSetzen();
 
 function anpassen() {
   let s = Math.min(window.innerWidth / B, window.innerHeight / H);
@@ -129,7 +155,7 @@ const rennen = {
   meldung: null,         // Text oben im Bild: { text, farbe, bis }
   uhr: 0,                // läuft immer (für die Anzeigedauer der Meldungen)
 };
-let debugAn = false;
+let debugAn = einstellungen.fps; // F3 (seit M5a auch in den Einstellungen, wird gespeichert)
 
 const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
@@ -193,7 +219,8 @@ function bodenHoehe(x, z) {
   return welt.bodenBei(x, z).h;
 }
 
-function physikSchritt(dt, e) {
+// nurFahren (M5a, Demo-Fahrt): nur Fahren und Kollisionen, keine Zeitmessung, nichts im Rennstand
+function physikSchritt(dt, e, nurFahren = false) {
   const q = strecke.abfrage(physik.x, physik.z, qAuto);
   const boden = welt.bodenBei(physik.x, physik.z, q);
   untergrund = boden.art;
@@ -204,7 +231,7 @@ function physikSchritt(dt, e) {
 
   let eingabe = e;
   // R-Countdown (M4.1): Auto gesperrt, bremst bis zum Stand (zurück auf die Strasse am Ende des Schritts)
-  if (rueck.rest > 0) {
+  if (rueck.rest > 0 && !nurFahren) {
     if (rennen.zustand !== 'laeuft') rueck.rest = 0; // (z. B. im Ziel ausgerollt)
     else {
       const zb = CONFIG.zurueck.bremse;
@@ -216,7 +243,7 @@ function physikSchritt(dt, e) {
   // Nach dem Ziel bremst das Auto von selbst bis zum Stand (aber nicht weiter in den Rückwärtsgang)
   // (M3c: Stärke in config.js, startZiel.zielBremse – das Auto steht vor der Absperrung der Ausrollstrecke)
   const zb = CONFIG.startZiel && CONFIG.startZiel.an !== false ? CONFIG.startZiel.zielBremse : 0.35;
-  if (rennen.zustand === 'ziel') eingabe = { ...e, gas: 0, bremse: physik.vVor > 0.5 ? Math.max(e.bremse, zb) : 0 };
+  if (rennen.zustand === 'ziel' && !nurFahren) eingabe = { ...e, gas: 0, bremse: physik.vVor > 0.5 ? Math.max(e.bremse, zb) : 0 };
 
   const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?
@@ -278,6 +305,8 @@ function physikSchritt(dt, e) {
     }
   }
 
+  if (nurFahren) return; // Demo-Fahrt: kein Rennstand
+
   // Zeitmessung und Checkpoints
   rennen.uhr += dt;
   const s = q2.s;
@@ -299,10 +328,10 @@ function physikSchritt(dt, e) {
         // sauber durchs Tor gefahren
         rennen.zwischenzeiten[n] = rennen.zeit;
         rennen.naechsterCp++;
-        zeigeMeldung(`CP ${n + 1}  ${formatZeit(rennen.zeit)}`, 'gelb');
+        zeigeMeldung(t('hud.cp', { n: n + 1, zeit: formatZeit(rennen.zeit) }), 'gelb');
       } else if (s > cpS + 5) {
         // schon hinter dem Tor, ohne durchgefahren zu sein
-        zeigeMeldung('CHECKPOINT VERPASST', 'rot');
+        zeigeMeldung(t('hud.cpVerpasst'), 'rot');
         if (cp.abkuerzungenVerhindern) {
           // zurück auf die Strassenmitte beim letzten erreichten Checkpoint
           setzeAuf(n > 0 ? checkpoints[n - 1].s + 1 : strecke.startS + 1);
@@ -406,29 +435,7 @@ function kameraFuehren(dt) {
   kam.yaw += winkelNorm(ziel - kam.yaw) * (1 - Math.exp(-c.nachfuehren * dt));
   kameraZiel();
   kam.pos.lerp(kam.ziel, 1 - Math.exp(-c.positionGlaetten * dt));
-  // nicht in die Felswand: höchstens bis 0.8 m vor den Wandfuss und (seit M3a.3) mit
-  // kamera.wandAbstand Luft zur sichtbaren Wandfläche in Kamerahöhe
-  const q = strecke.abfrage(kam.pos.x, kam.pos.z, qKam);
-  if (q.wandSeite && Math.sign(q.seite) === q.wandSeite) {
-    let max = welt.wandKante(q, kam.pos.y - q.h - c.wandAbstand) - c.wandAbstand;
-    if (q.wandStaerke > 0.2) max = Math.min(max, CONFIG.felswand.abstand - 0.8);
-    const ueber = Math.abs(q.seite) - max;
-    if (ueber > 0) {
-      kam.pos.x -= -q.tz * q.wandSeite * ueber;
-      kam.pos.z -= q.tx * q.wandSeite * ueber;
-    }
-  }
-  // M3c: Steht die Kamera in oder hinter der Absperrung an Start oder Ziel (Auto fährt rückwärts hinein),
-  // wird sie über die Absperrung gehoben (sonst sieht man ins Stroh)
-  for (const { ast, hoehe } of endSperren) {
-    const w = netz.stummelAbfrage(ast, kam.pos.x, kam.pos.z, 15, qKamS);
-    const sp = ast.sperre;
-    if (!w || Math.abs(w.seite) > sp.breite + 1.5) continue;
-    if (w.s > sp.bogenU(begrenze(w.seite, -sp.breite, sp.breite)) - 1.5) kam.pos.y = Math.max(kam.pos.y, w.h + hoehe + 0.7);
-  }
-  // nicht unter das Gelände
-  const boden = bodenHoehe(kam.pos.x, kam.pos.z) + 1.0;
-  if (kam.pos.y < boden) kam.pos.y = boden;
+  kameraKorrektur(kam.pos);
   kamera.position.copy(kam.pos);
   const y = auto.objekt.position.y;
   kamera.lookAt(
@@ -443,10 +450,123 @@ function kameraFuehren(dt) {
   welt.himmel.position.copy(kamera.position);
 }
 
+// Kamera nicht in die Felswand, nicht ins Stroh an Start/Ziel, nicht unter das Gelände
+// (seit M5a eigene Funktion: auch für die Kameras der Demo-Fahrt)
+function kameraKorrektur(pos, ueberBoden = 1.0) {
+  const c = CONFIG.kamera;
+  // nicht in die Felswand: höchstens bis 0.8 m vor den Wandfuss und (seit M3a.3) mit
+  // kamera.wandAbstand Luft zur sichtbaren Wandfläche in Kamerahöhe
+  const q = strecke.abfrage(pos.x, pos.z, qKam);
+  if (q.wandSeite && Math.sign(q.seite) === q.wandSeite) {
+    let max = welt.wandKante(q, pos.y - q.h - c.wandAbstand) - c.wandAbstand;
+    if (q.wandStaerke > 0.2) max = Math.min(max, CONFIG.felswand.abstand - 0.8);
+    const ueber = Math.abs(q.seite) - max;
+    if (ueber > 0) {
+      pos.x -= -q.tz * q.wandSeite * ueber;
+      pos.z -= q.tx * q.wandSeite * ueber;
+    }
+  }
+  // M3c: Steht die Kamera in oder hinter der Absperrung an Start oder Ziel (Auto fährt rückwärts hinein),
+  // wird sie über die Absperrung gehoben (sonst sieht man ins Stroh)
+  for (const { ast, hoehe } of endSperren) {
+    const w = netz.stummelAbfrage(ast, pos.x, pos.z, 15, qKamS);
+    const sp = ast.sperre;
+    if (!w || Math.abs(w.seite) > sp.breite + 1.5) continue;
+    if (w.s > sp.bogenU(begrenze(w.seite, -sp.breite, sp.breite)) - 1.5) pos.y = Math.max(pos.y, w.h + hoehe + 0.7);
+  }
+  // nicht unter das Gelände
+  const boden = bodenHoehe(pos.x, pos.z) + ueberBoden;
+  if (pos.y < boden) pos.y = boden;
+}
+
 // --- Spielschleife ---
 let letzte = performance.now();
 let akku = 0;
 let fps = 60, fpsZaehler = 0, fpsZeit = 0;
+
+// --- Ablauf: Titel, Hauptmenü, Rennen, Pause (seit M5a, js/ablauf.js) ---
+const M = CONFIG.menue;
+const hudLeinwand = document.getElementById('hud');
+const hudCtx = hudLeinwand.getContext('2d');
+const ablauf = baueAblauf();
+const menue = baueMenue({
+  tasteBelegen: belegeTaste, tasteLesen: (a, k) => einstellungen.tasten[a][k], tasteName: tastenName, aktionName: (a) => t(`aktion.${a}`),
+});
+// Demo-Fahrt: fährt mit physikSchritt(..., nurFahren = true), schreibt also nichts in den Rennstand
+const demo = baueDemo({
+  strecke, welt, physik, getriebe, kamera,
+  fahrSchritt: (dt, e) => physikSchritt(dt, e, true), kameraKorrektur: (p) => kameraKorrektur(p, 0.4),
+});
+ETAPPEN[0].laenge = (strecke.zielS - strecke.startS) / 1000;
+ETAPPEN[0].checkpoints = checkpoints.length;
+
+// Rennen frisch beginnen (Auto an der Startlinie, Zeit 0, Checkpoints zurück) – ohne Countdown (der kommt in M5b)
+function starten() {
+  neustart();
+  kollision.letzterAufprall = null;
+  ablauf.wechsle('rennen');
+}
+function pausieren() { if (ablauf.zustand === 'rennen') ablauf.wechsle('pause'); }
+function weiter() { if (ablauf.zustand === 'pause') ablauf.wechsle('rennen'); }
+function zumMenue() {
+  if (einstellungen.vollbild) vollbild(true); // gespeichertes Vollbild (geht nur nach einem Tastendruck)
+  ablauf.wechsle('menue');
+}
+function zumHauptmenue() {
+  neustart();
+  demo.start();
+  ablauf.wechsle('menue');
+}
+function zumTitel() { ablauf.wechsle('titel'); }
+// Vollbild an/aus. ausMenue: aus den Einstellungen (klappt es nicht, steht dort wieder AUS)
+function vollbild(an, ausMenue = false) {
+  const nein = () => { if (ausMenue && !document.fullscreenElement) setze('vollbild', false); };
+  try {
+    if (an && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        // Chrome/Edge: Esc geht im Vollbild ans Spiel (Pause); lange halten verlässt das Vollbild
+        if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock(['Escape']).catch(() => {});
+      }).catch(nein);
+    } else if (!an && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  } catch { nein(); /* Browser kann kein Vollbild */ }
+}
+const seiten = baueSeiten({ menue, zumMenue, starten, weiter, neustartEtappe: starten, zumHauptmenue, zumTitel, paceNotes, vollbild });
+
+ablauf.registriere('titel', { welt: 'demo', menue: true, abdunkeln: M.abdunkeln, betreten: () => menue.zeige(seiten.titel) });
+ablauf.registriere('menue', { welt: 'demo', menue: true, abdunkeln: M.abdunkeln, betreten: () => menue.zeige(seiten.haupt) });
+ablauf.registriere('rennen', { welt: 'rennen', hud: true, betreten: () => { eingabeLeeren(); akku = 0; } });
+ablauf.registriere('pause', { welt: null, hud: true, menue: true, abdunkeln: M.abdunkelnPause, betreten: () => menue.zeige(seiten.pause) });
+
+// Einstellungen wirken sofort
+beiAenderung((name, wert) => {
+  if (name === 'aufloesung') aufloesungSetzen();
+  if (name === 'fps') debugAn = wert;
+  menue.neuZeichnen();
+});
+document.addEventListener('fullscreenchange', () => {
+  const an = !!document.fullscreenElement;
+  if (an !== einstellungen.vollbild) setze('vollbild', an);
+  if (!an) pausieren();
+});
+// Tastatur im Menü (im Rennen geht alles wie bisher an die Fahr-Eingabe)
+setzeAbfangen((code, wiederholt) => (ablauf.def && ablauf.def.menue ? menue.taste(code, wiederholt) : false));
+// Maus im Menü: Punkt im 320x180-Raster
+function mausAnMenue(ev, art) {
+  if (!ablauf.def || !ablauf.def.menue) return;
+  if (art !== 'bewegen' && ev.button !== 0) return;
+  const r = hudLeinwand.getBoundingClientRect();
+  menue.maus((ev.clientX - r.left) / r.width * B, (ev.clientY - r.top) / r.height * H, art);
+}
+window.addEventListener('mousemove', (ev) => mausAnMenue(ev, 'bewegen'));
+window.addEventListener('mousedown', (ev) => mausAnMenue(ev, 'druecken'));
+window.addEventListener('mouseup', (ev) => mausAnMenue(ev, 'loslassen'));
+window.addEventListener('wheel', (ev) => { if (ablauf.def && ablauf.def.menue && ev.deltaY) menue.maus(0, 0, 'rad', ev.deltaY); }, { passive: true });
+// Fenster verlässt den Fokus oder Tab wird gewechselt: automatisch Pause
+window.addEventListener('blur', pausieren);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pausieren(); });
+
+let sicht = 0, dunkel = 0; // Menü sichtbar (0..1), Abdunkeln der Szene (0..1)
+const nach = (w, ziel, schritt) => (w < ziel ? Math.min(ziel, w + schritt) : Math.max(ziel, w - schritt));
 
 function schleife(jetzt) {
   requestAnimationFrame(schleife);
@@ -457,68 +577,117 @@ function schleife(jetzt) {
   fpsZeit += dt;
   if (fpsZeit >= 0.5) { fps = fpsZaehler / fpsZeit; fpsZaehler = 0; fpsZeit = 0; }
 
-  let e = leseEingabe(dt);
-  // nur für automatische Tests: Eingabe von aussen
-  const te = window.__alpineRally && window.__alpineRally.testEingabe;
-  if (te) e = { ...e, ...te };
-  if (e.debug) debugAn = !debugAn;
-  if (e.notes) {
-    paceNotes.umschalten();
-    zeigeMeldung(paceNotes.anzeige.an ? 'ANSAGEN AN' : 'ANSAGEN AUS', 'gelb');
-  }
-  if (e.reset) rTaste();
+  aktualisierePad();
+  const zustandVorher = ablauf.zustand;
+  if (ablauf.def.menue) menue.gamepad(dt, pad);
 
+  // Eingabe nur im Rennen (im Menü gehen Tasten an das Menü)
+  let e = null;
+  if (zustandVorher === 'rennen' && ablauf.zustand === 'rennen') {
+    e = leseEingabe(dt);
+    // nur für automatische Tests: Eingabe von aussen
+    const te = window.__alpineRally && window.__alpineRally.testEingabe;
+    if (te) e = { ...e, ...te };
+    if (e.pause) pausieren();
+  }
+  const def = ablauf.def;
+  const anhalten = window.__alpineRally && window.__alpineRally.anhalten; // nur für Tests: Physik von aussen gesteuert
   const xVor = physik.x, zVor = physik.z;
-  akku += dt;
-  // nur für automatische Tests: Physik von aussen gesteuert
-  if (window.__alpineRally && window.__alpineRally.anhalten) akku = 0;
-  while (akku >= SCHRITT) {
-    physikSchritt(SCHRITT, e);
-    akku -= SCHRITT;
+  let dtWelt = dt; // 0 = eingefroren (Pause)
+  if (def.welt === 'rennen') {
+    if (e.debug) { debugAn = !debugAn; setze('fps', debugAn); }
+    if (e.notes) {
+      paceNotes.umschalten();
+      zeigeMeldung(t(paceNotes.anzeige.an ? 'hud.ansagenAn' : 'hud.ansagenAus'), 'gelb');
+    }
+    if (e.reset) rTaste();
+    akku += dt;
+    if (anhalten) akku = 0;
+    while (akku >= SCHRITT) {
+      physikSchritt(SCHRITT, e);
+      akku -= SCHRITT;
+    }
+    if (physik.tempo > 3) rennen.hilfe = false;
+  } else if (def.welt === 'demo') {
+    akku += dt;
+    if (anhalten) akku = 0;
+    while (akku >= SCHRITT) {
+      demo.schritt(SCHRITT);
+      akku -= SCHRITT;
+    }
+  } else {
+    dtWelt = 0; // Pause: Physik, Zeit, R-Countdown, Staub, Zuschauer, Rauch stehen still
+    akku = 0;
   }
-  if (physik.tempo > 3) rennen.hilfe = false;
-  const weg = Math.hypot(physik.x - xVor, physik.z - zVor) * Math.sign(physik.vVor || 1);
 
-  autoZeichnen(dt, weg);
-  // Staub (nur auf Schotter und Wiesenweg): Werte ohne neue Objekte übergeben
-  staubAuto.x = physik.x; staubAuto.z = physik.z; staubAuto.y = auto.objekt.position.y;
-  staubAuto.richtung = physik.richtung; staubAuto.vx = physik.vx; staubAuto.vz = physik.vz;
-  staubAuto.tempo = physik.tempo; staubAuto.drift = physik.driftWinkel;
-  staubAuto.gas = e.gas; staubAuto.handbremse = e.handbremse; staubAuto.belag = untergrund;
-  staubAuto.schotter = !!(CONFIG.staub.belaege && CONFIG.staub.belaege[untergrund]);
-  staub.aktualisiere(dt, staubAuto);
-  kameraFuehren(dt);
+  if (dtWelt > 0) {
+    const weg = Math.hypot(physik.x - xVor, physik.z - zVor) * Math.sign(physik.vVor || 1);
+    autoZeichnen(dt, weg);
+    // Staub (nur auf Schotter und Wiesenweg): Werte ohne neue Objekte übergeben
+    const ea = e || demo.eingabe;
+    staubAuto.x = physik.x; staubAuto.z = physik.z; staubAuto.y = auto.objekt.position.y;
+    staubAuto.richtung = physik.richtung; staubAuto.vx = physik.vx; staubAuto.vz = physik.vz;
+    staubAuto.tempo = physik.tempo; staubAuto.drift = physik.driftWinkel;
+    staubAuto.gas = ea.gas; staubAuto.handbremse = ea.handbremse; staubAuto.belag = untergrund;
+    staubAuto.schotter = !!(CONFIG.staub.belaege && CONFIG.staub.belaege[untergrund]);
+    staub.aktualisiere(dt, staubAuto);
+  }
+  let schwarz = 0;
+  if (def.welt === 'rennen') kameraFuehren(dt);
+  else if (def.welt === 'demo') {
+    schwarz = demo.bild(dt, auto.objekt.position.y);
+    welt.himmel.position.copy(kamera.position);
+  }
   welt.aktualisiere(kamera.position);
   strassenrand.aktualisiere(kamera.position);
-  startZiel.aktualisiere(dt, kamera.position);
-  leben.aktualisiere(dt, kamera.position);
+  startZiel.aktualisiere(dtWelt, kamera.position);
+  leben.aktualisiere(dtWelt, kamera.position);
   nebenwegSperrenZeigen(kamera.position);
   renderer.render(szene, kamera);
 
-  const notes = paceNotes.aktualisiere(dt, rennen.letztesS, physik.tempo, rennen.zustand);
-  hud.zeichne({
-    notes,
-    zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
-    dt, kmh: physik.tempo * 3.6, debug: debugAn, fps, countdown: rueck.rest,
-    gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
-    meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
-    untergrund: { asphalt: 'ASPHALT', bankett: 'BANKETT', gras: 'GRAS', schotter: 'SCHOTTER', wiesenweg: 'WIESENWEG' }[untergrund],
-    hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
-    meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
-    zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
-    naechsterCp: rennen.naechsterCp < checkpoints.length
-      ? { nummer: rennen.naechsterCp + 1, abstand: checkpoints[rennen.naechsterCp].s - rennen.letztesS }
-      : { nummer: 0, abstand: strecke.zielS - rennen.letztesS },
-  });
+  // HUD (im Rennen und eingefroren in der Pause), darüber Abdunkeln und Menü
+  if (def.hud) {
+    const notes = def.welt === 'rennen' ? paceNotes.aktualisiere(dt, rennen.letztesS, physik.tempo, rennen.zustand) : paceNotes.anzeige;
+    hud.zeichne({
+      notes,
+      zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
+      dt: dtWelt, kmh: physik.tempo * 3.6, debug: debugAn, fps, countdown: rueck.rest,
+      gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
+      meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
+      untergrund,
+      hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
+      meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
+      zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
+      naechsterCp: rennen.naechsterCp < checkpoints.length
+        ? { nummer: rennen.naechsterCp + 1, abstand: checkpoints[rennen.naechsterCp].s - rennen.letztesS }
+        : { nummer: 0, abstand: strecke.zielS - rennen.letztesS },
+    });
+  } else hudCtx.clearRect(0, 0, B, H);
+  const k = dt / M.blende;
+  dunkel = nach(dunkel, def.abdunkeln, k * 0.5);
+  sicht = nach(sicht, def.menue ? 1 : 0, k);
+  if (schwarz > 0 || dunkel > 0) {
+    hudCtx.fillStyle = '#060a12';
+    hudCtx.globalAlpha = Math.min(1, dunkel + schwarz);
+    hudCtx.fillRect(0, 0, B, H);
+    hudCtx.globalAlpha = 1;
+  }
+  if (sicht > 0) menue.zeichne(hudCtx, dt, sicht);
 }
 
 neustart();
 lade.style.display = 'none';
+if (menueAn) {
+  demo.start();
+  ablauf.wechsle('titel');
+} else ablauf.wechsle('rennen');
 requestAnimationFrame(schleife);
 
 // Für Tests (Screenshots) von aussen erreichbar
+// start(): am Menü vorbei direkt ins Rennen (wie "STARTEN")
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
+  ablauf, menue, seiten, demo, einstellungen, start: starten, pausieren, weiter, zumHauptmenue, menueAn,
 };

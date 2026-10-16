@@ -3,6 +3,9 @@
 // Einheiten: Meter, Sekunden, m/s (1 m/s = 3.6 km/h), Grad wo angegeben.
 // =====================================================================
 
+// Versionsnummer (Credits im Menü)
+export const VERSION = '0.5A';
+
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
   bild: {
@@ -988,6 +991,10 @@ export const CONFIG = {
       tempoStrichLang: 20,     // lange Striche alle ... km/h
       tempoStrichKurz: 10,     // kurze Striche alle ... km/h
       tempoZahlen: 40,         // Zahlen alle ... km/h
+      tempoMaxMph: 120,        // Skala in mph (Einstellung "Einheiten", M5a): bis ... mph
+      tempoStrichLangMph: 20,  // ... lange Striche alle ... mph
+      tempoStrichKurzMph: 10,  // ... kurze Striche alle ... mph
+      tempoZahlenMph: 40,      // ... Zahlen alle ... mph
       drehzahlMax: 8,          // Skala Drehzahl bis (x 1000 U/min)
       drehzahlRotAb: 7,        // roter Bereich ab (x 1000 U/min)
       nadelBreite: 1,          // Nadel 1 oder 2 Pixel breit
@@ -1122,6 +1129,93 @@ export const CONFIG = {
     bremse: 0.7,               // so stark bremst das gesperrte Auto (0..1, wie das Bremspedal)
     oben: 3,                   // Anzeige "Zeichen + Zahl" so viele Pixel unter der Pace-Notes-Tafel (mittig)
     farbe: '#ffd23c',          // Farbe von Zeichen und Zahl
+  },
+
+  // --- Menüs, Pause, Einstellungen (Meilenstein 5a) ---------------------------------
+  // Masse in Pixeln des 320x180-Bildes (Menüs bleiben immer in diesem Raster).
+  menue: {
+    an: true,                  // false = Spiel startet direkt ohne Titel und Menü (wie ?menue=aus in der Adresse)
+    speicherName: 'alpineRally.einstellungen', // unter diesem Namen merkt sich der Browser die Einstellungen
+    bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten (werden ab M5b gefüllt)
+    // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
+    standard: {
+      vollbild: false,         // Vollbild an/aus (wird beim ersten Tastendruck auf dem Titel wieder eingeschaltet)
+      aufloesung: 0,           // Pixelgrösse: Nummer in "aufloesungen" (0 = 320x180, Original-Look)
+      einheit: 'kmh',          // 'kmh' oder 'mph'
+      fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
+      lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
+      totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
+      lautstaerke: 70,         // Lautstärke in Prozent (wirkt erst, wenn es Ton gibt, M7)
+      sprache: 'de',           // 'de' (Deutsch) oder 'en' (Englisch)
+      // Tastenbelegung: je Aktion Taste 1 und Taste 2 (null = keine). Namen = Tasten-Codes des Browsers
+      tasten: {
+        gas: ['ArrowUp', 'KeyW'],
+        bremse: ['ArrowDown', 'KeyS'],
+        links: ['ArrowLeft', 'KeyA'],
+        rechts: ['ArrowRight', 'KeyD'],
+        handbremse: ['Space', null],
+        zurueck: ['KeyR', null],    // zurück auf die Strasse (R)
+        notes: ['KeyN', null],      // Pace-Notes an/aus (N)
+      },
+    },
+    aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
+    lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
+    totzonen: [0.04, 0.08, 0.12, 0.18, 0.25], // Gamepad-Totzone je Stufe (Mitte = steuerung.totzone von früher)
+    lautSchritt: 5,            // Lautstärke-Regler in Schritten von ... Prozent
+    reserviert: ['Escape', 'Enter', 'NumpadEnter', 'F3'], // diese Tasten kann man nicht belegen
+    // Gamepad (fest, Standard-Belegung): Knopf-Nummern
+    gamepad: {
+      gas: 7,                  // RT / R2 (analog)
+      bremse: 6,               // LT / L2 (analog)
+      handbremse: 0,           // A / Kreuz
+      zurueck: 3,              // Y / Dreieck: zurück auf die Strasse (Start ist seit M5a die Pause)
+      pause: 9,                // Start / Options
+      bestaetigen: 0,          // Menü: A / Kreuz
+      abbrechen: 1,            // Menü: B / Kreis
+      hoch: 12, runter: 13, links: 14, rechts: 15, // Menü: Steuerkreuz
+    },
+    stickSchwelle: 0.5,        // Menü: so weit muss der Stick ausschlagen
+    wiederholenNach: 0.4,      // Menü: gehaltene Richtung wiederholt nach ... Sekunden ...
+    wiederholenAlle: 0.12,     // ... und dann alle ... Sekunden
+
+    // Aussehen (wie die Zeit-Tafel des HUDs)
+    farbeTafel: 'rgba(18, 24, 32, 0.86)', // dunkelblaue Tafel (etwas dichter als im HUD, für die Lesbarkeit)
+    farbeRand: '#e6e2d3',      // heller Rand
+    farbeText: '#f4f4ee',      // normaler Text
+    farbeTitel: '#ffd23c',     // Titelzeile (gelb)
+    farbeAuswahl: '#ff9a2e',   // gewählter Eintrag (orange) mit Pfeil davor
+    farbeAuswahlGrund: 'rgba(255, 154, 46, 0.16)', // ... und leicht orange hinterlegt
+    farbeGruppe: '#8fb4d8',    // Gruppen-Überschrift (hellblau)
+    farbeWert: '#ffd23c',      // Werte (AN/AUS, 320X180 ...)
+    farbeHinweis: '#aab4be',   // kleine Hinweise unten
+    farbeWarnung: '#ff6a4a',   // Warnung (Taste reserviert, schon belegt)
+    farbeRegler: '#56606a',    // Regler: leerer Teil
+    ecke: 2,                   // abgeschrägte Ecken der Tafeln (Pixel)
+    zeile: 11,                 // Höhe einer Zeile (auch Trefferfläche für Maus/Touch)
+    innen: 6,                  // Rand innen links/rechts
+    abdunkeln: 0.32,           // Szene hinter Titel/Hauptmenü so stark abdunkeln (0..1)
+    abdunkelnPause: 0.45,      // ... hinter der Pause (eingefrorenes Bild)
+    blende: 0.2,               // Übergang zwischen Seiten (Sekunden, aus- und einblenden zusammen)
+    blinken: 0.55,             // "TASTE DRÜCKEN" blinkt so schnell (Sekunden an / aus)
+    meldungDauer: 2.2,         // Warnung in der Tastenbelegung bleibt so lange stehen (Sekunden)
+
+    // Demo-Fahrt hinter Titel und Hauptmenü: der Testfahrer fährt die Etappe, die Kamera wechselt
+    demo: {
+      profil: 'mittel',        // Fahrstil des Testfahrers: Querbeschleunigung (m/s²) und Bremsen (m/s²)
+      quer: 6, bremsen: 6.5,
+      endeNachZiel: 30,        // so viele Meter nach dem Ziel beginnt die Fahrt von vorn
+      schwarzblende: 0.6,      // Abblenden beim Neubeginn (Sekunden)
+      wechsel: 1.6,            // so lange dauert der weiche Wechsel zwischen zwei Kameras (Sekunden)
+      drehGlaetten: 1.5,       // so weich folgen die Kameras der Drehung des Autos
+      // Kameras: Lage relativ zum Auto (rechts, hoch, vor = Meter; negativ = links/hinten),
+      // Blickziel relativ zum Auto, Dauer in Sekunden
+      kameras: [
+        { name: 'verfolger seitlich', pos: [3.6, 2.4, -7.5], blick: [0, 1.0, 3], dauer: 9 },
+        { name: 'front tief', pos: [1.4, 0.55, 8], blick: [0, 0.8, 0], dauer: 7 },
+        { name: 'vorn oben', pos: [-3, 8, 12], blick: [0, 0.5, -1], dauer: 7 },
+        { name: 'berge, Auto klein', pos: [18, 10, -26], blick: [-6, 7, 30], dauer: 9 },
+      ],
+    },
   },
 
   // --- Optik am Auto -----------------------------------------------------
