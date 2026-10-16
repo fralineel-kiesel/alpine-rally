@@ -16,6 +16,8 @@
 //               zeichne?(ctx, uhr, blinkAn) + taste?() + blinkt für ganz eigene Seiten (Titelbildschirm) }
 // rollen (M5a.1): Textseite (z. B. Credits) mit kaum wählbaren Einträgen: hoch/runter (und Mausrad) rollen die Seite,
 //               statt die Auswahl zu wechseln (die Auswahl bleibt auf ZURÜCK). Passt sie ganz, ist alles wie sonst.
+// M5b: titelFarbe?(blinkAn) = eigene Farbe der Titelzeile (z. B. blinkend, mit blinkt: true),
+//      kurztaste?(code) = Taste, die sonst nichts tut, auf dieser Seite auswerten (z. B. R = Neu starten); true = erledigt
 // Seiten werden nur bei Änderung neu gezeichnet (auf ein eigenes Bild), sonst nur kopiert.
 
 import { CONFIG } from './config.js';
@@ -182,7 +184,9 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
       case 'ArrowRight': case 'KeyD': aendern(eintrag(), 1); return true;
       case 'Enter': case 'NumpadEnter': case 'Space': if (!wiederholt) bestaetigen(); return true;
       case 'Escape': case 'Backspace': if (!wiederholt) zurueck(); return true;
-      default: return true; // im Menü sonst nichts
+      default:
+        if (!wiederholt && o.seite.kurztaste) o.seite.kurztaste(code);
+        return true; // im Menü sonst nichts
     }
   }
 
@@ -344,7 +348,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     zeichneTafel(c, x0, y0, breite, hoehe, M.ecke, M.farbeTafel, M.farbeRand);
     const xi = x0 + 1 + innen, xr = x0 + breite - 1 - innen;
     if (s.titel) {
-      pixelText(c, txt(s.titel), x0 + breite / 2, y0 + 5, 1, M.farbeTitel, 'mitte');
+      pixelText(c, txt(s.titel), x0 + breite / 2, y0 + 5, 1, s.titelFarbe ? s.titelFarbe(blinkAn) : M.farbeTitel, 'mitte');
       c.fillStyle = M.farbeRand;
       c.globalAlpha = 0.35;
       c.fillRect(x0 + 4, y0 + 15, breite - 8, 1);

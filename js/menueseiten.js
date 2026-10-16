@@ -1,20 +1,22 @@
 // Die Menüseiten (seit M5a): Titel, Hauptmenü, Auto, Etappe, Bestzeiten, Einstellungen,
-// Tastenbelegung, Steuerung, Symbol-Legende, Credits, Pause und Rückfrage.
+// Tastenbelegung, Steuerung, Symbol-Legende, Credits, Pause und Rückfrage; seit M5b der Zielbildschirm.
 // Was die Einträge tun, kommt von main.js (api). Texte: js/texte.js.
 
 import { CONFIG, VERSION } from './config.js';
 import { pixelText, textBreite } from './pixel.js';
-import { t, setzeSprache } from './texte.js';
+import { t, setzeSprache, aktuelleSprache } from './texte.js';
 import { einstellungen, setze, AKTIONEN, tastenStandard } from './einstellungen.js';
 import { tastenVon, tastenName, knopfName } from './input.js';
 import { zeichneKachel, kachelBreite } from './pacenotesbild.js';
-import { ladeBestzeiten } from './bestzeiten.js';
+import { ladeBestzeiten, loescheBestzeiten, formatDatum, hundertstel } from './bestzeiten.js';
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
 import { formatZeit } from './hud.js';
 
-// api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b) }
+// api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b),
+//        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf) }
 export function baueSeiten(api) {
   const M = CONFIG.menue;
+  const RA = CONFIG.rennablauf;
   const menue = api.menue;
   const ZURUECK = { typ: 'zurueck' };
 
@@ -66,18 +68,65 @@ export function baueSeiten(api) {
     ],
   };
 
-  // --- Bestzeiten (Top 10 kommt in M5b; die Seite liest schon den Speicher) ---
+  // --- Bestzeiten (seit M5b gefüllt): Top 10 der gewählten Etappe als Tabelle Platz | Zeit | Datum ---
+  // Der gerade eingetragene Lauf ist orange hervorgehoben (nur bis zum nächsten Start, api.markiert()).
+  // Wie die Etappenliste: je Etappe eine eigene Liste (weitere Etappen brauchen keinen Umbau).
+  const LUECKE = 12;
+  const spaltenZeiten = () => ({
+    a: Math.max(textBreite(t('bestzeiten.platz')), textBreite('10.')),
+    b: Math.max(textBreite(t('bestzeiten.zeit')), textBreite('00:00.00')),
+    c: Math.max(textBreite(t('bestzeiten.datum')), textBreite(formatDatum('2026-12-31T12:00:00Z', aktuelleSprache()))),
+  });
+  const breiteZeiten = () => { const s = spaltenZeiten(); return s.a + s.b + s.c + 2 * LUECKE; };
+  const kopfZeiten = {
+    typ: 'info', hoehe: 10, breite: breiteZeiten,
+    zeichne(c, x, y, b) {
+      const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
+      pixelText(c, t('bestzeiten.platz'), x0 + s.a, y + 1, 1, M.farbeGruppe, 'rechts');
+      pixelText(c, t('bestzeiten.zeit'), x0 + s.a + LUECKE, y + 1, 1, M.farbeGruppe);
+      pixelText(c, t('bestzeiten.datum'), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, M.farbeGruppe);
+    },
+  };
+  const zeitZeile = (z, platz, neu) => ({
+    typ: 'info', hoehe: 9, breite: breiteZeiten, neu, // (neu: für Tests)
+    inhalt: () => `${platz}. ${formatZeit(z.zeit)} ${formatDatum(z.datum, aktuelleSprache())}`,
+    zeichne(c, x, y, b) {
+      const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
+      const farbe = neu ? RA.farbeNeu : M.farbeText;
+      if (neu) { c.fillStyle = M.farbeAuswahlGrund; c.fillRect(x - 4, y, b + 8, 9); }
+      pixelText(c, `${platz}.`, x0 + s.a, y + 1, 1, neu ? farbe : M.farbeWert, 'rechts');
+      pixelText(c, formatZeit(z.zeit), x0 + s.a + LUECKE, y + 1, 1, farbe);
+      pixelText(c, formatDatum(z.datum, aktuelleSprache()), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, neu ? farbe : M.farbeHinweis);
+    },
+  });
   const bestzeitenSeite = {
     id: 'bestzeiten', titel: 'bestzeiten.titel',
     eintraege: () => {
       const etappe = ETAPPEN[auswahl.etappe];
       const liste = ladeBestzeiten(etappe.id);
+      const mark = api.markiert ? api.markiert() : null;
       const zeilen = liste.length
-        ? liste.map((z, i) => textZeile(() => `${String(i + 1).padStart(2, ' ')}. ${formatZeit(z.zeit)}`))
+        ? [kopfZeiten, ...liste.map((z, i) => zeitZeile(z, i + 1, !!mark && mark.etappe === etappe.id && mark.datum === z.datum))]
         : [leer(4), textZeile('bestzeiten.leer', M.farbeHinweis, true), leer(4)];
       return [textZeile(() => t(etappe.name), M.farbeGruppe, true), ...zeilen, leer(3), ZURUECK];
     },
   };
+
+  // --- Rückfrage "SICHER?" (M5a, seit M5b für mehrere Fragen): text = Erklärung, ja = was JA tut. NEIN ist vorgewählt
+  const frageSeite = (text, ja) => ({
+    id: 'frage', titel: 'frage.titel', start: 3,
+    eintraege: [
+      textZeile(text, M.farbeHinweis, true), leer(3),
+      { typ: 'aktion', text: 'frage.ja', aktion: ja },
+      { typ: 'aktion', text: 'frage.nein', aktion: () => menue.schliesse() },
+    ],
+  });
+  // Bestzeiten löschen (Einstellungen, Gruppe DATEN): alle Etappen, danach kurze Meldung
+  const loeschFrage = frageSeite('frage.loeschen', () => {
+    loescheBestzeiten();
+    menue.schliesse();
+    menue.zeigeMeldung(t('einst.geloescht'), M.farbeTitel);
+  });
 
   // --- Einstellungen ---
   const R = M.aufloesungen;
@@ -140,6 +189,9 @@ export function baueSeiten(api) {
         optionen: () => [{ wert: 'de', text: 'sprache.de' }, { wert: 'en', text: 'sprache.en' }],
         lesen: () => einstellungen.sprache, setzen: (w) => { setze('sprache', w); setzeSprache(w); },
       },
+      // M5b: Daten (alle Bestzeiten löschen, mit Rückfrage)
+      { typ: 'gruppe', text: 'einst.daten' },
+      { typ: 'aktion', text: 'einst.bestzeitenLoeschen', hinweis: 'einst.loeschenHinweis', aktion: () => menue.oeffne(loeschFrage) },
       ZURUECK,
     ],
   };
@@ -267,14 +319,7 @@ export function baueSeiten(api) {
   };
 
   // --- Pause und Rückfrage ---
-  const frage = {
-    id: 'frage', titel: 'frage.titel', start: 3,
-    eintraege: [
-      textZeile('frage.text', M.farbeHinweis, true), leer(3),
-      { typ: 'aktion', text: 'frage.ja', aktion: () => api.zumHauptmenue() },
-      { typ: 'aktion', text: 'frage.nein', aktion: () => menue.schliesse() },
-    ],
-  };
+  const frage = frageSeite('frage.text', () => api.zumHauptmenue());
   const pause = {
     id: 'pause', titel: 'pause.titel',
     zurueck: () => api.weiter(), startKnopf: () => api.weiter(),
@@ -286,7 +331,102 @@ export function baueSeiten(api) {
     ],
   };
 
+  // --- Zielbildschirm (M5b) ---------------------------------------------------------------------
+  // Titel ZIEL! (bei neuer Bestzeit blinkend NEUE BESTZEIT!), Platz, Endzeit gross, Vergleich zur Bestzeit vor
+  // diesem Lauf, Zwischenzeiten, Statistik, NEU STARTEN (vorgewählt) / HAUPTMENÜ. Esc tut nichts, R = Neu starten.
+  const erg = () => (api.ergebnis ? api.ergebnis() : null);
+  // Unterschied zweier Zeiten in Hundertstel (wie die Anzeige): Text und Farbe
+  const unterschied = (neu, alt) => {
+    const d = hundertstel(neu) - hundertstel(alt), a = Math.abs(d);
+    const sek = Math.floor(a / 100), hs = String(a % 100).padStart(2, '0');
+    const zahl = sek >= 60 ? `${Math.floor(sek / 60)}:${String(sek % 60).padStart(2, '0')}.${hs}` : `${sek}.${hs}`;
+    if (d < 0) return { text: `-${zahl}`, farbe: RA.farbeSchneller };
+    if (d > 0) return { text: `+${zahl}`, farbe: RA.farbeLangsamer };
+    return { text: zahl, farbe: RA.farbeGleich };
+  };
+  const grosseZeit = (zeit) => ({
+    typ: 'info', hoehe: 25, breite: () => textBreite(formatZeit(zeit), 3), inhalt: () => formatZeit(zeit),
+    zeichne(c, x, y, b) { pixelText(c, formatZeit(zeit), x + b / 2, y + 2, 3, M.farbeText, 'mitte'); },
+  });
+  const vergleichZeile = (e) => {
+    const u = e.bisher ? unterschied(e.zeit, e.bisher.zeit) : null;
+    if (!u) return textZeile('ziel.ersteZeit', M.farbeHinweis, true);
+    return {
+      typ: 'info', hoehe: 17, breite: () => textBreite(u.text, 2), inhalt: () => u.text, farbe: u.farbe,
+      zeichne(c, x, y, b) { pixelText(c, u.text, x + b / 2, y + 1, 2, u.farbe, 'mitte'); },
+    };
+  };
+  const CP_B = 30, CP_ZEIT = 48, CP_LUECKE = 12, CP_DIFF = 36; // Spalten: "CP 1" | Zeit | Unterschied (z. B. +12.34)
+  const cpZeile = (e, n) => {
+    const zz = e.cps[n], alt = e.bisher && e.bisher.cps ? e.bisher.cps[n] : null;
+    const u = zz != null && alt != null ? unterschied(zz, alt) : null;
+    const zeit = zz == null ? '--:--.--' : formatZeit(zz);
+    return {
+      typ: 'info', hoehe: 9, breite: CP_B + CP_ZEIT + CP_LUECKE + CP_DIFF,
+      inhalt: () => `${t('ziel.cp', { n: n + 1 })} ${zeit}${u ? ` ${u.text}` : ''}`, farbe: u ? u.farbe : null,
+      zeichne(c, x, y, b) {
+        const x0 = x + Math.round((b - (CP_B + CP_ZEIT + CP_LUECKE + CP_DIFF)) / 2);
+        pixelText(c, t('ziel.cp', { n: n + 1 }), x0, y + 1, 1, M.farbeGruppe);
+        pixelText(c, zeit, x0 + CP_B, y + 1, 1, M.farbeText);
+        if (u) pixelText(c, u.text, x0 + CP_B + CP_ZEIT + CP_LUECKE, y + 1, 1, u.farbe);
+      },
+    };
+  };
+  // Statistik in drei Spalten: Überschrift (hellblau), darunter der Wert
+  const statWerte = (e) => {
+    const mph = einstellungen.einheit === 'mph';
+    const v = Math.round(e.hoechstTempo * 3.6 / (mph ? 1.609344 : 1));
+    return [
+      [t('ziel.aufpralle'), String(e.aufpralle)],
+      [t('ziel.resets'), String(e.resets)],
+      [t('ziel.hoechstTempo'), `${v} ${t(mph ? 'einheit.mph' : 'einheit.kmh')}`],
+    ];
+  };
+  const statZeile = (e) => ({
+    typ: 'info', hoehe: 19,
+    breite: () => 3 * Math.max(...statWerte(e).flat().map((w) => textBreite(w))) + 2 * 10,
+    inhalt: () => statWerte(e).map((w) => w.join(' ')).join(' · '),
+    zeichne(c, x, y, b) {
+      statWerte(e).forEach(([titel, wert], i) => {
+        const xm = x + Math.round(b * (i + 0.5) / 3);
+        pixelText(c, titel, xm, y + 1, 1, M.farbeGruppe, 'mitte');
+        pixelText(c, wert, xm, y + 11, 1, M.farbeText, 'mitte');
+      });
+    },
+  });
+  const zielSeite = {
+    id: 'ziel',
+    titel: () => t(erg() && erg().neueBest ? 'ziel.neueBestzeit' : 'ziel.titel'),
+    // neue Bestzeit: Titel blinkt (gelb / grün); sonst wird die Seite nicht neu gezeichnet
+    get blinkt() { const e = erg(); return !!(e && e.neueBest); },
+    titelFarbe: (blinkAn) => (erg() && erg().neueBest && !blinkAn ? RA.farbeSchneller : M.farbeTitel),
+    zurueck: () => {}, // Esc / B tun hier nichts (keine Pause im Zielbildschirm)
+    kurztaste: (code) => { const T = einstellungen.tasten.zurueck; if (code === T[0] || code === T[1]) api.neuStarten(); },
+    eintraege: () => {
+      const e = erg();
+      const knoepfe = [
+        { typ: 'aktion', text: 'ziel.neuStarten', aktion: () => api.neuStarten() },
+        { typ: 'aktion', text: 'ziel.hauptmenue', aktion: () => api.zumHauptmenue() },
+      ];
+      if (!e) return knoepfe;
+      const platz = !e.neueBest && e.platz > 0 && e.bisher
+        ? [textZeile(() => t('ziel.platz', { p: e.platz, n: e.anzahl }), M.farbeGruppe, true)] : [];
+      return [
+        ...platz,
+        grosseZeit(e.zeit),
+        vergleichZeile(e),
+        leer(4),
+        ...e.cps.map((_, n) => cpZeile(e, n)),
+        leer(5),
+        statZeile(e),
+        ...(e.gespeichert ? [leer(4)] : [leer(2), textZeile('ziel.nichtGespeichert', M.farbeHinweis, true)]),
+        ...knoepfe,
+      ];
+    },
+  };
+
   return {
+    ziel: zielSeite,
     titel, haupt, auto: autoSeite, etappe: etappeSeite, bestzeiten: bestzeitenSeite, einstellungen: einstellungenSeite,
     tasten: tastenSeite, steuerung: steuerungSeite, symbole: legendeSeite, credits: creditsSeite, pause, frage,
   };

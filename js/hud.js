@@ -1,5 +1,5 @@
 // HUD: Tachos, Zeit (oben links), Pace-Notes (oben Mitte, seit M4.1 als Kacheln), R-Countdown,
-// Zielanzeige und Debug-Panel.
+// Zielanzeige (bis der Zielbildschirm kommt, M5b) und Debug-Panel.
 // Gezeichnet mit einer eigenen 5x7-Pixelschrift (keine externen Fonts, seit M5a in js/pixel.js).
 // Alle Texte kommen aus js/texte.js (Deutsch/Englisch).
 
@@ -9,7 +9,7 @@ import { zeichneKachel, zeichneReset, KACHEL_HOEHE } from './pacenotesbild.js';
 import { pixelText, zeichneTafel } from './pixel.js';
 import { t, beiSprachwechsel } from './texte.js';
 import { einstellungen, beiAenderung } from './einstellungen.js';
-import { tastenName, knopfName } from './input.js';
+import { tastenName } from './input.js';
 
 export function formatZeit(sek) {
   const ms = Math.floor(sek * 100);
@@ -33,8 +33,9 @@ export function baueHud(canvas) {
   const tachos = baueTachos(ctx, text);
   tachos.setzeEinheit(einstellungen.einheit);
 
-  // Feste Texte mit Tastennamen (Hilfe vor dem Start, Neustart im Ziel): nur bei Änderung neu bauen
-  const feste = { hilfe: [], zielNeustart: '', zeit: '' };
+  // Feste Texte mit Tastennamen (Hilfe vor dem Start): nur bei Änderung neu bauen
+  // (der Hinweis "R = Neustart" im Ziel ist seit M5b weg: dafür gibt es den Zielbildschirm)
+  const feste = { hilfe: [], zeit: '' };
   function festeTexte() {
     const T = einstellungen.tasten;
     const fahren = ['gas', 'bremse', 'links', 'rechts'].map((a) => tastenName(T[a][0])).join('');
@@ -45,7 +46,6 @@ export function baueHud(canvas) {
       t('hud.hilfeZurueck', { taste: tastenName(T.zurueck[0]) }),
       t('hud.hilfeNotes', { taste: tastenName(T.notes[0]) }),
     ];
-    feste.zielNeustart = t('hud.zielNeustart', { taste: tastenName(T.zurueck[0]), knopf: knopfName(CONFIG.menue.gamepad.zurueck) });
     feste.zeit = t('hud.zeit');
   }
   festeTexte();
@@ -161,9 +161,10 @@ export function baueHud(canvas) {
       }
       // Meldung oben (Zwischenzeit oder "Checkpoint verpasst")
       if (z.meldung && z.zustand !== 'ziel') text(z.meldung.text, CONFIG.hud.zeit.links, unterTafel + CONFIG.hud.zeit.meldungUnter, 1, z.meldung.farbe);
-      if (z.zustand === 'ziel') {
+      // Grosses "ZIEL!" mit Endzeit, bis der Zielbildschirm kommt (M5b: z.zielSchirm)
+      if (z.zustand === 'ziel' && !z.zielSchirm) {
         ctx.fillStyle = 'rgba(10,14,20,0.55)';
-        ctx.fillRect(0, 42, B, 96);
+        ctx.fillRect(0, 42, B, 78);
         text(t('hud.ziel'), B / 2, 47, 4, 'gelb', 'mitte');
         text(formatZeit(z.endZeit), B / 2, 79, 3, 'weiss', 'mitte');
         // Zwischenzeiten der Checkpoints
@@ -172,7 +173,6 @@ export function baueHud(canvas) {
           const x = B / 2 + (n - (z.anzahlCps - 1) / 2) * 100;
           text(`CP ${n + 1}  ${zz == null ? '--:--.--' : formatZeit(zz)}`, x, 107, 1, 'weiss', 'mitte');
         }
-        text(feste.zielNeustart, B / 2, 124, 1, 'gelb', 'mitte');
       }
       if (z.debug) {
         // Tempo in der gewählten Einheit (km/h oder mph)

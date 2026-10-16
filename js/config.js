@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.5A.1';
+export const VERSION = '0.5B';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1146,7 +1146,7 @@ export const CONFIG = {
   menue: {
     an: true,                  // false = Spiel startet direkt ohne Titel und Menü (wie ?menue=aus in der Adresse)
     speicherName: 'alpineRally.einstellungen', // unter diesem Namen merkt sich der Browser die Einstellungen
-    bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten (werden ab M5b gefüllt)
+    bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten (Top 10 je Etappe, seit M5b gefüllt)
     // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
     standard: {
       vollbild: false,         // Vollbild an/aus (wird beim ersten Tastendruck auf dem Titel wieder eingeschaltet)
@@ -1234,6 +1234,35 @@ export const CONFIG = {
         { name: 'berge, Auto klein', pos: [18, 10, -26], blick: [-6, 7, 30], dauer: 9 },
       ],
     },
+  },
+
+  // --- Rennablauf: Countdown, Zielbildschirm, Statistik (Meilenstein 5b) -------------
+  // Masse in Pixeln des 320x180-Bildes.
+  rennablauf: {
+    // Countdown 3 - 2 - 1 - GO (vor jedem Start aus dem Menü, der Pause und dem Zielbildschirm)
+    schnauzeVorLinie: 0.1,     // so viele Meter steht die Schnauze des Autos vor der Startlinie (Auto steht in der Mitte
+                               // dann bei Startlinie - halbe Autolänge - dieser Wert). Testweg ohne Countdown: strasse.spawnBeiMeter
+    zahlDauer: 1,              // jede Zahl (3, 2, 1) steht so viele Sekunden (Countdown dauert 3 x so lang)
+    goDauer: 0.8,              // "GO!" steht so lange (Sekunden); das Auto ist dann schon frei, die Zeit läuft
+    popDauer: 0.08,            // so lange ist jede Zahl am Anfang eine Stufe grösser ("Pop", Sekunden)
+    ausblenden: 0.25,          // in den letzten ... Sekunden blendet jede Zahl aus
+    groesse: 6,                // Pixelgrösse der Zahlen (6 = jeder Schriftpunkt 6x6 Pixel, Zahl 30x42 Pixel)
+    hoehe: 48,                 // Zahl so viele Pixel von oben (zwischen Start-Banner und Autodach)
+    farbeZahl: '#ffd23c',      // Farbe von 3, 2, 1 (gelb wie die Zeit)
+    farbeGo: '#5fe35a',        // Farbe von GO! (grün)
+    farbeSchatten: '#101418',  // Schatten unter den Zahlen
+
+    // Ziel und Zielbildschirm
+    zielSchirmNach: 3,         // so viele Sekunden nach der Ziellinie erscheint der Zielbildschirm (vorher: grosses "ZIEL!")
+    abdunkeln: 0.45,           // Szene hinter dem Zielbildschirm so stark abdunkeln (0..1, wie die Pause)
+    farbeSchneller: '#5fe35a', // schneller als die Bestzeit (grün, z. B. "-0.80")
+    farbeLangsamer: '#ff5a46', // langsamer (rot, z. B. "+1.23")
+    farbeGleich: '#f4f4ee',    // genau gleich schnell ("0.00")
+    farbeNeu: '#ff9a2e',       // Bestzeiten-Seite: der gerade eingetragene Lauf (orange wie die Auswahl)
+
+    // Statistik (nur im Rennen, zwischen GO und Ziel; die Demo-Fahrt zählt nichts)
+    aufprallSchwelle: 3,       // Aufprall zählt ab diesem Tempo Richtung Hindernis (m/s; 3 m/s = 11 km/h)
+    aufprallSperre: 0.6,       // nach einem gezählten Aufprall zählt so lange (Sekunden) kein weiterer (Entlangschleifen)
   },
 
   // --- Optik am Auto -----------------------------------------------------

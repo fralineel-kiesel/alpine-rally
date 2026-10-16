@@ -1,11 +1,11 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 5a.1 fertig** – drei kleine Punkte nach Linos Feedback: Die **Credits** haben zwei neue
-Gruppen (**MITWIRKENDE**: Louis, **UNTERSTÜTZER**: Shai-Ron). **Rückwärts auf Asphalt** geht jetzt bis ca. **32 km/h**
-(vorher 22), auf Gras, Bankett, Schotter und Wiesenweg bleibt es bei 22 km/h. An der **Felswand** stehen **keine Bäume
-und Steine mehr im Fels**, und wer von der Wiese her auf den Anfang oder das Ende der Wand zufährt, wird **nicht mehr
-auf die Strasse geworfen**.
-Davor: 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 5b fertig** – das Rennen hat jetzt einen Anfang und ein Ende: **Countdown 3 – 2 – 1 – GO!**
+(Auto steht mit der Schnauze an der Startlinie, Zeit startet bei GO), nach der Ziellinie ein **Zielbildschirm** mit
+Endzeit, Vergleich zur Bestzeit (grün schneller / rot langsamer), Zwischenzeiten und **Statistik** (Aufpralle, Resets,
+Höchsttempo), dazu **Bestzeiten Top 10** pro Etappe (im Browser gespeichert) und **BESTZEITEN LÖSCHEN** in den
+Einstellungen.
+Davor: 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -20,7 +20,7 @@ Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 | Lenken | Pfeil links/rechts oder A/D | linker Stick |
 | Handbremse | Leertaste | A / Kreuz |
 | Zurück auf die Strasse (im Rennen nach 4 s Wartezeit) | R | **Y / Dreieck** (neu, Start ist jetzt die Pause) |
-| Neustart nach dem Ziel | R | Y / Dreieck (oder Pause → Neustart) |
+| Neu starten nach dem Ziel (mit Countdown) | R | Y / Dreieck (oder NEU STARTEN im Zielbildschirm) |
 | **Pause** (neu) | **Esc** | **Start / Options** |
 | Debug-Anzeige | F3 | – |
 | Pace-Notes (Ansagen) aus/ein | N | – |
@@ -34,7 +34,252 @@ Alle Einstellungen (auch N) merkt sich der Browser.
 
 ---
 
-## Meilenstein 5a.1: Credits, Rückwärts-Tempo, Felswand (Bäume im Fels, Wurf) ✅
+## Meilenstein 5b: Countdown, Zielbildschirm, Bestzeiten, Statistik ✅
+
+### So läuft ein Rennen jetzt
+
+1. **STARTEN** (Hauptmenü), **NEUSTART DER ETAPPE** (Pause) oder **NEU STARTEN** (Zielbildschirm) → **Countdown**.
+   - Das Auto steht **mit der Schnauze an der Startlinie** (10 cm davor) und ist **gesperrt**: Gas, Lenken,
+     Handbremse, Bremse/Rückwärts tun nichts, das Auto bewegt sich keinen Millimeter (auch nicht am Hang, es wird
+     während des Countdowns gar nicht gerechnet).
+   - In der Bildmitte erscheinen grosse gelbe Pixelzahlen **3**, **2**, **1** (je 1 s). Jede Zahl ist ganz am Anfang
+     kurz eine Stufe grösser („Pop“, 0.08 s) und blendet in der letzten Viertelsekunde aus. Dann **GO!** in Grün
+     (0.8 s). Kein Wackeln, kein Zoomen.
+   - Die Hilfe unten links (Tasten) ist sichtbar wie vor dem Start, die Zeit steht auf 00:00.00 (gelb).
+   - **R** und **N** (Pace-Notes) tun im Countdown nichts. **Esc / Start** und Fokusverlust (Tab wechseln) **frieren den
+     Countdown ein**, WEITER macht genau dort weiter.
+   - Pace-Notes: Sie laufen im Countdown wie früher vor dem Start. **Ehrlich:** Stehend sieht man dort noch **keine**
+     Kachel, weil die erste Kurve weiter als 50 m weg ist (so war es auch früher vor dem Start). Die erste Kachel
+     kommt kurz nach GO.
+2. Bei **GO** wird das Auto frei, die Rennzeit beginnt bei **0.00**. An der Startlinie wird **nicht mehr** gemessen
+   (die Linie zählt nur noch beim Testweg, siehe unten).
+3. **Ziellinie** (wie bisher nur, wenn alle Checkpoints passiert sind): grosses „ZIEL!“ mit Endzeit und Zwischenzeiten
+   wie bisher, das Auto rollt aus (`startZiel.zielBremse`). Die Zeit wird **sofort gespeichert**. Der alte Hinweis
+   „R = Neustart“ ist weg.
+4. Nach **3 Sekunden** blendet der **Zielbildschirm** ein. Dahinter läuft die Welt weiter (Auto rollt aus, Zuschauer
+   jubeln), leicht abgedunkelt wie in der Pause. Pause gibt es hier keine, Esc tut nichts.
+
+### Der Zielbildschirm
+
+Tafel im Menü-Stil (dunkelblau, heller Rand, Titel gelb), von oben nach unten:
+
+| Zeile | Was |
+|---|---|
+| Titel | **ZIEL!** – bei einer neuen Bestzeit stattdessen **NEUE BESTZEIT!**, blinkt gelb/grün |
+| Platz | „PLATZ 4 VON 10“ (klein, hellblau), nur wenn die Zeit in den Top 10 ist und es keine neue Bestzeit ist. Beim allerersten Lauf nicht (dort steht „ERSTE ZEIT“) |
+| Endzeit | gross (dreifache Schrift), Format wie das HUD: `02:31.91` |
+| Vergleich | doppelt gross: **grün „-0.80“** = so viel schneller als die bisherige Bestzeit, **rot „+1.23“** = langsamer, weiss „0.00“ = gleich. Noch keine Zeit: „ERSTE ZEIT“. Verglichen wird mit der Bestzeit **vor** diesem Lauf |
+| CP 1–3 | Zwischenzeiten, daneben der Unterschied zur Zwischenzeit der Bestzeit (gleiche Farben), falls es eine gibt. Verpasst: „--:--.--“ |
+| Statistik | AUFPRÄLLE · RESETS · HÖCHSTTEMPO (km/h oder mph wie eingestellt) |
+| Knöpfe | **NEU STARTEN** (vorgewählt) · **HAUPTMENÜ** (ohne Rückfrage, die Zeit ist schon gespeichert). R (Gamepad Y) = Neu starten |
+
+Ohne Browser-Speicher steht klein „ZEIT WIRD NICHT GESPEICHERT“ über den Knöpfen.
+
+### Bestzeiten
+
+- **Top 10 pro Etappe**, schnellste zuerst. Bei gleicher Zeit steht die ältere vorn. Ein langsamerer Lauf kommt bei
+  vollen 10 nicht hinein, ein schnellerer verdrängt den langsamsten.
+- „Gleich“ heisst gleich in **Hundertsteln**, genau wie die Anzeige: Was auf dem Bildschirm gleich aussieht, zählt als
+  gleich schnell (keine „neue Bestzeit“ für eine tausendstel Sekunde, die man nicht sieht).
+- **Wo liegen sie?** Im Browser (pro Gerät, also Lenovo und Gaming-PC getrennt) unter dem Namen
+  `alpineRally.bestzeiten`. Inhalt (je Etappe eine Liste, damit weitere Etappen ohne Umbau gehen):
+  `{ "passstrasse": [ { "zeit": 151.91, "cps": [29.33, 86.4, 133.1], "datum": "2026-10-16T14:30:00.000Z",
+  "auto": "rt4", "aufpralle": 0, "resets": 0, "hoechstTempo": 41.9 } ] }` – Zeiten in Sekunden, `hoechstTempo` in m/s,
+  `auto` = Auto-Id aus `js/inhalte.js` (für später, wenn es mehrere Autos gibt). Alte Einträge aus M5a (nur `zeit`,
+  `cps`, `datum`) werden genauso gelesen.
+- **Seite BESTZEITEN**: Tabelle PLATZ | ZEIT | DATUM (Deutsch `16.10.26`, Englisch `2026-10-16`). Der Lauf, der gerade
+  eingetragen wurde, ist **orange hinterlegt** – nur bis zum nächsten Start. Leer: „NOCH KEINE ZEITEN“.
+- **Löschen im Menü**: EINSTELLUNGEN → Gruppe **DATEN** → **BESTZEITEN LÖSCHEN** → „SICHER?“ (NEIN ist vorgewählt) →
+  JA löscht alle Etappen, danach steht kurz „BESTZEITEN GELÖSCHT“.
+- **Löschen ohne Menü**: im Browser F12 → Konsole → `localStorage.removeItem('alpineRally.bestzeiten')` eingeben,
+  Enter. (Oder in den Browser-Einstellungen die Website-Daten löschen – dann sind auch die Einstellungen weg.)
+- **Ohne Browser-Speicher** (blockiert, privates Fenster mit Sperre): Das Spiel läuft normal. Die Zeiten gelten dann
+  nur bis zum Neuladen (der Vergleich im Zielbildschirm geht innerhalb der Sitzung trotzdem), der Zielbildschirm sagt
+  „ZEIT WIRD NICHT GESPEICHERT“.
+
+### Statistik (nur im Rennen zwischen GO und Ziel; die Demo-Fahrt zählt nichts)
+
+| Wert | Definition | Standard |
+|---|---|---|
+| Aufpralle | jeder harte Kontakt mit Baum, Stein, Stamm, Absperrung, Zaun, Leitplanke, Kuh und Felswand, wenn das Tempo **Richtung Hindernis** über der Schwelle liegt. Die **unsichtbaren Grenzen** (Abhang ohne Leitplanke, 45 m neben der Strasse) zählen **nicht** (Linos Entscheidung nach dem ersten Stand von M5b). Ein Aufprall zählt **einmal**: Danach zählt eine kurze Sperrzeit lang nichts (Entlangschleifen, Kleben mit Gas) | Schwelle 3 m/s (11 km/h), Sperrzeit 0.6 s |
+| Resets | wie oft R wirklich ausgelöst hat (erst, wenn die Wartezeit durch ist und das Auto zurückgesetzt wurde) | – |
+| Höchsttempo | höchstes Tempo zwischen GO und Ziel | – |
+
+Alles wird bei jedem Start auf 0 gesetzt (auch NEUSTART aus der Pause). Gemessen wird an den Stellen, die es schon gab
+(Kollision mit Hindernissen, Felswand); die Physik selbst ist unverändert.
+
+### Testweg ohne Countdown (für die Test-Werkzeuge)
+
+- `index.html?menue=aus` und `window.__alpineRally.start({ countdown: false })` starten **wie vor M5b**: Auto bei
+  Meter 10 (`strasse.spawnBeiMeter`), die Zeit beginnt beim **Überfahren der Startlinie** (fliegender Start). NEU STARTEN
+  und R nach dem Ziel bleiben auf diesem Weg ebenfalls ohne Countdown.
+- `window.__alpineRally.start()` ohne Angabe = wie STARTEN im Menü (mit Countdown).
+- Alle bisherigen Tests laufen so unverändert, die **Testfahrer-Zeiten bleiben 2:59.33 / 2:42.35 / 2:31.92**.
+- **Ehrlich: Zeiten aus dem Spiel sind nicht direkt mit den Testfahrer-Zeiten vergleichbar.** Im Spiel ist es ein
+  **Stehstart** an der Linie, die Testfahrer haben 15 m Anlauf. Gemessen (gleicher Testfahrer, einmal mit Stehstart):
+  **+1.72 s** bei allen drei Profilen (3:01.04 / 2:44.08 / 2:33.65), an CP 1 ebenfalls +1.72 s.
+- Kleine Eigenheit, schon immer so: Das Testwerkzeug rundet (2:31.92), das Spiel schneidet ab wie eine Stoppuhr
+  (HUD und Zielbildschirm zeigen für denselben Lauf 02:31.91).
+
+### Werte zum Drehen (`js/config.js`, neuer Block `rennablauf`)
+
+| Wert | Was | heute |
+|---|---|---|
+| `schnauzeVorLinie` | so weit steht die Schnauze vor der Startlinie (Meter) | 0.1 |
+| `zahlDauer` | Dauer jeder Zahl 3, 2, 1 (Countdown = 3 × so lang) | 1 s |
+| `goDauer` | so lange steht GO! (das Auto fährt dann schon) | 0.8 s |
+| `popDauer`, `ausblenden` | Pop am Anfang jeder Zahl, Ausblenden am Ende | 0.08 s / 0.25 s |
+| `groesse`, `hoehe` | Grösse der Zahlen (Pixel je Schriftpunkt), Abstand von oben | 6 / 48 px |
+| `farbeZahl`, `farbeGo`, `farbeSchatten` | Farben des Countdowns | gelb / grün / fast schwarz |
+| `zielSchirmNach` | so lange nach der Ziellinie kommt der Zielbildschirm | 3 s |
+| `abdunkeln` | Szene hinter dem Zielbildschirm abdunkeln | 0.45 (wie Pause) |
+| `farbeSchneller`, `farbeLangsamer`, `farbeGleich` | Farben des Vergleichs | grün / rot / weiss |
+| `farbeNeu` | Bestzeiten-Seite: gerade eingetragener Lauf | orange |
+| `aufprallSchwelle` | Aufprall zählt ab diesem Tempo Richtung Hindernis | 3 m/s |
+| `aufprallSperre` | danach zählt so lange kein weiterer Aufprall | 0.6 s |
+| `VERSION` (ganz oben) | Versionsnummer | 0.5B |
+
+Texte (Deutsch/Englisch) in `js/texte.js`: `ziel.*`, `bestzeiten.platz/zeit/datum`, `einst.daten`,
+`einst.bestzeitenLoeschen`, `einst.loeschenHinweis`, `einst.geloescht`, `frage.loeschen`.
+
+### So testest du
+
+1. **STARTEN**: Countdown 3 – 2 – 1 – GO!. Während des Countdowns Gas geben und lenken: Das Auto rührt sich nicht.
+   Bei GO losfahren: Die Zeit beginnt bei 0.
+2. Im Countdown **Esc** drücken: Countdown steht. WEITER: Er läuft genau dort weiter. Dasselbe mit Tab-Wechsel.
+3. Bis ins Ziel fahren: „ZIEL!“, nach 3 s der Zielbildschirm. Beim ersten Mal steht „ERSTE ZEIT“.
+4. **NEU STARTEN** (oder R / Y): Countdown, Zeit 0. Nochmals ins Ziel: grün mit Minus = schneller (dann blinkt
+   „NEUE BESTZEIT!“), rot mit Plus = langsamer, dazu „PLATZ … VON …“.
+5. **HAUPTMENÜ** → BESTZEITEN: dein Lauf ist orange hinterlegt.
+6. EINSTELLUNGEN → DATEN → BESTZEITEN LÖSCHEN → NEIN (nichts passiert) / JA (Liste leer).
+7. Fragen an dich: Passt der Countdown zur Stimmung (oder lieber Ampel / Rallye-Startuhr)? Ist der Zielbildschirm
+   auf beiden Rechnern gut lesbar? (Die unsichtbaren Grenzen zählen nicht als Aufprall, wie gewünscht.)
+
+### Bilder (`screenshots/m5b/`, 1280x720, dazu je `-320x180`; neu erzeugen: `node tools/m5b-bilder.mjs`)
+
+- `01-countdown-3`, `02-countdown-2`, `03-countdown-1`, `04-countdown-go`
+- `05-ziel-neue-bestzeit` (vorher 2:45.00, jetzt 2:41.37: grün -3.63), `06-ziel-langsamer` (rot +3.25, Platz 2 von 2),
+  `07-ziel-platz-5-von-10` (rot +8.62), `13-ziel-englisch-mph`, `15-ziel-erste-zeit`,
+  `16-ziel-vor-dem-zielbildschirm` (die ersten 3 s: „ZIEL!“ wie bisher, ohne „R = Neustart“)
+- `08-bestzeiten-10-hervorgehoben` (direkt nach Platz 5), `14-bestzeiten-englisch`, `12-bestzeiten-leer`
+- `09-einstellungen-daten`, `10-rueckfrage-loeschen` („SICHER?“), `11-einstellungen-geloescht` (Meldung)
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/rennablauf.js` | **neu**: Anzeige des Countdowns (Zahlen einmal gemalt, dann nur kopiert) |
+| `js/bestzeiten.js` | Speichern (Top 10, Platz, bisherige Bestzeit), Laden (auch altes Format), Löschen, Datum; alles mit `try/catch` |
+| `js/main.js` | Zustände `countdown` und `ziel`, Start mit/ohne Countdown, Ziel eintragen, Statistik, Pause aus dem Countdown |
+| `js/menueseiten.js` | Zielbildschirm, Bestzeiten-Tabelle, Gruppe DATEN, Rückfrage als wiederverwendbarer Baustein |
+| `js/menue.js` | zwei kleine Erweiterungen: Titelfarbe pro Seite (Blinken), Kurztaste pro Seite (R = Neu starten) |
+| `js/kollision.js` | gibt die Wucht des letzten Aufpralls nach aussen (`kollision.wucht`, nur lesen) |
+| `js/hud.js` | „ZIEL!“ nur bis zum Zielbildschirm, Hinweis „R = Neustart“ entfernt |
+| `js/ablauf.js` | Kommentar: die zwei neuen Zustände |
+| `js/config.js`, `js/texte.js` | Block `rennablauf`, neue Texte, Version 0.5B |
+| `tools/rennablauf-test.mjs` | **neu**: Test (a)–(k) |
+| `tools/menue-test.mjs` | angepasst: STARTEN / NEUSTART führen jetzt in den Countdown (Teile a, c, g, h, i) |
+| `tools/m5b-bilder.mjs` | **neu**: Bilder für diesen Meilenstein |
+
+### Selbst getestet
+
+- **Neuer Test `node tools/rennablauf-test.mjs`** – **alle 75 Prüfungen bestanden**, keine Konsolenfehler:
+  - (a) Countdown in der echten Spielschleife mit gehaltenem Gas, Lenken, Handbremse und Bremse: Auto bewegt sich
+    **keinen Millimeter** (genau gleiche Position), Zeit 0, R und N tun nichts (`rTaste()` = „gesperrt“). Auto steht
+    mit der Schnauze bei 24.90 m (Startlinie 25 m). Dauer im Zeitraffer: **360 Schritte = 3.000 s** (eingestellt 3 s).
+    Bei GO Zeit genau 0, 1 s später 1.000 s und das Auto fährt (18 km/h, 2.3 m). Am Hang (748 m, 5.4 % Gefälle): steht.
+    `start({ countdown: false })`: ohne Countdown bei Meter 10.
+  - (b) Esc im Countdown: Countdown steht 2.5 s lang auf 0.667 s; WEITER: +0.100 s im ersten Bild (ein Bild), dann
+    weiter. Fokusverlust ebenso. Pause → NEUSTART DER ETAPPE beginnt den Countdown von vorn.
+  - (c) Testfahrer „flott“ (Testweg ohne Countdown) bis ins Ziel: **2:31.92** (unverändert). Zielbildschirm nach
+    **3.000 s** (360 Schritte), zeigt 02:31.91 (siehe „Eigenheit“ oben), „ERSTE ZEIT“. Esc und Rücktaste tun nichts,
+    NEU STARTEN ist vorgewählt, Fokusverlust macht keine Pause.
+  - (d) 10 Läufe sortiert, Plätze beim Eintragen stimmen; elfter schnellerer Lauf verdrängt den langsamsten, nie mehr
+    als 10; langsamerer Lauf bei vollen 10: Platz 0, Liste unverändert; gleiche Zeit (in Hundertsteln) kommt hinter
+    die ältere. Eintrag mit Zwischenzeiten, Auto, Aufprallen, Resets, Höchsttempo, Datum. „NEUE BESTZEIT!“ nur bei
+    echter Verbesserung (nicht beim ersten Lauf, nicht bei gleicher Zeit).
+  - (e) langsamer: rot „+1.23“, „PLATZ 2 VON 2“; Zwischenzeiten -0.20 grün / +1.23 rot / 0.00 weiss; schneller: grün
+    „-0.80“, NEUE BESTZEIT! (blinkt gelb/grün), verglichen mit der Bestzeit **vor** dem Lauf; Höchsttempo 144 km/h =
+    89 mph.
+  - (f) localStorage blockiert: kein Fehler, „ZEIT WIRD NICHT GESPEICHERT“, Vergleich in der Sitzung geht, NEU STARTEN
+    geht, BESTZEITEN zeigt die Zeiten der Sitzung.
+  - (g) Baumaufprall (61 → 1 km/h, danach gut 1 s Vollgas am Baum): **genau 1**; mit 72 km/h in die unsichtbare
+    Grenze 45 m neben der Strasse: **0**; R-Reset: 1; Höchsttempo = höchstes
+    `physik.tempo` (108.2 km/h); Neustart: alles 0; Demo-Fahrt 60 s (auch mit erzwungenem Aufprall): 0.
+  - (h) NEU STARTEN mit Enter, Taste R und Maus: Countdown, Zeit 0, Checkpoints zurück. HAUPTMENÜ: ohne Rückfrage,
+    Demo fährt. **Gamepad** (simuliert): A auf STARTEN, A = NEU STARTEN, Y = Neu starten, B und Start tun im
+    Zielbildschirm nichts.
+  - (i) BESTZEITEN-Seite zeigt die Zeilen, der neue Lauf hervorgehoben, nach dem nächsten Start nicht mehr; Datum
+    Englisch 2026-10-02; Löschen: Gruppe DATEN, SICHER? mit NEIN vorgewählt, NEIN löscht nichts, JA alles, danach
+    „NOCH KEINE ZEITEN“.
+  - (j) 19 neue Text-Schlüssel in de und en, kein ß, alle Zeichen in der Pixelschrift (es fehlte keines, `+` und `-`
+    gab es schon). Der alte Text „R = Neustart“ ist weg.
+  - (k) Bestzeiten im alten Format (nur zeit, cps, datum, unsortiert) werden gelesen, sortiert angezeigt und beim
+    nächsten Lauf mit verglichen.
+- **`node tools/menue-test.mjs`**: **alle Prüfungen bestanden**. Angepasst (weil STARTEN jetzt in den Countdown führt):
+  (a) „STARTEN → Countdown“ statt „→ Rennen“, (c) ebenso, (g) wartet vor dem Fahren das Ende des Countdowns ab,
+  (h) NEUSTART aus der Pause → Countdown, Auto an der Startlinie, (i) STARTEN → Auto an der Startlinie, Countdown.
+- **Alle anderen Tests unverändert** (alte und neue Version gleichzeitig laufen gelassen, Ausgaben verglichen):
+  **Zeile für Zeile gleich** bis auf Ordnerpfade und Bauzeiten in ms: `testfahrer` **2:59.33 / 2:42.35 / 2:31.92**,
+  `pacenotes-test`, `startziel-test`, `aufprall`, `belag`, `felswand`, `felswand-sprites`, `getriebe`, `gras`,
+  `handbremse`, `kuh`, `leben`, `lenk`, `nebenweg`, `rueckwaerts`, `strassenrand`, `stummel-sicht`, `nebenweg-wald`,
+  `abkuerzungen --pruefen` **127 / 2 / 342 / 84**. Strecke, Physik, Sperren, Pace-Notes-Berechnung, Checkpoints nicht
+  angefasst (die Statistik liest nur das Tempo, bevor eine Grenze wirkt).
+- **Zeichenaufrufe** (3D, alt gegen neu an denselben Stellen): **genau gleich** – Start/Countdown 123, 900 m 98,
+  1948 m 108, 3170 m 70, Ziel/Zielbildschirm 55. Countdown und Zielbildschirm werden auf das HUD-Bild (2D) gemalt:
+  die Zahlen einmal beim ersten Zeigen, danach nur kopiert; der Zielbildschirm nur bei einer Änderung (bei neuer
+  Bestzeit zweimal pro Sekunde fürs Blinken). Pro Bild entsteht dabei kein neues Objekt.
+- **Ladezeit** (`node tools/ladezeit.mjs`, 2 Durchgänge mit je 9 Ladungen, Median alt → neu): 1433 → 1490 ms und
+  1489 → 1488 ms, im Mittel **ca. +28 ms** (Budget +50 ms). Die einzelnen Ladungen schwanken um ±150 ms, die Messung
+  ist hier ungenau.
+- **Nebenbei gefunden und behoben**: Startete man mit dem **Gamepad** (A auf STARTEN, oder WEITER / Start in der
+  Pause), lief die Spielschleife in diesem einen Bild ohne Eingabe in einen Fehler, und **über dem Spiel erschien der
+  Fehlerbildschirm** („Cannot read properties of null“). Mit simuliertem Gamepad in der alten Version nachgestellt.
+  Jetzt gilt in so einem Bild eine leere Eingabe. Lino hatte das Gamepad noch nicht getestet, darum ist es nie
+  aufgefallen.
+
+### Ehrlich beurteilt
+
+- **Passt der Countdown zur Stimmung?** Ja, ziemlich: grosse gelbe Pixelzahlen (gleiches Gelb wie die Zeit) zwischen
+  START-Banner und Autodach, GO! in Grün, nur ein kurzer Pop, nichts wackelt. Es wirkt eher Arcade (V-Rally) als echte
+  Rallye (dort zählt eine Startuhr oder ein Streckenposten 5 – 4 – 3 – 2 – 1). Ohne Ton ist er noch etwas stumm –
+  mit Piepsern in M7 wird er viel besser. Die „3“ der 5x7-Schrift sieht in Gross etwas eckig aus.
+- **Ist der Zielbildschirm bei 320x180 lesbar und nicht überladen?** Lesbar ja: Endzeit dreifach, Unterschied
+  doppelt gross, der Rest in der normalen Schrift mit klaren Spalten. Die Tafel ist aber gross (229 x 145 Pixel, mit
+  Platz-Zeile 155, mit Platz-Zeile und Speicher-Hinweis 163 von 180 Pixeln hoch; sie rollt nie) – voll, aber geordnet. Mehr sollte nicht dazukommen.
+- **Sieht man sofort, ob man schneller oder langsamer war?** Ja: Die grosse grüne oder rote Zahl direkt unter der
+  Zeit ist das Zweite, was man sieht. Plus/Minus steht immer dabei, das hilft auch, wer Rot und Grün schlecht
+  unterscheidet.
+- **Stört das Ausrollen dahinter?** Nein. Nach 3 s rollt das Auto meist nur noch langsam, die Tafel deckt es zu, die
+  Szene ist abgedunkelt. Nicht ganz schön: Unten rechts schauen die **Tachos halb unter der Tafel hervor**.
+
+### Bekannte Probleme
+
+- Im Countdown ist noch **keine Pace-Notes-Kachel** zu sehen (die erste Kurve ist im Stand weiter als 50 m weg; so war
+  es auch früher vor dem Start). Sie kommt kurz nach GO.
+- Spielzeiten (Stehstart) sind ca. **1.7 s langsamer** als die Testfahrer-Zeiten (fliegender Start), siehe oben.
+- Die Tachos schauen unten rechts unter der Zielbildschirm-Tafel hervor.
+- Die Hilfe unten links erscheint nur vor dem **ersten** Start einer Sitzung (wie bisher: sie verschwindet, sobald man
+  einmal gefahren ist).
+- R in den 3 Sekunden „ZIEL!“ startet sofort neu (wie bisher); die Zeit ist dann schon gespeichert, nur den
+  Zielbildschirm sieht man nicht.
+- Bestzeiten liegen pro Browser und Gerät (Lenovo und Gaming-PC haben je eigene Listen); ein privates Fenster vergisst
+  sie beim Schliessen.
+- Gamepad nur simuliert getestet (Knöpfe), nicht mit einem echten Gamepad.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Die Startuhr der Zeitnahme neben dem Start-Bogen (zeigt heute fest „0:30“) mit dem Countdown mitzählen lassen.
+- Piepser beim Countdown (3 tiefe, GO hoch) mit dem Ton in M7.
+- Der Beifahrer „liest“ im Countdown schon die erste Ansage vor (erste Kachel sichtbar, auch wenn sie weiter weg ist).
+- Tachos hinter dem Zielbildschirm ausblenden.
+- Auf der Bestzeiten-Seite einen Eintrag wählen und seine Zwischenzeiten und Statistik ansehen.
+- Zielbildschirm: „noch 0.42 bis Platz 4“, wenn man knapp an einem besseren Platz vorbei ist.
+- Später ein Geist (Ghost) der Bestzeit – die Zwischenzeiten sind dafür schon gespeichert.
+
+---
+
+## Meilenstein 5a.1: Credits, Rückwärts-Tempo, Felswand (Bäume im Fels, Wurf) ✅ (Verlauf, Stand damals)
 
 ### 1. Credits: Mitwirkende und Unterstützer
 

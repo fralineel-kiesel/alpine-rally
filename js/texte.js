@@ -41,6 +41,10 @@ export const TEXTE = {
   // --- Bestzeiten ---
   'bestzeiten.titel': { de: 'BESTZEITEN', en: 'BEST TIMES' },
   'bestzeiten.leer': { de: 'NOCH KEINE ZEITEN', en: 'NO TIMES YET' },
+  // M5b: Spaltenköpfe der Tabelle
+  'bestzeiten.platz': { de: 'PLATZ', en: 'RANK' },
+  'bestzeiten.zeit': { de: 'ZEIT', en: 'TIME' },
+  'bestzeiten.datum': { de: 'DATUM', en: 'DATE' },
 
   // --- Einstellungen ---
   'einst.titel': { de: 'EINSTELLUNGEN', en: 'SETTINGS' },
@@ -67,6 +71,11 @@ export const TEXTE = {
   'sprache.en': { de: 'ENGLISH', en: 'ENGLISH' },
   'einheit.kmh': { de: 'KM/H', en: 'KM/H' },
   'einheit.mph': { de: 'MPH', en: 'MPH' },
+  // M5b: Gruppe DATEN
+  'einst.daten': { de: 'DATEN', en: 'DATA' },
+  'einst.bestzeitenLoeschen': { de: 'BESTZEITEN LÖSCHEN', en: 'DELETE BEST TIMES' },
+  'einst.loeschenHinweis': { de: 'ALLE ETAPPEN, NUR AUF DIESEM GERÄT', en: 'ALL STAGES, ONLY ON THIS DEVICE' },
+  'einst.geloescht': { de: 'BESTZEITEN GELÖSCHT', en: 'BEST TIMES DELETED' },
 
   // --- Tastenbelegung ---
   'tasten.titel': { de: 'TASTEN BELEGEN', en: 'KEY BINDINGS' },
@@ -167,6 +176,20 @@ export const TEXTE = {
   'frage.text': { de: 'DIE FAHRT WIRD ABGEBROCHEN.', en: 'THE CURRENT RUN WILL BE LOST.' },
   'frage.ja': { de: 'JA', en: 'YES' },
   'frage.nein': { de: 'NEIN', en: 'NO' },
+  'frage.loeschen': { de: 'ALLE BESTZEITEN WERDEN GELÖSCHT.', en: 'ALL BEST TIMES WILL BE DELETED.' },
+
+  // --- Zielbildschirm (M5b) ---
+  'ziel.titel': { de: 'ZIEL!', en: 'FINISH!' },
+  'ziel.neueBestzeit': { de: 'NEUE BESTZEIT!', en: 'NEW BEST TIME!' },
+  'ziel.platz': { de: 'PLATZ {p} VON {n}', en: 'RANK {p} OF {n}' },
+  'ziel.ersteZeit': { de: 'ERSTE ZEIT', en: 'FIRST TIME' },
+  'ziel.cp': { de: 'CP {n}', en: 'CP {n}' },
+  'ziel.aufpralle': { de: 'AUFPRÄLLE', en: 'IMPACTS' },
+  'ziel.resets': { de: 'RESETS', en: 'RESETS' },
+  'ziel.hoechstTempo': { de: 'HÖCHSTTEMPO', en: 'TOP SPEED' },
+  'ziel.neuStarten': { de: 'NEU STARTEN', en: 'RESTART' },
+  'ziel.hauptmenue': { de: 'HAUPTMENÜ', en: 'MAIN MENU' },
+  'ziel.nichtGespeichert': { de: 'ZEIT WIRD NICHT GESPEICHERT', en: 'TIME IS NOT SAVED' },
 
   // --- HUD (im Rennen) ---
   'hud.zeit': { de: 'ZEIT', en: 'TIME' },
@@ -176,7 +199,6 @@ export const TEXTE = {
   'hud.ansagenAn': { de: 'ANSAGEN AN', en: 'PACE NOTES ON' },
   'hud.ansagenAus': { de: 'ANSAGEN AUS', en: 'PACE NOTES OFF' },
   'hud.ziel': { de: 'ZIEL!', en: 'FINISH!' },
-  'hud.zielNeustart': { de: '{taste} ODER {knopf} = NEUSTART', en: '{taste} OR {knopf} = RESTART' },
   'hud.hilfeFahren': { de: '{tasten}: FAHREN', en: '{tasten}: DRIVE' },
   'hud.hilfeHandbremse': { de: '{taste}: HANDBREMSE', en: '{taste}: HANDBRAKE' },
   'hud.hilfeZurueck': { de: '{taste}: AUF STRASSE  F3: DEBUG', en: '{taste}: BACK ON ROAD  F3: DEBUG' },

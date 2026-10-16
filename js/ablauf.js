@@ -3,12 +3,12 @@
 //   menue    Hauptmenü und seine Seiten, dahinter die Demo-Fahrt
 //   rennen   die Etappe läuft (wie bisher)
 //   pause    alles eingefroren, Pausenmenü
-// Später (M5b) kommen dazu: countdown (vor dem Start) und ziel (Zielbildschirm).
-// Jeder Zustand sagt, was in jedem Bild passiert:
+//   countdown (seit M5b) 3 - 2 - 1 - GO vor dem Start: Welt läuft, Auto gesperrt, HUD ohne Menü
+//   ziel     (seit M5b) Zielbildschirm: Welt läuft weiter (Auto rollt aus), abgedunkelt, Menü-Tafel
+// Die Zustände werden in main.js eingehängt (registriere). Jeder Zustand sagt, was in jedem Bild passiert:
 //   welt: 'rennen' (Rennen mit Zeitmessung), 'demo' (Testfahrer fährt, kein Rennstand) oder null (eingefroren)
 //   hud: HUD zeigen, menue: Menü zeigen, abdunkeln: so stark die Szene dahinter abdunkeln (0..1)
-// M5b hängt neue Zustände mit registriere() ein, z. B.
-//   ablauf.registriere('countdown', { welt: null, hud: true, menue: false, abdunkeln: 0, betreten() {...} })
+// Beispiel: ablauf.registriere('countdown', { welt: 'rennen', hud: true, betreten() {...} })
 
 export function baueAblauf() {
   const zustaende = {};
