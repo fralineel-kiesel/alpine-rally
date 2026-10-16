@@ -1,11 +1,11 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 5a fertig** – **Menüs**: Beim Start kommt ein **Titelbildschirm** („TASTE DRÜCKEN“), dann das
-**Hauptmenü**. Dahinter fährt der Testfahrer die Etappe als **Demo-Fahrt** mit wechselnden Kameras. Mit **Esc**
-(Gamepad: Start) gibt es im Rennen eine **Pause**. Neu sind die **Einstellungen** (Grafik, Tasten belegen,
-Lenkempfindlichkeit, Gamepad-Totzone, Lautstärke, Sprache) – alles wird im Browser gespeichert. Das Spiel kann
-**Deutsch und Englisch**.
-Davor: 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 5a.1 fertig** – drei kleine Punkte nach Linos Feedback: Die **Credits** haben zwei neue
+Gruppen (**MITWIRKENDE**: Louis, **UNTERSTÜTZER**: Shai-Ron). **Rückwärts auf Asphalt** geht jetzt bis ca. **32 km/h**
+(vorher 22), auf Gras, Bankett, Schotter und Wiesenweg bleibt es bei 22 km/h. An der **Felswand** stehen **keine Bäume
+und Steine mehr im Fels**, und wer von der Wiese her auf den Anfang oder das Ende der Wand zufährt, wird **nicht mehr
+auf die Strasse geworfen**.
+Davor: 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -34,7 +34,167 @@ Alle Einstellungen (auch N) merkt sich der Browser.
 
 ---
 
-## Meilenstein 5a: Menüs (Titel, Hauptmenü, Pause, Einstellungen, Sprache) ✅
+## Meilenstein 5a.1: Credits, Rückwärts-Tempo, Felswand (Bäume im Fels, Wurf) ✅
+
+### 1. Credits: Mitwirkende und Unterstützer
+
+- Unter „IDEE UND DESIGN: LINO / GEBAUT MIT CLAUDE“ stehen jetzt zwei Gruppen, je mit hellblauer Überschrift (gleiche
+  Farbe wie die Gruppen in den Einstellungen) und darunter die Namen, **ein Name pro Zeile**:
+  **MITWIRKENDE** (englisch CONTRIBUTORS): LOUIS – **UNTERSTÜTZER** (englisch SUPPORTERS): SHAI-RON.
+- **Namen eintragen**: in `js/config.js`, Block `menue`, ganz unten:
+  `credits: { mitwirkende: ['LOUIS'], unterstuetzer: ['SHAI-RON'] }`. Weitere Namen mit Komma dazu, z. B.
+  `mitwirkende: ['LOUIS', 'ANNA']`. Grossbuchstaben, ohne Sonderzeichen (die Pixelschrift kennt A–Z, Ä Ö Ü, Ziffern,
+  Bindestrich und ein paar Zeichen; der Menü-Test meldet, wenn ein Zeichen fehlt). Namen werden nicht übersetzt.
+  Ist eine Liste leer (`[]`), erscheint die ganze Gruppe nicht.
+- Die Überschriften stehen in `js/texte.js` (`credits.mitwirkende`, `credits.unterstuetzer`, Deutsch und Englisch).
+- Mit den zwei Namen passt die Seite ganz auf den Bildschirm. Mit vielen Namen **rollt** sie: Pfeil runter / Mausrad
+  (gelbe ▲/▼ am Rand wie bei den Einstellungen), Enter geht wie immer auf ZURÜCK. Neu im Menü-Baustein dafür:
+  Seiten mit `rollen: true` (Textseiten) rollen mit hoch/runter, statt die Auswahl zu wechseln (`menue.rollenSchritt`
+  = 10 Pixel pro Druck). Getestet mit 2, 6 und 12 Namen.
+- Versionsnummer jetzt **0.5A.1**.
+
+### 2. Rückwärts auf Asphalt schneller
+
+- Vorher war rückwärts überall bei **6 m/s (22 km/h)** Schluss. Jetzt auf **Asphalt 9 m/s (32 km/h)**. Auf
+  **Gras, Bankett, Schotter und Wiesenweg bleibt es bei 6 m/s** (sonst ändert sich das „Raus aus dem Gras“ aus M2c).
+- Die Beschleunigung rückwärts ist **unverändert** (`auto.rueckwaertsBeschl` = 3 m/s²). Darum dauert es auf ebenem
+  Asphalt aus dem Stand **ca. 3.5 s bis 32 km/h** (vorher 2.3 s bis 22 km/h); nach 2 s ist man gleich schnell wie
+  vorher.
+- **Kein Ruck**: Fährt man mit 32 km/h rückwärts vom Asphalt aufs Bankett oder ins Gras, springt das Tempo nicht auf
+  22 km/h, sondern läuft mit der Reibung des Untergrunds aus (Gras: in ca. 0.9 s, Bankett: ca. 2.6 s). Gemessen:
+  höchstens 3.6 m/s² Tempoverlust (Gras), ein harter Deckel wären 360 m/s² gewesen (Sprung in einem Bild).
+- Tacho, Gang **R**, Drehzahl (ca. 4700 U/min bei 32 km/h), Digitalzahl, F3-Anzeige, km/h und mph (20 mph) stimmen.
+- **Werte zum Drehen** (`js/config.js`):
+
+| Wert | Was | heute |
+|---|---|---|
+| `untergrund.asphalt.rueckwaertsMax` | Rückwärts-Höchsttempo auf Asphalt = `auto.rueckwaertsTempo` mal diesem Wert | 1.5 (= 9 m/s = 32 km/h) |
+| `auto.rueckwaertsTempo` | Rückwärts-Höchsttempo auf allen anderen Belägen | 6 m/s (22 km/h) |
+| `auto.rueckwaertsBeschl` | wie schnell das Auto rückwärts losfährt (nicht geändert) | 3 m/s² |
+
+  Andere Beläge können denselben Wert `rueckwaertsMax` bekommen (fehlt er, gilt 1).
+
+### 3. Felswand
+
+**Die Wand-Abschnitte** (aus den Streckendaten, Meter ab Strassenanfang; an jedem Ende 25 m weich ein-/ausgeblendet):
+
+| Abschnitt | Seite | von – bis |
+|---|---|---|
+| Felswand 1 vor dem Almweg | links | 1914 – 1966 m |
+| Felswand 1 nach dem Almweg | links | 2423 – 2494 m |
+| Abfahrt-Wand (nach dem Wiesenweg) | rechts | 3132 – 3417 m |
+
+**3a. Bäume im Fels – Ursache (zuerst mit einem Test gesucht, dann geändert)**
+- Neuer Test (`tools/felswand-sprites-test.mjs`, Teil a): Für **jedes** Objekt aller Sorten (25 650 Stück: Tannen,
+  Laubbäume, Steine, Felsbrocken, Stämme, Büsche, Grasbüschel, Jungtannen, Fernwald, Nebenweg-Wald, Sichtschutz,
+  Strassenrand, Kühe, Fan-Spots/Alpweide/Wracks, Zuschauer, Start/Ziel, Absperrungen) wird mit einem senkrechten Strahl
+  von oben geprüft, ob am Stamm (Mitte und rundherum) die **echte Felsfläche** (das gezeichnete Wand-Mesh) höher liegt
+  als das Gelände. 1577 Objekte stehen bis 30 m an einer Wand, 1327 davon sind „Grenzfälle“ (der nächste
+  Strassenpunkt hat keine Wand, aber einer daneben).
+- **Ergebnis vorher: 29 Objekte im Fels – alle vom „Nebenweg-Wald“** (die lockeren Tannengruppen entlang der
+  Abzweige, seit M3a). Dieser Teil prüfte die Felswand **gar nicht**. Er beginnt 42 m vor dem Almweg-Abzweig, also bei
+  **ca. 1944 m – genau Linos Stelle bei 1948 m** (Tannen bis 14 m tief im Fels, die Krone schaut oben und vorne heraus).
+  Weitere Stellen: nach der Almweg-Einmündung (2430 m, ein Stein am Wandanfang) und nach dem Wiesenweg (3164–3179 m,
+  Abfahrt-Wand rechts, Tannen und Steine).
+- Die Vermutung mit dem „nächsten Strassenpunkt“ (Wand-Enden, Kurven-Innenseiten) habe ich nachgemessen: Bei den
+  normalen Bäumen, Büschen usw. stand **kein** Objekt im Fels (die Regel „bis 26 m neben der Strasse nichts“ ist dort
+  grosszügig genug). Trotzdem prüfen jetzt auch diese beim Platzieren die echte Felsfläche (als Sicherung; heute fällt
+  dort nichts weg).
+- **Lösung**: Neu weiss die Welt, wie hoch der Fels an jedem Punkt ist (`welt.felsHoehe`, aus denselben Dreiecken wie
+  das Wand-Mesh, unabhängig vom nächsten Strassenpunkt), und `welt.imFels(x, z, Radius)`. Der Nebenweg-Wald stellt
+  keinen Baum und keinen Stein mehr dorthin. **Wichtig**: geprüft wird erst *nach* dem Würfeln, darum bleibt die
+  Zufallsfolge gleich – **alle anderen Objekte stehen genau am selben Platz** (nachgeprüft: alle ~25 600 Positionen
+  alt gegen neu verglichen, nur die 29 sind weg, keines ist neu oder verschoben). Die Wand selbst (Form, Höhe,
+  Kollision) ist unverändert.
+- **Entfernt (nach Sorte)**: **24 Tannen** und **5 Steine** (alle Nebenweg-Wald). Sonst nichts: 0 Laubbäume, 0
+  Büsche/Gras, 0 Jungtannen, 0 Fernwald, 0 Strassenrand, 0 Kühe, 0 Leben, 0 Start/Ziel, 0 Absperrungen.
+  Insgesamt 6190 statt 6214 Tannen und 866 statt 871 Steine.
+
+**3b. Wurf am Wandanfang – Ursache und Lösung**
+- *Ursache (gemessen, die Vermutung stimmte)*: Die Wand-Kollision (seit M3a.3) misst für jeden Punkt am Umriss des
+  Autos „Abstand von der Strassenmitte minus Wandfläche“ und schiebt das Auto um diese Tiefe **quer zur Strasse**
+  zurück. Kommt man aber von der Wiese her an den Anfang (oder das Ende) der Wand, steht das Auto schon *hinter* der
+  Wandfläche – die Tiefe war dann 5 bis 8 m, und das Auto wurde **in einem einzigen Physik-Schritt (1/120 s) bis 7.7 m
+  zur Strasse geschoben** (in 38 von 162 Testfahrten bis auf die Strasse). Dasselbe, schwächer, am weich
+  auslaufenden Wand-Ende: Dort kommt die Wandfläche beim Längsfahren auf das Auto zu.
+- *Lösung*: Jeder Umriss-Punkt wird auch dort geprüft, wo er einen Schritt vorher war.
+  - **Von der Strasse her** (der Punkt war vor der Wandfläche und ist selbst quer hineingefahren): genau wie in M3a.3
+    (Auto stoppt an der sichtbaren Fläche, Aufprall, Kamera) – der alte Felswand-Test ergibt Zeile für Zeile dieselben
+    Zahlen (ausser den Rückwärts-Metern, siehe Teil 2).
+  - **Von der Wiese, von hinten oder vom Wand-Ende her**: Der Fels wirkt wie ein zu steiler Hang. Nur der Teil der
+    Bewegung *in den Fels hinein* wird zurückgenommen (und das Tempo in diese Richtung), entlang darf das Auto
+    weiterrutschen. Frontal bleibt es stehen (wie an einem Baum), schräg rutscht es ab.
+  - **Nie ein Sprung**: Die Korrektur ist pro Schritt höchstens so gross wie der Weg, den das Auto gefahren ist, plus
+    3 cm (`grenze.wandSprungMax`).
+- *Kamera*: Stand das Auto hinter der Wandfläche (auf der Wiese am Wandanfang oder am Hang hinter der Wand), setzte
+  die Kamera-Regel aus M3a.3 die Kamera quer vor die Wand **auf die Strasse** – das sah auch wie ein Wurf aus (das war
+  schon vor M5a.1 so). Jetzt bleibt die Kamera dann hinter dem Auto und wird nur aus dem Fels zum Auto hin gezogen.
+  Von der Strasse her ist alles wie bisher.
+- **Werte** (`js/config.js`, Block `grenze`): `wandSprungMax` (0.03 m: so viel darf die Wand pro Schritt mehr
+  verschieben, als das Auto gefahren ist), `wandVorneToleranz` (0.1 m: stand ein Punkt vorher höchstens so tief in der
+  Wand, zählt er als „von der Strasse her“). Block `felswand`: `imFelsToleranz` (0.05 m: ab so viel Fels über dem
+  Gelände steht ein Objekt „im Fels“).
+
+### So testest du
+
+1. **Credits**: Hauptmenü → CREDITS: unter „Gebaut mit Claude“ MITWIRKENDE / LOUIS und UNTERSTÜTZER / SHAI-RON.
+   Einstellungen → Sprache English: CONTRIBUTORS / SUPPORTERS. Zum Ausprobieren in `config.js` ein paar Namen dazu
+   schreiben: Die Seite rollt mit Pfeil runter.
+2. **Rückwärts**: auf der Strasse anhalten, Pfeil runter halten: Tacho geht bis ca. 32 km/h (Gang R). Ins Gras
+   rückwärts: dort höchstens 22 km/h, beim Übergang kein Ruck, das Auto wird weich langsamer.
+3. **Bäume im Fels**: bei **1948 m** (F3 zeigt die Meter) und an den Wand-Enden (1914, 1966, 2423, 2494, 3132, 3417 m)
+   und bei 3170 m an die Wand schauen: keine Tanne mehr, die aus dem Fels wächst.
+4. **Wurf**: vor 1914 m links neben der Strasse auf die Wiese (ca. 10–20 m neben der Strasse) und geradeaus auf den
+   Anfang der Wand zufahren. Das Auto prallt am Fels ab oder rutscht daran entlang, bleibt aber auf der Wiese. Dasselbe
+   am Ende der Wand (von 1990 m rückwärts zur Wand) und an der rechten Wand der Abfahrt (vor 3132 m, nach 3417 m).
+5. Von der Strasse her gegen die Wand fahren: wie bisher (stoppt am Fels, rückwärts raus, Kamera vor der Wand).
+
+### Bilder (`screenshots/m5a-1/`, 1280x720, „-a“ = vorher, „-b“ = nachher; neu erzeugen: `node tools/m5a1-bilder.mjs`)
+
+- `credits-de-b.png`, `credits-en-b.png` (dazu je `-320x180`), `credits-probe-6-namen-oben/unten-b.png` (Probe mit
+  6 Namen: oben und ganz hinunter gerollt).
+- `fels-01` … `fels-09` (a und b): 1948 m (nah und Fahrersicht), Wandanfang 1914 m, Wandende 1966 m, 2430 m,
+  Wandende 2494 m, 3170 m (Abfahrt), Wandanfang 3132 m, Wandende 3417 m. Gut zu sehen: `fels-04` (1966 m),
+  `fels-05` (2430 m) und `fels-07` (3170 m) – vorher Tannen quer durch den Fels, nachher sauberer Fels.
+  `fels-09` ist vorher und nachher gleich (dort stand nichts im Fels).
+- `wurf-fest-1/2/3` und `wurf-spiel-1/2/3` (a und b): Auto fährt 18 m neben der Strasse mit 60 km/h geradeaus auf
+  den Wandanfang bei 1914 m; Bilder kurz vor, kurz nach der Berührung und 0.6 s später, einmal mit fester Kamera von
+  der anderen Strassenseite, einmal mit der Spielkamera. Vorher (a): im zweiten Bild steht das Auto plötzlich auf der
+  Strasse vor der Wand (in 3 Physik-Schritten, also 0.025 s, gut 10 m zur Strasse hin, auf 5 m neben der Mitte). Nachher (b): es prallt seitlich an den Fels
+  und bleibt auf der Wiese stehen.
+
+### Selbst getestet
+
+(siehe unten, Abschnitt wird nach den Testläufen ausgefüllt)
+
+### Ehrlich beurteilt
+
+- **Wand-Enden**: sehen jetzt sauber aus. Es fehlen nur Bäume, die *im* Fels standen; der Wald neben und hinter den
+  Wand-Enden ist unverändert, eine kahle Stelle sehe ich nicht – wo vorher eine Tanne quer durch die Wand ragte, sieht
+  man jetzt den Fels (bei 1966 m und 3170 m ein Stück mehr Fels, bei 2430 m ein Stück Wandanfang mehr).
+- **Auto an der Wand von der Wiese her**: wirkt wie an einem Felsen: frontal hart zum Halt (von 57 auf 1 km/h, wie an
+  einem Baum), schräg rutscht es ab. Das Auto steckt dabei meist gar nicht im Fels (Median 0 cm, 90 % der Fahrten
+  höchstens 5 cm), am meisten 20 cm (am Ende der Abfahrt-Wand, schräg mit 30 km/h). Das sieht man kaum, ist aber nicht
+  ganz so genau wie von der Strasse her (dort höchstens 1 cm).
+- Am Wandanfang ist das Gelände auf der Wandseite oft steil (Hang); dort kippt das Auto sichtbar zur Seite. Das war
+  vorher auch so.
+
+### Bekannte Probleme
+
+- Von der Wiese her kann die Karosserie an schrägen Stellen bis ca. 20 cm im Fels stecken (siehe oben).
+- Fährt man am weich auslaufenden Wand-Ende (die ersten/letzten Meter) längs ganz nahe am Fels, lenkt die schräge
+  Wandfläche das Auto etwas zur Strasse hin (höchstens so viel, wie es fährt, kein Sprung). In 1 von 162 Testfahrten
+  kam das Auto dadurch 0.1 s früher auf die Strasse als ganz ohne Wand (es fuhr sowieso dorthin).
+- Gamepad testet Lino später (unverändert seit M5a).
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Ein kleines Kratz-/Staubwölkchen, wenn das Auto am Fels entlangrutscht (passt zu Ton in M7).
+- Credits: Namen in zwei Spalten, wenn es mehr als ca. 8 werden (dann rollt die Seite weniger).
+
+---
+
+## Meilenstein 5a: Menüs (Titel, Hauptmenü, Pause, Einstellungen, Sprache) ✅ (Verlauf, Stand damals – Credits und Version seit M5a.1 erweitert)
 
 ### Was wurde gebaut?
 

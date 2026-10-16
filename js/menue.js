@@ -12,8 +12,10 @@
 //   { typ: 'info', hoehe, breite, zeichne(ctx, x, y, b, gewaehlt), waehlbar? }  freie Zeile
 //   { typ: 'zurueck' }                                     "ZURÜCK" (immer der letzte Punkt)
 // text: Schlüssel aus js/texte.js oder eine Funktion, die den Text liefert. hinweis: ebenso (unten in der Tafel).
-// Eine Seite: { id, titel, eintraege (Liste oder Funktion), start?, oben?, logo?, zurueck?(), hinweis?, startKnopf?(),
+// Eine Seite: { id, titel, eintraege (Liste oder Funktion), start?, oben?, logo?, zurueck?(), hinweis?, startKnopf?(), rollen?,
 //               zeichne?(ctx, uhr, blinkAn) + taste?() + blinkt für ganz eigene Seiten (Titelbildschirm) }
+// rollen (M5a.1): Textseite (z. B. Credits) mit kaum wählbaren Einträgen: hoch/runter (und Mausrad) rollen die Seite,
+//               statt die Auswahl zu wechseln (die Auswahl bleibt auf ZURÜCK). Passt sie ganz, ist alles wie sonst.
 // Seiten werden nur bei Änderung neu gezeichnet (auf ein eigenes Bild), sonst nur kopiert.
 
 import { CONFIG } from './config.js';
@@ -71,7 +73,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     const l = liste(seite);
     const start = seite.start != null && waehlbar(l[seite.start]) ? seite.start : erster(seite);
     if (!ohneBlende) wechselBild(); else { schmutzig = true; treffer = []; }
-    stapel.push({ seite, wahl: start, scroll: 0, platz: 0 });
+    stapel.push({ seite, wahl: start, scroll: 0, platz: 0, maxScroll: 0 });
   }
   function schliesse() {
     if (stapel.length <= 1) return false;
@@ -97,6 +99,12 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
   function schritt(r) {
     const o = oben();
     if (!o || o.seite.zeichne) return;
+    // Textseite, die nicht ganz passt: rollen statt wählen (maxScroll merkt sich render)
+    if (o.seite.rollen && o.maxScroll > 0) {
+      const neu = Math.max(0, Math.min(o.maxScroll, o.scroll + r * M.rollenSchritt));
+      if (neu !== o.scroll) { o.scroll = neu; schmutzig = true; }
+      return;
+    }
     const l = liste(o.seite);
     if (!l.length) return;
     let i = o.wahl;
@@ -315,8 +323,12 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     const x0 = Math.round((B - breite) / 2);
     const y0 = yOben ?? Math.round((H - hoehe) / 2);
 
+    o.maxScroll = Math.max(0, gesamt - sichtH);
+    o.masse = { gesamt, sichtH, breite, inhalt, y0, hoehe }; // für Tests (Seite passt? rollt?)
     // Rollen: der gewählte Eintrag (mit seiner Überschrift) bleibt sichtbar
-    if (gesamt > sichtH && o.wahl >= 0) {
+    // (Textseiten rollen selbst, siehe schritt(); sie beginnen oben)
+    if (s.rollen) o.scroll = Math.max(0, Math.min(o.maxScroll, o.scroll));
+    else if (gesamt > sichtH && o.wahl >= 0) {
       let y = 0, yWahl = 0;
       for (let i = 0; i < l.length; i++) { if (i === o.wahl) yWahl = y; y += zeilenHoehe(l[i]); }
       let von = yWahl;
@@ -435,6 +447,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     get seite() { const o = oben(); return o ? o.seite : null; },
     get wahl() { const o = oben(); return o ? o.wahl : -1; },
     get wartet() { return !!warten; },
+    // für Tests (M5a.1): wie weit ist die Seite gerollt, wie weit kann sie rollen, Masse der Tafel (Pixel)
+    get rollen() { const o = oben(); return o ? { scroll: o.scroll, max: o.maxScroll, ...o.masse } : null; },
     get stapel() { return stapel; },
     get treffer() { return treffer; },
     // Jedes Bild: Zeit weiter, bei Bedarf neu zeichnen, auf ctx kopieren (alpha = Sichtbarkeit 0..1)

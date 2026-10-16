@@ -21,6 +21,7 @@ export function baueSeiten(api) {
   // Textzeile ohne Auswahl (Daten, Hinweise)
   const textZeile = (text, farbe = M.farbeText, mitte = false) => ({
     typ: 'info', hoehe: 10, breite: () => textBreite(typeof text === 'function' ? text() : t(text)),
+    farbe, inhalt: () => (typeof text === 'function' ? text() : t(text)), // (inhalt: für Tests)
     zeichne(c, x, y, b) {
       const s = typeof text === 'function' ? text() : t(text);
       pixelText(c, s, mitte ? x + b / 2 : x, y + 1, 1, farbe, mitte ? 'mitte' : 'links');
@@ -228,15 +229,23 @@ export function baueSeiten(api) {
   };
 
   // --- Credits ---
+  // M5a.1: dazu die Namenslisten aus config.js (menue.credits), je mit Überschrift; leere Liste = keine Gruppe.
+  // Die Seite rollt mit hoch/runter, wenn sie nicht ganz auf den Bildschirm passt (rollen: true).
+  const namensGruppe = (titel, namen) => (namen && namen.length
+    ? [leer(6), textZeile(titel, M.farbeGruppe, true), ...namen.map((n) => textZeile(() => n, M.farbeText, true))]
+    : []);
   const creditsSeite = {
-    id: 'credits', titel: 'credits.titel', start: 7,
-    eintraege: [
+    id: 'credits', titel: 'credits.titel', rollen: true,
+    eintraege: () => [
       leer(2),
       textZeile('titel.name', M.farbeTitel, true),
       textZeile(() => t('credits.version', { v: VERSION }), M.farbeHinweis, true),
       leer(6),
       textZeile('credits.idee', M.farbeText, true),
       textZeile('credits.gebaut', M.farbeText, true),
+      ...namensGruppe('credits.mitwirkende', M.credits && M.credits.mitwirkende),
+      ...namensGruppe('credits.unterstuetzer', M.credits && M.credits.unterstuetzer),
+      leer(6),
       textZeile('credits.erfunden', M.farbeHinweis, true),
       ZURUECK,
     ],

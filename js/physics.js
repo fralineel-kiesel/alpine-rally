@@ -37,6 +37,7 @@ export class Fahrphysik {
     this.driftWinkel = 0;     // Winkel zwischen Blick- und Fahrtrichtung (Grad)
     this.stabAnteil = 1;      // Stabilitätshilfe (0 während Handbremse)
     this.hbZeit = 0;          // so lange (s) ist die Handbremse schon gezogen (M3a.2)
+    this.rueckDeckel = 0;     // zuletzt geltendes Rückwärts-Höchsttempo (m/s, M5a.1: für den weichen Belagwechsel)
   }
 
   get tempo() {
@@ -47,7 +48,8 @@ export class Fahrphysik {
   // eingabe: { gas 0..1, bremse 0..1, lenkung -1..1 (+ = rechts), handbremse true/false }
   // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus), rueckwaerts (Faktor Rückwärtsgang),
   //           heck (Faktor Grip hinten), stabilitaet (Faktor Stabilitätshilfe) – beide seit M3a, fehlen = 1,
-  //           geradeaus (Faktor Geradeauslauf, seit M3a.2, fehlt = 1) }
+  //           geradeaus (Faktor Geradeauslauf, seit M3a.2, fehlt = 1),
+  //           rueckwaertsMax (Faktor Rückwärts-Höchsttempo, seit M5a.1, fehlt = 1) }
   // motor:   vom Getriebe (getriebe.js): { beschl: Antrieb vorwärts (m/s²), motorbremse (m/s²) }
   schritt(dt, eingabe, boden, motor) {
     const c = CONFIG.auto;
@@ -109,12 +111,14 @@ export class Fahrphysik {
 
     // --- Längs: Antrieb ---
     let antrieb = 0;
+    // Rückwärts-Höchsttempo hier (M5a.1: je Untergrund, auf Asphalt höher)
+    const rueckMax = c.rueckwaertsTempo * (boden.rueckwaertsMax ?? 1);
     // (mit lange gehaltener Handbremse kommt nur noch handbremseAntrieb an: die Hinterräder stehen)
     if (eingabe.gas > 0 && vVor > -0.5) antrieb += motor.beschl * (1 - (1 - c.handbremseAntrieb) * hbLang);
     if (eingabe.bremse > 0 && vVor <= 0.5 && eingabe.gas < 0.1) {
       // rückwärts fahren
       // (boden.rueckwaerts: Faktor je Untergrund, auf Gras und Bankett stärker als auf Asphalt)
-      if (vVor > -c.rueckwaertsTempo) antrieb -= eingabe.bremse * c.rueckwaertsBeschl * (boden.rueckwaerts ?? 1);
+      if (vVor > -rueckMax) antrieb -= eingabe.bremse * c.rueckwaertsBeschl * (boden.rueckwaerts ?? 1);
     }
     // Steigung (im Stand ohne Gas hält das Auto an)
     const stehtFast = Math.abs(vVor) < 0.6 && eingabe.gas < 0.05 && eingabe.bremse < 0.05;
@@ -187,8 +191,13 @@ export class Fahrphysik {
     const drehKinematisch = (vVorNeu * Math.tan(delta)) / L;
     let drehNormal = drehKinematisch + (drehrate - drehKinematisch) * k;
     let vSeitNormal = vSeitNeu * k;
-    // Rückwärts: auf Rückwärtstempo begrenzen
-    const vVorNormal = Math.max(vVorNeu, -c.rueckwaertsTempo);
+    // Rückwärts: auf Rückwärtstempo begrenzen.
+    // M5a.1: Kommt das Auto schneller vom Asphalt (9 m/s) aufs Bankett oder Gras (6 m/s), springt das Tempo
+    // nicht auf den neuen Deckel, sondern läuft mit der Reibung des Untergrunds aus (Deckel sinkt mit, steigt
+    // aber nie über den vorherigen). Sonst (gleicher Untergrund) wie bisher.
+    const deckel = Math.max(rueckMax, Math.min(this.rueckDeckel, -vVorNeu));
+    this.rueckDeckel = deckel;
+    const vVorNormal = Math.max(vVorNeu, -deckel);
     // Dreher (M3a.2): rutscht das Auto schnell quer (z. B. mit Handbremse quergestellt), gilt oben
     // nicht. Vorher hielt es dann schlagartig an (von 60 auf 10 km/h in 0.1 s). Jetzt rutscht es
     // mit der Reibung der Reifen aus und hört höchstens mit dreher.drehBremse auf zu drehen.

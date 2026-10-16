@@ -176,14 +176,18 @@ export function bauePflanzen(szene, strecke, welt) {
       if (fbm(x / 70, z / 70, c.seed + 9) > 1 - strecke.waldAnteil[k] * 0.75) wald = 1;
       if (wurf > chance(wald, q.abstand, steilheit(x, z), x, z) * strecke.baumFaktor[k]) continue;
       const h = mische(hoehe[0], hoehe[1], rnd());
-      gestellt[art][n] = 1;
-      liste.push({
+      const neu = {
         x, z, y: welt.gelaendeHoehe(x, z) - 0.25,
         h, b: h * tex.seitenVerhaeltnis,
         variante: Math.floor(rnd() * tex.varianten),
         hell: 0.82 + rnd() * 0.26,
         spiegeln: rnd() < 0.5,
-      });
+      };
+      // M5a.1: nicht im Fels (echte Felsfläche, nicht nur der nächste Strassenpunkt). Erst nach dem Würfeln
+      // prüfen, damit die Zufallsfolge gleich bleibt (heute fällt hier nichts weg, es ist eine Sicherung)
+      if (welt.imFels(x, z, art === 2 ? neu.b * CONFIG.kollision.steinFaktor : CONFIG.kollision.stammRadius)) continue;
+      gestellt[art][n] = 1;
+      liste.push(neu);
     }
     return liste;
   }
@@ -271,14 +275,20 @@ export function bauePflanzen(szene, strecke, welt) {
       const p = strecke.punktBei(s), f = s - p.i;
       const x = p.x + p.tx * f - p.tz * sd * lat, z = p.z + p.tz * f + p.tx * sd * lat;
       if (!darf(x, z, s)) return;
+      // M5a.1: Der Nebenweg-Wald prüfte die Felswand gar nicht – vor dem Almweg (ab ca. 1944 m), nach dem Almweg
+      // (ca. 2430 m) und nach dem Wiesenweg (ca. 3165 m) standen Tannen und Steine im Fels. Jetzt fallen sie weg.
+      // Geprüft wird erst nach dem Würfeln: so bleiben alle anderen Bäume genau an ihrem Platz.
+      const kol = CONFIG.kollision;
       if (rnd() < steinAnteil) {
         const hs = mische(nw.steinHoehe[0], nw.steinHoehe[1], rnd());
-        steine.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.15, h: hs, b: hs * stein.seitenVerhaeltnis, variante: Math.floor(rnd() * stein.varianten),
-          hell: 0.85 + rnd() * 0.2, spiegeln: rnd() < 0.5, nebenwegWald: true });
+        const st = { x, z, y: welt.gelaendeHoehe(x, z) - 0.15, h: hs, b: hs * stein.seitenVerhaeltnis, variante: Math.floor(rnd() * stein.varianten),
+          hell: 0.85 + rnd() * 0.2, spiegeln: rnd() < 0.5, nebenwegWald: true };
+        if (!welt.imFels(x, z, st.b * kol.steinFaktor)) steine.push(st);
         return;
       }
-      tannen.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.25, h, b: h * tanne.seitenVerhaeltnis, variante: Math.floor(rnd() * tanne.varianten),
-        hell: 0.8 + rnd() * 0.25, spiegeln: rnd() < 0.5, nebenwegWald: true });
+      const ta = { x, z, y: welt.gelaendeHoehe(x, z) - 0.25, h, b: h * tanne.seitenVerhaeltnis, variante: Math.floor(rnd() * tanne.varianten),
+        hell: 0.8 + rnd() * 0.25, spiegeln: rnd() < 0.5, nebenwegWald: true };
+      if (!welt.imFels(x, z, kol.stammRadius)) tannen.push(ta);
     };
     // einzelne, von Hand gesetzte Gruppen (Bäume und Felsen gemischt, eigener Zufall)
     const rndG = zufall(nw.seed + 77);
@@ -380,6 +390,7 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe, extra = []
     if (q.abstand < mindest) return false;
     if (welt.netz && welt.netz.stummelAbstand(x, z, mindest) < mindest) return false; // nicht auf die Stummel (M3a)
     if (q.wandSeite && Math.sign(q.seite) === q.wandSeite && q.wandStaerke > 0.05 && q.abstand < 26) return false;
+    if (welt.imFels(x, z, r)) return false; // M5a.1: echte Felsfläche (Sicherung, heute fällt hier nichts weg)
     return kolFest.frei(x, z, r) && torFrei(x, z, r, 1.5, 12) && torFreiZusatz(x, z, r, 1.5, 12);
   }
   function steilheit(x, z) {

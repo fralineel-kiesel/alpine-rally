@@ -153,6 +153,9 @@ export const TEXTE = {
   'credits.idee': { de: 'IDEE UND DESIGN: LINO', en: 'IDEA AND DESIGN: LINO' },
   'credits.gebaut': { de: 'GEBAUT MIT CLAUDE', en: 'BUILT WITH CLAUDE' },
   'credits.erfunden': { de: 'ALLE AUTOS, NAMEN UND ORTE SIND ERFUNDEN.', en: 'ALL CARS, NAMES AND PLACES ARE FICTIONAL.' },
+  // M5a.1: Überschriften der Namenslisten (die Namen selbst stehen in config.js, menue.credits)
+  'credits.mitwirkende': { de: 'MITWIRKENDE', en: 'CONTRIBUTORS' },
+  'credits.unterstuetzer': { de: 'UNTERSTÜTZER', en: 'SUPPORTERS' },
 
   // --- Pause und Rückfrage ---
   'pause.titel': { de: 'PAUSE', en: 'PAUSE' },

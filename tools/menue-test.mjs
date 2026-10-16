@@ -8,6 +8,7 @@
 //  (g) Tastenbelegung ändert wirklich die Eingabe, doppelte Belegung wird verhindert
 //  (h) Neustart setzt Zeit und Checkpoints zurück
 //  (i) Demo-Fahrt schreibt nichts in den Rennstand, "Starten" beginnt sauber an der Startlinie
+//  (j) Credits (M5a.1): Mitwirkende und Unterstützer in de/en, leere Liste = keine Gruppe, rollt mit vielen Namen
 // Dazu: keine Fehler in der Konsole.
 
 import { starteSpiel } from './spiel-browser.mjs';
@@ -383,6 +384,93 @@ console.log('(i) Demo-Fahrt und Starten');
   });
   pruefe(r.zust === 'rennen' && r.d < 0.05 && r.v < 0.3 && r.rennen.zustand === 'bereit' && r.rennen.zeit === 0 && r.rennen.naechsterCp === 0 && r.auf === null,
     'Starten: Auto steht sauber an der Startposition, Zeit 0, kein Countdown', `${r.d.toFixed(3)} m vom Start, Gang ${r.gang}`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+// =====================================================================
+console.log('(j) Credits: Mitwirkende und Unterstützer (M5a.1)');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  await taste(p, 'KeyX');
+  await bilderAbwarten(p, 3);
+  const nrCredits = await nrVon(p, 'menue.credits');
+  await oeffne(p, nrCredits);
+  await bilderAbwarten(p, 4);
+  // Zeilen der Seite: Text, Farbe (Überschrift = Farbe der Gruppen in den Einstellungen)
+  const zeilen = () => A(p, () => {
+    const A = window.__alpineRally, se = A.menue.seite, M = A.CONFIG.menue;
+    const l = typeof se.eintraege === 'function' ? se.eintraege() : se.eintraege;
+    return l.map((e) => (e.inhalt ? { text: e.inhalt(), gruppe: e.farbe === M.farbeGruppe } : { text: '', leer: true }));
+  });
+  const neuOeffnen = () => A(p, () => { const A = window.__alpineRally; A.menue.schliesse(); A.menue.oeffne(A.seiten.credits); });
+  const sprache = (s) => A(p, (s) => window.__alpineRally.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.sprache' && x.typ === 'auswahl').setzen(s), s);
+  // Überschrift und darunter die Namen (ein Name pro Zeile)
+  const gruppe = (z, titel) => {
+    const i = z.findIndex((x) => x.text === titel && x.gruppe);
+    if (i < 0) return null;
+    const namen = [];
+    for (const x of z.slice(i + 1)) { if (x.leer || x.gruppe) break; namen.push(x.text); }
+    return namen;
+  };
+  let z = await zeilen();
+  const de = { m: gruppe(z, 'MITWIRKENDE'), u: gruppe(z, 'UNTERSTÜTZER') };
+  pruefe((await seite(p)) === 'credits' && JSON.stringify(de) === '{"m":["LOUIS"],"u":["SHAI-RON"]}',
+    'Deutsch: MITWIRKENDE / LOUIS, UNTERSTÜTZER / SHAI-RON (Überschrift in der Gruppenfarbe)', `${JSON.stringify(de)}`);
+  const iIdee = z.findIndex((x) => x.text.startsWith('IDEE')), iM = z.findIndex((x) => x.text === 'MITWIRKENDE');
+  pruefe(iIdee >= 0 && iM > iIdee, 'die Gruppen stehen unter "Idee und Design / Gebaut mit Claude"');
+  await sprache('en'); await bilderAbwarten(p, 2);
+  z = await zeilen();
+  const en = { m: gruppe(z, 'CONTRIBUTORS'), u: gruppe(z, 'SUPPORTERS') };
+  pruefe(JSON.stringify(en) === '{"m":["LOUIS"],"u":["SHAI-RON"]}', 'Englisch: CONTRIBUTORS / LOUIS, SUPPORTERS / SHAI-RON (Namen nicht übersetzt)', JSON.stringify(en));
+  await sprache('de');
+  // leere Liste = keine Gruppe
+  await A(p, () => { const C = window.__alpineRally.CONFIG.menue.credits; window.__cAlt = { ...C }; C.unterstuetzer = []; });
+  await neuOeffnen(); z = await zeilen();
+  const leer1 = !z.some((x) => x.text === 'UNTERSTÜTZER') && z.some((x) => x.text === 'MITWIRKENDE');
+  await A(p, () => { window.__alpineRally.CONFIG.menue.credits.mitwirkende = []; });
+  await neuOeffnen(); z = await zeilen();
+  const leer2 = !z.some((x) => x.gruppe);
+  pruefe(leer1 && leer2, 'leere Liste = Gruppe erscheint nicht (auch beide leer)');
+  // 1 + 1 Namen: passt bei 320x180 ohne Rollen; 6 Namen (3 + 3) und 12 Namen: rollt, nichts abgeschnitten
+  const pruefeGroesse = async (m, u) => {
+    await A(p, ([m, u]) => { const C = window.__alpineRally.CONFIG.menue.credits; C.mitwirkende = m; C.unterstuetzer = u; }, [m, u]);
+    await neuOeffnen(); await bilderAbwarten(p, 3);
+    const r0 = await A(p, () => window.__alpineRally.menue.rollen);
+    await taste(p, 'ArrowDown', 30); await bilderAbwarten(p, 2);
+    const r1 = await A(p, () => window.__alpineRally.menue.rollen);
+    await taste(p, 'ArrowUp', 30); await bilderAbwarten(p, 2);
+    const r2 = await A(p, () => window.__alpineRally.menue.rollen);
+    const zz = await zeilen();
+    // jede Liste vollständig, ein Name pro Zeile, unter ihrer Überschrift
+    const alle = JSON.stringify(gruppe(zz, 'MITWIRKENDE')) === JSON.stringify(m) && JSON.stringify(gruppe(zz, 'UNTERSTÜTZER')) === JSON.stringify(u);
+    return { r0, r1, r2, alle };
+  };
+  const g2 = await pruefeGroesse(['LOUIS'], ['SHAI-RON']);
+  pruefe(g2.r0.max === 0 && g2.r0.y0 >= 0 && g2.r0.y0 + g2.r0.hoehe <= 180, 'mit 2 Namen passt die Seite ganz auf 320x180 (rollt nicht)', `Tafel ${g2.r0.breite}x${g2.r0.hoehe} px, Inhalt ${g2.r0.gesamt} px`);
+  const g6 = await pruefeGroesse(['LOUIS', 'ANNA', 'BEAT'], ['SHAI-RON', 'MARIA', 'ZOE']);
+  const g12 = await pruefeGroesse(['LOUIS', 'ANNA', 'BEAT', 'CHRIGU', 'DANI', 'EVA'], ['SHAI-RON', 'MARIA', 'ZOE', 'NOAH', 'LEA', 'TIM']);
+  for (const [n, g] of [[6, g6], [12, g12]]) {
+    pruefe(g.alle && g.r0.scroll === 0 && g.r1.scroll === g.r1.max && g.r1.max === g.r1.gesamt - g.r1.sichtH && g.r2.scroll === 0 && g.r0.y0 >= 0 && g.r0.y0 + g.r0.hoehe <= 180 && g.r0.inhalt + 2 * 6 + 2 <= 316, // (breiter würde die Tafel den Text abschneiden)
+      `mit ${n} Namen: Seite beginnt oben, rollt mit Pfeil runter bis ganz unten und zurück, Tafel im Bild`, `Inhalt ${g.r1.gesamt} px, sichtbar ${g.r1.sichtH} px, gerollt bis ${g.r1.max} px`);
+  }
+  // ZURÜCK geht auch nach dem Rollen
+  await taste(p, 'ArrowDown', 30); await taste(p, 'Enter'); await bilderAbwarten(p, 3);
+  pruefe((await seite(p)) === 'haupt', 'Enter nach dem Rollen = ZURÜCK zum Hauptmenü');
+  await A(p, () => Object.assign(window.__alpineRally.CONFIG.menue.credits, window.__cAlt));
+  // Namen: nur Zeichen, die die Pixelschrift kennt; neue Text-Schlüssel in de und en
+  const k = await A(p, async () => {
+    const { SCHRIFT } = await import('/js/pixel.js');
+    const { TEXTE } = await import('/js/texte.js');
+    const C = window.__alpineRally.CONFIG.menue.credits;
+    const namen = [...C.mitwirkende, ...C.unterstuetzer];
+    return {
+      zeichen: namen.flatMap((n) => [...n].filter((c) => !SCHRIFT[c])),
+      schluessel: ['credits.mitwirkende', 'credits.unterstuetzer'].filter((s) => !(TEXTE[s] && TEXTE[s].de && TEXTE[s].en)),
+    };
+  });
+  pruefe(k.zeichen.length === 0 && k.schluessel.length === 0, 'Namen nur mit Zeichen der Pixelschrift; neue Schlüssel credits.mitwirkende / credits.unterstuetzer in de und en', [...k.zeichen, ...k.schluessel].join(', '));
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
   await spiel.schliessen();
 }
