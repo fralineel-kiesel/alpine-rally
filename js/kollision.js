@@ -113,6 +113,7 @@ export function baueKollision(hindernisse) {
   const kol = {
     anzahl,
     letzterAufprall: null, // { vorher, nachher } in m/s
+    wucht: 0,              // M5b (Statistik): Tempo Richtung Hindernis beim letzten loese() (m/s, 0 = kein Kontakt)
 
     // Ist ein Kreis (x, z, r) frei von Hindernissen? (für die Abkürzungs-Analyse)
     frei(x, z, r) {
@@ -128,6 +129,7 @@ export function baueKollision(hindernisse) {
     // Stücken abgefahren, damit man auch bei Höchsttempo nicht durch einen
     // Stamm rutscht.
     loese(physik, xAlt, zAlt, wAlt) {
+      kol.wucht = 0;
       if (!anzahl) return false;
       const weg = Math.hypot(physik.x - xAlt, physik.z - zAlt);
       const teile = Math.max(1, Math.ceil(weg / k.pruefSchritt));
@@ -152,6 +154,7 @@ export function baueKollision(hindernisse) {
       }
       // für F3: Tempo vor und nach dem Aufprall (winkel: 0° = frontal, 90° = streifend)
       if (wucht > 1.5) this.letzterAufprall = { vorher, nachher: physik.tempo, winkel };
+      kol.wucht = wucht;
       return true;
     },
 

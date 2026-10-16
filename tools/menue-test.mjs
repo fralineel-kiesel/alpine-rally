@@ -8,6 +8,8 @@
 //  (g) Tastenbelegung ändert wirklich die Eingabe, doppelte Belegung wird verhindert
 //  (h) Neustart setzt Zeit und Checkpoints zurück
 //  (i) Demo-Fahrt schreibt nichts in den Rennstand, "Starten" beginnt sauber an der Startlinie
+// M5b: STARTEN und NEUSTART führen jetzt in den Countdown (Auto mit der Schnauze an der Startlinie); die Teile
+//      (a), (c), (g), (h), (i) sind darauf angepasst. Mehr zum Countdown: tools/rennablauf-test.mjs
 //  (j) Credits (M5a.1): Mitwirkende und Unterstützer in de/en, leere Liste = keine Gruppe, rollt mit vielen Namen
 // Dazu: keine Fehler in der Konsole.
 
@@ -96,7 +98,7 @@ console.log('(a) Tastatur-Navigation durch alle Seiten');
   const t1 = await zustand(p);
   await taste(p, 'Enter');
   await zu(p, 0); await taste(p, 'Enter');
-  pruefe(t1 === 'titel' && (await zustand(p)) === 'rennen', 'Esc im Hauptmenü -> Titel; STARTEN -> Rennen');
+  pruefe(t1 === 'titel' && (await zustand(p)) === 'countdown', 'Esc im Hauptmenü -> Titel; STARTEN -> Countdown (M5b)');
   // Pause, Einstellungen aus der Pause, Rückfrage NEIN / JA
   await pauseTaste(p);
   const ps = [await zustand(p), await seite(p)];
@@ -179,7 +181,7 @@ console.log('(c) ohne Browser-Speicher');
   const ok = await A(p, () => window.__alpineRally.einstellungen.einheit === 'mph' && window.__alpineRally.paceNotes.anzeige.an === false);
   await taste(p, 'Escape'); await zu(p, 0); await taste(p, 'Enter');
   await bilderAbwarten(p);
-  pruefe(ok && (await zustand(p)) === 'rennen', 'Einstellungen ändern geht trotzdem, Rennen startet');
+  pruefe(ok && (await zustand(p)) === 'countdown', 'Einstellungen ändern geht trotzdem, Rennen startet (Countdown)');
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
   await spiel.schliessen();
 }
@@ -223,7 +225,7 @@ console.log('(d) Pause friert alles ein, (e) Fokusverlust = Pause, (h) Neustart'
   const p3 = await zustand(p);
   await A(p, () => { delete document.hidden; });
   pruefe(p1 === 'pause' && p2 === 'rennen' && p3 === 'pause', '(e) Fokusverlust und Tab-Wechsel lösen Pause aus');
-  // (h) Neustart: Checkpoint 1 echt durchfahren, dann Pause -> NEUSTART DER ETAPPE
+  // (h) Neustart: Checkpoint 1 echt durchfahren, dann Pause -> NEUSTART DER ETAPPE (seit M5b mit Countdown)
   await taste(p, 'Escape');
   await A(p, () => {
     const A = window.__alpineRally;
@@ -245,10 +247,10 @@ console.log('(d) Pause friert alles ein, (e) Fokusverlust = Pause, (h) Neustart'
   const vorNeu = await A(p, () => ({ ...window.__alpineRally.rennen }));
   await pauseTaste(p); await oeffne(p, 1);
   const r = await A(p, () => {
-    const A = window.__alpineRally, s = A.strecke.punktBei(A.CONFIG.strasse.spawnBeiMeter);
+    const A = window.__alpineRally, C = A.CONFIG, s = A.strecke.punktBei(A.strecke.startS - C.grenze.wandHuelle.laenge / 2 - C.rennablauf.schnauzeVorLinie);
     return { ...A.rennen, d: Math.hypot(A.physik.x - s.x, A.physik.z - s.z), v: A.physik.tempo, zust: A.ablauf.zustand };
   });
-  pruefe(vorNeu.naechsterCp === 1 && vorNeu.zwischenzeiten.length === 1 && r.zust === 'rennen' && r.zeit === 0 && r.zustand === 'bereit'
+  pruefe(vorNeu.naechsterCp === 1 && vorNeu.zwischenzeiten.length === 1 && r.zust === 'countdown' && r.zeit === 0 && r.zustand === 'bereit'
     && r.naechsterCp === 0 && r.zwischenzeiten.length === 0 && r.d < 0.5 && r.v < 0.5,
   '(h) Neustart setzt Zeit, Checkpoints und Auto zurück', `vorher CP ${vorNeu.naechsterCp}, Zeit ${vorNeu.zeit.toFixed(1)} s -> Zeit ${r.zeit}, CP ${r.naechsterCp}, ${r.d.toFixed(2)} m vom Start`);
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
@@ -317,6 +319,7 @@ console.log('(g) Tastenbelegung');
   await zu(p, 1); await taste(p, 'ArrowLeft'); await taste(p, 'Enter'); await taste(p, 'KeyG');
   t = await T();
   await taste(p, 'Escape'); await taste(p, 'Escape'); await zu(p, 0); await taste(p, 'Enter');
+  await p.waitForFunction(() => window.__alpineRally.ablauf.zustand === 'rennen', null, { timeout: 120000 }); // nach dem Countdown (M5b)
   await bilderAbwarten(p, 2);
   const tempo = () => A(p, () => window.__alpineRally.physik.tempo);
   await p.keyboard.down('ArrowUp'); await bilderAbwarten(p, 30); await p.keyboard.up('ArrowUp');
@@ -375,15 +378,15 @@ console.log('(i) Demo-Fahrt und Starten');
   pruefe((await rennStand()) === vorher, 'auch danach nichts im Rennstand');
   const best = await A(p, () => { try { return localStorage.getItem('alpineRally.bestzeiten'); } catch { return 'x'; } });
   pruefe(best === null, 'keine Bestzeit gespeichert');
-  // Hauptmenü -> Starten: Auto steht an der Startposition, Zeit 0
+  // Hauptmenü -> Starten: Auto steht an der Startposition (seit M5b mit der Schnauze an der Startlinie), Zeit 0
   await bilderAbwarten(p, 10);
   await taste(p, 'Enter'); await zu(p, 0); await taste(p, 'Enter');
   const r = await A(p, () => {
-    const A = window.__alpineRally, s = A.strecke.punktBei(A.CONFIG.strasse.spawnBeiMeter);
+    const A = window.__alpineRally, C = A.CONFIG, s = A.strecke.punktBei(A.strecke.startS - C.grenze.wandHuelle.laenge / 2 - C.rennablauf.schnauzeVorLinie);
     return { zust: A.ablauf.zustand, d: Math.hypot(A.physik.x - s.x, A.physik.z - s.z), v: A.physik.tempo, rennen: A.rennen, auf: A.kollision.letzterAufprall, gang: A.getriebe.anzeige };
   });
-  pruefe(r.zust === 'rennen' && r.d < 0.05 && r.v < 0.3 && r.rennen.zustand === 'bereit' && r.rennen.zeit === 0 && r.rennen.naechsterCp === 0 && r.auf === null,
-    'Starten: Auto steht sauber an der Startposition, Zeit 0, kein Countdown', `${r.d.toFixed(3)} m vom Start, Gang ${r.gang}`);
+  pruefe(r.zust === 'countdown' && r.d < 0.05 && r.v < 0.3 && r.rennen.zustand === 'bereit' && r.rennen.zeit === 0 && r.rennen.naechsterCp === 0 && r.auf === null,
+    'Starten: Auto steht sauber an der Startlinie, Zeit 0, Countdown läuft (M5b)', `${r.d.toFixed(3)} m vom Start, Gang ${r.gang}`);
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
   await spiel.schliessen();
 }

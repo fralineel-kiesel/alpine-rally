@@ -1,6 +1,8 @@
 // Start des Spiels und Spielschleife.
 // Seit M5a mit Ablauf: Titel -> Hauptmenü (Demo-Fahrt dahinter) -> Rennen <-> Pause (js/ablauf.js).
-// Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start()
+// Seit M5b: STARTEN -> Countdown 3-2-1-GO -> Rennen -> Ziel ("ZIEL!", 3 s) -> Zielbildschirm (Bestzeiten, Statistik).
+// Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
+// (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
@@ -10,7 +12,9 @@ import { baueAblauf } from './ablauf.js';
 import { baueMenue } from './menue.js';
 import { baueSeiten } from './menueseiten.js';
 import { baueDemo } from './demofahrt.js';
-import { ETAPPEN } from './inhalte.js';
+import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
+import { speichereBestzeit, hundertstel } from './bestzeiten.js';
+import { zeichneCountdown } from './rennablauf.js';
 import { baueStrecke } from './track.js';
 import { baueWelt } from './world.js';
 import { baueNetz } from './netz.js';
@@ -147,7 +151,7 @@ const hud = baueHud(document.getElementById('hud'));
 const paceNotes = bauePaceNotes(strecke, netz);
 
 // --- Rennzustand ---
-// bereit = vor der Startlinie, laeuft = Zeit läuft, ziel = durchs Ziel
+// bereit = vor der Startlinie (auch im Countdown), laeuft = Zeit läuft, ziel = durchs Ziel
 const rennen = {
   zustand: 'bereit', zeit: 0, endZeit: 0, letztesS: 0, hilfe: true,
   naechsterCp: 0,        // welcher Checkpoint als nächster kommt (0 = der erste)
@@ -156,6 +160,36 @@ const rennen = {
   uhr: 0,                // läuft immer (für die Anzeigedauer der Meldungen)
 };
 let debugAn = einstellungen.fps; // F3 (seit M5a auch in den Einstellungen, wird gespeichert)
+
+// --- Rennablauf (M5b): Countdown, Ziel, Zielbildschirm ---
+const RA = CONFIG.rennablauf;
+const lauf = {
+  mitCountdown: false, // wurde der laufende Lauf mit Countdown gestartet? (Neustart macht es wieder so)
+  countdown: 0,        // Sekunden seit Beginn des Countdowns (3 Zahlen à rennablauf.zahlDauer)
+  go: 0,               // so lange steht "GO!" noch (Sekunden)
+  zielWarte: 0,        // Sekunden seit der Ziellinie (Zielbildschirm nach rennablauf.zielSchirmNach)
+  zielErledigt: false, // Zeit schon eingetragen?
+  ergebnis: null,      // was der Zielbildschirm zeigt (siehe zielErreicht)
+  markiert: null,      // { etappe, datum } der gerade eingetragene Lauf (Bestzeiten-Seite, bis zum nächsten Start)
+  pauseVon: 'rennen',  // aus welchem Zustand kam die Pause (rennen oder countdown)?
+};
+// --- Statistik (M5b): nur im Rennen zwischen GO und Ziel (rennen.zustand 'laeuft'), nicht in der Demo-Fahrt ---
+const stat = {
+  aufpralle: 0,          // harte Kontakte über rennablauf.aufprallSchwelle (einmal je Aufprall)
+  hoechstTempo: 0,       // m/s
+  resetsBasis: 0,        // rueck.anzahl beim Start (Resets = rueck.anzahl - resetsBasis)
+  letzterAufprall: -1e9, // rennen.uhr beim letzten gezählten Aufprall (Sperrzeit)
+};
+const statResets = () => rueck.anzahl - stat.resetsBasis;
+// Aufprall melden: wucht = Tempo Richtung Hindernis (m/s). Zählt einmal, dann rennablauf.aufprallSperre Ruhe
+function aufprallZaehlen(wucht) {
+  if (rennen.zustand !== 'laeuft' || !(wucht > RA.aufprallSchwelle)) return;
+  if (rennen.uhr - stat.letzterAufprall < RA.aufprallSperre) return;
+  stat.aufpralle++;
+  stat.letzterAufprall = rennen.uhr;
+}
+// Tempo in die Grenze hinein (Richtung nx/nz zeigt in die Wand, wie bei physik.anGrenze)
+const grenzWucht = (nx, nz) => Math.max(0, physik.vx * nx + physik.vz * nz);
 
 const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
@@ -178,6 +212,9 @@ function neustart() {
   rennen.zwischenzeiten = [];
   rennen.meldung = null;
   paceNotes.zuruecksetzen();
+  // M5b: Statistik und Ziel zurück
+  stat.aufpralle = 0; stat.hoechstTempo = 0; stat.resetsBasis = rueck.anzahl; stat.letzterAufprall = -1e9;
+  lauf.countdown = 0; lauf.go = 0; lauf.zielWarte = 0; lauf.zielErledigt = false; lauf.ergebnis = null;
 }
 
 function zeigeMeldung(text, farbe) {
@@ -188,10 +225,13 @@ function zeigeMeldung(text, farbe) {
 // Auto gesperrt ist und bis zum Stand bremst; die Rennzeit läuft weiter. Erst dann aufStrasse().
 // Vor dem Start: sofort zurück auf die Strasse (wie bisher). Nach dem Ziel: Neustart (wie bisher).
 // Nochmals R während der Wartezeit ändert nichts.
-// Ergebnis (für Tests): 'neustart', 'sofort', 'countdown' oder 'laeuft schon'
+// M5b: Nach dem Ziel = NEU STARTEN (wie der Knopf im Zielbildschirm, mit Countdown, wenn der Lauf einen hatte).
+// Im Countdown tut R nichts.
+// Ergebnis (für Tests): 'neustart', 'sofort', 'countdown', 'laeuft schon' oder 'gesperrt'
 const rueck = { rest: 0, anzahl: 0 }; // rest = verbleibende Wartezeit (s, 0 = kein Countdown), anzahl = ausgelöste Resets
 function rTaste() {
-  if (rennen.zustand === 'ziel') { neustart(); return 'neustart'; }
+  if (ablauf.zustand === 'countdown') return 'gesperrt';
+  if (rennen.zustand === 'ziel') { neuStarten(); return 'neustart'; }
   if (rennen.zustand !== 'laeuft' || !(CONFIG.zurueck.wartezeit > 0)) { aufStrasse(); return 'sofort'; }
   if (rueck.rest > 0) return 'laeuft schon';
   rueck.rest = CONFIG.zurueck.wartezeit;
@@ -212,6 +252,8 @@ function aufStrasse() {
 // --- Physik-Schritt mit Untergrund, Steigung und Begrenzungen ---
 const qAuto = {}, qGrenze = {};
 const SPERRE = { gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false };
+// leere Eingabe (nichts gedrückt); wird nie verändert
+const LEER = Object.freeze({ gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false, pause: false });
 const SCHRITT = 1 / 120;
 let untergrund = 'asphalt';
 
@@ -284,6 +326,7 @@ function physikSchritt(dt, e, nurFahren = false) {
 
   // Bäume und Steine
   kollision.loese(physik, xAlt, zAlt, wAlt);
+  let wucht = kollision.wucht; // M5b, Statistik: stärkster Aufprall in diesem Schritt (m/s Richtung Hindernis)
 
   // Begrenzungen: Felswand, Abhang, zu weit weg
   const q2 = strecke.abfrage(physik.x, physik.z, qAuto);
@@ -293,23 +336,34 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Wer von der Wiese her auf Anfang oder Ende der Wand zufährt (also schon "hinter" der Wandfläche ist),
   // wurde früher in einem Schritt Meter weit auf die Strasse geworfen; jetzt hält ihn der Fels wie ein Hang auf.
   const wk = wandKontakt(q2, xAlt, zAlt, wAlt);
-  if (wk.strasse > 0) physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
-  else if (wk.fels > 0) physik.anGrenze(wk.nx, wk.nz, wk.fels);
+  // (M5b: vor jeder Grenze das Tempo hinein messen, für die Statistik; die Grenze selbst ist unverändert)
+  if (wk.strasse > 0) {
+    wucht = Math.max(wucht, grenzWucht(rx * q2.wandSeite, rz * q2.wandSeite));
+    physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
+  } else if (wk.fels > 0) {
+    wucht = Math.max(wucht, grenzWucht(wk.nx, wk.nz));
+    physik.anGrenze(wk.nx, wk.nz, wk.fels);
+  }
   if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
     // Abhang auf der anderen Seite
     const ueber = Math.abs(q2.seite) - g.abhangGrenze;
-    if (ueber > 0) physik.anGrenze(-rx * q2.wandSeite, -rz * q2.wandSeite, ueber);
+    if (ueber > 0) {
+      wucht = Math.max(wucht, grenzWucht(-rx * q2.wandSeite, -rz * q2.wandSeite));
+      physik.anGrenze(-rx * q2.wandSeite, -rz * q2.wandSeite, ueber);
+    }
   }
   if (q2.abstand > g.maxAbstand) {
     // nächster Punkt, der als Strasse zählt: Etappe, seit M3c auch die Ausrollstrecke nach dem Ziel
     const p = netz.grenzPunkt(physik.x, physik.z, qGrenze);
     if (p.abstand > g.maxAbstand) {
       const nx = (physik.x - p.x) / p.abstand, nz = (physik.z - p.z) / p.abstand;
+      wucht = Math.max(wucht, grenzWucht(nx, nz));
       physik.anGrenze(nx, nz, p.abstand - g.maxAbstand);
     }
   }
 
-  if (nurFahren) return; // Demo-Fahrt: kein Rennstand
+  if (nurFahren) return; // Demo-Fahrt: kein Rennstand (und keine Statistik)
+  aufprallZaehlen(wucht);
 
   // Zeitmessung und Checkpoints
   rennen.uhr += dt;
@@ -324,6 +378,7 @@ function physikSchritt(dt, e, nurFahren = false) {
     rennen.zeit = 0;
   } else if (rennen.zustand === 'laeuft') {
     rennen.zeit += dt;
+    if (physik.tempo > stat.hoechstTempo) stat.hoechstTempo = physik.tempo; // M5b: Höchsttempo zwischen GO und Ziel
     const cp = CONFIG.checkpoints;
     const n = rennen.naechsterCp;
     if (n < checkpoints.length) {
@@ -572,14 +627,69 @@ const demo = baueDemo({
 ETAPPEN[0].laenge = (strecke.zielS - strecke.startS) / 1000;
 ETAPPEN[0].checkpoints = checkpoints.length;
 
-// Rennen frisch beginnen (Auto an der Startlinie, Zeit 0, Checkpoints zurück) – ohne Countdown (der kommt in M5b)
-function starten() {
+// Rennen frisch beginnen (Zeit 0, Checkpoints, Statistik zurück).
+// M5b: Standard = mit Countdown: Auto steht mit der Schnauze an der Startlinie (rennablauf.schnauzeVorLinie),
+// gesperrt bis GO, die Zeit beginnt bei GO. countdown: false = Testweg wie vor M5b (Auto bei strasse.spawnBeiMeter,
+// Zeit beginnt beim Überfahren der Startlinie).
+function starten({ countdown = true } = {}) {
+  lauf.mitCountdown = countdown;
+  lauf.markiert = null; // der hervorgehobene Lauf auf der Bestzeiten-Seite gilt nur bis zum nächsten Start
   neustart();
   kollision.letzterAufprall = null;
-  ablauf.wechsle('rennen');
+  if (!countdown) { ablauf.wechsle('rennen'); return; }
+  setzeAuf(strecke.startS - CONFIG.grenze.wandHuelle.laenge / 2 - RA.schnauzeVorLinie);
+  ablauf.wechsle('countdown');
 }
-function pausieren() { if (ablauf.zustand === 'rennen') ablauf.wechsle('pause'); }
-function weiter() { if (ablauf.zustand === 'pause') ablauf.wechsle('rennen'); }
+// Neu starten (Pause, Zielbildschirm, R nach dem Ziel): gleich wie der laufende Lauf (im Spiel immer mit Countdown)
+function neuStarten() { starten({ countdown: lauf.mitCountdown }); }
+// Countdown: ein fester Schritt (Auto steht, keine Physik). Nach 3 Zahlen: GO, Auto frei, Zeit ab 0
+function countdownSchritt(dt) {
+  lauf.countdown += dt;
+  if (lauf.countdown >= 3 * RA.zahlDauer - 1e-9) {
+    rennen.zustand = 'laeuft';
+    rennen.zeit = 0;
+    lauf.go = RA.goDauer;
+    ablauf.wechsle('rennen');
+  }
+}
+// Ein fester Schritt im Rennen (1/120 s): im Countdown zählt nur die Uhr, sonst Physik und Zeitmessung.
+// Auch GO! und die Wartezeit bis zum Zielbildschirm laufen hier (genau auf 1/120 s, in der Pause eingefroren).
+function rennSchritt(dt, e) {
+  if (ablauf.zustand === 'countdown') { countdownSchritt(dt); return; }
+  physikSchritt(dt, e);
+  if (lauf.go > 0) lauf.go = Math.max(0, lauf.go - dt);
+  // Ziel erreicht -> Zeit eintragen; nach rennablauf.zielSchirmNach Sekunden kommt der Zielbildschirm
+  if (rennen.zustand === 'ziel') {
+    if (!lauf.zielErledigt) zielErreicht();
+    if (ablauf.zustand === 'rennen') {
+      lauf.zielWarte += dt;
+      if (lauf.zielWarte >= RA.zielSchirmNach - 1e-9) ablauf.wechsle('ziel');
+    }
+  }
+}
+// Ziel erreicht (einmal pro Lauf): Zeit eintragen (Top 10), Vergleich zur Bestzeit vor diesem Lauf merken
+function zielErreicht() {
+  lauf.zielErledigt = true;
+  const etappe = ETAPPEN[auswahl.etappe];
+  const cps = checkpoints.map((_, n) => (rennen.zwischenzeiten[n] == null ? null : rennen.zwischenzeiten[n]));
+  const eintrag = {
+    zeit: rennen.endZeit, cps, auto: AUTOS[auswahl.auto].id,
+    aufpralle: stat.aufpralle, resets: statResets(), hoechstTempo: stat.hoechstTempo,
+  };
+  const erg = speichereBestzeit(etappe.id, eintrag);
+  lauf.ergebnis = {
+    ...eintrag, platz: erg.platz, anzahl: erg.anzahl, bisher: erg.bisher, gespeichert: erg.gespeichert,
+    neueBest: !!erg.bisher && hundertstel(eintrag.zeit) < hundertstel(erg.bisher.zeit), // nur echte Verbesserung
+  };
+  lauf.markiert = erg.platz > 0 ? { etappe: etappe.id, datum: erg.datum } : null;
+}
+// Pause aus dem Rennen oder dem Countdown (nicht im Zielbildschirm); Weiter geht dorthin zurück
+function pausieren() {
+  if (!ablauf.ist('rennen', 'countdown')) return;
+  lauf.pauseVon = ablauf.zustand;
+  ablauf.wechsle('pause');
+}
+function weiter() { if (ablauf.zustand === 'pause') ablauf.wechsle(lauf.pauseVon); }
 function zumMenue() {
   if (einstellungen.vollbild) vollbild(true); // gespeichertes Vollbild (geht nur nach einem Tastendruck)
   ablauf.wechsle('menue');
@@ -602,12 +712,19 @@ function vollbild(an, ausMenue = false) {
     } else if (!an && document.fullscreenElement) document.exitFullscreen().catch(() => {});
   } catch { nein(); /* Browser kann kein Vollbild */ }
 }
-const seiten = baueSeiten({ menue, zumMenue, starten, weiter, neustartEtappe: starten, zumHauptmenue, zumTitel, paceNotes, vollbild });
+const seiten = baueSeiten({
+  menue, zumMenue, starten: () => starten(), weiter, neustartEtappe: neuStarten, zumHauptmenue, zumTitel, paceNotes, vollbild,
+  neuStarten, ergebnis: () => lauf.ergebnis, markiert: () => lauf.markiert,
+});
 
 ablauf.registriere('titel', { welt: 'demo', menue: true, abdunkeln: M.abdunkeln, betreten: () => menue.zeige(seiten.titel) });
 ablauf.registriere('menue', { welt: 'demo', menue: true, abdunkeln: M.abdunkeln, betreten: () => menue.zeige(seiten.haupt) });
-ablauf.registriere('rennen', { welt: 'rennen', hud: true, betreten: () => { eingabeLeeren(); akku = 0; } });
+// (nach GO kommt 'rennen' mitten in der Spielschleife: dann nichts leeren, die Schritte laufen nahtlos weiter)
+ablauf.registriere('rennen', { welt: 'rennen', hud: true, betreten: (alt) => { if (alt !== 'countdown') { eingabeLeeren(); akku = 0; } } });
 ablauf.registriere('pause', { welt: null, hud: true, menue: true, abdunkeln: M.abdunkelnPause, betreten: () => menue.zeige(seiten.pause) });
+// M5b: Countdown (Welt läuft, Auto gesperrt, HUD ohne Menü) und Zielbildschirm (Welt läuft weiter, abgedunkelt)
+ablauf.registriere('countdown', { welt: 'rennen', hud: true, betreten: () => { eingabeLeeren(); akku = 0; } });
+ablauf.registriere('ziel', { welt: 'rennen', hud: true, menue: true, abdunkeln: RA.abdunkeln, betreten: () => menue.zeige(seiten.ziel) });
 
 // Einstellungen wirken sofort
 beiAenderung((name, wert) => {
@@ -654,33 +771,39 @@ function schleife(jetzt) {
   const zustandVorher = ablauf.zustand;
   if (ablauf.def.menue) menue.gamepad(dt, pad);
 
-  // Eingabe nur im Rennen (im Menü gehen Tasten an das Menü)
-  let e = null;
-  if (zustandVorher === 'rennen' && ablauf.zustand === 'rennen') {
+  // Eingabe nur, wenn gefahren wird (Rennen, Countdown, Zielbildschirm; im Menü gehen Tasten an das Menü).
+  // Hat sich der Zustand in diesem Bild erst geändert (Gamepad im Menü), gilt eine leere Eingabe.
+  let e = LEER;
+  if (zustandVorher === ablauf.zustand && ablauf.def.welt === 'rennen') {
     e = leseEingabe(dt);
     // nur für automatische Tests: Eingabe von aussen
     const te = window.__alpineRally && window.__alpineRally.testEingabe;
     if (te) e = { ...e, ...te };
-    if (e.pause) pausieren();
+    if (e.pause) pausieren(); // (nicht im Zielbildschirm)
   }
+  // Sicherung: wurde von aussen neu gestartet (z. B. Test ruft neustart()), gehört der Zielbildschirm weg
+  if (ablauf.zustand === 'ziel' && rennen.zustand !== 'ziel') ablauf.wechsle('rennen');
   const def = ablauf.def;
   const anhalten = window.__alpineRally && window.__alpineRally.anhalten; // nur für Tests: Physik von aussen gesteuert
   const xVor = physik.x, zVor = physik.z;
   let dtWelt = dt; // 0 = eingefroren (Pause)
   if (def.welt === 'rennen') {
+    const imCountdown = ablauf.zustand === 'countdown'; // R und Pace-Notes-Taste tun im Countdown nichts
     if (e.debug) { debugAn = !debugAn; setze('fps', debugAn); }
-    if (e.notes) {
+    if (e.notes && !imCountdown) {
       paceNotes.umschalten();
       zeigeMeldung(t(paceNotes.anzeige.an ? 'hud.ansagenAn' : 'hud.ansagenAus'), 'gelb');
     }
-    if (e.reset) rTaste();
+    if (e.reset && !imCountdown) rTaste();
     akku += dt;
     if (anhalten) akku = 0;
     while (akku >= SCHRITT) {
-      physikSchritt(SCHRITT, e);
+      rennSchritt(SCHRITT, e);
       akku -= SCHRITT;
     }
     if (physik.tempo > 3) rennen.hilfe = false;
+    // (fährt ein Test direkt mit physikSchritt ins Ziel, wird die Zeit hier eingetragen)
+    if (rennen.zustand === 'ziel' && !lauf.zielErledigt) zielErreicht();
   } else if (def.welt === 'demo') {
     akku += dt;
     if (anhalten) akku = 0;
@@ -697,7 +820,7 @@ function schleife(jetzt) {
     const weg = Math.hypot(physik.x - xVor, physik.z - zVor) * Math.sign(physik.vVor || 1);
     autoZeichnen(dt, weg);
     // Staub (nur auf Schotter und Wiesenweg): Werte ohne neue Objekte übergeben
-    const ea = e || demo.eingabe;
+    const ea = def.welt === 'demo' ? demo.eingabe : e;
     staubAuto.x = physik.x; staubAuto.z = physik.z; staubAuto.y = auto.objekt.position.y;
     staubAuto.richtung = physik.richtung; staubAuto.vx = physik.vx; staubAuto.vz = physik.vz;
     staubAuto.tempo = physik.tempo; staubAuto.drift = physik.driftWinkel;
@@ -727,7 +850,7 @@ function schleife(jetzt) {
       dt: dtWelt, kmh: physik.tempo * 3.6, debug: debugAn, fps, countdown: rueck.rest,
       gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
       meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
-      untergrund,
+      untergrund, zielSchirm: ablauf.zustand === 'ziel',
       hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
       meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
       zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
@@ -735,6 +858,10 @@ function schleife(jetzt) {
         ? { nummer: rennen.naechsterCp + 1, abstand: checkpoints[rennen.naechsterCp].s - rennen.letztesS }
         : { nummer: 0, abstand: strecke.zielS - rennen.letztesS },
     });
+    // M5b: Countdown 3 - 2 - 1 und danach kurz GO! in der Bildmitte (in der Pause eingefroren)
+    if (ablauf.zustand === 'countdown' || lauf.pauseVon === 'countdown' && ablauf.zustand === 'pause' || lauf.go > 0) {
+      zeichneCountdown(hudCtx, lauf.countdown, lauf.go);
+    }
   } else hudCtx.clearRect(0, 0, B, H);
   const k = dt / M.blende;
   dunkel = nach(dunkel, def.abdunkeln, k * 0.5);
@@ -757,11 +884,13 @@ if (menueAn) {
 requestAnimationFrame(schleife);
 
 // Für Tests (Screenshots) von aussen erreichbar
-// start(): am Menü vorbei direkt ins Rennen (wie "STARTEN")
+// start(): am Menü vorbei ins Rennen wie "STARTEN" (mit Countdown); start({ countdown: false }): ohne Countdown wie vor M5b
+// rennSchritt(dt, e): ein fester Schritt wie in der Spielschleife (Countdown oder Physik), lauf/stat: Rennablauf, Statistik
 window.__alpineRally = {
   THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
-  ablauf, menue, seiten, demo, einstellungen, start: starten, pausieren, weiter, zumHauptmenue, menueAn,
+  ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,
+  rennSchritt, lauf, stat, statResets, neuStarten,
   get blenden() { return { sicht, dunkel }; },
 };
