@@ -25,7 +25,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - Sperren sollen natürlich aussehen: pro Kurve nur eine Sorte (nur ein paar Felsen, nur Stämme oder nur Tannen), locker statt Mauer, nichts steckt ineinander (seit M2a.1).
 - Schalten soll man spüren: kurze Pause ohne Antrieb bei jedem Gangwechsel.
 - Analoge Tachos (Drehzahl mit Gangzahl, Tempo mit kleiner Digitalanzeige) im 80er-Look.
-- HUD (seit M6): Zeit oben links, darunter der Live-Vergleich ("-0.8" grün / "+1.2" rot, wahlweise gegen Bestzeit oder letzten Lauf), Pace-Notes oben Mitte, Minimap oben rechts (ganze Strecke, Norden oben, kein Fortschrittsbalken, keine Meter), Tachos unten rechts. Taste H blendet alles aus (Clean Look, für Screenshots).
+- HUD (seit M6, aufgeräumt in M6.1): Zeit oben links, darunter der Live-Vergleich ("-0.8" grün / "+1.2" rot, wahlweise gegen Bestzeit oder letzten Lauf; gleich gross wie die Zeit-Tafel, nur zwei Schriftgrössen), Meldungen auf derselben Art Tafel (Zwischenzeit grün = schneller, rot = langsamer als die Referenz), Pace-Notes oben Mitte, Minimap oben rechts (seit M6.1 ein mitfahrender Ausschnitt um das Auto, ca. 120 m, Norden oben, Auto als Pfeil in Blickrichtung, kein Fortschrittsbalken, keine Meter), Tachos unten rechts. Taste H blendet alles aus (Clean Look, für Screenshots), Hinweis nur "HUD AUS" / "HUD AN".
 - Mag nicht: Formel-1-Randsteine, Kurvenpfeil-Schilder (Ausnahme seit M3a.1: Chevrons und Richtungstafel an den Absperrungen der Nebenwege), Alleen (gleichmässige Baumreihen), zu starkes Beschleunigen bergab, hartes Höchsttempo.
 - Später gewünscht: sichtbare Auto-Seite beim Lenken, Wetter und Tageszeit. (Schotter- und Wiesenabschnitte im Wechsel und Abzweigungen mit Rally-Absperrung gibt es seit M3a/M3b.)
 
@@ -52,6 +52,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M5a.1 Credits mit Mitwirkenden und Unterstützern (Namen in config.js), Rückwärts auf Asphalt schneller (ca. 32 statt 22 km/h, auf Gras/Bankett/Schotter/Wiesenweg wie bisher), Felswand: keine Bäume und Steine mehr im Fels, kein "Wurf" auf die Strasse mehr, wenn man von der Wiese her an den Anfang oder das Ende der Wand fährt (fertig)
 - M5b Rennen drumherum: Rally-Countdown 3-2-1-GO (Auto mit der Schnauze an der Startlinie, gesperrt, Zeit ab GO, kein Frühstart), Zielbildschirm nach 3 s (Endzeit, Vergleich zur Bestzeit grün/rot, Zwischenzeiten, Statistik Aufpralle/Resets/Höchsttempo, NEU STARTEN / HAUPTMENÜ), Bestzeiten Top 10 pro Etappe im Browser, Bestzeiten löschen in den Einstellungen (fertig)
 - M6 Minimap und Overlay: Minimap oben rechts (ganze Etappe, Norden oben, gefahrene Strecke orange, Start, Ziel, Checkpoints weiss/grün/rot, Auto als Punkt), Live-Vergleich unter der Zeit (grün "-0.8" / rot "+1.2", ständig aktuell, gegen Bestzeit oder letzten Lauf, Fahrspur alle 10 m mit der Bestzeit gespeichert), Einstellungen ANZEIGE, Taste H blendet das HUD aus (fertig)
+- M6.1 Minimap zoomt und fährt mit (Ausschnitt 120 m, Strasse 2 Pixel mit dunklem Rand, Auto als Pfeil in Blickrichtung, scrollt in ganzen Pixeln), Live-Vergleich so gross wie die Zeit-Tafel, Hinweis H nur "HUD AUS/AN", Meldungen mit Tafel, Zwischenzeit grün/rot gegen die Referenz (fertig)
 - M7 (als Nächstes) Ton
 - Danach: Feinschliff (Auto, Fahrphysik), evtl. Geisterauto aus der Fahrspur
 

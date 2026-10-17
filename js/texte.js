@@ -211,7 +211,7 @@ export const TEXTE = {
   // M6: Live-Vergleich (kleines Etikett vor der Zahl) und Taste H
   'hud.vergleichBest': { de: 'BEST', en: 'BEST' },
   'hud.vergleichLetzter': { de: 'LETZT', en: 'LAST' },
-  'hud.hudAus': { de: 'HUD AUS  {taste} = AN', en: 'HUD OFF  {taste} = ON' },
+  'hud.hudAus': { de: 'HUD AUS', en: 'HUD OFF' },
   'hud.hudAn': { de: 'HUD AN', en: 'HUD ON' },
   'hud.hilfeFahren': { de: '{tasten}: FAHREN', en: '{tasten}: DRIVE' },
   'hud.hilfeHandbremse': { de: '{taste}: HANDBREMSE', en: '{taste}: HANDBRAKE' },

@@ -2,6 +2,8 @@
 // Zielanzeige (bis der Zielbildschirm kommt, M5b) und Debug-Panel.
 // Seit M6: Minimap oben rechts (js/minimap.js), Live-Vergleich unter der Zeit-Tafel (Zahl aus js/vergleich.js),
 // Taste H blendet das HUD aus (Countdown, "ZIEL!", Menüs und ein kurzer Hinweis bleiben).
+// Seit M6.1: Minimap als mitfahrender Ausschnitt, Live-Vergleich genau so gross wie die Zeit-Tafel,
+// Meldungen (Zwischenzeit, "CHECKPOINT VERPASST", "ANSAGEN") auf einer eigenen Tafel im selben Stil.
 // Gezeichnet mit einer eigenen 5x7-Pixelschrift (keine externen Fonts, seit M5a in js/pixel.js).
 // Alle Texte kommen aus js/texte.js (Deutsch/Englisch).
 
@@ -43,6 +45,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   // M6: Live-Vergleich und Hinweis "HUD AUS" werden auf kleine Leinwände gemalt, nur wenn sie sich ändern
   const vglStand = { version: -1, etikett: null, breite: 0 };
   const hinweisStand = { aus: null, breite: 0 };
+  const meldungStand = { meldung: null, breite: 0 }; // M6.1: Meldung auf eigener Tafel
   function festeTexte() {
     const T = einstellungen.tasten;
     const fahren = ['gas', 'bremse', 'links', 'rechts'].map((a) => tastenName(T[a][0])).join('');
@@ -54,7 +57,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
       t('hud.hilfeNotes', { taste: tastenName(T.notes[0]) }),
     ];
     feste.zeit = t('hud.zeit');
-    vglStand.etikett = null; hinweisStand.aus = null; // neu malen (Sprache oder Taste geändert)
+    vglStand.etikett = null; hinweisStand.aus = null; meldungStand.meldung = null; // neu malen (Sprache oder Taste geändert)
   }
   festeTexte();
   beiSprachwechsel(festeTexte);
@@ -99,35 +102,53 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
     return yP + g;
   }
 
-  let zeitB = 0; // Breite der Zeit-Tafel (der Live-Vergleich ist mindestens so breit)
-  let lageVergleichY = -1, lageMeldungY = 0; // (für Tests)
+  let zeitB = 0; // Breite der Zeit-Tafel (der Live-Vergleich ist seit M6.1 genau so breit)
+  let lageVergleichY = -1, lageMeldungY = 0, lageMeldungSichtbar = false; // (für Tests)
 
   // --- Live-Vergleich (M6): kleine Tafel unter den Checkpoint-Punkten, "BEST -0.8" -------------------
+  // Seit M6.1 genau wie die Zeit-Tafel: gleiche Höhe und Breite, Etikett in der kleinen Schrift wie "ZEIT",
+  // die Zahl in der Pixelschrift Grösse 1 wie die Ziffern der Zeit (rechtsbündig, das Vorzeichen springt nicht).
   // Gemalt wird nur, wenn sich die Zahl ändert (höchstens 5 Mal pro Sekunde, js/vergleich.js), sonst kopiert.
-  const V = CONFIG.hud.vergleich;
+  const V = CONFIG.hud.vergleich, Z = CONFIG.hud.zeit;
   const vglBild = document.createElement('canvas');
-  vglBild.width = B; vglBild.height = V.hoehe;
+  vglBild.width = B; vglBild.height = Z.hoehe;
   const vglCtx = vglBild.getContext('2d');
   vglCtx.imageSmoothingEnabled = false;
   // a = Anzeige aus js/vergleich.js, quelle = 'best' / 'letzter'. Ergebnis: y unter der Tafel
   function zeichneVergleich(a, quelle, y) {
-    const c = CONFIG.hud.zeit;
     const etikett = t(quelle === 'letzter' ? 'hud.vergleichLetzter' : 'hud.vergleichBest');
-    if (a.version !== vglStand.version || etikett !== vglStand.etikett) {
+    if (a.version !== vglStand.version || etikett !== vglStand.etikett || zeitB !== vglStand.breite) {
       vglStand.version = a.version; vglStand.etikett = etikett;
       const zahl = a.stufe === 0 ? '0.0' : `${a.stufe < 0 ? '-' : '+'}${Math.floor(a.wert / 10)}.${a.wert % 10}`;
       const farbe = a.stufe < 0 ? V.farbeSchneller : a.stufe > 0 ? V.farbeLangsamer : V.farbeGleich;
-      const bZahl = Math.max(zahl.length, V.zeichenPlatz) * 6 * V.groesse - V.groesse;
-      const b = Math.min(B, Math.max(zeitB, c.innen * 2 + miniBreite(etikett) + c.luecke + bZahl + 2));
+      const b = zeitB; // immer genau so breit wie die Zeit-Tafel
       vglStand.breite = b;
-      vglCtx.clearRect(0, 0, B, V.hoehe);
-      zeichneTafel(vglCtx, 0, 0, b, V.hoehe, c.ecke, CONFIG.hud.tacho.farbeBlatt, c.farbeRand);
-      miniText(vglCtx, etikett, 1 + c.innen, Math.round((V.hoehe - 5) / 2), V.farbeEtikett);
-      // Zahl rechtsbündig (das Vorzeichen springt nicht hin und her)
-      pixelText(vglCtx, zahl, b - 1 - c.innen, Math.round((V.hoehe - 7 * V.groesse) / 2), V.groesse, farbe, 'rechts');
+      const yText = Math.round((Z.hoehe - 7) / 2); // wie in der Zeit-Tafel
+      vglCtx.clearRect(0, 0, B, Z.hoehe);
+      zeichneTafel(vglCtx, 0, 0, b, Z.hoehe, Z.ecke, CONFIG.hud.tacho.farbeBlatt, Z.farbeRand);
+      miniText(vglCtx, etikett, 1 + Z.innen, yText + 1, Z.farbeBeschriftung);
+      pixelText(vglCtx, zahl, b - 1 - Z.innen, yText, 1, farbe, 'rechts');
     }
-    ctx.drawImage(vglBild, 0, 0, vglStand.breite, V.hoehe, c.links, y, vglStand.breite, V.hoehe);
-    return y + V.hoehe;
+    ctx.drawImage(vglBild, 0, 0, vglStand.breite, Z.hoehe, Z.links, y, vglStand.breite, Z.hoehe);
+    return y + Z.hoehe;
+  }
+
+  // --- Meldung unter der Zeit-Tafel (seit M6.1 auf eigener Tafel wie die Zeit-Tafel) ---
+  // Zwischenzeit grün/rot/gelb (Farbe kommt aus main.js), "CHECKPOINT VERPASST" rot, "ANSAGEN AN/AUS" gelb.
+  // Gemalt wird nur, wenn eine neue Meldung kommt, sonst kopiert.
+  const meldungBild = document.createElement('canvas');
+  meldungBild.width = B; meldungBild.height = Z.hoehe;
+  const meldungCtx = meldungBild.getContext('2d');
+  function zeichneMeldung(m, y) {
+    if (m !== meldungStand.meldung) {
+      meldungStand.meldung = m;
+      const b = Math.min(B - Z.links, Z.innen * 2 + textBreite(m.text) + 2); // Textbreite plus Rand
+      meldungStand.breite = b;
+      meldungCtx.clearRect(0, 0, B, Z.hoehe);
+      zeichneTafel(meldungCtx, 0, 0, b, Z.hoehe, Z.ecke, CONFIG.hud.tacho.farbeBlatt, Z.farbeRand);
+      pixelText(meldungCtx, m.text, 1 + Z.innen, Math.round((Z.hoehe - 7) / 2), 1, FARBEN[m.farbe] || m.farbe);
+    }
+    ctx.drawImage(meldungBild, 0, 0, meldungStand.breite, Z.hoehe, Z.links, y, meldungStand.breite, Z.hoehe);
   }
 
   // --- Hinweis "HUD AUS" / "HUD AN" (M6), unten in der Mitte ---
@@ -138,7 +159,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   function zeichneHinweis(aus, rest) {
     if (aus !== hinweisStand.aus) {
       hinweisStand.aus = aus;
-      const tx = aus ? t('hud.hudAus', { taste: tastenName(einstellungen.tasten.hud[0]) }) : t('hud.hudAn');
+      const tx = t(aus ? 'hud.hudAus' : 'hud.hudAn'); // seit M6.1 ohne Tastenname
       const b = textBreite(tx) + 10;
       hinweisStand.breite = b;
       hinweisCtx.clearRect(0, 0, B, 13);
@@ -152,7 +173,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   }
 
   // --- Minimap (M6): oben rechts, beim Laden gebaut ---
-  const minimap = strecke ? baueMinimap(strecke, checkpoints) : null;
+  let minimap = strecke ? baueMinimap(strecke, checkpoints) : null;
 
   // --- Pace-Notes (M4.1): kleine Kacheln oben Mitte, nur Symbole -----------------------------------
   // Alle Kacheln der Etappe werden einmal (beim ersten Bild) auf ein gemeinsames Bild gemalt.
@@ -210,14 +231,17 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   }
 
   return {
-    minimap,
+    get minimap() { return minimap; },
+    // für Tests und Bilder: Minimap mit den aktuellen Werten aus config.js neu bauen (z. B. anderer Zoom)
+    minimapNeuBauen() { if (strecke) minimap = baueMinimap(strecke, checkpoints); return minimap; },
     // Wo liegen die Tafeln? (für Tests: Überlappung prüfen)
     get lage() {
       return {
         zeit: { x: CONFIG.hud.zeit.links, y: CONFIG.hud.zeit.oben, b: zeitB, h: CONFIG.hud.zeit.hoehe },
         notes: { x: Math.round(pnLinks) - PN.innen - 1, b: Math.round(pnRechts) - (Math.round(pnLinks) - PN.innen - 1) + PN.innen, y: PN.oben, h: pnH },
-        vergleich: { x: CONFIG.hud.zeit.links, y: lageVergleichY, b: vglStand.breite, h: V.hoehe },
+        vergleich: { x: CONFIG.hud.zeit.links, y: lageVergleichY, b: vglStand.breite, h: Z.hoehe },
         meldungY: lageMeldungY,
+        meldung: { x: CONFIG.hud.zeit.links, y: lageMeldungY, b: meldungStand.breite, h: Z.hoehe, sichtbar: lageMeldungSichtbar },
       };
     },
     zeichne(z) {
@@ -237,7 +261,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
         if (z.countdown > 0) zeichneCountdown(z.countdown, Math.max(unterNotes, PN.oben + pnH) + CONFIG.zurueck.oben);
         // M6: Minimap oben rechts (nicht nach dem Ziel: dort zählen die Zeiten)
         if (minimap && einstellungen.minimap && z.zustand !== 'ziel') {
-          minimap.zeichne(ctx, z.dt, z.meter, z.maxS, z.zwischenzeiten, z.cpNaechster, z.meldung ? z.meldung.verpasstCp : -1);
+          minimap.zeichne(ctx, z.autoX, z.autoZ, z.richtung, z.maxS, z.zwischenzeiten, z.cpNaechster, z.meldung ? z.meldung.verpasstCp : -1);
         }
         // Tachos unten rechts (Drehzahl mit Gang, Tempo)
         tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang);
@@ -245,9 +269,10 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
         if (z.zustand === 'bereit' && z.hilfe) {
           for (let i = 0; i < 4; i++) text(feste.hilfe[i], 5, H - 43 + i * 9);
         }
-        // Meldung oben (Zwischenzeit oder "Checkpoint verpasst"), seit M6 unter dem Live-Vergleich
+        // Meldung oben (Zwischenzeit oder "Checkpoint verpasst"), seit M6 unter dem Live-Vergleich, seit M6.1 mit Tafel
         lageMeldungY = unterTafel + CONFIG.hud.zeit.meldungUnter;
-        if (z.meldung && z.zustand !== 'ziel') text(z.meldung.text, CONFIG.hud.zeit.links, lageMeldungY, 1, z.meldung.farbe);
+        lageMeldungSichtbar = !!(z.meldung && z.zustand !== 'ziel');
+        if (lageMeldungSichtbar) zeichneMeldung(z.meldung, lageMeldungY);
       }
       if (z.hudHinweis > 0) zeichneHinweis(!!z.hudAus, z.hudHinweis);
       // Grosses "ZIEL!" mit Endzeit, bis der Zielbildschirm kommt (M5b: z.zielSchirm)
