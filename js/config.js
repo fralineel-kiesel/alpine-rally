@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.6';
+export const VERSION = '0.6.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -987,47 +987,45 @@ export const CONFIG = {
       cpUnter: 2,              // ... Abstand unter der Tafel
       farbeCpLeer: '#e6e2d3',  // Rahmen eines noch nicht erreichten Checkpoints
       farbeCpErreicht: '#ffd23c', // erreichter Checkpoint (gefüllt)
-      meldungUnter: 4,         // Zwischenzeit-Meldung so weit unter den Punkten (bzw. unter dem Live-Vergleich, M6)
+      meldungUnter: 4,         // Meldung (Zwischenzeit, seit M6.1 auf eigener Tafel) so weit unter den Punkten bzw. dem Live-Vergleich
     },
-    // Minimap oben rechts (Meilenstein 6): ganze Etappe, Norden oben, das Auto als Punkt
+    // Minimap oben rechts (M6, seit M6.1 ein Ausschnitt): Umgebung des Autos, Norden oben, die Karte fährt mit
     minimap: {
-      maxBreite: 64,           // Tafel höchstens so breit (Pixel, mit Rand) ...
-      maxHoehe: 46,            // ... und so hoch; das Seitenverhältnis kommt aus der Streckenform
-      rand: 3,                 // Abstand der Strecke vom Tafelrand (Pixel)
+      groesse: 61,             // Tafel so breit und so hoch (Pixel, mit Rand; ungerade, damit das Auto genau in der Mitte steht)
+      sichtMeter: 120,         // Zoom: so viele Meter reichen vom Auto bis zum Rand der Tafel (kleiner = näher dran)
       rechts: 3,               // Abstand der Tafel vom rechten Bildrand
       oben: 3,                 // Abstand der Tafel vom oberen Bildrand
       ecke: 2,                 // abgeschrägte Ecken der Tafel (wie die Zeit-Tafel)
-      punktAbstand: 8,         // die Karte nimmt alle ... Streckenmeter einen Punkt
-      neuFaerbenAb: 15,        // die gefahrene Strecke wird erst neu gefärbt, wenn das Auto ... Meter weiter ist
+      punktAbstand: 4,         // die Karte nimmt alle ... Streckenmeter einen Punkt (kleiner = rundere Kurven)
+      neuFaerbenAb: 15,        // die gefahrene Strecke wird erst weitergemalt, wenn das Auto ... Meter weiter ist
       farbeTafel: 'rgba(18, 24, 32, 0.74)', // dunkelblaue Tafel (wie die Zeit-Tafel)
       farbeRand: '#e6e2d3',    // heller Rand
-      farbeOffen: '#8796a6',   // noch nicht gefahrene Strecke (helles Blaugrau)
+      farbeOffen: '#8796a6',   // noch nicht gefahrene Strecke (helles Blaugrau), 2 Pixel breit
       farbeGefahren: '#ffa62e', // schon gefahrene Strecke (Gelb/Orange)
-      farbeStart: '#5fe35a',   // Start (2x2 Pixel, grün)
-      farbeZielHell: '#f4f4ee', // Ziel: Karo 3x3 Pixel, helle Felder ...
+      farbeStrassenRand: '#101418', // dünner dunkler Rand um die Strasse (lesbar auf jedem Untergrund)
+      farbeStart: '#5fe35a',   // Start (Quadrat, grün)
+      startGroesse: 4,         // ... so viele Pixel gross
+      farbeZielHell: '#f4f4ee', // Ziel: Karo, helle Felder ...
       farbeZielDunkel: '#101418', // ... und dunkle Felder
+      zielGroesse: 4,          // ... so viele Pixel gross
       farbeCpOffen: '#f4f4ee', // Checkpoint-Strich: noch nicht durchfahren (weiss)
       farbeCpDurch: '#5fe35a', // ... durchfahren (grün)
       farbeCpVerpasst: '#ff4a3a', // ... verpasst (rot)
-      cpLaenge: 3,             // Checkpoint-Strich quer zur Strecke, so viele Pixel lang
-      farbeAuto: '#ffffff',    // Auto: Punkt 2x2 Pixel, hell
-      farbeAutoRand: 'rgba(10, 14, 20, 0.7)', // ... mit dunklem Rand (damit man ihn auf der Linie sieht)
-      blinkenHz: 2,            // der Punkt pulsiert leicht so oft pro Sekunde ...
-      blinkenTiefe: 0.35,      // ... und wird dabei höchstens so viel dunkler (0 = gar nicht, 1 = ganz weg)
+      cpLaenge: 6,             // Checkpoint-Strich quer zur Strecke, so viele Pixel lang (2 Pixel dick)
+      farbeAuto: '#ffffff',    // Auto: Pfeil 5x5 Pixel in Blickrichtung (8 Richtungen), hell ...
+      farbeAutoRand: '#101418', // ... mit dunklem Rand
     },
     // Live-Vergleich unter der Zeit-Tafel (Meilenstein 6): "-0.8" grün = schneller, "+1.2" rot = langsamer
     vergleich: {
+      // Tafel, Schrift und Beschriftung wie die Zeit-Tafel (hud.zeit: Höhe, Ecken, Rand, gleich breit), seit M6.1
       unter: 2,                // Tafel so viele Pixel unter den Checkpoint-Punkten
-      hoehe: 18,               // Höhe der Tafel (Schrift Grösse 2 = 14 Pixel)
-      groesse: 2,              // Pixelschrift-Grösse der Zahl (2 = gut lesbar bei 320x180)
-      zeichenPlatz: 5,         // die Tafel ist so breit, dass "+99.9" (5 Zeichen) Platz hat (bleibt immer gleich breit)
       aktualisieren: 0.2,      // die Zahl wird höchstens alle ... Sekunden neu angezeigt (5 Mal pro Sekunde)
       nullBis: 0.05,           // Unterschied unter so vielen Sekunden: weiss "0.0"
       hysterese: 0.02,         // gegen Flackern: Farbe/Vorzeichen wechselt erst ... Sekunden über/unter der Grenze
       farbeSchneller: '#5fe35a', // schneller als die Referenz (grün, "-0.8")
       farbeLangsamer: '#ff5a46', // langsamer (rot, "+1.2")
       farbeGleich: '#f4f4ee',  // gleich schnell (weiss, "0.0")
-      farbeEtikett: '#e6e2d3', // das kleine "BEST" / "LETZT" davor
+      // (seit M6.1 färben farbeSchneller / farbeLangsamer auch die Zwischenzeit-Meldung am Checkpoint)
     },
     // Taste H (Meilenstein 6): ganzes HUD aus/an, kurzer Hinweis unten in der Mitte
     hudSchalter: {

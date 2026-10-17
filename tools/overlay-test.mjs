@@ -1,17 +1,25 @@
-// Test für Meilenstein 6 (Minimap, Live-Vergleich, Taste H, Einstellungen ANZEIGE):  node tools/overlay-test.mjs
-//  (a) Minimap-Geometrie: Punkt bei Start, Mitte, Ziel (und auf der Wiese) an der richtigen Stelle, ganze Strecke in
-//      der Tafel, keine Überlappung mit Pace-Notes, Zeit-Tafel, Live-Vergleich, Meldung
-//  (b) Färbung: wächst nur (maxS), nicht beim Rückwärtsfahren oder R; Checkpoint weiss -> grün, rot bei verpasst;
-//      nicht jedes Bild neu gemalt
-//  (c) Fahrspur: komplette Fahrt = ca. 361 Werte, streng aufsteigend, letzter = Endzeit, Zeitpunkte stimmen
-//  (d) Vergleich: identischer Lauf unter 0.05 s, langsamer = positiv und wachsend, schneller = negativ;
-//      Vorzeichen, Farbe, Rundung; kein Flackern (Hysterese, höchstens 5 Mal pro Sekunde)
-//  (e) keine Referenz: nichts angezeigt; alte Bestzeiten ohne Spur: Näherung, am Checkpoint genau;
-//      Einstellung Bestzeit / Letzter Lauf
-//  (f) Browser-Speicher blockiert: keine Fehler, Vergleich in der Sitzung
-//  (g) Taste H: aus/an, Countdown/ZIEL!/Zielbildschirm/Pause bleiben, belegbar, Tausch, nicht gespeichert
-//  (h) Einstellungen sofort wirksam und nach dem Neuladen noch da; Texte de/en, alle Zeichen in der Pixelschrift
-//  (i) Leistung: keine neuen Zeichenaufrufe (auch gegen die alte Version, falls angegeben), HUD-Zeit mit/ohne Minimap
+// Test für Meilenstein 6 und 6.1 (Minimap, Live-Vergleich, Taste H, Meldungen, Einstellungen ANZEIGE):
+//   node tools/overlay-test.mjs
+// Meilenstein 6.1 (ersetzt die Tests der alten Ganze-Strecke-Karte):
+//  [6.1 a] Minimap: echte Autoposition in der Tafelmitte (Start, Mitte, Ziel, neben der Strasse), Start/Ziel/Checkpoints
+//          nur im Ausschnitt (und an der richtigen Stelle), Tafel im Bild, keine Überlappung
+//  [6.1 b] Scrollen Bild für Bild: ganze Pixel, nie weiter als gefahren (+1), Sprünge nur bei Teleport, R, Neustart
+//  [6.1 c] Färbung: wächst nur (maxS), nicht beim Rückwärtsfahren oder R; Checkpoint weiss -> grün, rot bei verpasst;
+//          nur das neue Stück wird gemalt
+//  [6.1 d] Pfeil in Blickrichtung (Gerade, Kurve, 16 Richtungen, rückwärts)
+//  [6.1 e] Vergleichs-Tafel: gleich hoch und breit wie die Zeit-Tafel, gleiche Schriften und Zeilen, Zahl rechtsbündig
+//  [6.1 f] Hinweis Taste H: "HUD AUS" / "HUD AN" (en "HUD OFF" / "HUD ON"), ohne Tastenname
+//  [6.1 g] Meldung mit Tafel; Zwischenzeit grün / rot / gelb (Bestzeit, letzter Lauf, alte Bestzeit, Vergleich aus)
+// Meilenstein 6 (weiter gültig):
+//  [M6 c] Fahrspur: komplette Fahrt = ca. 361 Werte, streng aufsteigend, letzter = Endzeit, Zeitpunkte stimmen
+//  [M6 d] Vergleich: identischer Lauf unter 0.05 s, langsamer = positiv und wachsend, schneller = negativ;
+//         Vorzeichen, Farbe, Rundung; kein Flackern (Hysterese, höchstens 5 Mal pro Sekunde)
+//  [M6 e] keine Referenz: nichts angezeigt; alte Bestzeiten ohne Spur: Näherung, am Checkpoint genau;
+//         Einstellung Bestzeit / Letzter Lauf
+//  [M6 f] Browser-Speicher blockiert: keine Fehler, Vergleich in der Sitzung
+//  [M6 g] Taste H: aus/an, Countdown/ZIEL!/Zielbildschirm/Pause bleiben, belegbar, Tausch, nicht gespeichert
+//  [M6 h] Einstellungen sofort wirksam und nach dem Neuladen noch da; Texte de/en (auch 6.1), alle Zeichen in der Pixelschrift
+//  [M6 i] Leistung: keine neuen Zeichenaufrufe (auch gegen die alte Version, falls angegeben), HUD-Zeit mit/ohne Minimap
 // Dazu: keine Fehler in der Konsole.
 //   Optional: node tools/overlay-test.mjs <ordner der alten Version>  (Zeichenaufrufe alt gegen neu)
 
@@ -99,6 +107,29 @@ async function lade(opt = {}) {
         }
         return { sichtbar, n };
       },
+      // Pixel einer Farbe in einem Rechteck der HUD-Leinwand: Anzahl, Umriss (x0..x1, y0..y1), Summe der Pixelmitten
+      box(x, y, b, h, farbe, tol = 6) {
+        const d = document.getElementById('hud').getContext('2d').getImageData(x, y, b, h).data;
+        const r = parseInt(farbe.slice(1, 3), 16), g = parseInt(farbe.slice(3, 5), 16), bl = parseInt(farbe.slice(5, 7), 16);
+        const e = { n: 0, x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9, sx: 0, sy: 0 };
+        for (let i = 0; i < d.length; i += 4) {
+          if (!(d[i + 3] > 200 && Math.abs(d[i] - r) <= tol && Math.abs(d[i + 1] - g) <= tol && Math.abs(d[i + 2] - bl) <= tol)) continue;
+          const px = x + (i / 4) % b, py = y + Math.floor(i / 4 / b);
+          e.n++; e.sx += px + 0.5; e.sy += py + 0.5;
+          e.x0 = Math.min(e.x0, px); e.x1 = Math.max(e.x1, px); e.y0 = Math.min(e.y0, py); e.y1 = Math.max(e.y1, py);
+        }
+        return e;
+      },
+      // Umriss aller sichtbaren Pixel in einem Rechteck
+      sichtBox(x, y, b, h) {
+        const d = document.getElementById('hud').getContext('2d').getImageData(x, y, b, h).data;
+        const e = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 };
+        for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) {
+          const px = x + (i / 4) % b, py = y + Math.floor(i / 4 / b);
+          e.x0 = Math.min(e.x0, px); e.x1 = Math.max(e.x1, px); e.y0 = Math.min(e.y0, py); e.y1 = Math.max(e.y1, py);
+        }
+        return e;
+      },
       // Farbe eines Pixels der Minimap-Karte (Leinwand der Karte)
       kartenPixel(u, v) {
         const d = A.hud.minimap.karte.getContext('2d').getImageData(u, v, 1, 1).data;
@@ -123,82 +154,159 @@ const A = (p, f, arg) => p.evaluate(f, arg);
 const gleicheFarbe = (a, b) => a.toLowerCase() === b.toLowerCase();
 
 // =====================================================================
-console.log('(a) Minimap-Geometrie');
+console.log('[6.1 a] Minimap: Auto in der Mitte, Zeichen nur im Ausschnitt, keine Überlappung');
 {
   const spiel = await lade();
   const p = spiel.page;
-  // erwartete Lage, unabhängig vom Spiel aus Strecke und config.js gerechnet
   const g = await A(p, () => {
-    const A = window.__alpineRally, S = A.strecke, c = A.CONFIG.hud.minimap, m = A.hud.minimap;
-    const w = S.box.maxX - S.box.minX, h = S.box.maxZ - S.box.minZ;
-    const mass = Math.min((c.maxBreite - 2 * c.rand - 1) / w, (c.maxHoehe - 2 * c.rand - 1) / h);
-    const ex = (x) => m.x + c.rand + 0.5 + (x - S.box.minX) * mass, ez = (z) => m.y + c.rand + 0.5 + (z - S.box.minZ) * mass;
-    // ganze Strecke in der Tafel (innerhalb des 1-Pixel-Randes)
-    let drin = true, minU = 1e9, maxU = -1e9, minV = 1e9, maxV = -1e9;
-    for (let i = 0; i < S.anzahl; i++) {
-      const u = Math.floor(ex(S.px[i])), v = Math.floor(ez(S.pz[i]));
-      minU = Math.min(minU, u); maxU = Math.max(maxU, u); minV = Math.min(minV, v); maxV = Math.max(maxV, v);
-      if (u < m.x + 1 || u > m.x + m.breite - 2 || v < m.y + 1 || v > m.y + m.hoehe - 2) drin = false;
-    }
-    return { x: m.x, y: m.y, b: m.breite, h: m.hoehe, mass, drin, minU, maxU, minV, maxV, maxB: c.maxBreite, maxH: c.maxHoehe, ms: A.minimapMs, nordenOben: ez(-1000) < ez(0) };
+    const A = window.__alpineRally, m = A.hud.minimap, c = A.CONFIG.hud.minimap;
+    return { x: m.x, y: m.y, b: m.breite, h: m.hoehe, mitteX: m.mitteX, mitteY: m.mitteY, mass: m.mass, sicht: c.sichtMeter, G: c.groesse, ms: A.minimapMs, kb: m.karte.width, kh: m.karte.height };
   });
-  pruefe(g.b <= g.maxB && g.h <= g.maxH && g.x + g.b <= 320 - 1 && g.y >= 1, `Tafel ${g.b} x ${g.h} Pixel oben rechts (höchstens ${g.maxB} x ${g.maxH})`, `bei x ${g.x}..${g.x + g.b - 1}, y ${g.y}..${g.y + g.h - 1}, ${(g.mass * 1000).toFixed(1)} Pixel pro km, gebaut in ${g.ms.toFixed(1)} ms`);
-  pruefe(g.drin, 'die ganze Strecke liegt in der Tafel (innerhalb des Randes)', `Linie x ${g.minU}..${g.maxU}, y ${g.minV}..${g.maxV}`);
-  pruefe(g.nordenOben, 'Norden oben (kleineres z = weiter oben auf der Karte)');
-  // Punkt bei Start, Mitte, Ziel: Teleport, ein Bild abwarten
-  for (const [name, wo] of [['Start', 'start'], ['Mitte', 'mitte'], ['Ziel', 'ziel'], ['Wiese (40 m neben der Strasse)', 'wiese']]) {
-    const r0 = await A(p, (wo) => {
+  pruefe(g.b === g.G && g.h === g.G && g.G >= 56 && g.G <= 64 && g.x >= 0 && g.x + g.b <= 320 && g.y >= 0 && g.y + g.h <= 180 && g.mitteX - g.x === (g.G - 1) / 2 && g.mitteY - g.y === (g.G - 1) / 2,
+    `Tafel ${g.b} x ${g.h} Pixel oben rechts, vollständig im Bild, Auto-Pixel genau in der Mitte`,
+    `x ${g.x}..${g.x + g.b - 1}, y ${g.y}..${g.y + g.h - 1}, Mitte ${g.mitteX} / ${g.mitteY}; Zoom ${g.sicht} m bis zum Rand = ${(g.mass * 1000).toFixed(0)} Pixel pro km; grosse Karte ${g.kb} x ${g.kh} Pixel, gebaut in ${g.ms.toFixed(1)} ms`);
+  // Stellen: echte Autoposition in der Tafelmitte? Welche Zeichen sind im Ausschnitt (unabhängig aus Welt + config gerechnet)?
+  const stellen = [['Start', 'start', 0], ['Mitte', 'mitte', 0], ['Ziel', 'ziel', 0], ['40 m seitlich versetzt', 'mitte', 40],
+    ['40 m nach dem Start', 'start+40', 0], ['40 m vor dem Ziel', 'ziel-40', 0], ['2400 m (nichts in der Nähe)', 2400, 0], ['Checkpoint 1', 'cp1', 0]];
+  let maxAb = 0, zeichenOk = true;
+  const zeichenInfo = [];
+  for (const [name, wo, seite] of stellen) {
+    await A(p, ([wo, seite]) => {
       const A = window.__alpineRally, S = A.strecke;
-      const s = wo === 'start' ? S.startS : wo === 'ziel' ? S.zielS : (S.startS + S.zielS) / 2;
-      A.start({ countdown: false });
-      A.setzeAuf(s, wo === 'wiese' ? 40 : 0);
-      if (wo === 'wiese') A.physikSchritt(A.SCHRITT, window.__T.LEER); // Stelle aus der Abfrage der Spielschleife
-      return { s: A.rennen.letztesS };
-    }, wo);
+      const s = wo === 'start' ? S.startS : wo === 'ziel' ? S.zielS : wo === 'mitte' ? (S.startS + S.zielS) / 2 : wo === 'start+40' ? S.startS + 40
+        : wo === 'ziel-40' ? S.zielS - 40 : wo === 'cp1' ? A.checkpoints[0].s - 6 : wo;
+      A.start({ countdown: false }); // Zustand "bereit": Teleport zählt nicht als Checkpoint-Durchfahrt
+      A.setzeAuf(s, seite);
+    }, [wo, seite]);
     await bilderAbwarten(p, 3);
-    const r = await A(p, (s) => {
-      const A = window.__alpineRally, S = A.strecke, c = A.CONFIG.hud.minimap, m = A.hud.minimap;
-      const w = S.box.maxX - S.box.minX, h = S.box.maxZ - S.box.minZ;
-      const mass = Math.min((c.maxBreite - 2 * c.rand - 1) / w, (c.maxHoehe - 2 * c.rand - 1) / h);
-      const i = Math.round(s);
-      const ex = m.x + c.rand + 0.5 + (S.px[i] - S.box.minX) * mass, ez = m.y + c.rand + 0.5 + (S.pz[i] - S.box.minZ) * mass;
-      const auto = { x: m.x + c.rand + 0.5 + (A.physik.x - S.box.minX) * mass, z: m.y + c.rand + 0.5 + (A.physik.z - S.box.minZ) * mass };
-      const pk = m.punkt;
-      const hell = window.__T.hudPixel(pk.rx, pk.ry, 2, 2, [c.farbeAuto]);
-      // hell genug? (der Punkt pulsiert leicht)
-      const d = document.getElementById('hud').getContext('2d').getImageData(pk.rx, pk.ry, 1, 1).data;
-      return { ex, ez, px: pk.x, py: pk.y, mitteX: pk.rx + 1, mitteY: pk.ry + 1, hell: Math.min(d[0], d[1], d[2]), auto, abstand: A.strecke.abfrage(A.physik.x, A.physik.z).abstand, sichtbar: hell.sichtbar };
-    }, r0.s);
-    const ab = Math.hypot(r.mitteX - r.ex, r.mitteY - r.ez);
-    pruefe(ab < 1 && Math.hypot(r.px - r.ex, r.py - r.ez) < 1e-3 && r.hell > 150, `Punkt bei ${name}: Abweichung ${ab.toFixed(2)} Pixel gegen die Projektion des Streckenpunkts`,
-      `erwartet ${r.ex.toFixed(2)} / ${r.ez.toFixed(2)}, Quadrat-Mitte ${r.mitteX} / ${r.mitteY}, Helligkeit ${r.hell}${wo === 'wiese' ? `, Auto ${r.abstand.toFixed(1)} m neben der Mitte, Punkt bleibt auf der Linie` : ''}`);
+    const r = await A(p, () => {
+      const A = window.__alpineRally, S = A.strecke, c = A.CONFIG.hud.minimap, m = A.hud.minimap, ph = A.physik;
+      const ib = m.imBild(ph.x, ph.z);
+      // unabhängig: Massstab aus config.js, Lage relativ zum Auto (das Auto steht im Mittelpixel, +0.5 = Pixelmitte)
+      const halb = Math.floor((c.groesse - 3) / 2), mass = (halb + 0.5) / c.sichtMeter;
+      const erw = (q) => ({ x: m.mitteX + 0.5 + (q.x - ph.x) * mass, y: m.mitteY + 0.5 + (q.z - ph.z) * mass });
+      const innen = { x0: m.x + 1, y0: m.y + 1, x1: m.x + m.breite - 1, y1: m.y + m.hoehe - 1 };
+      const zeichen = [['Start', S.punktBei(S.startS), c.farbeStart], ['Ziel', S.punktBei(S.zielS), c.farbeZielHell],
+        ...A.checkpoints.map((cp, i) => [`CP ${i + 1}`, S.punktBei(cp.s), c.farbeCpOffen])];
+      const farben = {};
+      const liste = zeichen.map(([n, q, f]) => {
+        const e = erw(q);
+        // direkt unter dem Pfeil (7x7 um die Mitte): absichtlich verdeckt, das Auto liegt obendrauf
+        const unterPfeil = Math.abs(e.x - (m.mitteX + 0.5)) < 6 && Math.abs(e.y - (m.mitteY + 0.5)) < 6;
+        const drin = !unterPfeil && e.x > innen.x0 + 4 && e.x < innen.x1 - 4 && e.y > innen.y0 + 4 && e.y < innen.y1 - 4;
+        const draussen = e.x < innen.x0 - 4 || e.x > innen.x1 + 4 || e.y < innen.y0 - 4 || e.y > innen.y1 + 4;
+        (farben[f] ||= { drin: 0, rand: 0 })[drin ? 'drin' : draussen ? 'aus' : 'rand'] = 1;
+        const nah = drin ? window.__T.box(Math.floor(e.x) - 4, Math.floor(e.y) - 4, 9, 9, f, 3) : null;
+        return { n, drin, draussen, unterPfeil, nah: nah && { n: nah.n, dx: nah.n ? nah.sx / nah.n - e.x : 0, dy: nah.n ? nah.sy / nah.n - e.y : 0 } };
+      });
+      // Farben ohne sichtbares Zeichen dürfen in der Tafel gar nicht vorkommen
+      const gesamt = Object.fromEntries(Object.keys(farben).map((f) => [f, window.__T.box(innen.x0, innen.y0, innen.x1 - innen.x0, innen.y1 - innen.y0, f, 3).n]));
+      return { ib, mitteX: m.mitteX, mitteY: m.mitteY, liste, farben, gesamt, abstand: S.abfrage(ph.x, ph.z).abstand };
+    });
+    const ab = Math.max(Math.abs(r.ib.x - (r.mitteX + 0.5)), Math.abs(r.ib.y - (r.mitteY + 0.5)));
+    maxAb = Math.max(maxAb, ab);
+    if (['start', 'mitte', 'ziel'].includes(wo)) {
+      pruefe(ab <= 1 && Math.floor(r.ib.x) === r.mitteX && Math.floor(r.ib.y) === r.mitteY, `${name}: echte Autoposition in der Tafelmitte`,
+        `Abweichung ${ab.toFixed(2)} Pixel von der Mitte des Mittelpixels${seite ? `, Auto ${r.abstand.toFixed(1)} m neben der Strasse` : ''}`);
+    }
+    // Zeichen: sichtbar -> Farbe nahe der erwarteten Stelle (Schwerpunkt höchstens 1.5 Pixel daneben); nicht sichtbar -> Farbe nirgends
+    for (const z of r.liste) {
+      if (z.drin && !(z.nah.n >= 3 && Math.hypot(z.nah.dx, z.nah.dy) <= 1.5)) { zeichenOk = false; zeichenInfo.push(`${name}: ${z.n} fehlt (${JSON.stringify(z.nah)})`); }
+    }
+    for (const [f, st] of Object.entries(r.farben)) if (!st.drin && !st.rand && r.gesamt[f] > 0) { zeichenOk = false; zeichenInfo.push(`${name}: ${f} ${r.gesamt[f]} Pixel, obwohl kein Zeichen im Ausschnitt`); }
+    const sichtbar = [...r.liste.filter((z) => z.drin).map((z) => `${z.n} (${Math.hypot(z.nah.dx, z.nah.dy).toFixed(1)} px)`), ...r.liste.filter((z) => z.unterPfeil).map((z) => `${z.n} unter dem Pfeil`)];
+    zeichenInfo.push(`${name}: ${sichtbar.length ? sichtbar.join(', ') : 'keins'}`);
   }
-  // Überlappung: Zeit-Tafel, Live-Vergleich (breitester Fall), Meldungen, Pace-Notes (breitester Fall) gegen die Minimap
+  pruefe(maxAb <= 1, `Auto an allen ${stellen.length} Stellen im Mittelpixel (auch neben der Strasse)`, `grösste Abweichung ${maxAb.toFixed(2)} Pixel`);
+  pruefe(zeichenOk, 'Start, Ziel, Checkpoints erscheinen nur, wenn sie im Ausschnitt liegen, und dann an der richtigen Stelle (höchstens 1.5 Pixel daneben)');
+  console.log(`         ${zeichenInfo.filter((x) => !/fehlt|obwohl/.test(x)).join('; ')}`);
+  for (const x of zeichenInfo.filter((x) => /fehlt|obwohl/.test(x))) console.log(`         ${x}`);
+  // Überlappung: Pace-Notes (breitester Fall), Zeit-Tafel, Live-Vergleich, längste Meldung gegen die Minimap
   const u = await A(p, async () => {
-    const A = window.__alpineRally, PN = A.CONFIG.pacenotes, m = A.hud.minimap, L = A.hud.lage;
+    const A = window.__alpineRally, PN = A.CONFIG.pacenotes, m = A.hud.minimap, L = A.hud.lage, Z = A.CONFIG.hud.zeit;
     const { TEXTE } = await import('/js/texte.js');
+    const { textBreite } = await import('/js/pixel.js');
     const maxB = Math.max(...A.paceNotes.anzeige.alle.map((k) => k.breite));
-    // breitester Fall: zwei der breitesten Kacheln nebeneinander, die erste mittig
     const notesL = 160 - Math.round(maxB / 2) - PN.innen - 1, notesR = 160 - Math.round(maxB / 2) + maxB + PN.luecke + maxB + PN.innen;
-    const V = A.CONFIG.hud.vergleich, Z = A.CONFIG.hud.zeit;
-    const vglB = Math.max(L.zeit.b, Z.innen * 2 + 4 * 5 - 1 + Z.luecke + (6 * 6 * V.groesse - V.groesse) + 2); // "LETZT" und "+99.9."
-    const meldungB = Math.max(...['hud.cp', 'hud.cpVerpasst', 'hud.ansagenAn', 'hud.ansagenAus'].flatMap((k) => ['de', 'en'].map((s) => TEXTE[k][s].replace('{n}', '3').replace('{zeit}', '00:00.00').length * 6 - 1)));
-    return { notesL, notesR, notesY: PN.oben + 0, zeitR: L.zeit.x + L.zeit.b, vglR: Z.links + vglB, mx: m.x, my: m.y, mh: m.hoehe, meldungR: Z.links + meldungB, maxB };
+    const pnH = A.hud.lage.notes.h;
+    const meldungB = Math.max(...['hud.cp', 'hud.cpVerpasst', 'hud.ansagenAn', 'hud.ansagenAus'].flatMap((k) => ['de', 'en'].map((s) => Z.innen * 2 + 2 + textBreite(TEXTE[k][s].replace('{n}', '3').replace('{zeit}', '00:00.00')))));
+    return { notesL, notesR, notesU: PN.oben + pnH, zeitR: L.zeit.x + L.zeit.b, vglR: L.zeit.x + L.zeit.b, mx: m.x, my: m.y, mu: m.y + m.hoehe, meldungR: Z.links + meldungB };
   });
-  pruefe(u.notesR < u.mx, 'Minimap überlappt die Pace-Notes nicht (auch nicht bei zwei breiten Kacheln)', `Pace-Notes höchstens bis x ${u.notesR}, Minimap ab x ${u.mx}`);
-  pruefe(u.zeitR < u.notesL && u.vglR < u.notesL && u.vglR < u.mx, 'Zeit-Tafel und Live-Vergleich (auch "+99.9") überlappen weder Pace-Notes noch Minimap',
-    `Zeit bis x ${u.zeitR}, Vergleich höchstens bis x ${u.vglR}, Pace-Notes ab x ${u.notesL}`);
-  pruefe(u.meldungR < u.mx, 'die längste Meldung (de/en) reicht nicht bis zur Minimap', `bis x ${u.meldungR}`);
+  pruefe(u.notesR < u.mx, 'Minimap überlappt die Pace-Notes nicht (auch nicht bei zwei breiten Kacheln)', `Pace-Notes höchstens bis x ${u.notesR}, Minimap ab x ${u.mx} (${u.mx - u.notesR - 1} Pixel Luft)`);
+  pruefe(u.zeitR < u.notesL && u.vglR < u.mx, 'Zeit-Tafel und Live-Vergleich (gleich breit) überlappen weder Pace-Notes noch Minimap', `Zeit und Vergleich bis x ${u.zeitR}, Pace-Notes ab x ${u.notesL}`);
+  pruefe(u.meldungR < u.mx, 'die längste Meldung mit Tafel (de/en) reicht nicht bis zur Minimap', `bis x ${u.meldungR}`);
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
   await spiel.schliessen();
 }
 
 // =====================================================================
-console.log('(b) Färbung der gefahrenen Strecke, Checkpoints');
+console.log('[6.1 b] Minimap: Scrollen Bild für Bild');
 {
   const spiel = await lade();
   const p = spiel.page;
-  const stand = () => A(p, () => ({ maxS: window.__alpineRally.vergleich.spur.maxS, s: window.__alpineRally.rennen.letztesS, px: window.__T.gefahrenPixel(), gemalt: window.__alpineRally.hud.minimap.stand.neuGemalt }));
+  const r = await A(p, async () => {
+    const A = window.__alpineRally, m = A.hud.minimap, LEER = window.__T.LEER;
+    const f = await import(window.__fahrerUrl);
+    const c2 = document.createElement('canvas'); c2.width = 320; c2.height = 180;
+    const ctx2 = c2.getContext('2d');
+    const st = { schritte: 0, nichtGanz: 0, zuViel: [], spruenge: [], maxD: 0, maxBild: 0, hinUndHer: 0, letzteRichtung: [0, 0] };
+    let vor = null, vor2 = null, sprung = null;
+    // nach jedem Schritt (1/120 s) die echte Minimap zeichnen (auf eine eigene Leinwand) und die Verschiebung prüfen
+    const pruef = () => {
+      m.zeichne(ctx2, A.physik.x, A.physik.z, A.physik.richtung, A.vergleich.spur.maxS, A.rennen.zwischenzeiten, A.rennen.naechsterCp, -1);
+      const F = m.fenster, x = A.physik.x, z = A.physik.z;
+      if (!Number.isInteger(F.sx) || !Number.isInteger(F.sy)) st.nichtGanz++;
+      if (vor) {
+        const dx = Math.abs(F.sx - vor.sx), dy = Math.abs(F.sy - vor.sy);
+        const weg = Math.max(vor.tempo, A.physik.tempo) * A.SCHRITT * m.mass; // was das Tempo hergibt (Pixel) ...
+        const ex = weg + 1, ey = weg + 1; // ... + 1 Pixel
+        if (dx > ex || dy > ey) { if (sprung) st.spruenge.push(`${sprung}: ${Math.max(dx, dy)} px`); else st.zuViel.push(`${A.rennen.letztesS.toFixed(0)} m: ${dx}/${dy} px (erlaubt ${ex.toFixed(2)}/${ey.toFixed(2)})`); }
+        else st.maxD = Math.max(st.maxD, dx, dy);
+        // hin und her (Zittern): Richtung der Verschiebung kehrt innerhalb weniger Schritte um
+        for (const [k, d] of [[0, F.sx - vor.sx], [1, F.sy - vor.sy]]) {
+          if (d) { if (st.letzteRichtung[k] && Math.sign(d) !== Math.sign(st.letzteRichtung[k]) && st.schritte - st['zuletzt' + k] < 6) st.hinUndHer++; st.letzteRichtung[k] = d; st['zuletzt' + k] = st.schritte; }
+        }
+      }
+      if (vor2 && !sprung && !st.sprungNah) st.maxBild = Math.max(st.maxBild, Math.abs(F.sx - vor2.sx), Math.abs(F.sy - vor2.sy)); // 2 Schritte = 1 Bild bei 60 fps
+      st.sprungNah = !!sprung;
+      vor2 = vor; vor = { sx: F.sx, sy: F.sy, x, z, tempo: A.physik.tempo }; st.schritte++; sprung = null;
+    };
+    // 1. Lauf mit Countdown wie ein Spieler, durch die Kehren bis 1400 m
+    A.start({ countdown: true });
+    pruef();
+    while (A.ablauf.zustand === 'countdown') { A.rennSchritt(A.SCHRITT, LEER); pruef(); }
+    f.fahreBis(A, 'flott', { bisS: 1400, proSchritt: pruef });
+    // 2. Teleport 30 m neben die Strasse (eine Stelle, wo kein anderes Strassenstück nahe ist), dann R
+    //    (4 s warten, zurück auf die Strasse)
+    let weit = 0;
+    for (const s of [600, 400, 2200, 3300, 250]) {
+      for (const seite of [30, -30]) { A.setzeAuf(s, seite); weit = A.strecke.abfrage(A.physik.x, A.physik.z).abstand; if (weit > 20) break; }
+      if (weit > 20) break;
+    }
+    st.rWeit = weit;
+    sprung = 'Teleport'; pruef();
+    const resets = A.rueck.anzahl;
+    A.rTaste();
+    for (let i = 0; i < 600; i++) { A.rennSchritt(A.SCHRITT, LEER); if (A.rueck.anzahl !== resets && !st.rDa) { sprung = 'R'; st.rDa = true; } pruef(); }
+    // 3. Neustart (Teleport an den Start), weiter bis 700 m
+    A.start({ countdown: false }); sprung = 'Neustart'; pruef();
+    f.fahreBis(A, 'flott', { bisS: 700, proSchritt: pruef });
+    return st;
+  });
+  pruefe(r.nichtGanz === 0, `Ausschnitt immer um ganze Pixel verschoben (${r.schritte} Schritte à 1/120 s)`);
+  pruefe(r.zuViel.length === 0, 'Karte verschiebt sich nie weiter, als das Auto gefahren ist (+1 Pixel)', r.zuViel.slice(0, 5).join(', ') || `grösste Verschiebung je Schritt ${r.maxD} Pixel, je Bild (1/60 s) ${r.maxBild} Pixel`);
+  pruefe(r.spruenge.length === 3 && /Teleport/.test(r.spruenge[0]) && /^R/.test(r.spruenge[1]) && /Neustart/.test(r.spruenge[2]), 'Sprünge nur bei Teleport, R und Neustart (ohne Übergang)', `${r.spruenge.join(', ')}; vor R ${r.rWeit.toFixed(0)} m neben der Strasse`);
+  console.log(`         (Richtungswechsel der Verschiebung innerhalb von 6 Schritten: ${r.hinUndHer} Mal)`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+// =====================================================================
+console.log('[6.1 c] Minimap: Färbung der gefahrenen Strecke, Checkpoints');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  const stand = () => A(p, () => ({ maxS: window.__alpineRally.vergleich.spur.maxS, s: window.__alpineRally.rennen.letztesS, px: window.__T.gefahrenPixel(), gemalt: window.__alpineRally.hud.minimap.stand.neuGemalt, ganz: window.__alpineRally.hud.minimap.stand.ganzNeu }));
   const cpFarben = () => A(p, () => window.__alpineRally.hud.minimap.cps.map((c) => window.__T.kartenPixel(c.u, c.v)));
   const C = await A(p, () => window.__alpineRally.CONFIG.hud.minimap);
   // bis 600 m, dann bis zum Stand bremsen
@@ -217,15 +325,15 @@ console.log('(b) Färbung der gefahrenen Strecke, Checkpoints');
   await A(p, () => { const A = window.__alpineRally; A.rTaste(); for (let i = 0; i < 600; i++) A.rennSchritt(A.SCHRITT, window.__T.LEER); A.setzeAuf(A.rennen.letztesS - 80); A.rennSchritt(A.SCHRITT, window.__T.LEER); });
   await bilderAbwarten(p, 3);
   const s3 = await stand();
-  pruefe(s1.px > 10 && s1.maxS > 590, `nach 600 m und Bremsen: ${s1.px} Pixel gefahren (gelb/orange)`, `maxS ${s1.maxS.toFixed(0)} m`);
+  pruefe(s1.px > 40 && s1.maxS > 590, `nach 600 m und Bremsen: ${s1.px} Pixel gefahren (gelb/orange, Strasse 2 Pixel breit)`, `maxS ${s1.maxS.toFixed(0)} m`);
   // (aus dem Stand rollt das Auto beim Umschalten noch Millimeter vor: maxS darf nur so wenig wachsen)
   const gleich = (a, b) => b.maxS >= a.maxS && b.maxS - a.maxS < 0.5 && b.px === a.px;
   pruefe(s2.s < s1.s - 5 && gleich(s1, s2), 'rückwärts gefahren: Färbung bleibt gleich (schrumpft nicht)', `Auto ${s1.s.toFixed(1)} -> ${s2.s.toFixed(1)} m, maxS ${s1.maxS.toFixed(2)} -> ${s2.maxS.toFixed(2)} m, ${s1.px} -> ${s2.px} Pixel`);
   pruefe(s3.s < s1.s - 50 && gleich(s2, s3), 'R und Sprung zurück: Färbung bleibt gleich', `Auto bei ${s3.s.toFixed(0)} m, maxS ${s3.maxS.toFixed(2)} m, ${s3.px} Pixel`);
   const f0 = await cpFarben();
   pruefe(f0.every((f) => gleicheFarbe(f, C.farbeCpOffen)), 'vor Checkpoint 1: alle Checkpoint-Striche weiss', f0.join(' '));
-  // weiter bis hinter Checkpoint 1 (900 m), dabei zählen, wie oft die Karte neu gemalt wird
-  const gemaltVor = (await stand()).gemalt;
+  // weiter bis hinter Checkpoint 1 (900 m), dabei zählen, wie oft die Karte weitergemalt wird
+  const vorher = await stand();
   let bilder = 0;
   for (let ziel = 620; ziel <= 960; ziel += 20) {
     await A(p, async (z) => { const f = await import(window.__fahrerUrl); f.fahreBis(window.__alpineRally, 'flott', { bisS: z }); }, ziel);
@@ -235,8 +343,9 @@ console.log('(b) Färbung der gefahrenen Strecke, Checkpoints');
   const f1 = await cpFarben();
   pruefe(s4.px > s1.px && s4.maxS > 950, 'weiter vorwärts: Färbung wächst', `${s1.px} -> ${s4.px} Pixel`);
   pruefe(gleicheFarbe(f1[0], C.farbeCpDurch) && gleicheFarbe(f1[1], C.farbeCpOffen), 'Checkpoint 1 durchfahren: Strich grün, Checkpoint 2 weiss', f1.join(' '));
-  const neu = s4.gemalt - gemaltVor;
-  pruefe(neu <= Math.ceil((s4.maxS - s3.maxS) / C.neuFaerbenAb) + 1 && neu < bilder, `Karte nicht jedes Bild neu gemalt: ${neu} Mal in ${bilder} Bildern (${(s4.maxS - s3.maxS).toFixed(0)} m, alle ${C.neuFaerbenAb} m)`);
+  const neu = s4.gemalt - vorher.gemalt;
+  pruefe(neu <= Math.ceil((s4.maxS - s3.maxS) / C.neuFaerbenAb) + 2 && neu < bilder && s4.ganz === vorher.ganz,
+    `Karte nicht jedes Bild weitergemalt: ${neu} Mal in ${bilder} Bildern (${(s4.maxS - s3.maxS).toFixed(0)} m, alle ${C.neuFaerbenAb} m), nie ganz neu`);
   // Checkpoint 2 auslassen (Sprung hinter das Tor): "CHECKPOINT VERPASST", Strich rot, Auto zurück
   await A(p, () => { const A = window.__alpineRally; A.setzeAuf(A.checkpoints[1].s + 10); A.rennSchritt(A.SCHRITT, window.__T.LEER); });
   await bilderAbwarten(p, 3);
@@ -262,7 +371,212 @@ console.log('(b) Färbung der gefahrenen Strecke, Checkpoints');
 }
 
 // =====================================================================
-console.log('(c) Fahrspur, (d) Vergleich');
+console.log('[6.1 d] Minimap: Pfeil in Blickrichtung');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  // Richtung (0 = Norden, im Uhrzeigersinn, 8 Stufen) aus einer Blickrichtung (vorne = sin/cos in x/z)
+  const stufe = (r) => ((Math.round(Math.atan2(Math.sin(r), -Math.cos(r)) / (Math.PI / 4)) % 8) + 8) % 8;
+  // gezeichneten Pfeil lesen: Schwerpunkt der hellen Pixel um die Tafelmitte -> Richtung
+  const lies = () => A(p, () => {
+    const A = window.__alpineRally, m = A.hud.minimap, c = A.CONFIG.hud.minimap;
+    const b = window.__T.box(m.mitteX - 3, m.mitteY - 3, 7, 7, c.farbeAuto, 2);
+    const cx = b.sx / b.n - (m.mitteX + 0.5), cy = b.sy / b.n - (m.mitteY + 0.5);
+    return { n: b.n, stufe: ((Math.round(Math.atan2(cx, -cy) / (Math.PI / 4)) % 8) + 8) % 8, box: [b.x0 - m.mitteX, b.y0 - m.mitteY, b.x1 - m.mitteX, b.y1 - m.mitteY], r: A.physik.richtung, vVor: A.physik.vVor, vx: A.physik.vx, vz: A.physik.vz };
+  });
+  const proben = [];
+  // Gerade (Almweg), Kehre 1, Schikane-Gegend: Auto steht in Fahrtrichtung
+  for (const [name, s] of [['Gerade (2200 m)', 2200], ['Kehre 1 (1190 m)', 1190], ['Kurve (1500 m)', 1500], ['Start', 30]]) {
+    await A(p, (s) => { const A = window.__alpineRally; A.start({ countdown: false }); A.setzeAuf(s); }, s);
+    await bilderAbwarten(p, 3);
+    const l = await lies();
+    proben.push({ name, ok: l.stufe === stufe(l.r) && l.n >= 9 && l.box.every((v) => Math.abs(v) <= 2), info: `${name}: Pfeil ${l.stufe}, erwartet ${stufe(l.r)}` });
+  }
+  // alle 16 Blickrichtungen (stehendes Auto, Richtung gesetzt)
+  let alleOk = true; const gesehen = new Set();
+  for (let k = 0; k < 16; k++) {
+    await A(p, (k) => { window.__alpineRally.physik.richtung = k * Math.PI / 8 + 0.05; }, k);
+    await bilderAbwarten(p, 2);
+    const l = await lies();
+    gesehen.add(l.stufe);
+    if (l.stufe !== stufe(l.r)) { alleOk = false; proben.push({ name: `Richtung ${k}`, ok: false, info: `Pfeil ${l.stufe}, erwartet ${stufe(l.r)}` }); }
+  }
+  // rückwärts fahren: Pfeil zeigt weiter in Blickrichtung (nicht in Fahrtrichtung)
+  await A(p, () => { const A = window.__alpineRally; A.start({ countdown: false }); A.setzeAuf(600); for (let i = 0; i < 360; i++) A.rennSchritt(A.SCHRITT, { ...window.__T.LEER, bremse: 1 }); });
+  await bilderAbwarten(p, 3);
+  const rw = await lies();
+  const fahrRichtung = stufe(Math.atan2(rw.vx, rw.vz));
+  for (const pr of proben) pruefe(pr.ok, `Pfeil: ${pr.name}`, pr.info);
+  pruefe(alleOk && gesehen.size === 8, '16 Blickrichtungen: Pfeil immer auf die nächste der 8 Richtungen gerundet, alle 8 Pfeile verschieden gezeichnet');
+  pruefe(rw.vVor < -1 && rw.stufe === stufe(rw.r) && (fahrRichtung + 4) % 8 === rw.stufe, 'rückwärts: Pfeil zeigt in Blickrichtung (Fahrtrichtung genau entgegengesetzt)',
+    `Tempo rückwärts ${(-rw.vVor * 3.6).toFixed(0)} km/h, Pfeil ${rw.stufe}, Fahrtrichtung ${fahrRichtung}`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+// =====================================================================
+console.log('[6.1 e] Vergleichs-Tafel gleich gross wie die Zeit-Tafel');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  // im Rennen, mit Referenz, Anzeige festhalten (uhr gross: die Anzeige wird nicht neu gerechnet)
+  await A(p, async () => {
+    const A = window.__alpineRally;
+    await window.__T.fahre('flott', { bisS: 150 });
+    A.vergleich.setzeReferenz({ zeit: 150, cps: [30, 90, 130] }, 'best');
+  });
+  const faelle = [[1, 999, 'best', 'de', '+99.9'], [-1, 99, 'best', 'de', '-9.9'], [0, 0, 'letzter', 'de', '0.0'], [1, 12, 'letzter', 'en', '+1.2'], [1, 999, 'letzter', 'en', '+99.9'], [-1, 7, 'best', 'en', '-0.7']];
+  for (const [st, wert, quelle, sprache, soll] of faelle) {
+    await A(p, async ([st, wert, quelle, sprache]) => {
+      const A = window.__alpineRally, a = A.vergleich.anzeige;
+      (await import('/js/texte.js')).setzeSprache(sprache);
+      A.vergleich.ref.quelle = quelle;
+      a.uhr = 1e9; a.sichtbar = true; a.stufe = st; a.wert = wert; a.version++;
+    }, [st, wert, quelle, sprache]);
+    await bilderAbwarten(p, 3);
+    const r = await A(p, async (st) => {
+      const A = window.__alpineRally, L = A.hud.lage, Z = A.CONFIG.hud.zeit, V = A.CONFIG.hud.vergleich, T = window.__T;
+      const zahlFarbe = st < 0 ? V.farbeSchneller : st > 0 ? V.farbeLangsamer : V.farbeGleich;
+      // innen ohne Rand (und ohne die Eck-Pixel des Randes)
+      const innen = (q, f) => T.box(q.x + 2, q.y + 2, q.b - 4, q.h - 4, f, 4);
+      const rel = (b, q) => ({ x0: b.x0 - q.x, x1: b.x1 - q.x, y0: b.y0 - q.y, y1: b.y1 - q.y, n: b.n });
+      const zeit = { etikett: rel(innen(L.zeit, Z.farbeBeschriftung), L.zeit), zahl: rel(innen(L.zeit, '#f4f4ee'), L.zeit) };
+      const vgl = { etikett: rel(innen(L.vergleich, Z.farbeBeschriftung), L.vergleich), zahl: rel(innen(L.vergleich, zahlFarbe), L.vergleich) };
+      const sicht = T.sichtBox(L.vergleich.x - 1, L.vergleich.y - 1, L.vergleich.b + 2, L.vergleich.h + 2);
+      const { t } = await import('/js/texte.js');
+      const { miniBreite } = await import('/js/tacho.js');
+      return { L, zeit, vgl, sicht: { b: sicht.x1 - sicht.x0 + 1, h: sicht.y1 - sicht.y0 + 1 }, etikettB: miniBreite(t(A.vergleich.ref.quelle === 'letzter' ? 'hud.vergleichLetzter' : 'hud.vergleichBest')), innen: Z.innen };
+    }, st);
+    const z = r.zeit, v = r.vgl;
+    const ok = r.L.vergleich.b === r.L.zeit.b && r.L.vergleich.h === r.L.zeit.h && r.L.zeit.h === 13 && r.sicht.b === r.L.zeit.b && r.sicht.h === 13
+      && v.etikett.y0 === z.etikett.y0 && v.etikett.y1 === z.etikett.y1 && v.etikett.y1 - v.etikett.y0 === 4 && v.etikett.x1 - v.etikett.x0 + 1 === r.etikettB
+      && v.zahl.y0 === z.zahl.y0 && v.zahl.y1 === z.zahl.y1 && v.zahl.y1 - v.zahl.y0 === 6
+      && v.zahl.x1 === r.L.vergleich.b - 2 - r.innen && v.zahl.x0 > v.etikett.x1 + 2;
+    pruefe(ok, `"${soll}" ${sprache} (${st < 0 ? 'grün' : st > 0 ? 'rot' : 'weiss'}): Tafel ${r.sicht.b} x ${r.sicht.h} wie die Zeit-Tafel (${r.L.zeit.b} x ${r.L.zeit.h}), Etikett und Zahl auf der Linie der Zeit-Tafel, Zahl rechtsbündig`,
+      `Etikett Zeilen ${v.etikett.y0}-${v.etikett.y1} (Zeit: ${z.etikett.y0}-${z.etikett.y1}), Zahl Zeilen ${v.zahl.y0}-${v.zahl.y1} (Zeit: ${z.zahl.y0}-${z.zahl.y1}), Zahl x ${v.zahl.x0}-${v.zahl.x1}`);
+  }
+  await A(p, async () => { (await import('/js/texte.js')).setzeSprache('de'); });
+  const k = await A(p, () => ({ V: Object.keys(window.__alpineRally.CONFIG.hud.vergleich) }));
+  pruefe(!k.V.some((x) => ['hoehe', 'groesse', 'zeichenPlatz', 'farbeEtikett'].includes(x)), 'config.js: hoehe, groesse, zeichenPlatz, farbeEtikett im Block hud.vergleich entfernt (Werte der Zeit-Tafel)', k.V.join(', '));
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+// =====================================================================
+console.log('[6.1 f] Hinweis Taste H');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  const tx = await A(p, async () => { const { TEXTE } = await import('/js/texte.js'); return { aus: TEXTE['hud.hudAus'], an: TEXTE['hud.hudAn'] }; });
+  pruefe(tx.aus.de === 'HUD AUS' && tx.an.de === 'HUD AN' && tx.aus.en === 'HUD OFF' && tx.an.en === 'HUD ON', 'Texte: de "HUD AUS" / "HUD AN", en "HUD OFF" / "HUD ON", ohne Tastenname', JSON.stringify(tx));
+  await A(p, async () => { await window.__T.fahre('flott', { bisS: 200 }); });
+  for (const sprache of ['de', 'en']) {
+    await A(p, async (s) => { (await import('/js/texte.js')).setzeSprache(s); }, sprache);
+    for (const aus of [true, false]) {
+      await p.keyboard.press('KeyH'); await bilderAbwarten(p, 3);
+      const r = await A(p, async (aus) => {
+        const { t } = await import('/js/texte.js'), { textBreite } = await import('/js/pixel.js');
+        const b = window.__T.sichtBox(110, 150, 100, 20); // (rechts davon beginnt der Drehzahlmesser)
+        return { an: window.__alpineRally.hudSchalter.an, b: b.x1 - b.x0 + 1, soll: textBreite(t(aus ? 'hud.hudAus' : 'hud.hudAn')) + 10, text: t(aus ? 'hud.hudAus' : 'hud.hudAn') };
+      }, aus);
+      pruefe(r.an === !aus && r.b === r.soll, `${sprache}: Hinweis "${r.text}" unten in der Mitte, Tafel so breit wie der Text (+ Rand)`, `${r.b} Pixel breit`);
+    }
+  }
+  await A(p, async () => { (await import('/js/texte.js')).setzeSprache('de'); });
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+// =====================================================================
+console.log('[6.1 g] Meldung mit Tafel, Zwischenzeit grün / rot / gelb');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  const CP1 = 905;
+  // Meldung im Bild lesen: Tafel (sichtbare Pixel), Rand oben, Textfarbe
+  const meldung = () => A(p, async () => {
+    const A = window.__alpineRally, L = A.hud.lage, Z = A.CONFIG.hud.zeit, T = window.__T, m = A.rennen.meldung;
+    const { textBreite } = await import('/js/pixel.js');
+    const farben = { gelb: '#ffd23c', rot: '#ff4a3a' };
+    const f = farben[m.farbe] || m.farbe;
+    const M = L.meldung;
+    const sicht = T.sichtBox(M.x - 1, M.y - 1, M.b + 2, M.h + 2);
+    const rand = T.box(M.x, M.y, M.b, 1, Z.farbeRand, 4).n;
+    const text = T.box(M.x + 2, M.y + 2, M.b - 4, M.h - 4, f, 4).n;
+    const punkteUnten = Z.oben + Z.hoehe + Z.cpUnter + Z.cpGroesse;
+    return { text: m.text, farbe: m.farbe, sichtbar: M.sichtbar, x: M.x, y: M.y, b: M.b, sb: sicht.x1 - sicht.x0 + 1, sh: sicht.y1 - sicht.y0 + 1, sx: sicht.x0, rand, textPx: text,
+      sollB: Z.innen * 2 + 2 + textBreite(m.text), links: Z.links, vglY: L.vergleich.y, vglU: L.vergleich.y + L.vergleich.h, punkteUnten };
+  });
+  const V = await A(p, () => window.__alpineRally.CONFIG.hud.vergleich);
+  const farbName = (f) => (f === V.farbeSchneller ? 'grün' : f === V.farbeLangsamer ? 'rot' : f);
+  // Tafel geprüft: Masse der Zeit-Tafel, Rand, Text in seiner Farbe, keine Überlappung mit Punkten und Vergleich
+  const tafelOk = (m) => m.sichtbar && m.sh === 13 && m.sb === m.b && m.b === m.sollB && m.sx === m.links && m.rand >= m.b - 6 && m.textPx >= 15
+    && m.y > m.punkteUnten && (m.vglY < 0 || m.y >= m.vglU + 1);
+  const lageInfo = (m) => `Tafel ${m.sb} x ${m.sh} bei x ${m.sx}, y ${m.y}; ${m.textPx} Textpixel; ${m.vglY >= 0 ? `Vergleich y ${m.vglY}-${m.vglU - 1}` : 'ohne Vergleich'}, Punkte bis y ${m.punkteUnten - 1}`;
+  const lauf = async (opt) => { await A(p, async (o) => { await window.__T.fahre('flott', o); }, opt); await bilderAbwarten(p, 3); return meldung(); };
+
+  // 1. keine Referenz (Speicher leer): gelb
+  const m1 = await lauf({ bisS: CP1 });
+  pruefe(m1.farbe === 'gelb' && tafelOk(m1) && /^CP 1/.test(m1.text), `keine Referenz (erste Fahrt): "${m1.text}" gelb, mit Tafel`, lageInfo(m1));
+  // 2. Referenz fahren (ganzer Lauf, gleicher Start wie unten), dann identisch: gleiche Zwischenzeit -> gelb
+  await A(p, async () => { await window.__T.fahre('flott'); });
+  const m2 = await lauf({ bisS: CP1 });
+  pruefe(m2.farbe === 'gelb' && tafelOk(m2), `gleicher Lauf (gleiche Zwischenzeit in Hundertstel): gelb`, `${m2.text}; ${lageInfo(m2)}`);
+  // 3. langsamer (90 % Gas): rot
+  const m3 = await lauf({ bisS: CP1, gas: 0.9 });
+  pruefe(m3.farbe === V.farbeLangsamer && tafelOk(m3), `langsamer: "${m3.text}" rot`, lageInfo(m3));
+  // 4. Live-Vergleich ausgeschaltet: trotzdem rot
+  await A(p, async () => { (await import('/js/einstellungen.js')).setze('vergleich', false); });
+  const m4 = await lauf({ bisS: CP1, gas: 0.9 });
+  pruefe(m4.farbe === V.farbeLangsamer && tafelOk(m4) && m4.vglY < 0, 'Live-Vergleich aus: Meldung trotzdem rot (direkt unter den Punkten)', lageInfo(m4));
+  await A(p, async () => { (await import('/js/einstellungen.js')).setze('vergleich', true); });
+  // 5. "Letzter Lauf" = langsamer Lauf; flott ist schneller -> grün
+  await A(p, async () => { await window.__T.fahre('flott', { gas: 0.9 }); (await import('/js/einstellungen.js')).setze('vergleichMit', 'letzter'); });
+  const m5 = await lauf({ bisS: CP1 });
+  pruefe(m5.farbe === V.farbeSchneller && tafelOk(m5), `"Letzter Lauf" (langsam) als Referenz, schneller gefahren: "${m5.text}" grün`, lageInfo(m5));
+  // ... und gegen den letzten Lauf langsamer -> rot (der letzte Lauf ist jetzt der schnelle bis zum Ziel)
+  await A(p, async () => { await window.__T.fahre('flott'); });
+  const m5b = await lauf({ bisS: CP1, gas: 0.9 });
+  pruefe(m5b.farbe === V.farbeLangsamer, `"Letzter Lauf" (schnell) als Referenz, langsamer gefahren: rot`);
+  await A(p, async () => { (await import('/js/einstellungen.js')).setze('vergleichMit', 'best'); });
+  // 6. alte Bestzeit ohne Fahrspur (wie aus M5b): Zwischenzeiten eines Laufs
+  const zz = await A(p, async () => { const r = await window.__T.fahre('flott'); const r2 = await window.__T.fahre('flott', { gas: 0.9 }); return { schnell: r, langsam: r2 }; });
+  const alteBest = (e) => A(p, (e) => { localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: [{ zeit: e.zeit, cps: e.cps, datum: '2026-10-16T12:00:00.000Z' }] })); }, e);
+  await alteBest(zz.langsam);
+  const m6 = await lauf({ bisS: CP1 });
+  const art6 = await A(p, () => window.__alpineRally.vergleich.ref.art);
+  pruefe(art6 === 'naeherung' && m6.farbe === V.farbeSchneller, 'alte Bestzeit ohne Fahrspur (langsamer Lauf), schneller gefahren: grün', `Referenz ${art6}`);
+  await alteBest(zz.schnell);
+  const m7 = await lauf({ bisS: CP1 });
+  const m8 = await lauf({ bisS: CP1, gas: 0.9 });
+  pruefe(m7.farbe === 'gelb' && m8.farbe === V.farbeLangsamer, 'alte Bestzeit ohne Fahrspur (schneller Lauf): gleich = gelb, langsamer = rot');
+  // 7. Rundung direkt: auf Hundertstel gleich = gelb
+  const r = await A(p, () => {
+    const Vg = window.__alpineRally.vergleich;
+    Vg.setzeReferenz({ zeit: 150, cps: [13.40, 50, null], spur: null }, 'best');
+    const a = [Vg.zwischenVergleich(0, 13.409), Vg.zwischenVergleich(0, 13.4), Vg.zwischenVergleich(0, 13.399), Vg.zwischenVergleich(0, 13.415)];
+    const ohneCp = Vg.zwischenVergleich(2, 140) ; // Checkpoint fehlt in der Referenz: Referenzzeit an der Stelle (Näherung)
+    Vg.setzeReferenz(null, 'best');
+    return { a, ohneCp, keine: Vg.zwischenVergleich(0, 13.4) };
+  });
+  pruefe(JSON.stringify(r.a) === '[0,0,-1,1]' && r.keine === 0 && r.ohneCp !== 0, 'Rundung: 13.409 / 13.400 gegen 13.40 = gleich (gelb), 13.399 schneller, 13.415 langsamer; keine Referenz = gelb', JSON.stringify(r));
+  // 8. CHECKPOINT VERPASST: rot mit Tafel
+  await A(p, async (CP1) => { const A = window.__alpineRally; localStorage.clear(); await window.__T.fahre('flott', { bisS: CP1 }); A.setzeAuf(A.checkpoints[1].s + 10); A.rennSchritt(A.SCHRITT, window.__T.LEER); }, CP1);
+  await bilderAbwarten(p, 3);
+  const m9 = await meldung();
+  pruefe(m9.farbe === 'rot' && /VERPASST/.test(m9.text) && tafelOk(m9), '"CHECKPOINT VERPASST": rot, mit Tafel', lageInfo(m9));
+  // 9. ANSAGEN AN/AUS: gelb mit Tafel
+  await p.keyboard.press('KeyN'); await bilderAbwarten(p, 3);
+  const m10 = await meldung();
+  await p.keyboard.press('KeyN'); await bilderAbwarten(p, 3);
+  const m11 = await meldung();
+  pruefe(m10.farbe === 'gelb' && /ANSAGEN AUS/.test(m10.text) && tafelOk(m10) && /ANSAGEN AN/.test(m11.text) && tafelOk(m11), '"ANSAGEN AUS" / "ANSAGEN AN": gelb, mit Tafel', `${lageInfo(m10)}; ${m11.sb} Pixel breit`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+// =====================================================================
+console.log('[M6 c, d] Fahrspur, Live-Vergleich');
 let flott = null; // Ergebnis der ersten Fahrt (für Teil e)
 {
   const spiel = await lade();
@@ -407,7 +721,7 @@ let flott = null; // Ergebnis der ersten Fahrt (für Teil e)
 }
 
 // =====================================================================
-console.log('(e) Keine Referenz, alte Bestzeiten ohne Spur, Bestzeit / Letzter Lauf');
+console.log('[M6 e] Keine Referenz, alte Bestzeiten ohne Spur, Bestzeit / Letzter Lauf');
 {
   const spiel = await lade();
   const p = spiel.page;
@@ -501,7 +815,7 @@ console.log('(e) Keine Referenz, alte Bestzeiten ohne Spur, Bestzeit / Letzter L
 }
 
 // =====================================================================
-console.log('(f) Browser-Speicher blockiert');
+console.log('[M6 f] Browser-Speicher blockiert');
 {
   const spiel = await lade({ ohneSpeicher: true });
   const p = spiel.page;
@@ -525,7 +839,7 @@ console.log('(f) Browser-Speicher blockiert');
 }
 
 // =====================================================================
-console.log('(g) Taste H: HUD aus/an');
+console.log('[M6 g] Taste H: HUD aus/an');
 {
   const spiel = await lade();
   const p = spiel.page;
@@ -615,7 +929,7 @@ console.log('(g) Taste H: HUD aus/an');
 }
 
 // =====================================================================
-console.log('(h) Einstellungen ANZEIGE, Texte');
+console.log('[M6 h, 6.1 h] Einstellungen ANZEIGE, Texte');
 {
   const spiel = await lade();
   const p = spiel.page;
@@ -647,12 +961,14 @@ console.log('(h) Einstellungen ANZEIGE, Texte');
     const { TEXTE } = await import('/js/texte.js');
     const { SCHRIFT } = await import('/js/pixel.js');
     const { MINI } = await import('/js/tacho.js');
-    const neu = ['einst.anzeige', 'einst.minimap', 'einst.vergleich', 'einst.vergleichHinweis', 'einst.vergleichMit', 'wert.bestzeit', 'wert.letzterLauf', 'aktion.hud', 'hud.vergleichBest', 'hud.vergleichLetzter', 'hud.hudAus', 'hud.hudAn'];
+    // M6 und M6.1 (geändert: hud.hudAus / hudAn; Meldungen jetzt auf Tafel: hud.cp, hud.cpVerpasst, hud.ansagenAn/Aus)
+    const neu = ['einst.anzeige', 'einst.minimap', 'einst.vergleich', 'einst.vergleichHinweis', 'einst.vergleichMit', 'wert.bestzeit', 'wert.letzterLauf', 'aktion.hud', 'hud.vergleichBest', 'hud.vergleichLetzter', 'hud.hudAus', 'hud.hudAn', 'hud.cp', 'hud.cpVerpasst', 'hud.ansagenAn', 'hud.ansagenAus'];
     const fehlt = [], zeichen = new Set(), mini = new Set();
     for (const k of neu) for (const s of ['de', 'en']) {
       if (!TEXTE[k] || !TEXTE[k][s]) { fehlt.push(`${k}.${s}`); continue; }
       const txt = TEXTE[k][s].replace(/\{\w+\}/g, '').toUpperCase();
       if (txt.includes('ß')) fehlt.push(`${k}.${s}: ß`);
+      if (/hud\.hud/.test(k) && /\{/.test(TEXTE[k][s])) fehlt.push(`${k}.${s}: Platzhalter`);
       for (const c of txt) if (!SCHRIFT[c]) zeichen.add(c);
       // das Etikett steht in der kleinen Tacho-Schrift
       if (k.startsWith('hud.vergleich')) for (const c of txt) if (!MINI[c]) mini.add(c);
@@ -660,14 +976,14 @@ console.log('(h) Einstellungen ANZEIGE, Texte');
     for (const c of '+-.0123456789') if (!SCHRIFT[c]) zeichen.add(c);
     return { n: neu.length, fehlt, zeichen: [...zeichen], mini: [...mini] };
   });
-  pruefe(tx.fehlt.length === 0, `${tx.n} neue Text-Schlüssel in de und en, kein ß`, tx.fehlt.join(', '));
+  pruefe(tx.fehlt.length === 0, `${tx.n} Text-Schlüssel (M6 und 6.1) in de und en, kein ß, Hinweis H ohne Platzhalter`, tx.fehlt.join(', '));
   pruefe(tx.zeichen.length === 0 && tx.mini.length === 0, 'alle Zeichen in der Pixelschrift (auch + - . für den Vergleich, BEST/LETZT/LAST in der kleinen Schrift)', [...tx.zeichen, ...tx.mini].join(' '));
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
   await spiel.schliessen();
 }
 
 // =====================================================================
-console.log('(i) Leistung');
+console.log('[M6 i] Leistung');
 {
   const STELLEN = [['Start', 22.66], ['900 m', 900], ['1948 m', 1948], ['3170 m', 3170], ['Ziel', 3622]];
   // Zeichenaufrufe (3D) an festen Stellen; Minimap an und aus

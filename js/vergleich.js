@@ -10,8 +10,12 @@
 // Anzeige: eigene Rennzeit minus Referenzzeit an der aktuellen Stelle s (linear zwischen den Werten), höchstens
 // 5 Mal pro Sekunde neu, mit kleiner Hysterese (kein Flackern zwischen "0.0" und "+0.1").
 // Liest nur (Stelle, Rennzeit), die Physik merkt nichts davon. Im Bildtakt entstehen keine neuen Objekte.
+// Seit M6.1: Vergleich am Checkpoint (für die Farbe der Zwischenzeit-Meldung): eigene Zwischenzeit gegen die
+// Zwischenzeit der Referenz an diesem Checkpoint, auf Hundertstel (wie der Zielbildschirm). Fehlt sie in der
+// Referenz, die Referenzzeit an der Stelle des Checkpoints (wie der Live-Vergleich).
 
 import { CONFIG } from './config.js';
+import { hundertstel } from './bestzeiten.js';
 
 export function baueVergleich(strecke, checkpoints) {
   const RA = CONFIG.rennablauf, V = CONFIG.hud.vergleich;
@@ -74,11 +78,14 @@ export function baueVergleich(strecke, checkpoints) {
   // Punkte (Stelle, Zeit), aufsteigend; Platz für die Spur oder die Näherung aus den Zwischenzeiten
   const refS = new Float64Array(K + 2 + checkpoints.length), refT = new Float64Array(K + 2 + checkpoints.length);
   const ref = { n: 0, art: null, quelle: null }; // art: 'spur' oder 'naeherung'; quelle: 'best' / 'letzter'
+  const refCps = new Float64Array(checkpoints.length); // Zwischenzeiten der Referenz (NaN = fehlt), M6.1
   let cursor = 0;
   // eintrag: { zeit, cps, spur } oder null (keine Referenz)
   function setzeReferenz(eintrag, quelle) {
     ref.n = 0; ref.art = null; ref.quelle = quelle || null; cursor = 0;
+    refCps.fill(NaN);
     if (!eintrag || !Number.isFinite(eintrag.zeit)) return false;
+    if (Array.isArray(eintrag.cps)) for (let i = 0; i < refCps.length; i++) if (Number.isFinite(eintrag.cps[i])) refCps[i] = eintrag.cps[i];
     const sp = eintrag.spur;
     if (Array.isArray(sp) && sp.length === K + 1 && sp.every(Number.isFinite)) {
       for (let k = 0; k < K; k++) { refS[k] = s0 + k * D; refT[k] = sp[k]; }
@@ -115,6 +122,15 @@ export function baueVergleich(strecke, checkpoints) {
     cursor = i;
     const f = (s - refS[i]) / (refS[i + 1] - refS[i]);
     return refT[i] + (refT[i + 1] - refT[i]) * f;
+  }
+
+  // Am Checkpoint n mit der Zwischenzeit zeit (M6.1): -1 = schneller, 1 = langsamer, 0 = gleich (in Hundertstel)
+  // oder keine Referenz. Hängt nicht davon ab, ob der Live-Vergleich angezeigt wird.
+  function zwischenVergleich(n, zeit) {
+    if (!ref.n || n < 0 || n >= checkpoints.length || !Number.isFinite(zeit)) return 0;
+    const r = Number.isFinite(refCps[n]) ? refCps[n] : referenzBei(checkpoints[n].s);
+    if (!Number.isFinite(r)) return 0;
+    return Math.sign(hundertstel(zeit) - hundertstel(r));
   }
 
   // --- Anzeige: ruhig, höchstens alle hud.vergleich.aktualisieren Sekunden ---
@@ -154,7 +170,7 @@ export function baueVergleich(strecke, checkpoints) {
   zuruecksetzen();
   return {
     spur, ref, anzeige, K, abstand: D,
-    zuruecksetzen, schritt, fertigeSpur, setzeReferenz, referenzBei, aktualisiere,
+    zuruecksetzen, schritt, fertigeSpur, setzeReferenz, referenzBei, aktualisiere, zwischenVergleich, refCps,
     get roh() { return roh; },
   };
 }
