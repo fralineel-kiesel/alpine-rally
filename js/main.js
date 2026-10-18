@@ -2,6 +2,7 @@
 // Seit M5a mit Ablauf: Titel -> Hauptmenü (Demo-Fahrt dahinter) -> Rennen <-> Pause (js/ablauf.js).
 // Seit M5b: STARTEN -> Countdown 3-2-1-GO -> Rennen -> Ziel ("ZIEL!", 3 s) -> Zielbildschirm (Bestzeiten, Statistik).
 // Seit M6: Minimap und Live-Vergleich im HUD (Fahrspur alle 10 m, js/vergleich.js), Taste H = HUD aus/an.
+// Seit M6.1: Zwischenzeit-Meldung grün/rot je nach Vergleich mit der Referenz an diesem Checkpoint.
 // Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
 // (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
@@ -402,7 +403,10 @@ function physikSchritt(dt, e, nurFahren = false) {
         // sauber durchs Tor gefahren
         rennen.zwischenzeiten[n] = rennen.zeit;
         rennen.naechsterCp++;
-        zeigeMeldung(t('hud.cp', { n: n + 1, zeit: formatZeit(rennen.zeit) }), 'gelb');
+        // M6.1: grün = schneller als die Referenz an diesem Checkpoint, rot = langsamer, gelb = gleich / keine Referenz
+        const u = vergleich.zwischenVergleich(n, rennen.zeit);
+        const V = CONFIG.hud.vergleich;
+        zeigeMeldung(t('hud.cp', { n: n + 1, zeit: formatZeit(rennen.zeit) }), u < 0 ? V.farbeSchneller : u > 0 ? V.farbeLangsamer : 'gelb');
       } else if (s > cpS + 5) {
         // schon hinter dem Tor, ohne durchgefahren zu sein
         zeigeMeldung(t('hud.cpVerpasst'), 'rot', n);
@@ -887,6 +891,7 @@ function schleife(jetzt) {
       zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
       // M6: Minimap, Live-Vergleich, Taste H
       maxS: vergleich.spur.maxS, cpNaechster: rennen.naechsterCp, vergleich: vgl, vergleichQuelle: vergleich.ref.quelle,
+      autoX: physik.x, autoZ: physik.z, richtung: physik.richtung, // M6.1: Minimap fährt mit dem Auto mit
       hudAus: !hudSchalter.an, hudHinweis: hudSchalter.hinweis,
       naechsterCp: rennen.naechsterCp < checkpoints.length
         ? { nummer: rennen.naechsterCp + 1, abstand: checkpoints[rennen.naechsterCp].s - rennen.letztesS }
