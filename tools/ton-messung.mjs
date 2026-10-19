@@ -1,0 +1,184 @@
+// Messung für Meilenstein 7a.1 (vorher / nachher):  node tools/ton-messung.mjs <name> [ordner einer anderen Version]
+//   z. B. node tools/ton-messung.mjs vorher /pfad/zur/m7a-version   und   node tools/ton-messung.mjs nachher
+// Rechnet die Klänge offline (OfflineAudioContext, wie tools/ton-test.mjs (i)) und misst:
+//  - Motor bei 1500 / 3000 / 5000 / 7000 U/min mit Vollgas: Grundton, Spektralschwerpunkt, Energie über 1 kHz und
+//    über 2.5 kHz, Spitze, RMS (nur Motor; Turbo getrennt: Verhältnis Turbo zu Motor)
+//  - Aufprall je Material (leicht 1.5, mittel 7, hart 16 m/s): Schwerpunkt, Ausklingzeit bis -40 dB, Spitze, RMS
+//  - Signale bei Regler 100 %: Spitze und RMS (vor dem Limiter) und gegen den Motor bei Vollgas
+//  - Rückwärts-Heulen: Tonhöhe bei den echten Rückwärts-Drehzahlen (Getriebe und Physik aus dem Spiel)
+//  - Audio-Knoten (dauerhaft angelegt)
+// Ergebnis: tools/ton-messung-<name>.json (für den Vergleich in tools/ton-test.mjs) und Spektrogramme in
+// screenshots/m7a-1/<name>-*.png. Für die alte Version wird diese Mess-Hilfe (tools/ton-pruefung.js) dorthin kopiert.
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { starteSpiel, WURZEL } from './spiel-browser.mjs';
+
+const name = process.argv[2] || 'nachher';
+const wurzel = process.argv[3] ? path.resolve(process.argv[3]) : WURZEL;
+if (wurzel !== WURZEL) fs.copyFileSync(path.join(WURZEL, 'tools/ton-pruefung.js'), path.join(wurzel, 'tools/ton-pruefung.js'));
+const BILDER = path.join(WURZEL, 'screenshots/m7a-1');
+fs.mkdirSync(BILDER, { recursive: true });
+
+const spiel = await starteSpiel({ wurzel, breite: 640, hoehe: 360, args: ['--autoplay-policy=no-user-gesture-required'] });
+const p = spiel.page;
+await p.goto(`${spiel.url}/index.html?menue=aus`);
+await p.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+
+// Echte Rückwärts-Drehzahlen: im Spiel auf Asphalt stehen, Bremse halten (= rückwärts), 5 s aufzeichnen
+const rueck = await p.evaluate(() => {
+  const A = window.__alpineRally;
+  A.anhalten = true;
+  A.start({ countdown: false });
+  A.setzeAuf(600);
+  const e = { gas: 0, bremse: 1, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false, hud: false };
+  const liste = [];
+  for (let k = 0; k < 120 * 5; k++) {
+    A.rennSchritt(A.SCHRITT, e);
+    if (k % 30 === 29) liste.push({ t: (k + 1) / 120, rpm: A.getriebe.drehzahl, v: A.physik.vVor, gang: A.getriebe.gang, untergrund: A.tonZ ? A.tonZ.untergrund : '' });
+  }
+  return liste;
+});
+
+const erg = await p.evaluate(async ({ rueck }) => {
+  const P = await import('/tools/ton-pruefung.js');
+  const C = P.CONFIG.audio, M = C.motor, AU = C.aufprall;
+  const { VERSION } = await import('/js/config.js');
+  P.CONFIG.version = VERSION;
+  const out = { version: VERSION, motor: [], turbo: [], aufprall: {}, signale: {}, heulen: [], bilder: {} };
+  out.knoten = P.zaehleKnoten();
+  // --- Motor: nur der Motorkörper (Turbo und Heulen abgehängt), Vollgas, ein Bild (Begrenzer noch nicht aktiv) ---
+  const motorZ = (rpm) => P.zustand({ drehzahl: rpm, gas: 1, gang: 3, zielGang: 3 });
+  for (const rpm of [1500, 3000, 5000, 7000]) {
+    let f0 = 0;
+    const x = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(rpm)); f0 = w.zustand.f0; w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); }, 2, { limiter: false });
+    const s = P.spektrum(x.daten, 0.5, 1.9), m = P.miss(x.daten, 0.5, 1.9);
+    const fGemessen = P.staerksteFrequenz(x.daten, 0.5, 1.5, f0 * 0.92, f0 * 1.08, 0.25);
+    const sRoh = P.spektrum(x.daten, 0.5, 1.9);
+    out.motor.push({ rpm, f0, fGemessen, pegelA: P.pegelA(sRoh), schwerpunkt: P.schwerpunkt(s), ueber1k: P.anteilUeber(s, 1000), ueber2k5: P.anteilUeber(s, 2500), spitze: m.spitze, rms: m.rms, mittel: m.mittel, nan: m.nan });
+    // mit Turbo (voller Ladedruck): Motor + Turbo, und Turbo allein
+    if (rpm >= 5000) {
+      const nurTurbo = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, motorZ(rpm)); w.knoten.motorLast.disconnect(); w.knoten.heulenGain.disconnect(); }, 1.5, { limiter: false });
+      const mitTurbo = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, motorZ(rpm)); w.knoten.heulenGain.disconnect(); }, 1.5, { limiter: false });
+      const t = P.miss(nurTurbo.daten, 0.5, 1.4).rms, g = P.miss(mitTurbo.daten, 0.5, 1.4).rms;
+      out.turbo.push({ rpm, turboRms: t, motorRms: m.rms, gesamtRms: g, verhaeltnisDb: P.dB(t / m.rms) });
+    }
+    if (rpm >= 3000) out.bilder[`motor-${rpm}`] = P.spektrogramm(x.daten.subarray(0, P.RATE * 1.5), `${P.CONFIG.version}: Motor ${rpm}/min Vollgas (Grundton ${f0.toFixed(0)} Hz), ohne Turbo`);
+  }
+  // Bezug für die Signale: Motor bei 5000/min Vollgas mit Turbo (vor dem Limiter)
+  const bezug = out.turbo.find((t) => t.rpm === 5000).gesamtRms;
+  out.motorBezugRms = bezug;
+
+  // --- Aufprall je Material ---
+  for (const mat of AU.materialien) {
+    out.aufprall[mat] = {};
+    for (const [stufe, v] of [['leicht', 1.5], ['mittel', 7], ['hart', 16]]) {
+      const x = await P.rendere((w) => { w.aufprall(v, P.materialNr(mat)); }, 1.6, { limiter: false });
+      const h = P.huelle(x.daten, -40), s = P.spektrum(x.daten, 0, Math.max(0.1, h.anfang + h.ausklingen)), m = P.miss(x.daten);
+      // Material-Klang allein (ohne den tiefen Schlag, der ab aufprall.schlagAb dazukommt): dort sitzt das "Klirren"
+      const schlagAb = AU.schlagAb; AU.schlagAb = 1e9;
+      const y = await P.rendere((w) => { w.aufprall(v, P.materialNr(mat)); }, 1.6, { limiter: false });
+      AU.schlagAb = schlagAb;
+      const sy = P.spektrum(y.daten, 0, Math.max(0.1, h.anfang + h.ausklingen));
+      // Pegel robust gegen die Zufalls-Varianten: Material und tiefer Schlag je allein (RMS 0.15 s), Energie addiert
+      const pegel = AU.pegel; AU.pegel = 0;
+      const sch = await P.rendere((w) => { w.aufprall(v, P.materialNr(mat)); }, 0.5, { limiter: false });
+      AU.pegel = pegel;
+      const rmsMat = P.miss(y.daten, 0, 0.15).rms, rmsSchlag = P.miss(sch.daten, 0, 0.15).rms;
+      out.aufprall[mat][stufe] = { v, pegelRms: Math.hypot(rmsMat, rmsSchlag), rmsMat, rmsSchlag, spitze: m.spitze, rms100: P.miss(x.daten, 0, 0.1).rms, rmsAktiv: h.rmsAktiv, ausklingen40: h.ausklingen, schwerpunkt: P.schwerpunkt(s), spitzeUeber1k: P.spitzeUeber(s, 1000),
+        schwerpunktAllein: P.schwerpunkt(sy), spitzeUeber1kAllein: P.spitzeUeber(sy, 1000) };
+      if (mat === 'stein' && stufe !== 'leicht') out.bilder[`stein-${stufe}`] = P.spektrogramm(x.daten.subarray(0, P.RATE * 0.8), `${P.CONFIG.version}: Aufprall Stein ${stufe} (${v} m/s)`);
+    }
+  }
+
+  // --- Pops, Schaltknall, Klack (Spitze vor dem Limiter) ---
+  {
+    const an = (w) => { w.aktualisiere(1 / 60, P.zustand({ drehzahl: 1000 })); w.knoten.motorLast.disconnect(); };
+    // (erst nach 0.4 s: dann ist der Motor-Ausgang ganz offen)
+    const pop = await P.rendere((w) => { an(w); w.knall(0.4, 1); }, 0.8, { limiter: false });
+    const pd = pop.daten.subarray(Math.round(P.RATE * 0.38));
+    out.pop = { spitze: P.miss(pd).spitze, dauer: P.huelle(pd, -40).ausklingen, schwerpunkt: P.schwerpunkt(P.spektrum(pd, 0, 0.1)) };
+    if (M.klackPegel != null) {
+      const k = await P.rendere((w, ctx) => { an(w); const g = ctx.createGain(); g.gain.value = M.klackPegel; const q = ctx.createBufferSource(); q.buffer = w.puffer.klack; q.connect(g); g.connect(w.knoten.motorAus); q.start(0.4); }, 0.8, { limiter: false });
+      const kd = k.daten.subarray(Math.round(P.RATE * 0.38));
+      out.klack = { spitze: P.miss(kd).spitze, dauer: P.huelle(kd, -40).ausklingen, schwerpunkt: P.schwerpunkt(P.spektrum(kd, 0, 0.1)) };
+    }
+  }
+
+  // --- Signale (vor dem Limiter, Regler 100 %) ---
+  const signale = {
+    'menue-tick': (w) => w.menue('tick'), 'menue-bestaetigen': (w) => w.menue('bestaetigen'), 'menue-zurueck': (w) => w.menue('zurueck'),
+    'menue-fehler': (w) => w.menue('fehler'), 'menue-regler': (w) => w.menue('regler', 1),
+    countdown: (w) => w.countdown(), go: (w) => w.go(),
+    'cp-schneller': (w) => w.checkpoint(-1), 'cp-langsamer': (w) => w.checkpoint(1), 'cp-neutral': (w) => w.checkpoint(0),
+    verpasst: (w) => w.verpasst(), pause: (w) => w.pauseTon(true), weiter: (w) => w.pauseTon(false), paceNote: (w) => w.paceNote(1),
+    'fanfare-kurz': (w) => w.fanfare(false), 'fanfare-lang': (w) => w.fanfare(true),
+  };
+  for (const [n, f] of Object.entries(signale)) {
+    const x = await P.rendere((w) => f(w), n.startsWith('fanfare') ? 4.5 : 1, { limiter: false });
+    const h = P.huelle(x.daten, -40), m = P.miss(x.daten);
+    out.signale[n] = { spitze: m.spitze, rmsAktiv: h.rmsAktiv, dauer: h.aktivDauer, gegenMotorDb: P.dB(h.rmsAktiv / bezug) };
+  }
+
+  // --- Rückwärts-Heulen: echte Drehzahlen aus dem Spiel (nur das Heulen, Motor abgehängt) ---
+  for (const r of rueck) {
+    if (r.gang !== -1) continue;
+    const z = P.zustand({ drehzahl: r.rpm, gang: -1, zielGang: -1, tempo: Math.abs(r.v), vVor: r.v, bremse: 1 });
+    const x = await P.rendere((w) => { w.aktualisiere(1 / 60, z); w.knoten.motorLast.disconnect(); w.knoten.turboGain.disconnect(); }, 0.8, { limiter: false });
+    const mot = await P.rendere((w) => { w.aktualisiere(1 / 60, z); w.knoten.heulenGain.disconnect(); w.knoten.turboGain.disconnect(); }, 0.8, { limiter: false });
+    out.heulen.push({ ...r, hz: P.staerksteFrequenz(x.daten, 0.3, 0.7, 80, 2500, 2), rms: P.miss(x.daten, 0.3, 0.7).rms, motorRms: P.miss(mot.daten, 0.3, 0.7).rms });
+  }
+
+  // --- Spektrogramme mit Verlauf: Pop-Salve, Schalten hoch (unter Last) und runter (beim Bremsen), Heulen ---
+  const { Getriebe } = await import('/js/getriebe.js');
+  // Pop-Salve: 0.6 s Vollgas bei 5500/min, dann Gas weg (Knall-Chance für das Bild auf 1)
+  const altChance = M.knallChance, altZweiter = M.knallZweiter;
+  M.knallChance = 1; if (altZweiter != null) M.knallZweiter = 1;
+  const pop = await P.rendereVerlauf((w, t) => w.aktualisiere(1 / 60, P.zustand({ drehzahl: t < 0.6 ? 5500 : 5500 - (t - 0.6) * 3000, gas: t < 0.6 ? 1 : 0, gang: 3, zielGang: 3 })), 1.8);
+  M.knallChance = altChance; if (altZweiter != null) M.knallZweiter = altZweiter;
+  out.bilder['pop-salve'] = P.spektrogramm(pop.daten, `${P.CONFIG.version}: Gas weg bei 5500/min nach 0.6 s (Knallen / Poppen)`);
+  // Schalten: echtes Getriebe, einfache Fahrt
+  const fahrt = (v0, eingabe, dauer) => P.rendereVerlauf((w) => {
+    const g = w.__g || (w.__g = { getriebe: new Getriebe(), v: v0 });
+    for (let k = 0; k < 2; k++) {
+      const m = g.getriebe.schritt(1 / 120, eingabe, g.v, g.v, 1);
+      g.v = Math.max(0, g.v + (m.beschl - m.motorbremse * (eingabe.gas ? 0 : 1) - eingabe.bremse * 8 - 0.0004 * g.v * g.v - 0.15) / 120);
+    }
+    const G = g.getriebe;
+    w.aktualisiere(1 / 60, P.zustand({ drehzahl: G.drehzahl, gang: G.gang, zielGang: G.zielGang, schaltet: G.schaltet, gas: eingabe.gas, bremse: eingabe.bremse, tempo: 0, vVor: g.v }));
+  }, dauer);
+  const hoch = await fahrt(18.87, { gas: 1, bremse: 0 }, 1.6);
+  out.bilder['schalten-hoch'] = P.spektrogramm(hoch.daten, `${P.CONFIG.version}: Hochschalten 2 -> 3 mit Vollgas`);
+  const runter = await fahrt(26, { gas: 0, bremse: 1 }, 2.2);
+  out.bilder['schalten-runter'] = P.spektrogramm(runter.daten, `${P.CONFIG.version}: Bremsen im 3. Gang, Runterschalten 3 -> 2`);
+  // Heulen: aufgezeichnete Rückwärtsfahrt (Drehzahl und Tempo wie im Spiel), mit Motor
+  const heul = await P.rendereVerlauf((w, t) => {
+    const r = rueck[Math.min(rueck.length - 1, Math.floor(t / 0.25))];
+    w.aktualisiere(1 / 60, P.zustand({ drehzahl: r.rpm, gang: r.gang, zielGang: r.gang, tempo: Math.abs(r.v), vVor: r.v, bremse: 1 }));
+  }, 5);
+  out.bilder.heulen = P.spektrogramm(heul.daten, `${P.CONFIG.version}: Rückwärts anfahren bis 9 m/s (Motor + Getriebeheulen)`);
+  return out;
+}, { rueck });
+
+for (const [n, url] of Object.entries(erg.bilder)) fs.writeFileSync(path.join(BILDER, `${name}-${n}.png`), Buffer.from(url.split(',')[1], 'base64'));
+delete erg.bilder;
+erg.rueckFahrt = rueck;
+fs.writeFileSync(path.join(WURZEL, `tools/ton-messung-${name}.json`), `${JSON.stringify(erg, (k, v) => (typeof v === 'number' ? Math.round(v * 10000) / 10000 : v), 1)}\n`);
+
+// Tabelle
+const f = (x, n = 0) => x.toFixed(n);
+const db = (x) => (20 * Math.log10(x)).toFixed(1);
+console.log(`Version ${erg.version}, Audio-Knoten ${erg.knoten.summe} ${JSON.stringify(erg.knoten.je)}`);
+console.log('Motor Vollgas (ohne Turbo):  U/min | Grundton | gemessen | Schwerpunkt | >1k | >2.5k | Spitze | RMS (dBFS) | A-Pegel');
+for (const m of erg.motor) console.log(`  ${m.rpm} | ${f(m.f0, 1)} | ${f(m.fGemessen, 1)} | ${f(m.schwerpunkt)} Hz | ${f(m.ueber1k * 100, 1)} % | ${f(m.ueber2k5 * 100, 1)} % | ${f(m.spitze, 3)} | ${f(m.rms, 3)} (${db(m.rms)}) | ${f(m.pegelA, 1)} dB`);
+console.log(`Pop: Spitze ${f(erg.pop.spitze, 3)}, Dauer ${f(erg.pop.dauer, 3)} s, Schwerpunkt ${f(erg.pop.schwerpunkt)} Hz${erg.klack ? `; Klack: Spitze ${f(erg.klack.spitze, 3)}, Dauer ${f(erg.klack.dauer, 3)} s, Schwerpunkt ${f(erg.klack.schwerpunkt)} Hz` : ''}`);
+for (const t of erg.turbo) console.log(`Turbo ${t.rpm}: Turbo-RMS ${f(t.turboRms, 4)}, Motor ${f(t.motorRms, 3)}, Verhältnis ${f(t.verhaeltnisDb, 1)} dB, Motor+Turbo ${f(t.gesamtRms, 3)}`);
+console.log(`Aufprall-Pegel (RMS 0.15 s, Material + Schlag):  ${Object.entries(erg.aufprall).map(([m, x]) => `${m} ${Object.values(x).map((a) => db(a.pegelRms)).join(' / ')}`).join(', ')}`);
+console.log(`Aufprall:  Material Stufe | Spitze (dBFS) | RMS 0.1 s | Schwerpunkt gesamt / Material allein | Ausklingen -40 dB | Spitze >1 kHz gesamt / allein`);
+for (const [m, x] of Object.entries(erg.aufprall)) for (const [s, a] of Object.entries(x)) console.log(`  ${m} ${s} | ${f(a.spitze, 3)} (${db(a.spitze)}) | ${f(a.rms100, 3)} (${db(a.rms100)}) | ${f(a.schwerpunkt)} / ${f(a.schwerpunktAllein)} Hz | ${f(a.ausklingen40, 3)} s | ${f(a.spitzeUeber1k, 1)} / ${f(a.spitzeUeber1kAllein, 1)} dB`);
+console.log(`Signale (Motor-Bezug 5000/min Vollgas mit Turbo, RMS ${f(erg.motorBezugRms, 3)} = ${db(erg.motorBezugRms)} dBFS):  Spitze | RMS aktiv | gegen Motor`);
+for (const [n, s] of Object.entries(erg.signale)) console.log(`  ${n} | ${f(s.spitze, 3)} | ${f(s.rmsAktiv, 3)} | ${f(s.gegenMotorDb, 1)} dB`);
+console.log('Heulen rückwärts:  t | U/min | m/s | Tonhöhe | RMS | Motor-RMS');
+for (const h of erg.heulen) console.log(`  ${f(h.t, 2)} | ${f(h.rpm)} | ${f(h.v, 2)} | ${f(h.hz)} Hz | ${f(h.rms, 4)} | ${f(h.motorRms, 3)}`);
+if (spiel.fehler.length) console.log('FEHLER:', spiel.fehler.join(' | '));
+await spiel.schliessen();

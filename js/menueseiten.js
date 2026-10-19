@@ -192,6 +192,11 @@ export function baueSeiten(api) {
         typ: 'regler', text: 'einst.lautstaerke', hinweis: 'einst.lautHinweis', min: 0, max: 100, schritt: M.lautSchritt,
         lesen: () => einstellungen.lautstaerke, setzen: (w) => setze('lautstaerke', w), anzeige: (w) => `${w}%`,
       },
+      // M7a.1: Signaltöne (Menü, Countdown, Checkpoint, Ziel) zusätzlich leiser/lauter
+      {
+        typ: 'regler', text: 'einst.signale', hinweis: 'einst.signaleHinweis', min: 0, max: 100, schritt: M.lautSchritt,
+        lesen: () => einstellungen.signale, setzen: (w) => setze('signale', w), anzeige: (w) => `${w}%`,
+      },
       { typ: 'gruppe', text: 'einst.sprache' },
       {
         typ: 'auswahl', text: 'einst.sprache',

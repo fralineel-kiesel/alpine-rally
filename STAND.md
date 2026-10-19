@@ -1,13 +1,14 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 7a fertig** – das Spiel hat **Ton**: ein **5-Zylinder-Turbo-Motor** (Turbo-Pfeifen, Zischen
-und manchmal Knallen beim Gaswegnehmen, Begrenzer, hörbares Schalten), **Reifen** je Untergrund mit Quietschen bzw.
-Kies-Rutschen, **Fahrtwind**, **Aufprall** je Material (Baum, Stein, Holz, Weich, Metall, Felswand) und **Signale**
-(Menü-Klicks, Countdown-Pieps, Checkpoint-„Ding-Ding“, Ziel-Fanfaren, ein kurzes Signal pro Pace-Note). Alles im Code
-erzeugt, keine Dateien. Zum Anhören ohne Fahren gibt es das **Ton-Labor** (`ton-labor.html`). Dazu ist die **Minimap
-kleiner** (49 x 49, gleiches Detail) und die **Checkpoint-Punkte** unter der Zeit sind **grün / rot / gelb**.
-**Wichtig: Ich kann nicht hören – bitte zuerst die Hörtest-Anleitung unten machen.**
-Davor: 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 7a.1 fertig** – der Ton ist nach deinem Hörtest nachgeschärft: Der **Motor klingt härter und
+rauher und steigt beim Hochdrehen deutlich** (480 statt 300 Hz bei Höchstdrehzahl), beim Gaswegnehmen kommen
+**Salven aus kurzen, hellen Pops**, **Schalten** ist aggressiver (Zünd-Unterbrechung, Schaltknall, Getriebe-Klack,
+Zwischengas), die **Signale sind 3–4 Mal lauter** (der Motor duckt sich kurz darunter) und es gibt den neuen Regler
+**SIGNALTÖNE**. Der **Stein-Aufprall** ist dumpf statt metallisch, **alle Aufpralle** sind ca. 5 dB lauter, das
+**Rückwärts-Heulen** ist tiefer und folgt der Drehzahl. Im **Ton-Labor** gibt es neu den Bereich **Feinschliff**: Werte
+selber verstellen und mit **WERTE KOPIEREN** an mich schicken.
+**Wichtig: Ich kann immer noch nicht hören – bitte zuerst die Hörtest-Anleitung unten (M7a.1) machen.**
+Davor: 7a (Ton: Motor, Reifen, Wind, Aufprall, Signale, Ton-Labor; Minimap 49 x 49, farbige Checkpoint-Punkte), 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -37,7 +38,357 @@ Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start
 
 ---
 
-## Meilenstein 7a: Ton (Motor, Reifen, Aufprall, Signale) plus zwei HUD-Korrekturen ✅
+## Meilenstein 7a.1: Motor härter und höher, Poppen, Schalten, Signale lauter (Regler SIGNALTÖNE), Aufprall dumpfer und lauter, Heulen ✅
+
+> **Ehrlich vorneweg: Ich habe wieder nicht gehört.** Ich habe zuerst den Ton von M7a **gemessen** (offline gerechnet:
+> Tonhöhe, Spektralschwerpunkt = „wo der Klang wohnt“, Energie in den Höhen, Pegel, Ausklingzeit), dann geändert und
+> **gleich nochmal gemessen**. Ob es jetzt nach Gruppe B klingt, entscheidest du. Darum gibt es im Ton-Labor den neuen
+> Bereich **Feinschliff**: Du kannst die wichtigsten Werte selber verstellen und mir die Zahlen schicken.
+
+### Was ist neu?
+
+**1. Motor: härter, rauher, höher**
+- **Tonlage**: Der Grundton steigt jetzt von ca. **42 Hz im Leerlauf** auf **480 Hz bei Höchstdrehzahl** (vorher 300 Hz).
+  Dazwischen ist die Kurve leicht nach oben gebogen (die Mitte bleibt tiefer, oben steigt er schneller): 3000/min
+  142 Hz, 5000/min 290 Hz, 7000/min 462 Hz. Das ist Spiel-Klang, kein Naturgesetz – Wert `hoechstTon`.
+- **Härte**: viel weniger „weiches Brummen“ (Dreieck auf dem halben Ton 0.35 → 0.16), stärker gesättigt und oben hart
+  abgeschnitten (`verzerrung` 1.8 → 6, neu `clip`), eine **Impulswelle mit schmalen Zacken** statt Rechteck (Kanten
+  statt rund), der Tiefpass ist viel offener (unter Vollgas bei 5000/min ca. 7.9 kHz statt 3.5 kHz) und ein kleiner
+  **Biss** bei 2.2 kHz (+5 dB).
+- **Höhe beim Hochdrehen**: eine zusätzliche **Oktav-Schicht** (2. und 4. Oberwelle), die erst ab ca. 2200/min einblendet
+  und mit der Drehzahl stärker wird (ohne Gas schwächer).
+- **Rauheit**: dreimal so viel rauhes Rauschen (`rauh` 0.10 → 0.30), enger gebündelt und **im Takt der Zündungen
+  pulsierend** (wie Auspuff-Stösse). Mehr **Brabbeln** unter Last (`amTiefe` 0.22 → 0.40), im Leerlauf unregelmässig wie bisher.
+- **Leerlauf** etwas kerniger (heller), **ohne Gas** dumpfer als unter Last, aber nicht mehr weich.
+- **Lautstärke**: Ein harter Klang hat mehr Energie in den Höhen, die das Ohr lauter hört. Darum ist der Motor im
+  gemessenen Pegel (RMS) **ca. 2 dB leiser** als in M7a, aber **A-bewertet** (so wie das Ohr hört) **ca. 0.4–1.2 dB
+  lauter** – also gefühlt etwa gleich laut. Der **Turbo** ist unverändert und im Verhältnis sogar 2 dB besser hörbar.
+
+**2. Poppen vom Auspuff**: Statt ein bis zwei tiefe Knalle jetzt **Salven aus 1–4 kurzen, hellen Pops** (je ca. 25 ms,
+Abstand 40–140 ms, Mitte ca. 2.5 kHz mit kurzem tiefem Anteil, jeder etwas anders laut und hoch). **Häufiger**: Chance
+70 % (vorher 45 %) beim Gaswegnehmen aus hoher Last schon **ab 3500/min** (vorher 4000). Dazu in der Hälfte der Fälle
+ein ganz **leises Knistern** (1–3 Mini-Pops in den ersten 0.8 s). Danach 1.0 s Ruhe (vorher 1.5 s). Der Blow-off
+(Zischen) ist gleich wie vorher. Ohne Last vorher (Rollen ohne Gas) knallt und knistert nichts.
+
+**3. Schalten im Gruppe-B-Stil** (Schaltpause und Drehzahl kommen unverändert aus dem Getriebe)
+- **Hochschalten unter Last** (Gas über 50 %): Die Zündung wird sofort unterbrochen – der Motor fällt in ca. 20 ms auf
+  **20 %** (vorher blieb er bei 42 %). Beim Wiedereinsetzen in 70 % der Fälle ein **Schaltknall** (etwas lauter als ein
+  Pop), der **Blow-off** ist dabei 30 % lauter, und beim Einlegen des Gangs kommt ein **Getriebe-Klack** (kurzer
+  mechanischer Schlag 600–2500 Hz plus tiefer Tock bei 90 Hz).
+- **Runterschalten**: **Zwischengas** – beim Einlegen 0.15 s lang lauter und heller (wie ein Gasstoss), dazu Klack,
+  und mit etwas Gas in 35 % der Fälle ein kleiner Pop.
+- **Ohne Last** (Gas unter 20 %): nur ein **leises Klack**, kein Knall.
+- **Bewusste Abweichung vom Auftrag**: Das **Zwischengas gibt es auch beim Runterschalten ohne Gas** (beim Bremsen), weil
+  im Spiel fast alle Runterschaltungen beim Bremsen passieren – sonst würdest du es fast nie hören. Es knallt dabei
+  nicht, das Klack ist leise. Wenn dir das nicht gefällt: `audio.motor.zwischengasOhneLast = false`.
+
+**4. Signale lauter und neuer Regler SIGNALTÖNE**
+- Die Signale waren 9–21 dB leiser als der Motor. Jetzt (Spitze bei LAUTSTÄRKE und SIGNALTÖNE 100 %): Countdown, GO,
+  Checkpoint, Verpasst, Pause/Weiter, Fanfaren **0.53–0.59** (vorher 0.10–0.22), Menü Bestätigen/Zurück/Fehler **0.37**
+  (vorher 0.08–0.09), Menü-Tick, Regler-Tick und Pace-Signal **0.21–0.22** (vorher 0.04–0.08). Das ist 3–5 Mal lauter.
+- **Ducking**: Bei Countdown, GO, Checkpoint, Verpasst und Fanfare wird der Motor (mit den Reifen) für 0.25 s um
+  **3.5 dB** leiser und kommt weich zurück. Bei Menü-Tönen, Pause und Pace-Signal nicht.
+- **Neuer Regler SIGNALTÖNE** in EINSTELLUNGEN → TON direkt unter LAUTSTÄRKE (0–100 % in 5er-Schritten, Standard 100 %,
+  gleiche Kurve wie LAUTSTÄRKE, 0 % = alle Signale stumm). Er wirkt **zusätzlich** zu LAUTSTÄRKE. Beim Verstellen hörst
+  du den Regler-Tick schon in der neuen Stärke. Englisch: SIGNALS. Der Hinweis unter LAUTSTÄRKE („GILT FÜR DEN GANZEN
+  TON“) stimmt weiter (LAUTSTÄRKE regelt alles, SIGNALTÖNE nur die Signale). Alte gespeicherte Einstellungen ohne
+  den Wert bekommen 100 %.
+
+**5. Aufprall tiefer, dumpfer, lauter**
+- **Stein**: dumpfes „Tock/Wumm“ statt Klirren: Eigentöne nur noch **140 / 250 / 400 Hz** (vorher 820 / 1270 / 2140 /
+  3300 Hz = Metallklang), Helligkeit **1700 Hz** (vorher 7000), eigener tiefer Schlag 110 → 55 Hz, leises Gruss-Rascheln
+  um 650 Hz. Der grosse tiefe Schlag, den alle Materialien ab 22 km/h dazubekommen, fällt beim Stein weg (er hat ja
+  seinen eigenen) – sonst klingt er zu lange nach. **Ausklingzeit 0.19 s** (vorher 0.47 s).
+- **Alle Aufpralle ca. +5 dB** (`aufprall.pegel` 0.9 → 1.6, `schlagPegel` 0.7 → 1.25). **Leichte Kontakte** sind
+  zusätzlich lauter (`aufprall.kurve` 0.7 → 0.55), damit man sie hört. **Schleifen** +3 dB. Ducking beim harten Aufprall
+  **-7 dB** (vorher -5).
+- Baum, Holz, Weich, Felswand und Metall klingen wie vorher (nur lauter). Metall bleibt hell mit Nachklang.
+- Neu hinter dem Limiter eine **Sicherheits-Decke** (bis 0.85 unverändert, nie über 0.965), weil die lauteren Aufpralle
+  zusammen mit Vollgas und Drift sonst knapp an 0.98 kamen.
+- Die Statistik „Aufpralle“ ist unverändert.
+
+**6. Rückwärts-Heulen**: folgt jetzt der **Motordrehzahl** wie ein Zahnrad (Drehzahl / 60 x 5.5), statt dem Tempo. Beim
+Rückwärtsfahren auf Asphalt (Bremse gehalten, 3500–4724/min) liegt es bei **320–434 Hz** (vorher bis **1360 Hz**). Es
+ist ein Sinus mit etwas 2. Oberwelle durch einen Tiefpass bei 1.2 kHz (klingt nach Getriebe, nicht nach Pfeifen), etwas
+lauter als vorher (0.06 statt 0.05), aber immer 6–11 dB leiser als der Motor.
+**Abweichung vom Richtwert**: Der Richtwert war `heulenFaktor` 4. Mit den echten Rückwärts-Drehzahlen des Spiels (höchstens
+4724/min) gäbe das nur 315 Hz; verlangt waren ca. 400–500 Hz. Darum **5.5**.
+
+**7. Ton-Labor: Feinschliff** (`ton-labor.html`, unten): 15 Regler, jeder mit dem **Namen des Werts in `config.js`**,
+der aktuellen Zahl und einem **Rücksetz-Knopf** (↺): Tonlage bei Höchstdrehzahl, Härte (Verzerrung), Rauheit,
+Brabbeln, Helligkeit unter Gas, Anteil tiefes Brummen, Motor-Lautstärke, Knall-Chance, Pop-Lautstärke,
+Schaltknall-Chance, Klack-Lautstärke, Aufprall Stein: Helligkeit, Aufprall-Lautstärke gesamt, Heulen-Faktor,
+Signale-Pegel. Sie wirken **sofort** (Härte und Stein-Helligkeit bauen den betroffenen Teil neu). **WERTE KOPIEREN**
+kopiert alle geänderten Werte als Text (`audio.motor.verzerrung = 6.2`, eine Zeile pro Wert) und zeigt ihn zusätzlich
+im Feld darunter (falls der Browser das Kopieren nicht erlaubt: dort markieren und kopieren). **ALLES ZURÜCK** stellt
+alles wie in `config.js`. Die Regler ändern **nur diese Seite** und nur bis zum Neuladen; das Spiel bleibt, wie es ist.
+Neu im Labor ausserdem: Regler **Signaltöne**, Knöpfe **Ein Pop**, **Pop-Salve**, **Hochschalten**, **Runterschalten**,
+und die Anzeige zeigt die Tonhöhe des Heulens.
+
+### Messtabelle vorher (M7a) / nachher (M7a.1)
+
+Offline gerechnet (`node tools/ton-messung.mjs vorher <alte Version>` und `… nachher`), Pegel vor dem Limiter bei Regler 100 %.
+
+**Motor mit Vollgas (ohne Turbo)**
+
+| U/min | Grundton | Schwerpunkt | Energie über 1 kHz | über 2.5 kHz | Spitze | RMS | A-bewertet |
+|---|---|---|---|---|---|---|---|
+| 1500 | 62.5 → 58.3 Hz | 128 → 221 Hz | 1.9 → 4.8 % | 0.2 → 1.4 % | 0.54 → 0.60 | -12.5 → -14.9 dBFS | +0.4 dB |
+| 3000 | 125 → 142 Hz | 241 → 504 Hz | 4.2 → 12.4 % | 0.8 → 3.9 % | 0.52 → 0.55 | -12.1 → -14.2 dBFS | +1.2 dB |
+| 5000 | 208 → 290 Hz | **381 → 822 Hz (x2.2)** | 8.3 → 19.4 % | **1.8 → 7.4 %** | 0.55 → 0.58 | -11.3 → -13.4 dBFS | +1.0 dB |
+| 7000 | 292 → 462 Hz | 515 → 1157 Hz | 8.8 → 24.4 % | 3.4 → 9.1 % | 0.59 → 0.54 | -10.5 → -12.6 dBFS | +1.0 dB |
+| 7200 | 300 → **480 Hz** | | | | | | |
+
+Turbo gegen Motor (RMS): 5000/min **-21.0 → -18.8 dB**, 7000/min -21.6 → -19.5 dB (Turbo selbst unverändert).
+
+**Aufprall** (Pegel = RMS der ersten 0.15 s, Material und tiefer Schlag zusammen)
+
+| | Stein mittel (7 m/s) | Stein hart (16 m/s) | Metall hart |
+|---|---|---|---|
+| Schwerpunkt (Material allein) | 857 → **110 Hz** | 844 → **110 Hz** | 694 → 617 Hz |
+| stärkste Spitze über 1 kHz | -3.8 → **-32.2 dB** | -3.9 → **-32.4 dB** | -6.3 → -6.3 dB |
+| Ausklingen bis -40 dB | 0.47 → **0.19 s** | 0.47 → **0.19 s** | 1.01 → 1.13 s |
+| Spitze | 0.56 → 1.45 | 0.99 → 2.36 | 1.07 → 2.01 |
+| Pegel | -16.5 → -10.7 dBFS (+5.8) | -10.8 → -6.5 dBFS (+4.3) | -9.3 → -4.3 dBFS (+5.0) |
+
+Alle Materialien mittel/hart: Baum +5.5/+4.9, Stein +5.8/+4.3, Holz +5.7/+5.2, Weich +5.4/+4.8, Metall +5.4/+5.0,
+Felswand +6.0/+5.3 dB. Leichter Kontakt (1.5 m/s): -15 bis -21 dBFS (vorher -23 bis -33). Pop: Spitze 1.06 (73 % von
+Stein mittel), 25 ms, Schwerpunkt ca. 2.5 kHz. Klack: Spitze 0.27, 45 ms.
+
+**Signale gegen den Motor** (Motor bei 5000/min Vollgas mit Turbo: RMS -11.2 dBFS vorher, -13.4 dBFS nachher)
+
+| Signal | Spitze vorher → nachher | gegen den Motor vorher → nachher | im Mix mit Ducking |
+|---|---|---|---|
+| Countdown / GO | 0.13 / 0.14 → 0.53 / 0.54 | -9.3 / -8.8 → **+5.2 / +5.4 dB** | +8.2 / +8.0 dB |
+| Checkpoint (alle drei) | 0.12 → 0.55 | -14.1 → **+1.4 dB** | +4.6 dB |
+| Verpasst | 0.11 → 0.53 | -10.4 → +5.3 dB | +8.1 dB |
+| Pause / Weiter | 0.10 → 0.53 | -11.4 → +5.2 dB | +5.1 dB (kein Ducking) |
+| Fanfare kurz / lang | 0.22 → 0.59 | -10.6 / -11.3 → +0.3 / -0.4 dB | +0.8 dB / lang auf dem Zielbildschirm +8.4 dB |
+| Menü Bestätigen / Zurück / Fehler | 0.08–0.09 → 0.37 | -13 → +2 dB | (kein Motor im Menü) |
+| Menü-Tick / Regler-Tick | 0.04 / 0.08 → 0.22 / 0.21 | -21 / -17 → -4 / -6 dB | |
+| Pace-Signal | 0.05 → 0.22 | -19.7 → -4.3 dB | (soll Tippen bleiben) |
+
+**Rückwärts-Heulen** (echte Rückwärtsfahrt im Spiel, Bremse gehalten): 3500/min **1360 Hz → 320 Hz**, 4724/min
+(9 m/s, schnellstes Rückwärts) **1360 Hz → 434 Hz**; folgt der Drehzahl, nicht dem Tempo.
+
+### Hörtest-Anleitung für Lino (M7a.1)
+
+**Schritt 1: Ton-Labor** (`…/alpine-rally/ton-labor.html`, bei GitHub Pages vermutlich
+`https://fralineel-kiesel.github.io/alpine-rally/ton-labor.html`), Lautsprecher nicht zu laut, **TON STARTEN**.
+In dieser Reihenfolge anhören (Zustand „Rennen“):
+1. **Motor bei drei Drehzahlen**: Gas 100 %, Drehzahl ca. 2000, 4500 und 7000. Hart und rauh? Oder schon kratzig/schrill?
+2. **Hochdrehen**: Gas 100 %, den Drehzahl-Regler langsam von links nach ganz rechts ziehen. Steigt der Ton deutlich?
+3. **Poppen**: „Pop-Salve“ ein paar Mal drücken. Dann echt: Drehzahl 5500, Gas 100 %, 1 s warten, Gas schnell auf 0.
+4. **Schalten hoch**: Drehzahl 6500, Gas 100 %, „Hochschalten“ (Unterbrechung, Knall, Klack). **Runter**: Gas 0,
+   Drehzahl 3000, „Runterschalten“ (Zwischengas, Klack). Und **„Anfahren bis 160 km/h“** (alle Gänge, dann ausrollen).
+5. **Stein-Aufprall**: Stein leicht / mittel / hart. Dumpf genug? Dann zum Vergleich Metall und Baum.
+6. **Signale gegen den Motor**: Drehzahl 5000, Gas 100 %, dann Countdown-Pieps, GO, Checkpoint, Fanfare kurz drücken.
+   Kommen sie gut durch? Zu laut?
+7. **Rückwärts**: Häkchen „Rückwärts“, Tempo 20 km/h, Drehzahl zwischen 3500 und 4700. Tief genug?
+
+**Schritt 2: im Spiel**: Einmal die Etappe fahren (Schalten, Poppen vor den Kehren, Checkpoint-Ton bei Vollgas),
+einmal in einen Stein und in die Leitplanke, rückwärts raus. EINSTELLUNGEN → TON → **SIGNALTÖNE** ausprobieren.
+
+**Wenn X, dann Y** (die Werte findest du im Feinschliff mit genau diesem Namen):
+
+| Wenn … | dann … | jetzt |
+|---|---|---|
+| Motor noch zu weich | `audio.motor.verzerrung` hoch, `audio.motor.filterGas` hoch, `audio.motor.unter` runter | 6 / 4500 / 0.16 |
+| Motor zu schrill / kreischend | `audio.motor.hoechstTon` runter, `audio.motor.filterGas` runter | 480 / 4500 |
+| Ton steigt zu wenig beim Hochdrehen | `audio.motor.hoechstTon` hoch (z. B. 550) | 480 |
+| zu kratzig / zu viel Rauschen | `audio.motor.rauh` runter | 0.30 |
+| zu wenig Brabbeln / zu viel | `audio.motor.amTiefe` | 0.40 |
+| Motor zu laut / zu leise | `audio.motor.pegel` | 0.36 |
+| poppt zu oft / zu selten | `audio.motor.knallChance` | 0.7 |
+| Pops zu laut / zu leise | `audio.motor.popPegel` | 1.2 |
+| Schaltknall zu oft | `audio.motor.schaltKnallChance` | 0.7 |
+| Klack zu laut / zu leise | `audio.motor.klackPegel` | 0.3 |
+| Schalten zu ruckelig (Motor fällt zu stark) | `audio.motor.schaltDip` hoch (z. B. 0.35) | 0.2 |
+| Zwischengas beim Bremsen stört | `audio.motor.zwischengasOhneLast = false` | true |
+| Stein noch zu hell / zu dumpf | `audio.aufprall.klang.stein.knall[2]` (Helligkeit, Hz) | 1700 |
+| Aufpralle zu laut | `audio.aufprall.pegel` | 1.6 |
+| Heulen zu hoch / zu tief | `audio.motor.heulenFaktor` | 5.5 |
+| alle Signale zu laut / zu leise | Regler SIGNALTÖNE, oder `audio.signale.pegel` | 1.0 |
+| Motor duckt sich zu stark unter den Signalen | `audio.signale.duckDb` näher an 0 | -3.5 |
+
+**So schickst du mir deine Zahlen**: Im Ton-Labor unten im **Feinschliff** die Regler verstellen, bis es dir gefällt,
+dann **WERTE KOPIEREN** drücken und den Text in den Chat einfügen (z. B. `audio.motor.verzerrung = 7.5`). Geht das
+Kopieren nicht automatisch, steht der Text im Feld darunter: markieren, kopieren, einfügen. Werte, die nicht im
+Feinschliff sind (z. B. `schaltDip`), schreibst du einfach dazu.
+
+### Werte zum Drehen (`js/config.js`, Block `audio`) – neu und geändert
+
+| Wert | Was | M7a → M7a.1 |
+|---|---|---|
+| `motor.hoechstTon`, `tonKurve` | Tonlage bei Höchstdrehzahl, Kurve dazwischen | (300) → 480 Hz, 1.3 |
+| `motor.pegel` | Motor-Lautstärke | 0.5 → 0.36 |
+| `motor.puls`, `pulsBreite` | Impulswelle (Kanten) statt Rechteck | Rechteck 0.28 → 0.45 / 0.16 |
+| `motor.unter` | tiefes Brummen | 0.35 → 0.16 |
+| `motor.hoch`, `hochAb`, `hochSchub` | Oktav-Schicht beim Hochdrehen | neu: 0.4 / 0.2 / 0.55 |
+| `motor.amTiefe` | Brabbeln unter Last | 0.22 → 0.40 |
+| `motor.rauh`, `rauhGuete`, `rauhPuls` | Rauheit, Bündelung, Pulsieren im Zündtakt | 0.10 → 0.30, 2 → 3, neu 0.85 |
+| `motor.verzerrung`, `clip` | Härte | 1.8 → 6, neu 0.8 |
+| `motor.filterGrund`, `filterDrehzahl`, `filterGas`, `filterQ` | Helligkeit | 240 / 0.30 / 1800 / 1.3 → 450 / 0.6 / 4500 / 1.6 |
+| `motor.bissHz`, `bissDb`, `bissGuete` | Biss | neu: 2200 Hz / +5 dB / 1.1 |
+| `motor.knallAb`, `knallChance`, `knallSperre` | Poppen ab, Chance, Ruhe danach | 4000 / 0.45 / 1.5 → 3500 / 0.7 / 1.0 |
+| `motor.popAnzahl`, `popAbstand`, `popPegel`, `popStaerke`, `popTempo`, `pop` | Salve | neu (statt `knallZweiter`, `knallPegel`, `knall`) |
+| `motor.knisternChance`, `knisternAnzahl`, `knisternFenster`, `knisternPegel` | leises Knistern | neu: 0.5 / 1–3 / 0.8 s / 0.16 |
+| `motor.schaltLastAb`, `schaltOhneLast` | ab wann „unter Last“ / „ohne Last“ | neu: 0.5 / 0.2 |
+| `motor.schaltDip`, `schaltDipZeit` | Zünd-Unterbrechung | neu: 0.2 / 0.007 s |
+| `motor.schaltKnallChance`, `schaltKnallPegel`, `schaltBlowOff` | Schaltknall, lauterer Blow-off | neu: 0.7 / 1.25 / 1.3 |
+| `motor.klackPegel`, `klackLeise`, `klack` | Getriebe-Klack | neu: 0.3 / 0.45 |
+| `motor.zwischengasDauer`, `zwischengasStaerke`, `zwischengasOhneLast`, `zwischengasKnallChance` | Zwischengas | neu: 0.15 s / 0.9 / true / 0.35 |
+| `motor.schaltTonSperre` | eigene Sperre für Schaltknall und Klack | neu: 0.15 s |
+| `motor.heulenFaktor`, `heulenOberwelle`, `heulenFilter`, `heulenPegel` | Heulen | 280 Hz + 120 Hz pro m/s → 5.5 / 0.3 / 1200 Hz / 0.06 |
+| `signale.*.pegel`, `signale.pegel`, `busse.signale` | Signal-Pegel | siehe Tabelle; 0.5 → 1.0; 0.8 → 1.0 |
+| `signale.duckDb`, `duckDauer`, `duckZurueck` | Ducking für Signale | neu: -3.5 dB / 0.25 s / 0.1 |
+| `aufprall.pegel`, `kurve`, `schlagPegel`, `duckDb`, `schleifenPegel` | Aufprall | 0.9 / 0.7 / 0.7 / -5 / 0.18 → 1.6 / 0.55 / 1.25 / -7 / 0.25 |
+| `aufprall.klang.stein` | Stein-Klang (neu auch `schlagMit`, `pegel`, `kurve` je Material) | siehe oben |
+| `decke.weich`, `decke.max` | Sicherheits-Decke hinter dem Limiter | neu: 0.85 / 0.965 |
+| `menue.standard.signale` | Regler SIGNALTÖNE | neu: 100 % |
+
+Turbo, Pause, Untergrund-Rollen, Quietschen, Wind, Klang der Menü-Töne und des Pace-Signals: **unverändert** (nur die
+Pegel der Signale).
+
+### So testest du
+
+1. Ton-Labor nach der Hörtest-Anleitung oben (zuerst!).
+2. Spiel: Taste drücken (Blip, jetzt lauter), EINSTELLUNGEN → TON: **LAUTSTÄRKE** und darunter **SIGNALTÖNE**. SIGNALTÖNE
+   auf 0 % → Menü-Ticks weg, Motor im Rennen bleibt. Zurück auf 100 %.
+3. STARTEN: Countdown-Pieps und GO klar über dem Motor? Fahren: Hochschalten (Unterbrechung + Klack, manchmal Knall),
+   vor Kurven vom Gas (Pop-Salven), beim Bremsen runterschalten (Zwischengas).
+4. Stein und Leitplanke (leicht und hart), rückwärts raus (Heulen tiefer).
+5. Checkpoint bei Vollgas, Ziel mit Fanfare.
+
+### Zahlen
+
+- **Audio-Knoten** (dauerhaft angelegt): **69 → 77** (+8: Impulswelle statt Rechteck ±0, Oktav-Schicht 2, pulsierende
+  Rauheit 2, Biss-Filter 1, Heulen-Tiefpass 1, Regler SIGNALTÖNE 1, Sicherheits-Decke 1). Pops, Klack und Schaltknall
+  sind wie alle einmaligen Klänge kurzlebige Stimmen (höchstens 16 gleichzeitig, wie bisher).
+- **Zeichenaufrufe (3D)**: 60 m / 1170 m / 2900 m **122 / 113 / 81 → 122 / 113 / 81** (unverändert).
+- **Bildzeit mit / ohne Ton** (`node tools/m7a-leistung.mjs`, alle Ton-Schichten an): Median **250.0 / 249.9 ms** –
+  gleich (Test-Rechner mit Software-Grafik, nur zum Vergleich). `tonBild()` kostet im Hauptthread **1.8 µs** pro Bild
+  (M7a: 1.4 µs); pro Bild entstehen keine neuen Objekte.
+- **Puffer-Aufbau nach dem Entsperren**: **123–148 ms** Rechenzeit in 15–18 Häppchen, längstes 9–11 ms (M7a: 114–158 ms) –
+  zwei neue kleine Puffer (Pop, Klack), der alte Knall und ein Teil des Steins fallen weg. Einmal, als parallel ein
+  zweiter Test lief, waren es 200 ms mit einem Häppchen von 17.5 ms.
+- **Ladezeit** (`node tools/ladezeit.mjs`, 9 Ladungen abwechselnd, Median alt → neu): **1484 → 1530 ms**. Das liegt im
+  Rauschen dieser Messung (in M7a schwankte sie zwischen 1409 und 1522 ms); beim Laden wird kein Ton gebaut.
+- **Spitzenpegel**: alles zugleich (Vollgas am Begrenzer, Drift, Schleifen, zwei harte Aufpralle, Fanfaren, Signale, Pops,
+  Blow-off) **0.949**; harter Aufprall + Vollgas + Drift **0.90–0.95** je Material; alle Motor-Schichten zugleich 0.91.
+  Grenze 0.98.
+
+### Bilder (`screenshots/m7a-1/`)
+
+- **Spektrogramme vorher / nachher** (`node tools/ton-messung.mjs …`; Zeit nach rechts, Tonhöhe nach oben, hell = laut):
+  `vorher-` / `nachher-motor-3000`, `-motor-5000`, `-motor-7000`, `-stein-mittel`, `-stein-hart`, `-pop-salve`,
+  `-schalten-hoch`, `-schalten-runter`, `-heulen`.
+- `30-einstellungen-lautstaerke-signaltoene` (+ `-320x180`), `31-einstellungen-signals-englisch` (+ `-320x180`)
+  (`node tools/m7a1-bilder.mjs`)
+- `21-ton-labor-feinschliff` (Ton-Labor mit Feinschliff, zwei Werte geändert, WERTE KOPIEREN gedrückt)
+- `10-…` bis `16-…`: die Spektrogramme aus dem Ton-Test (wie in M7a, jetzt mit dem neuen Klang)
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/audio.js` | Motor neu (Tonkurve `motorTon`, Impulswelle, Oktav-Schicht, pulsierende Rauheit, harte Sättigung, Biss), Pops, Salven, Knistern, Schalten (Zünd-Unterbrechung, Schaltknall, Klack, Zwischengas), Ducking für Signale, Regler SIGNALTÖNE, Stein ohne grossen Schlag, Heulen nach Drehzahl, Sicherheits-Decke, `neuBauen` fürs Labor; Puffer mit eigener Zufallsfolge |
+| `js/config.js` | Block `audio` (siehe Tabelle), `menue.standard.signale`, Version 0.7a.1 |
+| `js/einstellungen.js`, `js/menueseiten.js`, `js/texte.js` | Regler SIGNALTÖNE (gespeichert, Texte de/en) |
+| `js/main.js` | gibt dem Ton zusätzlich den Ziel-Gang (für rauf/runter) und den Regler SIGNALTÖNE; sonst unverändert |
+| `ton-labor.html`, `js/tonlabor.js` | Feinschliff, WERTE KOPIEREN, ALLES ZURÜCK, Regler Signaltöne, Pop-, Salve-, Hoch-/Runterschalten-Knöpfe |
+| `tools/ton-test.mjs`, `tools/ton-pruefung.js` | Teil 1 (M7a, angepasst) und Teil 2 (M7a.1 (a)–(l)); neue Messhilfen (Spektrum, Schwerpunkt, A-Pegel, Hüllkurve, Verlauf) |
+| `tools/ton-messung.mjs`, `tools/ton-messung-vorher.json`, `tools/ton-messung-nachher.json` | **neu**: Messung vorher/nachher mit Spektrogrammen |
+| `tools/m7a1-bilder.mjs` | **neu**: Bilder der Einstellungen |
+
+### Selbst getestet
+
+- **`node tools/ton-test.mjs` – alle 212 Prüfungen bestanden**, keine Konsolenfehler.
+  - **Teil 1 = die M7a-Tests (a)–(k)** laufen weiter. **Angepasst habe ich**: der Soll-Grundton kommt aus der neuen Kurve
+    (`motorTon`) statt Drehzahl / 60 x 2.5; „Knallen höchstens 2“ ist jetzt „Salven 1–4 Pops ab 3500/min“; das Heulen wird
+    nach Drehzahl statt Tempo geprüft; der Wucht-Test nimmt den Baum statt den Stein (der Stein hat keinen grossen Schlag
+    mehr) und erwartet hart > 2.5 x leicht statt 3 x (leichte Kontakte sind lauter); Ducking -7 statt -5 dB; im
+    Offline-Teil Pop und Klack statt Knall; die Spektrogramme gehen nach `screenshots/m7a-1/`. Alles andere ist gleich.
+  - **Teil 2 = M7a.1 (a)–(l)**:
+    (a) Grundton bei 1000/1500/3000/5000/7000/7200 genau auf der Soll-Kurve (0.00 %), **480 Hz** oben, 41.7 Hz im
+    Leerlauf, steigt von 600 bis 7900/min bei jedem 10er-Schritt.
+    (b) Härte bei allen vier Drehzahlen: Schwerpunkt x1.7 / x2.1 / **x2.2** / x2.2, Energie über 2.5 kHz x2.7–x7, RMS
+    -2.1 bis -2.4 dB (höchstens +1 erlaubt), Spitze 0.54–0.60, kein NaN, keine Gleichspannung; alle Motor-Schichten
+    zugleich 0.91.
+    (c) Turbo-Werte genau wie M7a, Turbo gegen Motor -21.0 → -18.8 dB (besser).
+    (d) 200 Mal Gas weg: Salve in **67 %** (Chance 70), Verteilung 1/2/3/4 Pops = 32/47/25/30, Abstände 40–140 ms,
+    Knistern 53 %, gleich gefahren = gleich gepoppt, unter 3500/min nie, Sperre hält, ohne Last vorher nie; Pop-Spitze
+    73 % von Stein mittel, 25 ms, 2.5 kHz.
+    (e) Hochschalten unter Last: Motor 100 % → **18 %** (nach 33 ms unter 30 %) → zurück; Schaltknall in 72 % von 120
+    Schaltungen; Blow-off x1.30; Klack genau im ersten Bild nach der Schaltpause; ohne Last nur leises Klack;
+    Runterschalten mit Zwischengas (7.1 kHz statt 3–4.6 kHz Helligkeit direkt danach) und Klack; echtes Getriebe
+    0 → 160 km/h → 20 km/h: 7 Gangwechsel, 7 Klacks.
+    (f) alle 16 Signale im Zielbereich; alle Renn-Signale im Mix bei Vollgas lauter als der Motor (+0.8 bis +8.2 dB,
+    lange Fanfare auf dem Zielbildschirm +8.4 dB); Ducking 3.5 dB bei Countdown, GO, Checkpoint, Verpasst, Fanfare,
+    keines bei Menü, Pace, Pause.
+    (g) SIGNALTÖNE quadratisch (50 % = 0.25), Master unverändert, Standard 100, gespeichert, nach Neuladen gleich, alter
+    Speicher = 100, steht direkt unter LAUTSTÄRKE, Pfeil links = 65 % mit Tick, 0 % = alles stumm.
+    (h) Stein mittel/hart 110 Hz, 0.19 s, keine Spitze über 1 kHz über -32 dB; Metall wie M7a (±15 %); alle Materialien
+    +4.3 bis +6.0 dB; harter Aufprall lauter als Motor und alle Signale; leichter Kontakt -15 bis -21 dBFS; mit Vollgas
+    und Drift Spitze 0.90–0.95; Ducking -7.0 dB; der Limiter ist nach 0.27–0.37 s wieder wie vorher, das Ducking erst
+    nach 0.65 s – also kein zusätzliches Einbrechen.
+    (i) Heulen = Drehzahl / 60 x 5.5 (genau), gleiche Drehzahl = gleiche Tonhöhe bei 3 und 8 m/s, echte Rückwärtsfahrt
+    320–434 Hz, nur rückwärts, 6–11 dB leiser als der Motor.
+    (j) Ton-Labor: 15 Feinschliff-Regler wirken sofort (Tonlage 480 → 560 Hz, Sättigung neu, Stein-Puffer neu, …),
+    WERTE KOPIEREN im richtigen Format, ALLES ZURÜCK = config.js, `CONFIG.audio` im Spiel unverändert.
+    (k) Pause während einer Pop-Salve: alles stumm; Hauptmenü stumm, keine Stimme hängt. (Dazu Teil 1 (f).)
+    (l) Stimmen-Limit, Lecks, Texte, Pixelschrift: Teil 1 (h) und (k), neue Texte de/en drin.
+- **Alle bisherigen Tests bestanden** (unverändert): `testfahrer` **2:59.33 / 2:42.35 / 2:31.92**,
+  `abkuerzungen --pruefen` **127 / 2 / 342 / 84**, `overlay-test`, `menue-test`, `rennablauf-test` (Statistik
+  Aufpralle/Resets/Höchsttempo), `aufprall`, `belag`, `felswand`, `felswand-sprites`, `getriebe`, `gras`, `handbremse`,
+  `kuh`, `leben`, `lenk`, `nebenweg`, `pacenotes`, `rueckwaerts`, `startziel`, `strassenrand`. Strecke, Physik,
+  Kollisionsrechnung, Sperren, Abkürzungen, Pace-Notes, Checkpoints, Rennzeit, Fahrspur, Bestzeiten nicht angefasst;
+  „mit und ohne Ton genau gleich“ (Teil 1 (d)) besteht weiter.
+
+### Ehrlich beurteilt – wo ich am unsichersten bin
+
+- **Nicht gehört.** Die Ziele sind gemessen erreicht (Schwerpunkt x2.2, Tonlage 480 Hz, Stein ohne Eigentöne über 1 kHz,
+  Signale über dem Motor), aber ob es gut klingt, weiss ich nicht.
+- **Motor „hart“ oder schon „Fuzz-Gitarre“?** Die Sättigung schneidet bei Vollgas fast die ganze Welle ab. Das gibt Kanten,
+  kann aber auch nach verzerrtem Synthesizer klingen. **Das solltest du zuerst anhören** (Labor Punkt 1 und 2). Zu viel:
+  `verzerrung` 4, `clip` 0.9.
+- **480 Hz oben**: Bei 7000/min ist der Grundton fast eine Oktave höher als echt. Das kann „ruhig kreischen“ oder nerven.
+- **Pops**: Die Vorgabe „Spitze ca. 80 % eines mittleren Aufpralls“ gilt jetzt gegen die **lauteren** Aufpralle – ein
+  Pop ist damit vor dem Limiter so laut wie früher ein harter Aufprall (1.06). Der Limiter fängt es ab, aber die Pops
+  könnten zu laut oder zu spitz sein. Mit 70 % Chance und bis zu 4 Pops könnte es auch **zu oft** sein.
+- **Schalten zu ruckelig?** Der Motor fällt beim Hochschalten auf 20 % – das ist sehr deutlich (0.28 s lang).
+- **Kompromiss Härte gegen Pegel**: Härter = mehr Höhen = klingt lauter. Ich habe den Motor im gemessenen Pegel 2 dB
+  leiser gemacht, damit er gefühlt (A-bewertet) etwa gleich laut bleibt (+0.4 bis +1.2 dB). Der Turbo kommt dadurch
+  etwas besser durch (+2 dB).
+- **Kompromiss Signale**: Die kurze Fanfare ist bei Vollgas nur knapp lauter als der Motor (+0.8 dB im Mix), weil sie viele
+  Pausen hat und die Spitze bei 0.6 bleiben sollte. Die lange Fanfare kommt erst auf dem Zielbildschirm (Motor im Leerlauf,
+  +8.4 dB); bei Vollgas wäre sie 0.4 dB leiser als der Motor. Menü-Tick, Regler-Tick und Pace-Signal sind absichtlich
+  leiser als der Motor (Vorgabe 0.2–0.25).
+- **Aufpralle +5 dB**: Vor dem Limiter kommen harte Aufpralle jetzt auf 2.0–2.6. Der Limiter drückt dann das ganze
+  Bild bis ca. 0.3 s lang zusammen – das liegt innerhalb des Duckings (Motor ist dann sowieso 7 dB leiser), aber man
+  könnte ein kurzes „Pumpen“ hören.
+
+### Bekannte Probleme
+
+- Wie in M7a: Gamepad allein entsperrt den Ton nicht (Browser-Regel).
+- Das Zwischengas kommt auch beim Bremsen ohne Gas (bewusst, siehe oben).
+- Im Test-Rechner (Software-Grafik, stummes Ausgabegerät) gemessen; auf echten Rechnern kann der Puffer-Aufbau anders
+  lange dauern (nie ein Stück über ca. 12 ms am Stück).
+- Im Ton-Labor kopiert der Browser manchmal nicht automatisch in die Zwischenablage (z. B. ohne https) – dann steht der
+  Text im Feld darunter.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Motor leicht **stereo** und **Abstand** (aus M7a, passt zu M7b).
+- **Kies prasselt** gegen den Unterboden auf Schotter (aus M7a).
+- Fanfare je nach Platz leicht anders (aus M7a).
+- Pops und Schaltknall **leicht nachhallend** in Kehren mit Felswand (Echo), sonst trocken.
+- Feinschliff-Werte im Labor **als Link teilen** (Werte in der Adresse), damit du nicht kopieren musst.
+- Ein Regler **EFFEKTE** (Motor, Reifen, Aufprall) zusätzlich zu SIGNALTÖNE, falls der Motor im Verhältnis zur Musik (M7b) zu laut ist.
+
+---
+
+## Meilenstein 7a: Ton (Motor, Reifen, Aufprall, Signale) plus zwei HUD-Korrekturen ✅ (Verlauf, Stand damals – Motor, Knallen, Schalten, Signal-Pegel, Stein, Heulen seit M7a.1 anders)
 
 > **Ehrlich vorneweg: Ich kann nicht hören.** Alles hier ist nach **Zahlen und Bildern** beurteilt (Tonhöhen, Pegel,
 > Filter, offline gerechnete Klänge, Spektrogramme), **nicht gehört**. Ob der Motor nach Gruppe B klingt oder nach

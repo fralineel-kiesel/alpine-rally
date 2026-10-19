@@ -30,6 +30,7 @@ function uebernimm(d) {
   if (ganz(d.lenkStufe, M.lenkStufen.length)) einstellungen.lenkStufe = d.lenkStufe;
   if (ganz(d.totzoneStufe, M.totzonen.length)) einstellungen.totzoneStufe = d.totzoneStufe;
   if (Number.isFinite(d.lautstaerke)) einstellungen.lautstaerke = Math.max(0, Math.min(100, Math.round(d.lautstaerke)));
+  if (Number.isFinite(d.signale)) einstellungen.signale = Math.max(0, Math.min(100, Math.round(d.signale))); // M7a.1 (fehlt = 100)
   if (d.sprache === 'de' || d.sprache === 'en') einstellungen.sprache = d.sprache;
   // M6: Anzeige
   if (typeof d.minimap === 'boolean') einstellungen.minimap = d.minimap;

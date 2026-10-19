@@ -1,4 +1,4 @@
-// Ton (Meilenstein 7a): Motor, Reifen, Wind, Aufprall und Signale – alles im Code erzeugt (Web Audio).
+// Ton (Meilenstein 7a, M7a.1): Motor, Reifen, Wind, Aufprall und Signale – alles im Code erzeugt (Web Audio).
 // Keine Dateien, keine Samples: nur Oszillatoren, Rauschen-Puffer, Filter und Verstärker (laufen im Audio-Thread
 // des Browsers). Einmalige Klänge (Aufprall, Knall, Zischen, Ratschen, Fanfaren) und das Rauschen werden nach dem
 // Entsperren einmal als kleine Puffer berechnet – in Häppchen, damit das Spiel nicht ruckelt – und dann wiederverwendet.
@@ -7,7 +7,7 @@
 //   master (Regler LAUTSTÄRKE, quadratisch) -> Limiter -> Lautsprecher
 //     fahrzeug: Motor und Reifen (beide über das Ducking), Aufprall, Schleifen
 //     umgebung: Fahrtwind (M7b: Kuhglocken, Zuschauer, Vögel); mit Pausen-Tiefpass und Ducking
-//     signale:  Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes
+//     signale:  Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes (M7a.1: dazu Regler SIGNALTÖNE, quadratisch)
 //     musik:    noch leer (M7b)
 // Der Ton liest nur Zahlen aus dem Spiel (aktualisiere() einmal pro Bild, Ereignisse einzeln) und ändert nie etwas daran.
 // Gibt es kein Web Audio (oder ?ton=aus, ?menue=aus, audio.an = false), tun alle Aufrufe nichts: das Spiel läuft stumm.
@@ -35,6 +35,32 @@ export function materialVon(h) {
   return Math.max(0, A.materialien.indexOf((art && A.artVon[art]) || 'stein'));
 }
 export const materialNr = (name) => CONFIG.audio.aufprall.materialien.indexOf(name);
+
+// Grundton des Motors (Hz) bei einer Drehzahl (M7a.1): im Leerlauf Drehzahl / 60 x zuendFaktor (ca. 42 Hz), darüber eine
+// leicht nach oben gebogene Kurve bis hoechstTon bei hoechstDrehzahl (steigt immer mit der Drehzahl)
+export function motorTon(rpm) {
+  const M = CONFIG.audio.motor, leer = CONFIG.getriebe.leerlauf, fL = leer / 60 * M.zuendFaktor;
+  if (rpm <= leer) return Math.max(0, rpm) / 60 * M.zuendFaktor;
+  return fL + (M.hoechstTon - fL) * ((rpm - leer) / (M.hoechstDrehzahl - leer)) ** M.tonKurve;
+}
+
+// Wellenformen (M7a.1) als Obertöne: Impulswelle mit schmalem Zacken (Motor), Oktav-Schicht (2. und 4. Oberwelle),
+// Heulen (Sinus plus etwas 2. Oberwelle). Ergebnis: [Kosinus-, Sinus-Anteile] für createPeriodicWave
+export function wellen(M) {
+  const N = 64, pr = new Float32Array(N), pi = new Float32Array(N);
+  for (let n = 1; n < N; n++) pr[n] = Math.sin(Math.PI * n * M.pulsBreite) / n;
+  const hr = new Float32Array(9), hi = new Float32Array(9);
+  hi[2] = 1; hi[4] = 0.6; hi[6] = 0.28; hi[8] = 0.12;
+  const wr = new Float32Array(3), wi = new Float32Array(3);
+  wi[1] = 1; wi[2] = M.heulenOberwelle;
+  return { puls: [pr, pi], hoch: [hr, hi], heulen: [wr, wi] };
+}
+// Sättigungskurve des Motors: weich (tanh, verzerrung) und darüber hart abgeschnitten (clip)
+export function saettigungsKurve(M) {
+  const kurve = new Float32Array(1024), k = M.verzerrung, c = M.clip;
+  for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; kurve[i] = begr(Math.tanh(k * x) / Math.tanh(k), -c, c); }
+  return kurve;
+}
 
 // --- Puffer-Rezepte -------------------------------------------------------------------------------------------
 // Fertig machen: Gleichspannung weg (Mittelwert mit einem weichen Fenster abziehen, Anfang und Ende bleiben 0),
@@ -86,7 +112,8 @@ function klangRezept(rate, rz, rnd) {
   md.forEach((m, j) => { mf[j] = ZWEI_PI * m[0] / rate; ma[j] = Math.exp(-1 / (rate * m[1])); mp[j] = m[2]; });
   const mPh = new Float64Array(md.length), mHuell = new Float64Array(md.length).fill(1);
   const rAb = Math.exp(-1 / (rate * 0.0008));
-  let lp = 0, kH = 1, sPh = 0, sH = 1, rasch = 0, raschF = 0, dcX = 0, dcY = 0;
+  const rBp = r[3] ? 2 * Math.sin(Math.PI * r[3] / rate) : 0; // Rascheln um diese Mitte (M7a.1, Stein: Gruss statt Klingeln)
+  let lp = 0, kH = 1, sPh = 0, sH = 1, rasch = 0, raschF = 0, rLo = 0, rBand = 0, dcX = 0, dcY = 0;
   const kAb = Math.exp(-1 / (rate * k[1])), sAb = Math.exp(-1 / (rate * s[2])), rDichte = r[2] / rate;
   return {
     laenge: n,
@@ -105,7 +132,9 @@ function klangRezept(rate, rz, rnd) {
           if (rnd() < rDichte) rasch += rnd() * 2 - 1;
           rasch *= rAb;
           raschF += (rasch - raschF) * 0.5;
-          v += r[0] * raschF * Math.exp(-t * 3 / r[1]) * Math.min(1, t / 0.008);
+          let rv = raschF;
+          if (rBp) { rLo += rBp * rBand; rBand += rBp * (rv - rLo - rBand); rv = rBand * 3; }
+          v += r[0] * rv * Math.exp(-t * 3 / r[1]) * Math.min(1, t / 0.008);
         }
         let y = v - dcX + 0.995 * dcY; dcX = v; dcY = y; // Gleichspannung (grob) weg
         if (i < an) y *= i / an;                       // weicher Anfang ...
@@ -132,6 +161,30 @@ function blowOffRezept(rate, M, rnd) {
         lo += f * band; const hi = x - lo - 0.6 * band; band += f * hi;
         const huell = Math.min(1, t / 0.012) * Math.exp(-t / (M.blowOffDauer * 0.4)) * (i > n - 200 ? (n - i) / 200 : 1);
         d[i] = band * huell;
+      }
+    },
+    fertig: normalisiere,
+  };
+}
+
+// Pop (Auspuff) und Getriebe-Klack (M7a.1): kurzer Rauschstoss durch einen Bandpass um "mitte" Hz, darunter ein kurzer
+// tiefer Schlag (tief: [Hz Anfang, Hz Ende, Abklingen s, Pegel]). Sehr kurz, Anfang in 2 ms (knackig, aber kein Knacken), Ende auf 0
+function popRezept(rate, P, rnd) {
+  const n = Math.round(rate * P.laenge);
+  const f = 2 * Math.sin(Math.PI * Math.min(P.mitte, rate / 6) / rate), daempf = 1 / P.guete;
+  const [t0, t1, tAb, tPegel] = P.tief;
+  const aus = Math.max(1, Math.round(rate * 0.004));
+  let lo = 0, band = 0, ph = 0;
+  return {
+    laenge: n,
+    fuelle(d, von, bis) {
+      for (let i = von; i < bis; i++) {
+        const t = i / rate;
+        lo += f * band; band += f * (rnd() * 2 - 1 - lo - daempf * band);
+        ph += ZWEI_PI * (t1 + (t0 - t1) * Math.exp(-t / 0.01)) / rate;
+        let v = (band * Math.exp(-t / P.abklingen) + tPegel * Math.sin(ph) * Math.exp(-t / tAb)) * Math.min(1, t / 0.002);
+        if (i > n - aus) v *= (n - i) / aus;
+        d[i] = v;
       }
     },
     fertig: normalisiere,
@@ -214,10 +267,11 @@ function fanfareRezept(rate, F, stueck) {
 
 // --- Das Klangwerk: alle Knoten auf einem AudioContext (im Spiel) oder OfflineAudioContext (nur Tests) -----------
 export function baueKlangwerk(ctx) {
-  const C = CONFIG.audio, M = C.motor, R = C.reifen, W = C.wind, AU = C.aufprall, S = C.signale;
+  const C = CONFIG.audio, M = C.motor, R = C.reifen, WI = C.wind, AU = C.aufprall, S = C.signale;
   const G = CONFIG.getriebe;
   const rate = ctx.sampleRate;
-  const rnd = zufall(C.seed);
+  const rnd = zufall(C.seed);          // Ereignisse (Poppen, Aufprall-Varianten): gleiches Fahren = gleiche Töne
+  const rndP = zufall(C.seed + 1);     // Puffer (M7a.1 eigene Folge: die Ereignisse hängen nicht davon ab, wann gerechnet wird)
   const zaehl = { knotenAktiv: 0, knotenErzeugt: 0 };
   const gain = (wert, ziel) => { const g = ctx.createGain(); g.gain.value = wert; if (ziel) g.connect(ziel); return g; };
   const filter = (typ, hz, q, ziel) => {
@@ -230,9 +284,19 @@ export function baueKlangwerk(ctx) {
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = C.limiter.schwelle; limiter.knee.value = C.limiter.knie; limiter.ratio.value = C.limiter.verhaeltnis;
   limiter.attack.value = C.limiter.angriff; limiter.release.value = C.limiter.loslassen;
-  master.connect(limiter); limiter.connect(ctx.destination);
+  const decke = ctx.createWaveShaper(); // Sicherheits-Decke (M7a.1): nichts geht über C.decke.max
+  {
+    const k = C.decke.weich, d = C.decke.max, n = 4096, kurve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = i / ((n - 1) / 2) - 1, a = Math.abs(x);
+      kurve[i] = Math.sign(x) * (a <= k ? a : k + (d - k) * Math.tanh((a - k) / (d - k)));
+    }
+    decke.curve = kurve;
+  }
+  master.connect(limiter); limiter.connect(decke); decke.connect(ctx.destination);
   const fahrzeug = gain(C.busse.fahrzeug, master);
-  const signale = gain(C.busse.signale, master);
+  const signaleRegler = gain(1, master);           // Regler SIGNALTÖNE (M7a.1)
+  const signale = gain(C.busse.signale, signaleRegler);
   const musik = gain(C.busse.musik, master); // M7b
   const umgDuck = gain(1, master), umgPause = gain(1, umgDuck);
   const umgFilter = filter('lowpass', 20000, 0.7, umgPause);
@@ -240,32 +304,38 @@ export function baueKlangwerk(ctx) {
   const duck = gain(1, fahrzeug); // Ducking für Motor und Reifen
 
   // --- Motor ---
+  // Grundton f0 (ConstantSource) -> Sägezahn + Impulswelle + Dreieck (halber Ton) + Oktav-Schicht + Brabbeln + rauhes,
+  // im Zündtakt pulsierendes Rauschen -> Lautstärke-Schwanken (AM) -> Sättigung -> Tiefpass -> Biss -> Last -> Begrenzer -> aus
+  const W = wellen(M);
+  const welle = (w) => ctx.createPeriodicWave(w[0], w[1]);
   const motorAus = gain(0, duck);                 // Pause / Menü / Ziel-Stand: weich ein und aus
   const begrenzer = gain(1, motorAus);           // Drehzahlbegrenzer: schnelles Ein/Aus
   const motorLast = gain(0, begrenzer);          // Lautstärke je Last und Drehzahl
   const motorHp = filter('highpass', 16, 0.7, motorLast); // keine Gleichspannung, kein Rumpeln unter dem Halbton
-  const motorLp = filter('lowpass', 600, M.filterQ, motorHp);
+  const biss = filter('peaking', M.bissHz, M.bissGuete, motorHp); biss.gain.value = M.bissDb; // Biss bei 1.5-3 kHz
+  const motorLp = filter('lowpass', 600, M.filterQ, biss);
   const saettigung = ctx.createWaveShaper();
-  {
-    const kurve = new Float32Array(1024), k = M.verzerrung;
-    for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; kurve[i] = Math.tanh(k * x) / Math.tanh(k); }
-    saettigung.curve = kurve;
-  }
+  saettigung.curve = saettigungsKurve(M);
   saettigung.connect(motorLp);
   const amGain = gain(1 - M.amTiefe, saettigung);
   const summe = gain(1, amGain);
   const f0 = ctx.createConstantSource ? ctx.createConstantSource() : null; // Grundton als ein Wert für alle Oszillatoren
   const saege = osz('sawtooth', f0 ? 0 : 50, gain(M.saege, summe));
-  const rechteck = osz('square', f0 ? 0 : 50, gain(M.rechteck, summe));
-  const unter = osz('triangle', f0 ? 0 : 25, gain(M.unter, summe));
+  const puls = osz('sine', f0 ? 0 : 50, gain(M.puls, summe)); puls.setPeriodicWave(welle(W.puls));
+  const unterGain = gain(M.unter, summe);
+  const unter = osz('triangle', f0 ? 0 : 25, unterGain);
   const ober = osz('sine', M.schwebung, gain(M.oberwelle, summe));
+  const hochGain = gain(0, summe);
+  const hoch = osz('sine', f0 ? 0 : 50, hochGain); hoch.setPeriodicWave(welle(W.hoch));
   const amOsz = osz('sine', f0 ? 0 : 25);
   const amTiefe = gain(M.amTiefe, amGain.gain); amOsz.connect(amTiefe);
-  const rauhBp = filter('bandpass', 0, 2, null);
-  const rauhGain = gain(0, summe); rauhBp.connect(rauhGain);
+  const rauhBp = filter('bandpass', 0, M.rauhGuete, null);
+  const rauhGain = gain(0, summe);
+  const rauhPuls = gain(1 - M.rauhPuls, rauhGain); rauhBp.connect(rauhPuls); // pulsiert im Takt der Zündungen ...
+  puls.connect(gain(M.rauhPuls, rauhPuls.gain));                                // ... (die Impulswelle steuert die Lautstärke)
   if (f0) {
     f0.offset.value = G.leerlauf / 60 * M.zuendFaktor;
-    f0.connect(saege.frequency); f0.connect(rechteck.frequency);
+    f0.connect(saege.frequency); f0.connect(puls.frequency); f0.connect(hoch.frequency);
     const halb = gain(0.5); f0.connect(halb); halb.connect(unter.frequency); halb.connect(amOsz.frequency);
     const doppelt = gain(2); f0.connect(doppelt); doppelt.connect(ober.frequency);
     const rauhF = gain(M.rauhOberwelle); f0.connect(rauhF); rauhF.connect(rauhBp.frequency);
@@ -274,7 +344,7 @@ export function baueKlangwerk(ctx) {
   const turboGain = gain(0, motorAus);
   const turbo = osz('sine', M.turboTonMin, turboGain);
   const heulenGain = gain(0, motorAus);
-  const heulen = osz('sine', M.heulenGrund, heulenGain);
+  const heulen = osz('sine', 200, filter('lowpass', M.heulenFilter, 0.7, heulenGain)); heulen.setPeriodicWave(welle(W.heulen));
   const begrenzerTiefe = gain(0, begrenzer.gain);
   osz('square', M.begrenzerHz, begrenzerTiefe);
 
@@ -292,7 +362,7 @@ export function baueKlangwerk(ctx) {
   const rutschGain = gain(0, reifenFilter), rutschBp = filter('bandpass', R.rutschGrenze, 0.8, rutschGain);
   const schleifenGain = gain(0, fahrzeug), schleifenBp = filter('bandpass', 1200, 2, schleifenGain);
   // --- Wind (Schiene umgebung) ---
-  const windGain = gain(0, umgebung), windLp = filter('lowpass', W.grenze, 0.5, windGain);
+  const windGain = gain(0, umgebung), windLp = filter('lowpass', C.wind.grenze, 0.5, windGain);
 
   // --- Puffer (nach dem Entsperren in Häppchen berechnet) ---
   const puffer = {};
@@ -304,19 +374,20 @@ export function baueKlangwerk(ctx) {
     return q;
   }
   const auftraege = [
-    ['rauschen', () => rauschRezept(rate, 2, rnd), (b) => {
+    ['rauschen', () => rauschRezept(rate, 2, rndP), (b) => {
       dauerQuelle(b, rauhBp, 0.1); dauerQuelle(b, surrenLp, 0.37); dauerQuelle(b, weichLp, 0.81);
       dauerQuelle(b, quietschBp, 1.13); dauerQuelle(b, schleifenBp, 1.41); dauerQuelle(b, windLp, 1.77);
     }],
-    ['kies', () => kiesRezept(rate, 1.5, rnd, R.kiesKlicks), (b) => {
+    ['kies', () => kiesRezept(rate, 1.5, rndP, R.kiesKlicks), (b) => {
       kiesQuelle = dauerQuelle(b, kiesBp, 0.2); rutschQuelle = dauerQuelle(b, rutschBp, 0.9);
       rutschQuelle.playbackRate.value = 1.35;
     }],
-    ['knall', () => klangRezept(rate, M.knall, rnd)],
-    ['blowOff', () => blowOffRezept(rate, M, rnd)],
-    ['ratsch', () => ratschRezept(rate, R, rnd)],
-    ['schlag', () => klangRezept(rate, AU.schlag, rnd)],
-    ...AU.materialien.map((m) => [`aufprall-${m}`, () => klangRezept(rate, AU.klang[m], rnd)]),
+    ['pop', () => popRezept(rate, M.pop, rndP)],
+    ['klack', () => popRezept(rate, M.klack, rndP)],
+    ['blowOff', () => blowOffRezept(rate, M, rndP)],
+    ['ratsch', () => ratschRezept(rate, R, rndP)],
+    ['schlag', () => klangRezept(rate, AU.schlag, rndP)],
+    ...AU.materialien.map((m) => [`aufprall-${m}`, () => klangRezept(rate, AU.klang[m], rndP)]),
     ['fanfareKurz', () => fanfareRezept(rate, S.fanfare, S.fanfare.kurz)],
     ['fanfareLang', () => fanfareRezept(rate, S.fanfare, S.fanfare.lang)],
   ];
@@ -356,6 +427,17 @@ export function baueKlangwerk(ctx) {
   }
   // Tests (OfflineAudioContext): alles sofort
   function puffernSofort() { aufbau.start = performance.now(); while (!rechne(1e9)); }
+  // Ton-Labor (M7a.1, Feinschliff): einen Teil mit den aktuellen Werten aus CONFIG neu bauen ('saettigung' oder ein Puffername)
+  function neuBauen(was) {
+    if (was === 'saettigung') { saettigung.curve = saettigungsKurve(M); return true; }
+    const a = auftraege.find((x) => x[0] === was);
+    if (!a || !aufbau.fertig) return false;
+    const rz = a[1](), b = ctx.createBuffer(1, rz.laenge, rate), d = b.getChannelData(0);
+    rz.fuelle(d, 0, rz.laenge);
+    if (rz.fertig) rz.fertig(d);
+    puffer[was] = b;
+    return true;
+  }
 
   // --- Weiche Änderungen: jeder Wert wird nachgeführt, nie gesprungen. Gleicher Wert = kein neuer Auftrag ---
   const N_WERTE = 40;
@@ -370,7 +452,7 @@ export function baueKlangwerk(ctx) {
     W_BEGR = 9, W_BEGRG = 10, W_HEUL = 11, W_HEULHZ = 12, W_SURR = 13, W_SURRLP = 14, W_WEICH = 15, W_WEICHLP = 16,
     W_KIES = 17, W_KIESRATE = 18, W_KIESBP = 19, W_QUIETSCH = 20, W_QHZ = 21, W_QBP = 22, W_RUTSCH = 23, W_WIND = 24,
     W_WINDLP = 25, W_SCHL = 26, W_SCHLHZ = 27, W_SCHLQ = 28, W_RFILTER = 29, W_RPAUSE = 30, W_UFILTER = 31, W_UPAUSE = 32,
-    W_MASTER = 33;
+    W_MASTER = 33, W_HOCH = 34, W_UNTER = 35, W_SIGNALE = 36;
 
   // --- Einmalige Klänge: Stimmen (höchstens maxStimmen gleichzeitig, die älteste wird ausgeblendet) ---
   const stimmen = [];
@@ -437,8 +519,11 @@ export function baueKlangwerk(ctx) {
   const z0 = {
     uhr: 0, druck: 0, gasLangsam: 0, pedalLangsam: 0, blowOffBereit: true, knallBereit: true, knallSperre: -1e9,
     begrenzerZeit: 0, zitter: 0, zitterZiel: 0, zitterUhr: 0, hbVorher: false, letzterAufprall: -1e9,
+    // Schalten (M7a.1): läuft eine Schaltpause, rauf oder runter, wie viel Gas davor, Gasstoss bis, eigene Sperre
+    schaltetVor: false, schaltHoch: false, schaltLast: 0, zwischengasBis: -1e9, schaltTonSperre: -1e9,
+    duckEnde: -1e9, duckTiefe: 1, // laufendes Ducking (bis wann, wie tief)
     // Ziele (was zuletzt gesetzt wurde), für Tests und das Labor
-    f0: 0, filter: 0, motorPegel: 0, motorAn: 0, turbo: 0, begrenzer: 0, heulen: 0, surren: 0, weich: 0, kies: 0,
+    f0: 0, filter: 0, motorPegel: 0, motorAn: 0, turbo: 0, begrenzer: 0, heulen: 0, heulenHz: 0, hoch: 0, surren: 0, weich: 0, kies: 0,
     quietschen: 0, rutschen: 0, wind: 0, schleifen: 0, pause: false, modus: 'aus', duck: 1,
   };
   const zu = { ...z0 };
@@ -478,7 +563,7 @@ export function baueKlangwerk(ctx) {
     pauseMix(false);
     if (z.modus === 'aus') {
       allesNull(0.08);
-      zu.druck = 0; zu.begrenzerZeit = 0; zu.hbVorher = false;
+      zu.druck = 0; zu.begrenzerZeit = 0; zu.hbVorher = false; zu.schaltetVor = false;
       return;
     }
     const faehrt = z.modus === 'rennen' || z.modus === 'ziel';
@@ -487,27 +572,41 @@ export function baueKlangwerk(ctx) {
     const rpm = begr(z.drehzahl, 0, maxD * 1.1);
     const pedal = z.modus === 'countdown' ? 0 : z.gas; // Countdown: Auto gesperrt, Gas ändert nichts
     const gas = z.schaltet ? 0 : pedal;                  // Schaltpause: Kupplung offen, keine Last
+    // Schalten (M7a.1): Beginn der Schaltpause merken (rauf/runter, wie viel Gas), am Ende Klack, Knall, Zwischengas
+    const zielGang = z.zielGang ?? z.gang;
+    if (z.schaltet && !zu.schaltetVor) { zu.schaltHoch = zielGang > z.gang; zu.schaltLast = pedal; }
+    if (!z.schaltet && zu.schaltetVor) schaltEnde();
+    zu.schaltetVor = !!z.schaltet;
+    // Zwischengas (Runterschalten): kurz wie Gas für Lautstärke und Helligkeit; der Turbo folgt nur dem echten Gas
+    const gasTon = Math.max(gas, zu.uhr < zu.zwischengasBis ? M.zwischengasStaerke : 0);
+    // Zünd-Unterbrechung: Hochschalten unter Last -> Motor fällt in der Schaltpause schnell auf schaltDip
+    const dip = z.schaltet && zu.schaltHoch && zu.schaltLast > M.schaltLastAb;
     const anteil = begr((rpm - leer) / (maxD - leer), 0, 1);
-    const leerlaufig = (1 - begr(anteil * 5, 0, 1)) * (1 - gas);
+    const leerlaufig = (1 - begr(anteil * 5, 0, 1)) * (1 - gasTon);
     zu.zitterUhr -= dt;
     if (zu.zitterUhr <= 0) { zu.zitterZiel = rnd() * 2 - 1; zu.zitterUhr = 0.1 + rnd() * 0.12; }
     zu.zitter += (zu.zitterZiel - zu.zitter) * Math.min(1, dt * 10);
-    const f = rpm / 60 * M.zuendFaktor * (1 + M.leerlaufZittern * leerlaufig * zu.zitter);
+    const f = motorTon(rpm) * (1 + M.leerlaufZittern * leerlaufig * zu.zitter);
     zu.f0 = f;
     if (f0) setze(W_F0, f0.offset, f, 0.02);
     else {
-      setze(W_F0, saege.frequency, f, 0.02); rechteck.frequency.setTargetAtTime(f, ctx.currentTime, 0.02);
-      unter.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.02); amOsz.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.02);
+      setze(W_F0, saege.frequency, f, 0.02);
+      for (const o of [puls, hoch]) o.frequency.setTargetAtTime(f, ctx.currentTime, 0.02);
+      for (const o of [unter, amOsz]) o.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.02);
     }
-    zu.filter = M.filterGrund + M.filterDrehzahl * rpm + M.filterGas * gas;
+    zu.filter = M.filterGrund + M.filterDrehzahl * rpm + M.filterGas * gasTon;
     setze(W_LP, motorLp.frequency, zu.filter);
-    let last = mische(M.schubPegel, M.lastPegel, gas);
+    let last = mische(M.schubPegel, M.lastPegel, dip ? zu.schaltLast : gasTon);
     last = mische(last, M.leerlaufPegel, leerlaufig);
-    zu.motorPegel = M.pegel * last * (1 + M.drehzahlPegel * anteil) / (1 + M.drehzahlPegel);
-    setze(W_LAST, motorLast.gain, zu.motorPegel);
+    zu.motorPegel = M.pegel * last * (1 + M.drehzahlPegel * anteil) / (1 + M.drehzahlPegel) * (dip ? M.schaltDip : 1);
+    setze(W_LAST, motorLast.gain, zu.motorPegel, dip ? M.schaltDipZeit : C.glaetten);
     const am = mische(M.amTiefe, M.amTiefeLeerlauf, leerlaufig);
     setze(W_AM, amTiefe.gain, am); setze(W_AMG, amGain.gain, 1 - am);
-    setze(W_RAUH, rauhGain.gain, M.rauh * (0.3 + 0.7 * gas));
+    setze(W_RAUH, rauhGain.gain, M.rauh * (0.3 + 0.7 * gasTon));
+    setze(W_UNTER, unterGain.gain, M.unter);
+    // Oktav-Schicht: blendet mit steigender Drehzahl ein (ohne Gas schwächer)
+    zu.hoch = M.hoch * begr((anteil - M.hochAb) / (1 - M.hochAb), 0, 1) * mische(M.hochSchub, 1, gasTon);
+    setze(W_HOCH, hochGain.gain, zu.hoch);
     // Zielbildschirm: steht das Auto, blendet der Motor aus
     const steht = z.modus === 'ziel' && z.tempo < C.zielStand.ab;
     zu.motorAn = steht ? 0 : 1;
@@ -518,34 +617,31 @@ export function baueKlangwerk(ctx) {
     zu.turbo = M.turboPegel * zu.druck * zu.druck;
     setze(W_TURBO, turboGain.gain, zu.turbo);
     setze(W_TURBOHZ, turbo.frequency, mische(M.turboTonMin, M.turboTonMax, zu.druck));
-    // Blow-off: Gas (inkl. Schaltpause) schnell gefallen bei Ladedruck
+    // Blow-off: Gas (inkl. Schaltpause) schnell gefallen bei Ladedruck; beim Schalten unter Last lauter
     zu.gasLangsam += (gas - zu.gasLangsam) * (1 - Math.exp(-dt / M.blowOffZeit));
     if (zu.blowOffBereit && zu.gasLangsam - gas > M.blowOffGasFall && zu.druck > M.blowOffAb) {
       zu.blowOffBereit = false;
-      blowOff();
+      blowOff(z.schaltet && zu.schaltLast > M.schaltLastAb);
     }
     if (gas > 0.6) zu.blowOffBereit = true;
-    // Knallen: Pedal schnell weg über knallAb (Zufall aus fester Folge, höchstens 2, danach Sperre)
+    // Poppen: Pedal schnell weg aus hoher Last über knallAb (Zufall aus fester Folge, danach Sperre)
     zu.pedalLangsam += (pedal - zu.pedalLangsam) * (1 - Math.exp(-dt / M.blowOffZeit));
     if (zu.knallBereit && zu.pedalLangsam - pedal > 0.5 && rpm > M.knallAb && zu.uhr > zu.knallSperre) {
       zu.knallBereit = false;
       zu.knallSperre = zu.uhr + M.knallSperre;
-      if (rnd() < M.knallChance) {
-        const t1 = mische(M.knallFenster[0], M.knallFenster[1], rnd());
-        knall(t1, 0.8 + 0.4 * rnd());
-        if (rnd() < M.knallZweiter) knall(t1 + 0.07 + rnd() * 0.15, 0.6 + 0.4 * rnd());
-      }
+      salve();
     }
     if (pedal > 0.6) zu.knallBereit = true;
     // Drehzahlbegrenzer
     zu.begrenzerZeit = gas > 0.9 && rpm >= M.begrenzerAb ? zu.begrenzerZeit + dt : 0;
     zu.begrenzer = zu.begrenzerZeit > M.begrenzerNach ? M.begrenzerTiefe / 2 : 0;
     setze(W_BEGR, begrenzerTiefe.gain, zu.begrenzer, 0.01); setze(W_BEGRG, begrenzer.gain, 1 - zu.begrenzer, 0.01);
-    // Rückwärts: Getriebeheulen
+    // Rückwärts: Getriebeheulen, Tonhöhe folgt der Motordrehzahl (wie ein Zahnrad), Lautstärke dem Tempo
     const vr = Math.abs(z.vVor);
     zu.heulen = z.gang < 0 ? M.heulenPegel * begr(vr / 2, 0, 1) : 0;
+    zu.heulenHz = rpm / 60 * M.heulenFaktor;
     setze(W_HEUL, heulenGain.gain, zu.heulen);
-    setze(W_HEULHZ, heulen.frequency, M.heulenGrund + vr * M.heulenProMs);
+    setze(W_HEULHZ, heulen.frequency, zu.heulenHz);
 
     // --- Reifen und Untergrund (nur wenn das Auto fährt) ---
     const v = faehrt ? z.tempo : 0;
@@ -576,9 +672,9 @@ export function baueKlangwerk(ctx) {
     if (faehrt && z.handbremse && !zu.hbVorher) { merke('ratsch'); spiele('ratsch', 'ratsch', fahrzeug, R.ratschPegel); }
     zu.hbVorher = !!z.handbremse;
     // --- Wind (umgebung): mit dem Quadrat des Tempos, ab hellAb heller ---
-    zu.wind = Math.min(1.6, (v / W.bezugTempo) ** 2) * W.pegel;
+    zu.wind = Math.min(1.6, (v / WI.bezugTempo) ** 2) * WI.pegel;
     setze(W_WIND, windGain.gain, zu.wind, 0.1);
-    setze(W_WINDLP, windLp.frequency, W.grenze + Math.max(0, v - W.hellAb) * W.hellProMs, 0.1);
+    setze(W_WINDLP, windLp.frequency, WI.grenze + Math.max(0, v - WI.hellAb) * WI.hellProMs, 0.1);
     // --- Aufprall und Schleifen ---
     if (faehrt && z.aufprall >= AU.ab) aufprall(z.aufprall, z.aufprallArt);
     const schl = faehrt && z.kontaktArt >= 0 && z.kontaktTempo > AU.schleifenAb
@@ -592,25 +688,66 @@ export function baueKlangwerk(ctx) {
   }
 
   // --- Ereignisse ---
-  function blowOff() { merke('blowOff', zu.druck); spiele('blowOff', 'blowOff', motorAus, M.blowOffPegel * (0.6 + 0.4 * zu.druck)); }
-  function knall(wann = 0, staerke = 1) { merke('knall', wann); spiele('knall', 'knall', motorAus, M.knallPegel * staerke, wann, 0.85 + rnd() * 0.3); }
+  const zwischen = (ab, t) => ab[0] + (ab[1] - ab[0]) * t;
+  const ganzZwischen = (ab) => ab[0] + Math.min(ab[1] - ab[0], Math.floor(rnd() * (ab[1] - ab[0] + 1)));
+  function blowOff(schalten = false) {
+    merke('blowOff', zu.druck);
+    spiele('blowOff', 'blowOff', motorAus, M.blowOffPegel * (0.6 + 0.4 * zu.druck) * (schalten ? M.schaltBlowOff : 1));
+  }
+  // Ein Pop (Auspuff) in wann Sekunden, staerke 0..1 (mal popPegel); art: 'knall', 'knistern' oder 'schaltknall'
+  function knall(wann = 0, staerke = 1, art = 'knall') {
+    merke(art, wann);
+    spiele(art, 'pop', motorAus, M.popPegel * staerke, wann, zwischen(M.popTempo, rnd()));
+  }
+  // Gaswegnehmen aus hoher Last: mit knallChance eine Salve (1-4 Pops), dazu manchmal leises Knistern. Ergebnis: Anzahl Pops
+  function salve() {
+    let t = zwischen(M.knallFenster, rnd());
+    const n = rnd() < M.knallChance ? ganzZwischen(M.popAnzahl) : 0;
+    for (let k = 0; k < n; k++) { knall(t, zwischen(M.popStaerke, rnd())); t += zwischen(M.popAbstand, rnd()); }
+    if (rnd() < M.knisternChance) {
+      const m = ganzZwischen(M.knisternAnzahl);
+      for (let k = 0; k < m; k++) knall(rnd() * M.knisternFenster, M.knisternPegel * (0.6 + 0.4 * rnd()), 'knistern');
+    }
+    merke('salve', n);
+    return n;
+  }
+  // Ende der Schaltpause (Gang eingelegt): Zwischengas beim Runterschalten, Klack, Schaltknall (eigene kurze Sperre)
+  function schaltEnde() {
+    const last = zu.schaltLast, ohne = last < M.schaltOhneLast, voll = last > M.schaltLastAb;
+    merke(zu.schaltHoch ? 'schalten-hoch' : 'schalten-runter', last);
+    if (!zu.schaltHoch && (!ohne || M.zwischengasOhneLast)) { zu.zwischengasBis = zu.uhr + M.zwischengasDauer; merke('zwischengas', last); }
+    if (zu.uhr < zu.schaltTonSperre) return;
+    zu.schaltTonSperre = zu.uhr + M.schaltTonSperre;
+    merke('klack', ohne ? M.klackLeise : 1);
+    spiele('klack', 'klack', motorAus, M.klackPegel * (ohne ? M.klackLeise : 1));
+    const r = rnd();
+    if (zu.schaltHoch && voll && r < M.schaltKnallChance) knall(0.005, M.schaltKnallPegel, 'schaltknall');
+    if (!zu.schaltHoch && !ohne && r < M.zwischengasKnallChance) knall(0.03, 0.8, 'schaltknall');
+  }
   const dbZuFaktor = (db) => 10 ** (db / 20);
+  // Ducking: Motor und Reifen (mitUmgebung: auch die Umgebung) kurz um db leiser, nach dauer weich zurück.
+  // Ein laufendes tieferes Ducking (harter Aufprall) wird nicht abgeschwächt
+  function ducke(db, dauer, zurueck, mitUmgebung) {
+    const t = ctx.currentTime, d = dbZuFaktor(db);
+    if (t < zu.duckEnde && zu.duckTiefe < d) return;
+    zu.duck = d; zu.duckTiefe = d; zu.duckEnde = t + dauer;
+    for (const p of mitUmgebung ? [duck.gain, umgDuck.gain] : [duck.gain]) {
+      p.cancelScheduledValues(t); p.setTargetAtTime(d, t, 0.01); p.setTargetAtTime(1, t + dauer, zurueck);
+    }
+  }
   // Aufprall mit Wucht (m/s Richtung Hindernis) und Material (Nummer). Eigene kurze Sperrzeit gegen Rattern
   function aufprall(wucht, art) {
     if (wucht < AU.ab || zu.uhr - zu.letzterAufprall < AU.sperre) return false;
     zu.letzterAufprall = zu.uhr;
     const st = begr(wucht / AU.voll, 0, 1);
-    const name = AU.materialien[art] || 'stein';
-    const pegel = AU.pegel * st ** AU.kurve;
+    const name = AU.materialien[art] || 'stein', kl = AU.klang[name];
+    const pegel = AU.pegel * (kl.pegel ?? 1) * st ** (kl.kurve ?? AU.kurve);
     merke('aufprall', wucht);
     merke(`aufprall-${name}`, pegel);
     spiele('aufprall', `aufprall-${name}`, fahrzeug, pegel, 0, 0.92 + rnd() * 0.16, mische(AU.grenzeLeicht, AU.grenzeHart, st));
-    if (wucht >= AU.schlagAb) spiele('schlag', 'schlag', fahrzeug, AU.schlagPegel * st, 0, 0.9 + 0.2 * rnd());
-    if (wucht >= AU.duckAb) {
-      const t = ctx.currentTime, d = dbZuFaktor(AU.duckDb);
-      zu.duck = d;
-      for (const p of [duck.gain, umgDuck.gain]) { p.setTargetAtTime(d, t, 0.01); p.setTargetAtTime(1, t + AU.duckDauer, AU.duckZurueck); }
-    }
+    const sm = kl.schlagMit ?? 1; // Stein hat seinen eigenen tiefen Schlag (sonst klingt er zu lange nach)
+    if (wucht >= AU.schlagAb && sm > 0) spiele('schlag', 'schlag', fahrzeug, AU.schlagPegel * st * sm, 0, 0.9 + 0.2 * rnd());
+    if (wucht >= AU.duckAb) ducke(AU.duckDb, AU.duckDauer, AU.duckZurueck, true);
     return true;
   }
   // Menü: tick, bestaetigen, zurueck, regler (wert 0..1), fehler. Derselbe Ton kurz hintereinander nur einmal
@@ -631,19 +768,23 @@ export function baueKlangwerk(ctx) {
     if (an && countdownStimme && countdownStimme.an && countdownStimme.art === 'countdown') abwuergen(countdownStimme);
     menueSperre = performance.now() / 1000 + 0.08;
   }
-  function countdown() { merke('countdown'); countdownStimme = piep('countdown', S.countdown); }
-  function go() { merke('go'); countdownStimme = piep('countdown', S.go); }
+  // Signale im Rennen: der Motor wird kurz leiser (Ducking), damit sie durchkommen
+  const signalDuck = () => ducke(S.duckDb, S.duckDauer, S.duckZurueck, false);
+  function countdown() { merke('countdown'); countdownStimme = piep('countdown', S.countdown); signalDuck(); }
+  function go() { merke('go'); countdownStimme = piep('countdown', S.go); signalDuck(); }
   // Checkpoint: u < 0 schneller, u > 0 langsamer, 0 gleich / keine Referenz (dieselbe Entscheidung wie Meldung und Punkte)
   function checkpoint(u) {
     const p = S.checkpoint, toene = u < 0 ? p.schneller : u > 0 ? p.langsamer : p.neutral;
     merke(u < 0 ? 'cp-schneller' : u > 0 ? 'cp-langsamer' : 'cp-neutral', toene[1] - toene[0]);
     piep('checkpoint', p, 0, toene[0]);
     piep('checkpoint', p, p.dauer + p.luecke, toene[1]);
+    signalDuck();
   }
-  function verpasst() { merke('cp-verpasst'); piep('verpasst', S.verpasst); }
+  function verpasst() { merke('cp-verpasst'); piep('verpasst', S.verpasst); signalDuck(); }
   function fanfare(lang) {
     merke(lang ? 'fanfare-lang' : 'fanfare-kurz');
-    spiele('fanfare', lang ? 'fanfareLang' : 'fanfareKurz', signale, S.fanfare.pegel);
+    spiele('fanfare', lang ? 'fanfareLang' : 'fanfareKurz', signale, S.fanfare.pegel * S.pegel);
+    signalDuck();
   }
   function paceNote(anzahl = 1) {
     for (let k = 0; k < anzahl; k++) { merke('paceNote'); piep('paceNote', S.paceNote, k * S.paceNote.abstand); }
@@ -658,13 +799,15 @@ export function baueKlangwerk(ctx) {
     for (const p of [duck.gain, umgDuck.gain]) p.setTargetAtTime(1, ctx.currentTime, 0.02);
   }
   function lautstaerke(prozent) { setze(W_MASTER, master.gain, (begr(prozent, 0, 100) / 100) ** C.lautKurve, 0.02); }
+  // Regler SIGNALTÖNE (M7a.1): wirkt zusätzlich auf die Schiene signale, gleiche Kurve wie LAUTSTÄRKE
+  function signalLautstaerke(prozent) { setze(W_SIGNALE, signaleRegler.gain, (begr(prozent, 0, 100) / 100) ** C.lautKurve, 0.02); }
 
   // Pegelmesser für das Labor: Analyser an master und den Schienen (nur auf Wunsch, im Spiel nicht)
   let messer = null;
   function messerBauen() {
     if (messer) return messer;
     const an = (knoten) => { const a = ctx.createAnalyser(); a.fftSize = 1024; knoten.connect(a); return { a, d: new Float32Array(1024) }; };
-    messer = { master: an(limiter), fahrzeug: an(fahrzeug), umgebung: an(umgDuck), signale: an(signale), musik: an(musik) };
+    messer = { master: an(decke), fahrzeug: an(fahrzeug), umgebung: an(umgDuck), signale: an(signale), musik: an(musik) };
     return messer;
   }
   function spitzen(ziel) {
@@ -679,13 +822,13 @@ export function baueKlangwerk(ctx) {
 
   return {
     ctx, aufbau, puffer, zaehler, protokoll, zustand: zu, zaehl, quellen,
-    busse: { master, limiter, fahrzeug, umgebung, signale, musik, duck, umgDuck, umgFilter, umgPause, reifenFilter, reifenPause },
+    busse: { master, limiter, decke, fahrzeug, umgebung, signale, signaleRegler, musik, duck, umgDuck, umgFilter, umgPause, reifenFilter, reifenPause },
     // Werte der Knoten (für Tests: echte Parameter)
-    knoten: { surrenLp, weichLp, kiesBp, rutschBp, quietschBp, f0, saege, motorAus, motorLast, motorLp, turboGain, turbo, heulenGain, heulen, begrenzerTiefe, begrenzer, surrenGain, weichGain, kiesGain, quietschGain, quietschOsz, rutschGain, windGain, windLp, schleifenGain, schleifenBp, amTiefe },
+    knoten: { surrenLp, weichLp, kiesBp, rutschBp, quietschBp, f0, saege, motorAus, motorLast, motorLp, turboGain, turbo, heulenGain, heulen, begrenzerTiefe, begrenzer, surrenGain, weichGain, kiesGain, quietschGain, quietschOsz, rutschGain, windGain, windLp, schleifenGain, schleifenBp, amTiefe, rauhGain, unterGain, hochGain, saettigung },
     get stimmen() { let n = 0; for (const s of stimmen) if (s.an) n++; return n; },
     stimmenListe: stimmen,
-    puffernStarten, puffernSofort, aktualisiere, allesAus, lautstaerke, spitzen,
-    blowOff, knall, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote,
+    puffernStarten, puffernSofort, neuBauen, aktualisiere, allesAus, lautstaerke, signalLautstaerke, spitzen,
+    blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote,
   };
 }
 
@@ -693,7 +836,7 @@ export function baueKlangwerk(ctx) {
 // an = false: alles stumm (Tests mit ?menue=aus, ?ton=aus, audio.an = false). Fehlt Web Audio: ebenso, ohne Fehler.
 export function baueTon({ an = true } = {}) {
   const Klasse = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
-  let ctx = null, werk = null, laut = 70;
+  let ctx = null, werk = null, laut = 70, sig = 100;
   const ton = {
     an: !!(an && Klasse),
     get ctx() { return ctx; },
@@ -707,6 +850,7 @@ export function baueTon({ an = true } = {}) {
           ctx = new Klasse();
           werk = baueKlangwerk(ctx);
           werk.lautstaerke(laut);
+          werk.signalLautstaerke(sig);
           werk.puffernStarten();
         }
         if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {});
@@ -716,6 +860,7 @@ export function baueTon({ an = true } = {}) {
     anhalten() { if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {}); },
     fortsetzen() { if (ctx && ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {}); },
     lautstaerke(prozent) { laut = prozent; if (werk) werk.lautstaerke(prozent); },
+    signalLautstaerke(prozent) { sig = prozent; if (werk) werk.signalLautstaerke(prozent); }, // Regler SIGNALTÖNE (M7a.1)
   };
   // Alle Ereignisse: ohne Ton leer, Fehler im Ton stören das Spiel nie
   for (const name of ['aktualisiere', 'allesAus', 'blowOff', 'knall', 'aufprall', 'menue', 'pauseTon', 'countdown', 'go', 'checkpoint', 'verpasst', 'fanfare', 'paceNote']) {
