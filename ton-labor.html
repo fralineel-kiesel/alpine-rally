@@ -6,7 +6,8 @@
   <title>Alpine Rally – Ton-Labor</title>
   <link rel="icon" href="data:,">
   <!-- Hilfsseite (M7a, nicht im Menü verlinkt): alle Töne des Spiels einzeln anhören. Benutzt js/audio.js wie das Spiel.
-       M7a.1: Bereich "Feinschliff" (Werte live verstellen, WERTE KOPIEREN für den Chat), Regler Signaltöne. -->
+       M7a.1: Bereich "Feinschliff" (Werte live verstellen, WERTE KOPIEREN für den Chat), Regler Signaltöne.
+       M7b: Bereiche "Umgebung" (Klangart, Abstand, Seite, VORBEIFAHREN) und "Musik" (Abschnitte, Kanäle, Tempo), Regler Musik. -->
   <script type="importmap">
     { "imports": { "three": "./lib/three.module.min.js" } }
   </script>
@@ -108,6 +109,37 @@
       <label class="zeile">Signaltöne <input id="signale" type="range" min="0" max="100" step="5" value="100"><span class="wert" id="signaleW"></span></label>
       <div id="pegel"></div>
       <div id="anzeige"></div>
+    </section>
+
+    <section>
+      <h2>Umgebung (Stereo und Abstand)</h2>
+      <p class="hinweis">Die Quelle steht fest, du (der Hörer) stehst im Abstand daneben. Seite: 0° = vorne, -90° = links,
+        +90° = rechts, 180° = hinten. Kopfhörer helfen, links/rechts zu hören.</p>
+      <label class="zeile">Klangart <select id="uArt">
+        <option value="glocken">Kuhglocken</option><option value="gemurmel">Gemurmel</option>
+        <option value="jubelKurz">Jubel kurz</option><option value="jubelLang">Jubel lang</option>
+        <option value="klatschen">Klatschen</option><option value="voegel">Vögel</option>
+        <option value="brunnen">Brunnen</option><option value="boeen">Böen (Passhöhe)</option><option value="aus">– aus –</option>
+      </select><span></span></label>
+      <label class="zeile">Abstand <input id="uAbstand" type="range" min="0" max="150" step="1" value="10"><span class="wert" id="uAbstandW"></span></label>
+      <label class="zeile">Seite <input id="uSeite" type="range" min="-90" max="180" step="5" value="0"><span class="wert" id="uSeiteW"></span></label>
+      <div class="knoepfe">
+        <button id="uSpielen">ABSPIELEN</button><button id="uVorbei">VORBEIFAHREN</button><button id="uStopp">STOPP</button>
+      </div>
+      <div id="uAnzeige" class="hinweis" style="white-space:pre-wrap"></div>
+    </section>
+
+    <section>
+      <h2>Musik</h2>
+      <div class="knoepfe"><button id="mSpielen">SPIELEN</button><button id="mStopp">STOPP</button></div>
+      <label class="zeile">Abschnitt <select id="mAbschnitt"></select><span></span></label>
+      <label class="zeile">Art <select id="mArt">
+        <option value="menue">Menü</option><option value="pause">Pause</option><option value="ziel">Ziel (Ausklang)</option>
+      </select><span></span></label>
+      <label class="zeile">Tempo <input id="mTempo" type="range" min="110" max="160" step="1" value="138"><span class="wert" id="mTempoW"></span></label>
+      <label class="zeile">Musik-Pegel <input id="mPegel" type="range" min="0" max="100" step="5" value="60"><span class="wert" id="mPegelW"></span></label>
+      <div class="knoepfe" id="mKanaele"><b>Kanäle stumm</b></div>
+      <div id="mAnzeige" class="hinweis" style="white-space:pre-wrap"></div>
     </section>
 
     <section class="breit" id="feinschliff">

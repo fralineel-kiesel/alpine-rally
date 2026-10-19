@@ -5,6 +5,7 @@
 // Seit M6.1: Zwischenzeit-Meldung grün/rot je nach Vergleich mit der Referenz an diesem Checkpoint.
 // Seit M7a: Ton (js/audio.js) – erst nach dem ersten Tastendruck auf dem Titel; ohne Ton mit ?menue=aus oder ?ton=aus.
 //           Der Ton liest nur (ton.aktualisiere einmal pro Bild, Ereignisse an den bestehenden Stellen).
+// Seit M7b: Umgebungsklänge (Hörer = Kamera, Quellen einmal nach dem Aufbau der Welt) und Menü-Musik (musikModus).
 // Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
 // (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
@@ -40,6 +41,7 @@ import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
+import { umgebungsQuellen } from './umgebung.js';
 
 // Einstellungen laden (fehlt der Browser-Speicher: Standardwerte) und Sprache setzen
 ladeEinstellungen();
@@ -56,6 +58,7 @@ const menueAn = CONFIG.menue.an && new URLSearchParams(window.location.search).g
 const ton = baueTon({ an: CONFIG.audio.an && menueAn && new URLSearchParams(window.location.search).get('ton') !== 'aus' });
 ton.lautstaerke(einstellungen.lautstaerke);
 ton.signalLautstaerke(einstellungen.signale); // M7a.1: Regler SIGNALTÖNE
+ton.musikLautstaerke(einstellungen.musik); // M7b: Regler MUSIK
 
 const lade = document.getElementById('lade');
 lade.innerHTML = `${t('lade.titel')}<br><small>${t('lade.bauen')}</small>`;
@@ -166,6 +169,11 @@ const minimapMs = performance.now() - minimapT0;
 const vergleich = baueVergleich(strecke, checkpoints);
 // Pace-Notes (M4): Ansagen oben im Bild, beim Laden aus der Strecke berechnet
 const paceNotes = bauePaceNotes(strecke, netz);
+// Umgebungsklänge (M7b): Herden, Publikum, Brunnen, Vögel je Abschnitt, Passhöhe – nur gelesen, erst bei Bedarf
+// berechnet (beim Entsperren des Tons), damit das Laden der Seite gleich lang bleibt
+let tonQuellenWert = null;
+const tonQuellen = () => tonQuellenWert || (tonQuellenWert = umgebungsQuellen({ strecke, netz, kuehe, startZiel, leben }));
+ton.quellen(tonQuellen);
 
 // --- Rennzustand ---
 // bereit = vor der Startlinie (auch im Countdown), laeuft = Zeit läuft, ziel = durchs Ziel
@@ -809,6 +817,7 @@ beiAenderung((name, wert) => {
   if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
   if (name === 'lautstaerke') ton.lautstaerke(wert); // M7a: sofort, weich
   if (name === 'signale') ton.signalLautstaerke(wert); // M7a.1: Regler SIGNALTÖNE, sofort
+  if (name === 'musik') ton.musikLautstaerke(wert); // M7b: Regler MUSIK, sofort
   menue.neuZeichnen();
 });
 document.addEventListener('fullscreenchange', () => {
@@ -979,12 +988,17 @@ function paceSignal(notes, imRennen) {
 
 // --- Ton (M7a): einmal pro Bild die Zahlen aus dem Spiel an js/audio.js (keine neuen Objekte) ---
 const TON_MODUS = { rennen: 'rennen', countdown: 'countdown', pause: 'pause', ziel: 'ziel' };
+// M7b: Musik auf Titel und Menü (auch mit der Demo-Fahrt dahinter), leise in der Pause und auf dem Zielbildschirm
+const MUSIK_MODUS = { titel: 'menue', menue: 'menue', pause: 'pause', ziel: 'ziel' };
 const tonZ = {
+  musikModus: 'aus', hx: 0, hz: 0, hyaw: 0, s: 0, // M7b: Hörer = Kamera (Ort, Blickrichtung), Streckenmeter
   modus: 'aus', drehzahl: 0, gang: 0, zielGang: 0, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt', drift: 0,
   handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
 };
 function tonBild(dt) {
-  tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm
+  tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm (nur Musik)
+  tonZ.musikModus = MUSIK_MODUS[ablauf.zustand] || 'aus';
+  tonZ.hx = kam.pos.x; tonZ.hz = kam.pos.z; tonZ.hyaw = kam.yaw; tonZ.s = rennen.letztesS;
   tonZ.drehzahl = getriebe.drehzahl; tonZ.gang = getriebe.gang; tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
@@ -1012,5 +1026,6 @@ window.__alpineRally = {
   rennSchritt, lauf, stat, statResets, neuStarten,
   hud, vergleich, referenzLaden, hudSchalter, hudUmschalten, minimapMs, // M6
   ton, tonZ, tonInfo, tonEingabe, zumMenue, tonBild, paceSignal, // M7a
+  get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
 };

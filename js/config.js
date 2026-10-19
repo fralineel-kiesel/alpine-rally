@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.7a.1';
+export const VERSION = '0.7b';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1201,6 +1201,7 @@ export const CONFIG = {
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
       lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)
+      musik: 60,               // Regler MUSIK in Prozent (M7b): Menü-, Pause- und Ziel-Musik; wirkt zusätzlich, quadratisch
       signale: 100,            // Regler SIGNALTÖNE in Prozent (M7a.1): Menü, Countdown, Checkpoint, Ziel; wirkt zusätzlich, quadratisch
       sprache: 'de',           // 'de' (Deutsch) oder 'en' (Englisch)
       // Tastenbelegung: je Aktion Taste 1 und Taste 2 (null = keine). Namen = Tasten-Codes des Browsers
@@ -1222,7 +1223,7 @@ export const CONFIG = {
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
     totzonen: [0.04, 0.08, 0.12, 0.18, 0.25], // Gamepad-Totzone je Stufe (Mitte = steuerung.totzone von früher)
-    lautSchritt: 5,            // Regler LAUTSTÄRKE und SIGNALTÖNE in Schritten von ... Prozent
+    lautSchritt: 5,            // Regler LAUTSTÄRKE, SIGNALTÖNE und MUSIK in Schritten von ... Prozent
     reserviert: ['Escape', 'Enter', 'NumpadEnter', 'F3'], // diese Tasten kann man nicht belegen
     // Gamepad (fest, Standard-Belegung): Knopf-Nummern
     gamepad: {
@@ -1333,9 +1334,9 @@ export const CONFIG = {
     // Schienen (Busse) unter dem Lautstärke-Regler
     busse: {
       fahrzeug: 1.0,           // Motor, Reifen, Aufprall, Schleifen
-      umgebung: 1.0,           // Wind (M7b: Kuhglocken, Zuschauer, Vögel)
+      umgebung: 1.0,           // Wind, seit M7b auch Kuhglocken, Publikum, Vögel, Brunnen, Böen (kein eigener Regler, hängt an LAUTSTÄRKE)
       signale: 1.0,            // Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes (M7a.1: 0.8 -> 1.0; dazu Regler SIGNALTÖNE)
-      musik: 0.0,              // noch leer (M7b: Menü-Musik mit eigenem Regler)
+      musik: 1.0,              // Menü-Musik (M7b; dazu Regler MUSIK, quadratisch; vorher 0.0 = leer)
     },
     // Begrenzer am Ausgang: nichts übersteuert, auch bei Vollgas, Drift und Aufprall zugleich
     limiter: { schwelle: -6, knie: 0, verhaeltnis: 20, angriff: 0.002, loslassen: 0.12 }, // dB, -, -, s, s
@@ -1585,6 +1586,151 @@ export const CONFIG = {
           bass: [['C3', 2], ['G2', 2], ['F2', 2], ['C3', 3]],
         },
       },
+    },
+
+    // --- Raum (M7b): Stereo und Abstand für alle Umgebungsklänge. Hörer = die Kamera (Ort und Blickrichtung) ---
+    // Lautstärke nach Abstand d: bis "referenz" voll, dann referenz / (referenz + rolloff x (d - referenz)), ab "radius" 0
+    // (auf den letzten "auslauf"-Anteil des Radius weich auf 0). Dazu ein Tiefpass, der mit dem Abstand dumpfer wird.
+    raum: {
+      pan: 0.8,                // so stark links/rechts (0 = mono, 1 = ganz auf eine Seite bei 90°)
+      referenz: 6,             // Standard: bis so viele Meter voller Pegel (jede Klangart kann eigene Werte haben)
+      rolloff: 1,              // so schnell wird es leiser (1 = wie in der Natur: halber Pegel bei doppeltem Abstand)
+      auslauf: 0.15,           // auf den letzten 15 % des Radius weich auf 0
+      hinten: 0.7,             // Quelle genau hinter dem Hörer: Pegel mal so viel ...
+      hintenTiefpass: 2500,    // ... und höchstens so hell (Hz); weich über den Winkel
+      tiefpassNah: 9000,       // Helligkeit (Hz) nah ...
+      tiefpassAb: 6,           // ... bis so viele Meter ...
+      tiefpassFern: 1500,      // ... und so dumpf in ...
+      tiefpassBis: 150,        // ... so vielen Metern (dazwischen gleichmässig, logarithmisch)
+      glaetten: 0.05,          // Pan, Pegel, Tiefpass folgen so weich (Zeitkonstante s; nie ein Sprung)
+    },
+
+    // --- Umgebung (M7b, js/umgebung.js): Kuhglocken, Publikum, Vögel, Brunnen, Böen. Läuft nur im Countdown, Rennen,
+    // Zielbildschirm und in der Pause (gedämpft wie der Wind); Titel, Menü und Demo-Fahrt sind still.
+    // Pegel bei LAUTSTÄRKE 100 % (Ziele: immer unter dem Motor bei Vollgas). Kein eigener Regler.
+    umgebung: {
+      an: true,                // false = keine Umgebungsklänge
+      seed: 7007,              // feste Zufallsfolge (gleiches Fahren = gleiche Glocken, Vögel, Jubel)
+      maxStimmen: 8,           // höchstens so viele einmalige Umgebungsklänge zugleich (eigener Topf, verdrängt nie Aufprall/Signale)
+      // Kuhglocken (Treicheln): jede Herde ist eine Quelle; nur die nächsten läuten
+      kuhglocken: {
+        pegel: 0.142,          // Spitze einer Glocke bei "referenz" Metern (ca. -20 dBFS)
+        referenz: 6, radius: 70, rolloff: 1,
+        maxHerden: 2,          // so viele Herden läuten höchstens gleichzeitig (die nächsten)
+        grundton: [240, 400],  // Grundton der Glocken (Hz); jede Herde hat 3 Varianten (feste Zufallsfolge)
+        abstand: [0.5, 1.8],   // Abstand zwischen zwei Schlägen einer Herde (s) ...
+        dichteKuehe: 0.12,     // ... je Kuh mehr in der Herde so viel dichter (Verteilung rückt zum kurzen Ende)
+        doppel: 0.22,          // so oft ein kurzes Doppel "bim-bom" ...
+        doppelAbstand: [0.12, 0.24], // ... mit so viel Abstand (s)
+        pose: [0.6, 1.0, 0.08], // so oft läutet eine Kuh, wenn sie dran ist: stehend, grasend, liegend (0..1)
+        aufgeschreckt: 25,     // Hörer näher als so viele Meter: Herde läutet dichter ...
+        aufgeschrecktFaktor: 1.5, // ... um so viel (nur Klang)
+        // Klang (einmal berechnet, Grundton 300 Hz, im Spiel per Tempo auf die Tonhöhe gebracht): Teiltöne [Verhältnis, Pegel, Abklingen s]
+        klang: [
+          { teile: [[1, 1, 0.16], [2.3, 0.55, 0.09], [3.9, 0.32, 0.055]], rasseln: 0.12 },
+          { teile: [[1, 1, 0.15], [2.08, 0.5, 0.1], [3.62, 0.3, 0.05]], rasseln: 0.16 },
+          { teile: [[1, 1, 0.17], [2.55, 0.45, 0.085], [4.2, 0.25, 0.05]], rasseln: 0.1 },
+        ],
+      },
+      // Publikum an Start, Ziel und den drei Fan-Spots. Orte: Meter ab der Linie (Start/Ziel) bzw. aus leben.fans.spots
+      publikum: {
+        punktAbstand: 25,      // Klangpunkte alle so viele Meter entlang der Strasse (der nächste gilt)
+        orte: {
+          start: { staerke: 1.0, von: -70, bis: 70 },
+          ziel: { staerke: 1.0, von: -70, bis: 350 },
+          kehren: { staerke: 0.6 }, pass: { staerke: 0.8 }, alm: { staerke: 0.5 },
+        },
+        gemurmel: {
+          pegel: 0.0222,       // RMS des Gemurmels bei "referenz" Metern (ca. -36 dBFS bei Stärke 1)
+          referenz: 10, radius: 80, rolloff: 1,
+          maxOrte: 2,          // höchstens so viele Orte murmeln gleichzeitig (die nächsten)
+          baender: [300, 800, 2200], // Stimmen-Bänder (Hz)
+          lfo: [0.2, 1.3],     // Pegel schwankt mit so langsamen Wellen (Hz)
+          schleife: 4,         // Länge der Schleife (s), nahtlos überblendet
+        },
+        jubel: {
+          pegel: 0.178,        // Spitze bei "referenz" Metern (ca. -18 dBFS)
+          referenz: 10, radius: 160, rolloff: 1,
+          kurz: 2.4, lang: 5.2, // Dauer (s): beim Vorbeifahren, bei GO, an der Ziellinie / bei neuer Bestzeit
+          vorlauf: 25,         // Vorbeifahren: Jubel, wenn das Auto so viele Meter vor dem Fan-Spot ist ...
+          sperre: 20,          // ... höchstens alle so viele Sekunden pro Ort
+          go: 1.15, ziel: 1.3, best: 1.2, // so viel kräftiger bei GO, an der Ziellinie, bei neuer Bestzeit
+          gleiter: 14,         // so viele "Ooh/Yeah"-Rufe (Sägezahn durch Formantfilter) in der langen Welle
+        },
+        klatschen: {
+          pegel: 0.44,         // eigener Ausbruch an der Ziellinie (Spitze bei referenz; RMS ca. -28 dBFS)
+          rate: [25, 40],      // Klatscher pro Sekunde
+          band: [1500, 3000],  // Bandpass (Hz)
+          dauer: 2.2,          // Länge des Ausbruchs (s)
+        },
+      },
+      // Vögel: kurze Zwitscher-Laute (8 Arten) seitlich vom Hörer; Dichte je Abschnitt (track.js), weich überblendet
+      voegel: {
+        pegel: 0.062,          // Spitze bei "referenz" Metern (ca. -26 dBFS)
+        referenz: 15, radius: 70, rolloff: 1,
+        abstand: [3, 7],       // Abstand zwischen zwei Rufen bei Dichte 1 (s)
+        seitlich: [10, 40],    // so weit links/rechts vom Hörer (m) ...
+        laengs: [5, 25],       // ... und so weit vor/hinter ihm
+        dichteFaktor: 1,       // alle Abschnitte mal so viel (Ton-Labor: Vögel-Dichte)
+        tempoDaempfung: 0.7,   // je schneller, desto weniger Rufe: Dichte x (1 - Tempo / hoechstTempo x diesem Wert)
+        hoechstTempo: 50,      // m/s (180 km/h)
+        ueberblendung: 40,     // an den Abschnittsgrenzen so weich (m)
+        dichte: {              // je Abschnitt (Name wie in track.js; fehlt einer, gilt 0.5)
+          'Start im Tal': 0.7, 'Talabschnitt': 1.0, 'Waldstück': 1.0, 'Kehrengruppe': 0.5, 'Felswand 1': 0,
+          'Almweg': 0.7, 'Passhöhe': 0.15, 'Wiesenweg': 1.0, 'Abfahrt': 0.4, 'Zielgerade': 0.6,
+        },
+      },
+      // Brunnen auf der Alpweide (leben.wiesenweg.brunnen): Plätschern aus der Röhre
+      brunnen: {
+        pegel: 0.0176,         // RMS bei "referenz" Metern (ca. -38 dBFS)
+        referenz: 4, radius: 60, rolloff: 0.6, // (leiser Abfall: der Brunnen liegt 31 m neben der Strasse)
+        schleife: 3,           // Länge der Schleife (s)
+        tropfen: [14, 26],     // Tropfen ("Blubb") pro Sekunde
+      },
+      // Windböen auf der Passhöhe (unabhängig vom Tempo, zusätzlich zum Fahrtwind)
+      boeen: {
+        pegel: 0.032,          // RMS bei voller Stärke (ca. -30 dBFS)
+        abschnitt: 'Passhöhe', // Abschnitt aus track.js: dort voll ...
+        blende: 80,            // ... davor und danach so viele Meter weich ein und aus
+        rauf: [1.5, 3], runter: [2, 4], pause: [2, 6], // Böe: Anschwellen, Abschwellen, Pause (s)
+        spitze: [0.65, 1],     // so stark wird eine Böe (Anteil) ...
+        grund: 0.3,            // ... und so viel bleibt dazwischen
+        tiefpass: [420, 900],  // Helligkeit zwischen den Böen ... in der Böe (Hz)
+        heulen: 0.28,          // leiser Heulton (Anteil) ...
+        heulenTon: [300, 700], // ... wandert langsam zwischen diesen Tonhöhen (Hz) ...
+        heulenGuete: 22,       // ... schmal (Güte des Bandpasses)
+      },
+    },
+
+    // --- Musik (M7b, js/musik.js und js/musikstueck.js): eigenes Stück im Stil 80er-Arcade-Rally (a-Moll, 76 Takte) ---
+    // Läuft auf Titel und Menü, leise in der Pause und auf dem Zielbildschirm; nie im Countdown und im Rennen.
+    musik: {
+      an: true,                // false = keine Musik
+      bpm: 138,                // Tempo (Schläge pro Minute; ein Takt = 4 Schläge)
+      pegel: 0.9,              // ganze Musik (nach dem Kompressor)
+      lead: 0.26,              // Melodie (Pulswelle) ...
+      arp: 0.06,               // Arpeggio / Gegenstimme (leiser als die Melodie) ...
+      bass: 0.075,             // Bass ...
+      schlagzeug: 0.25,        // Schlagzeug (Kick, Snare, Hi-Hat)
+      tiefpass: 3800,          // sanfter Tiefpass auf der ganzen Musik (Hz): runde Flanken wie bei einem 80er-Computer, keine Klicks
+      lead25: 0.7,             // Melodie mit 25 %-Puls (Strophe) so laut (Anteil von "lead") ...
+      lead125: 0.85,           // ... mit 12.5 %-Puls (Refrain) so laut (schmaler Puls = spitzere Flanken)
+      kompressor: { eingang: 0.42, schwelle: -26, knie: 6, verhaeltnis: 5 }, // sanft auf der ganzen Musik (Pegel davor, dB, dB, -; der Browser gleicht den Pegel selbst aus)
+      decke: { weich: 0.3, max: 0.385 }, // dahinter: bis 0.3 unverändert, nie über 0.385 (-8.3 dBFS) – Spitze bleibt unter -8 dBFS
+      echo: { zeit: 3 / 16, rueck: 0.3, pegel: 0.28, tiefpass: 2600 }, // Echo nur auf der Melodie: Zeit (Takte), Rückkopplung, Pegel, Hz
+      ausblenden: 1.0,         // STARTEN: so schnell ausblenden (s)
+      einblenden: 0.8,         // Menü: so schnell einblenden (s)
+      pauseBlende: 0.4,        // Pause: ein- und ausblenden (s)
+      pauseFilter: 1200,       // Pause: Tiefpass (Hz) ...
+      pausePegel: 0.5,         // ... und so leise (Anteil)
+      zielPegel: 0.7,          // Zielbildschirm: so leise (Anteil) ...
+      zielNach: 1.0,           // ... beginnt so viele Sekunden nach dem Erscheinen ...
+      zielNachBestzeit: 5.0,   // ... bei neuer Bestzeit erst nach der langen Fanfare
+      duckSignal: -4,          // Menü-Bestätigen/Zurück/Fehler, Checkpoint- und Ziel-Signale: Musik kurz so viel leiser (dB) ...
+      duckDauer: 0.15,         // ... so lange (s)
+      vorlauf: 0.4,            // Noten so weit im Voraus planen (s) ...
+      planenAlle: 80,          // ... alle so viele ms
+      maxOszillatoren: 14,     // höchstens so viele Töne gleichzeitig
     },
 
     // Nur für tools/ton-test.mjs: erwartete Lautstärke (RMS) der Klänge, offline gerechnet (Bereich [min, max])

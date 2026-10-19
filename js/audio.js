@@ -6,15 +6,17 @@
 // Schienen (Busse):
 //   master (Regler LAUTSTÄRKE, quadratisch) -> Limiter -> Lautsprecher
 //     fahrzeug: Motor und Reifen (beide über das Ducking), Aufprall, Schleifen
-//     umgebung: Fahrtwind (M7b: Kuhglocken, Zuschauer, Vögel); mit Pausen-Tiefpass und Ducking
+//     umgebung: Fahrtwind; seit M7b Kuhglocken, Publikum, Vögel, Brunnen, Böen (js/umgebung.js); mit Pausen-Tiefpass und Ducking
 //     signale:  Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes (M7a.1: dazu Regler SIGNALTÖNE, quadratisch)
-//     musik:    noch leer (M7b)
+//     musik:    Menü-Musik (M7b, js/musik.js), mit Regler MUSIK (quadratisch) und Ducking unter den Signalen
 // Der Ton liest nur Zahlen aus dem Spiel (aktualisiere() einmal pro Bild, Ereignisse einzeln) und ändert nie etwas daran.
 // Gibt es kein Web Audio (oder ?ton=aus, ?menue=aus, audio.an = false), tun alle Aufrufe nichts: das Spiel läuft stumm.
 // Alle Werte: config.js, Block "audio". Probehören: ton-labor.html (gleicher Code).
 
 import { CONFIG } from './config.js';
 import { zufall } from './util.js';
+import { baueUmgebung, umgebungRezepte } from './umgebung.js';
+import { bauePlayer, musikRezepte } from './musik.js';
 
 const begr = (w, a, b) => (w < a ? a : w > b ? b : w);
 const mische = (a, b, t) => a + (b - a) * t;
@@ -297,7 +299,8 @@ export function baueKlangwerk(ctx) {
   const fahrzeug = gain(C.busse.fahrzeug, master);
   const signaleRegler = gain(1, master);           // Regler SIGNALTÖNE (M7a.1)
   const signale = gain(C.busse.signale, signaleRegler);
-  const musik = gain(C.busse.musik, master); // M7b
+  const musikRegler = gain(1, master);              // Regler MUSIK (M7b)
+  const musik = gain(C.busse.musik, musikRegler);
   const umgDuck = gain(1, master), umgPause = gain(1, umgDuck);
   const umgFilter = filter('lowpass', 20000, 0.7, umgPause);
   const umgebung = gain(C.busse.umgebung, umgFilter);
@@ -374,6 +377,7 @@ export function baueKlangwerk(ctx) {
     return q;
   }
   const auftraege = [
+    ...musikRezepte(rate, zufall(C.seed + 3)), // M7b: Schlagzeug der Musik zuerst (die Musik beginnt gleich nach dem Entsperren)
     ['rauschen', () => rauschRezept(rate, 2, rndP), (b) => {
       dauerQuelle(b, rauhBp, 0.1); dauerQuelle(b, surrenLp, 0.37); dauerQuelle(b, weichLp, 0.81);
       dauerQuelle(b, quietschBp, 1.13); dauerQuelle(b, schleifenBp, 1.41); dauerQuelle(b, windLp, 1.77);
@@ -390,6 +394,7 @@ export function baueKlangwerk(ctx) {
     ...AU.materialien.map((m) => [`aufprall-${m}`, () => klangRezept(rate, AU.klang[m], rndP)]),
     ['fanfareKurz', () => fanfareRezept(rate, S.fanfare, S.fanfare.kurz)],
     ['fanfareLang', () => fanfareRezept(rate, S.fanfare, S.fanfare.lang)],
+    ...umgebungRezepte(rate, zufall(C.umgebung.seed + 2)), // M7b: Glocken, Vögel, Gemurmel, Brunnen, Jubel, Klatschen
   ];
   const aufbau = { fertig: false, ms: 0, haeppchen: 0, laengstesMs: 0, start: 0, ende: 0 };
   let auftrag = 0, rezept = null, buf = null, daten = null, pos = 0;
@@ -399,14 +404,17 @@ export function baueKlangwerk(ctx) {
     while (auftrag < auftraege.length) {
       if (!rezept) {
         rezept = auftraege[auftrag][1]();
-        buf = ctx.createBuffer(1, rezept.laenge, rate);
+        buf = ctx.createBuffer(1, rezept.laenge, rezept.rate || rate); // (M7b: manche Klänge mit halber Abtastrate)
         daten = buf.getChannelData(0); pos = 0;
       }
-      const bis = Math.min(rezept.laenge, pos + 1024);
-      rezept.fuelle(daten, pos, bis);
-      pos = bis;
-      if (pos >= rezept.laenge) {
+      const ende = rezept.laenge + (rezept.extra || 0); // extra (M7b): Nachlauf einer Schleife, auch in Häppchen
+      if (pos < ende) { // (M7b: Blöcke von 512 Samples, "fertig" in einem eigenen Schritt – jedes Häppchen bleibt kurz)
+        const bis = Math.min(ende, pos + 512);
+        rezept.fuelle(daten, pos, bis);
+        pos = bis;
+      } else {
         if (rezept.fertig) rezept.fertig(daten);
+        if (rezept.schleifeEnde) buf.schleifeEnde = rezept.schleifeEnde; // M7b: Ende einer nahtlosen Schleife (Sample)
         const [name, , dann] = auftraege[auftrag];
         puffer[name] = buf;
         if (dann) dann(buf);
@@ -432,9 +440,10 @@ export function baueKlangwerk(ctx) {
     if (was === 'saettigung') { saettigung.curve = saettigungsKurve(M); return true; }
     const a = auftraege.find((x) => x[0] === was);
     if (!a || !aufbau.fertig) return false;
-    const rz = a[1](), b = ctx.createBuffer(1, rz.laenge, rate), d = b.getChannelData(0);
-    rz.fuelle(d, 0, rz.laenge);
+    const rz = a[1](), b = ctx.createBuffer(1, rz.laenge, rz.rate || rate), d = b.getChannelData(0);
+    rz.fuelle(d, 0, rz.laenge + (rz.extra || 0));
     if (rz.fertig) rz.fertig(d);
+    if (rz.schleifeEnde) b.schleifeEnde = rz.schleifeEnde;
     puffer[was] = b;
     return true;
   }
@@ -452,7 +461,7 @@ export function baueKlangwerk(ctx) {
     W_BEGR = 9, W_BEGRG = 10, W_HEUL = 11, W_HEULHZ = 12, W_SURR = 13, W_SURRLP = 14, W_WEICH = 15, W_WEICHLP = 16,
     W_KIES = 17, W_KIESRATE = 18, W_KIESBP = 19, W_QUIETSCH = 20, W_QHZ = 21, W_QBP = 22, W_RUTSCH = 23, W_WIND = 24,
     W_WINDLP = 25, W_SCHL = 26, W_SCHLHZ = 27, W_SCHLQ = 28, W_RFILTER = 29, W_RPAUSE = 30, W_UFILTER = 31, W_UPAUSE = 32,
-    W_MASTER = 33, W_HOCH = 34, W_UNTER = 35, W_SIGNALE = 36;
+    W_MASTER = 33, W_HOCH = 34, W_UNTER = 35, W_SIGNALE = 36, W_MUSIK = 37;
 
   // --- Einmalige Klänge: Stimmen (höchstens maxStimmen gleichzeitig, die älteste wird ausgeblendet) ---
   const stimmen = [];
@@ -515,6 +524,10 @@ export function baueKlangwerk(ctx) {
     return belege(art, o, g, null, wann);
   }
 
+  // --- M7b: Umgebung (eigener Stimmen-Topf) und Musik ---
+  const umgebungWerk = baueUmgebung(ctx, umgebung, puffer, merke);
+  const musikWerk = bauePlayer(ctx, musik, puffer, { offline: typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext });
+
   // --- Zustand (nur Zahlen, im Bildtakt keine neuen Objekte) ---
   const z0 = {
     uhr: 0, druck: 0, gasLangsam: 0, pedalLangsam: 0, blowOffBereit: true, knallBereit: true, knallSperre: -1e9,
@@ -525,6 +538,7 @@ export function baueKlangwerk(ctx) {
     // Ziele (was zuletzt gesetzt wurde), für Tests und das Labor
     f0: 0, filter: 0, motorPegel: 0, motorAn: 0, turbo: 0, begrenzer: 0, heulen: 0, heulenHz: 0, hoch: 0, surren: 0, weich: 0, kies: 0,
     quietschen: 0, rutschen: 0, wind: 0, schleifen: 0, pause: false, modus: 'aus', duck: 1,
+    bestzeitUhr: -1e9, // M7b: wann zuletzt die lange Fanfare kam (Ziel-Musik wartet dann)
   };
   const zu = { ...z0 };
   let countdownStimme = null;
@@ -553,6 +567,9 @@ export function baueKlangwerk(ctx) {
   function aktualisiere(dt, z) {
     zu.uhr += dt;
     zu.modus = z.modus;
+    // M7b: Musik folgt dem musikModus (Menü, Pause, Ziel; aus im Countdown und Rennen), Umgebung dem Modus und der Kamera
+    musikWerk.folge(z.musikModus || 'aus', dt, zu.uhr - zu.bestzeitUhr < 0.5);
+    umgebungWerk.aktualisiere(dt, z.modus, z);
     if (z.modus === 'pause') {
       // Pause: Motor stumm, Reifen und Umgebung gedämpft; nichts Neues auslösen (die Welt steht)
       setze(W_AUS, motorAus.gain, 0, C.pause.motorAus / 3); zu.motorAn = 0;
@@ -755,6 +772,7 @@ export function baueKlangwerk(ctx) {
   function menue(art, wert = 0) {
     const p = S.menue[art];
     if (!p) return;
+    if (art === 'bestaetigen' || art === 'zurueck' || art === 'fehler') musikWerk.ducke(); // M7b
     const jetzt = performance.now() / 1000;
     if (menueSperre !== null && jetzt < menueSperre) return; // gerade kam ein Pausenton (WEITER): kein Blip dazu
     if (jetzt - (menueZeit[art] ?? -1) < S.menue.sperre) return;
@@ -771,20 +789,22 @@ export function baueKlangwerk(ctx) {
   // Signale im Rennen: der Motor wird kurz leiser (Ducking), damit sie durchkommen
   const signalDuck = () => ducke(S.duckDb, S.duckDauer, S.duckZurueck, false);
   function countdown() { merke('countdown'); countdownStimme = piep('countdown', S.countdown); signalDuck(); }
-  function go() { merke('go'); countdownStimme = piep('countdown', S.go); signalDuck(); }
+  function go() { merke('go'); countdownStimme = piep('countdown', S.go); signalDuck(); umgebungWerk.jubel('start', 'go'); } // M7b: Jubel bei GO
   // Checkpoint: u < 0 schneller, u > 0 langsamer, 0 gleich / keine Referenz (dieselbe Entscheidung wie Meldung und Punkte)
   function checkpoint(u) {
     const p = S.checkpoint, toene = u < 0 ? p.schneller : u > 0 ? p.langsamer : p.neutral;
     merke(u < 0 ? 'cp-schneller' : u > 0 ? 'cp-langsamer' : 'cp-neutral', toene[1] - toene[0]);
     piep('checkpoint', p, 0, toene[0]);
     piep('checkpoint', p, p.dauer + p.luecke, toene[1]);
-    signalDuck();
+    signalDuck(); musikWerk.ducke();
   }
   function verpasst() { merke('cp-verpasst'); piep('verpasst', S.verpasst); signalDuck(); }
   function fanfare(lang) {
     merke(lang ? 'fanfare-lang' : 'fanfare-kurz');
     spiele('fanfare', lang ? 'fanfareLang' : 'fanfareKurz', signale, S.fanfare.pegel * S.pegel);
-    signalDuck();
+    signalDuck(); musikWerk.ducke();
+    // M7b: Publikum am Ziel – an der Linie Jubel und Klatschen, bei neuer Bestzeit der lange Jubel (Ziel-Musik wartet)
+    if (lang) { zu.bestzeitUhr = zu.uhr; umgebungWerk.jubel('ziel', 'lang'); } else { umgebungWerk.jubel('ziel', 'ziel'); umgebungWerk.klatschen('ziel'); }
   }
   function paceNote(anzahl = 1) {
     for (let k = 0; k < anzahl; k++) { merke('paceNote'); piep('paceNote', S.paceNote, k * S.paceNote.abstand); }
@@ -793,6 +813,7 @@ export function baueKlangwerk(ctx) {
   function allesAus() {
     allesNull(0.03);
     for (const s of stimmen) if (s.an) abwuergen(s);
+    umgebungWerk.allesAus(); // M7b
     const uhr = zu.uhr;
     Object.assign(zu, z0);
     zu.uhr = uhr;
@@ -801,6 +822,8 @@ export function baueKlangwerk(ctx) {
   function lautstaerke(prozent) { setze(W_MASTER, master.gain, (begr(prozent, 0, 100) / 100) ** C.lautKurve, 0.02); }
   // Regler SIGNALTÖNE (M7a.1): wirkt zusätzlich auf die Schiene signale, gleiche Kurve wie LAUTSTÄRKE
   function signalLautstaerke(prozent) { setze(W_SIGNALE, signaleRegler.gain, (begr(prozent, 0, 100) / 100) ** C.lautKurve, 0.02); }
+  // Regler MUSIK (M7b): wirkt zusätzlich auf die Schiene musik, gleiche Kurve wie LAUTSTÄRKE
+  function musikLautstaerke(prozent) { setze(W_MUSIK, musikRegler.gain, (begr(prozent, 0, 100) / 100) ** C.lautKurve, 0.02); }
 
   // Pegelmesser für das Labor: Analyser an master und den Schienen (nur auf Wunsch, im Spiel nicht)
   let messer = null;
@@ -822,12 +845,13 @@ export function baueKlangwerk(ctx) {
 
   return {
     ctx, aufbau, puffer, zaehler, protokoll, zustand: zu, zaehl, quellen,
-    busse: { master, limiter, decke, fahrzeug, umgebung, signale, signaleRegler, musik, duck, umgDuck, umgFilter, umgPause, reifenFilter, reifenPause },
+    busse: { master, limiter, decke, fahrzeug, umgebung, signale, signaleRegler, musik, musikRegler, duck, umgDuck, umgFilter, umgPause, reifenFilter, reifenPause },
     // Werte der Knoten (für Tests: echte Parameter)
     knoten: { surrenLp, weichLp, kiesBp, rutschBp, quietschBp, f0, saege, motorAus, motorLast, motorLp, turboGain, turbo, heulenGain, heulen, begrenzerTiefe, begrenzer, surrenGain, weichGain, kiesGain, quietschGain, quietschOsz, rutschGain, windGain, windLp, schleifenGain, schleifenBp, amTiefe, rauhGain, unterGain, hochGain, saettigung },
     get stimmen() { let n = 0; for (const s of stimmen) if (s.an) n++; return n; },
     stimmenListe: stimmen,
-    puffernStarten, puffernSofort, neuBauen, aktualisiere, allesAus, lautstaerke, signalLautstaerke, spitzen,
+    puffernStarten, puffernSofort, neuBauen, aktualisiere, allesAus, lautstaerke, signalLautstaerke, musikLautstaerke, spitzen,
+    musik: musikWerk, umgebung: umgebungWerk, setzeQuellen: (q) => umgebungWerk.setzeQuellen(q), // M7b
     blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote,
   };
 }
@@ -836,7 +860,7 @@ export function baueKlangwerk(ctx) {
 // an = false: alles stumm (Tests mit ?menue=aus, ?ton=aus, audio.an = false). Fehlt Web Audio: ebenso, ohne Fehler.
 export function baueTon({ an = true } = {}) {
   const Klasse = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
-  let ctx = null, werk = null, laut = 70, sig = 100;
+  let ctx = null, werk = null, laut = 70, sig = 100, mus = 60, quellen = null;
   const ton = {
     an: !!(an && Klasse),
     get ctx() { return ctx; },
@@ -851,6 +875,8 @@ export function baueTon({ an = true } = {}) {
           werk = baueKlangwerk(ctx);
           werk.lautstaerke(laut);
           werk.signalLautstaerke(sig);
+          werk.musikLautstaerke(mus);
+          if (quellen) werk.setzeQuellen(typeof quellen === 'function' ? quellen() : quellen);
           werk.puffernStarten();
         }
         if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {});
@@ -861,6 +887,11 @@ export function baueTon({ an = true } = {}) {
     fortsetzen() { if (ctx && ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {}); },
     lautstaerke(prozent) { laut = prozent; if (werk) werk.lautstaerke(prozent); },
     signalLautstaerke(prozent) { sig = prozent; if (werk) werk.signalLautstaerke(prozent); }, // Regler SIGNALTÖNE (M7a.1)
+    musikLautstaerke(prozent) { mus = prozent; if (werk) werk.musikLautstaerke(prozent); }, // Regler MUSIK (M7b)
+    // Quellen der Umgebung (M7b): einmal nach dem Aufbau der Welt; q darf eine Funktion sein (wird erst beim Entsperren gerechnet)
+    quellen(q) { quellen = q; if (werk) werk.setzeQuellen(typeof q === 'function' ? q() : q); },
+    // Musik-Zustand für Tests (M7b): ohne Ton { laeuft: false }
+    musikStatus() { return werk ? werk.musik.status() : { laeuft: false, art: '', pegel: 0 }; },
   };
   // Alle Ereignisse: ohne Ton leer, Fehler im Ton stören das Spiel nie
   for (const name of ['aktualisiere', 'allesAus', 'blowOff', 'knall', 'aufprall', 'menue', 'pauseTon', 'countdown', 'go', 'checkpoint', 'verpasst', 'fanfare', 'paceNote']) {

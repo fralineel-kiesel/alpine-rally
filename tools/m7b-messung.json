@@ -1,0 +1,267 @@
+{
+ "quellen": {
+  "herden": 17,
+  "kuehe": 54,
+  "orte": [
+   {
+    "name": "start",
+    "d": 0,
+    "punkte": 6,
+    "staerke": 1
+   },
+   {
+    "name": "ziel",
+    "d": 0.00004866535582736834,
+    "punkte": 17,
+    "staerke": 1
+   },
+   {
+    "name": "kehren",
+    "d": 0.00004974665231148002,
+    "punkte": 2,
+    "staerke": 0.6
+   },
+   {
+    "name": "pass",
+    "d": 0.000013083438870019864,
+    "punkte": 4,
+    "staerke": 0.8
+   },
+   {
+    "name": "alm",
+    "d": 0.000021043765557077236,
+    "punkte": 2,
+    "staerke": 0.5
+   }
+  ],
+  "brunnen": {
+   "x": 1184.2184997495658,
+   "z": -1658.1144123335514
+  },
+  "brunnenStrasse": 31,
+  "pass": {
+   "von": 2495,
+   "bis": 2794
+  }
+ },
+ "glocken": {
+  "spitze6": -20,
+  "schwerpunkt": 407,
+  "ausklingen": [
+   0.51,
+   0.88
+  ],
+  "mittelAbstand": 1.03
+ },
+ "publikum": {
+  "gemurmel10": -36.2,
+  "jubelKurz": -18.1,
+  "jubelKurzRms": -34.1,
+  "jubelLang": -16.4,
+  "klatschenRms": -28.7,
+  "klatschenSpitze": -9.6
+ },
+ "zielMusik": {
+  "ohneBest": 0.9833333333333334,
+  "mitBest": 4.9833333333333325
+ },
+ "voegel": {
+  "spitze15": -26,
+  "je": [
+   [
+    "Start im Tal",
+    0.7,
+    0.68
+   ],
+   [
+    "Talabschnitt",
+    1,
+    1.01
+   ],
+   [
+    "Waldstück",
+    1,
+    1.01
+   ],
+   [
+    "Kehrengruppe",
+    0.5,
+    0.48
+   ],
+   [
+    "Felswand 1",
+    0,
+    0
+   ],
+   [
+    "Almweg",
+    0.7,
+    0.68
+   ],
+   [
+    "Felswand 1",
+    0,
+    0
+   ],
+   [
+    "Passhöhe",
+    0.15,
+    0.13
+   ],
+   [
+    "Wiesenweg",
+    1,
+    1.01
+   ],
+   [
+    "Abfahrt",
+    0.4,
+    0.41
+   ],
+   [
+    "Zielgerade",
+    0.6,
+    0.61
+   ]
+  ]
+ },
+ "brunnen": {
+  "r4": -38.7,
+  "r31": -53
+ },
+ "boeen": {
+  "rms": -29.8,
+  "spanne": 13.7
+ },
+ "mix": {
+  "motor": -10.6,
+  "einzel": {
+   "Kuhglocke (6 m)": {
+    "rms": -39.1,
+    "spitze": -20,
+    "gegenMotor": -28.6
+   },
+   "Gemurmel (10 m)": {
+    "rms": -36.3,
+    "spitze": -23.6,
+    "gegenMotor": -25.7
+   },
+   "Jubel kurz (10 m)": {
+    "rms": -33.3,
+    "spitze": -15.8,
+    "gegenMotor": -22.7
+   },
+   "Jubel lang (10 m)": {
+    "rms": -33.8,
+    "spitze": -16.4,
+    "gegenMotor": -23.2
+   },
+   "Klatschen (10 m)": {
+    "rms": -29.5,
+    "spitze": -9.6,
+    "gegenMotor": -18.9
+   },
+   "Vogel (15 m)": {
+    "rms": -29.8,
+    "spitze": -26,
+    "gegenMotor": -19.2
+   },
+   "Brunnen (4 m)": {
+    "rms": -38.8,
+    "spitze": -24.8,
+    "gegenMotor": -28.3
+   },
+   "Böen (voll)": {
+    "rms": -29.2,
+    "spitze": -10.5,
+    "gegenMotor": -18.7
+   }
+  },
+  "spitzeAlle": 0.924
+ },
+ "musik": [
+  {
+   "name": "Intro",
+   "rms": -22.8,
+   "spitze": -11,
+   "schwer": 198,
+   "ueber2k": 1
+  },
+  {
+   "name": "A",
+   "rms": -20.6,
+   "spitze": -9.3,
+   "schwer": 670,
+   "ueber2k": 5.7
+  },
+  {
+   "name": "B",
+   "rms": -20.3,
+   "spitze": -9.4,
+   "schwer": 822,
+   "ueber2k": 6.7
+  },
+  {
+   "name": "C",
+   "rms": -21.7,
+   "spitze": -9.5,
+   "schwer": 1000,
+   "ueber2k": 16.4
+  },
+  {
+   "name": "A'",
+   "rms": -20.7,
+   "spitze": -9,
+   "schwer": 730,
+   "ueber2k": 5.8
+  },
+  {
+   "name": "Break",
+   "rms": -20.9,
+   "spitze": -12.7,
+   "schwer": 232,
+   "ueber2k": 1.3
+  },
+  {
+   "name": "B'",
+   "rms": -20.3,
+   "spitze": -9.4,
+   "schwer": 822,
+   "ueber2k": 6.7
+  },
+  {
+   "name": "C'",
+   "rms": -21.7,
+   "spitze": -9.5,
+   "schwer": 1000,
+   "ueber2k": 16.4
+  },
+  {
+   "name": "D",
+   "rms": -21.5,
+   "spitze": -9.1,
+   "schwer": 971,
+   "ueber2k": 15.3
+  },
+  {
+   "name": "C''",
+   "rms": -21.5,
+   "spitze": -9.1,
+   "schwer": 985,
+   "ueber2k": 15.7
+  },
+  {
+   "name": "Rückführung",
+   "rms": -20.8,
+   "spitze": -9.7,
+   "schwer": 633,
+   "ueber2k": 6
+  }
+ ],
+ "ducking": {
+  "tiefe": -4,
+  "signal": -8.7,
+  "musikRms": -21.6,
+  "abstand": 13
+ }
+}

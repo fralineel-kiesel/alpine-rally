@@ -102,7 +102,8 @@ console.log('(a) Entsperren, ?ton=aus, ?menue=aus, ohne Web Audio');
   const aufbau = await A(p, () => window.__alpineRally.ton.werk.aufbau);
   pruefe(vor.an && vor.z === 'keiner' && vor2 === 'keiner' && vor.ab === 'titel', 'Titel: noch kein AudioContext (auch nach ein paar Bildern)', `${vor.z}`);
   pruefe(nach.z === 'running' && nach.ab === 'menue' && nach.blip === 1, 'nach dem ersten Tastendruck: AudioContext läuft, ein Blip', `${nach.z}, Blip ${nach.blip}`);
-  pruefe(aufbau.fertig && aufbau.laengstesMs < 15 && aufbau.ms < 300, 'Puffer nach dem Entsperren in Häppchen gebaut (jedes < 15 ms, zusammen < 300 ms)',
+  // M7b: Grenze 300 -> 500 ms (Budget für Umgebung und Musik: höchstens +200 ms gegenüber M7a.1)
+  pruefe(aufbau.fertig && aufbau.laengstesMs < 15 && aufbau.ms < 500, 'Puffer nach dem Entsperren in Häppchen gebaut (jedes < 15 ms, zusammen < 500 ms)',
     `${aufbau.ms.toFixed(0)} ms Rechenzeit in ${aufbau.haeppchen} Häppchen, längstes ${aufbau.laengstesMs.toFixed(1)} ms, fertig ${(aufbau.ende - aufbau.start).toFixed(0)} ms nach dem Tastendruck`);
   console.log(`  ZAHL Puffer-Aufbau: ${aufbau.ms.toFixed(0)} ms Rechenzeit, ${aufbau.haeppchen} Häppchen, längstes ${aufbau.laengstesMs.toFixed(1)} ms`);
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
