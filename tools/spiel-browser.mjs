@@ -20,11 +20,12 @@ async function ladePlaywright() {
   throw new Error('Playwright nicht gefunden (npm i -g playwright)');
 }
 
-const TYPEN = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
+const TYPEN = { '.html': 'text/html', '.json': 'application/json', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
 
 // Startet Server + Browser. wurzel: Projektordner (Standard: dieser).
 // Ergebnis: { page, ladeSpiel(), schliessen() }
-export async function starteSpiel({ wurzel = WURZEL, breite = 640, hoehe = 360 } = {}) {
+// args (M7a): weitere Schalter für Chromium (z. B. --autoplay-policy=no-user-gesture-required für den Ton-Test)
+export async function starteSpiel({ wurzel = WURZEL, breite = 640, hoehe = 360, args = [] } = {}) {
   const server = http.createServer((req, res) => {
     const datei = path.join(wurzel, decodeURIComponent(new URL(req.url, 'http://x').pathname));
     if (!datei.startsWith(wurzel) || !fs.existsSync(datei) || fs.statSync(datei).isDirectory()) { res.writeHead(404); res.end(); return; }
@@ -35,7 +36,7 @@ export async function starteSpiel({ wurzel = WURZEL, breite = 640, hoehe = 360 }
   const url = `http://localhost:${server.address().port}`;
   const pw = await ladePlaywright();
   const { chromium } = pw.chromium ? pw : pw.default;
-  const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', ...args] });
   const page = await browser.newPage({ viewport: { width: breite, height: hoehe } });
   const fehler = [];
   page.on('pageerror', (e) => { fehler.push(String(e)); console.log('Fehler im Spiel:', String(e)); });

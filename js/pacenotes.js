@@ -491,7 +491,8 @@ export function bauePaceNotes(strecke, netz) {
   // Ergebnis für das HUD (immer dieselben Objekte)
   const sichtbare = [];
   for (let z = 0; z < P.maxKacheln + 2; z++) sichtbare.push({ nr: -1, alpha: 0, x: 0 });
-  const anzeige = { an, kacheln: sichtbare, anzahl: 0, alle: kacheln, notes, naechste: 0 };
+  // erschienen (M7a): zählt jede Kachel, die neu auftaucht (für das kurze Signal; zählt nur hoch)
+  const anzeige = { an, kacheln: sichtbare, anzahl: 0, alle: kacheln, notes, naechste: 0, erschienen: 0 };
   const mitteX = CONFIG.bild.breite / 2;
 
   function zurueck() {
@@ -552,7 +553,10 @@ export function bauePaceNotes(strecke, netz) {
       let z = 0, x = 0;
       for (let i = 0; i < K; i++) {
         const vorher = alpha[i];
-        if (status[i] === 1 && sichtbar) alpha[i] = Math.min(1, alpha[i] + dt / P.einblenden);
+        if (status[i] === 1 && sichtbar) {
+          alpha[i] = Math.min(1, alpha[i] + dt / P.einblenden);
+          if (vorher === 0 && alpha[i] > 0) anzeige.erschienen++; // M7a: Kachel taucht neu auf
+        }
         else if (alpha[i] > 0) alpha[i] = Math.max(0, alpha[i] - dt / P.ausblenden);
         if (alpha[i] <= 0 || z >= sichtbare.length) continue;
         const k = kacheln[i];

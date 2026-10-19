@@ -411,7 +411,7 @@ export function baueSeiten(api) {
     // neue Bestzeit: Titel blinkt (gelb / grün); sonst wird die Seite nicht neu gezeichnet
     get blinkt() { const e = erg(); return !!(e && e.neueBest); },
     titelFarbe: (blinkAn) => (erg() && erg().neueBest && !blinkAn ? RA.farbeSchneller : M.farbeTitel),
-    zurueck: () => {}, // Esc / B tun hier nichts (keine Pause im Zielbildschirm)
+    zurueck: () => false, // Esc / B tun hier nichts (keine Pause im Zielbildschirm, auch kein Ton)
     kurztaste: (code) => { const T = einstellungen.tasten.zurueck; if (code === T[0] || code === T[1]) api.neuStarten(); },
     eintraege: () => {
       const e = erg();

@@ -692,7 +692,7 @@ export function baueStartZiel(szene, strecke, welt, { pflanzen, rand, kuehe }) {
       buesche.push({ x: p.x, z: p.z, gras: rnd() < 0.3 });
     }
   }
-  const hindernisseBaeume = [...tannen, ...laub].map((t) => ({ x: t.x, z: t.z, r: CONFIG.kollision.stammRadius }));
+  const hindernisseBaeume = [...tannen, ...laub].map((t) => ({ x: t.x, z: t.z, r: CONFIG.kollision.stammRadius, ton: 'baum' }));
 
   // --- Jedes Bild: Winken, weit Entferntes nicht zeichnen ------------------------------------
   let zeit = 0;

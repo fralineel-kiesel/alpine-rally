@@ -19,6 +19,8 @@
 // M5b: titelFarbe?(blinkAn) = eigene Farbe der Titelzeile (z. B. blinkend, mit blinkt: true),
 //      kurztaste?(code) = Taste, die sonst nichts tut, auf dieser Seite auswerten (z. B. R = Neu starten); true = erledigt
 // Seiten werden nur bei Änderung neu gezeichnet (auf ein eigenes Bild), sonst nur kopiert.
+// M7a: klang(art, wert) = Menü-Ton (tick, bestaetigen, zurueck, regler mit Wert 0..1, fehler); hängt an denselben
+//      Aufrufen für alle Eingabearten. Ein seite.zurueck(), das false liefert, tut nichts (dann auch kein Ton).
 
 import { CONFIG } from './config.js';
 import { pixelText, textBreite, zeichneTafel } from './pixel.js';
@@ -29,7 +31,7 @@ const ZEIGER = '▶';
 
 // tasteBelegen(aktion, platz, code) -> Ergebnis wie einstellungen.belegeTaste, tasteLesen(aktion, platz) -> Code,
 // tasteName(code) und aktionName(aktion) -> Text für die Anzeige
-export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
+export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, klang = () => {} }) {
   const M = CONFIG.menue;
   const leinwand = () => {
     const c = document.createElement('canvas');
@@ -97,6 +99,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     if (!o || nr === o.wahl) return;
     o.wahl = nr;
     schmutzig = true;
+    klang('tick');
   }
   function schritt(r) {
     const o = oben();
@@ -119,16 +122,19 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
 
   function aendern(e, r) {
     if (!e) return;
-    if (e.typ === 'umschalter') e.setzen(!e.lesen());
+    if (e.typ === 'umschalter') { e.setzen(!e.lesen()); klang('bestaetigen'); }
     else if (e.typ === 'auswahl') {
       const opt = e.optionen();
       const i = Math.max(0, opt.findIndex((o) => o.wert === e.lesen()));
       e.setzen(opt[(i + r + opt.length) % opt.length].wert);
+      klang('bestaetigen');
     } else if (e.typ === 'regler') {
       const w = Math.min(e.max, Math.max(e.min, e.lesen() + r * e.schritt));
-      e.setzen(w);
+      if (w !== e.lesen()) { e.setzen(w); klang('regler', (w - e.min) / (e.max - e.min)); }
     } else if (e.typ === 'taste') {
-      oben().platz = r > 0 ? 1 : 0;
+      const p = r > 0 ? 1 : 0;
+      if (oben().platz !== p) klang('tick');
+      oben().platz = p;
     } else return;
     schmutzig = true;
   }
@@ -136,27 +142,29 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
   function bestaetigen() {
     const o = oben();
     if (!o) return;
-    if (o.seite.zeichne) { if (o.seite.taste) o.seite.taste(); return; }
+    if (o.seite.zeichne) { if (o.seite.taste) { o.seite.taste(); klang('bestaetigen'); } return; }
     const e = eintrag();
     if (!e) return;
-    if (e.typ === 'aktion') e.aktion();
+    // (der Ton kommt nach der Aktion: wird dabei weitergefahren, hat der Pausenton Vorrang)
+    if (e.typ === 'aktion') { e.aktion(); klang('bestaetigen'); }
     else if (e.typ === 'zurueck') zurueck();
     else if (e.typ === 'umschalter' || e.typ === 'auswahl') aendern(e, 1);
-    else if (e.typ === 'taste') { warten = { aktion: e.aktion, platz: o.platz }; meldung = null; }
+    else if (e.typ === 'taste') { warten = { aktion: e.aktion, platz: o.platz }; meldung = null; klang('bestaetigen'); }
     schmutzig = true;
   }
 
   function zurueck() {
-    if (warten) { warten = null; schmutzig = true; return; }
+    if (warten) { warten = null; schmutzig = true; klang('zurueck'); return; }
     const o = oben();
     if (!o) return;
-    if (o.seite.zurueck) o.seite.zurueck();
-    else schliesse();
+    if (o.seite.zurueck) { if (o.seite.zurueck() !== false) klang('zurueck'); }
+    else if (schliesse()) klang('zurueck');
   }
 
   function zeigeMeldung(text, farbe = M.farbeWarnung) {
     meldung = { text, farbe, bis: uhr + M.meldungDauer };
     schmutzig = true;
+    if (farbe === M.farbeWarnung) klang('fehler'); // "SCHON BELEGT", "RESERVIERT" ...
   }
 
   // Tastatur. Ergebnis true = Taste erledigt
@@ -165,18 +173,19 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     if (!o) return false;
     if (warten) {
       if (wiederholt) return true;
-      if (code === 'Escape') { warten = null; schmutzig = true; return true; }
+      if (code === 'Escape') { warten = null; schmutzig = true; klang('zurueck'); return true; }
       const w = warten;
       warten = null;
       const erg = tasteBelegen(w.aktion, w.platz, code === 'Delete' ? null : code);
       if (erg.art === 'reserviert') zeigeMeldung(t('tasten.reserviert', { taste: tasteName(code) }));
       else if (erg.art === 'belegt') zeigeMeldung(t('tasten.belegt', { aktion: aktionName(erg.mit) }));
       else if (erg.art === 'nichtLeer') zeigeMeldung(t('tasten.nichtLeer'));
-      else if (erg.art === 'getauscht') zeigeMeldung(t('tasten.getauscht', { aktion: aktionName(erg.mit) }), M.farbeTitel);
+      else if (erg.art === 'getauscht') { zeigeMeldung(t('tasten.getauscht', { aktion: aktionName(erg.mit) }), M.farbeTitel); klang('bestaetigen'); }
+      else klang('bestaetigen');
       schmutzig = true;
       return true;
     }
-    if (o.seite.zeichne) { if (!wiederholt && o.seite.taste) o.seite.taste(); return true; }
+    if (o.seite.zeichne) { if (!wiederholt && o.seite.taste) { o.seite.taste(); klang('bestaetigen'); } return true; }
     switch (code) {
       case 'ArrowUp': case 'KeyW': schritt(-1); return true;
       case 'ArrowDown': case 'KeyS': schritt(1); return true;
@@ -195,8 +204,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     const o = oben();
     if (!o || !pad.da) return;
     const G = M.gamepad;
-    if (warten) { if (pad.neu[G.abbrechen]) { warten = null; schmutzig = true; } return; }
-    if (o.seite.zeichne) { if (pad.irgendeinNeu && o.seite.taste) o.seite.taste(); return; }
+    if (warten) { if (pad.neu[G.abbrechen]) { warten = null; schmutzig = true; klang('zurueck'); } return; }
+    if (o.seite.zeichne) { if (pad.irgendeinNeu && o.seite.taste) { o.seite.taste(); klang('bestaetigen'); } return; }
     if (pad.neu[G.bestaetigen]) { bestaetigen(); return; }
     if (pad.neu[G.abbrechen]) { zurueck(); return; }
     if (pad.neu[G.pause] && o.seite.startKnopf) { o.seite.startKnopf(); return; }
@@ -223,12 +232,12 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
     const e = liste(oben().seite)[h.nr];
     const f = Math.min(1, Math.max(0, (x - h.reglerX) / h.reglerB));
     const w = Math.round((e.min + f * (e.max - e.min)) / e.schritt) * e.schritt;
-    if (w !== e.lesen()) { e.setzen(w); schmutzig = true; }
+    if (w !== e.lesen()) { e.setzen(w); schmutzig = true; klang('regler', (w - e.min) / (e.max - e.min)); }
   }
   function maus(x, y, art, dy = 0) {
     const o = oben();
     if (!o) return;
-    if (o.seite.zeichne) { if (art === 'druecken' && o.seite.taste) o.seite.taste(); return; }
+    if (o.seite.zeichne) { if (art === 'druecken' && o.seite.taste) { o.seite.taste(); klang('bestaetigen'); } return; }
     if (art === 'rad') { if (!warten) schritt(dy > 0 ? 1 : -1); return; }
     const h = trefferBei(x, y);
     if (art === 'bewegen') {
@@ -240,7 +249,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName }) {
       return;
     }
     if (art === 'druecken') {
-      if (warten) { warten = null; schmutzig = true; return; }
+      if (warten) { warten = null; schmutzig = true; klang('zurueck'); return; }
       druckNr = h ? h.nr : -1;
       if (h) {
         waehle(h.nr);

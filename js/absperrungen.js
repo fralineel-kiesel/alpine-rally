@@ -263,7 +263,7 @@ export function baueAbsperrungen(szene, welt, andere = []) {
       const p = punktBei((laenge * k) / nK);
       for (let d = r; d <= Math.max(r, tiefe - r) + 1e-6; d += Math.max(0.5, tiefe - 2 * r)) {
         const [x, z] = hinten(p, d);
-        hindernisse.push({ x, z, r, rand: 'absperrung' });
+        hindernisse.push({ x, z, r, rand: 'absperrung', ton: art }); // ton: Art für den Aufprallton (M7a)
       }
     }
 

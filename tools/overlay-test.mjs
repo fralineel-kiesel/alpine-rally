@@ -162,7 +162,7 @@ console.log('[6.1 a] Minimap: Auto in der Mitte, Zeichen nur im Ausschnitt, kein
     const A = window.__alpineRally, m = A.hud.minimap, c = A.CONFIG.hud.minimap;
     return { x: m.x, y: m.y, b: m.breite, h: m.hoehe, mitteX: m.mitteX, mitteY: m.mitteY, mass: m.mass, sicht: c.sichtMeter, G: c.groesse, ms: A.minimapMs, kb: m.karte.width, kh: m.karte.height };
   });
-  pruefe(g.b === g.G && g.h === g.G && g.G >= 56 && g.G <= 64 && g.x >= 0 && g.x + g.b <= 320 && g.y >= 0 && g.y + g.h <= 180 && g.mitteX - g.x === (g.G - 1) / 2 && g.mitteY - g.y === (g.G - 1) / 2,
+  pruefe(g.b === g.G && g.h === g.G && g.G >= 47 && g.G <= 50 && /* M7a: 49 statt 61 */ g.x >= 0 && g.x + g.b <= 320 && g.y >= 0 && g.y + g.h <= 180 && g.mitteX - g.x === (g.G - 1) / 2 && g.mitteY - g.y === (g.G - 1) / 2,
     `Tafel ${g.b} x ${g.h} Pixel oben rechts, vollständig im Bild, Auto-Pixel genau in der Mitte`,
     `x ${g.x}..${g.x + g.b - 1}, y ${g.y}..${g.y + g.h - 1}, Mitte ${g.mitteX} / ${g.mitteY}; Zoom ${g.sicht} m bis zum Rand = ${(g.mass * 1000).toFixed(0)} Pixel pro km; grosse Karte ${g.kb} x ${g.kh} Pixel, gebaut in ${g.ms.toFixed(1)} ms`);
   // Stellen: echte Autoposition in der Tafelmitte? Welche Zeichen sind im Ausschnitt (unabhängig aus Welt + config gerechnet)?

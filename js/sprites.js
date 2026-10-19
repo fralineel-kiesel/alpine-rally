@@ -331,9 +331,10 @@ export function bauePflanzen(szene, strecke, welt) {
   // Hindernisse für die Kollision: bei Bäumen nur der Stamm, Steine nach Breite
   const k = CONFIG.kollision;
   const hindernisse = [
-    ...tannen.map((t) => ({ x: t.x, z: t.z, r: k.stammRadius })),
-    ...laubbaeume.map((t) => ({ x: t.x, z: t.z, r: k.stammRadius })),
-    ...steine.map((t) => ({ x: t.x, z: t.z, r: t.b * k.steinFaktor })),
+    // (ton: Art für den Aufprallton, M7a; die Kollision liest nur x, z, r)
+    ...tannen.map((t) => ({ x: t.x, z: t.z, r: k.stammRadius, ton: 'baum' })),
+    ...laubbaeume.map((t) => ({ x: t.x, z: t.z, r: k.stammRadius, ton: 'baum' })),
+    ...steine.map((t) => ({ x: t.x, z: t.z, r: t.b * k.steinFaktor, ton: 'stein' })),
   ];
 
   // Abkürzungs-Sperren (je Kurve Felsbrocken, Tannengruppen oder Stämme) – siehe sperren.js
