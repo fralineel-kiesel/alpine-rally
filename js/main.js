@@ -6,6 +6,8 @@
 // Seit M7a: Ton (js/audio.js) – erst nach dem ersten Tastendruck auf dem Titel; ohne Ton mit ?menue=aus oder ?ton=aus.
 //           Der Ton liest nur (ton.aktualisiere einmal pro Bild, Ereignisse an den bestehenden Stellen).
 // Seit M7b: Umgebungsklänge (Hörer = Kamera, Quellen einmal nach dem Aufbau der Welt) und Menü-Musik (musikModus).
+// Seit M8a: Auto als 3D-Modell (js/car.js, Daten in js/autos.js) mit Federung (js/federung.js), Bremslicht,
+//           Rückfahrlicht und Dreck; alles nur Optik (liest die Physik, ändert sie nie).
 // Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
 // (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
@@ -26,6 +28,7 @@ import { baueWelt } from './world.js';
 import { baueNetz } from './netz.js';
 import { bauePflanzen, baueDeko, spriteGruppe } from './sprites.js';
 import { baueAuto } from './car.js';
+import { baueFederung } from './federung.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
 import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
@@ -157,8 +160,19 @@ const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hinder
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
 const staub = baueStaub(szene); // Staub auf Schotter (M3a) und Wiesenweg (M3b)
 const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false, belag: null };
-const auto = baueAuto();
+const auto = baueAuto(undefined, undefined, renderer.domElement.width); // (M8a: Detail nach Pixelgrösse)
 szene.add(auto.objekt);
+const federung = baueFederung(); // M8a: Nicken, Rollen, Hub der Karosserie (nur Optik)
+// M8a: Dreck am Auto (Menge 0..autoOptik.dreck.max, Farbe linear r, g, b); sauber bei jedem Start und Neustart
+const dreck = { menge: 0, r: 0, g: 0, b: 0 };
+const dreckFarben = {};
+for (const [art, d] of Object.entries(CONFIG.autoOptik.dreck.belaege)) {
+  const c = new THREE.Color(d.farbe || (CONFIG.staub.belaege[art] || {}).farbe || CONFIG.staub.farbe);
+  dreckFarben[art] = { r: c.r, g: c.g, b: c.b };
+}
+// M8a: Eingabe des letzten Physik-Schritts (auch in der Demo-Fahrt) für Bremslicht und Rückfahrlicht
+const lichtEin = { gas: 0, bremse: 0, handbremse: false };
+const radZustand = { lenkwinkel: 0, strecke: 0, tempo: 0 }; // M8a: Räder (Einschlag, Strecke seit dem letzten Bild, Tempo)
 const physik = new Fahrphysik();
 const getriebe = new Getriebe();
 // HUD mit Minimap (M6: die Karte wird hier einmal aus der Strecke gemalt)
@@ -223,7 +237,7 @@ const tonEingabe = { gas: 0, bremse: 0, handbremse: false };
 let pnStand = 0; // so viele Pace-Notes-Kacheln sind schon erschienen (für das Signal)
 
 const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
-const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
+const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken und Rollen in js/federung.js)
 
 function setzeAuf(s, seite = 0) {
   rueck.rest = 0; // ein laufender R-Countdown ist damit erledigt
@@ -252,6 +266,9 @@ function neustart() {
   lauf.countdown = 0; lauf.go = 0; lauf.zielWarte = 0; lauf.zielErledigt = false; lauf.ergebnis = null;
   // M7a: Ton – alle Schichten weich aus, nichts bleibt hängen
   ton.allesAus();
+  // M8a: Auto wieder sauber
+  dreck.menge = 0;
+  auto.dreck(dreck);
   tonInfo.wucht = 0; tonInfo.kontaktArt = -1; tonEingabe.gas = 0; tonEingabe.bremse = 0; tonEingabe.handbremse = false;
   pnStand = paceNotes.anzeige.erschienen;
 }
@@ -333,6 +350,7 @@ function physikSchritt(dt, e, nurFahren = false) {
   // (M3c: Stärke in config.js, startZiel.zielBremse – das Auto steht vor der Absperrung der Ausrollstrecke)
   const zb = CONFIG.startZiel && CONFIG.startZiel.an !== false ? CONFIG.startZiel.zielBremse : 0.35;
   if (rennen.zustand === 'ziel' && !nurFahren) eingabe = { ...e, gas: 0, bremse: physik.vVor > 0.5 ? Math.max(e.bremse, zb) : 0 };
+  lichtEin.gas = eingabe.gas; lichtEin.bremse = eingabe.bremse; lichtEin.handbremse = eingabe.handbremse; // M8a: nur für die Lichter
 
   const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?
@@ -371,6 +389,8 @@ function physikSchritt(dt, e, nurFahren = false) {
     physik.vz *= 0.985;
   }
 
+  // M8a (nur Optik): Tempo vor den Hindernissen merken; was Bäume, Steine und Wände wegnehmen, ist ein Stoss für die Federung
+  const stossVx = physik.vx, stossVz = physik.vz;
   // Bäume und Steine
   kollision.loese(physik, xAlt, zAlt, wAlt);
   let wucht = kollision.wucht; // M5b, Statistik: stärkster Aufprall in diesem Schritt (m/s Richtung Hindernis)
@@ -410,6 +430,15 @@ function physikSchritt(dt, e, nurFahren = false) {
     if (p.abstand > g.maxAbstand) {
       const nx = (physik.x - p.x) / p.abstand, nz = (physik.z - p.z) / p.abstand;
       physik.anGrenze(nx, nz, p.abstand - g.maxAbstand);
+    }
+  }
+
+  // M8a: Stoss an die Federung (nur gelesen: Tempoänderung durch den Aufprall im Auto längs und quer)
+  {
+    const dvx = physik.vx - stossVx, dvz = physik.vz - stossVz;
+    if (dvx * dvx + dvz * dvz > 0.25) {
+      const sx = Math.sin(physik.richtung), sz = Math.cos(physik.richtung);
+      federung.stoss(dvx * sx + dvz * sz, dvx * sz - dvz * sx);
     }
   }
 
@@ -570,7 +599,7 @@ const WAND_UMRISS = [];
 for (let k = 0; k <= 8; k++) WAND_UMRISS.push(-1 + k / 4, -1, -1 + k / 4, 1);
 for (const b of [-0.5, 0, 0.5]) WAND_UMRISS.push(-1, b, 1, b);
 
-// --- Auto-Optik: Position, Neigung zum Gelände, Rollen in Kurven ---
+// --- Auto-Optik: Position, Neigung zum Gelände, Federung (M8a), Räder, Lichter ---
 function autoZeichnen(dt, wegStrecke) {
   const x = physik.x, z = physik.z, yaw = physik.richtung;
   const fx = Math.sin(yaw), fz = Math.cos(yaw), lx = Math.cos(yaw), lz = -Math.sin(yaw);
@@ -579,17 +608,45 @@ function autoZeichnen(dt, wegStrecke) {
   const k = Math.min(1, dt * 14);
   optik.neigX += (Math.atan2(hv - hh, 2.6) - optik.neigX) * k;
   optik.neigZ += (Math.atan2(hl - hr, 1.6) - optik.neigZ) * k;
-  const y = Math.max(bodenHoehe(x, z), (hv + hh) / 2);
+  const hm = bodenHoehe(x, z);
+  const y = Math.max(hm, (hv + hh) / 2);
   auto.objekt.position.set(x, y, z);
   auto.objekt.rotation.set(-optik.neigX, yaw, optik.neigZ, 'YXZ');
 
   const o = CONFIG.autoOptik;
-  const k2 = Math.min(1, dt * 6);
-  optik.nicken += (begrenze(-physik.beschlVor * o.nicken, -0.06, 0.06) - optik.nicken) * k2;
-  optik.rollen += (begrenze(physik.beschlSeit * o.rollen, -0.08, 0.08) - optik.rollen) * k2;
-  auto.karosse.rotation.set(optik.nicken, 0, optik.rollen);
+  // M8a: Federung (Feder und Dämpfer) statt einfacher Glättung. Gelände: Krümmung der Bodenhöhe längs (Kuppe < 0,
+  // Senke > 0) mal Tempo² = Senkrechtbeschleunigung
+  if (dt > 0) {
+    const a = o.feder.gelaendeAbstand;
+    const krumm = a === 1.3 ? (hv - 2 * hm + hh) / (a * a)
+      : (bodenHoehe(x + fx * a, z + fz * a) - 2 * hm + bodenHoehe(x - fx * a, z - fz * a)) / (a * a);
+    federung.schritt(dt, physik.beschlVor, physik.beschlSeit, physik.vVor * physik.vVor * krumm);
+  }
+  auto.federung(federung);
   const radMax = o.radEinschlagMax * Math.PI / 180; // sichtbarer Einschlag begrenzt (Physik unverändert)
-  auto.raederBewegen(begrenze(physik.lenkwinkel, -radMax, radMax), wegStrecke);
+  radZustand.lenkwinkel = begrenze(physik.lenkwinkel, -radMax, radMax);
+  radZustand.strecke = wegStrecke; radZustand.tempo = physik.vVor;
+  auto.raederBewegen(radZustand);
+  // M8a: Bremslicht (Bremse vorwärts, Gas beim Rückwärtsrollen, Handbremse) und Rückfahrlicht (Gang R)
+  const rueck = getriebe.gang < 0;
+  auto.lichter(lichtEin.handbremse || (lichtEin.bremse > 0.05 && !rueck) || (lichtEin.gas > 0.05 && physik.vVor < -0.5), rueck);
+}
+
+// M8a: Dreck aufbauen (je Belag mal gefahrene Meter, höchstens dreck.max; Asphalt wäscht nichts ab).
+// Neuer Dreck färbt nach und nach um (Wiesenweg nach Schotter: wird brauner), auch wenn die Menge schon voll ist.
+function dreckSchritt(dt) {
+  const D = CONFIG.autoOptik.dreck;
+  const b = D.an ? D.belaege[untergrund] : null;
+  if (b && dt > 0) {
+    const zuwachs = b.aufbau * physik.tempo * dt;
+    if (zuwachs > 0) {
+      const c = dreckFarben[untergrund];
+      const anteil = Math.min(1, zuwachs / Math.max(1e-6, Math.min(D.max, dreck.menge + zuwachs)));
+      dreck.r += (c.r - dreck.r) * anteil; dreck.g += (c.g - dreck.g) * anteil; dreck.b += (c.b - dreck.b) * anteil;
+      dreck.menge = Math.min(D.max, dreck.menge + zuwachs);
+    }
+  }
+  auto.dreck(dreck, D.an);
 }
 
 // --- Verfolgerkamera ---
@@ -600,6 +657,7 @@ function kameraZiel() {
 }
 function kameraSofort() {
   kam.yaw = physik.richtung;
+  federung.reset(); // M8a: neu hingesetzt = Karosserie in Ruhe
   autoZeichnen(0, 0);
   kameraZiel();
   kam.pos.copy(kam.ziel);
@@ -812,7 +870,7 @@ ablauf.registriere('ziel', {
 
 // Einstellungen wirken sofort
 beiAenderung((name, wert) => {
-  if (name === 'aufloesung') aufloesungSetzen();
+  if (name === 'aufloesung') { aufloesungSetzen(); auto.detail(renderer.domElement.width); } // M8a: Schrift am Auto je Pixelgrösse
   if (name === 'fps') debugAn = wert;
   if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
   if (name === 'lautstaerke') ton.lautstaerke(wert); // M7a: sofort, weich
@@ -914,6 +972,7 @@ function schleife(jetzt) {
   if (dtWelt > 0) {
     const weg = Math.hypot(physik.x - xVor, physik.z - zVor) * Math.sign(physik.vVor || 1);
     autoZeichnen(dt, weg);
+    dreckSchritt(dt); // M8a
     // Staub (nur auf Schotter und Wiesenweg): Werte ohne neue Objekte übergeben
     const ea = def.welt === 'demo' ? demo.eingabe : e;
     staubAuto.x = physik.x; staubAuto.z = physik.z; staubAuto.y = auto.objekt.position.y;
@@ -1028,4 +1087,6 @@ window.__alpineRally = {
   ton, tonZ, tonInfo, tonEingabe, zumMenue, tonBild, paceSignal, // M7a
   get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
+  autoModell: auto, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a
+  get untergrund() { return untergrund; },
 };

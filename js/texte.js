@@ -28,8 +28,8 @@ export const TEXTE = {
   // --- Auto und Etappe ---
   'auto.titel': { de: 'AUTO', en: 'CAR' },
   'auto.rt4.name': { de: 'RINGWERK RT4', en: 'RINGWERK RT4' },
-  'auto.rt4.daten1': { de: 'ALLRAD · 5 GÄNGE AUTOMATIK', en: 'ALL-WHEEL DRIVE · 5-SPEED AUTO' },
-  'auto.rt4.daten2': { de: 'SCHWERES RALLYAUTO DER 80ER', en: 'HEAVY RALLY CAR FROM THE 80S' },
+  'auto.rt4.daten1': { de: 'ALLRAD · TURBO · 5 GÄNGE AUTOMATIK', en: 'AWD · TURBO · 5-SPEED AUTOMATIC' },
+  'auto.rt4.daten2': { de: 'SCHWERES RALLYAUTO, VIEL TRAKTION', en: 'HEAVY RALLY CAR, LOTS OF TRACTION' },
   'auswahl.gewaehlt': { de: 'GEWÄHLT', en: 'SELECTED' },
   'auto.spaeter': { de: 'WEITERE AUTOS FOLGEN', en: 'MORE CARS TO COME' },
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },

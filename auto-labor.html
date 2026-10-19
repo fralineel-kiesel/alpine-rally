@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alpine Rally – Auto-Labor</title>
+  <link rel="icon" href="data:,">
+  <!-- Hilfsseite (M8a, nicht im Menü verlinkt): das Auto in Ruhe ansehen, ohne zu fahren. Benutzt js/car.js (baueAuto)
+       und js/config.js wie das Spiel. Nur Ansicht: ändert nichts am Spiel. -->
+  <script type="importmap">
+    { "imports": { "three": "./lib/three.module.min.js" } }
+  </script>
+  <style>
+    :root { --grund: #0d1218; --tafel: #18212c; --rand: #e6e2d3; --text: #f4f4ee; --gelb: #ffd23c; --orange: #ff9a2e; --blau: #8fb4d8; --grau: #aab4be; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--grund); color: var(--text); font: 14px/1.4 monospace; }
+    main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; padding: 12px; min-height: 100vh; }
+    h1 { color: var(--gelb); font-size: 20px; letter-spacing: 3px; margin: 0 0 4px; }
+    h2 { color: var(--blau); font-size: 13px; letter-spacing: 2px; margin: 10px 0 6px; text-transform: uppercase; }
+    p.hinweis { color: var(--grau); margin: 0 0 10px; }
+    #buehne { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--rand); cursor: grab; touch-action: none; }
+    #buehne:active { cursor: grabbing; }
+    #buehne canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: crisp-edges; image-rendering: pixelated; }
+    #info { color: var(--grau); margin-top: 6px; white-space: pre-wrap; }
+    aside { background: var(--tafel); border: 1px solid var(--rand); border-radius: 3px; padding: 10px 12px; overflow-y: auto; max-height: calc(100vh - 24px); }
+    label.zeile { display: grid; grid-template-columns: 110px minmax(0, 1fr) 70px; align-items: center; gap: 8px; margin: 4px 0; }
+    label.zeile span.wert { color: var(--gelb); text-align: right; }
+    input[type=range] { width: 100%; accent-color: var(--orange); }
+    select, button { font: inherit; color: var(--text); background: #263240; border: 1px solid var(--rand); border-radius: 2px; padding: 4px 8px; cursor: pointer; }
+    button:hover { background: #33465a; color: var(--orange); }
+    button.an { background: var(--orange); color: #000; }
+    button.gross { font-size: 16px; padding: 8px 16px; background: var(--orange); color: #000; border-color: var(--orange); width: 100%; margin-top: 10px; }
+    .knoepfe { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { max-height: none; } }
+  </style>
+</head>
+<body>
+<main>
+  <section>
+    <h1>ALPINE RALLY · AUTO-LABOR</h1>
+    <p class="hinweis">Nur Ansicht: Hier siehst du das Auto genau wie im Spiel (gleiches Modell, gleiche Werte aus js/config.js,
+      gleicher Pixel-Look). Ändert nichts am Spiel. Maus ziehen = drehen, Mausrad = näher/weiter.</p>
+    <div id="buehne"><canvas id="bild"></canvas></div>
+    <div id="info"></div>
+  </section>
+  <aside>
+    <h2>Ansicht</h2>
+    <div class="knoepfe" id="ansichten"></div>
+    <div class="knoepfe">
+      <button id="drehscheibe">DREHSCHEIBE</button>
+      <button id="hintergrund">HINTERGRUND: HELL</button>
+    </div>
+    <label class="zeile">Pixelgrösse <select id="aufloesung">
+      <option value="0">320x180</option><option value="1">480x270</option><option value="2">640x360</option>
+    </select><span></span></label>
+    <label class="zeile">Lackierung <select id="lackierung"></select><span></span></label>
+
+    <h2>Räder</h2>
+    <label class="zeile">Lenkung <input id="lenkung" type="range" min="-1" max="1" step="0.01" value="0"><span class="wert" id="lenkungW"></span></label>
+    <label class="zeile">Tempo <input id="tempo" type="range" min="-30" max="200" step="1" value="0"><span class="wert" id="tempoW"></span></label>
+
+    <h2>Federung</h2>
+    <label class="zeile">Nicken <input id="nicken" type="range" min="-4" max="4" step="0.1" value="0"><span class="wert" id="nickenW"></span></label>
+    <label class="zeile">Rollen <input id="rollen" type="range" min="-5" max="5" step="0.1" value="0"><span class="wert" id="rollenW"></span></label>
+    <label class="zeile">Hub <input id="hub" type="range" min="-12" max="12" step="0.5" value="0"><span class="wert" id="hubW"></span></label>
+    <div class="knoepfe"><button id="stoss">STOSS (Aufprall)</button><button id="bremsen">BREMSEN (Nase taucht)</button><button id="federNull">GERADE</button></div>
+
+    <h2>Dreck, Lichter, Staub</h2>
+    <label class="zeile">Dreck <input id="dreck" type="range" min="0" max="1" step="0.01" value="0"><span class="wert" id="dreckW"></span></label>
+    <label class="zeile">Dreck von <select id="dreckBelag"></select><span></span></label>
+    <div class="knoepfe">
+      <button id="bremslicht">BREMSLICHT</button>
+      <button id="rueckfahrlicht">RÜCKFAHRLICHT</button>
+      <button id="staub">STAUB</button>
+    </div>
+    <button class="gross" id="speichern">BILD SPEICHERN</button>
+  </aside>
+</main>
+<script type="module" src="js/autolabor.js"></script>
+</body>
+</html>
