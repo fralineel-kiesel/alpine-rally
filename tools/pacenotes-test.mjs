@@ -3,7 +3,10 @@
 //   node tools/pacenotes-test.mjs             komplette Liste ausgeben, Grenztempo jeder Kurve mit der echten
 //                                             Fahrphysik messen, Prüfungen (a) bis (f)
 //   node tools/pacenotes-test.mjs --schreiben dazu js/pacenotes-tempo.js neu schreiben (nach Änderungen an
-//                                             Strecke oder Fahrphysik)
+//                                             Strecke oder Fahrphysik) – nur mit dem Referenzprofil "prototyp"
+//   node tools/pacenotes-test.mjs --auto rt4  (seit M8a) Grenztempo mit einem anderen Fahrprofil messen und mit der
+//                                             Referenz vergleichen: welche Stufe hätte dieses Auto? (nur melden; die
+//                                             Pace-Notes und js/pacenotes-tempo.js bleiben auf der Referenz)
 //
 // Prüft:
 //   (a) jede Stelle, an der die Strasse auf 50 m mehr als pruefWinkel Grad die Richtung ändert, hat eine Kurven-Ansage
@@ -26,15 +29,22 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { starteSpiel, WURZEL } from './spiel-browser.mjs';
+import { starteSpiel, WURZEL, AUTO } from './spiel-browser.mjs';
+import { pathToFileURL } from 'node:url';
 
 const schreiben = process.argv.includes('--schreiben');
 const PRUEF_WINKEL = 25;    // (a): Richtungsänderung (Grad) auf ...
 const PRUEF_STRECKE = 50;   // ... so vielen Metern = muss angesagt sein
 const MIN_ABSTAND = 25;     // (d)
 
+const REFERENZ = AUTO === 'prototyp'; // M8a: die Pace-Notes gelten für das Referenzprofil
+if (schreiben && !REFERENZ) {
+  console.log(`FEHLER --schreiben nur mit dem Referenzprofil "prototyp" (nicht --auto ${AUTO}): die Pace-Notes sagen die Kurve an, nicht das Auto.`);
+  process.exit(1);
+}
 const spiel = await starteSpiel();
 await spiel.ladeSpiel();
+console.log(`Fahrprofil: ${AUTO}${REFERENZ ? ' (Referenz)' : ' (Vergleich mit der Referenz in js/pacenotes-tempo.js)'}`);
 
 // --- Grenztempo jeder Kurve messen (echte Fahrphysik) ---
 const messung = await spiel.page.evaluate(async () => {
@@ -200,8 +210,34 @@ console.log(`Zusammengefasst ("UND"): ${d.notes.filter((n) => n.text.includes(' 
   const imSpiel = d.notes.flatMap((n) => n.teile).flatMap((t) => t.kurven);
   const veraltet = messung.filter((k) => imSpiel.some((c) => c.von === k.von && c.bis === k.bis && c.gemessen
     && alsZahl(c.kmh) !== alsZahl(k.kmh) && !(Math.abs(alsZahl(c.kmh) - alsZahl(k.kmh)) <= 0.11)));
-  melde(ok, `(c) Stufen monoton zum gemessenen Kurventempo${fall ? ` – nicht bei ${fall}` : ''}`);
-  melde(nichtGemessen === 0 && !veraltet.length, `(c) alle Kurven gemessen und js/pacenotes-tempo.js aktuell (ohne Messung: ${nichtGemessen}, abweichend: ${veraltet.length})`);
+  if (REFERENZ) {
+    melde(ok, `(c) Stufen monoton zum gemessenen Kurventempo${fall ? ` – nicht bei ${fall}` : ''}`);
+    melde(nichtGemessen === 0 && !veraltet.length, `(c) alle Kurven gemessen und js/pacenotes-tempo.js aktuell (ohne Messung: ${nichtGemessen}, abweichend: ${veraltet.length})`);
+  } else {
+    // M8a (j): anderes Profil gegen die Referenz – Asphalt höchstens ±5 %, Schotter/Wiesenweg bis +10 %; Stufe nur melden
+    const { KURVEN_TEMPO } = await import(pathToFileURL(path.join(WURZEL, 'js/pacenotes-tempo.js')).href);
+    const { CONFIG } = await import(pathToFileURL(path.join(WURZEL, 'js/config.js')).href);
+    const stufe = (kmh) => { let st = 1; for (const gr of CONFIG.pacenotes.stufenGrenzen) if (kmh >= gr) st++; return st; };
+    console.log(`       (j) Grenztempo ${AUTO} gegen die Referenz (js/pacenotes-tempo.js), Stufe 1-6 (Grenzen ${CONFIG.pacenotes.stufenGrenzen.join('/')} km/h):`);
+    console.log('       | Kurve | Belag | Referenz | ' + AUTO + ' | Unterschied | Stufe Referenz | Stufe ' + AUTO + ' |');
+    console.log('       |---|---|---|---|---|---|---|');
+    let aussen = 0;
+    const anders = [];
+    for (const k of messung) {
+      const ref = KURVEN_TEMPO.kurven.find((r) => Math.abs(r.von - k.von) <= 3 && Math.abs(r.bis - k.bis) <= 3);
+      const a = ref ? (ref.kmh == null ? Infinity : ref.kmh) : null, b = k.kmh == null ? Infinity : k.kmh;
+      const pz = a === Infinity && b === Infinity ? 0 : a === Infinity || b === Infinity || a == null ? null : (b / a - 1) * 100;
+      const asphalt = k.belag === 'asphalt';
+      const ok = pz !== null && (asphalt ? Math.abs(pz) <= 5 : pz <= 10 && pz >= -5);
+      if (!ok) aussen++;
+      const sa = a == null ? '-' : stufe(a), sb = stufe(b);
+      if (sa !== sb) anders.push(`${k.von}-${k.bis} (${k.belag}): Stufe ${sa} -> ${sb}`);
+      const fmt = (x) => (x === Infinity ? 'Vollgas' : x == null ? '-' : x.toFixed(1));
+      console.log(`       | ${k.von}-${k.bis} ${k.richtung > 0 ? 'rechts' : 'links'}${k.kehre ? ' Kehre' : ''} | ${k.belag} | ${fmt(a)} | ${fmt(b)} | ${pz == null ? '-' : `${pz >= 0 ? '+' : ''}${pz.toFixed(1)} %`}${ok ? '' : ' (ausserhalb)'} | ${sa} | ${sb} |`);
+    }
+    melde(aussen === 0, `(j) ${messung.length} Kurven gemessen: Asphalt höchstens ±5 %, Schotter/Wiesenweg -5 bis +10 % (ausserhalb: ${aussen})`);
+    console.log(`       (j) Kurven, bei denen die Stufe für ${AUTO} anders wäre (nur gemeldet, Pace-Notes bleiben auf der Referenz): ${anders.length ? anders.join('; ') : 'keine'}`);
+  }
   console.log('       Je Kurve: | Meter | Richtung | Winkel | Radius | Belag | gemessen | geschätzt (Reserve-Formel) |');
   for (const k of messung) {
     console.log(`         ${k.von}-${k.bis} ${k.richtung > 0 ? 'rechts' : 'links '} ${k.winkel.toFixed(0).padStart(3)}° R${k.rMin.toFixed(0).padStart(3)} ${k.belag.padEnd(9)} ${k.kmh == null ? 'Vollgas' : k.kmh.toFixed(0) + ' km/h'}  (Formel ${Math.round(k.schaetzung)} km/h)`);

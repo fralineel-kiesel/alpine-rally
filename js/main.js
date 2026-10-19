@@ -8,6 +8,8 @@
 // Seit M7b: Umgebungsklänge (Hörer = Kamera, Quellen einmal nach dem Aufbau der Welt) und Menü-Musik (musikModus).
 // Seit M8a: Auto als 3D-Modell (js/car.js, Daten in js/autos.js) mit Federung (js/federung.js), Bremslicht,
 //           Rückfahrlicht und Dreck; alles nur Optik (liest die Physik, ändert sie nie).
+//           Fahrprofile (js/fahrprofil.js): ?auto=prototyp (Fahrverhalten bis 0.7b, Referenz) oder ?auto=rt4 (Standard);
+//           mit ?fahrlabor=1 ein Seitenpanel zum Nachstellen (js/fahrlabor.js, sonst nicht geladen).
 // Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
 // (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
@@ -31,6 +33,7 @@ import { baueAuto } from './car.js';
 import { baueFederung } from './federung.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
+import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL } from './fahrprofil.js';
 import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
 import { baueHud, formatZeit } from './hud.js';
 import { baueKollision } from './kollision.js';
@@ -56,6 +59,9 @@ function dokumentSprache() {
 dokumentSprache();
 beiSprachwechsel(dokumentSprache);
 const menueAn = CONFIG.menue.an && new URLSearchParams(window.location.search).get('menue') !== 'aus';
+// M8a: Fahrprofil über die Referenzwerte legen, bevor Physik und Getriebe gebaut werden (?auto=..., Standard rt4)
+waehleFahrprofil(profilAusAdresse());
+const fahrlaborAn = new URLSearchParams(window.location.search).get('fahrlabor') === '1';
 // Ton (M7a): nur mit Menü (Tests mit ?menue=aus bleiben stumm), nicht mit ?ton=aus oder audio.an = false.
 // Der AudioContext entsteht erst beim ersten Tastendruck / Klick auf dem Titel (zumMenue).
 const ton = baueTon({ an: CONFIG.audio.an && menueAn && new URLSearchParams(window.location.search).get('ton') !== 'aus' });
@@ -90,11 +96,14 @@ function aufloesungSetzen() {
 aufloesungSetzen();
 
 function anpassen() {
-  let s = Math.min(window.innerWidth / B, window.innerHeight / H);
+  // (M8a: mit Fahr-Labor rückt das Bild um die Breite des Panels nach links)
+  const breite = window.innerWidth - (fahrlabor ? fahrlabor.breite : 0);
+  let s = Math.min(breite / B, window.innerHeight / H);
   if (CONFIG.bild.ganzzahligSkalieren && s >= 1) s = Math.floor(s);
   buehne.style.width = `${Math.floor(B * s)}px`;
   buehne.style.height = `${Math.floor(H * s)}px`;
 }
+let fahrlabor = null; // M8a: Seitenpanel (nur mit ?fahrlabor=1)
 window.addEventListener('resize', anpassen);
 anpassen();
 
@@ -354,11 +363,12 @@ function physikSchritt(dt, e, nurFahren = false) {
 
   const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?
-  const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip);
+  // (M8a: der Belag geht mit, für die Allrad-Traktion und den Heck-Grip je Belag des Fahrprofils)
+  const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip, boden.art);
   physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
     rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1, geradeaus: u.geradeaus ?? 1,
-    rueckwaertsMax: u.rueckwaertsMax ?? 1,
+    rueckwaertsMax: u.rueckwaertsMax ?? 1, belag: boden.art,
   }, motor);
 
   // Zu steiler Hang (neben der Strasse): da kommt das Auto nicht hoch
@@ -803,8 +813,9 @@ function zielErreicht() {
   const cps = checkpoints.map((_, n) => (rennen.zwischenzeiten[n] == null ? null : rennen.zwischenzeiten[n]));
   // M6: Fahrspur (Rennzeit alle 10 m) mit der Bestzeit speichern; jeder fertige Lauf ist auch der "letzte Lauf"
   const spur = vergleich.fertigeSpur(rennen.endZeit);
+  // (M8a: Läufe im Vergleichsprofil ?auto=prototyp tragen die Id "prototyp", sonst die Id des Autos wie bisher)
   const eintrag = {
-    zeit: rennen.endZeit, cps, auto: AUTOS[auswahl.auto].id,
+    zeit: rennen.endZeit, cps, auto: aktivesProfil() === REFERENZ_PROFIL ? REFERENZ_PROFIL : AUTOS[auswahl.auto].id,
     aufpralle: stat.aufpralle, resets: statResets(), hoechstTempo: stat.hoechstTempo, spur,
   };
   const erg = speichereBestzeit(etappe.id, eintrag);
@@ -888,6 +899,7 @@ setzeAbfangen((code, wiederholt) => (ablauf.def && ablauf.def.menue ? menue.tast
 // Maus im Menü: Punkt im 320x180-Raster
 function mausAnMenue(ev, art) {
   if (!ablauf.def || !ablauf.def.menue) return;
+  if (fahrlabor && ev.target && fahrlabor.panel.contains(ev.target)) return; // M8a: Klicks im Fahr-Labor gehören dem Panel
   if (art !== 'bewegen' && ev.button !== 0) return;
   const r = hudLeinwand.getBoundingClientRect();
   menue.maus((ev.clientX - r.left) / r.width * B, (ev.clientY - r.top) / r.height * H, art);
@@ -1036,6 +1048,7 @@ function schleife(jetzt) {
   }
   if (sicht > 0) menue.zeichne(hudCtx, dt, sicht);
   tonBild(dt);
+  if (fahrlabor) fahrlabor.aktualisiere(dt); // M8a
 }
 
 // M7a: kurzes Signal für jede neu erscheinende Pace-Notes-Kachel (nur im Rennen und Countdown, nicht bei ausgeblendetem HUD)
@@ -1073,6 +1086,15 @@ if (menueAn) {
   ablauf.wechsle('titel');
 } else ablauf.wechsle('rennen');
 requestAnimationFrame(schleife);
+// M8a: Fahr-Labor nur mit ?fahrlabor=1 nachladen (sonst weder Datei noch Aufwand)
+if (fahrlaborAn) {
+  import('./fahrlabor.js').then((m) => {
+    const f = m.baueFahrlabor({ physik, getriebe });
+    fahrlabor = { panel: f.panel, breite: m.BREITE, aktualisiere: f.aktualisiere, text: f.text, alleZeigen: f.alleZeigen };
+    window.__alpineRally.fahrlabor = fahrlabor;
+    anpassen();
+  });
+}
 
 // Für Tests (Screenshots) von aussen erreichbar
 // start(): am Menü vorbei ins Rennen wie "STARTEN" (mit Countdown); start({ countdown: false }): ohne Countdown wie vor M5b
@@ -1088,5 +1110,6 @@ window.__alpineRally = {
   get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
   autoModell: auto, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a
+  get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
 };

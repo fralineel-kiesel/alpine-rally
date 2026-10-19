@@ -10,6 +10,7 @@
 //                                         Alles, was dort zu war, muss wieder zu sein, und in den freien
 //                                         Kurven bleibt offen, was offen war
 //   node tools/abkuerzungen.mjs --pruefen --offen-merken <datei>   offene Linien in <datei> schreiben
+//   --auto rt4                            (seit M8a) mit einem anderen Fahrprofil laden; Standard "prototyp" (Referenz)
 //
 // Braucht Playwright mit Chromium (in der Testumgebung vorhanden). Startet einen
 // kleinen Webserver, öffnet das Spiel im Headless-Browser und rechnet dort mit
@@ -27,6 +28,7 @@ const nurReihen = process.argv.includes('--nur-reihen');
 const argWert = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 const offenDatei = argWert('--offen'), offenMerken = argWert('--offen-merken');
 const REFERENZ = offenDatei ? JSON.parse(fs.readFileSync(path.resolve(offenDatei), 'utf8')) : null;
+const AUTO = argWert('--auto') || 'prototyp'; // M8a: Fahrprofil (Referenz: prototyp)
 
 // Playwright suchen (lokal oder global installiert)
 async function ladePlaywright() {
@@ -48,7 +50,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(datei).pipe(res);
 });
 await new Promise((r) => server.listen(0, r));
-const URL_SPIEL = `http://localhost:${server.address().port}/index.html?menue=aus`; // am Menü vorbei (M5a)
+const URL_SPIEL = `http://localhost:${server.address().port}/index.html?menue=aus&auto=${encodeURIComponent(AUTO)}`; // am Menü vorbei (M5a), Fahrprofil (M8a)
 
 const pw = await ladePlaywright();
 const { chromium } = pw.chromium ? pw : pw.default;
@@ -300,7 +302,7 @@ const nach = await page.evaluate(async () => {
     nahFels, nahStamm, nahTanne, nichtSchneiden: A.strecke.nichtSchneiden, schneiden: A.strecke.schneiden,
   };
 });
-console.log(`\n=== NACHHER (mit ${nach.sperren} Sperren) ===`);
+console.log(`\n=== NACHHER (mit ${nach.sperren} Sperren, Fahrprofil ${AUTO}) ===`);
 if (offenMerken) { fs.writeFileSync(path.resolve(offenMerken), JSON.stringify(nach.offenKeys)); console.log(`offene Linien -> ${offenMerken}`); }
 console.log(`Ladezeit im Headless-Browser: ${ladeMs} ms`);
 console.log(`Hindernisse gesamt: ${nach.hindernisse} (davon Sperren: ${nach.sperrHindernisse} Kollisionskreise)`);

@@ -620,6 +620,12 @@ export const CONFIG = {
     // Dreher (M3a.2): rutscht das Auto schneller als abSeit (m/s) seitwärts, rutscht es mit der Reibung der Reifen
     // weich aus statt schlagartig zu stehen; das Drehen wird dabei höchstens mit drehBremse (rad/s²) gebremst
     dreher: { abSeit: 1.5, drehBremse: 4 },
+    // --- Seit M8a (Fahrprofile): neue Werte, hier neutral (= Verhalten wie vor M8a, Profil "prototyp"); ein Auto mit
+    // eigenem Fahrgefühl setzt sie in "fahrprofile" weiter unten ---
+    lastVorneAnteil: 0.5,      // Anteil des Gewichts auf der Vorderachse (0.5 = gleich). Mehr = vorne mehr Haftung, hinten weniger
+    gewichtstransfer: 0,       // Gewichtsverlagerung längs: Bremsen = mehr Last vorne, Gas = mehr hinten (0 = aus, 0.35 = deutlich)
+    gewichtstransferGlaettung: 0.1, // ... so weich (Sekunden) folgt die Verlagerung der Beschleunigung (kein Zittern)
+    heckJeBelag: { schotter: 1, wiesenweg: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -656,6 +662,39 @@ export const CONFIG = {
     motorbremseBezugDrehzahl: 4000, // ... und bei dieser Drehzahl gilt auto.motorbremse genau
     drehzahlFolgen: 14,        // wie schnell die Drehzahl-Anzeige folgt (höher = direkter)
     drehzahlFolgenSchalten: 9, // ... während der Schaltpause (Nadel fällt sichtbar ab)
+    // --- Seit M8a (Fahrprofile): neue Werte, hier neutral (= wie vor M8a, Profil "prototyp") ---
+    zugkraftFaktor: 1,         // Schub aller Gänge mal diesem Wert (1 = wie "zugkraft")
+    // Allrad: so viel mehr Schub geht je Belag auf den Boden (mal traktion; 1 = wie bisher)
+    allrad: { asphalt: 1, bankett: 1, gras: 1, schotter: 1, wiesenweg: 1 },
+    // Turbo: Ladedruck (0..1) baut sich mit Gas oberhalb "ab" in "aufbau" Sekunden auf und fällt ohne Gas in "abbau".
+    // Schub mal (1 - verlust) + (verlust + mehr) x Ladedruck. Anti-Lag: in der Schaltpause und beim Gaswegnehmen über
+    // antiLagAb fällt er höchstens auf antiLagMin. Der Motorton liest den Ladedruck (noch) nicht.
+    turbo: { an: false, ab: 3000, aufbau: 0.35, abbau: 0.25, verlust: 0.12, mehr: 0.04, antiLagAb: 4000, antiLagMin: 0.7 },
+  },
+
+  // --- Fahrprofile (Meilenstein 8a, js/fahrprofil.js) ----------------------------------------------------
+  // Die Werte in "auto" und "getriebe" oben sind die Referenz = Profil "prototyp" (Fahrverhalten bis 0.7b). Daran hängen
+  // Pace-Notes-Stufen, Abkürzungs-Sperren und Testfahrer-Zeiten. Ein Profil überschreibt nur, was hier steht.
+  // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4). Zum Ausprobieren: index.html?fahrlabor=1
+  fahrprofile: {
+    prototyp: {},              // keine Änderung (Referenz)
+    // Ringwerk RT4: Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
+    // schiebt in schnellen Kurven eher über die Vorderräder, das Heck kommt mit der Handbremse oder beim Bremsen in der Kurve.
+    rt4: {
+      auto: {
+        lastVorneAnteil: 0.555,  // frontlastig: vorne mehr Haftung, hinten weniger
+        schwerpunktVorne: 0.46,  // Schwerpunkt weiter vorne (Prototyp 0.48): schiebt in schnellen Kurven eher über die Front
+        traegheit: 2.5,          // schwerer, ruhiger Wagen (Prototyp 2.3)
+        gewichtstransfer: 0.35,  // Bremsen in der Kurve = Heck kommt; Gas = Heck stabil, Front schiebt etwas
+        gasImDrift: 0.07,        // Gas lockert das Heck im Drift weniger (Prototyp 0.12): Allrad zieht gerade
+        heckJeBelag: { schotter: 1.1, wiesenweg: 1.15 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser
+      },
+      getriebe: {
+        allrad: { schotter: 1.15, wiesenweg: 1.1 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil)
+        zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
+        turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
+      },
+    },
   },
 
   // --- Untergrund -------------------------------------------------------

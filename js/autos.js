@@ -131,7 +131,7 @@ export const AUTO_MODELLE = {
       { art: 'helm', ansicht: 'seite', nur: 'rechts', mitte: [-0.15, 1.11], r: 0.12, farbe: 'helmBeifahrer', visier: 'vorne' },
       // Startnummer auf der Tür (auf dem Streifen), Sponsoren
       { art: 'nummer', ansicht: 'seite', mitte: [0.22, 0.62] },
-      { art: 'text', ansicht: 'seite', text: 'RINGWERK', mitte: [0, 0.29], farbe: 'sponsorHell' },
+      { art: 'text', ansicht: 'seite', text: 'RINGWERK', mitte: [0, 0.29], farbe: 'sponsorHell', abBreite: 480 }, // (schräg von hinten bei 320x180 nur Rauschen)
 
       // --- Oben ---
       { art: 'nummer', ansicht: 'oben', mitte: [0, 1.36], lesbarVon: 'vorne' },
