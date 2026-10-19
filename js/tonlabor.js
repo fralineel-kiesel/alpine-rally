@@ -2,9 +2,13 @@
 // Benutzt dasselbe js/audio.js wie das Spiel. Die Schieberegler ersetzen die Zahlen, die sonst main.js liefert.
 // M7a.1: Regler Signaltöne und Bereich "Feinschliff": Werte aus config.js live verstellen (nur auf dieser Seite, nur bis zum
 // Neuladen; das Spiel lädt seine eigene config.js), WERTE KOPIEREN für den Chat, ALLES ZURÜCK.
+// M7b: Bereich "Umgebung" (eine Quelle, Hörer im Abstand und Winkel daneben, VORBEIFAHREN mit 90 km/h in 15 m Abstand)
+// und "Musik" (Abschnitte, Art, Tempo, Kanäle stumm, Regler Musik); Feinschliff um Umgebung und Musik erweitert.
 
 import { CONFIG } from './config.js';
 import { baueTon, materialNr } from './audio.js';
+import { raumWerte } from './umgebung.js';
+import { HAUPT_STUECK, KANAELE } from './musik.js';
 import { Getriebe } from './getriebe.js';
 
 const G = CONFIG.getriebe, A = CONFIG.audio;
@@ -16,6 +20,7 @@ window.__tonLabor = { ton, CONFIG }; // für tools/ton-test.mjs
 const z = {
   modus: 'rennen', drehzahl: G.leerlauf, gang: 1, zielGang: 1, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt',
   drift: 0, handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
+  musikModus: 'aus', hx: 0, hz: -10, hyaw: 0, s: 500, // M7b: Hörer (die Quelle steht im Ursprung)
 };
 let schaltRest = 0, schaltVon = 0, schaltHoch = true, demo = null;
 
@@ -79,11 +84,79 @@ document.body.addEventListener('click', (e) => { const k = e.target.closest('[da
 
 $('tonStarten').addEventListener('click', () => {
   ton.entsperren();
+  ton.musikLautstaerke(+$('mPegel').value);
+  umgebungSetzen();
   ton.lautstaerke(+$('laut').value);
   ton.signalLautstaerke(+$('signale').value);
   $('alles').classList.remove('aus');
   $('tonStarten').textContent = 'TON LÄUFT';
 });
+
+// --- Umgebung (M7b): eine Quelle im Ursprung, je nach Klangart; der Hörer steht im Abstand und Winkel daneben ---
+const U = A.umgebung;
+let vorbei = null; // VORBEIFAHREN: { t } (Sekunden seit Beginn)
+function umgebungSetzen() {
+  const art = $('uArt').value, q = { herden: [], orte: [], brunnen: null, voegel: { dichte: new Float32Array(1001).fill(art === 'voegel' ? 1 : 0), fehlen: [], namen: [] }, pass: null, laenge: 1000 };
+  if (art === 'glocken') q.herden.push({ nr: 0, x: 0, z: 0, r: 3, anzahl: 6, posen: [0, 6, 0], kuehe: Float32Array.from([0, 0, 1, 2, 1, 1, -2, 1, 1, 1, -2, 1, -1, 2, 0, 2, -2, 1]) });
+  if (art === 'gemurmel') q.orte.push({ name: 'ziel', staerke: 1, punkte: Float32Array.from([0, 0]), sVon: -1e9, sBis: -1e9, fan: false });
+  if (art.startsWith('jubel') || art === 'klatschen') q.orte.push({ name: 'ziel', staerke: 1, punkte: Float32Array.from([0, 0]), sVon: -1e9, sBis: -1e9, fan: false, murmeln: false });
+  if (art === 'brunnen') q.brunnen = { x: 0, z: 0 };
+  if (art === 'boeen') q.pass = { von: 0, bis: 1000 };
+  ton.quellen(q);
+}
+// Hörer aus Abstand und Seite: die Quelle liegt im Winkel "Seite" zur Blickrichtung (Blick nach +z)
+function hoererSetzen() {
+  const d = +$('uAbstand').value, w = +$('uSeite').value * Math.PI / 180;
+  z.hyaw = 0;
+  if (vorbei) { // 90 km/h (25 m/s) gerade vorbei, 15 m seitlich (Seite < 0: Quelle links, sonst rechts)
+    const seite = +$('uSeite').value < 0 ? -1 : 1;
+    z.hx = 15 * seite; z.hz = -100 + 25 * vorbei.t; z.tempo = 25;
+  } else { z.hx = d * Math.sin(w); z.hz = -d * Math.cos(w); }
+}
+const uAnzeigen = () => { $('uAbstandW').textContent = `${$('uAbstand').value} m`; $('uSeiteW').textContent = `${$('uSeite').value}°`; };
+for (const id of ['uAbstand', 'uSeite']) $(id).addEventListener('input', () => { vorbei = null; uAnzeigen(); });
+$('uArt').addEventListener('change', () => { vorbei = null; umgebungSetzen(); });
+uAnzeigen();
+function einmalAbspielen() {
+  const w = ton.werk, art = $('uArt').value;
+  if (!w) return;
+  if (art === 'jubelKurz') w.umgebung.jubel('ziel', 'kurz');
+  else if (art === 'jubelLang') w.umgebung.jubel('ziel', 'lang');
+  else if (art === 'klatschen') w.umgebung.klatschen('ziel');
+  else if (art === 'glocken') w.umgebung.glockenSchlag(0, 0);
+  else if (art === 'voegel') { // ein Vogel genau an der eingestellten Stelle (Quelle im Ursprung)
+    raumWerte(z.hx, z.hz, z.hyaw, 0, 0, U.voegel, w.umgebung.raum);
+    w.umgebung.einmal('vogel', `u-vogel-${Math.floor(Math.random() * 8)}`, 0, 1, U.voegel.pegel / 0.9, U.voegel);
+  }
+}
+$('uSpielen').addEventListener('click', einmalAbspielen);
+// VORBEIFAHREN: bei Jubel, Klatschen, Vögel kommt der Klang, wenn das Auto 25 m vor der Quelle ist
+$('uVorbei').addEventListener('click', () => { vorbei = { t: 0, ausgeloest: false }; });
+$('uStopp').addEventListener('click', () => { vorbei = null; $('uArt').value = 'aus'; umgebungSetzen(); if (ton.werk) ton.werk.umgebung.allesAus(); });
+const raumAnzeige = { d: 0, pan: 0, gain: 0, tiefpass: 0, winkel: 0 };
+
+// --- Musik (M7b) ---
+for (const a of HAUPT_STUECK().abschnitte) $('mAbschnitt').insertAdjacentHTML('beforeend', `<option value="${a.name}">${a.name} (Takt ${a.takt + 1}-${a.takt + a.takte})</option>`);
+for (const [k, name] of KANAELE.entries()) {
+  $('mKanaele').insertAdjacentHTML('beforeend', `<label><input type="checkbox" id="mStumm${k}"> ${['Lead', 'Arpeggio', 'Bass', 'Schlagzeug'][k]}</label>`);
+  $(`mStumm${k}`).addEventListener('change', (e) => { if (ton.werk) ton.werk.musik.stumm(name, e.target.checked); });
+}
+const mAnzeigen = () => { $('mTempoW').textContent = `${$('mTempo').value} BPM`; $('mPegelW').textContent = `${$('mPegel').value} %`; };
+mAnzeigen();
+function musikSpielen() {
+  const w = ton.werk;
+  if (!w) return;
+  w.musik.tempo(+$('mTempo').value);
+  for (let k = 0; k < 4; k++) w.musik.stumm(k, $(`mStumm${k}`).checked);
+  const art = $('mArt').value;
+  w.musik.starte(art, art === 'ziel' ? 'Ausklang' : $('mAbschnitt').value);
+}
+$('mSpielen').addEventListener('click', musikSpielen);
+$('mAbschnitt').addEventListener('change', () => { if (ton.werk && ton.werk.musik.status().laeuft) musikSpielen(); });
+$('mArt').addEventListener('change', () => { if (ton.werk && ton.werk.musik.status().laeuft) musikSpielen(); });
+$('mStopp').addEventListener('click', () => { if (ton.werk) ton.werk.musik.stoppe(0.3); });
+$('mTempo').addEventListener('input', () => { mAnzeigen(); if (ton.werk) ton.werk.musik.tempo(+$('mTempo').value); });
+$('mPegel').addEventListener('input', () => { mAnzeigen(); ton.musikLautstaerke(+$('mPegel').value); if (ton.werk) ton.werk.menue('regler', +$('mPegel').value / 100); });
 
 // --- Pegel-Anzeige ---
 const BUSSE = ['master', 'fahrzeug', 'umgebung', 'signale', 'musik'];
@@ -131,6 +204,15 @@ function bild(jetzt) {
   z.untergrund = $('untergrund').value; z.drift = +$('drift').value; z.handbremse = $('handbremse').checked;
   z.kontaktArt = +$('schleifen').value; z.kontaktTempo = z.tempo;
   z.aufprall = 0;
+  // Umgebung: Hörer setzen (VORBEIFAHREN dauert 8 s; einmalige Klänge 25 m vor der Quelle)
+  if (vorbei) {
+    vorbei.t += dt;
+    if (!vorbei.ausgeloest && z.hz > -25) { vorbei.ausgeloest = true; einmalAbspielen(); }
+    if (vorbei.t > 8) vorbei = null;
+  }
+  hoererSetzen();
+  if (!vorbei && !demo) z.tempo = +$('tempo').value / 3.6;
+  raumWerte(z.hx, z.hz, z.hyaw, 0, 0, uTyp(), raumAnzeige);
   ton.aktualisiere(dt, z);
   // Anzeige
   w.spitzen(spitzen);
@@ -141,6 +223,15 @@ function bild(jetzt) {
     el.className = halten[b] > 0.95 ? 'rot' : '';
     $(`pw-${b}`).textContent = halten[b].toFixed(2);
   }
+  const ms = w.musik.status(), uz = w.umgebung.zustand;
+  $('mAnzeige').textContent = ms.laeuft
+    ? `läuft: ${ms.abschnitt}, Takt ${ms.taktImAbschnitt} (gesamt ${ms.takt} von ${w.musik.zustand.liste.takte}), ${ms.bpm} BPM, Art ${ms.art}${ms.ausblenden ? ' (blendet aus)' : ''}`
+    : 'Musik steht.';
+  $('uAnzeige').textContent = [
+    `Abstand ${raumAnzeige.d.toFixed(1)} m, Winkel ${(raumAnzeige.winkel * 180 / Math.PI).toFixed(0)}°${vorbei ? ' (VORBEIFAHREN)' : ''}`,
+    `Pan ${raumAnzeige.pan.toFixed(2)} (- links, + rechts), Pegel ${(raumAnzeige.gain * 100).toFixed(0)} %, Tiefpass ${raumAnzeige.tiefpass.toFixed(0)} Hz`,
+    `Umgebungs-Stimmen ${w.umgebung.stimmen} / ${U.maxStimmen}, Böen ${(uz.boeWert * 100).toFixed(0)} %`,
+  ].join('\n');
   const s = w.zustand;
   $('anzeige').textContent = [
     `Grundton      ${s.f0.toFixed(1)} Hz`,
@@ -153,6 +244,12 @@ function bild(jetzt) {
   ].join('\n');
 }
 requestAnimationFrame(bild);
+// Raum-Typ der gewählten Klangart (für die Anzeige)
+function uTyp() {
+  const art = $('uArt').value;
+  return art === 'glocken' ? U.kuhglocken : art === 'gemurmel' ? U.publikum.gemurmel : art === 'voegel' ? U.voegel : art === 'brunnen' ? U.brunnen
+    : art === 'boeen' ? { radius: 1e9, referenz: 1e9 } : U.publikum.jubel;
+}
 
 // --- Feinschliff (M7a.1): Werte aus config.js live verstellen. pfad = Name in config.js, neu = Teil, der dafür neu gebaut
 // werden muss (Sättigungskurve, Stein-Puffer); alles andere liest der Ton ohnehin jedes Bild bzw. bei jedem Ereignis ---
@@ -172,6 +269,22 @@ const FEIN = [
   { pfad: 'audio.aufprall.pegel', name: 'Aufprall-Lautstärke gesamt', min: 0, max: 3, schritt: 0.05 },
   { pfad: 'audio.motor.heulenFaktor', name: 'Heulen-Faktor (rückwärts)', min: 2, max: 10, schritt: 0.1 },
   { pfad: 'audio.signale.pegel', name: 'Signale-Pegel', min: 0, max: 2, schritt: 0.05 },
+  // M7b: Umgebung und Musik
+  { pfad: 'audio.umgebung.kuhglocken.radius', name: 'Glocken-Reichweite (m)', min: 20, max: 150, schritt: 5 },
+  { pfad: 'audio.umgebung.kuhglocken.abstand[1]', name: 'Glocken-Dichte: längste Pause (s, kleiner = dichter)', min: 0.6, max: 4, schritt: 0.1 },
+  { pfad: 'audio.umgebung.kuhglocken.pegel', name: 'Glocken-Pegel', min: 0, max: 0.5, schritt: 0.002 },
+  { pfad: 'audio.umgebung.publikum.gemurmel.pegel', name: 'Gemurmel-Pegel', min: 0, max: 0.1, schritt: 0.0002 },
+  { pfad: 'audio.umgebung.publikum.jubel.pegel', name: 'Jubel-Pegel', min: 0, max: 0.6, schritt: 0.002 },
+  { pfad: 'audio.umgebung.voegel.dichteFaktor', name: 'Vögel-Dichte (Faktor)', min: 0, max: 3, schritt: 0.05 },
+  { pfad: 'audio.umgebung.voegel.pegel', name: 'Vögel-Pegel', min: 0, max: 0.3, schritt: 0.002 },
+  { pfad: 'audio.umgebung.brunnen.pegel', name: 'Brunnen-Pegel', min: 0, max: 0.1, schritt: 0.0002 },
+  { pfad: 'audio.umgebung.boeen.pegel', name: 'Böen-Pegel', min: 0, max: 0.15, schritt: 0.001 },
+  { pfad: 'audio.raum.pan', name: 'Pan-Stärke (links/rechts)', min: 0, max: 1, schritt: 0.05 },
+  { pfad: 'audio.raum.tiefpassFern', name: 'Tiefpass in der Ferne (Hz)', min: 300, max: 9000, schritt: 100 },
+  { pfad: 'audio.musik.echo.pegel', name: 'Musik: Echo-Pegel', min: 0, max: 0.8, schritt: 0.01, neu: 'musik' },
+  { pfad: 'audio.musik.lead', name: 'Musik: Lead-Pegel', min: 0, max: 0.6, schritt: 0.005, neu: 'musik' },
+  { pfad: 'audio.musik.bass', name: 'Musik: Bass-Pegel', min: 0, max: 0.3, schritt: 0.005, neu: 'musik' },
+  { pfad: 'audio.musik.schlagzeug', name: 'Musik: Schlagzeug-Pegel', min: 0, max: 0.6, schritt: 0.005, neu: 'musik' },
 ];
 // 'audio.aufprall.klang.stein.knall[2]' -> [Objekt, Schlüssel] in CONFIG
 function stelle(pfad) {
@@ -200,7 +313,7 @@ function feinSetzen(f, wert) {
   f.regler.value = wert;
   f.wert.textContent = f.zeige(wert);
   f.wert.classList.toggle('geaendert', wert !== f.original);
-  if (f.neu && ton.werk) ton.werk.neuBauen(f.neu);
+  if (f.neu === 'musik') { if (ton.werk) ton.werk.musik.pegelSetzen(); } else if (f.neu && ton.werk) ton.werk.neuBauen(f.neu);
 }
 // Geänderte Werte als Text, eine Zeile pro Wert: "audio.motor.verzerrung = 6.2"
 function feinText() {
@@ -218,7 +331,7 @@ $('kopieren').addEventListener('click', async () => {
 $('allesZurueck').addEventListener('click', () => { for (const f of FEIN) feinSetzen(f, f.original); $('kopieText').value = ''; $('kopieInfo').textContent = 'ALLE WERTE WIE IN CONFIG.JS'; });
 // Nach TON STARTEN: geänderte Bau-Werte anwenden (vorher gibt es noch kein Klangwerk)
 $('tonStarten').addEventListener('click', () => {
-  const warte = () => { if (!ton.werk || !ton.werk.aufbau.fertig) { setTimeout(warte, 50); return; } for (const f of FEIN) if (f.neu && f.original !== stelle(f.pfad)[0][stelle(f.pfad)[1]]) ton.werk.neuBauen(f.neu); };
+  const warte = () => { if (!ton.werk || !ton.werk.aufbau.fertig) { setTimeout(warte, 50); return; } for (const f of FEIN) if (f.neu && f.original !== stelle(f.pfad)[0][stelle(f.pfad)[1]]) { if (f.neu === 'musik') ton.werk.musik.pegelSetzen(); else ton.werk.neuBauen(f.neu); } };
   warte();
 });
 window.__tonLabor.fein = { FEIN, text: feinText, stelle };

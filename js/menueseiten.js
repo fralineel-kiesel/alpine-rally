@@ -197,6 +197,11 @@ export function baueSeiten(api) {
         typ: 'regler', text: 'einst.signale', hinweis: 'einst.signaleHinweis', min: 0, max: 100, schritt: M.lautSchritt,
         lesen: () => einstellungen.signale, setzen: (w) => setze('signale', w), anzeige: (w) => `${w}%`,
       },
+      // M7b: Musik (Menü, Pause, Zielbildschirm) zusätzlich leiser/lauter
+      {
+        typ: 'regler', text: 'einst.musik', hinweis: 'einst.musikHinweis', min: 0, max: 100, schritt: M.lautSchritt,
+        lesen: () => einstellungen.musik, setzen: (w) => setze('musik', w), anzeige: (w) => `${w}%`,
+      },
       { typ: 'gruppe', text: 'einst.sprache' },
       {
         typ: 'auswahl', text: 'einst.sprache',

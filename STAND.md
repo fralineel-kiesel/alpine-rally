@@ -1,14 +1,15 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 7a.1 fertig** – der Ton ist nach deinem Hörtest nachgeschärft: Der **Motor klingt härter und
-rauher und steigt beim Hochdrehen deutlich** (480 statt 300 Hz bei Höchstdrehzahl), beim Gaswegnehmen kommen
-**Salven aus kurzen, hellen Pops**, **Schalten** ist aggressiver (Zünd-Unterbrechung, Schaltknall, Getriebe-Klack,
-Zwischengas), die **Signale sind 3–4 Mal lauter** (der Motor duckt sich kurz darunter) und es gibt den neuen Regler
-**SIGNALTÖNE**. Der **Stein-Aufprall** ist dumpf statt metallisch, **alle Aufpralle** sind ca. 5 dB lauter, das
-**Rückwärts-Heulen** ist tiefer und folgt der Drehzahl. Im **Ton-Labor** gibt es neu den Bereich **Feinschliff**: Werte
-selber verstellen und mit **WERTE KOPIEREN** an mich schicken.
-**Wichtig: Ich kann immer noch nicht hören – bitte zuerst die Hörtest-Anleitung unten (M7a.1) machen.**
-Davor: 7a (Ton: Motor, Reifen, Wind, Aufprall, Signale, Ton-Labor; Minimap 49 x 49, farbige Checkpoint-Punkte), 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 7b fertig** – der Ton hat jetzt eine **Umgebung mit Stereo und Abstand**: **Kuhglocken**
+(Treicheln) bei den Herden, **Publikum** an Start, Ziel und den drei Fan-Spots (Gemurmel, **Jubel und Klatschen** beim
+Vorbeifahren, bei GO und an der Ziellinie, langer Jubel bei neuer Bestzeit), **Vögel** je nach Abschnitt, **Plätschern
+am Brunnen** der Alpweide und **Windböen auf der Passhöhe** – links/rechts und leiser/dumpfer mit der Entfernung, immer
+unter dem Motor. Dazu **Menü-Musik**: ein eigenes Stück im Stil 80er-Arcade-Rally (2:12, a-Moll, 138 BPM) auf Titel und
+Menü, leise in der Pause, als ruhiger Ausklang auf dem Zielbildschirm, nie im Rennen; neuer Regler **MUSIK** (Standard
+60 %). Das **Ton-Labor** hat die neuen Bereiche **Umgebung** (mit VORBEIFAHREN) und **Musik**.
+**Wichtig: Ich habe nichts davon gehört – bitte zuerst die Hörtest-Anleitung unten (M7b) machen. Einen Bach gibt es im
+Spiel nicht, nur den Brunnen (Bach = Idee).**
+Davor: 7a.1 (Motor härter und höher, Poppen, Schalten, Signale lauter mit Regler SIGNALTÖNE, Stein dumpf, Heulen), 7a (Ton: Motor, Reifen, Wind, Aufprall, Signale, Ton-Labor; Minimap 49 x 49, farbige Checkpoint-Punkte), 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -38,7 +39,387 @@ Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start
 
 ---
 
-## Meilenstein 7a.1: Motor härter und höher, Poppen, Schalten, Signale lauter (Regler SIGNALTÖNE), Aufprall dumpfer und lauter, Heulen ✅
+## Meilenstein 7b: Umgebungsklänge mit Stereo und Abstand, Menü-Musik, Regler MUSIK ✅
+
+> **Ehrlich vorneweg: Ich habe nichts davon gehört.** Alles ist **gemessen** (offline gerechnet: Pegel, Spitze,
+> Spektralschwerpunkt, Tonhöhe, Ausklingzeit, Stereo-Verteilung, Spektrogramme) und von Tests geprüft. Ob die Glocken nach
+> Treicheln klingen, der Jubel nach Menschen und die Musik nach 80er-Arcade-Rally, kannst nur du entscheiden. Darum zuerst
+> die **Hörtest-Anleitung** unten. **Musik:** Melodie, Schlagzeug und Mischung sind am unsichersten – sag einfach, was dir
+> nicht gefällt, das wird dann **M7b.1**.
+
+### Was ist neu?
+
+**1. Raum: Stereo und Abstand** (für alle Umgebungsklänge). Der Hörer ist die **Kamera** (wo sie steht und wohin sie
+schaut), damit der Ton zum Bild passt.
+- **Links/rechts**: Pan aus dem Winkel zur Blickrichtung (`sin(Winkel)` x 0.8). Quelle links = links, vorne/hinten = Mitte.
+- **Abstand**: bis zur „Referenz“ voller Pegel, dann leiser (halber Pegel bei doppeltem Abstand), ab dem „Radius“ still
+  (auf den letzten 15 % weich auslaufend). Dazu ein **Tiefpass**: nah 9000 Hz, in 150 m 1500 Hz (fern = dumpf).
+- **Hinten**: Quellen hinter der Kamera sind leiser (x0.7) und dumpfer (höchstens 2500 Hz), weich über den Winkel.
+- Alles wird **weich nachgeführt** (0.05 s), auch bei 100 km/h kein Knacken.
+- **Ehrlich zur Vorgabe „Pan wechselt von links nach rechts“:** Fährst du an einer Quelle vorbei, die links neben der
+  Strasse steht, **bleibt sie links**: vorne Mitte → ganz links (wenn du daneben bist) → hinten Mitte (und dumpfer). Sie
+  wandert nie auf die rechte Seite, das wäre physikalisch falsch. Das Bild `screenshots/m7b/20-pan-verlauf-vorbeifahrt.png`
+  zeigt beide Fälle (Quelle links und rechts).
+- Umgebung gibt es nur im **Countdown, Rennen, Zielbildschirm** und – durch den Pausenfilter dumpf und leiser – in der
+  **Pause** (dort wird nichts Neues ausgelöst, die Welt steht). Titel, Menü, Demo-Fahrt: keine Umgebung.
+- **Eigener Stimmen-Topf**: höchstens **8** einmalige Umgebungsklänge zugleich, getrennt von Aufprall und Signalen
+  (die werden nie verdrängt). Dauerklänge: höchstens 2 Gemurmel, 1 Brunnen, 1 Böen.
+
+**2. Kuhglocken (Treicheln)**: jede der **17 Herden** (54 Kühe, Tal und Alp, auch die Herden bei Start und Ziel) ist
+eine Quelle. Der Klang: 3 Teiltöne in unharmonischen Verhältnissen (z. B. 1 : 2.3 : 3.9) plus ein schwebender Zwilling
+des Grundtons und ein kurzes Rasseln, weicher Anschlag. **Grundton 240–400 Hz**, 3 Varianten pro Herde (feste
+Zufallsfolge), Ausklingen **0.51–0.88 s**, Schwerpunkt **ca. 400 Hz** (dumpf, kein Glöckchen). Die Herde bimmelt
+unregelmässig (Abstand **0.5–1.8 s**, im Mittel 1.0 s bei 6 Kühen; je mehr Kühe, desto dichter), manchmal ein
+**„bim-bom“**. Grasende Kühe läuten am meisten, stehende seltener, **liegende kaum**. Hörbar bis ca. **70 m** vor der
+Herde, nur die **2 nächsten** Herden. Unter **25 m** läutet die Herde **1.5-mal dichter** („aufgeschreckt“, nur Klang).
+Jeder Schlag kommt von einer zufälligen Kuh der Herde (der Klang wandert also ein bisschen). Kühe selbst: unverändert.
+
+**3. Publikum** an **Start** (±70 m um die Linie), **Ziel** (−70 … +350 m, auch die Ausrollstrecke) und den Fan-Spots
+**Kehre 3**, **Passhöhe**, **Almweg** (Stärke 1.0 / 1.0 / 0.6 / 0.8 / 0.5). Klangpunkte alle 25 m auf der Zuschauerseite.
+- **Gemurmel** (Dauerklang): Rauschen durch drei „Stimmen“-Bänder (300 / 800 / 2200 Hz), langsam schwankend, mit
+  Silben-Flattern; nahtlose 4-s-Schleife. Hörbar bis ca. **80 m**. Im Countdown am Start bist du mitten drin.
+- **Jubel-Welle** (ca. 2.4 s): Rauschen mit wandernden Vokal-Formanten (a/o/e/ä), dazu „Ooh/Yeah“-Rufe (Sägezahn durch
+  Formantfilter, gleitende Tonhöhe) und Klatschen, mit zufälligem Anschwellen. Ausgelöst **beim Vorbeifahren** an einem
+  Fan-Spot (25 m davor, einmal pro Durchfahrt, höchstens alle 20 s pro Ort; ein R-Sprung zählt nicht), **bei GO** am Start
+  (kräftiger) und **an der Ziellinie** (noch kräftiger, mit Klatsch-Ausbruch). Bei **neuer Bestzeit** kommt mit der langen
+  Fanfare der **lange Jubel** (ca. 5 s). Läuft ein Jubel, folgen Pan und Pegel der Kamera.
+- **Klatschen**: dichte, kurze Rauschimpulse (**25–40 pro Sekunde**, Bandpass um 2.2 kHz), in jeder Welle und als eigener
+  Ausbruch an der Ziellinie.
+- Zuschauer-Figuren und ihre Animation: unverändert (Bild und Ton laufen unabhängig).
+
+**4. Vögel**: 8 Ruf-Arten (Aufwärts- und Abwärts-Pfiff, Triller, Doppel-Ton, „tü-tü-tü“, schneller Triller, Schwung,
+„Zick“), **2–5 kHz**, **65–190 ms**, scharf. Sie rufen seitlich **10–40 m** neben und **5–25 m** vor/hinter der Kamera,
+im Mittel alle **5 s** bei Dichte 1. Dichte je Abschnitt (weich über 40 m übergeblendet):
+
+| Abschnitt | Dichte | gemessen |
+|---|---|---|
+| Start im Tal | 0.7 | 0.68 |
+| Talabschnitt | 1.0 | 1.01 |
+| Waldstück | 1.0 | 1.01 |
+| Kehrengruppe | 0.5 | 0.48 |
+| Felswand 1 (beide Teile) | 0 | 0 (keine Rufe) |
+| Almweg | 0.7 | 0.68 |
+| Passhöhe | 0.15 | 0.13 |
+| Wiesenweg | 1.0 | 1.01 |
+| Abfahrt (mit Felswand rechts) | 0.4 | 0.41 |
+| Zielgerade | 0.6 | 0.61 |
+
+Je schneller, desto weniger Rufe (bei 180 km/h noch 30 %); im Countdown volle Dichte.
+
+**5. Brunnen** (Alpweide, Wiesenweg bei 2979 m, **31 m links** neben der Strasse): Plätschern aus der Röhre (Rauschen
+1–4 kHz mit schnellem Blubbern) und kleine Tropfen (kurze Tonsprünge), nahtlose 3-s-Schleife, hörbar bis **60 m**.
+**Ehrlich: Es gibt im Spiel keinen Bach** – nur diesen Brunnen. Einen echten Bach müsste man zuerst als Gelände und
+Grafik bauen; das steht unter den Ideen.
+
+**6. Windböen auf der Passhöhe** (2495–2794 m, davor und danach 80 m weich ein und aus): tiefes Rauschen, links und
+rechts aus zwei unabhängigen Quellen (breit, kein Pan), mit **langsamen Böen** (anschwellen 1.5–3 s, abschwellen
+2–4 s, Pause 2–6 s) und einem leisen **Heulton** (schmaler Bandpass, wandert zwischen 300 und 700 Hz). Unabhängig vom
+Tempo (auch im Stand), **zusätzlich** zum Fahrtwind (der ist unverändert).
+
+**7. Menü-Musik „Passfahrt“** – eine **Eigenkomposition** (keine bekannten Motive) im Stil 80er-Arcade-Rally, aus Noten im
+Code gespielt (`js/musikstueck.js`), vier Kanäle wie ein 80er-Computer:
+- **Melodie**: Pulswelle 25 % (Strophe) / 12.5 % (Refrain), leichtes Vibrato bei langen Noten, **Echo** (3/16,
+  Rückkopplung 0.3, Tiefpass); im Schluss-Refrain mit leiser Oktave darunter („voller“).
+- **Arpeggio**: Pulswelle 50 %, schnelle 16tel auf den Akkorden; im Refrain eine **Gegenstimme** (absteigende Linien).
+- **Bass**: halb Dreieck, halb Sägezahn mit Tiefpass, **pumpende Achtel** (Grundton auf der Zählzeit, Oktave/Quinte
+  dazwischen); im Break Viertel.
+- **Schlagzeug**: Kick (Sinus, Tonhöhe fällt 150 → 46 Hz), Snare (Rauschen + Sinus), Hi-Hat zu/offen (Rauschen, hell);
+  **Fill** im letzten Takt jeder 8er-Gruppe.
+- Auf dem Mix: sanfter Tiefpass (3.8 kHz, runde Flanken wie ein 80er-Computer), sanfter Kompressor und eine Decke (nie
+  über −8.3 dBFS).
+- **Tempo 138 BPM**, a-Moll, **76 Takte = 2:12**, dann nahtlos von vorn. Die endgültige Tabelle:
+
+| Abschnitt | Takte | Harmonie (ein Akkord pro Takt) | Charakter |
+|---|---|---|---|
+| Intro | 1–4 | Am Am F G | Bass und Schlagzeug, Arpeggio ab Takt 3 |
+| A (Strophe) | 5–12 | Am Am F G / Am Am Dm E | Melodie mit kurzem rhythmischem Motiv, Frage und Antwort |
+| B (Aufbau) | 13–20 | F G Am Am / F G E E | steigende Linie bis a'', Schlagzeug dichter (16tel-Hi-Hat) |
+| C (Refrain) | 21–28 | Am G F E / Am G F E | Hook (3+3+2, mit Pause) zweimal gleich, beim dritten Mal variiert; Gegenstimme |
+| A' | 29–36 | wie A | gleiche Fragen, Antworten höher und anders |
+| Break | 37–40 | Dm Dm E E | ohne Schlagzeug und Melodie, Arpeggio und Bass; Rauschen-Anstieg im 4. Takt |
+| B' | 41–48 | wie B | |
+| C' | 49–56 | wie C | |
+| D (Schluss-Refrain) | 57–64 | Bm A G F♯ / Bm A G F♯ | ein Ganzton höher (h-Moll), Melodie mit Oktave darunter, Gegenstimme |
+| C'' | 65–72 | wie D | Takt 5, 7, 8 variiert, Höhepunkt bis h'' |
+| Rückführung | 73–76 | Em F E E | führt nach a-Moll zurück, im letzten Takt Stille in der Melodie, Schlagzeug-Fill |
+| (Ausklang, nur Zielbildschirm) | 8 | Am Am Dm Dm F F E E | ruhige Schleife: Arpeggio, Bass, sanfte Melodie (Dreieck), ohne Schlagzeug |
+
+**8. Wo die Musik läuft**: **Titel und Hauptmenü samt Unterseiten** (auch mit der Demo-Fahrt dahinter): startet beim
+Entsperren (erster Tastendruck) mit dem Intro, blendet in 0.8 s ein und **läuft über alle Seiten durch** (kein Neustart).
+**STARTEN**: blendet in **1.0 s** aus und stoppt; Countdown und Rennen **ohne Musik** (Countdown-Pieps, Motor, Umgebung
+wie gehabt). **Pause** (auch im Countdown): leise Variante ab Abschnitt A, **ohne Schlagzeug**, Tiefpass 1200 Hz, halber
+Pegel, 0.4 s ein; **Weiter**: 0.4 s aus. **Zielbildschirm**: nach **ca. 1 s** (bei neuer Bestzeit erst nach der langen
+Fanfare, **ca. 5 s**) der ruhige Ausklang in Schleife, Pegel 0.7. **Hauptmenü** (aus Pause, Rennen, Zielbildschirm):
+Musik wieder vom Intro. R / Neustart: keine Musik. Mit `?ton=aus` und `?menue=aus`: ganz stumm.
+
+**9. Regler MUSIK** (EINSTELLUNGEN → TON, unter SIGNALTÖNE): 0–100 % in 5er-Schritten, **Standard 60 %**, gespeichert
+(alter Speicher ohne den Wert = 60 %), quadratisch wie die anderen, wirkt sofort und weich, **zusätzlich** zu LAUTSTÄRKE.
+Englisch: MUSIC. Hinweis: „MENÜ, PAUSE, ZIEL - ZUSÄTZLICH ZUR LAUTSTÄRKE“. Der Hinweis unter LAUTSTÄRKE heisst jetzt
+**„FÜR ALLES (MOTOR, UMGEBUNG, MUSIK, SIGNALE)“** („FOR ALL (ENGINE, AMBIENCE, MUSIC, SIGNALS)“). Beim Verstellen hörst du
+den Regler-Tick und die Musik selbst lauter/leiser.
+
+**10. Ducking**: Menü-Bestätigen/Zurück/Fehler und Checkpoint-/Ziel-Signale senken die Musik für 150 ms um **4 dB**.
+Das Ducking des Motors (M7a.1) ist unverändert.
+
+**11. Ton-Labor** (`ton-labor.html`): neue Bereiche **Umgebung** (Klangart, Abstand 0–150 m, Seite −90° … 180°,
+ABSPIELEN, **VORBEIFAHREN** mit 90 km/h in 15 m Abstand, Anzeige von Pan, Pegel, Tiefpass) und **Musik** (SPIELEN/STOPP,
+Abschnitt zum Springen, Art Menü/Pause/Ziel, Tempo 110–160 BPM, Musik-Pegel = Regler MUSIK, Kanäle einzeln stumm, Anzeige
+von Abschnitt und Takt). Im **Feinschliff** 15 neue Regler (Glocken-Reichweite, Glocken-Dichte, Glocken-Pegel,
+Gemurmel-Pegel, Jubel-Pegel, Vögel-Dichte, Vögel-Pegel, Brunnen-Pegel, Böen-Pegel, Pan-Stärke, Tiefpass in der Ferne,
+Echo-Pegel, Lead-, Bass-, Schlagzeug-Pegel); WERTE KOPIEREN und ALLES ZURÜCK nehmen sie mit.
+
+### Quellen im Spiel (Positionen in Weltkoordinaten stimmen zur Strecke auf ±1 m, Test (a))
+
+| Quelle | wo | Reichweite |
+|---|---|---|
+| 17 Herden (54 Kühe) | Mittelpunkt und Radius aus den Kühen (`kuehe.js`, nur gelesen) | 70 m ab Herdenrand |
+| Start | 6 Punkte, 25 m Abstand, −70 … +70 m um die Startlinie (auch auf der Verlängerung) | 80 m (Jubel 160 m) |
+| Ziel | 17 Punkte, −70 … +350 m (Ausrollstrecke) | 80 m |
+| Fan-Spot Kehre 3 | 1694–1716 m, rechts, 13.8 m neben der Mitte (2 Punkte) | 80 m, Jubel ab 1669 m |
+| Fan-Spot Passhöhe | 2590–2652 m, rechts, 12.5 m (4 Punkte) | 80 m, Jubel ab 2565 m |
+| Fan-Spot Almweg | 1970–1990 m, links, 11.3 m (2 Punkte) | 80 m, Jubel ab 1945 m |
+| Brunnen | dort, wo er gebaut ist (Kollisionskreise aus `leben.js`), 31 m neben der Strasse | 60 m |
+| Böen | Abschnitt Passhöhe 2495–2794 m | ± 80 m weich |
+| Vögel | rund um die Kamera, Dichte je Abschnitt | 70 m |
+
+### Messtabelle (offline gerechnet, LAUTSTÄRKE und MUSIK 100 %, lauterer Kanal)
+
+**Umgebung gegen den Motor** (Motor 5000/min Vollgas mit Turbo, Reifen, Wind: RMS **−10.6 dBFS**; Grenze: kein
+Umgebungsklang lauter als Motor − 6 dB)
+
+| Klangart | Abstand | RMS | Spitze | gegen Motor (RMS) | Ziel |
+|---|---|---|---|---|---|
+| Kuhglocke | 6 m | −39.1 dBFS | **−20.0 dBFS** | −28.6 dB | Spitze ca. −20 |
+| Gemurmel | 10 m | **−36.3 dBFS** | −23.6 | −25.7 dB | RMS ca. −36 |
+| Jubel kurz (an der Ziellinie, kräftig) | 10 m | −33.3 | −15.8 | −22.7 dB | (Spitze einfacher Jubel **−18.1**, Ziel ca. −18) |
+| Jubel lang (neue Bestzeit) | 10 m | −33.8 | −16.4 | −23.2 dB | |
+| Klatschen (Ausbruch) | 10 m | **−28.7** | −9.6 | −18.9 dB | RMS ca. −28 |
+| Vogel | 15 m | −29.8 (während des Rufs) | **−26.0** | −19.2 dB | Spitze ca. −26 |
+| Brunnen | 4 m / 31 m (Strasse) | **−38.7** / −53.0 | −24.8 | −28.3 dB | RMS ca. −38 |
+| Böen (voll) | – | **−29.8** (schwankt um 14 dB) | −10.5 | −18.7 dB | RMS ca. −30 |
+| alles zugleich + Motor + harter Aufprall + Fanfare | | | **0.924** | | unter 0.98 |
+
+**Musik** (jeder Abschnitt einzeln gerechnet)
+
+| Abschnitt | RMS | Spitze | Schwerpunkt | über 2 kHz |
+|---|---|---|---|---|
+| Intro | −22.8 dBFS | −11.0 dBFS | 198 Hz | 1.0 % |
+| A / A' | −20.6 / −20.7 | −9.3 / −9.0 | 670 / 730 Hz | 5.7 / 5.8 % |
+| B / B' | −20.3 | −9.4 | 822 Hz | 6.7 % |
+| C / C' | −21.7 | −9.5 | 1000 Hz | 16.4 % |
+| Break | −20.9 | −12.7 | 232 Hz | 1.3 % |
+| D / C'' | −21.5 | −9.1 | 971 / 985 Hz | 15.3 / 15.7 % |
+| Rückführung | −20.8 | −9.7 | 633 Hz | 6.0 % |
+
+Ziel war RMS ca. −20 dBFS (±3), Spitze unter −8 dBFS: erfüllt (RMS −20.3 bis −22.8). Grösster Sprung zwischen zwei
+Abtastwerten (ohne Schlagzeug) unter 0.1. **Signal gegen Musik**: Menü-Bestätigen Spitze −8.7 dBFS, Musik RMS −21.6 dBFS
+→ **13 dB** Abstand (mindestens 10 verlangt), mit Ducking (−4.0 dB gemessen) 17 dB. Bei MUSIK 60 % (Standard) ist die
+Musik nochmals 8.9 dB leiser.
+
+### Zahlen
+
+- **Zeichenaufrufe (3D)** 60 m / 1170 m / 2900 m: **122 / 113 / 81 → 122 / 113 / 81** (unverändert).
+- **Audio-Knoten**: dauerhaft **79 → 118** (+39: Musik 22 – Kanäle, Echo, Bass-Tiefpass, Mix-Tiefpass, Kompressor, Decke,
+  Pause-Tiefpass, Blenden, Ducking, Regler MUSIK; Umgebung 17 – 2 Gemurmel, Brunnen je Pegel/Tiefpass/Panner, Böen mit
+  3 Rausch-Quellen, 2 Tiefpässen, Merger, Heul-Bandpass, 2 Pegeln; dazu die Schleifen-Quellen). In einem vollen Moment
+  kommen dazu: Umgebung höchstens 8 Stimmen x 4 Knoten, Musik höchstens 14 Töne x 2 Knoten (im Menü typisch 6 Töne).
+- **Puffer-Aufbau nach dem Entsperren** (`node tools/m7b-leistung.mjs <alte Version>`): **162 → 263 ms** Rechenzeit
+  (**+101 ms**, Budget +200), 20 → 33 Häppchen, **längstes 9.4 ms**. Gemurmel, Brunnen, Glocken, Jubel und Klatschen
+  werden mit halber Abtastrate gerechnet (ihr Klang liegt unter 6 kHz; der Browser rechnet beim Abspielen um) – das
+  halbiert die Rechenzeit. Das Schlagzeug der Musik wird zuerst gerechnet (die Musik beginnt sofort).
+- **Bildzeit mit / ohne Ton** (Test-Rechner mit Software-Grafik, nur zum Vergleich): Rennen an Kehre 3 (Gemurmel, Vögel,
+  Motor Vollgas) **216.7 / 216.7 ms**, Menü mit Musik **283.3 / 283.3 ms** – kein Unterschied.
+- **tonBild()** im Rennen: **5.5 µs** pro Bild (M7a.1: 1.8 µs). **Speicher pro Bild** (Heap-Profiler des Browsers, ohne
+  einmalige Klänge): **157 → 240 Byte** im Rennen. Unser eigener Code legt pro Bild keine Objekte an (in Node mit
+  Attrappen gemessen: 0); was bleibt, entsteht im Browser bei jedem Web-Audio-Auftrag (ca. 12 Byte pro Aufruf) – das war
+  beim Motor schon seit M7a so (157 Byte). Zwei Fallen habe ich dabei gefunden und umgangen: `Math.hypot` und Zahlen aus
+  einem `Float32Array` als Funktions-Argument kosten im Browser jedes Mal ein kleines Objekt.
+- **Ladezeit** (`node tools/ladezeit.mjs <alte Version> 9`, abwechselnd, Median): **1571 → 1497 ms** – kein messbarer
+  Unterschied (Schwankung dieser Messung ca. ±150 ms). Beim Laden wird nichts Neues gerechnet: Quellenliste und Noten
+  entstehen erst beim Entsperren (zusammen ca. 4 ms).
+
+### Hörtest-Anleitung für Lino (M7b)
+
+**Schritt 1: Ton-Labor** (`https://fralineel-kiesel.github.io/alpine-rally/ton-labor.html`), Kopfhörer wenn möglich
+(für links/rechts), nicht zu laut, **TON STARTEN**.
+1. **Umgebung** (Bereich „Umgebung“): Klangart der Reihe nach wählen – **Kuhglocken** (Abstand 6 m, dann 40 m, dann
+   70 m), **Gemurmel** (10 m), **Jubel kurz** und **Jubel lang** (ABSPIELEN), **Klatschen**, **Vögel** (läuft von selbst;
+   ABSPIELEN = einer genau an der Stelle), **Brunnen** (4 m, dann 31 m = von der Strasse), **Böen** (warten, sie kommen und
+   gehen langsam).
+2. **Seite**: bei Kuhglocken oder Gemurmel den Regler „Seite“ von −90 (links) über 0 (vorne) nach +90 (rechts) und 180
+   (hinten: dumpfer) schieben.
+3. **VORBEIFAHREN** bei Kuhglocken, Gemurmel und Brunnen (Seite −90 = Quelle links, +90 = rechts): 90 km/h, 15 m daneben.
+   Kommt der Klang von vorne, ist er neben dir am lautesten und wird hinten dumpfer?
+4. **Musik** (Bereich „Musik“): SPIELEN mit Abschnitt **Intro**, dann **A**, **C** (Refrain), **Break**, **D**
+   (Schluss-Refrain). Kanäle einzeln stumm schalten (z. B. nur Lead an), um jede Stimme zu hören. Art **Pause** (dumpf,
+   leise, ohne Schlagzeug) und **Ziel** (Ausklang). Tempo-Regler ausprobieren.
+
+**Schritt 2: im Spiel**, in dieser Reihenfolge:
+1. **Titelbild**: Taste drücken → Musik beginnt (Intro). Durch das Menü und die Unterseiten blättern: Die Musik läuft
+   durch. EINSTELLUNGEN → TON → **MUSIK** verstellen.
+2. **STARTEN**: Musik blendet in 1 s aus. Im **Countdown** am Start: Gemurmel rundherum, bei **GO** Jubel.
+3. Strecke abfahren: **Vögel** im Tal und im Wald, keine an der Felswand; **Kuhglocken** bei den Herden (Tal, Alpweiden);
+   Fan-Spots **Kehre 3**, **Almweg-Abzweig**, **Passhöhe** (Jubel beim Vorbeifahren), auf der **Passhöhe** die **Böen**.
+4. **Wiesenweg**: der **Brunnen** links bei der Alphütte (von der Strasse aus leise – kurz anhalten und hinhören).
+5. **Ziel**: Jubel und Klatschen an der Linie, dann **Zielbildschirm** mit ruhigem Ausklang (nach ca. 1 s).
+6. **Pause** (Esc) im Rennen: leise, dumpfe Musik; Weiter: weg.
+
+**Wenn X, dann Y** (die meisten Werte gibt es im Feinschliff des Ton-Labors mit genau diesem Namen):
+
+| Wenn … | dann … | jetzt |
+|---|---|---|
+| Glocken zu laut / zu leise | `audio.umgebung.kuhglocken.pegel` | 0.142 |
+| Glocken zu hell / zu tief | `audio.umgebung.kuhglocken.grundton` (Hz) | [240, 400] |
+| Glocken zu weit / zu kurz hörbar | `audio.umgebung.kuhglocken.radius` (m) | 70 |
+| Glocken bimmeln zu oft / zu selten | `audio.umgebung.kuhglocken.abstand` (s) | [0.5, 1.8] |
+| Gemurmel zu laut / zu leise | `audio.umgebung.publikum.gemurmel.pegel` | 0.0222 |
+| Jubel zu laut / zu leise | `audio.umgebung.publikum.jubel.pegel` | 0.178 |
+| Jubel klingt unecht | `audio.umgebung.publikum.jubel.gleiter` (mehr/weniger Rufe), `…publikum.klatschen.pegel`; sonst sag mir, was fehlt | 14 / 0.44 |
+| Jubel zu oft (Fan-Spots) | `audio.umgebung.publikum.jubel.sperre` (s) | 20 |
+| Klatschen zu laut | `audio.umgebung.publikum.klatschen.pegel` | 0.44 |
+| zu viele / zu wenige Vögel | `audio.umgebung.voegel.dichteFaktor`, je Abschnitt `audio.umgebung.voegel.dichte` | 1 |
+| Vögel zu laut | `audio.umgebung.voegel.pegel` | 0.062 |
+| Brunnen nicht hörbar | `audio.umgebung.brunnen.pegel`, `…brunnen.rolloff` (kleiner = weiter hörbar) | 0.0176 / 0.6 |
+| Böen zu laut / zu leise | `audio.umgebung.boeen.pegel` | 0.032 |
+| links/rechts zu stark / zu schwach | `audio.raum.pan` | 0.8 |
+| Ferne zu dumpf | `audio.raum.tiefpassFern` (Hz) | 1500 |
+| Musik zu hektisch / zu lahm | `audio.musik.bpm` | 138 |
+| Musik zu laut gegen Signale | Regler MUSIK, oder `audio.musik.pegel` | 60 % / 0.9 |
+| Melodie zu leise / zu laut | `audio.musik.lead` | 0.26 |
+| Bass dröhnt / zu dünn | `audio.musik.bass` | 0.075 |
+| Schlagzeug zu dünn / zu laut | `audio.musik.schlagzeug` | 0.25 |
+| Echo zu viel | `audio.musik.echo.pegel` | 0.28 |
+| Musik zu dumpf | `audio.musik.tiefpass` (Hz, höher = heller) | 3800 |
+| Pause-Musik zu laut | `audio.musik.pausePegel` | 0.5 |
+| Ziel-Musik kommt zu früh / zu spät | `audio.musik.zielNach`, `zielNachBestzeit` (s) | 1 / 5 |
+
+**So schickst du mir deine Zahlen**: im Ton-Labor unten im **Feinschliff** verstellen, **WERTE KOPIEREN** drücken und den
+Text in den Chat einfügen (z. B. `audio.umgebung.kuhglocken.radius = 70`). Werte, die nicht im Feinschliff sind, einfach
+dazuschreiben. **Für Musik-Änderungen** (andere Melodie, anderes Tempo, mehr Abwechslung, anderes Schlagzeug) **schreib
+einfach, was dir nicht gefällt – das wird dann M7b.1.**
+
+### Wie der Ton aufgebaut ist (Stand M7b)
+
+```
+master (Regler LAUTSTÄRKE, quadratisch) -> Limiter -> Sicherheits-Decke -> Lautsprecher
+  fahrzeug: Motor + Reifen (über das Ducking), Aufprall, Schleifen
+  umgebung: Fahrtwind, Kuhglocken, Publikum, Vögel, Brunnen, Böen (js/umgebung.js) – Pausen-Tiefpass und Ducking
+            jede Quelle: Pegel -> Tiefpass (Abstand) -> Panner (links/rechts); eigener Stimmen-Topf (8)
+  signale:  Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes (Regler SIGNALTÖNE)
+  musik:    Regler MUSIK -> Ducking -> Blende -> Art-Pegel -> Pause-Tiefpass -> Decke <- Pegel <- Kompressor
+            <- Mix-Tiefpass <- Melodie (mit Echo), Arpeggio/Gegenstimme, Bass (Tiefpass), Schlagzeug (js/musik.js)
+```
+
+- Das Spiel gibt dem Ton pro Bild zusätzlich die **Kamera** (Ort, Blickrichtung), den **Streckenmeter** und den
+  **musikModus** (Menü, Pause, Ziel, aus) und einmal nach dem Bau der Welt die **Quellenliste** (`umgebungsQuellen`).
+- **Musik** wird auf der Audio-Uhr geplant (0.4 s im Voraus, alle 80 ms und bei jedem Bild); bleibt der Zeitgeber stehen
+  (Seite im Hintergrund), wird nichts nachgeholt.
+- Alle neuen Werte: `js/config.js`, Blöcke `audio.raum`, `audio.umgebung`, `audio.musik`; Noten: `js/musikstueck.js`.
+
+### So testest du
+
+1. Hörtest-Anleitung oben (Ton-Labor zuerst).
+2. `node tools/ton-umgebung-test.mjs` (neu, Umgebung und Musik), `node tools/ton-test.mjs` (M7a/M7a.1),
+   `node tools/m7b-leistung.mjs <alte Version>`, `node tools/m7b-bilder.mjs`.
+
+### Bilder (`screenshots/m7b/`)
+
+- Spektrogramme (Zeit nach rechts, Tonhöhe nach oben, hell = laut): `10-kuhglocke`, `11-gemurmel`, `12-jubel-kurz`,
+  `13-jubel-lang`, `14-vogelrufe` (alle 8 nacheinander), `15-brunnen`, `16-boeen` (30 s), `17-musik-intro`, `-a`, `-c`,
+  `-break`, `-d` (je 4 Takte).
+- `20-pan-verlauf-vorbeifahrt`: Pan, Pegel und Tiefpass bei 90 km/h, 15 m neben einer Quelle (links und rechts).
+- `30-ton-labor`: das Ton-Labor mit den Bereichen Umgebung, Musik und dem erweiterten Feinschliff.
+- `31-einstellungen-lautstaerke-signaltoene-musik`, `32-einstellungen-music-englisch` (je auch `-320x180`).
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/umgebung.js` | **neu**: Raum (Pan, Abstand, Tiefpass, hinten), Quellenliste, Klänge (Glocken, Gemurmel, Jubel, Klatschen, Vögel, Brunnen, Böen), eigener Stimmen-Topf |
+| `js/musik.js` | **neu**: Musik-Spieler (vorausplanend, 4 Kanäle, Echo, Arten Menü/Pause/Ziel, Blenden, Ducking, `status`, `testRender`) |
+| `js/musikstueck.js` | **neu**: Noten und Abschnitte des Stücks |
+| `js/audio.js` | Umgebung und Musik eingebaut, Regler MUSIK, Ducking der Musik, Jubel bei GO/Ziel/Bestzeit, Puffer in kleineren Häppchen (auch mit eigener Abtastrate) |
+| `js/main.js` | gibt dem Ton Kamera, Streckenmeter, musikModus und einmal die Quellenliste; sonst unverändert |
+| `js/config.js` | `audio.raum`, `audio.umgebung`, `audio.musik`, `busse.musik` 0 → 1, `menue.standard.musik` 60, Version 0.7b |
+| `js/einstellungen.js`, `js/menueseiten.js`, `js/texte.js` | Regler MUSIK (gespeichert, Texte de/en), Hinweis unter LAUTSTÄRKE |
+| `ton-labor.html`, `js/tonlabor.js` | Bereiche Umgebung und Musik, 15 neue Feinschliff-Regler |
+| `tools/ton-umgebung-test.mjs`, `tools/umgebung-pruefung.js` | **neu**: Tests (a)–(n) und Messhilfen (Stereo-Rendering, Klick-Messer) |
+| `tools/m7b-leistung.mjs`, `tools/m7b-bilder.mjs`, `tools/m7b-messung.json` | **neu**: Leistung, Bilder, Messwerte |
+| `tools/ton-test.mjs` | eine Grenze angepasst: Puffer-Aufbau zusammen < 500 ms (vorher < 300 ms; Budget +200 ms für M7b) |
+
+### Selbst getestet
+
+- **`node tools/ton-umgebung-test.mjs` – alle 107 Prüfungen bestanden**, keine Konsolenfehler:
+  (a) 17 Herden / 54 Kühe, jede Kuh in einer Herde; Start/Ziel/Fan-Spots ±0.0001 m an der Strecke, Brunnen am gebauten
+  Brunnen; Vögel-Tabelle hat alle 10 Abschnittsnamen. (b) Pan links −0.8 / rechts +0.8 / vorne 0; Pegel monoton, 1 bis zur
+  Referenz, 0 ab Radius; Tiefpass fällt; hinten x0.7 und 2500 Hz; Vorbeifahrt: grösster Pan-Schritt 0.009 pro Bild, kein
+  NaN; gerechnetes Stereo: die Seite der Quelle ist 12 dB lauter. (c) Glocken 240–400 Hz (gemessen = Soll), Ausklingen
+  0.51–0.88 s, 0.52–1.80 s Abstand über 292 Schläge (74 Doppel), aufgeschreckt x1.5, nur im Radius, höchstens 2 Herden, −20.0 dBFS bei
+  6 m, Schwerpunkt 407 Hz, liegende Kühe läuten kaum. (d) Gemurmel-Naht nahtlos, −36.2 dBFS bei 10 m, still ab 80 m; Jubel
+  einmal pro Durchfahrt, 20-s-Sperre, kein Jubel bei R-Sprung, GO, Ziellinie, langer Jubel nur bei neuer Bestzeit;
+  Klatschen 30–40 pro Sekunde (gezählt 31.8). (e) Vögel-Dichten ±5 % (siehe Tabelle), Felswand 0, Übergänge weich, 2–5 kHz, 65–190 ms,
+  mit Tempo weniger, −26.0 dBFS bei 15 m, alle 8 Arten kommen vor. (f) Brunnen −38.7 dBFS bei 4 m, still ab 60 m, Naht
+  nahtlos; Böen folgen der Passhöhe, tempo-unabhängig, −29.8 dBFS, L/R unabhängig. (g) siehe Messtabelle. (h) Topf nie
+  über 8, Aufprall/Fanfare/Checkpoint bekommen ihre Stimmen, Pause gedämpft ohne Neues, Menü still, keine hängenden
+  Knoten (auch nach einer Minute Fahrt). (i) 76 Takte, 132.17 s, Tonmenge, Lead 220–880 Hz (D bis 988), Bass 55–196 Hz,
+  alle Phrasen enden auf Akkordtönen, höchstens 10 gleichzeitige Töne, Naht ohne Klick (Sprung 0.014). (j) alle Abschnitte im Ziel,
+  Break ohne Schlagzeug, D genau einen Ganzton höher (Bass 55.0 → 61.7 Hz). (k) Musik ab Entsperren, Unterseiten ohne
+  Neustart, STARTEN 1.0 s Rampe, Pause-Variante, Weiter 0.4 s, Hauptmenü → Intro, Ziel nach 0.98 / 4.98 s, Ausklang,
+  `?ton=aus`/`?menue=aus` stumm. (l) Regler 60 % Standard, gespeichert, alter Speicher = 60, quadratisch, 0 % still, kein
+  Knacken. (m) Ducking −4.0 dB, Signal 13 dB über der Musik.
+- **`node tools/ton-test.mjs` – alle 212 Prüfungen bestanden** (eine Grenze angepasst, siehe oben; Puffer-Aufbau dort
+  284 ms, längstes Häppchen 8.9 ms). In einem früheren Durchlauf schlug einmal die zeitabhängige Prüfung „?menue=aus: das
+  Spiel läuft“ knapp fehl (Tempo 0.5 statt über 0.5 m/s nach 0.8 s, ohne Ton) – im nächsten Durchlauf bestanden.
+- **Alte Tests** (unverändert): `testfahrer` **2:59.33 / 2:42.35 / 2:31.92**, `abkuerzungen --pruefen` **127 / 2 / 342 / 84**,
+  `rennablauf-test` (Statistik Aufpralle/Resets/Höchsttempo), `menue-test`, `startziel`, `leben`, `kuh`, `pacenotes`,
+  `aufprall`, `getriebe` – alle bestanden. `overlay-test`: einmal bestanden, einmal eine zeitabhängige Prüfung („Hinweis
+  nach 1.5 s weg“, gemessen nach 1.8 s echter Zeit bei ca. 250 ms pro Bild) nicht – die **alte Version** (M7a.1) scheitert
+  im selben Test-Rechner genau gleich; der Test läuft ohne Ton (`?menue=aus`). Strecke, Physik, Kollision, Sperren,
+  Abkürzungen, Pace-Notes, Checkpoints, Rennzeit, Fahrspur, Bestzeiten, Kühe und Zuschauer nicht angefasst; „mit und
+  ohne Ton genau gleich“ (Ton-Test Teil 1 (d)) besteht weiter.
+
+### Ehrlich beurteilt – wo ich am unsichersten bin
+
+- **Nicht gehört.** Alle Ziele sind gemessen erreicht, aber Klangqualität kann ich nicht beurteilen.
+- **Jubel**: Menschliche Stimmen aus Rauschen und Sägezahn sind schwer. Es klingt vermutlich **„stilisiert“** (Rauschen mit
+  Vokal-Färbung, ein paar gleitende „Ooh“-Töne, Klatschen) und nicht wie echte Menschen. **Das zuerst anhören** (Labor:
+  Jubel kurz / lang).
+- **Musik**: Die Melodie folgt sauber den Regeln (Stufen, Phrasen auf Akkordtönen, Hook mit Pause), kann aber **zu brav**
+  oder zu „Übungsstück“ wirken. Das **Schlagzeug** ist einfach (ein Kick, eine Snare, Hi-Hats) und könnte **dünn** klingen.
+  Kompromiss: ein Tiefpass bei 3.8 kHz auf der ganzen Musik (für runde Flanken ohne Klicks) – das macht sie etwas dumpfer
+  als ein heller Chip-Sound. Zu dumpf: `audio.musik.tiefpass` höher.
+- **Glocken**: dumpf gemessen (Schwerpunkt 400 Hz), aber ob es nach Treichel oder nach Gong klingt, weiss ich nicht.
+- **Brunnen**: von der Strasse (31 m) mit −53 dBFS sehr leise, beim Fahren praktisch nicht hörbar – nur wenn du anhältst.
+  Das passt zur Vorgabe „leise“; wenn du ihn hören willst: Pegel hoch oder `rolloff` kleiner.
+- **Pan „links nach rechts“**: bewusst nicht so (siehe Punkt 1): eine Quelle neben der Strasse bleibt auf ihrer Seite.
+- **Klatschen**: um RMS −28 dBFS zu erreichen, haben einzelne Klatscher Spitzen bis −9.6 dBFS (Klatschen ist sehr
+  spitzig) – unter dem Motor, aber hörbar „knackig“.
+- **Speicher pro Bild**: +83 Byte pro Bild im Rennen durch Web-Audio-Aufträge des Browsers (siehe Zahlen) – klein, aber
+  nicht ganz null.
+
+### Bekannte Probleme
+
+- Wie seit M7a: **Gamepad allein entsperrt den Ton nicht** (Browser-Regel) – erst ein Tastendruck oder Klick. Damit
+  startet auch die Musik erst dann.
+- Im Test-Rechner (Software-Grafik, langsame Bilder) gemessen; die Zeit bis zur Ziel-Musik zählt in Spielzeit (Bildern)
+  – auf echten Rechnern ist das gleich wie die Uhr.
+- Die Musik plant im Voraus: Wechselt man sehr schnell zwischen Pause und Weiter, klingt die letzte geplante Note kurz aus.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Echter Bach** (z. B. entlang der Alpweide oder im Tal): müsste zuerst als Gelände und Grafik gebaut werden, dann
+  Plätschern mit Abstand wie beim Brunnen.
+- **Doppler** für die Glocken (Tonhöhe ändert sich leicht beim Vorbeifahren).
+- Fanfare je nach Platz leicht anders (aus M7a).
+- **Echo in den Kehren mit Felswand** (Pops, Schaltknall, Jubel leicht nachhallend).
+- **Mehrere Musikstücke** (z. B. eines fürs Menü, eines für den Zielbildschirm) oder eine Auswahl im Menü.
+- **Hinweis auf dem Titel**, dass eine Taste oder ein Klick den Ton aktiviert (für Gamepad-Spieler).
+- **Motor leicht stereo** (aus M7a.1).
+- Feinschliff-Werte im Labor als Link teilen (aus M7a.1).
+
+---
+
+## Meilenstein 7a.1: Motor härter und höher, Poppen, Schalten, Signale lauter (Regler SIGNALTÖNE), Aufprall dumpfer und lauter, Heulen ✅ (Verlauf, Stand damals)
 
 > **Ehrlich vorneweg: Ich habe wieder nicht gehört.** Ich habe zuerst den Ton von M7a **gemessen** (offline gerechnet:
 > Tonhöhe, Spektralschwerpunkt = „wo der Klang wohnt“, Energie in den Höhen, Pegel, Ausklingzeit), dann geändert und
@@ -454,14 +835,14 @@ und ohne Ton auf den Millimeter gleich).
   Leistung, das fühlt sich gleichmässig an), 0 % = stumm. Der Hinweis darunter heisst jetzt „GILT FÜR DEN GANZEN TON“
   („APPLIES TO ALL SOUND“). Den Regler MUSIK gibt es erst in M7b.
 
-### Wie der Ton aufgebaut ist (für später, M7b)
+### Wie der Ton aufgebaut ist (Stand M7a; seit M7b mit Umgebung und Musik, siehe M7b oben)
 
 ```
 master (Regler LAUTSTÄRKE, quadratisch) -> Limiter (nichts übersteuert) -> Lautsprecher
   fahrzeug: Motor + Reifen (über das Ducking), Aufprall, Schleifen
-  umgebung: Fahrtwind – mit Pausen-Tiefpass und Ducking; hier hängt M7b Kuhglocken, Zuschauer, Vögel an
+  umgebung: Fahrtwind – mit Pausen-Tiefpass und Ducking; seit M7b auch Kuhglocken, Publikum, Vögel, Brunnen, Böen
   signale:  Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes
-  musik:    noch leer; hier kommt in M7b die Menü-Musik mit eigenem Regler dran
+  musik:    seit M7b die Menü-Musik mit eigenem Regler MUSIK
 ```
 
 - **Dauerklänge** (Motor, Reifen, Wind, Quietschen, Schleifen) laufen immer und werden nur lauter/leiser gestellt –
