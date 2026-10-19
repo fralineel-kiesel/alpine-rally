@@ -1,4 +1,4 @@
-// Browser-Hilfe für tools/ton-test.mjs (M7a): rechnet Klänge mit js/audio.js offline (OfflineAudioContext),
+// Browser-Hilfe für tools/ton-test.mjs (M7a) und tools/ton-messung.mjs (M7a.1): rechnet Klänge mit js/audio.js offline (OfflineAudioContext),
 // misst sie (Spitze, RMS, Gleichspannung, Anfang, Ausklingen) und malt Spektrogramme. Das Spiel lädt diese Datei nicht.
 
 import { baueKlangwerk, materialNr } from '../js/audio.js';
@@ -9,21 +9,120 @@ export const RATE = 44100;
 // Zustand wie tonZ in main.js
 export function zustand(t = {}) {
   return {
-    modus: 'rennen', drehzahl: CONFIG.getriebe.leerlauf, gang: 1, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0,
+    modus: 'rennen', drehzahl: CONFIG.getriebe.leerlauf, gang: 1, zielGang: t.gang ?? 1, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0,
     untergrund: 'asphalt', drift: 0, handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0, ...t,
   };
 }
 
-// Offline rechnen: aufbau(werk) richtet ein (Zustand setzen, Ereignisse auslösen), dauer in Sekunden
-export async function rendere(aufbau, dauer = 1.5) {
+// Offline rechnen: aufbau(werk) richtet ein (Zustand setzen, Ereignisse auslösen), dauer in Sekunden.
+// limiter = false (M7a.1): Pegel "vor dem Limiter" messen (master direkt an den Ausgang)
+export async function rendere(aufbau, dauer = 1.5, { limiter = true } = {}) {
   const ctx = new OfflineAudioContext(1, Math.round(RATE * dauer), RATE);
   const w = baueKlangwerk(ctx);
   w.puffernSofort();
   w.busse.master.gain.value = 1; // Regler auf 100 %
+  if (!limiter) { w.busse.master.disconnect(); w.busse.master.connect(ctx.destination); }
   aufbau(w, ctx);
   const buf = await ctx.startRendering();
   return { daten: buf.getChannelData(0), werk: w };
 }
+
+// Offline mit Verlauf (M7a.1): bild(werk, t) wird alle 1/60 s aufgerufen (wie im Spiel), z. B. Getriebe + aktualisiere
+export async function rendereVerlauf(bild, dauer = 2, { limiter = true, vorher = null } = {}) {
+  const ctx = new OfflineAudioContext(1, Math.round(RATE * dauer), RATE);
+  const w = baueKlangwerk(ctx);
+  w.puffernSofort();
+  w.busse.master.gain.value = 1;
+  if (!limiter) { w.busse.master.disconnect(); w.busse.master.connect(ctx.destination); }
+  if (vorher) vorher(w, ctx);
+  const dt = 1 / 60;
+  bild(w, 0);
+  for (let k = 1; k * dt < dauer - 0.01; k++) {
+    const t = k * dt;
+    ctx.suspend(t).then(() => { bild(w, t); ctx.resume(); });
+  }
+  const buf = await ctx.startRendering();
+  return { daten: buf.getChannelData(0), werk: w };
+}
+
+// Knoten zählen (M7a.1): alle Audio-Knoten, die baueKlangwerk und der Puffer-Aufbau dauerhaft anlegen
+export function zaehleKnoten() {
+  const ctx = new OfflineAudioContext(1, RATE, RATE);
+  const zahl = {};
+  for (const name of ['createGain', 'createBiquadFilter', 'createOscillator', 'createConstantSource', 'createWaveShaper', 'createDynamicsCompressor', 'createBufferSource', 'createAnalyser']) {
+    const orig = ctx[name].bind(ctx);
+    ctx[name] = (...a) => { zahl[name] = (zahl[name] || 0) + 1; return orig(...a); };
+  }
+  const w = baueKlangwerk(ctx);
+  w.puffernSofort();
+  return { summe: Object.values(zahl).reduce((a, b) => a + b, 0), je: zahl };
+}
+
+// Leistungsspektrum eines Ausschnitts (Mittel über Hann-Fenster à 4096 Samples), für Schwerpunkt und Anteile
+export function spektrum(d, von = 0, bis = Infinity) {
+  const N = 4096, a0 = Math.max(0, Math.round(von * RATE)), b0 = Math.min(d.length, Math.round(bis * RATE));
+  const re = new Float64Array(N), im = new Float64Array(N), p = new Float64Array(N / 2);
+  const fen = new Float64Array(N); for (let i = 0; i < N; i++) fen[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+  let n = 0;
+  for (let a = a0; a + N <= Math.max(b0, a0 + N); a += N / 2) {
+    for (let i = 0; i < N; i++) { re[i] = (d[a + i] || 0) * fen[i]; im[i] = 0; }
+    fft(re, im);
+    for (let k = 0; k < N / 2; k++) p[k] += re[k] * re[k] + im[k] * im[k];
+    n++;
+    if (a + N >= b0) break;
+  }
+  return { p, df: RATE / N };
+}
+// Spektralschwerpunkt (Hz, 20 Hz .. 20 kHz): wo der Klang "wohnt"
+export function schwerpunkt(s) {
+  let a = 0, b = 0;
+  for (let k = 1; k < s.p.length; k++) { const f = k * s.df; if (f < 20 || f > 20000) continue; a += f * s.p[k]; b += s.p[k]; }
+  return b > 0 ? a / b : 0;
+}
+// Anteil der Energie über f Hz (0..1)
+export function anteilUeber(s, f) {
+  let a = 0, b = 0;
+  for (let k = 1; k < s.p.length; k++) { const fk = k * s.df; if (fk < 20) continue; b += s.p[k]; if (fk > f) a += s.p[k]; }
+  return b > 0 ? a / b : 0;
+}
+// A-bewerteter Pegel (dB, nur zum Vergleichen): Energie gewichtet wie das Ohr (tiefe Töne zählen weniger)
+export function pegelA(s) {
+  let q = 0;
+  for (let k = 1; k < s.p.length; k++) {
+    const f = k * s.df, f2 = f * f;
+    const ra = (12194 ** 2 * f2 * f2) / ((f2 + 20.6 ** 2) * Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194 ** 2));
+    q += s.p[k] * ra * ra * 1.2589; // +2 dB: A(1 kHz) = 0 dB
+  }
+  return 10 * Math.log10(q + 1e-30);
+}
+// Stärkste Spitze über f Hz gegen die stärkste insgesamt (dB, im Spektrum)
+export function spitzeUeber(s, f) {
+  let alle = 0, oben = 0;
+  for (let k = 1; k < s.p.length; k++) { const fk = k * s.df; if (fk < 20) continue; alle = Math.max(alle, s.p[k]); if (fk > f) oben = Math.max(oben, s.p[k]); }
+  return 10 * Math.log10(oben / alle + 1e-20);
+}
+
+// Hüllkurve (RMS je 5 ms) eines einmaligen Klangs: Anfang, Ausklingzeit bis db unter der lautesten Stelle, RMS im aktiven Teil
+export function huelle(d, db = -40) {
+  const fen = Math.round(RATE * 0.005), n = Math.floor(d.length / fen);
+  const r = new Float64Array(n);
+  let max = 0;
+  for (let j = 0; j < n; j++) { let q = 0; for (let i = j * fen; i < (j + 1) * fen; i++) q += d[i] * d[i]; r[j] = Math.sqrt(q / fen); max = Math.max(max, r[j]); }
+  const g = max * 10 ** (db / 20);
+  let erst = -1, letzt = -1;
+  for (let j = 0; j < n; j++) if (r[j] >= g) { if (erst < 0) erst = j; letzt = j; }
+  const g20 = max * 0.1;
+  let a20 = -1, b20 = -1;
+  for (let j = 0; j < n; j++) if (r[j] >= g20) { if (a20 < 0) a20 = j; b20 = j; }
+  let q = 0;
+  for (let i = a20 * fen; i < (b20 + 1) * fen; i++) q += d[i] * d[i];
+  return {
+    anfang: erst * fen / RATE, ausklingen: (letzt - erst + 1) * fen / RATE,
+    rmsAktiv: Math.sqrt(q / Math.max(1, (b20 - a20 + 1) * fen)), aktivDauer: (b20 - a20 + 1) * fen / RATE,
+  };
+}
+const dB = (x) => 20 * Math.log10(Math.max(1e-9, x));
+export { dB };
 
 // Messwerte eines Ausschnitts (von, bis in Sekunden)
 export function miss(d, von = 0, bis = Infinity) {

@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.7a';
+export const VERSION = '0.7a.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1201,6 +1201,7 @@ export const CONFIG = {
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
       lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)
+      signale: 100,            // Regler SIGNALTÖNE in Prozent (M7a.1): Menü, Countdown, Checkpoint, Ziel; wirkt zusätzlich, quadratisch
       sprache: 'de',           // 'de' (Deutsch) oder 'en' (Englisch)
       // Tastenbelegung: je Aktion Taste 1 und Taste 2 (null = keine). Namen = Tasten-Codes des Browsers
       tasten: {
@@ -1221,7 +1222,7 @@ export const CONFIG = {
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
     totzonen: [0.04, 0.08, 0.12, 0.18, 0.25], // Gamepad-Totzone je Stufe (Mitte = steuerung.totzone von früher)
-    lautSchritt: 5,            // Lautstärke-Regler in Schritten von ... Prozent
+    lautSchritt: 5,            // Regler LAUTSTÄRKE und SIGNALTÖNE in Schritten von ... Prozent
     reserviert: ['Escape', 'Enter', 'NumpadEnter', 'F3'], // diese Tasten kann man nicht belegen
     // Gamepad (fest, Standard-Belegung): Knopf-Nummern
     gamepad: {
@@ -1333,11 +1334,14 @@ export const CONFIG = {
     busse: {
       fahrzeug: 1.0,           // Motor, Reifen, Aufprall, Schleifen
       umgebung: 1.0,           // Wind (M7b: Kuhglocken, Zuschauer, Vögel)
-      signale: 0.8,            // Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes
+      signale: 1.0,            // Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes (M7a.1: 0.8 -> 1.0; dazu Regler SIGNALTÖNE)
       musik: 0.0,              // noch leer (M7b: Menü-Musik mit eigenem Regler)
     },
     // Begrenzer am Ausgang: nichts übersteuert, auch bei Vollgas, Drift und Aufprall zugleich
     limiter: { schwelle: -6, knie: 0, verhaeltnis: 20, angriff: 0.002, loslassen: 0.12 }, // dB, -, -, s, s
+    // Decke hinter dem Limiter (M7a.1): bis "weich" unverändert, darüber weich gerundet, nie über "max" (Sicherheit bei
+    // sehr harten Aufprallen, die jetzt lauter sind; im normalen Spiel kommt kaum etwas dort hin)
+    decke: { weich: 0.85, max: 0.965 },
     // Pause: Motor stumm, Reifen und Umgebung dumpf und leiser
     pause: {
       motorAus: 0.15,          // Motor blendet in so vielen Sekunden aus
@@ -1348,30 +1352,43 @@ export const CONFIG = {
     zielStand: { ab: 0.4, blende: 1.2 }, // Zielbildschirm: steht das Auto (unter ... m/s), blendet der Motor in ... s aus
 
     // Motor: 5-Zylinder-Turbo wie die Gruppe-B-Autos der 80er. Grundlage ist die Drehzahl aus dem Getriebe (getriebe.drehzahl).
+    // M7a.1: härter, rauher und höher (Lino: "zu weich"); Werte mit (M7a: ...) zeigen, was vorher galt.
     motor: {
-      zuendFaktor: 2.5,        // Grundton = Drehzahl / 60 x diesem Wert (5 Zylinder, Viertakt: 5 Zündungen pro 2 Umdrehungen)
-      hoechstDrehzahl: 7200,   // obere Drehzahl für den Ton (U/min; 300 Hz Grundton). Leerlauf: getriebe.leerlauf (ca. 42 Hz)
-      pegel: 0.5,              // Gesamtlautstärke des Motors (der lauteste Teil)
-      saege: 0.55,             // Körper: Sägezahn auf dem Grundton ...
-      rechteck: 0.28,          // ... plus Rechteck (hohl, kernig) ...
-      unter: 0.35,             // ... plus Dreieck auf dem halben Grundton (das typische 5-Zylinder-Brummen)
+      zuendFaktor: 2.5,        // Leerlauf: Grundton = Drehzahl / 60 x diesem Wert (5 Zylinder, Viertakt), ca. 42 Hz
+      hoechstDrehzahl: 7200,   // obere Drehzahl für den Ton (U/min). Leerlauf: getriebe.leerlauf
+      hoechstTon: 480,         // Tonlage bei Höchstdrehzahl: Grundton (Hz) bei hoechstDrehzahl (M7a: 300; Spiel-Klang, kein Naturgesetz)
+      tonKurve: 1.3,           // Kurve vom Leerlauf bis dorthin: 1 = gerade, mehr = Mitte tiefer und oben steiler (ruhig kreischend)
+      pegel: 0.36,             // Gesamtlautstärke des Motors (M7a: 0.5; härter = mehr Energie, darum leiser gestellt)
+      saege: 0.5,              // Körper: Sägezahn auf dem Grundton ...
+      puls: 0.45,              // ... plus Impulswelle (schmale Zacken, viele Obertöne: Kanten statt rund; M7a: Rechteck 0.28) ...
+      pulsBreite: 0.16,        // ... so breit ist jeder Zacken (Anteil der Periode; kleiner = schärfer, 0.5 = Rechteck)
+      unter: 0.16,             // ... plus Dreieck auf dem halben Grundton: Anteil tiefes Brummen (M7a: 0.35, das "weiche Brummen")
       oberwelle: 0.12,         // Brabbeln: dazu die 2. Oberwelle ...
       schwebung: 3.5,          // ... um so viele Hz verstimmt (langsames Schweben)
-      amTiefe: 0.22,           // Brabbeln: Lautstärke schwankt im Takt des halben Grundtons (0 = gar nicht, 1 = sehr stark)
-      amTiefeLeerlauf: 0.42,   // ... im Leerlauf stärker (unregelmässiger)
+      hoch: 0.4,               // Oktav-Schicht (2. und 4. Oberwelle betont): bringt die Höhe beim Hochdrehen ...
+      hochAb: 0.2,             // ... blendet ab diesem Drehzahl-Anteil ein (0 = Leerlauf, 1 = Höchstdrehzahl) ...
+      hochSchub: 0.55,         // ... und ist ohne Gas (Schub) nur so stark (Anteil)
+      amTiefe: 0.4,            // Brabbeln: Lautstärke schwankt im Takt des halben Grundtons unter Last (M7a: 0.22)
+      amTiefeLeerlauf: 0.42,   // ... im Leerlauf (unregelmässig)
       leerlaufZittern: 0.01,   // Leerlauf: Drehzahl zittert um so viel (0.01 = 1 %)
-      rauh: 0.10,              // rauhes Rauschen um die rauhOberwelle-te Oberwelle (mehr = kratziger)
+      rauh: 0.3,               // Rauheit: rauhes Rauschen um die rauhOberwelle-te Oberwelle (M7a: 0.10; mehr = kratziger)
       rauhOberwelle: 6,
-      verzerrung: 1.8,         // leichte Sättigung (1 = sauber, mehr = rauer)
-      filterGrund: 240,        // Helligkeit: Tiefpass (Hz) ohne Gas im Leerlauf ...
-      filterDrehzahl: 0.30,    // ... plus so viele Hz pro U/min ...
-      filterGas: 1800,         // ... plus so viele Hz mit Vollgas (unter Last heller)
-      filterQ: 1.3,            // Resonanz des Tiefpasses (mehr = "röhriger")
+      rauhGuete: 3,            // ... so eng gebündelt (Güte des Bandpasses; M7a: 2)
+      rauhPuls: 0.85,          // ... pulsiert so stark im Takt der Zündungen (Auspuff-Impulse; 0 = gleichmässig, 1 = nur Stösse)
+      verzerrung: 6,           // Härte: Sättigung (1 = sauber, mehr = härter; M7a: 1.8) ...
+      clip: 0.8,               // ... und darüber hart abgeschnitten (Anteil; 1 = nie, kleiner = kantiger)
+      filterGrund: 450,        // Helligkeit: Tiefpass (Hz) ohne Gas im Leerlauf (M7a: 240; Leerlauf kerniger) ...
+      filterDrehzahl: 0.6,     // ... plus so viele Hz pro U/min (M7a: 0.30) ...
+      filterGas: 4500,         // ... plus so viele Hz mit Vollgas (unter Last heller; M7a: 1800)
+      filterQ: 1.6,            // Resonanz des Tiefpasses (M7a: 1.3)
+      bissHz: 2200,            // Biss: Anhebung um diese Frequenz (Hz) ...
+      bissDb: 5,               // ... um so viele dB (0 = keine) ...
+      bissGuete: 1.1,          // ... so breit (kleiner = breiter)
       lastPegel: 1.0,          // Lautstärke mit Vollgas ...
       schubPegel: 0.42,        // ... ohne Gas (Schubbetrieb, Motorbremse: leiser, brummig)
       leerlaufPegel: 0.55,     // ... im Leerlauf
       drehzahlPegel: 0.35,     // bei Höchstdrehzahl so viel lauter als unten (Anteil)
-      // Turbo: leises Pfeifen, folgt dem Ladedruck (läuft Gas und Drehzahl hinterher)
+      // Turbo: leises Pfeifen, folgt dem Ladedruck (läuft Gas und Drehzahl hinterher) – M7a.1 unverändert
       turboAb: 3000,           // Ladedruck baut sich erst ab dieser Drehzahl auf ...
       turboVoll: 5500,         // ... und ist hier voll (mit Vollgas)
       turboRauf: 0.4,          // Ladedruck steigt so träge (Sekunden) ...
@@ -1386,23 +1403,50 @@ export const CONFIG = {
       blowOffDauer: 0.3,       // Zischen dauert so lange
       blowOffTon: 2600,        // Mitte des Zischens (Hz), fällt auf die Hälfte
       blowOffPegel: 0.16,
-      // Knallen beim Gaswegnehmen (Auspuff). Feste Zufallsfolge (audio.seed): gleiches Fahren = gleiches Knallen
-      knallAb: 4000,           // nur über dieser Drehzahl
-      knallChance: 0.45,       // so wahrscheinlich knallt es beim Gaswegnehmen (0..1) ...
-      knallZweiter: 0.35,      // ... und so wahrscheinlich kommt ein zweiter Knall (höchstens 2)
-      knallFenster: [0.05, 0.4], // der Knall kommt so viele Sekunden nach dem Gaswegnehmen (zufällig dazwischen)
-      knallPegel: 0.32,
-      knallSperre: 1.5,        // danach so lange kein neues Knallen (sonst nervt es)
-      knall: { laenge: 0.15, knall: [1.0, 0.012, 1500], schlag: [120, 55, 0.035, 0.9] }, // Klang (wie aufprall.klang)
+      // Poppen vom Auspuff beim Gaswegnehmen (M7a.1: Salven aus kurzen, hellen Pops statt 1-2 tiefe Knalle).
+      // Feste Zufallsfolge (audio.seed): gleiches Fahren = gleiches Poppen
+      knallAb: 3500,           // nur über dieser Drehzahl (M7a: 4000)
+      knallChance: 0.7,        // so wahrscheinlich kommt beim Gaswegnehmen aus hoher Last eine Salve (0..1; M7a: 0.45)
+      popAnzahl: [1, 4],       // so viele Pops pro Salve (zufällig dazwischen)
+      popAbstand: [0.04, 0.14], // Abstand zwischen zwei Pops (Sekunden)
+      knallFenster: [0.04, 0.22], // der erste Pop kommt so viele Sekunden nach dem Gaswegnehmen
+      popPegel: 1.2,           // Pop-Lautstärke (Spitze ca. 75-80 % eines mittleren Aufpralls, vor dem Limiter)
+      popStaerke: [0.7, 1.0],  // jeder Pop so laut (Anteil, zufällig) ...
+      popTempo: [0.8, 1.25],   // ... und so hoch/kurz (Abspieltempo; 1 = Puffer wie berechnet)
+      knallSperre: 1.0,        // danach so lange kein neues Poppen (M7a: 1.5)
+      knisternChance: 0.5,     // dazu leises Knistern/Blubbern (0..1) ...
+      knisternAnzahl: [1, 3],  // ... so viele Mini-Pops ...
+      knisternFenster: 0.8,    // ... in den ersten ... Sekunden nach dem Gaswegnehmen ...
+      knisternPegel: 0.16,     // ... so leise (Anteil von popPegel)
+      // Klang eines Pops: hell und knackig (Bandpass-Rauschen um mitte Hz), darunter ein kurzer tiefer Anteil
+      pop: { laenge: 0.03, mitte: 2400, guete: 1.3, abklingen: 0.0055, tief: [170, 85, 0.006, 0.35] }, // tief: [Hz Anfang, Hz Ende, Abklingen s, Pegel]
+      // Schalten (M7a.1, Gruppe-B-Stil): Zünd-Unterbrechung, Schaltknall, Getriebe-Klack, Zwischengas.
+      // Schaltpause und Drehzahl kommen unverändert aus dem Getriebe (getriebe.schaltDauerHoch/-Runter).
+      schaltLastAb: 0.5,       // Gas über diesem Wert = Schalten unter Last
+      schaltOhneLast: 0.2,     // Gas unter diesem Wert = Schalten ohne Last (nur leises Klack)
+      schaltDip: 0.2,          // Zünd-Unterbrechung: Motor-Pegel in der Schaltpause beim Hochschalten unter Last (Anteil von vorher)
+      schaltDipZeit: 0.007,    // ... so schnell fällt er (Zeitkonstante; nach ca. 20 ms unten)
+      schaltKnallChance: 0.7,  // Schaltknall beim Wiedereinsetzen der Zündung (0..1) ...
+      schaltKnallPegel: 1.25,  // ... so viel lauter als ein normaler Pop
+      schaltBlowOff: 1.3,      // Blow-off beim Schalten unter Last so viel lauter als beim normalen Gaswegnehmen
+      klackPegel: 0.3,         // Getriebe-Klack beim Einlegen des Gangs (am Ende der Schaltpause), mittellaut ...
+      klackLeise: 0.45,        // ... ohne Last so viel leiser (Anteil)
+      klack: { laenge: 0.045, mitte: 1300, guete: 0.9, abklingen: 0.007, tief: [90, 80, 0.012, 0.45] }, // Klang des Klacks
+      zwischengasDauer: 0.15,  // Runterschalten: Gasstoss beim Einlegen (Last und Helligkeit hoch) so lange (s) ...
+      zwischengasStaerke: 0.9, // ... so stark (wie so viel Gas, 0..1) ...
+      zwischengasOhneLast: true, // ... auch beim Runterschalten ohne Gas (beim Bremsen; false = nur unter Last)
+      zwischengasKnallChance: 0.35, // ... und mit dieser Chance ein kleiner Pop (nicht ohne Last)
+      schaltTonSperre: 0.15,   // Schaltknall und Klack höchstens alle ... Sekunden (eigene Sperre, nicht knallSperre)
       // Drehzahlbegrenzer: nahe der Höchstdrehzahl mit Vollgas stottert der Motor
       begrenzerAb: 6850,       // ab dieser Drehzahl (U/min) mit Vollgas ...
       begrenzerNach: 0.12,     // ... und nach so vielen Sekunden dort (kurz vor dem Hochschalten nicht)
       begrenzerHz: 13,         // Stottern so schnell (Hz)
       begrenzerTiefe: 0.85,    // so stark (1 = ganz aus)
-      // Rückwärts: Getriebeheulen dazu (Tonhöhe folgt dem Tempo)
-      heulenGrund: 280,        // Tonhöhe beim Anfahren (Hz) ...
-      heulenProMs: 120,        // ... plus so viele Hz pro m/s
-      heulenPegel: 0.05,
+      // Rückwärts: Getriebeheulen (M7a.1: folgt der Motordrehzahl wie ein Zahnrad, tiefer und weicher)
+      heulenFaktor: 5.5,       // Tonhöhe = Drehzahl / 60 x diesem Wert (bei 4700/min ca. 430 Hz; M7a: 280 Hz + 120 Hz pro m/s)
+      heulenOberwelle: 0.3,    // dazu ein bisschen 2. Oberwelle (klingt nach Getriebe, nicht nach Pfeifen) ...
+      heulenFilter: 1200,      // ... und ein Tiefpass (Hz)
+      heulenPegel: 0.06,       // Lautstärke (M7a: 0.05; nie lauter als der Motor)
     },
 
     // Reifen und Untergrund
@@ -1452,23 +1496,23 @@ export const CONFIG = {
     aufprall: {
       ab: 1.5,                 // Kontakt macht ab diesem Tempo Richtung Hindernis (m/s) ein Geräusch
       voll: 14,                // bei dieser Wucht (m/s, ca. 50 km/h) voller Pegel und volle Härte
-      pegel: 0.9,              // Lautstärke bei voller Wucht (kurz das Lauteste)
-      kurve: 0.7,              // Lautstärke = (Wucht / voll) hoch diesem Wert (unter 1: leichte Kontakte etwas lauter)
+      pegel: 1.6,              // Lautstärke bei voller Wucht (der lauteste Klang des Spiels; M7a: 0.9, M7a.1 ca. +5 dB)
+      kurve: 0.55,             // Lautstärke = (Wucht / voll) hoch diesem Wert (unter 1: leichte Kontakte lauter; M7a: 0.7)
       sperre: 0.1,             // nach einem Aufprallton so lange (s) keiner (mehrere Kontakte rattern nicht)
       grenzeLeicht: 900,       // Helligkeit (Hz) beim leichten Streifschuss ...
       grenzeHart: 9000,        // ... beim harten Aufprall
       schlagAb: 6,             // ab dieser Wucht (m/s) dazu ein tiefer Schlag
-      schlagPegel: 0.7,
+      schlagPegel: 1.25,       // (M7a: 0.7)
       schlag: { laenge: 0.5, knall: [0.2, 0.01, 300], schlag: [78, 42, 0.16, 1.0] },
       // Ducking: bei hartem Aufprall werden Motor und Umgebung kurz leiser, damit der Knall durchkommt
       duckAb: 6,               // ab dieser Wucht (m/s)
-      duckDb: -5,              // so viel leiser (dB)
+      duckDb: -7,              // so viel leiser (dB; M7a: -5)
       duckDauer: 0.3,          // so lange
       duckZurueck: 0.12,       // ... dann weich zurück (Zeitkonstante)
       // Schleifen: Auto rutscht an Wand, Leitplanke, Zaun entlang
       schleifenAb: 2,          // ab diesem Tempo (m/s)
       schleifenVoll: 15,       // voll bei diesem
-      schleifenPegel: 0.18,
+      schleifenPegel: 0.25,    // (M7a: 0.18, M7a.1 ca. +3 dB)
       // Materialien (Reihenfolge = Nummer in der Kollisionsliste) und welche Hindernis-Art welches Material ist
       materialien: ['baum', 'stein', 'holz', 'weich', 'metall', 'fels'],
       artVon: {
@@ -1481,10 +1525,13 @@ export const CONFIG = {
       },
       // Klang je Material (einmal berechnet). laenge = Ausklingzeit (s). knall: [Pegel, Abklingen s, Helligkeit Hz],
       // moden: Eigentöne [Hz, Abklingen s, Pegel], schlag: tiefer Schlag [Hz Anfang, Hz Ende, Abklingen s, Pegel],
-      // rascheln: Knistern/Splittern/Schleifen [Pegel, Dauer s, Knackser pro s]
+      // rascheln: Knistern/Splittern/Schleifen [Pegel, Dauer s, Knackser pro s, Mitte Hz (optional, sonst dumpf)],
+      // schlagMit: so viel vom tiefen Schlag oben (aufprall.schlag) kommt dazu (fehlt = 1), pegel: Anteil (fehlt = 1),
+      // kurve: eigene Lautstärke-Kurve (fehlt = aufprall.kurve)
       klang: {
         baum: { laenge: 0.7, knall: [0.5, 0.02, 2200], moden: [[180, 0.08, 0.2], [330, 0.06, 0.12]], schlag: [95, 55, 0.12, 0.8], rascheln: [0.4, 0.6, 450] },
-        stein: { laenge: 0.45, knall: [0.9, 0.012, 7000], moden: [[820, 0.07, 0.35], [1270, 0.05, 0.3], [2140, 0.04, 0.2], [3300, 0.03, 0.12]], schlag: [140, 90, 0.05, 0.4], rascheln: [0.25, 0.25, 900] },
+        // Stein M7a.1: dumpfes "Tock/Wumm" statt Klirren (M7a: Eigentöne 820/1270/2140/3300 Hz, Helligkeit 7000 Hz = Metallklang)
+        stein: { laenge: 0.24, knall: [0.35, 0.006, 1700], moden: [[140, 0.04, 0.55], [250, 0.03, 0.35], [400, 0.02, 0.16]], schlag: [110, 55, 0.04, 0.95], rascheln: [0.22, 0.12, 700, 650], schlagMit: 0, pegel: 1.65, kurve: 0.7 },
         holz: { laenge: 0.55, knall: [0.7, 0.015, 4000], moden: [[230, 0.09, 0.3], [410, 0.07, 0.22], [690, 0.05, 0.15]], schlag: [110, 70, 0.08, 0.5], rascheln: [0.55, 0.35, 1500] },
         weich: { laenge: 0.4, knall: [0.4, 0.04, 600], moden: [], schlag: [80, 50, 0.15, 0.9], rascheln: [0.15, 0.2, 200] },
         metall: { laenge: 1.1, knall: [0.8, 0.01, 8000], moden: [[340, 0.5, 0.25], [523, 0.45, 0.22], [817, 0.4, 0.2], [1180, 0.35, 0.16], [1690, 0.3, 0.12], [2410, 0.25, 0.08]], schlag: [120, 80, 0.06, 0.4], rascheln: [0.2, 0.3, 600] },
@@ -1495,32 +1542,37 @@ export const CONFIG = {
     },
 
     // Signale: kurze Töne im Retro-Stil (form: 'square' = Rechteck, 'triangle' = Dreieck, 'sine' = Sinus).
-    // ton: Tonhöhe (Hz) oder [Anfang, Ende], dauer (s), pegel (mal signale.pegel und busse.signale)
+    // ton: Tonhöhe (Hz) oder [Anfang, Ende], dauer (s), pegel (mal signale.pegel und busse.signale; M7a.1: pegel = Spitze
+    // bei LAUTSTÄRKE und SIGNALTÖNE 100 %, ca. 3-4 Mal lauter als in M7a, damit sie neben dem Motor durchkommen)
     signale: {
-      pegel: 0.5,
+      pegel: 1.0,              // alle Signale (M7a: 0.5)
+      // Ducking: bei Countdown, GO, Checkpoint, Verpasst und Fanfare wird der Motor (und die Reifen) kurz leiser
+      duckDb: -3.5,            // so viel (dB)
+      duckDauer: 0.25,         // so lange (s) ...
+      duckZurueck: 0.1,        // ... dann weich zurück (Zeitkonstante)
       menue: {
-        tick: { form: 'square', ton: 1800, dauer: 0.018, pegel: 0.10 },        // Auswahl bewegen (sehr leise)
-        bestaetigen: { form: 'square', ton: [660, 990], dauer: 0.07, pegel: 0.22 }, // höherer Blip
-        zurueck: { form: 'square', ton: [520, 350], dauer: 0.07, pegel: 0.20 },  // tieferer Blip
-        regler: { form: 'triangle', ton: [300, 1200], dauer: 0.035, pegel: 0.2 }, // Tick, Tonhöhe je nach Wert (min..max)
-        fehler: { form: 'square', ton: [140, 118], dauer: 0.18, pegel: 0.22 },  // "SCHON BELEGT", "RESERVIERT"
+        tick: { form: 'square', ton: 1800, dauer: 0.018, pegel: 0.22 },         // Auswahl bewegen (leise; M7a: 0.10 x 0.4)
+        bestaetigen: { form: 'square', ton: [660, 990], dauer: 0.07, pegel: 0.37 }, // höherer Blip
+        zurueck: { form: 'square', ton: [520, 350], dauer: 0.07, pegel: 0.37 },  // tieferer Blip
+        regler: { form: 'triangle', ton: [300, 1200], dauer: 0.035, pegel: 0.22 }, // Tick, Tonhöhe je nach Wert (min..max)
+        fehler: { form: 'square', ton: [140, 118], dauer: 0.18, pegel: 0.37 },  // "SCHON BELEGT", "RESERVIERT"
         sperre: 0.045,         // derselbe Menü-Ton höchstens alle ... s (kein Doppelton, wenn Maus und Tastatur dasselbe tun)
       },
-      pause: { form: 'square', ton: [440, 262], dauer: 0.12, pegel: 0.25 },    // beim Pausieren (tief)
-      weiter: { form: 'square', ton: [262, 523], dauer: 0.12, pegel: 0.25 },   // beim Weiterfahren (hoch)
-      countdown: { form: 'square', ton: 440, dauer: 0.15, pegel: 0.32 },      // 3, 2, 1
-      go: { form: 'square', ton: 880, dauer: 0.4, pegel: 0.34 },              // GO!
+      pause: { form: 'square', ton: [440, 262], dauer: 0.12, pegel: 0.53 },     // beim Pausieren (tief)
+      weiter: { form: 'square', ton: [262, 523], dauer: 0.12, pegel: 0.53 },    // beim Weiterfahren (hoch)
+      countdown: { form: 'square', ton: 440, dauer: 0.15, pegel: 0.53 },       // 3, 2, 1
+      go: { form: 'square', ton: 880, dauer: 0.4, pegel: 0.54 },              // GO!
       checkpoint: {
-        form: 'triangle', dauer: 0.09, luecke: 0.035, pegel: 0.3,             // zwei Töne ("Ding-Ding")
+        form: 'triangle', dauer: 0.09, luecke: 0.035, pegel: 0.56,            // zwei Töne ("Ding-Ding")
         schneller: [880, 1319],  // aufsteigend
         langsamer: [740, 622],   // leicht absteigend und tiefer
         neutral: [880, 880],     // gleich schnell oder keine Referenz
       },
-      verpasst: { form: 'square', ton: [130, 92], dauer: 0.38, pegel: 0.28 }, // CHECKPOINT VERPASST: tiefer Buzz
-      paceNote: { form: 'sine', ton: 1200, dauer: 0.05, pegel: 0.12, abstand: 0.09 }, // pro neuer Kachel (abstand: zweite Kachel im selben Bild)
+      verpasst: { form: 'square', ton: [130, 92], dauer: 0.38, pegel: 0.53 },  // CHECKPOINT VERPASST: tiefer Buzz
+      paceNote: { form: 'sine', ton: 1200, dauer: 0.05, pegel: 0.22, abstand: 0.09 }, // pro neuer Kachel (abstand: zweite Kachel im selben Bild)
       // Ziel-Fanfaren (eigene Melodien): [Note, Schläge]; 'R' = Pause. tempo in Schlägen pro Minute
       fanfare: {
-        pegel: 0.3, tempo: 165,
+        pegel: 0.66, tempo: 165,  // (M7a: 0.3; Spitze = pegel x 0.9)
         kurz: {   // beim Überfahren der Ziellinie (ca. 2 s)
           melodie: [['G4', 0.5], ['C5', 0.5], ['E5', 0.5], ['G5', 1], ['E5', 0.5], ['G5', 0.5], ['C6', 2.5]],
           zweite: [['R', 3.5], ['E5', 2.5]],

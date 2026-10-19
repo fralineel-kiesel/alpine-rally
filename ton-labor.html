@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Alpine Rally – Ton-Labor</title>
   <link rel="icon" href="data:,">
-  <!-- Hilfsseite (M7a, nicht im Menü verlinkt): alle Töne des Spiels einzeln anhören. Benutzt js/audio.js wie das Spiel. -->
+  <!-- Hilfsseite (M7a, nicht im Menü verlinkt): alle Töne des Spiels einzeln anhören. Benutzt js/audio.js wie das Spiel.
+       M7a.1: Bereich "Feinschliff" (Werte live verstellen, WERTE KOPIEREN für den Chat), Regler Signaltöne. -->
   <script type="importmap">
     { "imports": { "three": "./lib/three.module.min.js" } }
   </script>
@@ -36,6 +37,14 @@
     #anzeige { color: var(--grau); white-space: pre-wrap; }
     #start { margin: 8px 0 14px; }
     .aus { opacity: 0.45; pointer-events: none; }
+    section.breit { grid-column: 1 / -1; }
+    .fein { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) minmax(90px, 1fr) 70px 34px; gap: 4px 8px; align-items: center; }
+    .fein .pfad { color: var(--grau); font-size: 12px; overflow-wrap: anywhere; }
+    .fein .wert { color: var(--gelb); text-align: right; }
+    .fein .wert.geaendert { color: var(--orange); }
+    .fein button { padding: 2px 6px; }
+    #kopieText { width: 100%; min-height: 70px; margin-top: 8px; font: 12px/1.4 monospace; color: var(--text); background: #0d1218; border: 1px solid #44505c; }
+    @media (max-width: 700px) { .fein { grid-template-columns: minmax(0, 1fr) 70px 34px; } .fein .pfad { grid-column: 1 / -1; } .fein input { grid-column: 1 / -1; } }
   </style>
 </head>
 <body>
@@ -67,8 +76,8 @@
       </select><span></span></label>
       <div class="knoepfe">
         <b>Motor-Ereignisse</b>
-        <button data-tu="blowOff">Blow-off</button><button data-tu="knall">Knall</button>
-        <button data-tu="schalten">Schalten</button>
+        <button data-tu="blowOff">Blow-off</button><button data-tu="knall">Ein Pop</button><button data-tu="salve">Pop-Salve</button>
+        <button data-tu="schalten">Hochschalten</button><button data-tu="runterschalten">Runterschalten</button>
         <button data-tu="beschleunigen">Anfahren bis 160 km/h</button><button data-tu="stopp">Stopp (alles auf null)</button>
       </div>
     </section>
@@ -96,8 +105,22 @@
     <section>
       <h2>Pegel</h2>
       <label class="zeile">Gesamtpegel <input id="laut" type="range" min="0" max="100" step="5" value="70"><span class="wert" id="lautW"></span></label>
+      <label class="zeile">Signaltöne <input id="signale" type="range" min="0" max="100" step="5" value="100"><span class="wert" id="signaleW"></span></label>
       <div id="pegel"></div>
       <div id="anzeige"></div>
+    </section>
+
+    <section class="breit" id="feinschliff">
+      <h2>Feinschliff</h2>
+      <p class="hinweis">Diese Regler verstellen Werte aus js/config.js (Block "audio") – aber nur hier auf dieser Seite und nur,
+        bis du sie neu lädst. Das Spiel selbst bleibt unverändert, gespeichert wird nichts. Gefällt dir etwas: WERTE KOPIEREN
+        und den Text in den Chat einfügen (eine Zeile pro geänderten Wert).</p>
+      <div class="fein" id="fein"></div>
+      <div class="knoepfe" style="margin-top:10px">
+        <button id="kopieren">WERTE KOPIEREN</button><button id="allesZurueck">ALLES ZURÜCK</button>
+        <span class="hinweis" id="kopieInfo"></span>
+      </div>
+      <textarea id="kopieText" readonly placeholder="Hier erscheinen die geänderten Werte."></textarea>
     </section>
   </div>
 </main>

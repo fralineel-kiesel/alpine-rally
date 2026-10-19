@@ -1,4 +1,8 @@
-// Test für Meilenstein 7a (Ton plus zwei HUD-Korrekturen):  node tools/ton-test.mjs
+// Test für Meilenstein 7a (Ton plus zwei HUD-Korrekturen) und 7a.1 (Motor härter, Poppen, Schalten, Signale, Aufprall,
+// Heulen, Ton-Labor-Feinschliff):  node tools/ton-test.mjs
+// Teil 1 = die Tests (a)-(k) aus M7a (angepasst, wo sich in M7a.1 Werte geändert haben: Grundton-Kurve, Poppen statt Knall,
+// Heulen nach Drehzahl, Ducking -7 dB, Stein ohne grossen Schlag, Spektrogramme nach screenshots/m7a-1/).
+// Teil 2 = neue Tests M7a.1 (a)-(l); Vergleichswerte von M7a aus tools/ton-messung-vorher.json (node tools/ton-messung.mjs).
 // Playwright mit Chromium. Der Ton wird nicht gehört, sondern gemessen: Parameter der Knoten (Tonhöhe, Pegel, Filter),
 // Ereignisse (welcher Klang wann), offline gerechnete Klänge (OfflineAudioContext: Spitze, RMS, Anfang, Ausklingen).
 //  (a) Entsperren: kein AudioContext vor dem ersten Tastendruck, danach "running"; ?ton=aus und ?menue=aus nie Ton;
@@ -30,7 +34,8 @@ const pruefe = (ok, text, info = '') => {
 };
 const AUTOPLAY = ['--autoplay-policy=no-user-gesture-required'];
 const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
-const BILDER = path.join(WURZEL, 'screenshots/m7a');
+const BILDER = path.join(WURZEL, 'screenshots/m7a-1');
+const VORHER = JSON.parse(fs.readFileSync(path.join(WURZEL, 'tools/ton-messung-vorher.json'), 'utf8')); // M7a gemessen
 fs.mkdirSync(BILDER, { recursive: true });
 const A = (p, f, arg) => p.evaluate(f, arg);
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -139,12 +144,13 @@ console.log('(b) Motor');
   const r = await A(p, async () => {
     const w = window.__W, P = window.__P, s = window.__schritte, warte = window.__warte, C = P.CONFIG, M = C.audio.motor;
     const erg = {};
-    // Grundton = Drehzahl / 60 x 2.5 (Parameter des Knotens nach dem Einschwingen)
+    // Grundton nach der Kurve motorTon (M7a.1; Parameter des Knotens nach dem Einschwingen)
+    const { motorTon } = await import('/js/audio.js');
     erg.f0 = [];
     for (const rpm of [C.getriebe.leerlauf, 3000, 6000]) {
       const z = P.zustand({ drehzahl: rpm, gas: 0.5 });
       s(z, 0.2); await warte(300); s(z, 1 / 60);
-      erg.f0.push({ rpm, ist: w.knoten.f0.offset.value, soll: rpm / 60 * M.zuendFaktor });
+      erg.f0.push({ rpm, ist: w.knoten.f0.offset.value, soll: motorTon(rpm) });
     }
     // Turbo: Ladedruck nach 2 s bei 5000/min mit wenig / viel Gas
     w.allesAus();
@@ -200,7 +206,7 @@ console.log('(b) Motor');
       const m = g.schritt(1 / 120, { gas: 1, bremse: 0 }, v, v, 1);
       v += (m.beschl - 0.0004 * v * v - 0.15) / 120;
       if (k % 2) {
-        w.aktualisiere(1 / 60, P.zustand({ drehzahl: g.drehzahl, gas: 1, schaltet: g.schaltet, gang: g.gang, tempo: v, vVor: v }));
+        w.aktualisiere(1 / 60, P.zustand({ drehzahl: g.drehzahl, gas: 1, schaltet: g.schaltet, gang: g.gang, zielGang: g.zielGang, tempo: v, vVor: v }));
         if (phase === 0 && g.schaltet) phase = 1;
         if (phase === 0) { vorF = w.zustand.f0; motorPegelVor = w.zustand.motorPegel; }
         if (phase === 1) { minF = Math.min(minF, w.zustand.f0); schaltZeit += 1 / 60; motorPegelPause = Math.min(motorPegelPause, w.zustand.motorPegel); if (!g.schaltet) { phase = 2; nachF = w.zustand.f0; } }
@@ -212,7 +218,7 @@ console.log('(b) Motor');
     s(P.zustand({ drehzahl: 2500, gang: -1, tempo: 5, vVor: -5, bremse: 1 }), 0.3); const rueck = w.zustand.heulen;
     await warte(150); const heulHz = w.knoten.heulen.frequency.value;
     s(P.zustand({ drehzahl: 2500, gang: 1, tempo: 5, vVor: 5, gas: 0.5 }), 0.3); const vor = w.zustand.heulen;
-    erg.rueck = { rueck, vor, heulHz, soll: M.heulenGrund + 5 * M.heulenProMs };
+    erg.rueck = { rueck, vor, heulHz, soll: 2500 / 60 * M.heulenFaktor };
     // Countdown: Auto gesperrt, Gas ändert den Ton nicht
     w.allesAus();
     const bo0 = w.zaehler.blowOff || 0, kn0 = w.zaehler.knall || 0;
@@ -234,19 +240,20 @@ console.log('(b) Motor');
     JSON.stringify(b));
   const sum = (l) => l.reduce((a, x) => a + x, 0);
   const k = r.knall;
-  const erwartet = 40 * 0.45 * (1 + 0.35);
-  pruefe(JSON.stringify(k.k1) === JSON.stringify(k.k2), 'Knallen: feste Zufallsfolge (gleiches Fahren = gleiches Knallen)');
-  pruefe(sum(k.k1) >= erwartet * 0.5 && sum(k.k1) <= erwartet * 1.5 && Math.max(...k.k1) <= 2 && k.k1.filter((x) => x === 0).length >= 10, 'Knallen: gelegentlich, höchstens 2 pro Gaswegnehmen, oft gar nicht',
-    `${sum(k.k1)} Knalle bei 40 Mal Gas weg (erwartet ca. ${erwartet.toFixed(0)}), ${k.k1.filter((x) => x === 0).length} Mal keiner, Folge ${k.k1.join('')}`);
-  pruefe(k.unterAb === 0, `Knallen nur über ${4000}/min (darunter 20 Mal Gas weg: ${k.unterAb})`);
+  // M7a.1: Salven aus 1-4 Pops mit Chance 0.7 (M7a: höchstens 2, Chance 0.45); genau geprüft in M7a.1 (d)
+  const erwartet = 40 * 0.7 * 2.5;
+  pruefe(JSON.stringify(k.k1) === JSON.stringify(k.k2), 'Poppen: feste Zufallsfolge (gleiches Fahren = gleiches Poppen)');
+  pruefe(sum(k.k1) >= erwartet * 0.6 && sum(k.k1) <= erwartet * 1.4 && Math.max(...k.k1) <= 4 && k.k1.filter((x) => x === 0).length >= 4, 'Poppen: meistens eine Salve (1-4 Pops), manchmal keine',
+    `${sum(k.k1)} Pops bei 40 Mal Gas weg (erwartet ca. ${erwartet.toFixed(0)}), ${k.k1.filter((x) => x === 0).length} Mal keine, Folge ${k.k1.join('')}`);
+  pruefe(k.unterAb === 0, `Poppen nur über ${3500}/min (darunter 20 Mal Gas weg: ${k.unterAb})`);
   const g = r.begrenzer;
   pruefe(g.kurz === 0 && g.lang > 0.3 && g.param > 0.3 && g.tiefer === 0 && g.halbGas === 0, `Drehzahlbegrenzer: Stottern (${g.hz} Hz) nahe Höchstdrehzahl mit Vollgas nach kurzer Zeit, sonst nicht`,
     `Tiefe ${g.lang}, Knoten ${g.param.toFixed(2)}; nach 0.06 s ${g.kurz}, bei 6000/min ${g.tiefer}, halbes Gas ${g.halbGas}`);
   const sc = r.schalten;
   pruefe(sc.minF < sc.vorF * 0.8 && sc.nachF < sc.vorF && sc.motorPegelPause < sc.motorPegelVor * 0.7, 'Schaltpause: Grundton fällt hörbar, Motor ohne Last leiser, im neuen Gang steigt er wieder',
     `vor dem Schalten ${sc.vorF.toFixed(0)} Hz, tiefster Wert ${sc.minF.toFixed(0)} Hz (${((1 - sc.minF / sc.vorF) * 100).toFixed(0)} % tiefer), Pause ${(sc.schaltZeit * 1000).toFixed(0)} ms; Pegel ${sc.motorPegelVor.toFixed(2)} -> ${sc.motorPegelPause.toFixed(2)}`);
-  pruefe(r.rueck.rueck > 0 && r.rueck.vor === 0 && Math.abs(r.rueck.heulHz - r.rueck.soll) < 5, 'Rückwärts: Getriebeheulen dazu (Tonhöhe nach Tempo), vorwärts nicht',
-    `${r.rueck.heulHz.toFixed(0)} Hz bei 5 m/s`);
+  pruefe(r.rueck.rueck > 0 && r.rueck.vor === 0 && Math.abs(r.rueck.heulHz - r.rueck.soll) < 5, 'Rückwärts: Getriebeheulen dazu (M7a.1: Tonhöhe nach Drehzahl), vorwärts nicht',
+    `${r.rueck.heulHz.toFixed(0)} Hz bei 2500/min (soll ${r.rueck.soll.toFixed(0)})`);
   const c = r.countdown;
   pruefe(c.ohne.f === c.mit.f && c.ohne.p === c.mit.p && c.mit.d === 0 && !c.mit.bo && !c.loslassen.kn, 'Countdown: Gas ändert den Motorton nicht (Leerlauf, kein Ladedruck, kein Zischen, kein Knall)',
     `Filter ${c.ohne.f} / ${c.mit.f} Hz, Pegel ${c.ohne.p.toFixed(3)} / ${c.mit.p.toFixed(3)}`);
@@ -350,7 +357,7 @@ console.log('(d) Aufprall, Ducking, Statistik mit und ohne Ton');
     erg.wucht = [];
     for (const v of [1.2, 2, 5, 9, 14, 25]) {
       w.allesAus(); w.zustand.letzterAufprall = -1e9;
-      const ok = w.aufprall(v, P.materialNr('stein'));
+      const ok = w.aufprall(v, P.materialNr('baum')); // (M7a: Stein; der hat seit M7a.1 keinen grossen tiefen Schlag mehr)
       const st = w.stimmenListe.find((x) => x.an && x.art === 'aufprall');
       erg.wucht.push({ v, ok, pegel: st ? st.g.gain.value : 0, hz: st && st.extra ? st.extra.frequency.value : 0, schlag: !!w.stimmenListe.find((x) => x.an && x.art === 'schlag') });
     }
@@ -363,13 +370,13 @@ console.log('(d) Aufprall, Ducking, Statistik mit und ohne Ton');
     w.allesAus(); const a0 = w.zaehler.aufprall || 0;
     for (let k = 0; k < 30; k++) w.aktualisiere(1 / 60, P.zustand({ tempo: 8, aufprall: 6, aufprallArt: 4 }));
     erg.sperre = { sp, rattern: (w.zaehler.aufprall || 0) - a0 };
-    // Ducking: hart -> Motor/Reifen und Umgebung ca. -5 dB für 0.3 s, dann zurück; leicht -> nichts
+    // Ducking: hart -> Motor/Reifen und Umgebung um audio.aufprall.duckDb (M7a.1: -7 dB) für 0.3 s, dann zurück; leicht -> nichts
     w.allesAus(); await warte(200); w.zustand.letzterAufprall = -1e9;
     w.aufprall(12, 4);
     await warte(90); const d1 = { fz: w.busse.duck.gain.value, um: w.busse.umgDuck.gain.value };
     await warte(800); const d2 = { fz: w.busse.duck.gain.value, um: w.busse.umgDuck.gain.value };
     w.zustand.letzterAufprall = -1e9; w.aufprall(4, 4); await warte(90); const d3 = w.busse.duck.gain.value;
-    erg.duck = { d1, d2, d3 };
+    erg.duck = { d1, d2, d3, db: AU.duckDb };
     // Schleifen: Kontakt und Tempo > 2 m/s
     const sch = (art, v) => { w.allesAus(); s(P.zustand({ tempo: v, kontaktArt: art, kontaktTempo: v }), 0.2); return w.zustand.schleifen; };
     erg.schleifen = { metall8: sch(4, 8), fels8: sch(5, 8), metall1: sch(4, 1.5), keins: sch(-1, 8) };
@@ -379,13 +386,14 @@ console.log('(d) Aufprall, Ducking, Statistik mit und ohne Ton');
     Object.entries(r.material).map(([m, x]) => `${m} ${x.n}${x.puffer ? '' : ' (falscher Puffer!)'}`).join(', '));
   const W = r.wucht;
   const steigend = W.slice(1).every((x, i) => !W[i].ok || (x.pegel >= W[i].pegel && x.hz >= W[i].hz));
-  pruefe(!W[0].ok && W[1].ok && steigend && W[W.length - 1].pegel > W[1].pegel * 3 && !W[2].schlag && W[3].schlag, 'Lautstärke und Härte wachsen mit der Wucht (ab 1.5 m/s; ab 6 m/s mit tiefem Schlag)',
+  // (M7a: hart > 3 x leicht; seit M7a.1 sind leichte Kontakte lauter (aufprall.kurve 0.55), darum hart > 2.5 x leicht)
+  pruefe(!W[0].ok && W[1].ok && steigend && W[W.length - 1].pegel > W[1].pegel * 2.5 && !W[2].schlag && W[3].schlag, 'Lautstärke und Härte wachsen mit der Wucht (ab 1.5 m/s; ab 6 m/s mit tiefem Schlag)',
     W.map((x) => `${x.v} m/s: ${x.ok ? `${x.pegel.toFixed(2)} / ${x.hz.toFixed(0)} Hz${x.schlag ? ' + Schlag' : ''}` : 'kein Ton'}`).join('; '));
   pruefe(JSON.stringify(r.sperre.sp) === '[true,false,true]' && r.sperre.rattern <= 5 && r.sperre.rattern >= 4, 'eigene Sperrzeit 0.1 s: kein Rattern bei Dauerkontakt',
     `${r.sperre.rattern} Töne in 0.5 s Dauerkontakt`);
-  const dz = 10 ** (-5 / 20);
+  const dz = 10 ** (r.duck.db / 20);
   pruefe(Math.abs(r.duck.d1.fz - dz) < 0.08 && Math.abs(r.duck.d1.um - dz) < 0.08 && r.duck.d2.fz > 0.97 && r.duck.d2.um > 0.97 && r.duck.d3 > 0.97,
-    'Ducking: harter Aufprall senkt Motor/Reifen und Umgebung kurz um 5 dB, dann zurück; leichter nicht',
+    `Ducking: harter Aufprall senkt Motor/Reifen und Umgebung kurz um ${-r.duck.db} dB, dann zurück; leichter nicht`,
     `nach 90 ms ${r.duck.d1.fz.toFixed(2)} / ${r.duck.d1.um.toFixed(2)} (soll ${dz.toFixed(2)}), nach 0.9 s ${r.duck.d2.fz.toFixed(2)}; leicht ${r.duck.d3.toFixed(2)}`);
   pruefe(r.schleifen.metall8 > 0 && r.schleifen.fels8 > 0 && r.schleifen.metall1 === 0 && r.schleifen.keins === 0, 'Schleifen: bei Kontakt über 2 m/s, sonst nicht', JSON.stringify(r.schleifen));
   await spiel.schliessen();
@@ -846,18 +854,19 @@ console.log('(i) Offline gerechnet: Pegel, NaN, Gleichspannung, Anfang, Auskling
   const spiel = await lade({ entsperren: false });
   const p = spiel.page;
   const r = await A(p, async () => {
-    const P = await import('/tools/ton-pruefung.js'), C = P.CONFIG.audio;
+    const P = await import('/tools/ton-pruefung.js'), C = P.CONFIG.audio, { motorTon } = await import('/js/audio.js');
     const erg = { motor: [], einmal: [], bilder: {} };
     for (const rpm of [1000, 3000, 6000]) {
       const x = await P.rendere((w) => w.aktualisiere(0.016, P.zustand({ drehzahl: rpm, gas: 0.6 })), 2);
-      const soll = rpm / 60 * C.motor.zuendFaktor;
+      const soll = motorTon(rpm); // (M7a.1: Kurve statt Drehzahl / 60 x 2.5)
       erg.motor.push({ rpm, m: P.miss(x.daten, 0.5), f: P.staerksteFrequenz(x.daten, 0.5, 1.5, soll * 0.94, soll * 1.06, 0.25), soll });
       erg.bilder[`10-spektrogramm-motor-${rpm}`] = P.spektrogramm(x.daten, `Motor ${rpm}/min, 60 % Gas (Grundton ${soll.toFixed(0)} Hz)`);
     }
     // einmalige Klänge: Puffer direkt und durch die Schienen gerechnet
     const an = (w) => { w.aktualisiere(0.016, P.zustand({ modus: 'rennen', drehzahl: 1000 })); w.knoten.motorLast.gain.value = 0; };
     const ereignisse = {
-      knall: [(w) => { an(w); w.knall(0, 1); }, M => M.knall.laenge],
+      pop: [(w) => { an(w); w.knall(0.4, 1); }, M => M.pop.laenge],
+      klack: [(w) => { an(w); w.zustand.schaltetVor = true; w.zustand.schaltLast = 0; w.aktualisiere(0.016, P.zustand({ modus: 'rennen', drehzahl: 1000 })); }, M => M.klack.laenge],
       blowOff: [(w) => { an(w); w.zustand.druck = 1; w.blowOff(); }, () => C.motor.blowOffDauer + 0.05],
       ratsch: [(w) => { w.aktualisiere(0.016, P.zustand({ tempo: 10, handbremse: true })); }, () => C.reifen.ratschDauer + 0.04],
       schlag: [(w) => { w.aufprall(20, 0); }, () => C.aufprall.schlag.laenge],
@@ -907,7 +916,7 @@ console.log('(i) Offline gerechnet: Pegel, NaN, Gleichspannung, Anfang, Auskling
     `Spitze ${r.alles.spitze.toFixed(3)}, RMS ${r.alles.rms.toFixed(3)}`);
   console.log(`  ZAHL Spitzenpegel alles zugleich: ${r.alles.spitze.toFixed(3)}`);
   for (const [name, url] of Object.entries(r.bilder)) fs.writeFileSync(path.join(BILDER, `${name}.png`), Buffer.from(url.split(',')[1], 'base64'));
-  console.log(`  (Spektrogramme: ${Object.keys(r.bilder).length} Bilder in screenshots/m7a/)`);
+  console.log(`  (Spektrogramme: ${Object.keys(r.bilder).length} Bilder in screenshots/m7a-1/)`);
   await spiel.schliessen();
 }
 
@@ -1022,7 +1031,7 @@ console.log('(k) Texte');
   const erg = await A(p, async () => {
     const { TEXTE } = await import('/js/texte.js');
     const { SCHRIFT } = await import('/js/pixel.js');
-    const neu = ['einst.lautHinweis', 'einst.lautstaerke', 'einst.ton'];
+    const neu = ['einst.lautHinweis', 'einst.lautstaerke', 'einst.ton', 'einst.signale', 'einst.signaleHinweis'];
     const fehlt = neu.filter((k) => !(TEXTE[k] && TEXTE[k].de && TEXTE[k].en) || /ß/.test(TEXTE[k].de));
     const zeichen = new Set();
     for (const k of neu) for (const s of ['de', 'en']) for (const c of (TEXTE[k] && TEXTE[k][s] || '').toUpperCase()) if (!SCHRIFT[c]) zeichen.add(`${c} (${k})`);
@@ -1030,6 +1039,582 @@ console.log('(k) Texte');
   });
   pruefe(erg.fehlt.length === 0 && !/WIRKT ERST/.test(erg.hinweis.de) && !/ONCE THERE IS/.test(erg.hinweis.en), 'Hinweis unter LAUTSTÄRKE angepasst (de und en)', `"${erg.hinweis.de}" / "${erg.hinweis.en}"`);
   pruefe(erg.zeichen.length === 0, 'alle Zeichen gibt es in der Pixelschrift', erg.zeichen.join(', '));
+  await spiel.schliessen();
+}
+
+// =====================================================================
+// Teil 2: neue Tests für M7a.1 (Vergleich mit M7a: tools/ton-messung-vorher.json)
+// =====================================================================
+console.log('\n===== M7a.1 =====');
+const db = (x) => 20 * Math.log10(Math.max(1e-9, x));
+const f1 = (x) => x.toFixed(1);
+
+console.log('M7a.1 (a) Motor-Tonlage');
+{
+  const spiel = await lade({ entsperren: false });
+  const p = spiel.page;
+  await A(p, WERK);
+  const r = await A(p, async () => {
+    const w = window.__W, P = window.__P, s = window.__schritte, warte = window.__warte, C = P.CONFIG, M = C.audio.motor;
+    const { motorTon } = await import('/js/audio.js');
+    const erg = { punkte: [], hoechstTon: M.hoechstTon, maxRpm: M.hoechstDrehzahl, leer: C.getriebe.leerlauf };
+    for (const rpm of [C.getriebe.leerlauf, 1500, 3000, 5000, 7000, M.hoechstDrehzahl]) {
+      const z = P.zustand({ drehzahl: rpm, gas: 1 });
+      w.allesAus(); s(z, 0.1); await warte(250); s(z, 1 / 60);
+      erg.punkte.push({ rpm, ist: w.knoten.f0.offset.value, soll: motorTon(rpm) });
+    }
+    // steigt immer mit der Drehzahl (Kurve von 600 bis 7900/min in 10er-Schritten)
+    let monoton = true, vor = -1;
+    for (let rpm = 600; rpm <= 7900; rpm += 10) { const f = motorTon(rpm); if (!(f > vor)) monoton = false; vor = f; }
+    erg.monoton = monoton;
+    erg.leerSoll = C.getriebe.leerlauf / 60 * M.zuendFaktor;
+    return erg;
+  });
+  for (const pt of r.punkte) {
+    const ab = Math.abs(pt.ist / pt.soll - 1);
+    pruefe(ab <= 0.02, `Grundton bei ${pt.rpm}/min: ${f1(pt.ist)} Hz (Soll-Kurve ${f1(pt.soll)} Hz)`, `Abweichung ${(ab * 100).toFixed(2)} %`);
+  }
+  const top = r.punkte[r.punkte.length - 1], idle = r.punkte[0];
+  pruefe(r.hoechstTon >= 450 && r.hoechstTon <= 500 && Math.abs(top.ist / r.hoechstTon - 1) < 0.02, `Höchstdrehzahl ${r.maxRpm}/min: Grundton ${f1(top.ist)} Hz (hoechstTon ${r.hoechstTon}, Ziel 450-500; M7a: 300 Hz)`);
+  pruefe(Math.abs(idle.ist / 42 - 1) < 0.03 && Math.abs(r.leerSoll - 41.67) < 0.1, `Leerlauf weiter ca. 42 Hz (${f1(idle.ist)} Hz)`);
+  pruefe(r.monoton, 'Tonhöhe steigt bei jeder Drehzahl mit der Drehzahl (600-7900/min, 10er-Schritte)');
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (b) Motor-Härte (offline, Vollgas) und (c) Turbo');
+{
+  const spiel = await lade({ entsperren: false });
+  const p = spiel.page;
+  const r = await A(p, async () => {
+    const P = await import('/tools/ton-pruefung.js'), M = P.CONFIG.audio.motor;
+    const erg = { motor: [], turbo: [], turboWerte: {} };
+    const z = (rpm) => P.zustand({ drehzahl: rpm, gas: 1, gang: 3, zielGang: 3 });
+    for (const rpm of [1500, 3000, 5000, 7000]) {
+      let f0 = 0;
+      const x = await P.rendere((w) => { w.aktualisiere(1 / 60, z(rpm)); f0 = w.zustand.f0; w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); }, 2, { limiter: false });
+      const s = P.spektrum(x.daten, 0.5, 1.9), m = P.miss(x.daten, 0.5, 1.9);
+      erg.motor.push({ rpm, f0, fGemessen: P.staerksteFrequenz(x.daten, 0.5, 1.5, f0 * 0.92, f0 * 1.08, 0.25), schwerpunkt: P.schwerpunkt(s), ueber1k: P.anteilUeber(s, 1000), ueber2k5: P.anteilUeber(s, 2500), pegelA: P.pegelA(s), ...m });
+      if (rpm >= 5000) {
+        const t = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, z(rpm)); w.knoten.motorLast.disconnect(); w.knoten.heulenGain.disconnect(); }, 1.5, { limiter: false });
+        const tr = P.miss(t.daten, 0.5, 1.4).rms;
+        erg.turbo.push({ rpm, turboRms: tr, motorRms: m.rms, verhaeltnisDb: P.dB(tr / m.rms) });
+      }
+    }
+    // alle Schichten zugleich (mit Limiter): Vollgas am Begrenzer, Turbo, Salve, Schaltknall, Klack, Blow-off, Heulen
+    const alles = await P.rendereVerlauf((w, t) => {
+      w.zustand.druck = Math.max(w.zustand.druck, 0.95);
+      w.aktualisiere(1 / 60, P.zustand({ drehzahl: 7100, gas: t < 0.8 ? 1 : 0, gang: 3, zielGang: 3, tempo: 40, vVor: 40 }));
+      if (Math.abs(t - 0.5) < 0.008) { w.knall(0, 1, 'schaltknall'); w.knall(0.01, 1); w.blowOff(true); w.salve(); }
+    }, 2);
+    erg.alles = P.miss(alles.daten);
+    for (const k of ['turboAb', 'turboVoll', 'turboRauf', 'turboRunter', 'turboTonMin', 'turboTonMax', 'turboPegel']) erg.turboWerte[k] = M[k];
+    return erg;
+  });
+  for (const m of r.motor) {
+    const v = VORHER.motor.find((x) => x.rpm === m.rpm);
+    const ok = m.nan === 0 && m.spitze < 0.98 && Math.abs(m.mittel) < 0.005 && m.rms <= v.rms * 10 ** (1 / 20) && Math.abs(m.fGemessen / m.f0 - 1) < 0.02;
+    pruefe(ok && (m.rpm !== 5000 || m.schwerpunkt >= 2 * v.schwerpunkt) && m.ueber2k5 >= 2 * v.ueber2k5,
+      `Motor ${m.rpm}/min Vollgas: härter (Schwerpunkt${m.rpm === 5000 ? ' mind. doppelt' : ''}, Anteil über 2.5 kHz mind. doppelt), RMS höchstens +1 dB, Spitze < 0.98, kein NaN, keine Gleichspannung`,
+      `Schwerpunkt ${v.schwerpunkt.toFixed(0)} -> ${m.schwerpunkt.toFixed(0)} Hz (x${(m.schwerpunkt / v.schwerpunkt).toFixed(2)}), über 2.5 kHz ${(v.ueber2k5 * 100).toFixed(1)} -> ${(m.ueber2k5 * 100).toFixed(1)} %, `
+      + `über 1 kHz ${(v.ueber1k * 100).toFixed(1)} -> ${(m.ueber1k * 100).toFixed(1)} %, RMS ${f1(db(v.rms))} -> ${f1(db(m.rms))} dBFS (A-bewertet ${f1(m.pegelA - v.pegelA)} dB), Spitze ${m.spitze.toFixed(2)}, Mittel ${m.mittel.toFixed(4)}`);
+  }
+  pruefe(r.alles.nan === 0 && r.alles.spitze < 0.98, 'alle Motor-Schichten zugleich (Begrenzer, Turbo, Salve, Schaltknall, Blow-off): Spitze < 0.98', `Spitze ${r.alles.spitze.toFixed(3)}`);
+  const turboM7a = { turboAb: 3000, turboVoll: 5500, turboRauf: 0.4, turboRunter: 0.6, turboTonMin: 2200, turboTonMax: 5200, turboPegel: 0.035 };
+  pruefe(JSON.stringify(r.turboWerte) === JSON.stringify(turboM7a), '(c) Turbo-Werte (Pegel, Tonhöhe, Zeiten) genau wie in M7a', JSON.stringify(r.turboWerte));
+  for (const t of r.turbo) {
+    const v = VORHER.turbo.find((x) => x.rpm === t.rpm);
+    pruefe(t.verhaeltnisDb >= v.verhaeltnisDb - 3, `(c) Turbo gegen Motor bei ${t.rpm}/min nicht schlechter als -3 dB gegenüber M7a`,
+      `Turbo/Motor ${f1(v.verhaeltnisDb)} -> ${f1(t.verhaeltnisDb)} dB (Turbo-RMS ${v.turboRms.toFixed(4)} -> ${t.turboRms.toFixed(4)})`);
+  }
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (d) Poppen');
+{
+  const spiel = await lade({ entsperren: false });
+  const p = spiel.page;
+  await A(p, WERK);
+  const r = await A(p, async () => {
+    const w = window.__W, P = window.__P, s = window.__schritte, M = P.CONFIG.audio.motor;
+    const { baueKlangwerk } = await import('/js/audio.js');
+    const Z = (art) => w.zaehler[art] || 0;
+    const versuch = (werk, rpm) => {
+      const z = (a) => werk.zaehler[a] || 0;
+      for (let t = 0; t < 0.8; t += 1 / 60) werk.aktualisiere(1 / 60, P.zustand({ drehzahl: rpm, gas: 1 }));
+      const k0 = z('knall'), n0 = z('knistern'), s0 = z('salve');
+      for (let t = 0; t < 1.1; t += 1 / 60) werk.aktualisiere(1 / 60, P.zustand({ drehzahl: rpm, gas: 0 }));
+      const pops = z('knall') - k0, kn = z('knistern') - n0;
+      const wann = pops ? werk.protokoll.filter((x) => x.art === 'knall').slice(-pops).map((x) => x.wert).sort((a, b) => a - b) : [];
+      const knWann = werk.protokoll.filter((x) => x.art === 'knistern').slice(kn ? -kn : werk.protokoll.length).map((x) => x.wert);
+      return { pops, kn, salven: z('salve') - s0, abst: wann.slice(1).map((x, i) => x - wann[i]), knWann };
+    };
+    const liste = [];
+    for (let k = 0; k < 200; k++) liste.push(versuch(w, 5500));
+    // gleiche Folge mit einem neuen Werk: gleiches Poppen
+    const w2 = baueKlangwerk(new AudioContext()); w2.puffernSofort();
+    const w3 = baueKlangwerk(new AudioContext()); w3.puffernSofort();
+    const fa = [], fb = [];
+    for (let k = 0; k < 30; k++) { fa.push(versuch(w2, 5500).pops); fb.push(versuch(w3, 5500).pops); }
+    // unter knallAb: nie
+    let unten = 0;
+    for (let k = 0; k < 30; k++) { const v = versuch(w, M.knallAb - 300); unten += v.pops + v.kn; }
+    // Sperre: Gas weg (Salve), nach 0.3 s wieder Vollgas und nach 0.6 s wieder weg -> keine zweite Salve; nach > 1 s wieder
+    w.allesAus();
+    const sv = () => Z('salve');
+    s(P.zustand({ drehzahl: 5500, gas: 1 }), 0.8); const a0 = sv();
+    s(P.zustand({ drehzahl: 5500, gas: 0 }), 0.3); const a1 = sv();
+    s(P.zustand({ drehzahl: 5500, gas: 1 }), 0.3); s(P.zustand({ drehzahl: 5500, gas: 0 }), 0.3); const a2 = sv();
+    s(P.zustand({ drehzahl: 5500, gas: 1 }), 0.5); s(P.zustand({ drehzahl: 5500, gas: 0 }), 0.3); const a3 = sv();
+    // ohne Last vorher: 3 s ohne Gas bei hoher Drehzahl, oder nur wenig Gas weg -> kein Poppen, kein Knistern
+    w.allesAus();
+    const o0 = Z('knall') + Z('knistern') + Z('salve');
+    s(P.zustand({ drehzahl: 5500, gas: 0 }), 3);
+    s(P.zustand({ drehzahl: 5500, gas: 0.4 }), 1); s(P.zustand({ drehzahl: 5500, gas: 0 }), 1.2);
+    const ohneLast = Z('knall') + Z('knistern') + Z('salve') - o0;
+    // Pegel: ein Pop (offline, vor dem Limiter) gegen Stein mittel / hart
+    const an = (x) => { x.aktualisiere(1 / 60, P.zustand({ drehzahl: 1000 })); x.knoten.motorLast.disconnect(); };
+    const pop = await P.rendere((x) => { an(x); x.knall(0.4, 1); }, 0.8, { limiter: false });
+    const sk = await P.rendere((x) => { an(x); x.knall(0.4, M.schaltKnallPegel, 'schaltknall'); }, 0.8, { limiter: false });
+    const st = {};
+    for (const [n, v] of [['mittel', 7], ['hart', 16]]) st[n] = P.miss((await P.rendere((x) => x.aufprall(v, P.materialNr('stein')), 1, { limiter: false })).daten).spitze;
+    const pd = pop.daten.subarray(Math.round(P.RATE * 0.39));
+    return { liste, fa, fb, unten, sperre: [a1 - a0, a2 - a1, a3 - a2], ohneLast, pop: P.miss(pd).spitze, popDauer: P.huelle(pd, -40).ausklingen, popSchwerpunkt: P.schwerpunkt(P.spektrum(pd, 0, 0.1)), schaltknall: P.miss(sk.daten).spitze, stein: st, M: { chance: M.knallChance, kn: M.knisternChance, abstand: M.popAbstand, anzahl: M.popAnzahl, fenster: M.knisternFenster, ab: M.knallAb } };
+  });
+  const L = r.liste, mit = L.filter((x) => x.pops > 0);
+  const anteil = mit.length / L.length;
+  pruefe(Math.abs(anteil - r.M.chance) <= 0.08 && mit.every((x) => x.pops >= r.M.anzahl[0] && x.pops <= r.M.anzahl[1]) && L.every((x) => x.salven === 1),
+    `200 Mal Gas weg aus Vollgas bei 5500/min: Salve in ${(anteil * 100).toFixed(0)} % (Chance ${r.M.chance * 100} % ±8), je ${r.M.anzahl.join('-')} Pops`,
+    `Verteilung 1/2/3/4 Pops: ${[1, 2, 3, 4].map((n) => mit.filter((x) => x.pops === n).length).join(' / ')}`);
+  const abst = L.flatMap((x) => x.abst);
+  pruefe(abst.length > 50 && abst.every((a) => a >= r.M.abstand[0] - 1e-9 && a <= r.M.abstand[1] + 1e-9), `Abstände in einer Salve ${r.M.abstand[0] * 1000}-${r.M.abstand[1] * 1000} ms`, `${abst.length} Abstände, ${(Math.min(...abst) * 1000).toFixed(0)}-${(Math.max(...abst) * 1000).toFixed(0)} ms`);
+  const knAnteil = L.filter((x) => x.kn > 0).length / L.length;
+  pruefe(Math.abs(knAnteil - r.M.kn) <= 0.1 && L.every((x) => x.knWann.every((t) => t <= r.M.fenster)), `Knistern bei ${(knAnteil * 100).toFixed(0)} % (Chance ${r.M.kn * 100} %), immer in den ersten ${r.M.fenster} s`);
+  pruefe(JSON.stringify(r.fa) === JSON.stringify(r.fb), 'feste Zufallsfolge: zweimal gleich gefahren = gleich gepoppt', r.fa.join(''));
+  pruefe(r.unten === 0, `unter ${r.M.ab}/min kein Poppen und kein Knistern (30 Mal Gas weg bei ${r.M.ab - 300}/min)`);
+  pruefe(JSON.stringify(r.sperre) === '[1,0,1]', 'Sperre: in der Sperrzeit (1.0 s) keine zweite Salve, danach wieder', JSON.stringify(r.sperre));
+  pruefe(r.ohneLast === 0, 'ohne Last vorher (rollen ohne Gas, wenig Gas weg): kein Poppen, kein Knistern');
+  const verh = r.pop / r.stein.mittel;
+  pruefe(verh >= 0.65 && verh <= 0.9 && r.schaltknall < r.stein.hart && r.popDauer >= 0.012 && r.popDauer <= 0.04 && r.popSchwerpunkt >= 1500 && r.popSchwerpunkt <= 3000,
+    'Pop: kurz, hell, klar hörbar (Spitze ca. 80 % eines mittleren Aufpralls), Schaltknall leiser als ein harter Aufprall',
+    `Pop-Spitze ${r.pop.toFixed(2)} = ${(verh * 100).toFixed(0)} % von Stein mittel (${r.stein.mittel.toFixed(2)}), Dauer ${(r.popDauer * 1000).toFixed(0)} ms, Schwerpunkt ${r.popSchwerpunkt.toFixed(0)} Hz; Schaltknall ${r.schaltknall.toFixed(2)} < Stein hart ${r.stein.hart.toFixed(2)}`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (e) Schalten');
+{
+  const spiel = await lade({ entsperren: false });
+  const p = spiel.page;
+  await A(p, WERK);
+  const r = await A(p, async () => {
+    const w = window.__W, P = window.__P, s = window.__schritte, C = P.CONFIG, M = C.audio.motor, G = C.getriebe;
+    const Z = (art) => w.zaehler[art] || 0;
+    // Ein Schaltvorgang als Folge von Bildern: vorher im alten Gang, Schaltpause (Dauer wie im Getriebe), danach im neuen
+    const schalt = (werk, hoch, gas, druck = null) => {
+      const g0 = hoch ? 2 : 3, g1 = hoch ? 3 : 2, dauer = hoch ? G.schaltDauerHoch : G.schaltDauerRunter;
+      const r0 = hoch ? 6800 : 3000, r1 = hoch ? 6800 * G.gaenge[1] / G.gaenge[2] : 3000 * G.gaenge[2] / G.gaenge[1];
+      const dt = 1 / 60, z = (a) => werk.zaehler[a] || 0, vor = { ...werk.zaehler };
+      for (let t = 0; t < 0.6; t += dt) werk.aktualisiere(dt, P.zustand({ drehzahl: r0, gas, gang: g0, zielGang: g0 }));
+      if (druck != null) werk.zustand.druck = druck;
+      const pegelVor = werk.zustand.motorPegel, filterVor = werk.zustand.filter;
+      let minPegel = Infinity, klackInPause = 0, n = 0;
+      for (let t = 0; t < dauer - 1e-9; t += dt, n++) {
+        werk.aktualisiere(dt, P.zustand({ drehzahl: r0 + (r1 - r0) * Math.min(1, t / dauer * 1.5), gas, gang: g0, zielGang: g1, schaltet: true }));
+        minPegel = Math.min(minPegel, werk.zustand.motorPegel);
+        klackInPause += z('klack') - (vor.klack || 0);
+      }
+      const kv = z('klack');
+      werk.aktualisiere(dt, P.zustand({ drehzahl: r1, gas, gang: g1, zielGang: g1 }));
+      const klackErstesBild = z('klack') - kv, filterNach1 = werk.zustand.filter, pegelNach1 = werk.zustand.motorPegel;
+      for (let t = 0; t < 0.5; t += dt) werk.aktualisiere(dt, P.zustand({ drehzahl: r1, gas, gang: g1, zielGang: g1 }));
+      const d = (a) => z(a) - (vor[a] || 0);
+      const kl = werk.protokoll.filter((x) => x.art === 'klack').pop();
+      return { pegelVor, minPegel, pegelNach: werk.zustand.motorPegel, filterVor, filterNach1, filterSpaeter: werk.zustand.filter, pegelNach1, klackInPause, klackErstesBild, klack: d('klack'), klackWert: kl ? kl.wert : null,
+        knall: d('schaltknall'), blowOff: d('blowOff'), zwischengas: d('zwischengas'), pops: d('knall') };
+    };
+    const erg = {};
+    w.allesAus(); erg.hochLast = schalt(w, true, 1);
+    w.allesAus(); erg.hochOhne = schalt(w, true, 0.1, 0);
+    w.allesAus(); erg.runterBremsen = schalt(w, false, 0);
+    w.allesAus(); erg.runterTeil = schalt(w, false, 0.35);
+    // Schaltknall-Chance und Klack über 120 Hochschaltungen unter Last
+    let knaelle = 0, klacks = 0;
+    for (let k = 0; k < 120; k++) { w.allesAus(); const x = schalt(w, true, 1); knaelle += x.knall; klacks += x.klack; }
+    erg.chance = { knaelle, klacks, soll: M.schaltKnallChance };
+    // Blow-off beim Schalten unter Last lauter als beim normalen Gaswegnehmen (Pegel der Stimme / Ladedruck-Anteil)
+    const boPegel = () => { const st = w.stimmenListe.filter((x) => x.an && x.art === 'blowOff').sort((a, b) => b.start - a.start)[0]; const e = w.protokoll.filter((x) => x.art === 'blowOff').pop(); return st.g.gain.value / (0.6 + 0.4 * e.wert); };
+    w.allesAus(); s(P.zustand({ drehzahl: 6000, gas: 1, gang: 2, zielGang: 2 }), 2.5); s(P.zustand({ drehzahl: 6000, gas: 0, gang: 2, zielGang: 2 }), 0.1); const boNormal = boPegel();
+    w.allesAus(); s(P.zustand({ drehzahl: 6000, gas: 1, gang: 2, zielGang: 2 }), 2.5); s(P.zustand({ drehzahl: 6000, gas: 1, gang: 2, zielGang: 3, schaltet: true }), 0.1); const boSchalt = boPegel();
+    erg.blowOff = { normal: boNormal, schalt: boSchalt, soll: M.schaltBlowOff };
+    // echtes Getriebe: Vollgas 0 -> 160 km/h, dann bremsen bis 20 km/h: genau ein Klack pro Gangwechsel
+    const { Getriebe } = await import('/js/getriebe.js');
+    w.allesAus();
+    const g = new Getriebe();
+    let v = 0, phase = 'gas', wechsel = 0, schaltetVor = false;
+    const k0 = Z('klack');
+    for (let k = 0; k < 120 * 40; k++) {
+      const e = phase === 'gas' ? { gas: 1, bremse: 0 } : { gas: 0, bremse: 1 };
+      const m = g.schritt(1 / 120, e, v, v, 1);
+      v = Math.max(0, v + (m.beschl - (e.gas ? 0 : m.motorbremse) - e.bremse * 7 - 0.0004 * v * v - 0.15) / 120);
+      if (g.schaltet && !schaltetVor) wechsel++;
+      schaltetVor = g.schaltet;
+      if (k % 2) w.aktualisiere(1 / 60, P.zustand({ drehzahl: g.drehzahl, gas: e.gas, bremse: e.bremse, gang: g.gang, zielGang: g.zielGang, schaltet: g.schaltet, tempo: v, vVor: v }));
+      if (phase === 'gas' && v * 3.6 > 160) phase = 'bremsen';
+      if (phase === 'bremsen' && v * 3.6 < 20) break;
+    }
+    erg.fahrt = { wechsel, klacks: Z('klack') - k0 };
+    // Dip-Geschwindigkeit offline: Pegel des Motors 2 Bilder (33 ms) nach Beginn der Schaltpause
+    const dip = [];
+    await P.rendereVerlauf((x, t) => {
+      const sch = t >= 0.5 && t < 0.5 + G.schaltDauerHoch;
+      x.aktualisiere(1 / 60, P.zustand({ drehzahl: 6800, gas: 1, gang: 2, zielGang: sch ? 3 : 2, schaltet: sch }));
+      dip.push([t, x.knoten.motorLast.gain.value]);
+    }, 1.2);
+    erg.dip = dip;
+    erg.klackLeise = M.klackLeise; erg.schaltDip = M.schaltDip;
+    return erg;
+  });
+  const h = r.hochLast;
+  pruefe(h.minPegel < 0.3 * h.pegelVor && h.pegelNach > 0.85 * h.pegelVor, 'Hochschalten unter Last: Zünd-Unterbrechung, Motor fällt in der Schaltpause unter 30 % und kommt danach zurück',
+    `Pegel ${h.pegelVor.toFixed(3)} -> ${h.minPegel.toFixed(3)} (${(h.minPegel / h.pegelVor * 100).toFixed(0)} %) -> ${h.pegelNach.toFixed(3)}`);
+  const d0 = r.dip.filter((x) => x[0] < 0.5).pop()[1], d2 = r.dip.find((x) => x[0] >= 0.5 + 0.03)[1];
+  pruefe(d2 < 0.3 * d0, 'Zünd-Unterbrechung schnell: nach ca. 33 ms schon unter 30 % (Knoten, offline)', `${d0.toFixed(3)} -> ${d2.toFixed(3)}`);
+  pruefe(h.klackInPause === 0 && h.klackErstesBild === 1 && h.klack === 1, 'Klack genau einmal, am Ende der Schaltpause (im ersten Bild mit eingelegtem Gang)', JSON.stringify({ inPause: h.klackInPause, erstesBild: h.klackErstesBild }));
+  const ch = r.chance.knaelle / 120;
+  pruefe(Math.abs(ch - r.chance.soll) <= 0.12 && r.chance.klacks === 120, `Schaltknall beim Hochschalten unter Last: ${(ch * 100).toFixed(0)} % (Chance ${r.chance.soll * 100} %), 120 Klacks bei 120 Schaltungen`);
+  const bf = r.blowOff.schalt / r.blowOff.normal;
+  pruefe(Math.abs(bf - r.blowOff.soll) < 0.05, `Blow-off beim Schalten unter Last ${bf.toFixed(2)} Mal so laut wie beim normalen Gaswegnehmen (soll ${r.blowOff.soll})`);
+  const o = r.hochOhne;
+  pruefe(o.klack === 1 && Math.abs(o.klackWert - r.klackLeise) < 1e-9 && o.knall === 0 && o.blowOff === 0 && o.pops === 0 && o.minPegel > 0.9 * o.pegelVor * 0.5,
+    'Hochschalten ohne Last: nur das leise Klack (kein Knall, kein Zischen, keine Zünd-Unterbrechung)', JSON.stringify({ klack: o.klack, leise: o.klackWert, knall: o.knall, blowOff: o.blowOff, pegel: `${o.pegelVor.toFixed(3)} -> ${o.minPegel.toFixed(3)}` }));
+  const b = r.runterBremsen, t2 = r.runterTeil;
+  pruefe(b.zwischengas === 1 && b.filterNach1 > b.filterSpaeter + 1500 && b.pegelNach1 > 0 && b.klack === 1 && b.klackWert === r.klackLeise && b.knall === 0,
+    'Runterschalten beim Bremsen: Zwischengas (kurz heller und lauter), leises Klack, kein Pop',
+    `Helligkeit direkt danach ${b.filterNach1.toFixed(0)} Hz, 0.5 s später ${b.filterSpaeter.toFixed(0)} Hz`);
+  pruefe(t2.zwischengas === 1 && t2.filterNach1 > t2.filterSpaeter + 1500 && t2.klack === 1 && t2.klackWert === 1,
+    'Runterschalten mit etwas Gas: Zwischengas und normales Klack (Pop mit Chance 0.35)', `Helligkeit ${t2.filterNach1.toFixed(0)} -> ${t2.filterSpaeter.toFixed(0)} Hz, Pop ${t2.knall}`);
+  pruefe(r.fahrt.wechsel >= 7 && r.fahrt.klacks === r.fahrt.wechsel, 'echtes Getriebe (Vollgas bis 160 km/h, dann bremsen): genau ein Klack pro Gangwechsel, kein Doppel-Klack',
+    `${r.fahrt.wechsel} Gangwechsel, ${r.fahrt.klacks} Klacks`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (f) Signale');
+{
+  const spiel = await lade({ entsperren: false });
+  const p = spiel.page;
+  await A(p, WERK);
+  const r = await A(p, async () => {
+    const w = window.__W, P = window.__P, S = P.CONFIG.audio.signale;
+    const SIG = {
+      'menue-tick': (x) => x.menue('tick'), 'menue-regler': (x) => x.menue('regler', 1), 'menue-bestaetigen': (x) => x.menue('bestaetigen'),
+      'menue-zurueck': (x) => x.menue('zurueck'), 'menue-fehler': (x) => x.menue('fehler'), paceNote: (x) => x.paceNote(1),
+      countdown: (x) => x.countdown(), go: (x) => x.go(), 'cp-schneller': (x) => x.checkpoint(-1), 'cp-langsamer': (x) => x.checkpoint(1), 'cp-neutral': (x) => x.checkpoint(0),
+      verpasst: (x) => x.verpasst(), pause: (x) => x.pauseTon(true), weiter: (x) => x.pauseTon(false), 'fanfare-kurz': (x) => x.fanfare(false), 'fanfare-lang': (x) => x.fanfare(true),
+    };
+    const erg = { spitze: {}, mix: {} };
+    for (const [n, f] of Object.entries(SIG)) erg.spitze[n] = P.miss((await P.rendere((x) => f(x), n.startsWith('fanfare') ? 4.5 : 1, { limiter: false })).daten).spitze;
+    // Im Mix: Motor bei 5000/min Vollgas (voller Ladedruck); das Signal kommt nach 0.5 s. Signal allein (Motor abgehängt) gegen
+    // Motor allein (Signal-Schiene abgehängt, Ducking wirkt trotzdem), RMS im selben Fenster (aktiver Teil des Signals)
+    const rennen = ['countdown', 'go', 'cp-schneller', 'cp-langsamer', 'cp-neutral', 'verpasst', 'pause', 'weiter', 'fanfare-kurz', 'fanfare-lang'];
+    for (const n of rennen) {
+      for (const motorZ of [P.zustand({ drehzahl: 5000, gas: 1, gang: 3, zielGang: 3 }), P.zustand({ modus: 'ziel', drehzahl: 2500, gas: 0, tempo: 10, vVor: 10, gang: 2, zielGang: 2 })]) {
+        if (motorZ.modus === 'ziel' && n !== 'fanfare-lang') continue;
+        const lauf = (welche) => P.rendereVerlauf((x, t) => {
+          if (t === 0) { x.zustand.druck = motorZ.gas; if (welche === 'signal') x.busse.duck.disconnect(); else x.busse.signale.disconnect(); }
+          x.aktualisiere(1 / 60, motorZ);
+          if (Math.abs(t - 0.5) < 0.008) SIG[n](x);
+        }, n.startsWith('fanfare') ? 5 : 1.5, { limiter: false });
+        const sig = (await lauf('signal')).daten, mot = (await lauf('motor')).daten;
+        const h = P.huelle(sig.subarray(Math.round(P.RATE * 0.5)), -40);
+        const von = 0.5, bis = 0.5 + Math.max(0.05, h.aktivDauer + 0.0);
+        const rs = P.miss(sig, von, bis).rms, rm = P.miss(mot, von, bis).rms;
+        erg.mix[`${n}${motorZ.modus === 'ziel' ? '-zielschirm' : ''}`] = { signal: rs, motor: rm, db: P.dB(rs / rm), fenster: bis - von };
+      }
+    }
+    // Ducking: Motor (Schiene duck) nach 90 ms und 200 ms um ca. 3.5 dB leiser, nach 0.8 s zurück; Menü-Töne: kein Ducking
+    const warte = window.__warte;
+    erg.duck = {};
+    for (const n of [...rennen.filter((x) => !['pause', 'weiter', 'cp-langsamer', 'cp-neutral', 'fanfare-lang'].includes(x)), 'menue-bestaetigen', 'menue-tick', 'paceNote', 'pause']) {
+      w.allesAus(); await warte(400);
+      SIG[n](w);
+      await warte(90); const a = w.busse.duck.gain.value, u = w.busse.umgDuck.gain.value;
+      await warte(110); const b = w.busse.duck.gain.value;
+      await warte(650); const c = w.busse.duck.gain.value;
+      erg.duck[n] = { a, b, c, u };
+    }
+    erg.duckDb = S.duckDb;
+    return erg;
+  });
+  const bereich = { 'menue-tick': [0.2, 0.25], 'menue-regler': [0.2, 0.25], paceNote: [0.2, 0.25], 'menue-bestaetigen': [0.35, 0.4], 'menue-zurueck': [0.35, 0.4], 'menue-fehler': [0.35, 0.4] };
+  for (const [n, sp] of Object.entries(r.spitze)) {
+    const [a, b] = bereich[n] || [0.5, 0.6];
+    const v = VORHER.signale[n];
+    pruefe(sp >= a && sp <= b, `${n}: Spitze ${sp.toFixed(3)} im Zielbereich ${a}-${b} (LAUTSTÄRKE und SIGNALTÖNE 100 %, vor dem Limiter)`, `M7a: ${v.spitze.toFixed(3)} (x${(sp / v.spitze).toFixed(1)})`);
+  }
+  for (const [n, m] of Object.entries(r.mix)) {
+    if (n === 'fanfare-lang') { console.log(`  INFO fanfare-lang bei Vollgas: ${f1(m.db)} dB gegen den Motor (sie kommt aber erst auf dem Zielbildschirm, siehe nächste Zeile)`); continue; }
+    pruefe(m.db >= 0, `${n}: im Mix mit dem Motor ${n.endsWith('zielschirm') ? '(Zielbildschirm, Auto rollt aus)' : 'bei 5000/min Vollgas'} mindestens so laut wie der Motor`,
+      `Signal ${f1(db(m.signal))} dBFS, Motor ${f1(db(m.motor))} dBFS (mit Ducking) -> ${m.db >= 0 ? '+' : ''}${f1(m.db)} dB, Fenster ${(m.fenster * 1000).toFixed(0)} ms`);
+  }
+  const dz = 10 ** (r.duckDb / 20);
+  for (const [n, d] of Object.entries(r.duck)) {
+    const soll = !/menue|paceNote|pause/.test(n);
+    const ok = soll ? d.a < 10 ** (-3 / 20) && d.a > 10 ** (-4 / 20) && d.b < 0.75 && d.c > 0.97 && d.u > 0.99 : d.a > 0.99 && d.b > 0.99 && d.c > 0.99;
+    pruefe(ok, soll ? `Ducking bei ${n}: Motor ${f1(-db(d.a))} dB leiser (3-4 dB, ca. 0.25 s), dann zurück; Umgebung bleibt` : `kein Ducking bei ${n}`,
+      `nach 90 ms ${d.a.toFixed(2)} (soll ${dz.toFixed(2)}), 200 ms ${d.b.toFixed(2)}, 850 ms ${d.c.toFixed(2)}`);
+  }
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (g) Regler SIGNALTÖNE');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  const r = await A(p, async () => {
+    const A = window.__alpineRally, w = A.ton.werk, E = await import('/js/einstellungen.js');
+    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+    const erg = { werte: {} };
+    erg.standard = E.einstellungen.signale;
+    E.setze('lautstaerke', 70);
+    // (Chrome rechnet eine Schiene nur, solange darauf etwas klingt: darum läuft dabei die Fanfare)
+    for (const v of [0, 30, 50, 100, 70]) { E.setze('signale', v); w.fanfare(false); await warte(250); erg.werte[v] = { sig: w.busse.signaleRegler.gain.value, master: w.busse.master.gain.value }; w.allesAus(); }
+    erg.gespeichert = JSON.parse(localStorage.getItem(A.CONFIG.menue.speicherName)).signale;
+    // Menü: Eintrag direkt unter LAUTSTÄRKE, Pfeil links = 65 % mit Regler-Tick
+    A.menue.oeffne(A.seiten.einstellungen, true);
+    const ein = A.menue.seite.eintraege;
+    erg.reihe = [ein.findIndex((e) => e.text === 'einst.lautstaerke'), ein.findIndex((e) => e.text === 'einst.signale')];
+    while (A.menue.wahl !== erg.reihe[1]) A.menue.runter();
+    await warte(80);
+    erg.tickVor = w.zaehler['menue-regler'] || 0;
+    return erg;
+  });
+  await p.keyboard.press('ArrowLeft'); await bilderAbwarten(p, 2);
+  const nachTick = await A(p, () => ({ n: window.__alpineRally.ton.werk.zaehler['menue-regler'] || 0, wert: (window.__alpineRally.ton.werk.protokoll.filter((x) => x.art === 'menue-regler').pop() || {}).wert, sig: window.__alpineRally.ton.werk.busse.signaleRegler.gain.value }));
+  const wv = r.werte;
+  pruefe(wv[0].sig < 1e-3 && Math.abs(wv[30].sig - 0.09) < 0.01 && Math.abs(wv[50].sig - 0.25) < 0.01 && Math.abs(wv[100].sig - 1) < 0.01 && Object.values(wv).every((x) => Math.abs(x.master - 0.49) < 0.01),
+    'SIGNALTÖNE wirkt quadratisch auf die Signale (0 % = stumm, 50 % = 0.25), LAUTSTÄRKE (Master) bleibt', JSON.stringify(Object.fromEntries(Object.entries(wv).map(([k, x]) => [k, r2(x.sig)]))));
+  pruefe(r.standard === 100 && r.gespeichert === 70, 'Standard 100 %, wird gespeichert', `Standard ${r.standard}, gespeichert ${r.gespeichert}`);
+  pruefe(r.reihe[1] === r.reihe[0] + 1, 'Regler SIGNALTÖNE steht direkt unter LAUTSTÄRKE (Gruppe TON)', JSON.stringify(r.reihe));
+  pruefe(nachTick.n === r.tickVor + 1 && Math.abs(nachTick.wert - 0.65) < 0.01 && Math.abs(nachTick.sig - 0.65 ** 2) < 0.05, 'Pfeil links: 65 %, Regler-Tick auf der Signal-Schiene (schon mit der neuen Stärke)', JSON.stringify(nachTick));
+  // Neu laden: Wert bleibt; alter Speicher ohne "signale" -> 100
+  await p.reload();
+  await p.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  const geladen = await A(p, async () => (await import('/js/einstellungen.js')).einstellungen.signale);
+  await A(p, () => { const k = window.__alpineRally.CONFIG.menue.speicherName, d = JSON.parse(localStorage.getItem(k)); delete d.signale; localStorage.setItem(k, JSON.stringify(d)); });
+  await p.reload();
+  await p.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  const alt = await A(p, async () => (await import('/js/einstellungen.js')).einstellungen.signale);
+  pruefe(geladen === 65 && alt === 100, 'nach dem Neuladen gleich; alter Speicher ohne den Wert = 100 %', `neu geladen ${geladen}, alter Speicher ${alt}`);
+  // Wert 0: alle Signale stumm (offline gerechnet)
+  const stumm = await A(p, async () => {
+    const P = await import('/tools/ton-pruefung.js');
+    const x = await P.rendere((w) => { w.busse.signaleRegler.gain.value = 0; w.signalLautstaerke(0); w.countdown(); w.checkpoint(-1); w.menue('bestaetigen'); w.fanfare(false); }, 1);
+    return P.miss(x.daten).spitze;
+  });
+  pruefe(stumm < 1e-4, 'SIGNALTÖNE 0 %: Countdown, Checkpoint, Menü, Fanfare stumm', `Spitze ${stumm.toExponential(1)}`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (h) Aufprall');
+{
+  const spiel = await lade({ entsperren: false });
+  const p = spiel.page;
+  const r = await A(p, async () => {
+    const P = await import('/tools/ton-pruefung.js'), AU = P.CONFIG.audio.aufprall;
+    const erg = { mat: {} };
+    for (const mat of AU.materialien) {
+      erg.mat[mat] = {};
+      for (const [stufe, v] of [['leicht', 1.5], ['mittel', 7], ['hart', 16]]) {
+        const x = await P.rendere((w) => w.aufprall(v, P.materialNr(mat)), 1.6, { limiter: false });
+        const h = P.huelle(x.daten, -40), s = P.spektrum(x.daten, 0, Math.max(0.1, h.anfang + h.ausklingen));
+        const schlagAb = AU.schlagAb; AU.schlagAb = 1e9;
+        const y = await P.rendere((w) => w.aufprall(v, P.materialNr(mat)), 1.6, { limiter: false });
+        AU.schlagAb = schlagAb;
+        const pegel = AU.pegel; AU.pegel = 0;
+        const sch = await P.rendere((w) => w.aufprall(v, P.materialNr(mat)), 0.5, { limiter: false });
+        AU.pegel = pegel;
+        const sy = P.spektrum(y.daten, 0, Math.max(0.1, h.anfang + h.ausklingen));
+        erg.mat[mat][stufe] = { spitze: P.miss(x.daten).spitze, ausklingen40: h.ausklingen, schwerpunkt: P.schwerpunkt(s), schwerpunktAllein: P.schwerpunkt(sy), spitzeUeber1k: P.spitzeUeber(s, 1000),
+          pegelRms: Math.hypot(P.miss(y.daten, 0, 0.15).rms, P.miss(sch.daten, 0, 0.15).rms) };
+      }
+    }
+    // Motor bei Vollgas (mit Turbo) und lautestes Signal, zum Vergleich
+    const mot = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, P.zustand({ drehzahl: 5000, gas: 1, gang: 3, zielGang: 3 })); }, 1.5, { limiter: false });
+    erg.motor = P.miss(mot.daten, 0.5, 1.4);
+    // Aufprall + Vollgas + Drift zugleich (mit Limiter): Spitze, Absenkung des Limiters, Ducking
+    erg.zugleich = {};
+    for (const mat of AU.materialien) {
+      const red = [];
+      const z = P.zustand({ drehzahl: 6000, gas: 1, tempo: 30, vVor: 30, drift: 20, untergrund: 'asphalt', gang: 3, zielGang: 3, kontaktArt: -1 });
+      const x = await P.rendereVerlauf((w, t) => {
+        w.aktualisiere(1 / 60, z);
+        if (Math.abs(t - 0.6) < 0.008) { w.zustand.letzterAufprall = -1e9; w.aufprall(16, P.materialNr(mat)); }
+        red.push([t, w.busse.limiter.reduction, w.busse.duck.gain.value]);
+      }, 2);
+      const vor = red.filter((q) => q[0] > 0.4 && q[0] < 0.58).reduce((a, q) => Math.min(a, q[1]), 0);
+      const zurueck = red.find((q) => q[0] > 0.62 && q[1] > vor - 1);
+      const duck90 = red.find((q) => q[0] >= 0.69)[2];
+      const duckZurueck = red.find((q) => q[0] > 0.62 && q[2] > 0.97);
+      erg.zugleich[mat] = { spitze: P.miss(x.daten).spitze, zurueck: zurueck ? zurueck[0] - 0.6 : 9, duck90, duckZurueck: duckZurueck ? duckZurueck[0] - 0.6 : 9 };
+    }
+    erg.duckDb = AU.duckDb; erg.duckDauer = AU.duckDauer;
+    return erg;
+  });
+  const V = VORHER.aufprall;
+  for (const st of ['mittel', 'hart']) {
+    const a = r.mat.stein[st], v = V.stein[st];
+    pruefe(a.schwerpunkt < 1200 && a.schwerpunktAllein < 1200 && a.ausklingen40 < 0.25 && a.spitzeUeber1k < -30, `Stein ${st}: dumpf (Schwerpunkt < 1200 Hz), kurz (Ausklingen bis -40 dB < 0.25 s), keine Eigentöne über 1 kHz über -30 dB`,
+      `Schwerpunkt Material ${v.schwerpunktAllein.toFixed(0)} -> ${a.schwerpunktAllein.toFixed(0)} Hz (gesamt ${a.schwerpunkt.toFixed(0)}), Ausklingen ${v.ausklingen40.toFixed(2)} -> ${a.ausklingen40.toFixed(2)} s, stärkste Spitze über 1 kHz ${f1(v.spitzeUeber1kAllein)} -> ${f1(a.spitzeUeber1k)} dB`);
+    const m = r.mat.metall[st], vm = V.metall[st];
+    pruefe(Math.abs(m.schwerpunktAllein / vm.schwerpunktAllein - 1) <= 0.15 && Math.abs(m.ausklingen40 / vm.ausklingen40 - 1) <= 0.15, `Metall ${st} bleibt hell und klingt nach (wie M7a ±15 %)`,
+      `Schwerpunkt ${vm.schwerpunktAllein.toFixed(0)} -> ${m.schwerpunktAllein.toFixed(0)} Hz, Ausklingen ${vm.ausklingen40.toFixed(2)} -> ${m.ausklingen40.toFixed(2)} s`);
+  }
+  const zeilen = [];
+  let alleOk = true;
+  for (const mat of Object.keys(r.mat)) for (const st of ['mittel', 'hart']) {
+    const d = db(r.mat[mat][st].pegelRms) - db(V[mat][st].pegelRms);
+    if (d < 4 || d > 6) alleOk = false;
+    zeilen.push(`${mat} ${st} ${d >= 0 ? '+' : ''}${f1(d)}`);
+  }
+  pruefe(alleOk, 'alle Materialien +4 bis +6 dB lauter als in M7a (RMS der ersten 0.15 s, Material und Schlag)', zeilen.join(', '));
+  const maxSignal = Math.max(...Object.values(VORHER.signale).map(() => 0), ...Object.keys(r.mat).map(() => 0));
+  void maxSignal;
+  const sigSpitze = 0.6, sigRms = 0.42; // obere Grenzen aus (f): Spitze aller Signale <= 0.6, RMS (aktiv) höchstens ca. 0.4
+  const hartOk = Object.entries(r.mat).every(([, x]) => x.hart.spitze > Math.max(r.motor.spitze, sigSpitze) && x.hart.pegelRms > Math.max(r.motor.rms, sigRms));
+  pruefe(hartOk, 'harter Aufprall ist der lauteste Klang: Spitze und Pegel über Motor (Vollgas) und jedem Signal',
+    `Motor Spitze ${r.motor.spitze.toFixed(2)} / RMS ${r.motor.rms.toFixed(2)}; hart: ${Object.entries(r.mat).map(([m, x]) => `${m} ${x.hart.spitze.toFixed(2)} / ${x.hart.pegelRms.toFixed(2)}`).join(', ')}`);
+  pruefe(Object.values(r.mat).every((x) => db(x.leicht.pegelRms) > -24), 'leichter Kontakt (1.5 m/s) klar hörbar: RMS über -24 dBFS',
+    Object.entries(r.mat).map(([m, x]) => `${m} ${f1(db(x.leicht.pegelRms))}`).join(', '));
+  const Zg = r.zugleich;
+  pruefe(Object.values(Zg).every((x) => x.spitze < 0.98), 'Aufprall (hart) + Vollgas + Drift zugleich: Spitze < 0.98', Object.entries(Zg).map(([m, x]) => `${m} ${x.spitze.toFixed(3)}`).join(', '));
+  const dz = 10 ** (r.duckDb / 20);
+  pruefe(Object.values(Zg).every((x) => Math.abs(db(x.duck90) - r.duckDb) <= 1 && x.zurueck <= x.duckZurueck), `Ducking ${r.duckDb} dB (±1); der Limiter ist wieder auf dem Stand von vorher, bevor das Ducking zurück ist (kein längeres Einbrechen)`,
+    Object.entries(Zg).map(([m, x]) => `${m}: Ducking ${f1(db(x.duck90))} dB, Limiter zurück nach ${(x.zurueck * 1000).toFixed(0)} ms, Ducking zurück nach ${(x.duckZurueck * 1000).toFixed(0)} ms`).join('; ') + ` (soll ${dz.toFixed(2)})`);
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (i) Rückwärts-Heulen');
+{
+  const spiel = await lade({ entsperren: false, adresse: '?menue=aus' });
+  const p = spiel.page;
+  // echte Rückwärts-Drehzahlen: im Spiel Bremse halten (Asphalt, 600 m), 5 s
+  const rueck = await A(p, () => {
+    const A = window.__alpineRally;
+    A.anhalten = true; A.start({ countdown: false }); A.setzeAuf(600);
+    const e = { ...window.__T.LEER, bremse: 1 }, liste = [];
+    for (let k = 0; k < 120 * 5; k++) { A.rennSchritt(A.SCHRITT, e); if (k % 12 === 11) liste.push({ rpm: A.getriebe.drehzahl, v: A.physik.vVor, gang: A.getriebe.gang }); }
+    return liste;
+  });
+  await A(p, WERK);
+  const r = await A(p, async (rueck) => {
+    const w = window.__W, P = window.__P, s = window.__schritte, warte = window.__warte, M = P.CONFIG.audio.motor;
+    const erg = { stich: [] };
+    for (const [rpm, v] of [[2000, 3], [3500, 3], [3500, 8], [4724, 9]]) {
+      w.allesAus(); s(P.zustand({ drehzahl: rpm, gang: -1, zielGang: -1, tempo: v, vVor: -v, bremse: 1 }), 0.1); await warte(200);
+      erg.stich.push({ rpm, v, hz: w.knoten.heulen.frequency.value, soll: rpm / 60 * M.heulenFaktor, pegel: w.zustand.heulen });
+    }
+    w.allesAus(); s(P.zustand({ drehzahl: 3500, gang: 2, zielGang: 2, tempo: 8, vVor: 8, gas: 0.5 }), 0.3); erg.vorwaerts = w.zustand.heulen;
+    // echte Rückwärtsfahrt: Tonhöhe und Pegel gegen den Motor (offline, Heulen allein / Motor allein)
+    erg.real = [];
+    for (const q of rueck.filter((x, i) => x.gang === -1 && i % 4 === 3)) {
+      const z = P.zustand({ drehzahl: q.rpm, gang: -1, zielGang: -1, tempo: Math.abs(q.v), vVor: q.v, bremse: 1 });
+      const x = await P.rendere((u) => { u.aktualisiere(1 / 60, z); u.knoten.motorLast.disconnect(); u.knoten.turboGain.disconnect(); }, 0.6, { limiter: false });
+      const m = await P.rendere((u) => { u.aktualisiere(1 / 60, z); u.knoten.heulenGain.disconnect(); u.knoten.turboGain.disconnect(); }, 0.6, { limiter: false });
+      erg.real.push({ rpm: q.rpm, v: q.v, hz: P.staerksteFrequenz(x.daten, 0.25, 0.55, 80, 2500, 2), rms: P.miss(x.daten, 0.25, 0.55).rms, motor: P.miss(m.daten, 0.25, 0.55).rms });
+    }
+    return erg;
+  }, rueck);
+  pruefe(r.stich.every((x) => Math.abs(x.hz / x.soll - 1) <= 0.02), 'Tonhöhe = Drehzahl / 60 x heulenFaktor (±2 %)', r.stich.map((x) => `${x.rpm}/min ${x.v} m/s: ${x.hz.toFixed(0)} Hz (soll ${x.soll.toFixed(0)})`).join(', '));
+  pruefe(Math.abs(r.stich[1].hz - r.stich[2].hz) < 1, 'folgt der Drehzahl: gleiche Drehzahl, anderes Tempo = gleiche Tonhöhe', `${r.stich[1].hz.toFixed(1)} / ${r.stich[2].hz.toFixed(1)} Hz`);
+  const maxHz = Math.max(...r.real.map((x) => x.hz)), maxRpm = Math.max(...rueck.map((x) => x.rpm));
+  pruefe(maxHz < 520 && maxHz > 350, `echte Rückwärtsfahrt (bis ${Math.round(maxRpm)}/min, ${Math.abs(Math.min(...rueck.map((x) => x.v))).toFixed(1)} m/s): höchstens ${maxHz.toFixed(0)} Hz (unter 520; M7a: 1360 Hz)`,
+    r.real.map((x) => `${Math.round(x.rpm)}/min ${x.hz.toFixed(0)} Hz`).join(', '));
+  pruefe(r.vorwaerts === 0 && r.real.every((x) => x.rms < x.motor), 'nur im Rückwärtsgang, nie lauter als der Motor', r.real.map((x) => `${f1(db(x.rms))} / ${f1(db(x.motor))} dB`).join(', '));
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (j) Ton-Labor: Feinschliff');
+{
+  const spiel = await starteSpiel({ breite: 1100, hoehe: 900, args: AUTOPLAY });
+  const p = spiel.page;
+  await p.goto(`${spiel.url}/ton-labor.html`);
+  await p.waitForFunction(() => window.__tonLabor && window.__tonLabor.fein);
+  await p.click('#tonStarten');
+  await p.waitForFunction(() => window.__tonLabor.ton.werk && window.__tonLabor.ton.werk.aufbau.fertig);
+  const r = await A(p, async () => {
+    const L = window.__tonLabor, F = L.fein.FEIN, w = L.ton.werk, C = L.CONFIG;
+    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+    const setze = (pfad, v) => { const f = F.find((x) => x.pfad === pfad); f.regler.value = v; f.regler.dispatchEvent(new Event('input')); };
+    const regler = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input')); };
+    const erg = { anzahl: F.length, signalRegler: !!document.getElementById('signale') };
+    regler('drehzahl', C.audio.motor.hoechstDrehzahl); regler('gas', 0.5);
+    await warte(200); erg.f0Vor = w.zustand.f0;
+    const kurveVor = w.knoten.saettigung.curve[560], steinVor = w.puffer['aufprall-stein'];
+    setze('audio.motor.hoechstTon', 560); setze('audio.motor.verzerrung', 9.5); setze('audio.aufprall.klang.stein.knall[2]', 3000);
+    setze('audio.motor.rauh', 0.5); setze('audio.motor.unter', 0.3); setze('audio.motor.filterGas', 6000);
+    await warte(250);
+    erg.f0Nach = w.zustand.f0; erg.kurve = [kurveVor, w.knoten.saettigung.curve[560]]; erg.steinNeu = steinVor !== w.puffer['aufprall-stein'];
+    erg.rauh = w.knoten.rauhGain.gain.value; erg.unter = w.knoten.unterGain.gain.value; erg.filter = w.zustand.filter;
+    document.getElementById('kopieren').click(); await warte(150);
+    erg.text = document.getElementById('kopieText').value;
+    document.getElementById('allesZurueck').click(); await warte(250);
+    erg.zurueck = F.map((f) => { const [o, k] = L.fein.stelle(f.pfad); return o[k] === f.original; });
+    erg.f0Zurueck = w.zustand.f0;
+    erg.audio = JSON.stringify(C.audio);
+    erg.hinweis = /nur hier auf dieser Seite/.test(document.getElementById('feinschliff').textContent);
+    return erg;
+  });
+  // Bild der Seite mit geänderten Werten
+  await A(p, () => { const F = window.__tonLabor.fein.FEIN; for (const [pfad, v] of [['audio.motor.verzerrung', 7.5], ['audio.motor.popPegel', 1.0]]) { const f = F.find((x) => x.pfad === pfad); f.regler.value = v; f.regler.dispatchEvent(new Event('input')); } document.getElementById('kopieren').click(); });
+  await warte(300);
+  await p.screenshot({ path: path.join(BILDER, '21-ton-labor-feinschliff.png'), fullPage: true });
+  await A(p, () => document.getElementById('allesZurueck').click());
+  const zeilen = r.text.split('\n');
+  pruefe(r.anzahl >= 12 && r.signalRegler && r.hinweis, `Feinschliff mit ${r.anzahl} Reglern (Name, Wert, Rücksetz-Knopf), Regler Signaltöne, Hinweis "nur auf dieser Seite"`);
+  pruefe(r.f0Nach > r.f0Vor * 1.1 && r.kurve[0] !== r.kurve[1] && r.steinNeu && Math.abs(r.rauh - 0.5 * 0.65) < 0.05 && Math.abs(r.unter - 0.3) < 0.02,
+    'die Regler wirken sofort (Tonlage, Härte baut die Sättigung neu, Stein-Puffer neu, Rauheit, Brummen, Helligkeit)',
+    `Grundton ${r.f0Vor.toFixed(0)} -> ${r.f0Nach.toFixed(0)} Hz, Kurve ${r.kurve.map((x) => x.toFixed(3)).join(' -> ')}, Rauheit ${r.rauh.toFixed(3)}, Brummen ${r.unter.toFixed(2)}, Tiefpass ${r.filter.toFixed(0)} Hz`);
+  pruefe(zeilen.length === 6 && zeilen.every((z) => /^audio\.[\w.]+(\[\d+\])? = -?\d+(\.\d+)?$/.test(z)) && zeilen.includes('audio.motor.verzerrung = 9.5') && zeilen.includes('audio.aufprall.klang.stein.knall[2] = 3000'),
+    'WERTE KOPIEREN: eine Zeile pro geändertem Wert im Format audio.motor.verzerrung = 9.5', zeilen.join(' | '));
+  pruefe(r.zurueck.every(Boolean) && Math.abs(r.f0Zurueck - r.f0Vor) < 2, 'ALLES ZURÜCK: alle Werte wie in config.js');
+  // Spielseite unberührt: CONFIG.audio im Spiel = config.js
+  const spielSeite = await spiel.page.context().browser().newPage();
+  await spielSeite.goto(`${spiel.url}/index.html?menue=aus`);
+  await spielSeite.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  const imSpiel = await spielSeite.evaluate(() => JSON.stringify(window.__alpineRally.CONFIG.audio));
+  const { CONFIG: ORIGINAL } = await import(path.join(WURZEL, 'js/config.js'));
+  pruefe(imSpiel === JSON.stringify(ORIGINAL.audio) && r.audio === JSON.stringify(ORIGINAL.audio), 'Spielseite unberührt: CONFIG.audio im Spiel = config.js (auch das Labor nach ALLES ZURÜCK)');
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
+  await spiel.schliessen();
+}
+
+console.log('M7a.1 (k) Pause und Menü (dazu Teil 1 (f)), (l) Stimmen, Lecks, Texte (Teil 1 (h), (k))');
+{
+  const spiel = await lade();
+  const p = spiel.page;
+  await A(p, () => { const A = window.__alpineRally; A.start({ countdown: false }); A.testEingabe = { gas: 1 }; });
+  await p.waitForFunction(() => window.__alpineRally.getriebe.drehzahl > 4500, null, { timeout: 60000 });
+  await A(p, () => { const A = window.__alpineRally, w = A.ton.werk; w.salve(); w.knall(0.05, 1); A.pausieren(); });
+  await bilderAbwarten(p, 3); await warte(450); // (wie Teil 1 (f): die Spielschleife meldet die Pause im nächsten Bild)
+  const r = await A(p, async () => {
+    const A = window.__alpineRally, w = A.ton.werk;
+    const pause = { motor: w.knoten.motorAus.gain.value };
+    A.weiter(); A.testEingabe = null;
+    await new Promise((r) => setTimeout(r, 450));
+    A.zumHauptmenue();
+    await new Promise((r) => setTimeout(r, 1500));
+    return { pause, menue: { motor: w.knoten.motorAus.gain.value, stimmen: w.stimmen, modus: w.zustand.modus } };
+  });
+  pruefe(r.pause.motor < 0.02, 'Pause während einer Pop-Salve: Motor und Pops stumm (laufen über den Motor-Ausgang)', `Motor-Ausgang ${r.pause.motor.toFixed(3)}`);
+  pruefe(r.menue.motor < 1e-3 && r.menue.stimmen === 0 && r.menue.modus === 'aus', 'Hauptmenü (Demo-Fahrt): stumm, keine Stimme hängt');
+  pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
   await spiel.schliessen();
 }
 

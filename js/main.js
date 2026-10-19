@@ -55,6 +55,7 @@ const menueAn = CONFIG.menue.an && new URLSearchParams(window.location.search).g
 // Der AudioContext entsteht erst beim ersten Tastendruck / Klick auf dem Titel (zumMenue).
 const ton = baueTon({ an: CONFIG.audio.an && menueAn && new URLSearchParams(window.location.search).get('ton') !== 'aus' });
 ton.lautstaerke(einstellungen.lautstaerke);
+ton.signalLautstaerke(einstellungen.signale); // M7a.1: Regler SIGNALTÖNE
 
 const lade = document.getElementById('lade');
 lade.innerHTML = `${t('lade.titel')}<br><small>${t('lade.bauen')}</small>`;
@@ -807,6 +808,7 @@ beiAenderung((name, wert) => {
   if (name === 'fps') debugAn = wert;
   if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
   if (name === 'lautstaerke') ton.lautstaerke(wert); // M7a: sofort, weich
+  if (name === 'signale') ton.signalLautstaerke(wert); // M7a.1: Regler SIGNALTÖNE, sofort
   menue.neuZeichnen();
 });
 document.addEventListener('fullscreenchange', () => {
@@ -978,12 +980,12 @@ function paceSignal(notes, imRennen) {
 // --- Ton (M7a): einmal pro Bild die Zahlen aus dem Spiel an js/audio.js (keine neuen Objekte) ---
 const TON_MODUS = { rennen: 'rennen', countdown: 'countdown', pause: 'pause', ziel: 'ziel' };
 const tonZ = {
-  modus: 'aus', drehzahl: 0, gang: 0, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt', drift: 0,
+  modus: 'aus', drehzahl: 0, gang: 0, zielGang: 0, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt', drift: 0,
   handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
 };
 function tonBild(dt) {
   tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm
-  tonZ.drehzahl = getriebe.drehzahl; tonZ.gang = getriebe.gang; tonZ.schaltet = getriebe.schaltet;
+  tonZ.drehzahl = getriebe.drehzahl; tonZ.gang = getriebe.gang; tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
   tonZ.aufprall = tonInfo.wucht; tonZ.aufprallArt = tonInfo.art; tonZ.kontaktArt = tonInfo.kontaktArt; tonZ.kontaktTempo = tonInfo.kontaktTempo;

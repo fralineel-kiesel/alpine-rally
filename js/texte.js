@@ -64,6 +64,8 @@ export const TEXTE = {
   'einst.ton': { de: 'TON', en: 'SOUND' },
   'einst.lautstaerke': { de: 'LAUTSTÄRKE', en: 'VOLUME' },
   'einst.lautHinweis': { de: 'GILT FÜR DEN GANZEN TON', en: 'APPLIES TO ALL SOUND' }, // seit M7a
+  'einst.signale': { de: 'SIGNALTÖNE', en: 'SIGNALS' }, // M7a.1
+  'einst.signaleHinweis': { de: 'MENÜ, COUNTDOWN, CHECKPOINT, ZIEL', en: 'MENU, COUNTDOWN, CHECKPOINT, FINISH' },
   'einst.sprache': { de: 'SPRACHE', en: 'LANGUAGE' },
   'wert.an': { de: 'AN', en: 'ON' },
   'wert.aus': { de: 'AUS', en: 'OFF' },
