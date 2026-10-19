@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alpine Rally – Ton-Labor</title>
+  <link rel="icon" href="data:,">
+  <!-- Hilfsseite (M7a, nicht im Menü verlinkt): alle Töne des Spiels einzeln anhören. Benutzt js/audio.js wie das Spiel. -->
+  <script type="importmap">
+    { "imports": { "three": "./lib/three.module.min.js" } }
+  </script>
+  <style>
+    :root { --grund: #0d1218; --tafel: #18212c; --rand: #e6e2d3; --text: #f4f4ee; --gelb: #ffd23c; --orange: #ff9a2e; --blau: #8fb4d8; --grau: #aab4be; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--grund); color: var(--text); font: 14px/1.4 monospace; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    h1 { color: var(--gelb); font-size: 22px; letter-spacing: 3px; margin: 0 0 4px; }
+    h2 { color: var(--blau); font-size: 14px; letter-spacing: 2px; margin: 0 0 8px; text-transform: uppercase; }
+    p.hinweis { color: var(--grau); margin: 0 0 14px; }
+    .raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+    section { background: var(--tafel); border: 1px solid var(--rand); border-radius: 3px; padding: 10px 12px; }
+    label.zeile { display: grid; grid-template-columns: 110px minmax(0, 1fr) 80px; align-items: center; gap: 8px; margin: 4px 0; }
+    label.zeile span.wert { color: var(--gelb); text-align: right; }
+    input[type=range] { width: 100%; accent-color: var(--orange); }
+    select { max-width: 100%; }
+    select, button { font: inherit; color: var(--text); background: #263240; border: 1px solid var(--rand); border-radius: 2px; padding: 4px 8px; cursor: pointer; }
+    button:hover { background: #33465a; color: var(--orange); }
+    button:active { background: var(--orange); color: #000; }
+    button.gross { font-size: 18px; padding: 10px 20px; background: var(--orange); color: #000; border-color: var(--orange); }
+    .knoepfe { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+    .knoepfe b { width: 100%; color: var(--grau); font-weight: normal; }
+    .pegel { display: grid; grid-template-columns: 90px 1fr 60px; gap: 8px; align-items: center; margin: 3px 0; }
+    .balken { height: 10px; background: #263240; border: 1px solid #44505c; position: relative; }
+    .balken div { position: absolute; inset: 0 auto 0 0; background: var(--orange); width: 0; }
+    .balken div.rot { background: #ff4a3a; }
+    #anzeige { color: var(--grau); white-space: pre-wrap; }
+    #start { margin: 8px 0 14px; }
+    .aus { opacity: 0.45; pointer-events: none; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ALPINE RALLY · TON-LABOR</h1>
+  <p class="hinweis">Hier klingt alles genau wie im Spiel (gleicher Code, gleiche Werte aus js/config.js, Block "audio").
+    Zuerst auf TON STARTEN klicken. Kopfhörer oder Lautsprecher nicht zu laut stellen.</p>
+  <div id="start"><button class="gross" id="tonStarten">TON STARTEN</button> <span id="startInfo" class="hinweis"></span></div>
+
+  <div class="raster aus" id="alles">
+    <section>
+      <h2>Motor und Fahrt</h2>
+      <label class="zeile">Zustand <select id="modus">
+        <option value="rennen">Rennen</option><option value="countdown">Countdown</option>
+        <option value="ziel">Zielbildschirm</option><option value="pause">Pause</option><option value="aus">Menü (stumm)</option>
+      </select><span></span></label>
+      <label class="zeile">Drehzahl <input id="drehzahl" type="range" step="10"><span class="wert" id="drehzahlW"></span></label>
+      <label class="zeile">Gas <input id="gas" type="range" min="0" max="1" step="0.01" value="0"><span class="wert" id="gasW"></span></label>
+      <label class="zeile">Tempo <input id="tempo" type="range" min="0" max="200" step="1" value="0"><span class="wert" id="tempoW"></span></label>
+      <label class="zeile">Untergrund <select id="untergrund">
+        <option value="asphalt">Asphalt</option><option value="bankett">Bankett</option><option value="gras">Gras</option>
+        <option value="schotter">Schotter</option><option value="wiesenweg">Wiesenweg</option>
+      </select><span></span></label>
+      <label class="zeile">Driftwinkel <input id="drift" type="range" min="0" max="45" step="1" value="0"><span class="wert" id="driftW"></span></label>
+      <label class="zeile">Handbremse <input id="handbremse" type="checkbox"><span></span></label>
+      <label class="zeile">Rückwärts <input id="rueckwaerts" type="checkbox"><span></span></label>
+      <label class="zeile">Schleifen an <select id="schleifen">
+        <option value="-1">kein Kontakt</option>
+      </select><span></span></label>
+      <div class="knoepfe">
+        <b>Motor-Ereignisse</b>
+        <button data-tu="blowOff">Blow-off</button><button data-tu="knall">Knall</button>
+        <button data-tu="schalten">Schalten</button>
+        <button data-tu="beschleunigen">Anfahren bis 160 km/h</button><button data-tu="stopp">Stopp (alles auf null)</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Aufprall</h2>
+      <div class="knoepfe" id="aufprallKnoepfe"></div>
+      <h2>Signale</h2>
+      <div class="knoepfe">
+        <b>Rennen</b>
+        <button data-tu="countdown">Countdown-Pieps</button><button data-tu="go">GO</button>
+        <button data-tu="cp-1">Checkpoint schneller</button><button data-tu="cp1">Checkpoint langsamer</button>
+        <button data-tu="cp0">Checkpoint neutral</button><button data-tu="verpasst">Checkpoint verpasst</button>
+        <button data-tu="fanfareKurz">Ziel-Fanfare kurz</button><button data-tu="fanfareLang">Fanfare lang (Bestzeit)</button>
+        <button data-tu="paceNote">Pace-Note-Signal</button><button data-tu="pause">Pause</button><button data-tu="weiter">Weiter</button>
+      </div>
+      <div class="knoepfe">
+        <b>Menü</b>
+        <button data-tu="m-tick">Auswahl (Tick)</button><button data-tu="m-bestaetigen">Bestätigen</button>
+        <button data-tu="m-zurueck">Zurück</button><button data-tu="m-fehler">Fehler</button>
+        <button data-tu="m-regler">Regler-Tick</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Pegel</h2>
+      <label class="zeile">Gesamtpegel <input id="laut" type="range" min="0" max="100" step="5" value="70"><span class="wert" id="lautW"></span></label>
+      <div id="pegel"></div>
+      <div id="anzeige"></div>
+    </section>
+  </div>
+</main>
+<script type="module" src="js/tonlabor.js"></script>
+</body>
+</html>

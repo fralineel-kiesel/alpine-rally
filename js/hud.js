@@ -2,6 +2,7 @@
 // Zielanzeige (bis der Zielbildschirm kommt, M5b) und Debug-Panel.
 // Seit M6: Minimap oben rechts (js/minimap.js), Live-Vergleich unter der Zeit-Tafel (Zahl aus js/vergleich.js),
 // Taste H blendet das HUD aus (Countdown, "ZIEL!", Menüs und ein kurzer Hinweis bleiben).
+// Seit M7a: Minimap kleiner (49 x 49), Checkpoint-Punkte grün/rot/gelb wie die Zwischenzeit-Meldung.
 // Seit M6.1: Minimap als mitfahrender Ausschnitt, Live-Vergleich genau so gross wie die Zeit-Tafel,
 // Meldungen (Zwischenzeit, "CHECKPOINT VERPASST", "ANSAGEN") auf einer eigenen Tafel im selben Stil.
 // Gezeichnet mit einer eigenen 5x7-Pixelschrift (keine externen Fonts, seit M5a in js/pixel.js).
@@ -81,7 +82,9 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
     const yText = y + Math.round((c.hoehe - 7) / 2);
     miniText(ctx, feste.zeit, x + 1 + c.innen, yText + 1, c.farbeBeschriftung);
     text(zeit, x + 1 + c.innen + bWort + c.luecke, yText, 1, z.zustand === 'laeuft' ? 'weiss' : 'gelb');
-    // Checkpoint-Punkte mittig unter der Tafel: leer = noch nicht erreicht, gelb gefüllt = erreicht
+    // Checkpoint-Punkte mittig unter der Tafel: leer = noch nicht erreicht, gefüllt = erreicht.
+    // Seit M7a in der Farbe der Zwischenzeit-Meldung: grün = schneller als die Referenz, rot = langsamer,
+    // gelb = gleich schnell oder keine Referenz (z.cpVergleich: dieselbe Entscheidung wie die Meldung, aus main.js)
     const n = z.anzahlCps, g = c.cpGroesse;
     const bPunkte = n * g + (n - 1) * c.cpAbstand;
     const yP = y + c.hoehe + c.cpUnter;
@@ -90,7 +93,8 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
       ctx.fillStyle = 'rgba(10, 14, 20, 0.7)'; // Schatten
       ctx.fillRect(xp + 1, yP + 1, g, g);
       if (z.zwischenzeiten[i] != null) {
-        ctx.fillStyle = c.farbeCpErreicht;
+        const u = z.cpVergleich ? z.cpVergleich[i] : 0;
+        ctx.fillStyle = u < 0 ? CONFIG.hud.vergleich.farbeSchneller : u > 0 ? CONFIG.hud.vergleich.farbeLangsamer : c.farbeCpErreicht;
         ctx.fillRect(xp, yP, g, g);
       } else {
         ctx.fillStyle = c.farbeCpLeer;

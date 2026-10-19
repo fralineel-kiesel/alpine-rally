@@ -331,7 +331,7 @@ function planeKurve(gruppe, strecke, welt, tex, basis) {
     else if (t.art === 'fels') ergebnis.felsen.push(sprite(t, 0.35, tex.fels.varianten));
     else if (t.art === 'stein') ergebnis.steine.push(sprite(t, 0.25, tex.stein.varianten));
     else ergebnis.staemme.push({ x: t.x, z: t.z, dx: t.dx, dz: t.dz, laenge: t.laenge, r: t.r, hoch: t.hoch, aeste: ganz(rnd, c.aeste), zufall: rnd() });
-    for (const kr of kreise(t)) ergebnis.hindernisse.push({ x: kr.x, z: kr.z, r: kr.r, sperre: true });
+    for (const kr of kreise(t)) ergebnis.hindernisse.push({ x: kr.x, z: kr.z, r: kr.r, sperre: true, ton: t.art }); // ton: Art für den Aufprallton (M7a)
   }
   return ergebnis;
 }

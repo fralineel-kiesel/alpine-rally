@@ -1,11 +1,13 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 6.1 fertig** – die **Minimap fährt mit**: Sie zeigt nur noch die Umgebung des Autos (ca.
-120 m in jede Richtung), dafür viel genauer (Kehren sind als Zickzack zu sehen). Das Auto ist ein **Pfeil in
-Blickrichtung** in der Mitte. Der **Live-Vergleich** ist jetzt **genau so gross wie die Zeit-Tafel**, der Hinweis bei
-**H** heisst nur noch **„HUD AUS“ / „HUD AN“**, und die **Checkpoint-Meldung** hat eine Tafel und ist **grün**
-(schneller als die Referenz) oder **rot** (langsamer).
-Davor: 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 7a fertig** – das Spiel hat **Ton**: ein **5-Zylinder-Turbo-Motor** (Turbo-Pfeifen, Zischen
+und manchmal Knallen beim Gaswegnehmen, Begrenzer, hörbares Schalten), **Reifen** je Untergrund mit Quietschen bzw.
+Kies-Rutschen, **Fahrtwind**, **Aufprall** je Material (Baum, Stein, Holz, Weich, Metall, Felswand) und **Signale**
+(Menü-Klicks, Countdown-Pieps, Checkpoint-„Ding-Ding“, Ziel-Fanfaren, ein kurzes Signal pro Pace-Note). Alles im Code
+erzeugt, keine Dateien. Zum Anhören ohne Fahren gibt es das **Ton-Labor** (`ton-labor.html`). Dazu ist die **Minimap
+kleiner** (49 x 49, gleiches Detail) und die **Checkpoint-Punkte** unter der Zeit sind **grün / rot / gelb**.
+**Wichtig: Ich kann nicht hören – bitte zuerst die Hörtest-Anleitung unten machen.**
+Davor: 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -35,7 +37,312 @@ Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start
 
 ---
 
-## Meilenstein 6.1: Minimap zoomt und fährt mit, Vergleich kleiner, Meldungen mit Tafel und Farbe ✅
+## Meilenstein 7a: Ton (Motor, Reifen, Aufprall, Signale) plus zwei HUD-Korrekturen ✅
+
+> **Ehrlich vorneweg: Ich kann nicht hören.** Alles hier ist nach **Zahlen und Bildern** beurteilt (Tonhöhen, Pegel,
+> Filter, offline gerechnete Klänge, Spektrogramme), **nicht gehört**. Ob der Motor nach Gruppe B klingt oder nach
+> Staubsauger, kannst nur du entscheiden. Darum gibt es das **Ton-Labor** und unten eine **Hörtest-Anleitung**.
+
+### Was ist neu?
+
+**Teil 0: zwei HUD-Korrekturen**
+- **Minimap kleiner**: Tafel **49 x 49** Pixel statt 61 x 61 (gut 20 % kleiner; 49 statt 48, weil die Zahl ungerade
+  sein muss, damit das Auto genau in der Mitte steht). **Gleich viel Detail**: gleich viele Pixel pro Meter, dafür
+  reicht der Ausschnitt jetzt **95.6 m** statt 120 m weit. Position und alle anderen Regeln wie in M6.1.
+- **Checkpoint-Punkte unter der Zeit in Farbe**: Ein erreichter Punkt ist **grün** (an diesem Checkpoint schneller als
+  die Referenz), **rot** (langsamer) oder **gelb** (gleich schnell oder keine Referenz). Es ist **dieselbe
+  Entscheidung** wie bei der Meldung „CP 1 …“ (wird einmal gerechnet und gemerkt). Die Farbe bleibt den ganzen Lauf
+  stehen, auch mit ausgeschaltetem Live-Vergleich. Noch nicht erreichte Punkte bleiben leer, die Minimap-Striche wie
+  bisher.
+
+**Teil 1–6: Ton** – alles im Code erzeugt (Web Audio: Oszillatoren, Rauschen, Filter, Verstärker), **keine Dateien,
+keine Samples**. Der Ton **liest nur** Zahlen aus dem Spiel und ändert nie etwas (Zeiten, Statistik, Physik sind mit
+und ohne Ton auf den Millimeter gleich).
+
+- **Wann gibt es Ton?** Erst nach dem **ersten Tastendruck oder Mausklick auf dem Titel** („TASTE DRÜCKEN“) – vorher
+  erlauben Browser keinen Ton. Die Demo-Fahrt hinter dem Menü ist **stumm**, im Menü gibt es nur **Klicks**.
+  Mit `?ton=aus` in der Adresse gibt es nie Ton (und mit `?menue=aus`, das brauchen die Tests).
+- **Motor (5-Zylinder-Turbo wie die Gruppe-B-Autos)**: Der Grundton folgt der Drehzahl (Leerlauf ca. 42 Hz, bei
+  7200/min 300 Hz), gebaut aus Sägezahn + Rechteck + einem Brummen auf dem halben Ton (das typische 5-Zylinder-„Brabbeln“),
+  leicht verzerrt und gefiltert. **Mit Gas lauter und heller**, ohne Gas leiser und dumpfer (Motorbremse).
+  **Turbo**: leises Pfeifen, das dem Gas mit Verzögerung folgt (ca. 0.4 s hoch, 0.6 s runter), erst ab ca. 3000/min.
+  **Blow-off**: kurzes Zischen, wenn du bei Ladedruck **schnell** vom Gas gehst und beim Schalten unter Last.
+  **Knallen**: beim Gaswegnehmen über 4000/min **manchmal** ein Knall (ca. jedes zweite Mal, höchstens 2, danach 1.5 s
+  Ruhe; immer gleich bei gleichem Fahren). **Begrenzer**: hängst du mit Vollgas an der Höchstdrehzahl, stottert der
+  Motor (13 Mal pro Sekunde). **Schalten**: in der Schaltpause fällt der Ton hörbar (ca. 35 %) und der Motor wird ohne
+  Last leiser. **Leerlauf**: tief und etwas unregelmässig. **Rückwärts**: dazu ein leises Getriebeheulen.
+  **Im Countdown** läuft der Motor im Leerlauf – Gas ändert nichts (das Auto ist ja gesperrt).
+- **Reifen und Untergrund**: Asphalt **surrt** (heller mit dem Tempo), Schotter **knirscht** (viele kleine Knackser),
+  Bankett, Gras und Wiesenweg **rauschen weich** (Gras am dumpfsten). Beim Wechsel wird in ca. 0.15 s übergeblendet.
+  **Quietschen** nur auf Asphalt, ab ca. 8° Drift oder mit Handbremse bei Tempo; auf Schotter, Bankett, Gras,
+  Wiesenweg stattdessen ein lauteres **Rutschen/Kies-Knirschen**. **Handbremse ziehen** = kurzes Ratschen.
+- **Fahrtwind**: ganz leises Rauschen, wächst mit dem Quadrat des Tempos, ab ca. 120 km/h heller.
+- **Aufprall**: jeder Kontakt ab 1.5 m/s macht ein Geräusch, je härter, desto lauter und heller, ab ca. 22 km/h
+  mit tiefem Schlag. **Je Material**: Baum (dumpf, Rascheln), Stein/Fels (hartes Klacken), Holz (Zaun, Wegweiser,
+  liegende Stämme: Splittern), Weich (Strohballen, Reifen, Band, Heu, Kühe: dumpf), Metall (Leitplanke, Schilder,
+  Wracks: Scheppern mit Nachklang), **Felswand** (dumpfer Schlag und Schleifen). Die **unsichtbaren Grenzen** machen
+  **keinen** Ton (wie bei der Statistik). Eigene Sperre 0.1 s, damit es nicht rattert. Rutschst du an Wand,
+  Leitplanke oder Zaun entlang (über 2 m/s), hörst du ein **Schleifen**. Bei einem harten Aufprall werden Motor und
+  Umgebung kurz **5 dB leiser** („Ducking“), damit der Knall durchkommt. Die **Statistik „Aufpralle“ ist davon
+  unabhängig** und zählt genau wie seit M5b.
+- **Signale** (kurz, Retro-Stil): Menü: Auswahl = leises **Tick**, Bestätigen = höherer **Blip**, Zurück = tieferer
+  Blip, Regler = Tick mit **Tonhöhe je nach Wert** (bei LAUTSTÄRKE hörst du gleich die neue Stärke), Fehler („SCHON
+  BELEGT“, „RESERVIERT“) = tiefer **Buzz**. Pause = kurzer tiefer Ton, Weiter = kurzer hoher Ton.
+  **Countdown**: drei Pieps genau beim Erscheinen von 3, 2, 1, bei **GO** ein höherer, längerer Ton.
+  **Checkpoint**: „Ding-Ding“ – **aufsteigend** = schneller, **leicht absteigend und tiefer** = langsamer, **gleich
+  hoch** = gleich / keine Referenz (dieselbe Entscheidung wie Meldung und Punkt). „CHECKPOINT VERPASST“ = tiefer Buzz.
+  **Ziel**: kurze **Fanfare** (ca. 2 s) beim Überfahren der Ziellinie; bei **NEUER BESTZEIT** zum Zielbildschirm
+  zusätzlich eine längere, festlichere (ca. 3.5 s). Beide Melodien sind eigene Erfindungen.
+  **Pace-Notes**: ein leises, kurzes „Tipp“ (1.2 kHz, 50 ms) **pro neuer Kachel** (nicht beim Wegblenden, nicht mit
+  Ansagen aus, nicht in der Demo; auch nicht bei ausgeblendetem HUD, Taste H).
+- **Pause**: Motor stumm, Reifen und Wind dumpf (Tiefpass 800 Hz) und leiser. **Neustart / Hauptmenü**: alles
+  blendet weich aus, nichts bleibt hängen. **Zielbildschirm**: das Auto rollt aus, der Motor geht in den Leerlauf und
+  blendet aus, wenn es steht. **Tab versteckt / Fenster ohne Fokus**: der Ton wird angehalten, beim Zurückkommen geht
+  er weiter.
+- **Regler LAUTSTÄRKE** (EINSTELLUNGEN → TON) wirkt jetzt sofort auf alles, **quadratisch** (50 % = ein Viertel der
+  Leistung, das fühlt sich gleichmässig an), 0 % = stumm. Der Hinweis darunter heisst jetzt „GILT FÜR DEN GANZEN TON“
+  („APPLIES TO ALL SOUND“). Den Regler MUSIK gibt es erst in M7b.
+
+### Wie der Ton aufgebaut ist (für später, M7b)
+
+```
+master (Regler LAUTSTÄRKE, quadratisch) -> Limiter (nichts übersteuert) -> Lautsprecher
+  fahrzeug: Motor + Reifen (über das Ducking), Aufprall, Schleifen
+  umgebung: Fahrtwind – mit Pausen-Tiefpass und Ducking; hier hängt M7b Kuhglocken, Zuschauer, Vögel an
+  signale:  Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes
+  musik:    noch leer; hier kommt in M7b die Menü-Musik mit eigenem Regler dran
+```
+
+- **Dauerklänge** (Motor, Reifen, Wind, Quietschen, Schleifen) laufen immer und werden nur lauter/leiser gestellt –
+  **weich** nachgeführt, nie gesprungen (kein Knacken). Es gibt genau **einen** Motor.
+- **Einmalige Klänge** (Aufprall, Knall, Zischen, Ratschen, Fanfaren) und das Rauschen werden **nach dem Entsperren
+  einmal berechnet**, in kleinen Häppchen (jedes unter ca. 10 ms, damit das Spiel nicht ruckelt), und dann immer
+  wieder abgespielt. Beim Laden der Seite passiert nichts (die Ladezeit bleibt gleich).
+- **Höchstens 16 einmalige Klänge** gleichzeitig (`audio.maxStimmen`), ältere werden ausgeblendet.
+- Neue Dateien: `js/audio.js` (alles zum Ton), `ton-labor.html` + `js/tonlabor.js` (Labor). Das Spiel gibt dem Ton
+  einmal pro Bild die Zahlen (Drehzahl, Gang, Schaltpause, Pedale, Tempo, Untergrund, Drift, Handbremse, Aufprall)
+  und meldet Ereignisse (Countdown, Checkpoint, Ziel, Pause, Menü) an den Stellen, wo sie sowieso passieren.
+
+### Hörtest-Anleitung für Lino
+
+**Schritt 1: Ton-Labor öffnen** (eine Hilfsseite, nicht im Menü verlinkt): dieselbe Adresse wie das Spiel, aber am
+Ende `ton-labor.html` statt `index.html`, also **`…/alpine-rally/ton-labor.html`** (bei GitHub Pages vermutlich
+`https://fralineel-kiesel.github.io/alpine-rally/ton-labor.html`). Lautsprecher nicht zu laut, dann **TON STARTEN**
+klicken. Rechts siehst du Pegel-Balken (rot = sehr laut, der Limiter fängt es ab).
+
+**Schritt 2: im Labor anhören** (Zustand oben links auf „Rennen“ lassen):
+1. **Motor bei drei Drehzahlen**: Gas auf 60 %, Drehzahl auf ca. 1000, 3000 und 6000 stellen. Klingt es tief und rauh
+   wie ein Rallye-Fünfzylinder, oder eher wie ein Rasenmäher / Staubsauger / Synthesizer?
+2. **Last**: bei 5000/min Gas zwischen 0 und 100 % schieben: unter Last heller und lauter, ohne Gas dumpfer?
+3. **Turbo**: Drehzahl 5000, Gas 100 %, 1–2 s warten: hörst du ein leises Pfeifen? Zu laut / zu leise / zu hoch?
+4. **Blow-off** und **Knall**: die Knöpfe drücken. Dann echt: Gas auf 100 %, warten, Gas schnell auf 0 schieben
+   (Zischen, manchmal Knall).
+5. **Schalten**: Knopf „Schalten“ bei ca. 6000/min. Und **„Anfahren bis 160 km/h“**: das echte Getriebe schaltet
+   durch alle Gänge, danach rollt das Auto aus (Blow-off, Knallen, Motorbremse). **Das ist der wichtigste Test.**
+6. **Begrenzer**: Drehzahl ganz nach rechts, Gas 100 %: Stottern?
+7. **Untergründe**: Tempo 80 km/h, Untergrund durchschalten (Asphalt, Bankett, Gras, Schotter, Wiesenweg).
+8. **Quietschen**: Asphalt, Tempo 80, Driftwinkel auf 20°. Dann Schotter mit Drift (Knirschen statt Quietschen).
+   Handbremse an/aus (Ratschen).
+9. **Rückwärts**: Häkchen „Rückwärts“, Tempo 20 km/h (Heulen).
+10. **Aufprall je Material**: alle Knöpfe leicht / mittel / hart. Klingt Metall nach Leitplanke, Baum nach Holz?
+    „Schleifen an“ auf Metall und Tempo 40: Schleifen an der Leitplanke.
+11. **Signale**: Countdown-Pieps, GO, die vier Checkpoint-Töne, Fanfare kurz und lang, Pace-Note-Signal, Menü-Töne.
+12. **Pause**: Zustand auf „Pause“ stellen (Motor weg, Reifen dumpf), zurück auf „Rennen“.
+
+**Schritt 3: im Spiel fahren**:
+- Titel: Taste drücken (Blip). Im Menü hoch/runter (Tick), EINSTELLUNGEN → LAUTSTÄRKE links/rechts (Tick wird
+  leiser/lauter). Ist der Menü-Tick zu laut oder nervig?
+- STARTEN: **Countdown** – kommen die drei Pieps genau mit 3, 2, 1 und der hohe Ton genau mit GO? Gas im Countdown
+  drücken: der Motor darf nicht hochdrehen.
+- Fahren: Schalten hörbar? Turbo/Zischen beim Gaswegnehmen in die Kurve? Knallt es zu oft?
+- **Checkpoint 1**: Ding-Ding. Fahre zweimal: einmal schneller (aufsteigend, Punkt grün), einmal langsamer (absteigend,
+  Punkt rot).
+- Einmal leicht und einmal hart in die Leitplanke, in einen Baum, an die Felswand. Kurz auf Schotter / Gras.
+- **Esc** (Pause): Motor weg, Rest dumpf? Nochmals Esc: alles wieder da?
+- Ziel: Fanfare. Mit neuer Bestzeit: lange Fanfare zum Zielbildschirm.
+- Auf beiden Rechnern (Lenovo und Gaming-PC) einmal kurz: ruckelt etwas, seit es Ton gibt?
+
+**Am ehesten nachbessern muss man vermutlich**: den **Motor** (Charakter, Rauheit, Lautstärke im Verhältnis), den
+**Turbo** (Höhe und Pegel), das **Knallen** (Häufigkeit, Klang), die **Aufprall-Klänge** (vor allem Holz und Metall)
+und die **Fanfaren** (Melodie, Tempo, Lautstärke).
+
+### Werte zum Drehen (`js/config.js`, Block `audio`)
+
+| Wenn … | dann … | heute |
+|---|---|---|
+| alles zu laut / zu leise | Regler LAUTSTÄRKE, oder `audio.busse.fahrzeug`, `umgebung`, `signale` | 1.0 / 1.0 / 0.8 |
+| Motor zu laut / zu leise | `audio.motor.pegel` | 0.5 |
+| Motor zu dumpf / zu hell | `audio.motor.filterGrund`, `filterDrehzahl`, `filterGas` (Hz) | 240 / 0.30 pro U/min / 1800 |
+| Motor zu sauber / zu kratzig | `audio.motor.verzerrung` (1 = sauber), `rauh` | 1.8 / 0.10 |
+| zu wenig / zu viel „Brabbeln“ | `audio.motor.unter`, `amTiefe`, `amTiefeLeerlauf`, `leerlaufZittern` | 0.35 / 0.22 / 0.42 / 0.01 |
+| Motorbremse (ohne Gas) zu leise | `audio.motor.schubPegel` | 0.42 |
+| **Turbo zu laut** | `audio.motor.turboPegel` kleiner | 0.035 |
+| Turbo zu hoch / zu tief | `audio.motor.turboTonMin`, `turboTonMax` (Hz) | 2200 / 5200 |
+| Turbo zu träge / zu flink | `audio.motor.turboRauf`, `turboRunter` (Sekunden) | 0.4 / 0.6 |
+| Blow-off zu laut / zu lang / zu hell | `audio.motor.blowOffPegel`, `blowOffDauer`, `blowOffTon` | 0.16 / 0.3 s / 2600 Hz |
+| **Knallt zu oft** | `audio.motor.knallChance` kleiner (0..1), `knallZweiter`, `knallSperre` grösser | 0.45 / 0.35 / 1.5 s |
+| Knall zu laut | `audio.motor.knallPegel` | 0.32 |
+| Begrenzer nervt | `audio.motor.begrenzerTiefe` kleiner, `begrenzerAb` höher | 0.85 / 6850 |
+| Rückwärts-Heulen | `audio.motor.heulenPegel` | 0.05 |
+| Reifen je Untergrund | `audio.reifen.belaege.<belag>.pegel`, `.grenze` (Helligkeit) | z. B. Asphalt 0.10 / 160 Hz |
+| Quietschen zu früh / zu laut | `audio.reifen.quietschAb` (Grad), `quietschPegel` | 8° / 0.09 |
+| Quietschen zu schrill | `audio.reifen.quietschTon` (Hz) | 900–1400 |
+| Kies-Rutschen | `audio.reifen.rutschPegel` | 0.22 |
+| Handbremsen-Ratschen | `audio.reifen.ratschPegel` | 0.12 |
+| Wind | `audio.wind.pegel`, `hellAb` (m/s) | 0.05 / 33 |
+| Aufprall zu laut | `audio.aufprall.pegel`, `schlagPegel` | 0.9 / 0.7 |
+| Aufprall schon bei kleinen Kontakten | `audio.aufprall.ab` (m/s) | 1.5 |
+| Klang eines Materials | `audio.aufprall.klang.<material>` (Eigentöne, Rascheln, Schlag, Länge) | |
+| welches Hindernis welches Material | `audio.aufprall.artVon` | |
+| Ducking zu stark | `audio.aufprall.duckDb` (näher an 0) | -5 dB |
+| Schleifen | `audio.aufprall.schleifenPegel` | 0.18 |
+| Signale allgemein | `audio.signale.pegel` | 0.5 |
+| Menü-Tick zu laut | `audio.signale.menue.tick.pegel` | 0.10 |
+| Countdown-Pieps / GO | `audio.signale.countdown`, `go` (Ton, Dauer, Pegel) | 440 Hz / 880 Hz |
+| Checkpoint-Töne | `audio.signale.checkpoint.schneller`, `langsamer`, `neutral` (Hz) | |
+| Pace-Note-Signal | `audio.signale.paceNote.pegel`, `ton` | 0.12 / 1200 Hz |
+| Fanfaren | `audio.signale.fanfare.pegel`, `tempo`, `kurz`/`lang` (Noten) | 0.3 / 165 |
+| Pause zu dumpf | `audio.pause.filter` (Hz), `pegel` | 800 / 0.45 |
+| Regler-Kurve | `audio.lautKurve` (2 = quadratisch, 1 = gerade) | 2 |
+| kein Ton | `audio.an = false` (oder `?ton=aus` in der Adresse) | an |
+| Minimap-Grösse / Zoom | `hud.minimap.groesse` (ungerade), `sichtMeter` | 49 / 95.6 m |
+
+### So testest du
+
+1. Zuerst das **Ton-Labor** (siehe Hörtest-Anleitung).
+2. Spiel öffnen: vor dem Tastendruck ist es still, danach Blip und Menü-Ticks. Die Demo-Fahrt bleibt stumm.
+3. STARTEN, Countdown, fahren, Checkpoint 1, Pause, Weiter, ins Ziel (siehe oben).
+4. Zweite Fahrt: unter der Zeit stehen die Checkpoint-Punkte jetzt **grün** oder **rot**. Die **Minimap** oben rechts
+   ist kleiner (49 x 49). Frage: Ist sie gut so, oder zu klein?
+
+### Zahlen
+
+- **Zeichenaufrufe (3D) vorher → nachher**: 60 m **122 → 122**, 1170 m **113 → 113**, 2900 m **81 → 81** (Ton und
+  HUD bringen keine 3D-Objekte).
+- **Ladezeit** (`node tools/ladezeit.mjs`, 2 x 9 Ladungen, Median alt → neu): **1522 → 1409 ms** und **1429 →
+  1455 ms** – kein messbarer Unterschied (Budget +30 ms; beim Laden wird nur ein leeres Ton-Objekt angelegt).
+- **Puffer-Aufbau nach dem Entsperren**: **114–158 ms** Rechenzeit in 14–19 Häppchen, **längstes 8.7–10.2 ms**,
+  fertig **ca. 170–240 ms** nach dem Tastendruck (im Testrechner mit Software-Grafik; auf echten Rechnern schneller).
+- **Bildzeit mit / ohne Ton** (`node tools/m7a-leistung.mjs`, alle Ton-Schichten an): Median **233.4 / 233.4 ms** –
+  gleich. (Im Testrechner rendert die Grafik in Software, darum so langsam; die Zahl taugt nur zum Vergleich.) Der
+  Ton kostet im Hauptthread **1.4 µs pro Bild**; der Klang selbst wird vom Browser in einem eigenen Thread gerechnet.
+  Pro Bild entstehen keine neuen Objekte.
+- **Spitzenpegel** bei allem zugleich (Vollgas am Begrenzer, Drift, Schleifen, zwei harte Aufpralle, beide
+  Fanfaren, Signale, Knall, Blow-off): **0.941–0.944** (mehrere Läufe) – der Limiter hält, nichts übersteuert (Grenze 0.98).
+
+### Bilder (`screenshots/m7a/`; Spielbilder 1280x720 und `-320x180`; neu: `node tools/m7a-bilder.mjs`, Spektrogramme: `node tools/ton-test.mjs`)
+
+- `00-minimap-alt-neu` (M6.1 gegen M7a an den Kehren und auf dem Almweg, 4fach vergrössert)
+- `01-hud-punkt-gruen` (CP 1 schneller), `02-hud-punkte-gruen-rot` (CP 1 grün, CP 2 rot, Meldung rot), `03-minimap-kehren`
+- `04-einstellungen-lautstaerke` (Hinweis „GILT FÜR DEN GANZEN TON“), `05-einstellungen-lautstaerke-englisch`
+- `06-ton-labor` (die Labor-Seite)
+- Spektrogramme (Zeit nach rechts, Tonhöhe nach oben, hell = laut): `10-…-motor-1000`, `-3000`, `-6000`,
+  `11-…-blowoff`, `12-…-aufprall-baum`, `13-…-aufprall-metall`, `14-…-fanfare-lang`, `15-…-fanfare-kurz`,
+  `16-…-alles-zugleich`
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/audio.js` | **neu**: alles zum Ton (Busse, Motor, Reifen, Wind, Aufprall, Signale, Puffer-Rezepte, Stimmen-Limit) |
+| `ton-labor.html`, `js/tonlabor.js` | **neu**: Ton-Labor (Hilfsseite, nicht im Menü) |
+| `js/main.js` | Ton erzeugen (erst beim Tastendruck), einmal pro Bild die Zahlen geben, Ereignisse (Countdown, Checkpoint, Ziel, Pause), Material bei Aufprall/Felswand, Punkt-Farbe pro Checkpoint |
+| `js/kollision.js` | merkt sich **nur für den Ton** das Material (Nummer) je Hindernis und welches getroffen wurde; die Rechnung ist unverändert |
+| `js/sprites.js`, `js/sperren.js`, `js/startziel.js`, `js/absperrungen.js` | Hindernisse bekommen eine Art fürs Material (`ton: 'baum'` usw.), nur für den Ton |
+| `js/menue.js`, `js/menueseiten.js` | Menü-Töne an den bestehenden Aufrufen (Tick, Blip, Zurück, Regler, Fehler) |
+| `js/pacenotes.js` | zählt neu erscheinende Kacheln (für das Signal); die Berechnung ist unverändert |
+| `js/hud.js` | Checkpoint-Punkte grün/rot/gelb |
+| `js/config.js`, `js/texte.js` | Block `audio` neu, Minimap 49 / 95.6 m, Hinweis LAUTSTÄRKE, Version 0.7a |
+| `tools/ton-test.mjs`, `tools/ton-pruefung.js` | **neu**: Ton-Test (a)–(k) |
+| `tools/m7a-bilder.mjs`, `tools/m7a-leistung.mjs` | **neu**: Bilder und Leistungsmessung |
+| `tools/spiel-browser.mjs` | Chromium-Schalter von aussen (für den Ton-Test: Autoplay) |
+| `tools/overlay-test.mjs` | erwartete Minimap-Grösse 47–50 statt 56–64 |
+
+### Selbst getestet
+
+- **`node tools/ton-test.mjs` – alle 106 Prüfungen bestanden**, keine Konsolenfehler:
+  - **(a) Entsperren**: auf dem Titel **kein AudioContext**, nach dem ersten Tastendruck **„running“** und genau ein
+    Blip (ohne Autoplay-Schalter, also mit der echten Browser-Regel). `?ton=aus` und `?menue=aus`: nie ein
+    AudioContext. **Ohne Web Audio** (im Browser abgeschaltet): Menü, Countdown, Rennen, Pause gehen stumm, keine Fehler.
+  - **(b) Motor**: Grundton **41.8 / 125.0 / 250.0 Hz** bei 1000 / 3000 / 6000/min (Abweichung 0.34 % / 0 % / 0 %).
+    Turbo mit Vollgas 16 Mal lauter als mit wenig Gas, bei 2000/min aus, Ladedruck nach 0.4 s bei 58 %. Blow-off:
+    schnell vom Gas = 1, ein bisschen weniger Gas / langsam lösen / ohne Ladedruck = 0, Schalten unter Last = 1.
+    Knallen: 40 Mal Gas weg bei 5500/min = **29 Knalle, 18 Mal keiner, nie mehr als 2**, zweimal gerechnet genau gleich;
+    unter 4000/min nie. Begrenzer erst nach kurzer Zeit an der Höchstdrehzahl mit Vollgas. Schaltpause: Grundton
+    **277 → 175 Hz** (37 % tiefer), Pegel 0.49 → 0.18. Rückwärts: Heulen 878 Hz bei 5 m/s. Countdown: Gas ändert nichts.
+  - **(c) Untergrund**: Asphalt surrt, Schotter knirscht, Bankett/Gras/Wiesenweg weich (Gras am dumpfsten: 342 Hz
+    gegen 499 / 618 Hz). Überblendung Asphalt → Schotter: nach 51 ms noch 37 %, nach 0.4 s 0 %. Quietschen nur auf
+    Asphalt ab 8°, sonst Rutschen. Ratschen einmal pro Ziehen, nicht im Countdown.
+  - **(d) Aufprall**: jedes der 6 Materialien spielt seinen eigenen Klang; Lautstärke **0.23 → 0.90** und Helligkeit
+    **2057 → 9000 Hz** von 2 bis 14 m/s, unter 1.5 m/s still, ab 6 m/s mit Schlag. Dauerkontakt 0.5 s = 5 Töne (Sperre
+    0.1 s). Ducking: nach 90 ms **0.56 (= -5 dB)**, nach 0.9 s wieder 1.00. **Statistik wie in M5b** (Baum 1, R 1,
+    Höchsttempo 108.2 km/h) **mit und ohne Ton genau gleich**, auch Rennzeit und Lage. Unsichtbare Grenze: kein Ton.
+    Felswand (1932 m): Fels-Ton.
+  - **(e) Signale**: Tick, Blip, Regler-Tick (Wert 0.65 bei 65 %), Fehler-Buzz (F3), Zurück; **kein Doppelton** bei
+    Maus + Tastatur. Pause / Weiter je ein Ton, kein Blip dazu. **Countdown auf den Schritt genau**: Piep bei Schritt
+    1 (3), 121 (2), 241 (1), GO-Ton bei Schritt 360 – genau dann, wenn die Zahl erscheint. Pause im Countdown: Pieps hört
+    auf, nichts nachgeholt, nichts doppelt. Checkpoint ohne Referenz / schneller / langsamer / gleich: Ton, Meldung und
+    Punkt passen immer zusammen. Verpasst = Buzz. Fanfaren: erste Zeit und Platz 2 = nur die kurze; neue Bestzeit =
+    kurze an der Linie und lange zum Zielbildschirm. Pace-Notes: 13 Kacheln bis 1800 m = 13 Signale; Ansagen aus = 0;
+    Demo = 0.
+  - **(f) Zustände**: Pause: Motor 1.00 → 0.000, Umgebung und Reifen 800 Hz / 0.45; Weiter: alles zurück. Neustart
+    (während Drift und Turbo, mit laufendem Aufprall und Fanfare): alle Schichten 0, **0 Stimmen**, genau ein Motor,
+    immer 8 Rauschquellen. Hauptmenü mit Demo: stumm. Tab versteckt: „suspended“, zurück: „running“.
+  - **(g) Regler**: 0 % = 0, 30 % = 0.09, 50 % = 0.25, 70 % = 0.49, 100 % = 1 (quadratisch), gleitet ohne Sprung.
+  - **(h) Stimmen**: 200 Aufpralle plus Signale in Folge: **höchstens 16** gleichzeitig, danach 0 Stimmen und 0 Knoten
+    übrig. Eine Minute Fahrt mit dem Testfahrer: höchstens 16, danach 0 übrig (keine Lecks).
+  - **(i) Offline gerechnet**: Motor bei 1000 / 3000 / 6000/min: Spitze 0.59–0.64, RMS 0.22–0.33, keine Gleichspannung,
+    Grundton im Spektrum genau. Alle 13 einmaligen Klänge: erstes Sample 0, sauberer Anfang (3 ms), klingen genau in
+    der eingestellten Länge auf 0 aus, kein NaN. **Alles zugleich: Spitze 0.941** (Limiter hält).
+  - **(j) HUD**: Minimap **49 x 49** bei x 268, y 3, Auto genau in der Mitte, **245.8 Pixel pro km wie vorher**;
+    Kehren: bis zu 3 / 4 / 5 Strassenstücke in einer Bildzeile bei 1170 / 1260 / 1350 m (Zickzack). Punkte: ohne
+    Referenz gelb, schneller grün, langsamer rot, gleich gelb – bleiben stehen, auch mit Live-Vergleich aus, nach
+    Neustart leer.
+  - **(k)** Hinweis de/en neu, alle Zeichen in der Pixelschrift.
+- **Alle bisherigen Tests bestanden** (unverändert, ausser der Minimap-Grösse im Overlay-Test): `testfahrer`
+  **2:59.33 / 2:42.35 / 2:31.92**, `abkuerzungen --pruefen` **127 / 2 / 342 / 84**, `overlay-test` (121 Prüfungen,
+  inkl. Überlappung), `menue-test`, `rennablauf-test` (Statistik, Countdown, Zielbildschirm), `aufprall`, `belag`,
+  `felswand`, `felswand-sprites`, `getriebe`, `gras`, `handbremse`, `kuh`, `leben`, `lenk`, `nebenweg`, `pacenotes`,
+  `rueckwaerts`, `startziel`, `strassenrand`. Strecke, Physik, Kollisionsrechnung, Sperren, Abkürzungen,
+  Pace-Notes-Berechnung, Checkpoints, Rennzeit, Fahrspur und Bestzeiten-Format nicht angefasst.
+
+### Ehrlich beurteilt
+
+- **Nicht gehört.** Gemessen ist: Die Tonhöhen stimmen (Grundton auf 0.0–0.4 % genau), Pegel und Filter folgen dem
+  Spiel, alles blendet weich, nichts übersteuert, nichts bleibt hängen, nichts ändert das Spiel. **Ob es gut klingt,
+  weiss ich nicht.** Synthetische Motoren klingen schnell nach „Synthesizer“; das ist das grösste Risiko.
+- **Minimap 49 x 49**: Proportional passt sie jetzt besser zur Zeit-Tafel (74 x 13) und zu den Tachos und nimmt oben
+  rechts deutlich weniger Platz weg. Die **Kehren sind weiter als Zickzack lesbar**, sobald man in ihnen ist (siehe
+  `02-…` und `03-…`). **Ehrlicher Nachteil**: man sieht weniger weit voraus – 95 m statt 120 m, bei 100 km/h gut 3 s
+  statt gut 4 s. Vor der ersten Kehre (1150 m) sieht man nur den Anfang des Pakets.
+- **Punkte**: grün und rot sind klar zu unterscheiden (auch bei 320x180), gelb und grün sind bei nur 4 x 4 Pixeln
+  etwas näher beieinander, aber unterscheidbar. Für Farbenblinde (rot/grün) ist es schwierig – das gilt aber schon für
+  Meldung und Live-Vergleich.
+
+### Bekannte Probleme
+
+- **Gamepad allein entsperrt den Ton nicht**: Ein Gamepad-Knopf zählt im Browser nicht als „Benutzer hat etwas getan“.
+  Wer nur mit dem Gamepad durchs Menü geht, hat erst Ton, wenn er einmal eine Taste drückt oder klickt.
+- **Im Countdown erscheint auf dieser Etappe keine Pace-Notes-Kachel** (die erste Kurve ist zu weit weg), also gibt es
+  dort auch kein Signal. Kommt eine, piept sie genau einmal (so gebaut und getestet).
+- Der **Fahrtwind und die Reifen klingen in der Pause gedämpft weiter** (so gewünscht: „Umgebung gedämpft“); weil das
+  Auto in der Pause eingefroren ist, bleibt ihr Pegel stehen.
+- Am Ende des Zielbildschirms rollt das Auto aus; erst wenn es steht, blendet der Motor aus (ca. 1.2 s).
+- Im Test-Rechner wurde mit einem stummen Ausgabegerät und Software-Grafik gemessen; auf echten Rechnern kann der
+  Puffer-Aufbau etwas anders lange dauern (es ist aber nie ein Stück über ca. 10 ms am Stück).
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- Motorton leicht **stereo** (Auspuff hinten links/rechts) – passt zu M7b (Stereo und Abstand).
+- Kurzes **Klacken beim Schalten** (Getriebe) zusätzlich zum Drehzahlabfall.
+- **Kies prasselt** gegen den Unterboden auf Schotter bei hohem Tempo (zusätzlich zum Rollgeräusch).
+- Eigener Regler **EFFEKTE** (Fahrzeug) und **SIGNALE** getrennt, falls die Menü-Klicks stören.
+- Fanfare je nach Platz leicht anders (Platz 1, Top 3, Rest).
+- Minimap in der Pause grösser (aus M6.1).
+
+---
+
+## Meilenstein 6.1: Minimap zoomt und fährt mit, Vergleich kleiner, Meldungen mit Tafel und Farbe ✅ (Verlauf, Stand damals – Minimap seit M7a 49 x 49 und 95.6 m)
 
 ### Was ist neu?
 

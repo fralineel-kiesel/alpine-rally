@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.6.1';
+export const VERSION = '0.7a';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -991,8 +991,9 @@ export const CONFIG = {
     },
     // Minimap oben rechts (M6, seit M6.1 ein Ausschnitt): Umgebung des Autos, Norden oben, die Karte fährt mit
     minimap: {
-      groesse: 61,             // Tafel so breit und so hoch (Pixel, mit Rand; ungerade, damit das Auto genau in der Mitte steht)
-      sichtMeter: 120,         // Zoom: so viele Meter reichen vom Auto bis zum Rand der Tafel (kleiner = näher dran)
+      groesse: 49,             // Tafel so breit und so hoch (Pixel, mit Rand; ungerade, damit das Auto genau in der Mitte steht; M7a: 49 statt 61)
+      sichtMeter: 95.6,        // Zoom: so viele Meter reichen vom Auto bis zum Rand der Tafel (kleiner = näher dran);
+                               // M7a: 95.6 statt 120, damit es gleich viele Pixel pro Meter bleiben wie vorher (23.5 / 95.6 = 29.5 / 120)
       rechts: 3,               // Abstand der Tafel vom rechten Bildrand
       oben: 3,                 // Abstand der Tafel vom oberen Bildrand
       ecke: 2,                 // abgeschrägte Ecken der Tafel (wie die Zeit-Tafel)
@@ -1199,7 +1200,7 @@ export const CONFIG = {
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
-      lautstaerke: 70,         // Lautstärke in Prozent (wirkt erst, wenn es Ton gibt, M7)
+      lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)
       sprache: 'de',           // 'de' (Deutsch) oder 'en' (Englisch)
       // Tastenbelegung: je Aktion Taste 1 und Taste 2 (null = keine). Namen = Tasten-Codes des Browsers
       tasten: {
@@ -1315,6 +1316,229 @@ export const CONFIG = {
 
     // Fahrspur (M6): alle ... Streckenmeter wird die Rennzeit notiert (für den Live-Vergleich, mit der Bestzeit gespeichert)
     spurAbstand: 10,
+  },
+
+  // --- Ton (Meilenstein 7a, js/audio.js) ---------------------------------------------
+  // Alles im Code erzeugt (Web Audio: Oszillatoren, Rauschen, Filter, Verstärker), keine Dateien, keine Samples.
+  // Pegel = Verstärkung (0..1, 1 = voll), Tonhöhen in Hz, Zeiten in Sekunden, Tempo in m/s (1 m/s = 3.6 km/h).
+  // Probehören ohne zu fahren: ton-labor.html (benutzt genau diesen Code und diese Werte).
+  audio: {
+    an: true,                  // false = gar kein Ton (wie ?ton=aus in der Adresse)
+    lautKurve: 2,              // Regler LAUTSTÄRKE wirkt so: (Prozent / 100) hoch diesem Wert (2 = quadratisch, fühlt sich gleichmässig an)
+    maxStimmen: 16,            // höchstens so viele einmalige Klänge gleichzeitig (Aufprall, Signale); ältere werden ausgeblendet
+    glaetten: 0.03,            // Lautstärken und Tonhöhen folgen dem Spiel so weich (Zeitkonstante; nie ein Sprung, kein Knacken)
+    seed: 707,                 // feste Zufallsfolge (Knallen, Aufprall-Varianten): gleiches Fahren = gleiche Töne
+    pufferSchritt: 8,          // Klänge berechnen nach dem Entsperren: höchstens so viele ms am Stück, dann ist das Spiel wieder dran
+    // Schienen (Busse) unter dem Lautstärke-Regler
+    busse: {
+      fahrzeug: 1.0,           // Motor, Reifen, Aufprall, Schleifen
+      umgebung: 1.0,           // Wind (M7b: Kuhglocken, Zuschauer, Vögel)
+      signale: 0.8,            // Menü, Pause, Countdown, Checkpoint, Ziel, Pace-Notes
+      musik: 0.0,              // noch leer (M7b: Menü-Musik mit eigenem Regler)
+    },
+    // Begrenzer am Ausgang: nichts übersteuert, auch bei Vollgas, Drift und Aufprall zugleich
+    limiter: { schwelle: -6, knie: 0, verhaeltnis: 20, angriff: 0.002, loslassen: 0.12 }, // dB, -, -, s, s
+    // Pause: Motor stumm, Reifen und Umgebung dumpf und leiser
+    pause: {
+      motorAus: 0.15,          // Motor blendet in so vielen Sekunden aus
+      filter: 800,             // Tiefpass auf Reifen und Umgebung (Hz)
+      pegel: 0.45,             // ... und so viel leiser (Anteil)
+      blende: 0.2,             // Ein-/Ausblenden der Dämpfung (Sekunden)
+    },
+    zielStand: { ab: 0.4, blende: 1.2 }, // Zielbildschirm: steht das Auto (unter ... m/s), blendet der Motor in ... s aus
+
+    // Motor: 5-Zylinder-Turbo wie die Gruppe-B-Autos der 80er. Grundlage ist die Drehzahl aus dem Getriebe (getriebe.drehzahl).
+    motor: {
+      zuendFaktor: 2.5,        // Grundton = Drehzahl / 60 x diesem Wert (5 Zylinder, Viertakt: 5 Zündungen pro 2 Umdrehungen)
+      hoechstDrehzahl: 7200,   // obere Drehzahl für den Ton (U/min; 300 Hz Grundton). Leerlauf: getriebe.leerlauf (ca. 42 Hz)
+      pegel: 0.5,              // Gesamtlautstärke des Motors (der lauteste Teil)
+      saege: 0.55,             // Körper: Sägezahn auf dem Grundton ...
+      rechteck: 0.28,          // ... plus Rechteck (hohl, kernig) ...
+      unter: 0.35,             // ... plus Dreieck auf dem halben Grundton (das typische 5-Zylinder-Brummen)
+      oberwelle: 0.12,         // Brabbeln: dazu die 2. Oberwelle ...
+      schwebung: 3.5,          // ... um so viele Hz verstimmt (langsames Schweben)
+      amTiefe: 0.22,           // Brabbeln: Lautstärke schwankt im Takt des halben Grundtons (0 = gar nicht, 1 = sehr stark)
+      amTiefeLeerlauf: 0.42,   // ... im Leerlauf stärker (unregelmässiger)
+      leerlaufZittern: 0.01,   // Leerlauf: Drehzahl zittert um so viel (0.01 = 1 %)
+      rauh: 0.10,              // rauhes Rauschen um die rauhOberwelle-te Oberwelle (mehr = kratziger)
+      rauhOberwelle: 6,
+      verzerrung: 1.8,         // leichte Sättigung (1 = sauber, mehr = rauer)
+      filterGrund: 240,        // Helligkeit: Tiefpass (Hz) ohne Gas im Leerlauf ...
+      filterDrehzahl: 0.30,    // ... plus so viele Hz pro U/min ...
+      filterGas: 1800,         // ... plus so viele Hz mit Vollgas (unter Last heller)
+      filterQ: 1.3,            // Resonanz des Tiefpasses (mehr = "röhriger")
+      lastPegel: 1.0,          // Lautstärke mit Vollgas ...
+      schubPegel: 0.42,        // ... ohne Gas (Schubbetrieb, Motorbremse: leiser, brummig)
+      leerlaufPegel: 0.55,     // ... im Leerlauf
+      drehzahlPegel: 0.35,     // bei Höchstdrehzahl so viel lauter als unten (Anteil)
+      // Turbo: leises Pfeifen, folgt dem Ladedruck (läuft Gas und Drehzahl hinterher)
+      turboAb: 3000,           // Ladedruck baut sich erst ab dieser Drehzahl auf ...
+      turboVoll: 5500,         // ... und ist hier voll (mit Vollgas)
+      turboRauf: 0.4,          // Ladedruck steigt so träge (Sekunden) ...
+      turboRunter: 0.6,        // ... und fällt so träge
+      turboTonMin: 2200,       // Pfeifen: Tonhöhe bei wenig Ladedruck (Hz) ...
+      turboTonMax: 5200,       // ... und bei vollem
+      turboPegel: 0.035,       // Lautstärke des Pfeifens bei vollem Ladedruck (leise, nie dominant)
+      // Blow-off: Zischen, wenn man bei Ladedruck schnell vom Gas geht (und beim Schalten unter Last)
+      blowOffAb: 0.5,          // nur bei Ladedruck über diesem Wert (0..1)
+      blowOffGasFall: 0.5,     // ... und wenn das Gas in ca. blowOffZeit Sekunden um so viel gefallen ist
+      blowOffZeit: 0.12,
+      blowOffDauer: 0.3,       // Zischen dauert so lange
+      blowOffTon: 2600,        // Mitte des Zischens (Hz), fällt auf die Hälfte
+      blowOffPegel: 0.16,
+      // Knallen beim Gaswegnehmen (Auspuff). Feste Zufallsfolge (audio.seed): gleiches Fahren = gleiches Knallen
+      knallAb: 4000,           // nur über dieser Drehzahl
+      knallChance: 0.45,       // so wahrscheinlich knallt es beim Gaswegnehmen (0..1) ...
+      knallZweiter: 0.35,      // ... und so wahrscheinlich kommt ein zweiter Knall (höchstens 2)
+      knallFenster: [0.05, 0.4], // der Knall kommt so viele Sekunden nach dem Gaswegnehmen (zufällig dazwischen)
+      knallPegel: 0.32,
+      knallSperre: 1.5,        // danach so lange kein neues Knallen (sonst nervt es)
+      knall: { laenge: 0.15, knall: [1.0, 0.012, 1500], schlag: [120, 55, 0.035, 0.9] }, // Klang (wie aufprall.klang)
+      // Drehzahlbegrenzer: nahe der Höchstdrehzahl mit Vollgas stottert der Motor
+      begrenzerAb: 6850,       // ab dieser Drehzahl (U/min) mit Vollgas ...
+      begrenzerNach: 0.12,     // ... und nach so vielen Sekunden dort (kurz vor dem Hochschalten nicht)
+      begrenzerHz: 13,         // Stottern so schnell (Hz)
+      begrenzerTiefe: 0.85,    // so stark (1 = ganz aus)
+      // Rückwärts: Getriebeheulen dazu (Tonhöhe folgt dem Tempo)
+      heulenGrund: 280,        // Tonhöhe beim Anfahren (Hz) ...
+      heulenProMs: 120,        // ... plus so viele Hz pro m/s
+      heulenPegel: 0.05,
+    },
+
+    // Reifen und Untergrund
+    reifen: {
+      bezugTempo: 30,          // bei diesem Tempo (m/s, 108 km/h) gilt der Pegel unten; schneller etwas lauter
+      // Rollgeräusch je Untergrund: art = Schicht (surren = Asphalt, kies = körnig, weich = dumpf), pegel,
+      // grenze = Helligkeit (Hz) im Schritttempo, grenzeTempo = so viele Hz heller pro m/s
+      belaege: {
+        asphalt: { art: 'surren', pegel: 0.10, grenze: 160, grenzeTempo: 22 },
+        bankett: { art: 'weich', pegel: 0.12, grenze: 420, grenzeTempo: 10 },
+        gras: { art: 'weich', pegel: 0.08, grenze: 240, grenzeTempo: 5 },
+        schotter: { art: 'kies', pegel: 0.16, grenze: 2600, grenzeTempo: 40 },
+        wiesenweg: { art: 'weich', pegel: 0.11, grenze: 340, grenzeTempo: 8 },
+      },
+      wechsel: 0.05,           // Überblendung beim Untergrundwechsel (Zeitkonstante; nach ca. 0.15 s fertig)
+      kiesRate: 0.7,           // Kies: Abspieltempo im Schritttempo ...
+      kiesRateTempo: 0.012,    // ... plus so viel pro m/s (Tonhöhe steigt leicht mit dem Tempo)
+      kiesKlicks: 900,         // Kies: so viele Knackser pro Sekunde
+      // Quietschen (nur auf Asphalt)
+      quietschAb: 8,           // ab diesem Driftwinkel (Grad) ...
+      quietschVoll: 25,        // ... voll bei diesem
+      quietschTempo: [4, 14],  // unter dem ersten Tempo (m/s) nichts, ab dem zweiten voll
+      quietschTon: [900, 1400], // Tonhöhe (Hz): leicht ... stark
+      quietschWackeln: 60,     // der Ton schwankt um so viele Hz ...
+      quietschWackelnHz: 6,    // ... so schnell
+      quietschPegel: 0.09,
+      handbremseQuietschen: 0.6, // Handbremse gezogen und Tempo: mindestens so viel Quietschen bzw. Rutschen (0..1)
+      // Rutschen auf losem Untergrund (Schotter, Bankett, Gras, Wiesenweg): lauteres Knirschen statt Quietschen
+      rutschPegel: 0.22,
+      rutschGrenze: 1800,      // Mitte des Knirschens (Hz)
+      // Handbremse ziehen: kurzes Ratschen
+      ratschKlacks: 5,
+      ratschDauer: 0.15,
+      ratschPegel: 0.12,
+    },
+
+    // Fahrtwind (Schiene "umgebung": in der Pause mit gedämpft)
+    wind: {
+      pegel: 0.05,             // Lautstärke bei bezugTempo (wächst mit dem Quadrat des Tempos; ganz leise)
+      bezugTempo: 45,          // m/s (162 km/h)
+      grenze: 450,             // Helligkeit (Hz) ...
+      hellAb: 33,              // ... ab diesem Tempo (m/s, ca. 120 km/h) heller ...
+      hellProMs: 70,           // ... um so viele Hz pro m/s darüber
+    },
+
+    // Aufprall und Schleifen. Die Statistik "Aufpralle" zählt unabhängig davon (rennablauf.aufprallSchwelle, aufprallSperre)
+    aufprall: {
+      ab: 1.5,                 // Kontakt macht ab diesem Tempo Richtung Hindernis (m/s) ein Geräusch
+      voll: 14,                // bei dieser Wucht (m/s, ca. 50 km/h) voller Pegel und volle Härte
+      pegel: 0.9,              // Lautstärke bei voller Wucht (kurz das Lauteste)
+      kurve: 0.7,              // Lautstärke = (Wucht / voll) hoch diesem Wert (unter 1: leichte Kontakte etwas lauter)
+      sperre: 0.1,             // nach einem Aufprallton so lange (s) keiner (mehrere Kontakte rattern nicht)
+      grenzeLeicht: 900,       // Helligkeit (Hz) beim leichten Streifschuss ...
+      grenzeHart: 9000,        // ... beim harten Aufprall
+      schlagAb: 6,             // ab dieser Wucht (m/s) dazu ein tiefer Schlag
+      schlagPegel: 0.7,
+      schlag: { laenge: 0.5, knall: [0.2, 0.01, 300], schlag: [78, 42, 0.16, 1.0] },
+      // Ducking: bei hartem Aufprall werden Motor und Umgebung kurz leiser, damit der Knall durchkommt
+      duckAb: 6,               // ab dieser Wucht (m/s)
+      duckDb: -5,              // so viel leiser (dB)
+      duckDauer: 0.3,          // so lange
+      duckZurueck: 0.12,       // ... dann weich zurück (Zeitkonstante)
+      // Schleifen: Auto rutscht an Wand, Leitplanke, Zaun entlang
+      schleifenAb: 2,          // ab diesem Tempo (m/s)
+      schleifenVoll: 15,       // voll bei diesem
+      schleifenPegel: 0.18,
+      // Materialien (Reihenfolge = Nummer in der Kollisionsliste) und welche Hindernis-Art welches Material ist
+      materialien: ['baum', 'stein', 'holz', 'weich', 'metall', 'fels'],
+      artVon: {
+        baum: 'baum', tanne: 'baum', stein: 'stein', fels: 'stein', stamm: 'holz', // Bäume, Steine, Sperren
+        planke: 'metall', zaun: 'holz', tor: 'holz', schild: 'metall',              // Strassenrand, Absperrungen
+        band: 'weich', reifen: 'weich', heu: 'weich', stroh: 'weich', heurolle: 'weich', kuh: 'weich',
+        zuschauer: 'weich', posten: 'weich', wegweiser: 'holz', steinmann: 'stein', findling: 'stein', bande: 'holz',
+        banner: 'metall', fahne: 'metall', flagge: 'metall', stuhl: 'metall', markise: 'metall', wrack: 'metall',
+        bogen: 'metall', uhr: 'metall',
+      },
+      // Klang je Material (einmal berechnet). laenge = Ausklingzeit (s). knall: [Pegel, Abklingen s, Helligkeit Hz],
+      // moden: Eigentöne [Hz, Abklingen s, Pegel], schlag: tiefer Schlag [Hz Anfang, Hz Ende, Abklingen s, Pegel],
+      // rascheln: Knistern/Splittern/Schleifen [Pegel, Dauer s, Knackser pro s]
+      klang: {
+        baum: { laenge: 0.7, knall: [0.5, 0.02, 2200], moden: [[180, 0.08, 0.2], [330, 0.06, 0.12]], schlag: [95, 55, 0.12, 0.8], rascheln: [0.4, 0.6, 450] },
+        stein: { laenge: 0.45, knall: [0.9, 0.012, 7000], moden: [[820, 0.07, 0.35], [1270, 0.05, 0.3], [2140, 0.04, 0.2], [3300, 0.03, 0.12]], schlag: [140, 90, 0.05, 0.4], rascheln: [0.25, 0.25, 900] },
+        holz: { laenge: 0.55, knall: [0.7, 0.015, 4000], moden: [[230, 0.09, 0.3], [410, 0.07, 0.22], [690, 0.05, 0.15]], schlag: [110, 70, 0.08, 0.5], rascheln: [0.55, 0.35, 1500] },
+        weich: { laenge: 0.4, knall: [0.4, 0.04, 600], moden: [], schlag: [80, 50, 0.15, 0.9], rascheln: [0.15, 0.2, 200] },
+        metall: { laenge: 1.1, knall: [0.8, 0.01, 8000], moden: [[340, 0.5, 0.25], [523, 0.45, 0.22], [817, 0.4, 0.2], [1180, 0.35, 0.16], [1690, 0.3, 0.12], [2410, 0.25, 0.08]], schlag: [120, 80, 0.06, 0.4], rascheln: [0.2, 0.3, 600] },
+        fels: { laenge: 0.8, knall: [0.5, 0.03, 1500], moden: [[95, 0.15, 0.3]], schlag: [60, 38, 0.2, 1.0], rascheln: [0.45, 0.6, 300] },
+      },
+      // Schleifen je Material: [Mitte Hz, Güte] (Bandpass auf Rauschen)
+      schleifen: { baum: [1200, 2], stein: [1500, 2], holz: [900, 2.5], weich: [300, 1], metall: [2600, 4], fels: [500, 1.2] },
+    },
+
+    // Signale: kurze Töne im Retro-Stil (form: 'square' = Rechteck, 'triangle' = Dreieck, 'sine' = Sinus).
+    // ton: Tonhöhe (Hz) oder [Anfang, Ende], dauer (s), pegel (mal signale.pegel und busse.signale)
+    signale: {
+      pegel: 0.5,
+      menue: {
+        tick: { form: 'square', ton: 1800, dauer: 0.018, pegel: 0.10 },        // Auswahl bewegen (sehr leise)
+        bestaetigen: { form: 'square', ton: [660, 990], dauer: 0.07, pegel: 0.22 }, // höherer Blip
+        zurueck: { form: 'square', ton: [520, 350], dauer: 0.07, pegel: 0.20 },  // tieferer Blip
+        regler: { form: 'triangle', ton: [300, 1200], dauer: 0.035, pegel: 0.2 }, // Tick, Tonhöhe je nach Wert (min..max)
+        fehler: { form: 'square', ton: [140, 118], dauer: 0.18, pegel: 0.22 },  // "SCHON BELEGT", "RESERVIERT"
+        sperre: 0.045,         // derselbe Menü-Ton höchstens alle ... s (kein Doppelton, wenn Maus und Tastatur dasselbe tun)
+      },
+      pause: { form: 'square', ton: [440, 262], dauer: 0.12, pegel: 0.25 },    // beim Pausieren (tief)
+      weiter: { form: 'square', ton: [262, 523], dauer: 0.12, pegel: 0.25 },   // beim Weiterfahren (hoch)
+      countdown: { form: 'square', ton: 440, dauer: 0.15, pegel: 0.32 },      // 3, 2, 1
+      go: { form: 'square', ton: 880, dauer: 0.4, pegel: 0.34 },              // GO!
+      checkpoint: {
+        form: 'triangle', dauer: 0.09, luecke: 0.035, pegel: 0.3,             // zwei Töne ("Ding-Ding")
+        schneller: [880, 1319],  // aufsteigend
+        langsamer: [740, 622],   // leicht absteigend und tiefer
+        neutral: [880, 880],     // gleich schnell oder keine Referenz
+      },
+      verpasst: { form: 'square', ton: [130, 92], dauer: 0.38, pegel: 0.28 }, // CHECKPOINT VERPASST: tiefer Buzz
+      paceNote: { form: 'sine', ton: 1200, dauer: 0.05, pegel: 0.12, abstand: 0.09 }, // pro neuer Kachel (abstand: zweite Kachel im selben Bild)
+      // Ziel-Fanfaren (eigene Melodien): [Note, Schläge]; 'R' = Pause. tempo in Schlägen pro Minute
+      fanfare: {
+        pegel: 0.3, tempo: 165,
+        kurz: {   // beim Überfahren der Ziellinie (ca. 2 s)
+          melodie: [['G4', 0.5], ['C5', 0.5], ['E5', 0.5], ['G5', 1], ['E5', 0.5], ['G5', 0.5], ['C6', 2.5]],
+          zweite: [['R', 3.5], ['E5', 2.5]],
+          bass: [['C3', 1.5], ['G2', 1.5], ['C3', 3]],
+        },
+        lang: {   // NEUE BESTZEIT, zum Zielbildschirm (ca. 3.5 s)
+          melodie: [['C5', 0.5], ['E5', 0.5], ['G5', 0.5], ['C6', 0.5], ['B5', 0.5], ['G5', 0.5], ['A5', 1],
+            ['F5', 0.5], ['A5', 0.5], ['C6', 0.5], ['D6', 0.5], ['E6', 3]],
+          zweite: [['R', 2], ['D5', 0.5], ['E5', 0.5], ['F5', 1], ['R', 2], ['G5', 3]],
+          bass: [['C3', 2], ['G2', 2], ['F2', 2], ['C3', 3]],
+        },
+      },
+    },
+
+    // Nur für tools/ton-test.mjs: erwartete Lautstärke (RMS) der Klänge, offline gerechnet (Bereich [min, max])
+    pruefung: {
+      rmsMotor: [0.03, 0.45], rmsKlang: [0.01, 0.5], spitzeMax: 0.98,
+    },
   },
 
   // --- Optik am Auto -----------------------------------------------------

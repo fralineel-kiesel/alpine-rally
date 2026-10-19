@@ -3,6 +3,8 @@
 // Seit M5b: STARTEN -> Countdown 3-2-1-GO -> Rennen -> Ziel ("ZIEL!", 3 s) -> Zielbildschirm (Bestzeiten, Statistik).
 // Seit M6: Minimap und Live-Vergleich im HUD (Fahrspur alle 10 m, js/vergleich.js), Taste H = HUD aus/an.
 // Seit M6.1: Zwischenzeit-Meldung grün/rot je nach Vergleich mit der Referenz an diesem Checkpoint.
+// Seit M7a: Ton (js/audio.js) – erst nach dem ersten Tastendruck auf dem Titel; ohne Ton mit ?menue=aus oder ?ton=aus.
+//           Der Ton liest nur (ton.aktualisiere einmal pro Bild, Ereignisse an den bestehenden Stellen).
 // Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
 // (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
@@ -17,7 +19,7 @@ import { baueDemo } from './demofahrt.js';
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
 import { speichereBestzeit, hundertstel, ladeBestzeiten, speichereLetztenLauf, ladeLetztenLauf } from './bestzeiten.js';
 import { baueVergleich } from './vergleich.js';
-import { zeichneCountdown } from './rennablauf.js';
+import { zeichneCountdown, countdownNummer } from './rennablauf.js';
 import { baueStrecke } from './track.js';
 import { baueWelt } from './world.js';
 import { baueNetz } from './netz.js';
@@ -37,6 +39,7 @@ import { baueStartZiel } from './startziel.js';
 import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
+import { baueTon, materialVon, materialNr } from './audio.js';
 
 // Einstellungen laden (fehlt der Browser-Speicher: Standardwerte) und Sprache setzen
 ladeEinstellungen();
@@ -48,6 +51,10 @@ function dokumentSprache() {
 dokumentSprache();
 beiSprachwechsel(dokumentSprache);
 const menueAn = CONFIG.menue.an && new URLSearchParams(window.location.search).get('menue') !== 'aus';
+// Ton (M7a): nur mit Menü (Tests mit ?menue=aus bleiben stumm), nicht mit ?ton=aus oder audio.an = false.
+// Der AudioContext entsteht erst beim ersten Tastendruck / Klick auf dem Titel (zumMenue).
+const ton = baueTon({ an: CONFIG.audio.an && menueAn && new URLSearchParams(window.location.search).get('ton') !== 'aus' });
+ton.lautstaerke(einstellungen.lautstaerke);
 
 const lade = document.getElementById('lade');
 lade.innerHTML = `${t('lade.titel')}<br><small>${t('lade.bauen')}</small>`;
@@ -141,7 +148,8 @@ const leben = baueLeben(szene, strecke, welt, { pflanzen, rand: strassenrand, ku
 strassenrand.hindernisse.push(...leben.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
-const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse]);
+// (materialVon, M7a: Material je Hindernis nur für den Aufprallton; die Kollisionsrechnung bleibt gleich)
+const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse], materialVon);
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
 const staub = baueStaub(szene); // Staub auf Schotter (M3a) und Wiesenweg (M3b)
 const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false, belag: null };
@@ -164,6 +172,7 @@ const rennen = {
   zustand: 'bereit', zeit: 0, endZeit: 0, letztesS: 0, hilfe: true,
   naechsterCp: 0,        // welcher Checkpoint als nächster kommt (0 = der erste)
   zwischenzeiten: [],    // Zeit bei jedem Checkpoint (null = verpasst)
+  cpVergleich: [],       // M7a: je erreichtem Checkpoint -1 schneller / 1 langsamer / 0 gleich oder keine Referenz (Punkte, Ton)
   meldung: null,         // Text oben im Bild: { text, farbe, bis, verpasstCp } (verpasstCp: M6, Minimap färbt ihn rot)
   uhr: 0,                // läuft immer (für die Anzeigedauer der Meldungen)
 };
@@ -198,6 +207,11 @@ function aufprallZaehlen(wucht) {
 }
 // Tempo in die Grenze hinein (Richtung nx/nz zeigt in die Wand, wie bei physik.anGrenze)
 const grenzWucht = (nx, nz) => Math.max(0, physik.vx * nx + physik.vz * nz);
+// Für den Ton (M7a, nur gelesen): stärkster Kontakt im Bild (Wucht, Material), Kontakt zum Schleifen, Pedale aus der Physik
+const FELS = materialNr('fels');
+const tonInfo = { wucht: 0, art: 0, kontaktArt: -1, kontaktTempo: 0 };
+const tonEingabe = { gas: 0, bremse: 0, handbremse: false };
+let pnStand = 0; // so viele Pace-Notes-Kacheln sind schon erschienen (für das Signal)
 
 const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 const optik = { nicken: 0, rollen: 0, neigX: 0, neigZ: 0 };
@@ -218,6 +232,7 @@ function neustart() {
   rennen.endZeit = 0;
   rennen.naechsterCp = 0;
   rennen.zwischenzeiten = [];
+  rennen.cpVergleich = [];
   rennen.meldung = null;
   paceNotes.zuruecksetzen();
   // M6: Fahrspur leeren, Referenz für den Live-Vergleich laden (nur hier, nicht jedes Bild)
@@ -226,6 +241,10 @@ function neustart() {
   // M5b: Statistik und Ziel zurück
   stat.aufpralle = 0; stat.hoechstTempo = 0; stat.resetsBasis = rueck.anzahl; stat.letzterAufprall = -1e9;
   lauf.countdown = 0; lauf.go = 0; lauf.zielWarte = 0; lauf.zielErledigt = false; lauf.ergebnis = null;
+  // M7a: Ton – alle Schichten weich aus, nichts bleibt hängen
+  ton.allesAus();
+  tonInfo.wucht = 0; tonInfo.kontaktArt = -1; tonEingabe.gas = 0; tonEingabe.bremse = 0; tonEingabe.handbremse = false;
+  pnStand = paceNotes.anzeige.erschienen;
 }
 
 function zeigeMeldung(text, farbe, verpasstCp = -1) {
@@ -346,6 +365,7 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Bäume und Steine
   kollision.loese(physik, xAlt, zAlt, wAlt);
   let wucht = kollision.wucht; // M5b, Statistik: stärkster Aufprall in diesem Schritt (m/s Richtung Hindernis)
+  let tonW = kollision.wucht, tonArt = kollision.wuchtArt, tonKontakt = kollision.kontaktArt; // M7a: nur für den Ton
 
   // Begrenzungen: Felswand, Abhang, zu weit weg
   const q2 = strecke.abfrage(physik.x, physik.z, qAuto);
@@ -358,10 +378,16 @@ function physikSchritt(dt, e, nurFahren = false) {
   // (M5b: vor der Felswand das Tempo hinein messen, für die Statistik; die Wand selbst ist unverändert.
   //  Die unsichtbaren Grenzen weiter unten zählen nicht als Aufprall, Linos Wunsch)
   if (wk.strasse > 0) {
-    wucht = Math.max(wucht, grenzWucht(rx * q2.wandSeite, rz * q2.wandSeite));
+    const gw = grenzWucht(rx * q2.wandSeite, rz * q2.wandSeite);
+    wucht = Math.max(wucht, gw);
+    if (gw > tonW) { tonW = gw; tonArt = FELS; } // M7a: Wand = Felswand-Ton
+    tonKontakt = FELS;
     physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
   } else if (wk.fels > 0) {
-    wucht = Math.max(wucht, grenzWucht(wk.nx, wk.nz));
+    const gw = grenzWucht(wk.nx, wk.nz);
+    wucht = Math.max(wucht, gw);
+    if (gw > tonW) { tonW = gw; tonArt = FELS; }
+    tonKontakt = FELS;
     physik.anGrenze(wk.nx, wk.nz, wk.fels);
   }
   if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
@@ -380,6 +406,10 @@ function physikSchritt(dt, e, nurFahren = false) {
 
   if (nurFahren) return; // Demo-Fahrt: kein Rennstand (und keine Statistik)
   aufprallZaehlen(wucht);
+  // M7a: für den Ton merken (stärkster Kontakt im Bild; die unsichtbaren Grenzen machen keinen Ton)
+  if (tonW > tonInfo.wucht) { tonInfo.wucht = tonW; tonInfo.art = tonArt; }
+  if (tonKontakt >= 0) { tonInfo.kontaktArt = tonKontakt; tonInfo.kontaktTempo = physik.tempo; }
+  tonEingabe.gas = eingabe.gas; tonEingabe.bremse = eingabe.bremse; tonEingabe.handbremse = eingabe.handbremse;
 
   // Zeitmessung und Checkpoints
   rennen.uhr += dt;
@@ -407,9 +437,13 @@ function physikSchritt(dt, e, nurFahren = false) {
         const u = vergleich.zwischenVergleich(n, rennen.zeit);
         const V = CONFIG.hud.vergleich;
         zeigeMeldung(t('hud.cp', { n: n + 1, zeit: formatZeit(rennen.zeit) }), u < 0 ? V.farbeSchneller : u > 0 ? V.farbeLangsamer : 'gelb');
+        // M7a: dieselbe Entscheidung für den Punkt unter der Zeit (bleibt den ganzen Lauf) und den Checkpoint-Ton
+        rennen.cpVergleich[n] = u < 0 ? -1 : u > 0 ? 1 : 0;
+        ton.checkpoint(rennen.cpVergleich[n]);
       } else if (s > cpS + 5) {
         // schon hinter dem Tor, ohne durchgefahren zu sein
         zeigeMeldung(t('hud.cpVerpasst'), 'rot', n);
+        ton.verpasst(); // M7a: tiefer Buzz
         if (cp.abkuerzungenVerhindern) {
           // zurück auf die Strassenmitte beim letzten erreichten Checkpoint
           setzeAuf(n > 0 ? checkpoints[n - 1].s + 1 : strecke.startS + 1);
@@ -639,6 +673,7 @@ const hudCtx = hudLeinwand.getContext('2d');
 const ablauf = baueAblauf();
 const menue = baueMenue({
   tasteBelegen: belegeTaste, tasteLesen: (a, k) => einstellungen.tasten[a][k], tasteName: tastenName, aktionName: (a) => t(`aktion.${a}`),
+  klang: (art, wert) => ton.menue(art, wert), // M7a: Menü-Töne
 });
 // Demo-Fahrt: fährt mit physikSchritt(..., nurFahren = true), schreibt also nichts in den Rennstand
 const demo = baueDemo({
@@ -664,13 +699,19 @@ function starten({ countdown = true } = {}) {
 // Neu starten (Pause, Zielbildschirm, R nach dem Ziel): gleich wie der laufende Lauf (im Spiel immer mit Countdown)
 function neuStarten() { starten({ countdown: lauf.mitCountdown }); }
 // Countdown: ein fester Schritt (Auto steht, keine Physik). Nach 3 Zahlen: GO, Auto frei, Zeit ab 0
+// M7a: Pieps genau zu den Zahlen (beim ersten Schritt die 3, dann bei jeder neuen Zahl), GO-Ton mit GO.
+// In der Pause laufen keine Schritte: nichts wird nachgeholt, nichts doppelt.
 function countdownSchritt(dt) {
+  const vorher = lauf.countdown;
   lauf.countdown += dt;
   if (lauf.countdown >= 3 * RA.zahlDauer - 1e-9) {
     rennen.zustand = 'laeuft';
     rennen.zeit = 0;
     lauf.go = RA.goDauer;
+    ton.go();
     ablauf.wechsle('rennen');
+  } else if (vorher === 0 || countdownNummer(lauf.countdown, 0) !== countdownNummer(vorher, 0)) {
+    ton.countdown(); // (dieselbe Rechnung wie die Anzeige: Pieps im selben Schritt, in dem die Zahl erscheint)
   }
 }
 // Ein fester Schritt im Rennen (1/120 s): im Countdown zählt nur die Uhr, sonst Physik und Zeitmessung.
@@ -706,15 +747,22 @@ function zielErreicht() {
     neueBest: !!erg.bisher && hundertstel(eintrag.zeit) < hundertstel(erg.bisher.zeit), // nur echte Verbesserung
   };
   lauf.markiert = erg.platz > 0 ? { etappe: etappe.id, datum: erg.datum } : null;
+  ton.fanfare(false); // M7a: kurze Fanfare beim Überfahren der Ziellinie (neue Bestzeit: die lange zum Zielbildschirm)
 }
 // Pause aus dem Rennen oder dem Countdown (nicht im Zielbildschirm); Weiter geht dorthin zurück
 function pausieren() {
   if (!ablauf.ist('rennen', 'countdown')) return;
   lauf.pauseVon = ablauf.zustand;
   ablauf.wechsle('pause');
+  ton.pauseTon(true); // M7a: kurzer tiefer Ton (ein laufender Countdown-Pieps hört auf)
 }
-function weiter() { if (ablauf.zustand === 'pause') ablauf.wechsle(lauf.pauseVon); }
+function weiter() {
+  if (ablauf.zustand !== 'pause') return;
+  ablauf.wechsle(lauf.pauseVon);
+  ton.pauseTon(false); // M7a: kurzer hoher Ton
+}
 function zumMenue() {
+  ton.entsperren(); // M7a: erster Tastendruck / Klick auf dem Titel: jetzt darf es Ton geben
   if (einstellungen.vollbild) vollbild(true); // gespeichertes Vollbild (geht nur nach einem Tastendruck)
   ablauf.wechsle('menue');
 }
@@ -748,13 +796,17 @@ ablauf.registriere('rennen', { welt: 'rennen', hud: true, betreten: (alt) => { i
 ablauf.registriere('pause', { welt: null, hud: true, menue: true, abdunkeln: M.abdunkelnPause, betreten: () => menue.zeige(seiten.pause) });
 // M5b: Countdown (Welt läuft, Auto gesperrt, HUD ohne Menü) und Zielbildschirm (Welt läuft weiter, abgedunkelt)
 ablauf.registriere('countdown', { welt: 'rennen', hud: true, betreten: () => { eingabeLeeren(); akku = 0; } });
-ablauf.registriere('ziel', { welt: 'rennen', hud: true, menue: true, abdunkeln: RA.abdunkeln, betreten: () => menue.zeige(seiten.ziel) });
+ablauf.registriere('ziel', {
+  welt: 'rennen', hud: true, menue: true, abdunkeln: RA.abdunkeln,
+  betreten: () => { menue.zeige(seiten.ziel); if (lauf.ergebnis && lauf.ergebnis.neueBest) ton.fanfare(true); }, // M7a: lange Fanfare
+});
 
 // Einstellungen wirken sofort
 beiAenderung((name, wert) => {
   if (name === 'aufloesung') aufloesungSetzen();
   if (name === 'fps') debugAn = wert;
   if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
+  if (name === 'lautstaerke') ton.lautstaerke(wert); // M7a: sofort, weich
   menue.neuZeichnen();
 });
 document.addEventListener('fullscreenchange', () => {
@@ -877,6 +929,7 @@ function schleife(jetzt) {
   if (hudSchalter.hinweis > 0) hudSchalter.hinweis = Math.max(0, hudSchalter.hinweis - dt);
   if (def.hud) {
     const notes = def.welt === 'rennen' ? paceNotes.aktualisiere(dt, rennen.letztesS, physik.tempo, rennen.zustand) : paceNotes.anzeige;
+    paceSignal(notes, def.welt === 'rennen');
     // M6: Live-Vergleich (rechnet höchstens 5 Mal pro Sekunde neu, in der Pause eingefroren)
     const vgl = vergleich.aktualisiere(dtWelt, rennen.letztesS, rennen.zeit, rennen.zustand === 'laeuft');
     hud.zeichne({
@@ -888,7 +941,7 @@ function schleife(jetzt) {
       untergrund, zielSchirm: ablauf.zustand === 'ziel',
       hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
       meldung: rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung : null,
-      zwischenzeiten: rennen.zwischenzeiten, anzahlCps: checkpoints.length,
+      zwischenzeiten: rennen.zwischenzeiten, cpVergleich: rennen.cpVergleich, anzahlCps: checkpoints.length,
       // M6: Minimap, Live-Vergleich, Taste H
       maxS: vergleich.spur.maxS, cpNaechster: rennen.naechsterCp, vergleich: vgl, vergleichQuelle: vergleich.ref.quelle,
       autoX: physik.x, autoZ: physik.z, richtung: physik.richtung, // M6.1: Minimap fährt mit dem Auto mit
@@ -912,6 +965,30 @@ function schleife(jetzt) {
     hudCtx.globalAlpha = 1;
   }
   if (sicht > 0) menue.zeichne(hudCtx, dt, sicht);
+  tonBild(dt);
+}
+
+// M7a: kurzes Signal für jede neu erscheinende Pace-Notes-Kachel (nur im Rennen und Countdown, nicht bei ausgeblendetem HUD)
+function paceSignal(notes, imRennen) {
+  if (notes.erschienen === pnStand) return;
+  if (notes.erschienen > pnStand && imRennen && hudSchalter.an) ton.paceNote(notes.erschienen - pnStand);
+  pnStand = notes.erschienen;
+}
+
+// --- Ton (M7a): einmal pro Bild die Zahlen aus dem Spiel an js/audio.js (keine neuen Objekte) ---
+const TON_MODUS = { rennen: 'rennen', countdown: 'countdown', pause: 'pause', ziel: 'ziel' };
+const tonZ = {
+  modus: 'aus', drehzahl: 0, gang: 0, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt', drift: 0,
+  handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
+};
+function tonBild(dt) {
+  tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm
+  tonZ.drehzahl = getriebe.drehzahl; tonZ.gang = getriebe.gang; tonZ.schaltet = getriebe.schaltet;
+  tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
+  tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
+  tonZ.aufprall = tonInfo.wucht; tonZ.aufprallArt = tonInfo.art; tonZ.kontaktArt = tonInfo.kontaktArt; tonZ.kontaktTempo = tonInfo.kontaktTempo;
+  tonInfo.wucht = 0; tonInfo.kontaktArt = -1;
+  ton.aktualisiere(dt, tonZ);
 }
 
 neustart();
@@ -932,5 +1009,6 @@ window.__alpineRally = {
   ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,
   rennSchritt, lauf, stat, statResets, neuStarten,
   hud, vergleich, referenzLaden, hudSchalter, hudUmschalten, minimapMs, // M6
+  ton, tonZ, tonInfo, tonEingabe, zumMenue, tonBild, paceSignal, // M7a
   get blenden() { return { sicht, dunkel }; },
 };

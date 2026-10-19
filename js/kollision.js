@@ -13,15 +13,18 @@ import { CONFIG } from './config.js';
 const begrenze = (w, min, max) => (w < min ? min : w > max ? max : w);
 
 // hindernisse: Liste von { x, z, r }
-export function baueKollision(hindernisse) {
+// artVon (M7a, nur für den Ton): Hindernis -> Material-Nummer (Baum, Stein, Holz, ...). Die Rechnung ändert sich nicht.
+export function baueKollision(hindernisse, artVon = null) {
   const k = CONFIG.kollision;
   const Z = k.zelle;
   const anzahl = hindernisse.length;
   // Float64, damit die Rasterzelle genau gleich gerechnet wird wie minX/minZ
   const hx = new Float64Array(anzahl), hz = new Float64Array(anzahl), hr = new Float64Array(anzahl);
+  const art = new Uint8Array(anzahl); // M7a: Material je Hindernis, nur für den Aufprallton
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, maxR = 0;
   hindernisse.forEach((h, i) => {
     hx[i] = h.x; hz[i] = h.z; hr[i] = h.r;
+    if (artVon) art[i] = artVon(h);
     minX = Math.min(minX, h.x); maxX = Math.max(maxX, h.x);
     minZ = Math.min(minZ, h.z); maxZ = Math.max(maxZ, h.z);
     maxR = Math.max(maxR, h.r);
@@ -65,12 +68,12 @@ export function baueKollision(hindernisse) {
   // 2. an diesem Punkt die Richtung der Hindernis-Oberfläche bestimmen. Dabei
   //    zählen auch Nachbarn mit (z. B. die Kreise eines liegenden Stamms) –
   //    so fühlt sich ein Stamm glatt an und nicht wie eine Perlenkette.
-  const kontakt = { tiefe: 0, nx: 0, nz: 0 };
+  const kontakt = { tiefe: 0, nx: 0, nz: 0, i: -1 }; // i (M7a): welches Hindernis (für das Material des Tons)
   const band = k.glaetten;
   function finde(x, z, w) {
     const fx = Math.sin(w), fz = Math.cos(w);   // vorne
     const lx = Math.cos(w), lz = -Math.sin(w);  // links
-    let tiefe = 0, px = 0, pz = 0, nx = 0, nz = 0;
+    let tiefe = 0, px = 0, pz = 0, nx = 0, nz = 0, ti = -1;
     inDerNaehe(x, z, umkreis, (i) => {
       // Hindernis im Auto-Koordinatensystem (v = vorne, s = links)
       const dx = hx[i] - x, dz = hz[i] - z;
@@ -90,7 +93,7 @@ export function baueKollision(hindernisse) {
         if (tv < ts) { t = tv; nv = -Math.sign(v || 1); ns = 0; } else { t = ts; nv = 0; ns = -Math.sign(s || 1); }
       }
       if (t <= tiefe) return;
-      tiefe = t;
+      tiefe = t; ti = i;
       px = x + kv * fx + ks * lx; pz = z + kv * fz + ks * lz;
       nx = nv * fx + ns * lx; nz = nv * fz + ns * lz;
     });
@@ -106,7 +109,7 @@ export function baueKollision(hindernisse) {
     });
     const l = Math.hypot(sx, sz);
     if (l > 1e-9 && (sx * nx + sz * nz) / l > 0.3) { nx = sx / l; nz = sz / l; }
-    kontakt.tiefe = tiefe; kontakt.nx = nx; kontakt.nz = nz;
+    kontakt.tiefe = tiefe; kontakt.nx = nx; kontakt.nz = nz; kontakt.i = ti;
     return kontakt;
   }
 
@@ -114,6 +117,9 @@ export function baueKollision(hindernisse) {
     anzahl,
     letzterAufprall: null, // { vorher, nachher } in m/s
     wucht: 0,              // M5b (Statistik): Tempo Richtung Hindernis beim letzten loese() (m/s, 0 = kein Kontakt)
+    wuchtArt: 0,           // M7a (Ton): Material des Hindernisses mit der grössten Wucht beim letzten loese()
+    kontaktArt: -1,        // M7a (Ton): Material beim letzten loese() berührt (-1 = kein Kontakt)
+    art,                   // M7a: Material je Hindernis (Nummer in audio.aufprall.materialien)
 
     // Ist ein Kreis (x, z, r) frei von Hindernissen? (für die Abkürzungs-Analyse)
     frei(x, z, r) {
@@ -129,7 +135,7 @@ export function baueKollision(hindernisse) {
     // Stücken abgefahren, damit man auch bei Höchsttempo nicht durch einen
     // Stamm rutscht.
     loese(physik, xAlt, zAlt, wAlt) {
-      kol.wucht = 0;
+      kol.wucht = 0; kol.kontaktArt = -1;
       if (!anzahl) return false;
       const weg = Math.hypot(physik.x - xAlt, physik.z - zAlt);
       const teile = Math.max(1, Math.ceil(weg / k.pruefSchritt));
@@ -145,10 +151,14 @@ export function baueKollision(hindernisse) {
       if (!treffer) return false;
       const vorher = physik.tempo;
       let wucht = 0, winkel = 0;
+      kol.kontaktArt = art[treffer.i];
+      kol.wuchtArt = art[treffer.i];
       // höchstens ein paar Runden, falls das Auto zwei Hindernisse zugleich berührt
       for (let runde = 0; runde < 4 && treffer; runde++) {
+        const ti = treffer.i;
         const st = this.stoss(physik, treffer);
         if (runde === 0) winkel = st.winkel;
+        if (st.wucht > wucht) kol.wuchtArt = art[ti];
         wucht = Math.max(wucht, st.wucht);
         treffer = finde(physik.x, physik.z, physik.richtung);
       }

@@ -63,7 +63,7 @@ export const TEXTE = {
   'einst.mitteHinweis': { de: 'MITTE = WIE BISHER', en: 'MIDDLE = DEFAULT' },
   'einst.ton': { de: 'TON', en: 'SOUND' },
   'einst.lautstaerke': { de: 'LAUTSTÄRKE', en: 'VOLUME' },
-  'einst.lautHinweis': { de: 'WIRKT ERST, WENN ES TON GIBT', en: 'TAKES EFFECT ONCE THERE IS SOUND' },
+  'einst.lautHinweis': { de: 'GILT FÜR DEN GANZEN TON', en: 'APPLIES TO ALL SOUND' }, // seit M7a
   'einst.sprache': { de: 'SPRACHE', en: 'LANGUAGE' },
   'wert.an': { de: 'AN', en: 'ON' },
   'wert.aus': { de: 'AUS', en: 'OFF' },
