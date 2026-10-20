@@ -10,10 +10,12 @@ import { tastenVon, tastenName, knopfName } from './input.js';
 import { zeichneKachel, kachelBreite } from './pacenotesbild.js';
 import { ladeBestzeiten, loescheBestzeiten, formatDatum, hundertstel } from './bestzeiten.js';
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
+import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
 
 // api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b),
-//        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf) }
+//        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf),
+//        M8c: autoWechseln(id, lack), autoWahl() ({ auto, modell, profil }), autoModell() (das gebaute Modell, js/car.js) }
 export function baueSeiten(api) {
   const M = CONFIG.menue;
   const RA = CONFIG.rennablauf;
@@ -53,12 +55,60 @@ export function baueSeiten(api) {
       zeilen().forEach((z, i) => pixelText(c, z, x + 10, y + 13 + i * 9, 1, M.farbeText));
     },
   });
+  // --- Garage (M8c, Seite AUTO): links die Autos und LACK, rechts oben das drehende 3D-Modell (main.js zeichnet es mit
+  // js/garage.js in den Rahmen garageRahmen), rechts unten vier Werte-Balken, unten zwei Zeilen Daten.
+  // Wählen = sofort wechseln (Modell, Fahrprofil, Lackierung); ENTER auf einem Auto = zurück ins Hauptmenü.
+  const GA = CONFIG.garage;
+  const lackVon = (name) => CONFIG.autoOptik.lackierungen[name] || {};
+  const garage = { rahmen: null }; // Vorschau-Rahmen (Pixel im 320x180-Raster), gesetzt beim Zeichnen
+  const WERTE = [['beschleunigung', 'garage.beschleunigung'], ['tempo', 'garage.tempo'], ['grip', 'garage.grip'], ['drift', 'garage.drift']];
+  const modellJetzt = () => (api.autoModell ? api.autoModell().modell : AUTO_MODELLE[AUTOS[auswahl.auto].id]);
+  function garageRechts(c, x, y, b, h, tafel) {
+    // Vorschau: dunkle Tafel mit hellem Rand (die 3D-Szene kommt darüber, nur während die Seite offen ist)
+    const px = x + 2, py = y, pb = (b - M.innen - 4) & ~1, ph = GA.vorschauHoehe;
+    garage.rahmen = { x: px, y: py, b: pb, h: ph };
+    c.fillStyle = M.farbeRand; c.globalAlpha = 0.5; c.fillRect(px - 1, py - 1, pb + 2, ph + 2); c.globalAlpha = 1;
+    c.fillStyle = GA.hintergrund; c.fillRect(px, py, pb, ph);
+    // Werte-Balken: 1 bis 10 Kästchen
+    const m = modellJetzt();
+    const lb = Math.max(...WERTE.map(([, k]) => textBreite(t(k))));
+    WERTE.forEach(([feld, k], i) => {
+      const ly = py + ph + 5 + i * 9;
+      pixelText(c, t(k), px, ly + 1, 1, M.farbeGruppe);
+      const w = Math.max(0, Math.min(10, Math.round(m.werte ? m.werte[feld] : 0)));
+      for (let n = 0; n < 10; n++) {
+        const bx = px + lb + 6 + n * 6;
+        c.fillStyle = '#101418'; c.fillRect(bx + 1, ly + 2, 5, 5);
+        c.fillStyle = n < w ? M.farbeWert : M.farbeRegler; c.fillRect(bx, ly + 1, 5, 5);
+      }
+    });
+    // zwei Zeilen Daten (Antrieb, Bauart), über die ganze Tafel
+    const mitte = tafel.x0 + Math.round(tafel.breite / 2);
+    [`auto.${m.id}.daten1`, `auto.${m.id}.daten2`].forEach((k, i) => pixelText(c, t(k), mitte, y + h - 19 + i * 9, 1, M.farbeText, 'mitte'));
+  }
+  const autoZeile = (a) => ({
+    typ: 'aktion', text: a.name, autoId: a.id, // (autoId: für Tests)
+    // das gewählte Auto steht gelb, auch wenn der Zeiger woanders ist (z. B. auf LACK)
+    farbeText: () => ((api.autoWahl ? api.autoWahl().modell : AUTOS[auswahl.auto].id) === a.id ? M.farbeWert : M.farbeText),
+    beimWaehlen: () => { if (api.autoWechseln) api.autoWechseln(a.id); },
+    aktion: () => menue.schliesse(),
+  });
+  const lackZeile = {
+    typ: 'auswahl', text: () => '', lack: true,
+    optionen: () => modellJetzt().lackierungen.map((n) => ({ wert: n, text: `lack.${n}` })),
+    lesen: () => (api.autoModell ? api.autoModell().lackName : modellJetzt().lackierungen[0]),
+    setzen: (w) => { if (api.autoWechseln) api.autoWechseln(api.autoWahl().auto, w); },
+    probe: (w) => { const l = lackVon(w); return [l.lack, l.streifen0 || l.akzent || l.unten].filter(Boolean); },
+  };
   const autoSeite = {
-    id: 'auto', titel: 'auto.titel',
+    id: 'auto', titel: 'garage.titel', breite: GA.tafelBreite, spalte: GA.spalte, minHoehe: GA.tafelHoehe,
+    // der Zeiger beginnt beim gewählten Auto
+    get start() { return Math.max(0, AUTOS.findIndex((a) => a.id === (api.autoWahl ? api.autoWahl().modell : AUTOS[auswahl.auto].id))); },
     eintraege: () => [
-      ...AUTOS.map((a, i) => karte(a.name, () => a.daten.map((d) => t(d)), () => auswahl.auto === i)),
-      leer(), textZeile('auto.spaeter', M.farbeHinweis, true), leer(3), ZURUECK,
+      ...AUTOS.map(autoZeile),
+      leer(6), { typ: 'gruppe', text: 'garage.lack' }, lackZeile, leer(4), ZURUECK,
     ],
+    zeichneRechts: garageRechts,
   };
   const etappeSeite = {
     id: 'etappe', titel: 'etappe.titel',
@@ -68,7 +118,8 @@ export function baueSeiten(api) {
     ],
   };
 
-  // --- Bestzeiten (seit M5b gefüllt): Top 10 der gewählten Etappe als Tabelle Platz | Zeit | Datum ---
+  // --- Bestzeiten (seit M5b gefüllt): Top 10 der gewählten Etappe als Tabelle Platz | Zeit | Auto | Datum ---
+  // M8c: eine gemeinsame Liste für alle Autos, je Zeile der Kurzname des Autos (alte Einträge ohne Id: QUARTO)
   // Der gerade eingetragene Lauf ist orange hervorgehoben (nur bis zum nächsten Start, api.markiert()).
   // Wie die Etappenliste: je Etappe eine eigene Liste (weitere Etappen brauchen keinen Umbau).
   const LUECKE = 12;
@@ -76,27 +127,31 @@ export function baueSeiten(api) {
     a: Math.max(textBreite(t('bestzeiten.platz')), textBreite('10.')),
     b: Math.max(textBreite(t('bestzeiten.zeit')), textBreite('00:00.00')),
     c: Math.max(textBreite(t('bestzeiten.datum')), textBreite(formatDatum('2026-12-31T12:00:00Z', aktuelleSprache()))),
+    d: Math.max(textBreite(t('bestzeiten.auto')), textBreite('PROTO'), ...Object.values(AUTO_MODELLE).map((m) => textBreite(m.kurz))),
   });
-  const breiteZeiten = () => { const s = spaltenZeiten(); return s.a + s.b + s.c + 2 * LUECKE; };
+  const breiteZeiten = () => { const s = spaltenZeiten(); return s.a + s.b + s.d + s.c + 3 * LUECKE; };
   const kopfZeiten = {
     typ: 'info', hoehe: 10, breite: breiteZeiten,
     zeichne(c, x, y, b) {
       const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
       pixelText(c, t('bestzeiten.platz'), x0 + s.a, y + 1, 1, M.farbeGruppe, 'rechts');
       pixelText(c, t('bestzeiten.zeit'), x0 + s.a + LUECKE, y + 1, 1, M.farbeGruppe);
-      pixelText(c, t('bestzeiten.datum'), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, M.farbeGruppe);
+      pixelText(c, t('bestzeiten.auto'), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, M.farbeGruppe);
+      pixelText(c, t('bestzeiten.datum'), x0 + s.a + LUECKE + s.b + LUECKE + s.d + LUECKE, y + 1, 1, M.farbeGruppe);
     },
   };
   const zeitZeile = (z, platz, neu) => ({
     typ: 'info', hoehe: 9, breite: breiteZeiten, neu, // (neu: für Tests)
     inhalt: () => `${platz}. ${formatZeit(z.zeit)} ${formatDatum(z.datum, aktuelleSprache())}`,
+    autoKurz: () => kurzName(z.auto), // M8c (für Tests): Kurzname des Autos in dieser Zeile
     zeichne(c, x, y, b) {
       const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
       const farbe = neu ? RA.farbeNeu : M.farbeText;
       if (neu) { c.fillStyle = M.farbeAuswahlGrund; c.fillRect(x - 4, y, b + 8, 9); }
       pixelText(c, `${platz}.`, x0 + s.a, y + 1, 1, neu ? farbe : M.farbeWert, 'rechts');
       pixelText(c, formatZeit(z.zeit), x0 + s.a + LUECKE, y + 1, 1, farbe);
-      pixelText(c, formatDatum(z.datum, aktuelleSprache()), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, neu ? farbe : M.farbeHinweis);
+      pixelText(c, kurzName(z.auto), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, neu ? farbe : M.farbeGruppe);
+      pixelText(c, formatDatum(z.datum, aktuelleSprache()), x0 + s.a + LUECKE + s.b + LUECKE + s.d + LUECKE, y + 1, 1, neu ? farbe : M.farbeHinweis);
     },
   });
   const bestzeitenSeite = {
@@ -393,7 +448,7 @@ export function baueSeiten(api) {
       },
     };
   };
-  // Statistik in drei Spalten: Überschrift (hellblau), darunter der Wert
+  // Statistik in Spalten (seit M8c vier: dazu das Auto): Überschrift (hellblau), darunter der Wert
   const statWerte = (e) => {
     const mph = einstellungen.einheit === 'mph';
     const v = Math.round(e.hoechstTempo * 3.6 / (mph ? 1.609344 : 1));
@@ -401,15 +456,16 @@ export function baueSeiten(api) {
       [t('ziel.aufpralle'), String(e.aufpralle)],
       [t('ziel.resets'), String(e.resets)],
       [t('ziel.hoechstTempo'), `${v} ${t(mph ? 'einheit.mph' : 'einheit.kmh')}`],
+      [t('bestzeiten.auto'), kurzName(e.auto)], // M8c: mit welchem Auto (gemeinsame Bestzeiten)
     ];
   };
   const statZeile = (e) => ({
     typ: 'info', hoehe: 19,
-    breite: () => 3 * Math.max(...statWerte(e).flat().map((w) => textBreite(w))) + 2 * 10,
+    breite: () => statWerte(e).length * Math.max(...statWerte(e).flat().map((w) => textBreite(w))) + (statWerte(e).length - 1) * 10,
     inhalt: () => statWerte(e).map((w) => w.join(' ')).join(' · '),
     zeichne(c, x, y, b) {
       statWerte(e).forEach(([titel, wert], i) => {
-        const xm = x + Math.round(b * (i + 0.5) / 3);
+        const xm = x + Math.round(b * (i + 0.5) / statWerte(e).length);
         pixelText(c, titel, xm, y + 1, 1, M.farbeGruppe, 'mitte');
         pixelText(c, wert, xm, y + 11, 1, M.farbeText, 'mitte');
       });
@@ -448,6 +504,7 @@ export function baueSeiten(api) {
 
   return {
     ziel: zielSeite,
+    garage, // M8c: Vorschau-Rahmen der Garage (main.js)
     titel, haupt, auto: autoSeite, etappe: etappeSeite, bestzeiten: bestzeitenSeite, einstellungen: einstellungenSeite,
     tasten: tastenSeite, steuerung: steuerungSeite, symbole: legendeSeite, credits: creditsSeite, pause, frage,
   };

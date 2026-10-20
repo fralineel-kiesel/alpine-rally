@@ -2,6 +2,7 @@
 // Nur mit index.html?fahrlabor=1 (main.js lädt diese Datei dann nach; ohne den Schalter gibt es weder Panel noch Aufwand).
 // Regler mit dem Namen des Werts aus config.js, sofort wirksam (die Physik liest CONFIG bei jedem Schritt),
 // Umschalter PROTOTYP / AUDAN QUARTO (Profil rt4; schaltet nur die Werte, das Aussehen bleibt), WERTE KOPIEREN und ALLES ZURÜCK.
+// M8c: ein Knopf je Fahrprofil (PROTOTYP, AUDAN QUARTO, LANZA DELTO, FARD ESCORTA); die Regler wirken auf das gewählte.
 // Nichts wird gespeichert: Neu laden = wieder die Werte aus config.js. Das Panel nimmt nur Mausklicks an; Tasten gehen
 // weiter ans Spiel (Fahrtasten verhindern ohnehin, dass ein Regler auf Pfeiltasten reagiert).
 
@@ -52,7 +53,7 @@ export function baueFahrlabor({ physik, getriebe }) {
       background: rgba(18, 24, 32, 0.96); color: #f4f4ee; border-left: 1px solid #e6e2d3; font: 12px/1.35 monospace; padding: 8px 10px; z-index: 5; }
     #fahrlabor h1 { color: #ffd23c; font-size: 14px; letter-spacing: 2px; margin: 0 0 2px; }
     #fahrlabor p { color: #aab4be; margin: 0 0 8px; }
-    #fahrlabor .profil { display: flex; gap: 6px; margin: 6px 0 8px; }
+    #fahrlabor .profil { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
     #fahrlabor button { font: inherit; color: #f4f4ee; background: #263240; border: 1px solid #e6e2d3; border-radius: 2px; padding: 3px 8px; cursor: pointer; }
     #fahrlabor button:hover { color: #ff9a2e; }
     #fahrlabor button.an { background: #ff9a2e; color: #000; }
@@ -73,7 +74,7 @@ export function baueFahrlabor({ physik, getriebe }) {
   panel.innerHTML = `<h1>FAHR-LABOR</h1>
     <p>Werte live verstellen (wirkt sofort). Nur diese Seite: nichts wird gespeichert, neu laden = wieder wie vorher.
     Fahren mit den Tasten wie immer.</p>
-    <div class="profil"><button data-profil="prototyp">PROTOTYP</button><button data-profil="rt4">${profilName('rt4')}</button></div>
+    <div class="profil">${Object.keys(CONFIG.fahrprofile).map((id) => `<button data-profil="${id}">${profilName(id)}</button>`).join('')}</div>
     <div class="live" id="fahrlaborLive"></div>
     <div id="fahrlaborRegler"></div>
     <div class="profil"><button id="fahrlaborKopieren">WERTE KOPIEREN</button><button id="fahrlaborZurueck">ALLES ZURÜCK</button></div>

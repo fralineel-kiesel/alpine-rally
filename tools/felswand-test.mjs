@@ -46,9 +46,10 @@ await page.evaluate(() => {
     return t.length ? 2 + t[0].distance : null;
   }
   // Umriss der Karosserie (sichtbar: 4.48 x 1.86 m) in drei Höhen über dem Boden
+  // (M8c: Masse des gewählten Autos aus grenze.wandHuelle; beim Audan Quarto genau 4.48 x 1.86 wie bisher)
   function umriss() {
     const P = A.physik, f = [Math.sin(P.richtung), Math.cos(P.richtung)], l = [Math.cos(P.richtung), -Math.sin(P.richtung)];
-    const HL = 2.24, HB = 0.93, pk = [];
+    const HL = A.CONFIG.grenze.wandHuelle.laenge / 2, HB = A.CONFIG.grenze.wandHuelle.breite / 2, pk = [];
     for (let k = 0; k <= 8; k++) { const a = -1 + k / 4; pk.push([a, -1], [a, 1]); }
     for (let k = 1; k < 4; k++) { const b = -1 + k / 2; pk.push([-1, b], [1, b]); }
     return pk.map(([a, b]) => [P.x + f[0] * a * HL + l[0] * b * HB, P.z + f[1] * a * HL + l[1] * b * HB]);
@@ -223,7 +224,8 @@ for (const s0 of STELLEN) {
       const rx = -p.tz * ws, rz = p.tx * ws;
       const dx = p.tx * Math.cos(a) + rx * Math.sin(a), dz = p.tz * Math.cos(a) + rz * Math.sin(a);
       // so weit zur Wand, wie die Karosserie (sichtbar 4.48 x 1.86) Platz hat, 3 cm Luft
-      const ext = 2.24 * Math.abs(Math.sin(a)) + 0.93 * Math.abs(Math.cos(a));
+      const H = A.CONFIG.grenze.wandHuelle; // (M8c: Masse des gewählten Autos)
+      const ext = (H.laenge / 2) * Math.abs(Math.sin(a)) + (H.breite / 2) * Math.abs(Math.cos(a));
       A.setzeAuf(s0);
       const L = window.__fw.flaeche(p.i, 0, p.h + 0.1, ws) ?? 5.1;
       P.reset(p.x + rx * (L - ext - 0.03), p.z + rz * (L - ext - 0.03), Math.atan2(dx, dz));

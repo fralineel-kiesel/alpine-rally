@@ -30,8 +30,30 @@ export const TEXTE = {
   'auto.rt4.name': { de: 'AUDAN QUARTO', en: 'AUDAN QUARTO' }, // (Id rt4 bleibt: Bestzeiten)
   'auto.rt4.daten1': { de: 'ALLRAD · TURBO · 5 GÄNGE AUTOMATIK', en: 'AWD · TURBO · 5-SPEED AUTOMATIC' },
   'auto.rt4.daten2': { de: 'SCHWERES RALLYAUTO, VIEL TRAKTION', en: 'HEAVY RALLY CAR, LOTS OF TRACTION' },
+  'auto.delto.name': { de: 'LANZA DELTO', en: 'LANZA DELTO' }, // M8c
+  'auto.delto.daten1': { de: 'ALLRAD · TURBO · 5 GÄNGE AUTOMATIK', en: 'AWD · TURBO · 5-SPEED AUTOMATIC' },
+  'auto.delto.daten2': { de: 'KOMPAKT, WENDIG, GRIFFIG', en: 'COMPACT, NIMBLE, GRIPPY' },
+  'auto.escorta.name': { de: 'FARD ESCORTA', en: 'FARD ESCORTA' }, // M8c
+  'auto.escorta.daten1': { de: 'HINTERRAD · OHNE TURBO · 5 GÄNGE AUTOMATIK', en: 'RWD · NO TURBO · 5-SPEED AUTOMATIC' },
+  'auto.escorta.daten2': { de: 'LEICHT, VERSPIELT, DRIFTET GERN', en: 'LIGHT, PLAYFUL, LOVES TO DRIFT' },
   'auswahl.gewaehlt': { de: 'GEWÄHLT', en: 'SELECTED' },
-  'auto.spaeter': { de: 'WEITERE AUTOS FOLGEN', en: 'MORE CARS TO COME' },
+  // M8c: Garage (Seite AUTO)
+  'garage.titel': { de: 'GARAGE', en: 'GARAGE' },
+  'garage.lack': { de: 'LACK:', en: 'PAINT:' },
+  'garage.beschleunigung': { de: 'BESCHLEUNIGUNG', en: 'ACCELERATION' },
+  'garage.tempo': { de: 'HÖCHSTTEMPO', en: 'TOP SPEED' },
+  'garage.grip': { de: 'GRIP', en: 'GRIP' },
+  'garage.drift': { de: 'DRIFT', en: 'DRIFT' },
+  // Lackierungen (Namen wie in js/config.js, autoOptik.lackierungen)
+  'lack.werk': { de: 'WERK', en: 'WORKS' },
+  'lack.gletscher': { de: 'GLETSCHER', en: 'GLACIER' },
+  'lack.dunkel': { de: 'DUNKEL', en: 'DARK' },
+  'lack.deltoWerk': { de: 'WERK', en: 'WORKS' },
+  'lack.rosso': { de: 'ROSSO', en: 'ROSSO' },
+  'lack.waldgruen': { de: 'WALDGRÜN', en: 'FOREST' },
+  'lack.escortaWerk': { de: 'WERK', en: 'WORKS' },
+  'lack.kanarie': { de: 'KANARIE', en: 'CANARY' },
+  'lack.tannengruen': { de: 'TANNENGRÜN', en: 'FIR GREEN' },
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },
   'etappe.pass.name': { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
   'etappe.daten1': { de: '{km} KM · {cps} CHECKPOINTS', en: '{km} KM · {cps} CHECKPOINTS' },
@@ -45,6 +67,7 @@ export const TEXTE = {
   'bestzeiten.platz': { de: 'PLATZ', en: 'RANK' },
   'bestzeiten.zeit': { de: 'ZEIT', en: 'TIME' },
   'bestzeiten.datum': { de: 'DATUM', en: 'DATE' },
+  'bestzeiten.auto': { de: 'AUTO', en: 'CAR' }, // M8c: Kurzname des Autos (gemeinsame Liste für alle Autos)
 
   // --- Einstellungen ---
   'einst.titel': { de: 'EINSTELLUNGEN', en: 'SETTINGS' },

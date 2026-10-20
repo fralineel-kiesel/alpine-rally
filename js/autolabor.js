@@ -2,10 +2,12 @@
 // Benutzt dieselbe baueAuto() aus js/car.js und dieselben Werte aus js/config.js wie das Spiel, dieselbe kleine
 // Renderauflösung mit scharfem Hochskalieren. Die Regler ersetzen die Zahlen, die sonst die Fahrphysik liefert.
 // Ändert nichts am Spiel (nichts wird gespeichert).
+// M8c: Auswahl Auto (alle Modelle aus js/autos.js) und ihre Lackierungen.
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { baueAuto } from './car.js';
+import { AUTO_MODELLE } from './autos.js';
 import { baueFederung } from './federung.js';
 import { baueStaub } from './staub.js';
 
@@ -42,7 +44,8 @@ const kamera = new THREE.PerspectiveCamera(CONFIG.kamera.sichtfeld, 16 / 9, 0.1,
 // --- Das Auto (dieselbe Funktion wie im Spiel) ---
 auto = baueAuto(undefined, undefined, renderer.domElement.width);
 szene.add(auto.objekt);
-$('titel').textContent = `ALPINE RALLY · AUTO-LABOR · ${auto.modell.name}`; // (Name aus js/autos.js)
+const titel = () => { $('titel').textContent = `ALPINE RALLY · AUTO-LABOR · ${auto.modell.name}`; }; // (Name aus js/autos.js)
+titel();
 const federung = baueFederung();
 const staub = baueStaub(szene);
 const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: true, belag: 'schotter' };
@@ -96,9 +99,27 @@ const zustand = {
   staub: false, drehscheibe: false, hell: true, federTest: 0,
 };
 let drehscheibe = false;
-for (const name of auto.modell.lackierungen) $('lackierung').insertAdjacentHTML('beforeend', `<option value="${name}">${name.toUpperCase()}</option>`);
-$('lackierung').value = auto.lackName;
+function lackListe() {
+  $('lackierung').innerHTML = '';
+  for (const name of auto.modell.lackierungen) $('lackierung').insertAdjacentHTML('beforeend', `<option value="${name}">${name.toUpperCase()}</option>`);
+  $('lackierung').value = auto.lackName;
+}
+lackListe();
 $('lackierung').addEventListener('change', () => { auto.lackierung($('lackierung').value); });
+// M8c: anderes Auto: altes Modell freigeben, neues bauen (gleiche Pixelgrösse), Lackierungen des neuen Autos
+for (const [id, m] of Object.entries(AUTO_MODELLE)) $('modell').insertAdjacentHTML('beforeend', `<option value="${id}">${m.name}</option>`);
+$('modell').value = auto.modell.id;
+function modellWaehlen(id, lack = null) {
+  if (!AUTO_MODELLE[id]) return;
+  if (id !== auto.modell.id) {
+    auto.dispose();
+    auto = baueAuto(id, lack, renderer.domElement.width);
+    szene.add(auto.objekt);
+  } else if (lack) auto.lackierung(lack);
+  $('modell').value = id;
+  lackListe(); titel();
+}
+$('modell').addEventListener('change', () => modellWaehlen($('modell').value));
 for (const b of Object.keys(O.dreck.belaege)) $('dreckBelag').insertAdjacentHTML('beforeend', `<option value="${b}">${b.toUpperCase()}</option>`);
 $('dreckBelag').value = zustand.dreckBelag;
 $('aufloesung').addEventListener('change', () => aufloesung(+$('aufloesung').value));
@@ -202,6 +223,6 @@ requestAnimationFrame(schleife);
 
 // Für tools/auto-test.mjs und Bilder
 window.__autoLabor = {
-  THREE, CONFIG, auto, renderer, szene, kamera, federung, staub, orbit, zustand, ansicht, ANSICHTEN, bildDaten, zeichne,
+  THREE, CONFIG, get auto() { return auto; }, modellWaehlen, renderer, szene, kamera, federung, staub, orbit, zustand, ansicht, ANSICHTEN, bildDaten, zeichne,
   aufloesung, setzeDrehscheibe: (an) => { drehscheibe = an; },
 };

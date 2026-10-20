@@ -121,7 +121,7 @@ export function baueStaub(szene) {
   // Bild, darum staubte es immer nur auf einer Seite.)
   let rad = 0;
   const zustand = { aktiv: 0, links: 0, rechts: 0 }; // links/rechts: so viele Wölkchen pro Rad (für Tests)
-  // Jedes Bild: auto = { x, y, z, richtung, vx, vz, tempo, drift (Grad), gas, handbremse, schotter, belag }
+  // Jedes Bild: auto = { x, y, z, richtung, vx, vz, tempo, drift (Grad), gas, handbremse, schotter, belag, hinten, seite }
   // schotter = true: es staubt (auf Schotter oder Wiesenweg); belag: welcher (Farbe und Stärke, sonst wie Schotter)
   function aktualisiere(dt, auto) {
     if (c.an && auto.schotter && auto.tempo > 0.8) {
@@ -140,7 +140,9 @@ export function baueStaub(szene) {
         guthaben -= 1;
         const seite = rad++ % 2 ? 1 : -1;
         if (seite > 0) zustand.links++; else zustand.rechts++;
-        starte(auto.x - fx * 1.3 + lx * 0.75 * seite, auto.y, auto.z - fz * 1.3 + lz * 0.75 * seite, auto.vx, auto.vz, Math.min(1, 0.35 + st),
+        // (M8c: Lage der Hinterräder je Auto, auto.hinten / auto.seite; fehlt = 1.3 / 0.75 wie bisher)
+        const hi = auto.hinten ?? 1.3, si = auto.seite ?? 0.75;
+        starte(auto.x - fx * hi + lx * si * seite, auto.y, auto.z - fz * hi + lz * si * seite, auto.vx, auto.vz, Math.min(1, 0.35 + st),
           lx * seite * wurf, lz * seite * wurf, art.farbe);
       }
     } else guthaben = 0;

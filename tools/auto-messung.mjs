@@ -1,10 +1,13 @@
 // Auto messen (Meilenstein 8a): Optik (Draw Calls, Dreiecke) und Fahrgefühl (Tabelle B3) für jedes Fahrprofil.
+// M8c: alle Profile aus config.js (prototyp, rt4, delto, escorta; ?auto= baut dazu das passende Modell), dazu das
+// Höchsttempo, die Tabelle M8c (Ziele aus tools/m8c-ziele.js) und die Werte-Balken der Garage (werteAusMessung).
 //
-//   node tools/auto-messung.mjs                 dieses Projekt messen (Profile prototyp und rt4), Ergebnis als
+//   node tools/auto-messung.mjs                 dieses Projekt messen (alle Profile), Ergebnis als
 //                                               "nachher" in tools/auto-messung.json (der Eintrag "vorher" bleibt)
 //   node tools/auto-messung.mjs --alt <ordner>  dazu eine alte Version (z. B. 0.7b) als "vorher" messen
 //   node tools/auto-messung.mjs --nur-alt <ordner>   nur die alte Version messen ("vorher")
 //   --schnell                                   ohne Testfahrer (nur Physik und Optik)
+//   --nur-tabelle                               (M8c) nichts messen, nur die Tabellen aus tools/auto-messung.json
 //
 // Physik: ohne Browser mit js/physics.js und js/getriebe.js (tools/fahrmessung.js), je Profil.
 // Testfahrer und Optik: im Headless-Browser (tools/testfahrer-browser.js, renderer.info).
@@ -15,6 +18,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
 import { baueMessung, alleMessungen } from './fahrmessung.js';
+import { ZEILEN, TESTFAHRER, pruefeZeile } from './m8c-ziele.js';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 const schnell = process.argv.includes('--schnell');
@@ -31,7 +35,7 @@ async function physik(wurzel) {
   const fp = mitProfilen ? await lade('fahrprofil.js') : null;
   const m = baueMessung({ CONFIG, Fahrphysik, Getriebe });
   const erg = {};
-  for (const id of mitProfilen ? ['prototyp', 'rt4'] : ['prototyp']) {
+  for (const id of mitProfilen ? Object.keys(CONFIG.fahrprofile) : ['prototyp']) {
     if (fp) fp.waehleFahrprofil(id);
     erg[id] = alleMessungen(m);
   }
@@ -117,11 +121,14 @@ async function miss(wurzel) {
 
 const alt = arg('--alt') || arg('--nur-alt');
 let daten = fs.existsSync(DATEI) ? JSON.parse(fs.readFileSync(DATEI, 'utf8')) : {};
-daten.hinweis = 'Automatisch erzeugt von node tools/auto-messung.mjs (Meilenstein 8a). vorher = Version vor M8a (nur Profil prototyp), nachher = jetzt (prototyp und rt4).';
-if (alt) daten.vorher = await miss(path.resolve(alt));
-if (!arg('--nur-alt')) daten.nachher = await miss(WURZEL);
-fs.writeFileSync(DATEI, JSON.stringify(daten, null, 1) + '\n');
-console.log(`-> ${path.relative(WURZEL, DATEI)} geschrieben`);
+daten.hinweis = 'Automatisch erzeugt von node tools/auto-messung.mjs (seit M8a, M8c: alle Profile). vorher = eine ältere Version (--alt), nachher = jetzt (alle Profile aus config.js).';
+const nurTabelle = process.argv.includes('--nur-tabelle'); // M8c: nur die Tabellen aus tools/auto-messung.json ausgeben
+if (!nurTabelle) {
+  if (alt) daten.vorher = await miss(path.resolve(alt));
+  if (!arg('--nur-alt')) daten.nachher = await miss(WURZEL);
+  fs.writeFileSync(DATEI, JSON.stringify(daten, null, 1) + '\n');
+  console.log(`-> ${path.relative(WURZEL, DATEI)} geschrieben`);
+}
 
 // --- Tabellen ---
 const pz = (neu, alt) => (neu == null || alt == null ? '--' : `${neu >= alt ? '+' : ''}${((neu / alt - 1) * 100).toFixed(1)} %`);
@@ -198,5 +205,38 @@ if (daten.vorher && n) {
     }
   }
   const pv = daten.vorher.physik.prototyp, pn = n.physik.prototyp;
-  console.log(`  Physik-Messungen prototyp: ${JSON.stringify(pv) === JSON.stringify(pn) ? 'bit-genau identisch' : 'ANDERS!'}`);
+  // (M8c: nur die Messungen vergleichen, die es in beiden Versionen gibt; das Höchsttempo ist neu)
+  const gemeinsam = (o) => JSON.stringify(Object.fromEntries(Object.keys(pv).filter((k) => k in pn).map((k) => [k, o[k]])));
+  console.log(`  Physik-Messungen prototyp: ${gemeinsam(pv) === gemeinsam(pn) ? 'bit-genau identisch' : 'ANDERS!'}`);
+}
+
+// --- M8c: Tabelle Lanza Delto und Fard Escorta gegen prototyp (Audan zur Orientierung), Werte-Balken ---
+if (n && n.physik.delto && n.physik.escorta) {
+  const { werteAusMessung, AUTO_MODELLE } = await import(pathToFileURL(path.join(WURZEL, 'js/autos.js')).href);
+  const P = n.physik.prototyp;
+  const zahl = (z, r) => { const w = z[1](r); return w == null ? '--' : Number(w).toFixed(z[5] === 'm' || z[5] === 'km/h' ? 1 : 2); };
+  console.log('\n=== Tabelle M8c: prototyp / Audan / Delto / Escorta (Physik ohne Browser) ===');
+  console.log('| Messung | prototyp | Audan | Delto | Ziel Delto | Escorta | Ziel Escorta |');
+  console.log('|---|---|---|---|---|---|---|');
+  for (const z of ZEILEN) {
+    const d = pruefeZeile(z, P, n.physik.delto, 'delto'), e = pruefeZeile(z, P, n.physik.escorta, 'escorta'), q = pruefeZeile(z, P, n.physik.rt4, 'delto');
+    const zeige = (x, r) => `${zahl(z, r)} ${z[5]}${x.art === 'prozent' ? ` (${x.d >= 0 ? '+' : ''}${x.d.toFixed(1)} %)` : x.art === 'diff' ? ` (${x.d >= 0 ? '+' : ''}${x.d.toFixed(1)}°)` : ''}`;
+    console.log(`| ${z[0]} | ${zahl(z, P)} ${z[5]} | ${zeige(q, n.physik.rt4)} | ${zeige(d, n.physik.delto)} ${d.ok ? '✅' : '❌'} | ${d.ziel} | ${zeige(e, n.physik.escorta)} ${e.ok ? '✅' : '❌'} | ${e.ziel} |`);
+  }
+  const tf = (id) => n.browser[id] && n.browser[id].testfahrer;
+  if (tf('prototyp')) {
+    console.log('\n| Testfahrer | prototyp | Audan | Delto | Escorta |');
+    console.log('|---|---|---|---|---|');
+    for (const prof of Object.keys(tf('prototyp'))) {
+      const a = tf('prototyp')[prof].zeit;
+      const z = (id) => { const t = tf(id) && tf(id)[prof]; return t ? `${fmtZeit(t.zeit)} (${pz(t.zeit, a)}, Aufpralle ${t.aufpralleStat}, Hänger ${t.haenger})` : '--'; };
+      console.log(`| ${prof} | ${fmtZeit(a)} | ${z('rt4')} | ${z('delto')} | ${z('escorta')} |`);
+    }
+    console.log(`(Ziele: Delto ${TESTFAHRER.delto.join(' bis ')} % und nicht schneller als der Audan, Escorta ${TESTFAHRER.escorta.join(' bis ')} %, ohne Aufprall und Hänger)`);
+  }
+  console.log('\n=== Werte-Balken der Garage (WERTE_VORSCHRIFT in js/autos.js) ===');
+  for (const id of ['rt4', 'delto', 'escorta']) {
+    const w = werteAusMessung(P, n.physik[id]), m = AUTO_MODELLE[id].werte;
+    console.log(`${AUTO_MODELLE[id].name.padEnd(13)} gemessen ${JSON.stringify(w)}  in autos.js ${JSON.stringify(m)} ${JSON.stringify(w) === JSON.stringify(m) ? '(passt)' : '(NICHT nachgetragen!)'}`);
+  }
 }

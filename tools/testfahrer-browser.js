@@ -11,6 +11,13 @@
 const winkelNorm = (w) => Math.atan2(Math.sin(w), Math.cos(w));
 const begrenze = (w, a, b) => Math.max(a, Math.min(b, w));
 
+// M8c: Anpassung je Auto (Fahrprofil-Id): gasImDrift = [ab, bis] Grad Schwimmwinkel: darüber nimmt der Fahrer das Gas
+// zurück (ab: noch voll, bis: ganz weg), wie ein Mensch, wenn das Heck kommt. Nur für den Fard Escorta (Hinterradantrieb:
+// sonst dreht er sich beim Herausbeschleunigen); alle anderen Autos fahren genau wie bisher.
+export const ANPASSUNG = {
+  escorta: { gasImDrift: [3, 9] },
+};
+
 // Fahrprofile: Querbeschleunigung (m/s²) in Kurven und Bremsverzögerung (m/s²)
 export const PROFILE = {
   vorsichtig: { quer: 4.5, bremsen: 5.5 },
@@ -66,8 +73,14 @@ function steuere(A, pfad, idx) {
   const lenkung = begrenze(-fehler * 2.5, -1, 1);
   const vz = pfad.vZiel[Math.min(pfad.n - 1, idx + 2)];
   const dv = vz - v;
+  let gas = dv > 0 ? begrenze(dv * 1.0, 0, 1) : 0;
+  const anp = ANPASSUNG[A.auto];
+  if (anp && anp.gasImDrift && gas > 0) {
+    const [ab, bis] = anp.gasImDrift, d = Math.abs(p.driftWinkel);
+    if (d > ab) gas *= Math.max(0, 1 - (d - ab) / (bis - ab));
+  }
   return {
-    gas: dv > 0 ? begrenze(dv * 1.0, 0, 1) : 0,
+    gas,
     bremse: dv < -0.3 ? begrenze(-dv * 0.5, 0, 1) : 0,
     lenkung, handbremse: false, reset: false, debug: false,
   };

@@ -2,7 +2,10 @@
 // Referenz (Profil "prototyp": daran hängen Pace-Notes, Abkürzungs-Sperren und die Testfahrer-Zeiten). Ein Auto mit
 // eigenem Fahrgefühl (z. B. der Audan Quarto, Id rt4) ist ein Profil in config.js (fahrprofile), das nur einzelne Werte
 // überschreibt. Beim Start legt main.js das gewählte Profil über die Referenz, bevor gefahren wird.
-// Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4, unbekannter Wert: rt4).
+// Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4, unbekannter Wert: rt4). Seit M8c wählt das Menü
+// (Garage) das Auto und damit sein Profil (main.js); ?auto= setzt weiter beides (Tests).
+// M8c: Block "ton" im Profil ({ turboMal, knallMal }, fehlt = 1): wie stark Turbo-Pfeifen/Blow-off und Pops klingen.
+// Er liegt nicht in CONFIG, sondern in tonWerte (immer dasselbe Objekt, js/audio.js liest es über main.js).
 // Das Fahr-Labor (?fahrlabor=1) schaltet hiermit live um. Diese Datei kennt kein Three.js.
 
 import { CONFIG } from './config.js';
@@ -12,7 +15,9 @@ export const REFERENZ_PROFIL = 'prototyp';
 
 // Kopie der Referenz (nur Zahlen, Texte, Wahrheitswerte, Felder, null), gemerkt beim Laden – bevor ein Profil darüberliegt
 const kopie = (o) => JSON.parse(JSON.stringify(o));
-const REFERENZ = { auto: kopie(CONFIG.auto), getriebe: kopie(CONFIG.getriebe) };
+const REFERENZ = { auto: kopie(CONFIG.auto), getriebe: kopie(CONFIG.getriebe), ton: { turboMal: 1, knallMal: 1 } };
+// M8c: Ton-Werte des gewählten Profils (Turbo-Pfeifen und Blow-off mal turboMal, Knall-Chance mal knallMal)
+export const tonWerte = { ...REFERENZ.ton };
 
 const istObjekt = (w) => w !== null && typeof w === 'object' && !Array.isArray(w);
 // ziel an Ort und Stelle auf die Werte von quelle setzen (Objekte bleiben dieselben, die Physik liest sie jeden Schritt)
@@ -50,6 +55,8 @@ export function waehleFahrprofil(id) {
   const p = (CONFIG.fahrprofile || {})[name] || {};
   if (p.auto) ueberlagere(CONFIG.auto, p.auto);
   if (p.getriebe) ueberlagere(CONFIG.getriebe, p.getriebe);
+  setzeGleich(tonWerte, REFERENZ.ton);
+  if (p.ton) ueberlagere(tonWerte, p.ton);
   aktiv = name;
   return name;
 }

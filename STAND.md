@@ -1,12 +1,12 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 8b fertig** – das Auto heisst jetzt **Audan Quarto** (Marke AUDAN, Modell QUARTO; die interne Id
-bleibt `rt4`, deine Bestzeiten bleiben stehen). **Hinten sieht man keine Fahrer-Köpfe mehr** (ruhige dunkle Heckscheibe),
-von der Seite und von vorne sind die Helme nur noch dezent (kleiner, gedeckte Farben). Das **Fahrgefühl ist stärker anders**
-als beim alten Auto: mehr Grip auf Schotter und Wiesenweg (Kreisbahn Schotter +5.3 % statt +2.6 %, Wiesenweg +12.5 %
-statt +8.5 %), kräftiger aus dem Wiesenweg (0–100 km/h −12.8 %) und das **Heck kommt beim Bremsen in der Kurve
-deutlicher** (+3.6° statt +2.3°). Der **Turbo ist jetzt zu hören**: Pfeifen, Zischen und Pops folgen dem echten
-Ladedruck (dezent). **Wichtig: Fahrgefühl nicht gespürt, Ton nicht gehört – bitte zuerst die Test-Anleitung unten (M8b).**
+Aktuell: **Meilenstein 8c fertig** – es gibt jetzt **drei Autos** und eine **Garage** (Hauptmenü → AUTO): links die
+Autos und die Lackierung, rechts das **drehende 3D-Modell**, **Werte-Balken** und zwei Zeilen zu Antrieb und Bauart. Neu
+sind der **Lanza Delto** (kantiger Kompakt-Allrad mit Dachspoiler, wendig und griffig) und der **Fard Escorta** (kastiges
+Hinterrad-Coupé ohne Turbo, das Heck kommt leicht). Auswahl und Lackierung je Auto merkt sich der Browser. Die
+**Bestzeiten** sind eine gemeinsame Liste für alle Autos, mit dem Kurznamen des Autos in jeder Zeile. Der **Audan Quarto
+ist unverändert**. **Wichtig: Fahrgefühl nicht gespürt, Ton nicht gehört – bitte zuerst die Test-Anleitung unten (M8c).**
+Davor: 8b (Name Audan Quarto, Fahrer hinten weg, spürbareres Fahrgefühl, Turbo im Ton am echten Ladedruck).
 Davor: 8a (Ringwerk RT4 – heute Audan Quarto – als richtiges 3D-Modell mit Lackierung, Federung, Lichtern, Dreck,
 Auto-Labor; Fahrprofile mit eigenem Fahrgefühl, Fahr-Labor). Die Hörtest-Anleitung von M7b gilt weiter (M7b.1 ist noch offen).
 Davor: 7b (Umgebungsklänge mit Stereo und Abstand: Kuhglocken, Publikum, Vögel, Brunnen, Windböen; Menü-Musik, Regler MUSIK), 7a.1 (Motor härter und höher, Poppen, Schalten, Signale lauter mit Regler SIGNALTÖNE, Stein dumpf, Heulen), 7a (Ton: Motor, Reifen, Wind, Aufprall, Signale, Ton-Labor; Minimap 49 x 49, farbige Checkpoint-Punkte), 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
@@ -39,7 +39,388 @@ Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start
 
 ---
 
-## Meilenstein 8b: Name „Audan Quarto“, Fahrer-Feinschliff, spürbareres Fahrgefühl, Turbo im Ton ✅
+## Meilenstein 8c: Garage und zwei neue Autos – Lanza Delto und Fard Escorta ✅
+
+> **Ehrlich vorneweg: Ich habe das Fahrgefühl nicht gespürt und den Ton nicht gehört.** Alles ist **gemessen** (Fahrphysik
+> mit festen Fahrprogrammen, Testfahrer über die ganze Etappe, Ton offline gerechnet) und auf Bildern in drei Pixelgrössen
+> angeschaut. Ob sich der Delto wendig und der Escorta verspielt anfühlt (oder zickig), kannst nur du entscheiden. Darum
+> zuerst die **Test-Anleitung** unten. **Für Änderungen schreib einfach, was dir nicht gefällt, das wird dann M8c.1.**
+
+Vier Teile, vier Commits im selben Pull Request: **A = Mechanik für mehrere Autos**, **B = Garage**, **C = Lanza Delto**,
+**D = Fard Escorta** (dazu in D: Tests, Bilder, diese Beschreibung). Der **Audan Quarto ist unverändert** (Aussehen,
+Fahrgefühl, Ton: gemessen, siehe „Selbst getestet“).
+
+### Was ist neu?
+
+**A – Mechanik für mehrere Autos**
+- **Auswahl wirkt sofort**: Wählst du im Menü (Seite AUTO, jetzt Garage) ein Auto, wird **sein Modell gebaut** (das alte wird
+  sauber freigegeben, kein Speicherleck) und **sein Fahrprofil** eingeschaltet. Getriebe, Federung und Dreck fangen sauber
+  von vorn an, die **Demo-Fahrt** im Menü fährt sofort mit dem neuen Auto (von vorn). Gewechselt wird **nur im Menü**, nie im
+  Rennen, im Countdown, in der Pause oder im Zielbildschirm.
+- **Masse je Auto**: Felswand (das Auto stoppt an der sichtbaren Wand), Kollision an Bäumen, Zäunen und Zuschauern, Radstand,
+  Radpositionen, Staub hinter den Hinterrädern, Schatten und Dreck kommen vom gewählten Auto (`js/autos.js`). Beim Audan
+  genau wie bisher (4.48 x 1.86 m).
+- **Gemerkt**: gewähltes Auto und **Lackierung je Auto** merkt sich der Browser (bei den Einstellungen). Unbekannte Werte:
+  Audan Quarto, erste Lackierung. `index.html?auto=prototyp|rt4|delto|escorta` geht weiter (für Tests, wird nicht gemerkt).
+- **Bestzeiten gemeinsam**: eine Top 10 für alle Autos, in jeder Zeile der **Kurzname** des Autos (QUARTO, DELTO, ESCORTA,
+  PROTO für Läufe mit `?auto=prototyp`; alte Einträge ohne Auto = QUARTO). Im Zielbildschirm steht das Auto als vierte Spalte
+  bei der Statistik. Der Live-Vergleich misst gegen die gemeinsame Bestzeit wie bisher. Format und Speicher unverändert.
+- **Ton je Auto (nur das Nötigste)**: neuer Block `ton: { turboMal, knallMal }` im Fahrprofil. Audan und Delto 1 / 1 (Ton wie
+  0.8b), **Escorta 0 / 0.5**: kein Turbo-Pfeifen, kein Blow-off, etwa halb so viele Pops. Motorklang je Auto kommt in M8d.
+- **Ton-Labor**: neue Auswahl **FAHRPROFIL (TON)** (Prototyp, Audan, Delto, Escorta). **Fahr-Labor**: ein Knopf je Profil.
+
+**B – Garage (Menü → AUTO)**
+- Links die **Autos** (das gewählte steht gelb), darunter **LACK:** mit Pfeilen und kleiner Farbprobe. Rechts oben das
+  **drehende 3D-Modell** auf einer Drehscheibe (8 s pro Umdrehung, gleiche Pixelgrösse wie das Spiel, Räder stehen still),
+  rechts unten **vier Werte-Balken** (BESCHLEUNIGUNG, HÖCHSTTEMPO, GRIP, DRIFT), unten zwei Zeilen zu Antrieb und Bauart.
+- Wählen = sofort wechseln (Tastatur, Maus, Gamepad). ENTER auf einem Auto = zurück ins Hauptmenü. Gestartet wird wie
+  bisher über STARTEN im Hauptmenü.
+- Technik: keine zweite WebGL-Leinwand, sondern eine kleine zweite Szene im selben Renderer (nur der Rahmen der Vorschau
+  wird neu gezeichnet). **Nur solange die Seite AUTO offen ist** – sonst kostet die Garage nichts (geprüft).
+- Die **Werte-Balken** sind nicht geschätzt, sondern aus den Messungen gerechnet (Vorschrift `WERTE_VORSCHRIFT` in
+  `js/autos.js`, nachgerechnet von `tools/auto-messung.mjs` und `tools/m8c-test.mjs`):
+
+| Auto | Beschleunigung | Höchsttempo | Grip | Drift |
+|---|---|---|---|---|
+| Audan Quarto | 7 | 6 | 8 | 5 |
+| Lanza Delto | 8 | 3 | 8 | 7 |
+| Fard Escorta | 3 | 2 | 6 | 10 |
+| (Prototyp, nicht in der Garage) | 6 | 6 | 6 | 2 |
+
+  (Beschleunigung aus 0–100 km/h Asphalt und Schotter, Höchsttempo aus dem Höchsttempo, Grip aus den drei Kreisfahrten
+  R 25 m, Drift aus dem Heck beim Bremsen in der Kurve und dem Handbremsen-Drift; 40 Punkte pro 100 % Unterschied.)
+- **Auto-Labor** (`auto-labor.html`): neue Auswahl **Auto** (alle drei) mit ihren Lackierungen.
+
+**C – Lanza Delto** (Id `delto`, Lancia-Delta-Typ, eigenes Design)
+- **Kantiger Kompakt-Allrad**: Fliessheck mit **steiler Heckklappe** und **Dachspoiler**, breite Kastenkotflügel (Räder
+  stehen sichtbar in den Radläufen), Haube mit **Wölbung und Lüftungsschlitzen**, zwei grosse Scheinwerfer und zwei runde
+  Zusatzscheinwerfer in der Schürze, **Heckwischer**, breite C-Säule mit kleinem Fenster, Auspuff rechts, Heckscheibe ohne
+  Fahrer. Masse: **4.03 x 1.80 x 1.45 m**, Radstand 2.48 m, Spur 1.52 m, Radradius 0.325 m. Kennzeichen **LD 3**, Nummer **3**.
+- **Lackierungen**: **Werk** (weiss, blauer und roter Streifen), **Rosso** (rot, schwarzes Unterteil), **Waldgrün**
+  (dunkelgrün, gelbe Akzente). Sponsoren erfunden: TALBANK, ALPENKRAFT, SCHNEEFINK (Schrift erst ab 480x270).
+- **Fahrgefühl** (`fahrprofile.delto`): wendig, neutral (kein Schieben über die Front wie beim Audan), Allrad-Traktion auf
+  Schotter und Wiesenweg, dezenter Turbo (baut in 0.4 s auf), etwas weniger Höchsttempo.
+
+**D – Fard Escorta** (Id `escorta`, Ford-Escort-Typ, eigenes Design)
+- **Kastiges Rallye-Coupé** mit Stufenheck: flache Haube, flacher Kofferraum, gerade schmale Karosserie mit dezent
+  verbreiterten Kotflügeln, **zwei runde Scheinwerfer** und **zwei Zusatzscheinwerfer im Grill**, verchromte Stossstangen,
+  **kleine Spoilerlippe** statt Flügel, keine Dachhutze, Auspuff hinten links. Masse: **4.10 x 1.76 x 1.34 m**, Radstand
+  2.40 m, Spur 1.48 m, Radradius 0.325 m. Kennzeichen **FE 5**, Nummer **5**.
+- **Lackierungen**: **Werk** (weiss, blauer Streifen, **blaue Haube**), **Kanarie** (gelb, schwarzes Unterteil),
+  **Tannengrün** (hellgrün, **weisses Dach**). Sponsoren erfunden: SENNHOF, BERGBLICK, MURMELI.
+- **Fahrgefühl** (`fahrprofile.escorta`): **Hinterrad-Drifter** ohne Turbo. Das Heck kommt leicht (mit Gas, beim Bremsen in
+  der Kurve, mit der Handbremse), ist aber nach gut einer Sekunde wieder eingefangen. Weniger Traktion auf losem Boden,
+  etwas weniger Leistung, kürzere Höchstgeschwindigkeit.
+- **Neue Schraube in der Physik: `auto.antriebHinten`** (nur im Profil escorta gesetzt, sonst ohne Wirkung): Der Schub der
+  Hinterräder braucht einen Teil ihrer Haftung auf (wie ein Reibungskreis) – mit Gas halten sie seitlich weniger, das Heck
+  schiebt unter Gas nach aussen. Ohne diesen Term liess sich „Heck kommt mit Gas“ nicht messbar machen (gasImDrift allein
+  wirkt erst, wenn das Auto schon rutscht).
+
+### Messtabelle Fahrgefühl (gegen `prototyp`, Audan zur Orientierung)
+
+`node tools/auto-messung.mjs` (Zahlen: `tools/auto-messung.json`, Bild: `screenshots/m8c/80-messtabelle.png`). Prozent =
+Unterschied zum Prototyp (bei Zeiten: plus = langsamer).
+
+| Messung | Prototyp | Audan | **Delto** | Ziel Delto | **Escorta** | Ziel Escorta |
+|---|---|---|---|---|---|---|
+| 0–100 km/h Asphalt | 5.13 s | −2.1 % | **−4.4 %** ✅ | −4 bis −8 % | **+8.3 %** ✅ | +4 bis +9 % |
+| 0–100 km/h Schotter | 5.78 s | −5.6 % | **−7.1 %** ✅ | −6 bis −11 % | **+7.9 %** ✅ | 0 bis +8 % |
+| 0–100 km/h Wiesenweg | 8.28 s | −12.8 % | **−10.5 %** ✅ | −9 bis −14 % | **+16.0 %** ✅ | +10 bis +20 % |
+| 0–60 km/h Gras | 10.10 s | ±0 % | **±0 %** ✅ | gleich/langsamer | **±0 %** ✅ | gleich/langsamer |
+| 0–100 km/h Bankett | 6.15 s | −2.0 % | **+1.8 %** ✅ | gleich/langsamer | **+9.2 %** ✅ | gleich/langsamer |
+| Höchsttempo (Vollgas) | 188.1 km/h | +0.9 % | **−5.4 %** (177.9) ✅ | −3 bis −7 % | **−8.3 %** (172.4) ✅ | −6 bis −10 % |
+| Bremsweg 100 → 0 Asphalt | 35.8 m | ±0 % | **−0.3 %** ✅ | ±6 % | **−0.4 %** ✅ | ±5 % |
+| Kreis R 25 m Asphalt | 54.4 km/h | +2.5 % | **+1.9 %** ✅ | +1 bis +5 % | **+0.4 %** ✅ | −2 bis +2 % |
+| Kreis R 25 m Schotter | 49.3 km/h | +5.3 % | **+4.6 %** ✅ | +4 bis +9 % | **−0.1 %** ✅ | −2 bis +3 % |
+| Kreis R 25 m Wiesenweg | 40.9 km/h | +12.5 % | **+11.9 %** ✅ | +8 bis +13 % | **+0.5 %** ✅ | −2 bis +4 % |
+| Lenkwinkel 80 km/h auf R 60 m | 3.54° | +16.9 % | **+7.4 %** ✅ (neutral) | −5 bis +8 % | **−11.5 %** ✅ (dreht ein) | −15 bis −5 % |
+| Heck: 90 km/h, R 80 m, Gas weg + Bremse 60 %: Zusatz-Schwimmwinkel nach 0.5 s | −0.3° | +3.6° | **+3.2°** ✅ | +3 bis +6° | **+6.3°** ✅ | +6 bis +10° |
+| … wieder eingefangen nach | – | 0.57 s | **0.38 s** ✅ | unter 0.9 s | **1.05 s** ✅ | unter 1.2 s |
+| Vollgas in der Kurve R 80 m: Schwimmwinkel | 3.9° | 2.8° | **3.2°** ✅ | kleiner/gleich | **6.4° (+2.4°)** ✅ | +2 bis +6° mehr |
+| Handbremsen-Drift Asphalt nach 0.5 s | 6.7° | −6.6 % | **+19.7 %** ✅ | ±20 % | **+26.3 %** ✅ | +10 bis +30 % |
+| Rückwärts (Höchsttempo, nach 1 s, Gras) | | identisch | **identisch** ✅ | identisch | **identisch** ✅ | identisch |
+
+**Testfahrer (ganze Etappe, alle ohne Aufprall und ohne Hänger):**
+
+| Fahrer | Prototyp | Audan Quarto | **Lanza Delto** | **Fard Escorta** |
+|---|---|---|---|---|
+| vorsichtig | 2:59.33 | 2:58.65 (−0.4 %) | **2:58.61 (−0.40 %)** | **3:00.68 (+0.75 %)** |
+| mittel | 2:42.35 | 2:41.76 (−0.4 %) | **2:41.60 (−0.46 %)** | **2:44.02 (+1.03 %)** |
+| flott | 2:31.92 | 2:31.22 (−0.5 %) | **2:31.22 (−0.46 %)** | **2:34.68 (+1.82 %)** |
+
+**Zeitunterschied für deine Bestzeiten** (gemeinsame Liste): Der Testfahrer ist mit dem **Delto praktisch gleich schnell wie
+mit dem Audan** (0.00 bis 0.16 s schneller, je nach Fahrstil) und mit dem **Escorta 2 bis 3.5 s langsamer** als mit dem
+Audan (1.4 bis 2.3 % gegen den Audan, 0.75 bis 1.8 % gegen den Prototyp). Ein Mensch, der den Grip des Delto in den
+Schotterkurven nutzt, sollte mit ihm etwas schneller sein als der Testfahrer (der plant das Kurventempo für alle Autos gleich).
+
+**Kompromisse (ehrlich, und welche Ziele ich verfehle):**
+- **Delto knapp schneller als der Audan (verfehlt):** vorsichtig 0.04 s, mittel 0.16 s schneller (flott gleich). Ziel war
+  „nicht schneller als der Audan“. Der Testfahrer gewinnt mit dem Delto beim Herausbeschleunigen (0–100 km/h −4.4 % war
+  gefordert). Weniger Schub hätte 0–100 km/h unter −4 % gedrückt. Ausgeglichen habe ich mit **kürzerem 4. und 5. Gang**
+  (`gaenge` 140 / 166 km/h statt 156 / 195): oben herum zieht der Delto weniger, das kostet dem Testfahrer Zeit.
+- **Escorta vorsichtig nur +0.75 % langsamer statt 1 bis 4 % (verfehlt):** Der vorsichtige Testfahrer fährt fast überall
+  kurvenbegrenzt (gleiches geplantes Kurventempo für alle Autos), da hilft weniger Leistung kaum. Mehr Abstand ginge nur mit
+  noch weniger Schub – aber 0–100 km/h Asphalt liegt mit +8.3 % schon fast an der Grenze (+9 %).
+- **Testfahrer-Werkzeug für den Escorta angepasst** (nur `tools/testfahrer-browser.js`, nicht das Spiel, wie im Auftrag
+  vorgesehen): Ohne Anpassung drehte sich der flotte Testfahrer beim Herausbeschleunigen (Heck unter Gas = genau der
+  Charakter). Jetzt nimmt er beim Escorta das Gas zurück, wenn der Schwimmwinkel über 3° steigt (bei 9° ganz weg), wie ein
+  Mensch. Alle anderen Autos fahren genau wie bisher.
+- **Delto: Heck beim Bremsen +3.2° (knapp über der unteren Grenze).** Mit `gewichtstransfer` über 0.4 kam der flotte
+  Testfahrer bei **694–730 m** (lange Linkskurve, Bremsen mit 130 km/h) quer – dieselbe Stelle wie beim Audan in M8b. Dafür
+  fängt `stabilitaet` 7.5 (Prototyp 5) das Heck schneller ein (0.38 s). Achtung: Diese Stelle ist eine scharfe Kante, schon
+  kleine Änderungen (0.42 / 0.44) lassen den flotten Testfahrer dort wieder quer kommen.
+- **Escorta: Vollgas in der Kurve kippt.** `antriebHinten` 1.12 gibt +2.4° mehr Schwimmwinkel als der Prototyp (Ziel +2 bis
+  +6°). Schon bei 1.13 kippt das Auto in einen langen Drift (+5.9°), bei 1.15 +9.5°. Darunter bleibt es ruhig. Das ist genau
+  das Verhalten eines Hinterradantriebs am Limit, kann sich aber **plötzlich** anfühlen. Auf **Schotter mit Vollgas** in der
+  Kurve geht der Escorta stark quer (gemessen bis 29° Schwimmwinkel in der Kurve R 80 m, Prototyp 3°; Info, ohne Dreher).
+- **Escorta: `heckJeBelag`** (Schotter 1.15, Wiesenweg 1.25) – klingt nach mehr Heck-Grip, gleicht aber nur aus, dass der
+  Hinterradantrieb im Kreis auf losem Boden Haftung kostet (sonst Kreis Schotter −5 %). Unter Gas bleibt das Heck locker.
+
+**Pace-Notes** (`node tools/pacenotes-test.mjs --auto <id>`, nur gemeldet, nichts neu geschrieben; Grenztempo der 25 Kurven):
+- **Delto**: 24 von 25 im Zielbereich (Schotter/Wiesenweg +1.9 bis +8.3 %, Asphalt −0.5 bis +3.5 %). Andere Stufe wären:
+  **917–979 m** (Schotter) 2 → 3 und **1028–1057 m** 6 → 3 (dieselbe Messketten-Kurve wie beim Audan, siehe M8b).
+- **Escorta**: Asphalt −1.8 bis +2.8 %; auf losem Boden langsamer. Ausserhalb ±5 %: **850–914 m** −6.1 %, **917–979 m** −5.8 %
+  (Talschleife), **2027–2078 m −19.4 %** (Almweg, S-Kurve direkt nach dem Abzweig), **3092–3120 m −9.8 %** (Wiesenweg) und
+  die Messketten-Kurven 1028–1057 m und 3197–3231 m. Andere Stufe wären: 2027–2078 m 3 → 2, 3022–3089 m 4 → 3,
+  3092–3120 m 3 → 2, 1028 m und 3197 m 6 → 3. Das passt zum Hinterradantrieb (die Messung hält in der Kurve das Tempo mit
+  Gas), aber **die Almweg-S-Kurve ist mit dem Escorta merklich langsamer** als angesagt. Die Pace-Notes bleiben auf der Referenz.
+  (Eine erste Fassung des Hinterrad-Terms machte den Wiesenweg 3022–3089 m −24 % langsamer; ich habe ihn darum entschärft:
+  er rechnet jetzt gegen den Grip auf Asphalt, nicht gegen den kleineren Grip auf losem Boden.)
+
+**Abkürzungen** (`node tools/abkuerzungen.mjs --pruefen --auto <id>`): mit **delto** und **escorta** je **127 / 2 / 342 / 84**
+übrige Linien (wie die Referenz), gesperrt durchkommen: **0**. Gras und Bankett ohne Vorteil (0–60 km/h Gras gleich, 0–100
+km/h Bankett langsamer; Delto mit `allrad.bankett` 0.9, damit er dort trotz mehr Schub nicht schneller ist).
+
+### Messungen Ton (gerechnet, nicht gehört)
+
+`node tools/m8c-test.mjs --nur h`, offline mit `js/audio.js` und dem echten Getriebe, vor dem Limiter:
+
+| Messung | Prototyp | Audan | Delto | Escorta |
+|---|---|---|---|---|
+| Turbo-Pfeifen bei Vollgas (Anteil, RMS) | −34.0 dBFS (eigenes Modell) | −29.5 dBFS | −29.5 dBFS | **kein Pfeifen** (0) |
+| Blow-off über 60 s fester Fahrt | 24 | 25 | 26 | **0** |
+| Salven mit Pops über 60 s (Pops) | 16 (41) | 22 (46) | 21 (51) | **10 (22) = 63 %** |
+
+- Audan und Prototyp: Ton **wie 0.8b** (`tools/ton-messung.mjs` gegen die Referenz, siehe „Selbst getestet“).
+- Delto wie Audan (gleicher Turbo-Ton, der Ladedruck baut 0.4 statt 0.35 s auf).
+- Escorta: `turboMal` 0 schaltet Pfeifen und Blow-off ganz aus, auch das eigene Pfeif-Modell des Tons (Ladedruck im Ton bleibt
+  0); `knallMal` 0.5 halbiert die Knall-Chance (Zufall: über 60 s 63 %).
+
+### Werte zum Drehen
+
+**Fahrgefühl** (`js/config.js`, Blöcke `fahrprofile.delto` und `fahrprofile.escorta`; im Fahr-Labor sofort). Die Werte in
+`auto` und `getriebe` selbst bleiben die Referenz (Profil `prototyp`), nicht dort ändern.
+
+| Wert | Prototyp | Audan | Delto | Escorta |
+|---|---|---|---|---|
+| `auto.radstand` | 2.52 | 2.52 | 2.48 | 2.40 |
+| `auto.traegheit` | 2.3 | 2.5 | 2.25 | 2.2 |
+| `auto.schwerpunktVorne` | 0.48 | 0.46 | 0.49 | 0.5 |
+| `auto.lastVorneAnteil` | 0.5 | 0.555 | 0.53 | 0.5 |
+| `auto.gewichtstransfer` | 0 | 0.45 | 0.4 | 0.6 |
+| `auto.stabilitaet` | 5 | 5 | 7.5 | 4.5 |
+| `auto.gripHinten` | 1.12 | 1.12 | 1.12 | 1.04 |
+| `auto.gasImDrift` | 0.12 | 0.07 | 0.12 | 0.22 |
+| `auto.antriebHinten` (neu) | – | – | – | 1.12 |
+| `auto.vorneJeBelag` Schotter / Wiesenweg | 1 / 1 | 1.06 / 1.06 | 1.06 / 1.08 | 1 / 1 |
+| `auto.heckJeBelag` Schotter / Wiesenweg | 1 / 1 | 1.15 / 1.25 | 1.12 / 1.22 | 1.15 / 1.25 |
+| `getriebe.allrad` Schotter / Wiesenweg / Bankett | 1 / 1 / 1 | 1.2 / 1.15 / 1 | 1.15 / 1.1 / 0.9 | 0.95 / 0.9 / 1 |
+| `getriebe.zugkraftFaktor` | 1 | 0.99 | 1.02 | 0.92 |
+| `getriebe.gaenge` (km/h je Gang) | 48/82/118/156/195 | wie Prototyp | 48/80/112/140/166 | 48/82/118/150/168 |
+| `getriebe.turbo` | aus | an | an, Aufbau 0.4 s | aus |
+| `ton` (turboMal / knallMal) | 1 / 1 | 1 / 1 | 1 / 1 | 0 / 0.5 |
+
+**Garage**: `js/config.js`, Block `garage` (Tafel, Vorschau-Höhe, Drehdauer 8 s, Kamera, Drehscheibe).
+**Lackierungen**: `js/config.js`, `autoOptik.lackierungen` (deltoWerk, rosso, waldgruen, escortaWerk, kanarie, tannengruen).
+
+### Test-Anleitung für Lino (M8c)
+
+**Zuerst die Garage (5 Minuten), dann fahren (20 Minuten), dann hören (5 Minuten).** Am besten auf beiden Rechnern.
+
+1. **Hauptmenü → AUTO** (das ist jetzt die **Garage**): Mit Pfeil hoch/runter (oder Maus, oder Gamepad) durch die drei Autos
+   gehen – das Modell rechts wechselt sofort und dreht sich. Zur Zeile **LACK:** gehen und mit links/rechts die drei
+   Lackierungen durchschalten. Schau auf die **Balken** (Beschleunigung, Höchsttempo, Grip, Drift) und die zwei Zeilen unten.
+   Wirken die Autos auch bei 320x180 eigenständig? Dann ein Auto wählen, ZURÜCK, **STARTEN**.
+2. **Lanza Delto** und **Fard Escorta** je ein paar Minuten fahren, **immer in dieser Reihenfolge**:
+   - **Kehren** (Kehre 1 bei ca. 1350 m) und **raus beschleunigen**: der Delto sollte kräftig ziehen, der Escorta mit Gas das
+     Heck kommen lassen.
+   - **Nebenwege**: Talschleife (Schotter, ab 800 m), Almweg (ab 1986 m), Wiesenweg (ab 2798 m). Delto: viel Halt, zieht.
+     Escorta: rutschiger, mit Gas quer – **achte auf die S-Kurve gleich nach dem Almweg-Abzweig (ca. 2030 m)**, da ist der
+     Escorta laut Messung deutlich langsamer.
+   - **In die Kurve bremsen** (z. B. lange Linkskurve ab 504 m): Delto kurz, Escorta deutlich – kommt er nach ca. 1 s
+     wieder gerade? **Vorsicht um 695 m** (harter Bremspunkt mit ca. 130 km/h).
+   - **Handbremse** in den Kehren.
+3. **A/B-Vergleich**: dieselben Stellen mit `index.html?auto=prototyp` (altes Fahrverhalten, Aussehen Audan) fahren.
+4. **Bestzeiten** ansehen (Hauptmenü → BESTZEITEN): jede Zeile hat den Kurznamen des Autos (QUARTO, DELTO, ESCORTA).
+   Deine alten Zeiten stehen als QUARTO drin.
+5. **Ton-Labor** (`ton-labor.html`): TON STARTEN, bei **FAHRPROFIL (TON)** zuerst **AUDAN QUARTO**, dann **FARD ESCORTA**
+   wählen und je **Anfahren bis 160 km/h** und mehrmals **Pop-Salve** drücken: Der Escorta hat kein Turbo-Pfeifen und kein
+   Blow-off und poppt seltener. Dann im Spiel: Gas wegnehmen mit dem Escorta.
+6. **Fahr-Labor** (`index.html?fahrlabor=1`): oben die vier Knöpfe PROTOTYP / AUDAN QUARTO / LANZA DELTO / FARD ESCORTA
+   (schalten nur das Fahrgefühl, das Aussehen bleibt). Regler drehen, **WERTE KOPIEREN** und mir schicken (die erste Zeile
+   nennt das Profil).
+
+**Wenn X, dann Y** (Wert in `js/config.js`, Profil delto bzw. escorta, oder im Fahr-Labor ausprobieren und mir die Zeilen schicken):
+
+| Wenn … | dann … |
+|---|---|
+| der Escorta zu zickig ist (Heck kommt zu leicht / zu plötzlich) | `fahrprofile.escorta.auto.gasImDrift` runter (z. B. 0.15) oder `auto.stabilitaet` hoch (z. B. 5) |
+| der Escorta unter Gas zu plötzlich quer geht | `auto.antriebHinten` runter (1.0 = merklich ruhiger, 0 = aus); nur in kleinen Schritten hoch (ab 1.13 kippt es) |
+| der Escorta zu brav ist | `auto.antriebHinten` 1.13 bis 1.15, `auto.gripHinten` 1.0 |
+| das Heck des Escorta beim Bremsen zu stark kommt | `fahrprofile.escorta.auto.gewichtstransfer` runter (z. B. 0.5) |
+| der Escorta zu langsam auf Asphalt ist | `fahrprofile.escorta.getriebe.zugkraftFaktor` hoch (z. B. 0.96) |
+| der Escorta auf Schotter/Wiesenweg zu wenig zieht | `getriebe.allrad.schotter` / `.wiesenweg` hoch (1 = wie der Prototyp) |
+| der Delto zu zahm ist | `fahrprofile.delto.getriebe.allrad` hoch (z. B. Schotter 1.2) oder `auto.gewichtstransfer` hoch (Achtung 695 m) |
+| der Delto zu nervös ist (Heck beim Bremsen) | `fahrprofile.delto.auto.gewichtstransfer` runter (z. B. 0.3) |
+| der Delto auf Schotter zu viel Grip hat | `auto.vorneJeBelag.schotter` und `heckJeBelag.schotter` runter (z. B. 1.03 / 1.06) |
+| der Delto zu langsam ist (oben herum) | `fahrprofile.delto.getriebe.gaenge` 4./5. Gang länger (z. B. 150 / 175) |
+| die Drehscheibe zu schnell / zu langsam dreht | `garage.drehDauer` (Sekunden pro Umdrehung) |
+| dir die Balken komisch vorkommen | sag es – sie sind aus den Messungen gerechnet (`WERTE_VORSCHRIFT` in `js/autos.js`) |
+
+**Für Änderungen schreib einfach, was dir nicht gefällt (mit Screenshot oder den kopierten Werten), das wird dann M8c.1.**
+
+### So testest du (Werkzeuge)
+
+- `node tools/m8c-test.mjs` (neu: Prüfungen (a) bis (l), mit (i) und (l) mehrere Stunden; einzeln z. B. `--nur c,d,j`;
+  `--kurz` ohne die langen Läufe in (i); `--alt <ordner 0.8b>` misst in (l) die Ladezeit)
+- `node tools/m8c-bilder.mjs` (neu: alle Bilder unten)
+- `node tools/auto-messung.mjs` (jetzt alle Profile, Messtabelle M8c, Werte-Balken; `--nur-tabelle` ohne zu messen)
+- wie bisher mit `--auto delto` oder `--auto escorta`: `tools/testfahrer.mjs`, `tools/pacenotes-test.mjs`,
+  `tools/abkuerzungen.mjs --pruefen`, `tools/felswand-test.mjs`, `tools/aufprall-test.mjs`, `tools/menue-test.mjs`,
+  `tools/rennablauf-test.mjs`
+
+### Bilder (`screenshots/m8c/`)
+
+| Datei | Was |
+|---|---|
+| `10-garage-<auto>-<lack>-320x180/-1280x720` | Garage mit jedem Auto und jeder Lackierung (9 je Grösse) |
+| `11-garage-en-…` | Garage englisch |
+| `20-<auto>-heck/-dreiviertel/-seite/-front` | Audan (rt4), Delto, Escorta im Spiel an der Startlinie, je 1280x720 und `…-320x180` |
+| `30-delto-kurve`, `30-escorta-kurve` | in der Kehre (Seite sichtbar), je 1280x720 und 320x180 |
+| `31-escorta-drift-schotter`, `32-escorta-drift-gas-schotter` | Escorta im Drift auf Schotter (Handbremse; mit Gas) |
+| `40-labor-<auto>-ansichten/-heck-lackierungen/-lackierungen-dreiviertel-<grösse>` | Auto-Labor, `<grösse>` = 320x180, 480x270, 640x360 (Originalgrösse) |
+| `41-alle-drei-320x180/-640x360` | Audan, Delto, Escorta nebeneinander von hinten (wie im Spiel) und drei Viertel |
+| `70-bestzeiten-de/en-320x180/-1280x720` | gemeinsame Bestzeiten mit Kurznamen |
+| `80-messtabelle.png`, `80-messtabelle.md` | die Messtabelle |
+| `90-fahrlabor`, `91-auto-labor`, `92-ton-labor-escorta` | Fahr-Labor mit vier Profilen, Auto-Labor mit Auswahl, Ton-Labor mit Profil Escorta |
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/main.js` | Autowechsel (`autoWechseln`), Masse vom Modell, gemerkte Auswahl, Garage zeichnen (nur auf der Seite AUTO), Ton je Profil |
+| `js/garage.js` | **neu**: Drehscheibe, zweite kleine Szene im selben Renderer |
+| `js/autos.js` | Kurzname, Kollision und Staub je Auto, Werte-Balken mit Rechenvorschrift; **neu** Lanza Delto und Fard Escorta |
+| `js/car.js` | Lackierung gehört zum Auto, `dispose()`, Lichtzustand (für die Garage) |
+| `js/config.js` | Profile delto und escorta, Block `ton` je Profil, sechs Lackierungen, Heckwischer-Farbe, Block `garage`, Einstellungen `auto`/`lacke`, Version 0.8c |
+| `js/physics.js` | `antriebHinten` (Hinterradantrieb, im Prototyp ohne Wirkung) |
+| `js/fahrprofil.js` | Ton-Werte des Profils (`tonWerte`) |
+| `js/kollision.js`, `js/staub.js`, `js/vergleich.js` | Masse des gewählten Autos (Umriss, Staub-Austritt, Vorlauf beim Stehstart) |
+| `js/einstellungen.js`, `js/inhalte.js` | Auto und Lackierungen gemerkt; Autoliste aus `js/autos.js` |
+| `js/menue.js`, `js/menueseiten.js`, `js/texte.js` | Garage (Spalte, Vorschau, Balken, Farbprobe), Kurznamen in den Bestzeiten und im Zielbildschirm, Texte de/en |
+| `js/audio.js`, `js/tonlabor.js`, `ton-labor.html` | `turboMal`/`knallMal`, Auswahl FAHRPROFIL (TON) |
+| `js/fahrlabor.js`, `js/autolabor.js`, `auto-labor.html` | ein Knopf je Profil; Auswahl Auto |
+| `tools/m8c-test.mjs`, `tools/m8c-bilder.mjs`, `tools/m8c-ziele.js`, `tools/m8c-referenz-audan.json` | **neu** |
+| `tools/auto-messung.mjs`, `tools/fahrmessung.js` | alle Profile, Höchsttempo, Tabelle M8c, `--nur-tabelle` |
+| `tools/testfahrer-browser.js` | Gas zurück im Drift, **nur für den Escorta** |
+| `tools/felswand-test.mjs` | Umriss aus `grenze.wandHuelle` statt fest 4.48 x 1.86 (beim Audan dieselben Zahlen) |
+
+### Selbst getestet
+
+- **`node tools/m8c-test.mjs`** (neu, (a) bis (l)):
+  - (a) **Profil `prototyp` bit-genau**: Werte wie 0.7b, 70-s-Fahrt-Prüfsumme **3d98a02d**, Testfahrer **2:59.33 / 2:42.35 /
+    2:31.92** mit Zwischenzeiten und Statistik, Abkürzungen **127 / 2 / 342 / 84** (gesperrt durchkommen 0), **Ton** wie 0.8b
+    (gleich bis auf Rechenrauschen in der 4. Stelle, wie schon in M8b). ✅
+  - (b) **Audan Quarto unverändert**: alle 20 Fahrmessungen gleich wie M8b (`tools/m8b-messung.json`), **9 Draw Calls,
+    1306 Dreiecke** (wie M8b), Bilder im Auto-Labor (Heck, Drei-Viertel, Seite bei 320x180, Drei-Viertel vorne bei 640x360)
+    **pixelgleich** mit 0.8b (0 Pixel anders). ✅
+  - (c) **Modelle**: Delto 4.034 x 1.800 x 1.450 m, Escorta 4.100 x 1.760 x 1.340 m, Audan 4.475 x 1.860 m; Radstand, Spur,
+    Radradius wie vorgegeben; je **9 Draw Calls**, Dreiecke 1306 / 1150 / 1196; kein NaN; keine Helme hinten, Helme seitlich
+    und vorne klein (r ≤ 0.085) und dunkel; alle neun Lackierungen malen ohne Fehler; nur Pixelschrift; **kein RINGWERK,
+    keine echte Marke** (Suche nach 27 Namen in allen Texten: nichts; „LIVE DELTA“ = englisch für Live-Vergleich ist erlaubt). ✅
+  - (d) **Wechsel**: 30 Wechsel mit der Tastatur in der Garage – Profil, Modell, Kollision, Felswand, Radstand, Räder, Staub,
+    Dreck, Federung folgen jedes Mal; **Speicher stabil** (Geometrien 87 → 87, Texturen 25 → 25, JS-Heap +0.53 MB nach
+    Aufräumen); Bremslicht am neuen Auto geht; **kein Wechsel** im Countdown, im Rennen, in der Pause; nach Neuladen Auto
+    und Lackierung je Auto erhalten; unbekannte Werte → Audan, Lack WERK; `?auto=` setzt Modell und Profil. ✅
+  - (e) **Masse im Spiel**: `felswand-test` mit jedem Auto bestanden (Karosserie höchstens **1 cm** in der sichtbaren Wand,
+    Kamera ≥ 63 cm Luft), `aufprall-test` mit jedem Auto bestanden (kein Hängenbleiben an Bäumen, Zäunen, Steinen), Staub
+    höchstens 0.22 m neben dem Hinterrad. ✅
+  - (f) **Fahrmessungen**: alle Zeilen der Tabelle im Ziel; **3 Kompromisse** beim Testfahrer (siehe oben); keine Dreher;
+    Werte-Balken = Messung. ✅ (mit Kompromissen)
+  - (g) **Bestzeiten**: Lauf mit jedem Auto eingetragen (Auto-Id im Eintrag), gemeinsame Liste mit QUARTO / DELTO / ESCORTA /
+    PROTO, alte Einträge (ohne Id, rt4, prototyp) richtig, Live-Vergleich gegen die gemeinsame Bestzeit, Felder unverändert. ✅
+  - (h) **Ton**: Tabelle oben; Escorta ohne Pfeifen und Blow-off, Pops 63 %; Konsole ohne Fehler. ✅
+  - (i) **Demo-Fahrt** mit jedem Auto: ganze Etappe, 0 Aufpralle, 0 Kontakte, nie hängen geblieben. `menue-test` mit allen
+    drei Autos bestanden; `rennablauf-test` mit allen drei Autos bestanden (mit der angepassten Soll-Zeit, siehe unten). ✅
+  - (j) **Garage**: ohne Seite AUTO zeichnet die Garage nichts (Zeichenaufrufe = nur die Szene, 89), offen dreht sie (11
+    Zeichenaufrufe für Auto und Drehscheibe), Tafel 312 x 172 bei 320x180, Lack wechselt, Balken zeigen die Daten, Texte de
+    und en passen, Tastatur, Maus und Gamepad wechseln das Auto, geschlossen wieder ohne Aufwand. ✅
+  - (k) **Fahr-Labor**: vier Knöpfe schalten live, Regler wirken auf das gewählte Profil, WERTE KOPIEREN nennt das Profil;
+    ohne `?fahrlabor=1` kein Panel. **Auto-Labor**: drei Autos mit je drei Lackierungen. ✅
+  - (l) **Stabilität** (Profil prototyp): `getriebe-test`, `lenk-test`, `handbremse-test`, `belag-test`, `rueckwaerts-test`,
+    `aufprall-test`, `pacenotes-test`, `menue-test`, `rennablauf-test`, `ton-umgebung-test` **bestanden**, `auto-test` (a)–(n)
+    bestanden (nach der Anpassung unten), `m8b-test` (a)–(g) bestanden.
+  - **`ton-test` ehrlich: nicht bestanden** – nur an Zeit-Prüfpunkten im Test-Browser („?ton=aus / ?menue=aus: das Spiel
+    läuft, Tempo 0.4 statt über 0.5 m/s nach 0.8 s“ und „Neustart: 8 Rauschquellen“). Die **unveränderte 0.8b** scheitert im
+    selben Test-Browser an denselben Punkten (gleicher Lauf direkt danach: „Tempo 0.5 m/s“, „8 Rauschquellen“). Alle
+    Ton-Inhalte (Pegel, Klänge, Signale, Musik) bestehen: 209 ok-Zeilen (0.8b: 210). Diese Punkte hängen an der Bildzeit des
+    Test-Browsers (ca. 0.3 s pro Bild), siehe auch M8a/M8b.
+- **Was ich an alten Tests ändern musste**:
+  - `tools/felswand-test.mjs`: Umriss der Karosserie aus `grenze.wandHuelle` statt fest 4.48 x 1.86 m (beim Audan dieselben Zahlen).
+  - `tools/auto-test.mjs` (f): prüft die Lackierungen des gebauten Modells statt aller Lackierungen in `config.js` (die sechs
+    neuen gehören zu Delto und Escorta).
+  - `tools/rennablauf-test.mjs`: die erwartete Testfahrer-Zeit „flott“ hängt mit `--auto` vom Auto ab (Standard prototyp
+    2:31.92 wie bisher).
+  - `tools/testfahrer-browser.js`: Gas zurück im Drift nur für den Escorta (siehe Kompromisse).
+  - `tools/auto-messung.mjs`, `tools/fahrmessung.js`: erweitert (alle Profile, Höchsttempo); die alten Ausgaben bleiben.
+  - Alle anderen Tests unverändert.
+- **Leistung**: **Ladezeit** (Median aus 9, abwechselnd mit 0.8b) **1863 → 1815 ms** (−48 ms, Streuung ±200 ms; es wird nur
+  das gewählte Auto gebaut). Zeichenaufrufe der Szene ohne Garage wie M8b (108 / 99 / 67 an drei Stellen, gleiche Zahl mit
+  allen Autos). Die Garage kostet nur auf der Seite AUTO 11 Zeichenaufrufe zusätzlich.
+- **Bilder** in 320x180, 480x270, 640x360 und 1280x720 angeschaut (Garage, alle Lackierungen, Spiel, Kurve, Drift, Labore).
+- **Nicht gemacht: das Fahrgefühl gespürt und den Ton gehört.**
+
+### Ehrlich beurteilt – wo ich am unsichersten bin
+
+- **Eigenständig bei 320x180?** Ja, von hinten klar: der **Audan** ist breit und flach mit grossem Flügel und rotem
+  Rücklichtband, der **Delto** ein kürzerer, höherer Kasten mit Dachspoiler-Kante und dunklem Heckband (Fliessheck mit
+  steiler Klappe gut lesbar), der **Escorta** niedrig mit flachem Kofferraum, Chrom-Stossstange und zwei roten Rücklichtern.
+  Von der Seite und vorne noch deutlicher (Kombi-artiger Kompakt gegen Stufenheck-Coupé). Mit gleicher Lackfarbe wären sie
+  von weit hinten am ehesten über die Höhe zu unterscheiden – darum haben alle drei eigene Farben.
+- **Fahrgefühl nicht gespürt.** Am unsichersten bin ich beim **Escorta unter Gas**: Der Hinterrad-Term kippt nahe am Limit
+  (siehe Kompromisse). Er kann sich **zickig** anfühlen – oder genau wie ein Hinterrad-Drifter. Zweitens: Der Escorta auf
+  **Schotter mit Vollgas** in der Kurve geht stark quer (bis 29°) – das kann Spass machen oder nerven. Drittens: Der **Delto** könnte **zu zahm** wirken – er ist auf dem
+  Papier ein „besserer Audan“ (neutraler, gleich viel Grip), das Heck kommt beim Bremsen nur knapp (+3.2°).
+- **Zuerst ausprobieren**: Escorta aus der Kehre heraus beschleunigen und die Almweg-S-Kurve, dann den Delto auf der
+  Talschleife gegen den Audan.
+- **Ton nicht gehört, nur gemessen.** Der Escorta klingt wie der Prototyp-Motor ohne Turbo-Pfeifen – einen eigenen
+  4-Zylinder-Klang gibt es erst in M8d.
+
+### Bekannte Probleme
+
+- **Testfahrer**: Delto 0.04 / 0.16 s schneller als der Audan, Escorta vorsichtig nur +0.75 % (siehe Kompromisse).
+- **Pace-Notes mit dem Escorta**: auf losem Boden mehrere Kurven langsamer als angesagt, die Almweg-S-Kurve (2027 m) −19 %.
+  Die Pace-Notes bleiben auf der Referenz (wie gewollt).
+- **694–730 m** (lange Linkskurve) bleibt für den flotten Testfahrer eine Kante: mit etwas mehr `gewichtstransfer` kommen
+  Audan und Delto dort beim harten Bremsen quer.
+- Die **Unfallautos** an der Strecke sind weiterhin die alten Klötzchen-Autos.
+- `ton-test` scheitert im Test-Browser an Zeit-Prüfpunkten (Bildzeit) – mit 0.8b genauso (siehe „Selbst getestet“);
+  `ton-umgebung-test` bestand diesmal. Schrift am Auto erst ab 480x270.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Motorklang je Auto (M8d)**: Delto 4-Zylinder-Turbo, Escorta 4-Zylinder ohne Turbo (heller, kerniger, kein Pfeifen);
+  Lanza 073 (Mittelmotor) und Subora Imprexa mit **Boxer**-Klang.
+- **Flamme aus dem Auspuff** beim Poppen (kleiner Pixel-Blitz; Escorta seltener, Delto rechts, Audan und Escorta links).
+- **Dellen und Schaden** nach harten Aufprallen.
+- **Unfallautos mit den neuen Modellen** (statt der alten Klötzchen-Autos).
+- **Bestzeiten getrennt je Auto**, falls dich die gemeinsame Liste stört (Umschalter auf der Bestzeiten-Seite).
+- Der **Testfahrer** könnte das Kurventempo aus dem Grip des Autos planen (dann zeigt er die Vorteile ehrlicher).
+- Ein **„Auto-Info“** in der Pause (welches Auto, welche Lackierung).
+
+---
+
+## Meilenstein 8b: Name „Audan Quarto“, Fahrer-Feinschliff, spürbareres Fahrgefühl, Turbo im Ton ✅ (Verlauf, Stand damals – seit M8c gibt es drei Autos und die Garage)
 
 > **Ehrlich vorneweg: Ich habe das Fahrgefühl nicht gespürt und den Ton nicht gehört.** Alles ist **gemessen** (Fahrphysik
 > mit festen Fahrprogrammen, Testfahrer, Ton offline gerechnet und ausgewertet) und mit Bildern in drei Pixelgrössen

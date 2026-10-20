@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8b';
+export const VERSION = '0.8c';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -666,7 +666,8 @@ export const CONFIG = {
     drehzahlFolgenSchalten: 9, // ... während der Schaltpause (Nadel fällt sichtbar ab)
     // --- Seit M8a (Fahrprofile): neue Werte, hier neutral (= wie vor M8a, Profil "prototyp") ---
     zugkraftFaktor: 1,         // Schub aller Gänge mal diesem Wert (1 = wie "zugkraft")
-    // Allrad: so viel mehr Schub geht je Belag auf den Boden (mal traktion; 1 = wie bisher)
+    // Allrad: so viel mehr Schub geht je Belag auf den Boden (mal traktion; 1 = wie bisher). Eigentlich ein
+    // Traktions-Faktor: über 1 = Allrad zieht besser, unter 1 = Hinterradantrieb (M8c, Fard Escorta) zieht schlechter
     allrad: { asphalt: 1, bankett: 1, gras: 1, schotter: 1, wiesenweg: 1 },
     // Turbo: Ladedruck (0..1) baut sich mit Gas oberhalb "ab" in "aufbau" Sekunden auf und fällt ohne Gas in "abbau".
     // Schub mal (1 - verlust) + (verlust + mehr) x Ladedruck. Anti-Lag: in der Schaltpause und beim Gaswegnehmen über
@@ -678,8 +679,11 @@ export const CONFIG = {
   // Die Werte in "auto" und "getriebe" oben sind die Referenz = Profil "prototyp" (Fahrverhalten bis 0.7b). Daran hängen
   // Pace-Notes-Stufen, Abkürzungs-Sperren und Testfahrer-Zeiten. Ein Profil überschreibt nur, was hier steht.
   // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4). Zum Ausprobieren: index.html?fahrlabor=1
+  // M8c: Block "ton" je Profil: turboMal = Turbo-Pfeifen und Blow-off mal diesem Wert (0 = kein Turbo-Geräusch),
+  // knallMal = Knall-Chance (Pops beim Gaswegnehmen) mal diesem Wert. Fehlt er, gilt 1 (= Ton wie 0.8b).
+  // Die Garage (Menü AUTO) wählt das Auto und damit sein Profil; ?auto=<id> in der Adresse geht weiter (Tests).
   fahrprofile: {
-    prototyp: {},              // keine Änderung (Referenz)
+    prototyp: { ton: { turboMal: 1, knallMal: 1 } }, // keine Änderung (Referenz)
     // Audan Quarto (Id rt4): Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
     // schiebt in schnellen Kurven eher über die Vorderräder, das Heck kommt mit der Handbremse oder beim Bremsen in der Kurve.
     rt4: {
@@ -698,6 +702,59 @@ export const CONFIG = {
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },
+      ton: { turboMal: 1, knallMal: 1 }, // M8c: Ton wie 0.8b
+    },
+    // Lanza Delto (Id delto, M8c): wendig, griffig, kurzer Radstand. Leichter und kürzer als der Audan, direkter in der
+    // Lenkung, neutral (schiebt nicht über die Front), Allrad-Traktion auf Schotter und Wiesenweg, dezenter Turbo,
+    // etwas weniger Höchsttempo. Messwerte und Kompromisse: STAND.md, Meilenstein 8c.
+    delto: {
+      auto: {
+        radstand: 2.48,          // kurzer Radstand (Audan 2.52): dreht williger ein
+        traegheit: 2.25,         // leichter als der Audan (2.5); 2.0 machte den Handbremsen-Drift zu wild (+37 %)
+        schwerpunktVorne: 0.49,  // etwas weiter hinten als beim Prototyp (0.48): neutral (Audan 0.46 = schiebt)
+        lastVorneAnteil: 0.53,   // kaum frontlastig (Audan 0.555): Lenkwinkel +7 % statt +17 %
+        gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve (+3.2°) ...
+        stabilitaet: 7.5,        // ... und wird schnell wieder gefangen (Prototyp 5; sonst kam der flotte Testfahrer bei
+                                 // 694 m beim harten Bremsen mit 130 km/h quer)
+        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.08 }, // Allrad zieht die Front auf losem Boden in die Kurve
+        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit (sonst rutscht hinten zuerst)
+      },
+      getriebe: {
+        allrad: { schotter: 1.15, wiesenweg: 1.1, bankett: 0.9 }, // Traktion auf losem Boden; Bankett weniger, damit
+                                 // es dort trotz mehr Schub keinen Vorteil gibt (Abkürzungen)
+        zugkraftFaktor: 1.02,    // leichter = zieht kräftiger (0-100 km/h Asphalt 4 % schneller)
+        gaenge: [48, 80, 112, 140, 166], // 4. und 5. Gang kürzer: Höchsttempo 5 % tiefer, oben herum zieht er weniger
+                                 // (sonst wäre der Testfahrer schneller als mit dem Audan)
+        turbo: { an: true, aufbau: 0.4 }, // dezenter Turbo, baut etwas langsamer auf als beim Audan (0.35 s)
+      },
+      ton: { turboMal: 1, knallMal: 1 },
+    },
+    // Fard Escorta (Id escorta, M8c): leichter Hinterrad-Drifter ohne Turbo. Das Heck kommt leicht (mit Gas, beim Lupfen,
+    // beim Bremsen in der Kurve), lässt sich aber in rund einer Sekunde wieder einfangen; weniger Traktion auf losem
+    // Boden, etwas weniger Leistung, kürzere Höchstgeschwindigkeit. Messwerte und Kompromisse: STAND.md, Meilenstein 8c.
+    escorta: {
+      auto: {
+        radstand: 2.4,           // kurz (Audan 2.52)
+        traegheit: 2.2,          // leicht (Prototyp 2.3); 2.0 machte den Handbremsen-Drift zu wild (+44 %)
+        schwerpunktVorne: 0.5,   // Schwerpunkt in der Mitte: dreht leicht ein (Lenkwinkel -12 %)
+        lastVorneAnteil: 0.5,    // Gewicht gleich verteilt
+        gewichtstransfer: 0.6,   // Bremsen in der Kurve: das Heck kommt deutlich (+6.3°)
+        gripHinten: 1.04,        // Heck hält weniger als beim Prototyp (1.12)
+        gasImDrift: 0.22,        // Gas im Drift lockert das Heck mehr (Prototyp 0.12)
+        stabilitaet: 4.5,        // Drift hält etwas länger (Prototyp 5), eingefangen in ca. 1 s
+        antriebHinten: 1.12,     // Hinterradantrieb: Schub braucht hinten Haftung auf, das Heck schiebt unter Gas
+                                 // (Vollgas in der Kurve +2.4° mehr Schwimmwinkel). Achtung: ab ca. 1.13 kippt es in einen
+                                 // langen Drift (+5.9°), darunter ruhig – kleine Schritte! (0 = aus)
+        heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // gleicht antriebHinten im Kreis auf losem Boden aus (sonst
+                                 // Grenztempo Schotter -5 %, Wiesenweg -3 %); im Drift unter Gas bleibt das Heck locker
+      },
+      getriebe: {
+        allrad: { schotter: 0.95, wiesenweg: 0.9 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden
+        zugkraftFaktor: 0.92,    // etwas weniger Leistung (kein Turbo)
+        gaenge: [48, 82, 118, 150, 168], // 4. und 5. Gang kürzer: Höchsttempo ca. 8 % tiefer
+        turbo: { an: false },    // kein Turbo (auch kein Pfeifen und kein Blow-off im Ton, siehe ton)
+      },
+      ton: { turboMal: 0, knallMal: 0.5 }, // kein Turbo-Geräusch, halb so oft Pops
     },
   },
 
@@ -772,7 +829,8 @@ export const CONFIG = {
     maxAbstand: 45,            // weiter weg von der Strasse geht es nicht (unsichtbare Wand)
     abhangGrenze: 6.6,         // am Abhang: unsichtbare Grenze (Abstand Strassenmitte)
     wandGrenze: 4.3,           // an der Felswand: hier stoppt die Automitte (seit M3a.3 nur noch für die Abkürzungs-Analyse)
-    // Felswand (seit M3a.3): Das Auto stoppt an der sichtbaren Wandfläche, geprüft mit seinem Umriss
+    // Felswand (seit M3a.3): Das Auto stoppt an der sichtbaren Wandfläche, geprüft mit seinem Umriss.
+    // M8c: laenge und breite setzt main.js beim Autowechsel aus js/autos.js (masse); hier die Werte des Audan Quarto
     wandHuelle: {
       laenge: 4.48,            // so lang ist das Auto für die Felswand (sichtbare Karosserie, Meter)
       breite: 1.86,            // so breit (mit Kotflügeln)
@@ -788,6 +846,7 @@ export const CONFIG = {
   // --- Kollision mit Bäumen, Steinen und Baumstämmen ---------------------
   kollision: {
     // Das Auto als Rechteck mit runden Ecken (flache Front = frontaler Aufprall)
+    // M8c: autoLaenge und autoBreite setzt main.js beim Autowechsel aus js/autos.js (kollision); hier der Audan Quarto
     autoLaenge: 4.4,           // Länge (Meter)
     autoBreite: 1.8,           // Breite (Meter)
     eckRadius: 0.3,            // Rundung der Ecken (Meter)
@@ -1259,6 +1318,9 @@ export const CONFIG = {
       minimap: true,           // Minimap oben rechts an/aus
       vergleich: true,         // Live-Vergleich unter der Zeit an/aus
       vergleichMit: 'best',    // 'best' = Platz 1 der Bestzeiten, 'letzter' = der letzte fertige Lauf
+      // Garage (M8c)
+      auto: 'rt4',             // gewähltes Auto (Id aus js/autos.js; unbekannt = Audan Quarto)
+      lacke: {},               // gewählte Lackierung je Auto, z. B. { rt4: 'gletscher' } (fehlt = die erste des Autos)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1326,6 +1388,26 @@ export const CONFIG = {
         { name: 'berge, Auto klein', pos: [18, 10, -26], blick: [-6, 7, 30], dauer: 9 },
       ],
     },
+  },
+
+  // --- Garage (Meilenstein 8c): Menüseite AUTO mit drehendem 3D-Modell (js/garage.js) ----------
+  // Masse in Pixeln des 320x180-Bildes (das 3D-Bild der Vorschau hat dieselbe Pixelgrösse wie das Spiel)
+  garage: {
+    tafelBreite: 312,          // Breite der Tafel
+    tafelHoehe: 172,           // Höhe der Tafel (mindestens)
+    spalte: 120,               // links: Liste der Autos und LACK (so breit), rechts: Vorschau und Werte
+    vorschauHoehe: 80,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts)
+    hintergrund: '#121a24',    // ruhige dunkle Tafel hinter dem Auto
+    drehDauer: 8,              // Sekunden für eine Umdrehung der Drehscheibe
+    startWinkel: 215,          // so steht das Auto beim ersten Öffnen (Grad; 180 = Front zur Kamera)
+    sichtfeld: 26,             // Kamera: Sichtfeld (Grad) ...
+    abstand: 8.6,              // ... Abstand zum Auto (Meter, für 4.48 m Länge; längere Autos etwas weiter) ...
+    neigung: 16,               // ... so steil von oben (Grad) ...
+    blickHoehe: 0.55,          // ... und so hoch schaut sie aufs Auto (Meter)
+    platteRadius: 2.75,        // Drehscheibe: Radius (Meter) ...
+    platteHoehe: 0.06,         // ... Dicke ...
+    platte: '#2a313a',         // ... Farbe der Platte ...
+    platteRand: '#56606a',     // ... und des Rands
   },
 
   // --- Rennablauf: Countdown, Zielbildschirm, Statistik (Meilenstein 5b) -------------
@@ -1833,7 +1915,8 @@ export const CONFIG = {
       felge: 0.5,              // ... die Felgen so viel
     },
 
-    // Lackierungen: Farben für die Bemalung in js/autos.js (null = diesen Teil nicht malen)
+    // Lackierungen: Farben für die Bemalung in js/autos.js (null = diesen Teil nicht malen).
+    // M8c: jede Lackierung gehört zu einem Auto (Liste "lackierungen" des Autos in js/autos.js; Namen eindeutig)
     lackierungen: {
       // Werk: Weiss mit rotem Streifen und dunkelgrauem Unterteil (wie vor M8a)
       werk: {
@@ -1856,11 +1939,56 @@ export const CONFIG = {
         sponsor0: '#ff8a1e', sponsor1: '#f4f4ee', sponsorHell: '#ff8a1e', banner: '#ff8a1e', bannerSchrift: '#1c1c1e',
         sponsorFeld: null, sponsorFeldSchrift: '#ff8a1e',
       },
+      // --- Lanza Delto (M8c) ---
+      // Werk: Weiss mit blauem und rotem Streifen, dunkles Unterteil
+      deltoWerk: {
+        lack: '#f1f1ec', unten: '#2c3038', streifen0: '#1f4f9a', streifen1: '#c8202c', akzent: '#1f4f9a', fluegel: '#f1f1ec',
+        lappen: '#1f4f9a', nummerFeld: '#f4f4ee', nummerRand: '#1f4f9a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#1f4f9a', sponsor1: '#c8202c', sponsorHell: '#f4f4ee', banner: '#1f4f9a', bannerSchrift: '#f4f4ee',
+        sponsorFeld: '#c8202c', sponsorFeldSchrift: '#f4f4ee',
+      },
+      // Rosso: Rot mit schwarzem Unterteil
+      rosso: {
+        lack: '#b8161e', unten: '#18191b', streifen0: '#18191b', streifen1: '#f1f1ec', akzent: '#18191b', fluegel: '#b8161e',
+        lappen: '#18191b', nummerFeld: '#f4f4ee', nummerRand: '#18191b', nummerSchrift: '#18191b',
+        sponsor0: '#f4f4ee', sponsor1: '#18191b', sponsorHell: '#f4f4ee', banner: '#18191b', bannerSchrift: '#f4f4ee',
+        sponsorFeld: '#18191b', sponsorFeldSchrift: '#f4f4ee',
+      },
+      // Waldgrün: Dunkelgrün mit gelben Akzenten
+      waldgruen: {
+        lack: '#1e4a30', unten: '#132a1d', streifen0: '#f2c22e', streifen1: null, akzent: '#f2c22e', fluegel: '#f2c22e',
+        lappen: '#f2c22e', nummerFeld: '#f2c22e', nummerRand: '#132a1d', nummerSchrift: '#132a1d',
+        sponsor0: '#f2c22e', sponsor1: '#f4f4ee', sponsorHell: '#f2c22e', banner: '#f2c22e', bannerSchrift: '#132a1d',
+        sponsorFeld: null, sponsorFeldSchrift: '#f2c22e',
+      },
+      // --- Fard Escorta (M8c) --- (haube: Farbe der Motorhaube, dach: Farbe des Dachs; null = wie der Lack)
+      // Werk: Weiss mit blauem Streifen und blauer Haube
+      escortaWerk: {
+        lack: '#f1f1ec', unten: '#1f3a6e', streifen0: '#1f4f9a', streifen1: null, akzent: '#1f4f9a', fluegel: '#1f4f9a',
+        lappen: '#1f4f9a', nummerFeld: '#f4f4ee', nummerRand: '#1f3a6e', nummerSchrift: '#1f3a6e',
+        sponsor0: '#f4f4ee', sponsor1: '#1f4f9a', sponsorHell: '#f4f4ee', banner: '#1f4f9a', bannerSchrift: '#f4f4ee',
+        sponsorFeld: '#1f4f9a', sponsorFeldSchrift: '#f4f4ee', haube: '#1f4f9a', dach: null,
+      },
+      // Kanarie: Gelb mit schwarzem Unterteil
+      kanarie: {
+        lack: '#f2c81e', unten: '#18191b', streifen0: '#18191b', streifen1: null, akzent: '#18191b', fluegel: '#18191b',
+        lappen: '#18191b', nummerFeld: '#f4f4ee', nummerRand: '#18191b', nummerSchrift: '#18191b',
+        sponsor0: '#18191b', sponsor1: '#18191b', sponsorHell: '#f2c81e', banner: '#18191b', bannerSchrift: '#f2c81e',
+        sponsorFeld: '#18191b', sponsorFeldSchrift: '#f2c81e', haube: null, dach: null,
+      },
+      // Tannengrün: Hellgrün mit weissem Dach
+      tannengruen: {
+        lack: '#6fae4a', unten: '#2e5a24', streifen0: '#f1f1ec', streifen1: '#2e5a24', akzent: '#f1f1ec', fluegel: '#f1f1ec',
+        lappen: '#2e5a24', nummerFeld: '#f4f4ee', nummerRand: '#2e5a24', nummerSchrift: '#2e5a24',
+        sponsor0: '#2e5a24', sponsor1: '#f4f4ee', sponsorHell: '#f4f4ee', banner: '#2e5a24', bannerSchrift: '#f4f4ee',
+        sponsorFeld: null, sponsorFeldSchrift: '#2e5a24', haube: null, dach: '#f1f1ec',
+      },
     },
     // Feste Autofarben (für alle Lackierungen gleich)
     farben: {
       schwarz: '#1c1c1e', gitter: '#0d0e10', fuge: '#2a2c30', kante: '#26282c', radhaus: '#121214', unterboden: '#1a1a1c',
       glas: '#1c2834', glasHell: '#3a5266', chrom: '#a4a7aa', rot: '#c8202c', heckblende: '#3a0c0c',
+      wischer: '#5a5f66',      // M8c: Heckwischer (Lanza Delto), etwas heller als die Scheibe
       // Helme im Fenster (M8b: gedeckt statt weiss/gelb, damit nichts leuchtet; zwei leicht andere Töne = zwei Personen)
       helmFahrer: '#5c6b7a', helmBeifahrer: '#55585e', visier: '#0c0f13', schulter: '#23272d',
       kennzeichen: '#f4f4ee', kennzeichenSchrift: '#1c1c1e',

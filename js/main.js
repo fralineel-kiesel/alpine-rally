@@ -10,6 +10,9 @@
 //           Rückfahrlicht und Dreck; alles nur Optik (liest die Physik, ändert sie nie).
 //           Fahrprofile (js/fahrprofil.js): ?auto=prototyp (Fahrverhalten bis 0.7b, Referenz) oder ?auto=rt4 (Standard);
 //           mit ?fahrlabor=1 ein Seitenpanel zum Nachstellen (js/fahrlabor.js, sonst nicht geladen).
+// Seit M8c: mehrere Autos. Das Menü (Garage, Seite AUTO) wählt Auto und Lackierung (autoWechseln): Modell neu bauen,
+//           Fahrprofil umschalten, Masse (Felswand, Kollision, Staub) vom Modell; gemerkt in den Einstellungen.
+//           ?auto=<id> (prototyp, rt4, delto, escorta) setzt Modell und Profil für Tests (prototyp = Audan mit Referenzprofil).
 // Am Menü vorbei (für Tests): index.html?menue=aus oder window.__alpineRally.start({ countdown: false })
 // (ohne Countdown wie vor M5b: Auto bei strasse.spawnBeiMeter, Zeit beginnt beim Überfahren der Startlinie).
 
@@ -30,10 +33,12 @@ import { baueWelt } from './world.js';
 import { baueNetz } from './netz.js';
 import { bauePflanzen, baueDeko, spriteGruppe } from './sprites.js';
 import { baueAuto } from './car.js';
+import { baueGarage } from './garage.js';
+import { autoZuordnung, gibtAuto, STANDARD_AUTO } from './autos.js';
 import { baueFederung } from './federung.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
-import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL } from './fahrprofil.js';
+import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL, tonWerte } from './fahrprofil.js';
 import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
 import { baueHud, formatZeit } from './hud.js';
 import { baueKollision } from './kollision.js';
@@ -59,8 +64,11 @@ function dokumentSprache() {
 dokumentSprache();
 beiSprachwechsel(dokumentSprache);
 const menueAn = CONFIG.menue.an && new URLSearchParams(window.location.search).get('menue') !== 'aus';
-// M8a: Fahrprofil über die Referenzwerte legen, bevor Physik und Getriebe gebaut werden (?auto=..., Standard rt4)
-waehleFahrprofil(profilAusAdresse());
+// M8a: Fahrprofil über die Referenzwerte legen, bevor Physik und Getriebe gebaut werden.
+// M8c: Auto aus der Adresse (?auto=..., nur für diesen Besuch, wird nicht gemerkt), sonst das gemerkte, sonst Audan Quarto
+const adressAuto = profilAusAdresse();
+let autoWahl = autoZuordnung(gibtAuto(adressAuto) ? adressAuto : gibtAuto(einstellungen.auto) ? einstellungen.auto : STANDARD_AUTO);
+waehleFahrprofil(autoWahl.profil);
 const fahrlaborAn = new URLSearchParams(window.location.search).get('fahrlabor') === '1';
 // Ton (M7a): nur mit Menü (Tests mit ?menue=aus bleiben stumm), nicht mit ?ton=aus oder audio.an = false.
 // Der AudioContext entsteht erst beim ersten Tastendruck / Klick auf dem Titel (zumMenue).
@@ -168,9 +176,18 @@ const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...s
 const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse], materialVon);
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
 const staub = baueStaub(szene); // Staub auf Schotter (M3a) und Wiesenweg (M3b)
-const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false, belag: null };
-const auto = baueAuto(undefined, undefined, renderer.domElement.width); // (M8a: Detail nach Pixelgrösse)
+const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false, belag: null, hinten: 1.3, seite: 0.75 };
+// M8c: gemerkte Lackierung dieses Autos (unbekannt: car.js nimmt die erste des Autos)
+const lackFuer = (modell) => einstellungen.lacke[modell] || null;
+let auto = baueAuto(autoWahl.modell, lackFuer(autoWahl.modell), renderer.domElement.width); // (M8a: Detail nach Pixelgrösse)
 szene.add(auto.objekt);
+// M8c: alles, was an den Massen hängt, kommt vom gewählten Modell (Audan Quarto: genau die Werte von 0.8b)
+function masseSetzen(m) {
+  CONFIG.grenze.wandHuelle.laenge = m.masse.laenge; CONFIG.grenze.wandHuelle.breite = m.masse.breite;
+  CONFIG.kollision.autoLaenge = m.kollision.laenge; CONFIG.kollision.autoBreite = m.kollision.breite;
+  staubAuto.hinten = m.staub.hinten; staubAuto.seite = m.staub.seite;
+}
+masseSetzen(auto.modell);
 const federung = baueFederung(); // M8a: Nicken, Rollen, Hub der Karosserie (nur Optik)
 // M8a: Dreck am Auto (Menge 0..autoOptik.dreck.max, Farbe linear r, g, b); sauber bei jedem Start und Neustart
 const dreck = { menge: 0, r: 0, g: 0, b: 0 };
@@ -865,7 +882,43 @@ function vollbild(an, ausMenue = false) {
 const seiten = baueSeiten({
   menue, zumMenue, starten: () => starten(), weiter, neustartEtappe: neuStarten, zumHauptmenue, zumTitel, paceNotes, vollbild,
   neuStarten, ergebnis: () => lauf.ergebnis, markiert: () => lauf.markiert,
+  autoWechseln: (id, lack) => autoWechseln(id, lack), autoWahl: () => autoWahl, autoModell: () => auto, // M8c: Garage
 });
+
+// --- Autowechsel (M8c, Garage): nur im Menü, nie im Rennen, Countdown, in der Pause oder im Zielbildschirm ---
+// id: Auto (rt4, delto, escorta, prototyp), lack: Lackierung (null = die gemerkte bzw. erste des Autos).
+// Ein anderes Modell wird neu gebaut (das alte freigegeben), das Fahrprofil umgeschaltet, Getriebe, Federung und Dreck
+// zurück, die Demo-Fahrt beginnt mit dem neuen Auto von vorn. Gemerkt in den Einstellungen. Ergebnis: true = gewechselt.
+function autoWechseln(id, lack = null) {
+  if (ablauf.ist('rennen', 'countdown', 'pause', 'ziel')) return false;
+  const w = autoZuordnung(id);
+  const lackName = lack ?? lackFuer(w.modell);
+  const modellNeu = w.modell !== auto.modell.id;
+  if (modellNeu) {
+    auto.dispose();
+    auto = baueAuto(w.modell, lackName, renderer.domElement.width);
+    szene.add(auto.objekt);
+    masseSetzen(auto.modell);
+  } else if (lackName && lackName !== auto.lackName) auto.lackierung(lackName);
+  const neu = modellNeu || w.profil !== aktivesProfil() || w.auto !== autoWahl.auto;
+  autoWahl = w;
+  auswahl.auto = Math.max(0, AUTOS.findIndex((a) => a.id === w.modell));
+  if (neu) {
+    waehleFahrprofil(w.profil);
+    getriebe.reset();
+    dreck.menge = 0;
+    auto.dreck(dreck);
+    federung.reset();
+    if (ablauf.ist('titel', 'menue')) demo.start(); else neustart(); // (Fahrphysik sauber auf den Start)
+    if (fahrlabor && fahrlabor.alleZeigen) fahrlabor.alleZeigen();
+  }
+  // merken (das Auto der Adresse ?auto= nur, wenn im Menü gewählt; prototyp gibt es in der Garage nicht)
+  if (w.auto !== 'prototyp') setze('auto', w.auto);
+  if (einstellungen.lacke[w.modell] !== auto.lackName) { einstellungen.lacke[w.modell] = auto.lackName; setze('lacke', einstellungen.lacke); }
+  menue.neuZeichnen();
+  return true;
+}
+auswahl.auto = Math.max(0, AUTOS.findIndex((a) => a.id === autoWahl.modell));
 
 ablauf.registriere('titel', { welt: 'demo', menue: true, abdunkeln: M.abdunkeln, betreten: () => menue.zeige(seiten.titel) });
 ablauf.registriere('menue', { welt: 'demo', menue: true, abdunkeln: M.abdunkeln, betreten: () => menue.zeige(seiten.haupt) });
@@ -913,6 +966,13 @@ window.addEventListener('blur', pausieren);
 document.addEventListener('visibilitychange', () => { if (document.hidden) pausieren(); });
 
 let sicht = 0, dunkel = 0; // Menü sichtbar (0..1), Abdunkeln der Szene (0..1)
+// M8c: Garage (Menüseite AUTO): zweite kleine Szene im selben Renderer, gezeichnet nur, solange die Seite zu sehen ist
+const garage = baueGarage(renderer);
+const szeneInfo = { calls: 0, dreiecke: 0 }; // Zeichenaufrufe der Spielszene im letzten Bild (ohne Garage)
+function garageSichtbar() {
+  if (!ablauf.def || !ablauf.def.menue || sicht <= 0 || menue.seite !== seiten.auto) return null;
+  return menue.einblendung > 0 ? seiten.garage.rahmen : null;
+}
 // Taste H (M6): ganzes HUD aus/an, nicht gespeichert (jeder Start der Seite mit HUD); hinweis = Sekunden "HUD AUS/AN"
 const hudSchalter = { an: true, hinweis: 0 };
 function hudUmschalten() {
@@ -1006,6 +1066,13 @@ function schleife(jetzt) {
   leben.aktualisiere(dtWelt, kamera.position);
   nebenwegSperrenZeigen(kamera.position);
   renderer.render(szene, kamera);
+  szeneInfo.calls = renderer.info.render.calls; szeneInfo.dreiecke = renderer.info.render.triangles; // M8c: nur die Szene
+  // M8c: Garage – das drehende Modell in den Vorschau-Rahmen (nur solange die Seite AUTO zu sehen ist)
+  const gRahmen = garageSichtbar();
+  if (gRahmen) {
+    const f = renderer.domElement.width / B;
+    garage.zeichne(dt, auto, Math.round(gRahmen.x * f), Math.round((H - gRahmen.y - gRahmen.h) * f), Math.round(gRahmen.b * f), Math.round(gRahmen.h * f));
+  }
 
   // HUD (im Rennen und eingefroren in der Pause), darüber Abdunkeln und Menü
   if (hudSchalter.hinweis > 0) hudSchalter.hinweis = Math.max(0, hudSchalter.hinweis - dt);
@@ -1047,6 +1114,14 @@ function schleife(jetzt) {
     hudCtx.globalAlpha = 1;
   }
   if (sicht > 0) menue.zeichne(hudCtx, dt, sicht);
+  // M8c: im HUD ein Loch über der Garage-Vorschau (das 3D-Bild liegt darunter), so weit wie die Seite eingeblendet ist
+  if (gRahmen) {
+    hudCtx.globalCompositeOperation = 'destination-out';
+    hudCtx.globalAlpha = Math.min(1, sicht * menue.einblendung);
+    hudCtx.fillRect(gRahmen.x, gRahmen.y, gRahmen.b, gRahmen.h);
+    hudCtx.globalAlpha = 1;
+    hudCtx.globalCompositeOperation = 'source-over';
+  }
   tonBild(dt);
   if (fahrlabor) fahrlabor.aktualisiere(dt); // M8a
 }
@@ -1067,6 +1142,7 @@ const tonZ = {
   modus: 'aus', drehzahl: 0, gang: 0, zielGang: 0, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt', drift: 0,
   handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
   ladedruck: 0, turboAn: false, // M8b: echter Ladedruck des Getriebes und ob das Fahrprofil einen Turbo hat
+  turboMal: 1, knallMal: 1,     // M8c: Turbo-Pfeifen/Blow-off und Knall-Chance mal diesen Werten (Fahrprofil)
 };
 function tonBild(dt) {
   tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm (nur Musik)
@@ -1076,6 +1152,7 @@ function tonBild(dt) {
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
   tonZ.ladedruck = getriebe.ladedruck; tonZ.turboAn = !!CONFIG.getriebe.turbo.an; // M8b
+  tonZ.turboMal = tonWerte.turboMal; tonZ.knallMal = tonWerte.knallMal; // M8c: Ton je Auto (Fahrprofil, Block "ton")
   tonZ.aufprall = tonInfo.wucht; tonZ.aufprallArt = tonInfo.art; tonZ.kontaktArt = tonInfo.kontaktArt; tonZ.kontaktTempo = tonInfo.kontaktTempo;
   tonInfo.wucht = 0; tonInfo.kontaktArt = -1;
   ton.aktualisiere(dt, tonZ);
@@ -1111,7 +1188,8 @@ window.__alpineRally = {
   ton, tonZ, tonInfo, tonEingabe, zumMenue, tonBild, paceSignal, // M7a
   get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
-  autoModell: auto, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a
+  get autoModell() { return auto; }, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a (M8c: Modell wechselt)
+  autoWechseln, get autoWahl() { return autoWahl; }, masseSetzen, garage, szeneInfo, staubAuto, // M8c
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
 };

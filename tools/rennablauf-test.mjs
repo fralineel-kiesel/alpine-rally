@@ -15,7 +15,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { starteSpiel, WURZEL } from './spiel-browser.mjs';
+import { starteSpiel, WURZEL, AUTO } from './spiel-browser.mjs';
 
 let fehlerZahl = 0;
 const pruefe = (ok, text, info = '') => {
@@ -241,7 +241,9 @@ console.log('(c) Testfahrer bis ins Ziel, Zielbildschirm');
   pruefe(r.erg && r.erg.zeit === r.fahrt.zeit && gross && gross.text === zeitText, 'Zielbildschirm zeigt die richtige Endzeit', `${gross && gross.text}`);
   pruefe(r.zeilen.some((z) => z.text === 'ERSTE ZEIT') && !r.erg.neueBest, 'erster Lauf: "ERSTE ZEIT", keine "neue Bestzeit"');
   // der Testweg (ohne Countdown) ändert die Testfahrer-Zeit nicht
-  pruefe(fmt(r.fahrt.zeit) === '2:31.92', 'Testfahrer-Zeit "flott" unverändert 2:31.92', fmt(r.fahrt.zeit));
+  // (M8c: mit --auto die Zeit des Testfahrers mit diesem Auto, siehe STAND.md M8c; Standard prototyp: 2:31.92 wie bisher)
+  const sollZeit = { prototyp: '2:31.92', rt4: '2:31.22', delto: '2:31.22', escorta: '2:34.68' }[AUTO] || '2:31.92';
+  pruefe(fmt(r.fahrt.zeit) === sollZeit, `Testfahrer-Zeit "flott" unverändert ${sollZeit}`, fmt(r.fahrt.zeit));
   // Esc tut im Zielbildschirm nichts
   await A(p, () => { window.__alpineRally.anhalten = false; });
   await bilderAbwarten(p, 3);

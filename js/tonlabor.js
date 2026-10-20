@@ -6,12 +6,16 @@
 // und "Musik" (Abschnitte, Art, Tempo, Kanäle stumm, Regler Musik); Feinschliff um Umgebung und Musik erweitert.
 // M8b: Schalter ECHTER LADEDRUCK AN (Ton wie im Audan Quarto: Pfeifen, Blow-off und Pops folgen dem Ladedruck des
 // Getriebes) mit Regler LADEDRUCK (Test); beim Anfahren liefert das echte Getriebe mit Turbo den Ladedruck.
+// M8c: Auswahl FAHRPROFIL (TON): dieselben Werte wie im Spiel (Turbo an/aus des Getriebes, turboMal, knallMal), z. B.
+// Fard Escorta (kein Turbo: kein Pfeifen, kein Blow-off, halb so viele Pops) gegen Audan Quarto. Standard: prototyp.
 
 import { CONFIG } from './config.js';
 import { baueTon, materialNr } from './audio.js';
 import { raumWerte } from './umgebung.js';
 import { HAUPT_STUECK, KANAELE } from './musik.js';
 import { Getriebe } from './getriebe.js';
+import { waehleFahrprofil, aktivesProfil, tonWerte } from './fahrprofil.js';
+import { AUTO_MODELLE } from './autos.js';
 
 const G = CONFIG.getriebe, A = CONFIG.audio;
 const $ = (id) => document.getElementById(id);
@@ -24,7 +28,20 @@ const z = {
   drift: 0, handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
   musikModus: 'aus', hx: 0, hz: -10, hyaw: 0, s: 500, // M7b: Hörer (die Quelle steht im Ursprung)
   ladedruck: 0, turboAn: false, // M8b
+  turboMal: 1, knallMal: 1, // M8c: aus dem gewählten Fahrprofil
 };
+// M8c: Fahrprofil für den Ton (Standard prototyp = wie bisher). Setzt das Getriebe (Turbo an/aus) und ECHTER LADEDRUCK.
+waehleFahrprofil('prototyp');
+for (const id of Object.keys(CONFIG.fahrprofile)) {
+  $('tonProfil').insertAdjacentHTML('beforeend', `<option value="${id}">${AUTO_MODELLE[id] ? AUTO_MODELLE[id].name : id.toUpperCase()}</option>`);
+}
+function tonProfil(id) {
+  waehleFahrprofil(id);
+  $('tonProfil').value = aktivesProfil();
+  $('echterLadedruck').checked = !!G.turbo.an;
+  z.turboMal = tonWerte.turboMal; z.knallMal = tonWerte.knallMal;
+  $('tonProfilW').textContent = `TURBO ${G.turbo.an ? 'AN' : 'AUS'} · turboMal ${z.turboMal} · knallMal ${z.knallMal}`;
+}
 let schaltRest = 0, schaltVon = 0, schaltHoch = true, demo = null;
 
 // --- Regler ---
@@ -44,6 +61,8 @@ for (const id of ['drehzahl', 'gas', 'tempo', 'drift', 'laut', 'signale', 'laded
 // M8b: Turbo wie im Fahrprofil des Audan Quarto (nur auf dieser Seite: das Getriebe fürs Anfahren baut dann Ladedruck auf)
 $('echterLadedruck').addEventListener('change', () => { G.turbo.an = $('echterLadedruck').checked; anzeigen(); });
 $('laut').addEventListener('input', () => ton.lautstaerke(+$('laut').value));
+$('tonProfil').addEventListener('change', () => { tonProfil($('tonProfil').value); anzeigen(); });
+tonProfil('prototyp');
 // Regler Signaltöne (M7a.1, wie im Spiel): danach der Regler-Tick, damit man die neue Stärke hört
 $('signale').addEventListener('input', () => { ton.signalLautstaerke(+$('signale').value); if (ton.werk) ton.werk.menue('regler', +$('signale').value / 100); });
 anzeigen();
@@ -67,9 +86,9 @@ function tu(was) {
   if (was.startsWith('m-')) { w.menue(was.slice(2), was === 'm-regler' ? Math.random() : 0); return; }
   if (was.startsWith('cp')) { w.checkpoint(+was.slice(2)); return; }
   switch (was) {
-    case 'blowOff': w.zustand.druck = Math.max(w.zustand.druck, 0.9); w.blowOff(); break;
+    case 'blowOff': if (z.turboMal > 0) { w.zustand.druck = Math.max(w.zustand.druck, 0.9); w.blowOff(false, z.turboMal); } break; // M8c: ohne Turbo nichts
     case 'knall': w.knall(0, 1); break;
-    case 'salve': w.salve(z.turboAn && z.ladedruck >= A.motor.blowOffAb); break; // M8b: mit Anti-Lag etwas öfter
+    case 'salve': w.salve(z.turboAn && z.ladedruck >= A.motor.blowOffAb, z.knallMal); break; // M8b: mit Anti-Lag etwas öfter (M8c: mal knallMal)
     case 'schalten': schaltRest = G.schaltDauerHoch; schaltVon = +drehzahl.value; schaltHoch = true; break;
     case 'runterschalten': schaltRest = G.schaltDauerRunter; schaltVon = +drehzahl.value; schaltHoch = false; break;
     case 'countdown': w.countdown(); break;
