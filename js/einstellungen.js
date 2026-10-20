@@ -10,7 +10,7 @@ export const AKTIONEN = Object.keys(STANDARD.tasten); // gas, bremse, links, rec
 const kopieTasten = (q) => Object.fromEntries(AKTIONEN.map((a) => [a, [...q[a]]]));
 
 // Aktuelle Werte (immer dasselbe Objekt)
-export const einstellungen = { ...STANDARD, tasten: kopieTasten(STANDARD.tasten) };
+export const einstellungen = { ...STANDARD, tasten: kopieTasten(STANDARD.tasten), lacke: { ...STANDARD.lacke } };
 
 const beobachter = [];
 // f(name, wert) wird nach jeder Änderung aufgerufen
@@ -37,6 +37,11 @@ function uebernimm(d) {
   if (typeof d.minimap === 'boolean') einstellungen.minimap = d.minimap;
   if (typeof d.vergleich === 'boolean') einstellungen.vergleich = d.vergleich;
   if (d.vergleichMit === 'best' || d.vergleichMit === 'letzter') einstellungen.vergleichMit = d.vergleichMit;
+  // M8c: gewähltes Auto und Lackierung je Auto (ob es die Id gibt, prüft main.js: unbekannt = Audan Quarto)
+  if (typeof d.auto === 'string' && d.auto.length < 40) einstellungen.auto = d.auto;
+  if (d.lacke && typeof d.lacke === 'object' && !Array.isArray(d.lacke)) {
+    einstellungen.lacke = Object.fromEntries(Object.entries(d.lacke).filter(([k, w]) => typeof w === 'string' && k.length < 40 && w.length < 40));
+  }
   if (d.tasten && typeof d.tasten === 'object') {
     const neu = kopieTasten(STANDARD.tasten);
     const gesehen = new Set();
@@ -86,7 +91,7 @@ export function speichere() {
 
 // Einen Wert ändern, speichern und melden
 export function setze(name, wert) {
-  if (einstellungen[name] === wert && name !== 'tasten') return;
+  if (einstellungen[name] === wert && name !== 'tasten' && name !== 'lacke') return;
   einstellungen[name] = wert;
   speichere();
   for (const f of beobachter) f(name, wert);

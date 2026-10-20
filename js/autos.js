@@ -1,6 +1,7 @@
 // Modelldaten der Autos (seit M8a). js/car.js baut daraus das 3D-Modell (baueAuto), ohne eigenes Wissen über ein
-// bestimmtes Auto. Ein weiteres Auto (M8c) = ein weiterer Eintrag hier, dazu die Menüliste in js/inhalte.js (gleiche Id)
-// und ein Fahrprofil in js/config.js (fahrprofile).
+// bestimmtes Auto. Ein weiteres Auto = ein weiterer Eintrag hier (die Garage zeigt alle in dieser Reihenfolge), dazu
+// Texte in js/texte.js (auto.<id>.name, auto.<id>.daten1/2), Lackierungen und ein Fahrprofil in js/config.js.
+// M8c: Masse je Auto (Felswand, Kollision, Staub hängen am gewählten Modell), Kurzname für die Bestzeiten.
 //
 // Koordinaten in Metern, Auto schaut nach +z (vorne), +x = links (Fahrerseite), y = Höhe über dem Boden.
 // Farben stehen als Namen: zuerst die Farben der Lackierung (config.js, autoOptik.lackierungen), sonst die festen
@@ -40,9 +41,13 @@ export const AUTO_MODELLE = {
     fahrprofil: 'rt4',          // Fahrprofil in config.js (fahrprofile)
     nummer: '4',                // Startnummer (Türen, Dach, Motorhaube)
     kennzeichen: 'AQ 4',        // erfundenes Kennzeichen (hinten)
+    kurz: 'QUARTO',             // M8c: Kurzname in den Bestzeiten (so schmal, dass die Zeile bei 320x180 passt)
     lackierungen: ['werk', 'gletscher', 'dunkel'], // Lackierungen aus config.js, autoOptik.lackierungen
     // Masse (Kollision, Felswand, Staub und Physik hängen daran; car.js prüft sie nicht, tools/auto-test.mjs schon)
+    // (M8c: laenge/breite = Hülle für die Felswand; der Radstand der Physik steht im Fahrprofil, auto.radstand)
     masse: { laenge: 4.48, breite: 1.86, radstand: 2.52, spur: 1.6, radRadius: 0.33 },
+    kollision: { laenge: 4.4, breite: 1.8 }, // M8c: Rechteck mit runden Ecken gegen Bäume, Steine, Zäune (kollision.js)
+    staub: { hinten: 1.3, seite: 0.75 },     // M8c: Staub tritt so weit hinter der Mitte und so weit seitlich aus (Hinterräder)
     schwerpunktHoehe: 0.5,      // um diesen Punkt (Höhe) neigt sich die Karosserie (Federung)
     raeder: {
       x: 0.8, z: 1.26,          // Radmitten bei (±x, Radius, ±z)
@@ -179,6 +184,23 @@ export const AUTO_MODELLE = {
 // Das Modell zu einer Id (unbekannt: das erste)
 export function autoModell(id) {
   return AUTO_MODELLE[id] || Object.values(AUTO_MODELLE)[0];
+}
+
+// M8c: Auswahl (Menü, ?auto=..., Bestzeiten). "prototyp" = Aussehen des Audan Quarto mit dem Referenz-Fahrprofil.
+export const STANDARD_AUTO = 'rt4';
+export const PROTOTYP = 'prototyp';
+export const gibtAuto = (id) => id === PROTOTYP || Object.prototype.hasOwnProperty.call(AUTO_MODELLE, id);
+// Welches Modell und welches Fahrprofil gehören zu einer Auswahl? (unbekannt: Standard)
+export function autoZuordnung(id) {
+  const a = gibtAuto(id) ? id : STANDARD_AUTO;
+  if (a === PROTOTYP) return { auto: a, modell: STANDARD_AUTO, profil: PROTOTYP };
+  return { auto: a, modell: a, profil: AUTO_MODELLE[a].fahrprofil };
+}
+// Kurzname für die Bestzeiten-Liste: alte Einträge ohne Id = Audan Quarto (das einzige Auto bis M8b)
+export function kurzName(id) {
+  if (id === PROTOTYP) return 'PROTO';
+  if (id == null) return AUTO_MODELLE[STANDARD_AUTO].kurz;
+  return AUTO_MODELLE[id] ? AUTO_MODELLE[id].kurz : '';
 }
 
 // Alle Texte eines Modells (für die Prüfung: nur Zeichen der Pixelschrift)

@@ -564,7 +564,9 @@ export function baueKlangwerk(ctx) {
   // Ein Bild. z: { modus ('aus' | 'countdown' | 'rennen' | 'ziel' | 'pause'), drehzahl, gang, schaltet, gas, bremse,
   //   tempo, vVor, untergrund, drift (Grad), handbremse, aufprall (Wucht m/s in diesem Bild), aufprallArt (Material),
   //   kontaktArt (-1 = kein Kontakt), kontaktTempo, M8b: ladedruck (0..1, echter Ladedruck des Getriebes),
-  //   turboAn (Fahrprofil mit Turbo; fehlt/false = eigenes Turbo-Modell wie bis 0.8a) }
+  //   turboAn (Fahrprofil mit Turbo; fehlt/false = eigenes Turbo-Modell wie bis 0.8a),
+  //   M8c: turboMal (Pfeifen und Blow-off mal diesem Wert, 0 = kein Turbo-Geräusch; fehlt = 1),
+  //   knallMal (Knall-Chance mal diesem Wert; fehlt = 1) – aus dem Fahrprofil (Block "ton") }
   function aktualisiere(dt, z) {
     zu.uhr += dt;
     zu.modus = z.modus;
@@ -632,13 +634,19 @@ export function baueKlangwerk(ctx) {
     // Turbo: Ladedruck läuft Gas und Drehzahl träge hinterher (eigenes Modell, Profil ohne Turbo wie bis 0.8a).
     // M8b: Mit Turbo im Fahrprofil (z.turboAn) folgt er dem echten Ladedruck des Getriebes (z.ladedruck, nur kurz
     // geglättet): das Pfeifen steigt mit dem Aufbau nach dem Gasgeben und reisst mit Anti-Lag in der Schaltpause nicht ab
-    if (z.turboAn) {
+    // M8c: turboMal (Fahrprofil) = 0: Auto ohne Turbo (Fard Escorta): kein Pfeifen, kein Blow-off, auch nicht aus dem
+    // eigenen Modell (Ladedruck im Ton bleibt 0)
+    const turboMal = z.turboMal ?? 1;
+    if (!(turboMal > 0)) {
+      zu.druck = 0;
+      zu.turbo = 0;
+    } else if (z.turboAn) {
       zu.druck += (begr(z.ladedruck || 0, 0, 1) - zu.druck) * (1 - Math.exp(-dt / M.turboEchtGlaetten));
-      zu.turbo = M.turboPegel * M.turboPegelMal * zu.druck * zu.druck;
+      zu.turbo = M.turboPegel * M.turboPegelMal * zu.druck * zu.druck * turboMal;
     } else {
       const druckZiel = gas * begr((rpm - M.turboAb) / (M.turboVoll - M.turboAb), 0, 1);
       zu.druck += (druckZiel - zu.druck) * (1 - Math.exp(-dt / (druckZiel > zu.druck ? M.turboRauf : M.turboRunter)));
-      zu.turbo = M.turboPegel * zu.druck * zu.druck;
+      zu.turbo = M.turboPegel * zu.druck * zu.druck * turboMal;
     }
     setze(W_TURBO, turboGain.gain, zu.turbo);
     setze(W_TURBOHZ, turbo.frequency, mische(M.turboTonMin, M.turboTonMax, zu.druck));
@@ -646,7 +654,7 @@ export function baueKlangwerk(ctx) {
     zu.gasLangsam += (gas - zu.gasLangsam) * (1 - Math.exp(-dt / M.blowOffZeit));
     if (zu.blowOffBereit && zu.gasLangsam - gas > M.blowOffGasFall && zu.druck > M.blowOffAb) {
       zu.blowOffBereit = false;
-      blowOff(z.schaltet && zu.schaltLast > M.schaltLastAb);
+      blowOff(z.schaltet && zu.schaltLast > M.schaltLastAb, turboMal);
     }
     if (gas > 0.6) zu.blowOffBereit = true;
     // Poppen: Pedal schnell weg aus hoher Last über knallAb (Zufall aus fester Folge, danach Sperre).
@@ -655,7 +663,7 @@ export function baueKlangwerk(ctx) {
     if (zu.knallBereit && zu.pedalLangsam - pedal > 0.5 && rpm > M.knallAb && zu.uhr > zu.knallSperre) {
       zu.knallBereit = false;
       zu.knallSperre = zu.uhr + M.knallSperre;
-      salve(!!z.turboAn && rpm >= G.turbo.antiLagAb && (z.ladedruck || 0) >= M.blowOffAb);
+      salve(!!z.turboAn && rpm >= G.turbo.antiLagAb && (z.ladedruck || 0) >= M.blowOffAb, z.knallMal ?? 1);
     }
     if (pedal > 0.6) zu.knallBereit = true;
     // Drehzahlbegrenzer
@@ -716,9 +724,10 @@ export function baueKlangwerk(ctx) {
   // --- Ereignisse ---
   const zwischen = (ab, t) => ab[0] + (ab[1] - ab[0]) * t;
   const ganzZwischen = (ab) => ab[0] + Math.min(ab[1] - ab[0], Math.floor(rnd() * (ab[1] - ab[0] + 1)));
-  function blowOff(schalten = false) {
+  // (M8c: mal turboMal des Fahrprofils; ohne Turbo kommt es gar nicht so weit, der Ladedruck im Ton bleibt 0)
+  function blowOff(schalten = false, turboMal = 1) {
     merke('blowOff', zu.druck);
-    spiele('blowOff', 'blowOff', motorAus, M.blowOffPegel * (0.6 + 0.4 * zu.druck) * (schalten ? M.schaltBlowOff : 1));
+    spiele('blowOff', 'blowOff', motorAus, M.blowOffPegel * (0.6 + 0.4 * zu.druck) * (schalten ? M.schaltBlowOff : 1) * turboMal);
   }
   // Ein Pop (Auspuff) in wann Sekunden, staerke 0..1 (mal popPegel); art: 'knall', 'knistern' oder 'schaltknall'
   function knall(wann = 0, staerke = 1, art = 'knall') {
@@ -727,9 +736,10 @@ export function baueKlangwerk(ctx) {
   }
   // Gaswegnehmen aus hoher Last: mit knallChance eine Salve (1-4 Pops), dazu manchmal leises Knistern. Ergebnis: Anzahl Pops.
   // antiLag (M8b): Turbo mit Anti-Lag aktiv -> Chance plus turboKnallPlus (gleich viele Zufallszahlen wie ohne)
-  function salve(antiLag = false) {
+  // knallMal (M8c): Knall-Chance mal diesem Wert (Fahrprofil; Fard Escorta 0.5 = etwa halb so oft)
+  function salve(antiLag = false, knallMal = 1) {
     let t = zwischen(M.knallFenster, rnd());
-    const n = rnd() < M.knallChance + (antiLag ? M.turboKnallPlus : 0) ? ganzZwischen(M.popAnzahl) : 0;
+    const n = rnd() < M.knallChance * knallMal + (antiLag ? M.turboKnallPlus : 0) ? ganzZwischen(M.popAnzahl) : 0;
     for (let k = 0; k < n; k++) { knall(t, zwischen(M.popStaerke, rnd())); t += zwischen(M.popAbstand, rnd()); }
     if (rnd() < M.knisternChance) {
       const m = ganzZwischen(M.knisternAnzahl);

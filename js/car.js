@@ -1,4 +1,5 @@
 // Das Auto als 3D-Modell (seit M8a): baueAuto(modell, lackierung) baut es aus den Modelldaten in js/autos.js.
+// Seit M8c für mehrere Autos (Garage); dispose() gibt ein Modell beim Wechsel wieder frei.
 // Hier steht kein Wissen über ein bestimmtes Auto, nur der Baukasten:
 //  - Karosserie: alle Teile mit Lack oder fester Farbe in EINER Geometrie (eine Lack-Textur, Pixel-Look),
 //    die Farbe kommt aus einem kleinen Bildatlas, der im Code gemalt wird (Lackierung, Streifen, Nummern, Sponsoren,
@@ -451,8 +452,9 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
   lackTex.minFilter = THREE.NearestFilter;
   lackTex.generateMipmaps = false;
   let lackName = null;
+  // (M8c: jede Lackierung gehört zu einem Auto: unbekannt oder von einem anderen Auto = die erste dieses Autos)
   function lackierung(name) {
-    const lack = O.lackierungen[name] ? name : Object.keys(O.lackierungen)[0];
+    const lack = m.lackierungen.includes(name) && O.lackierungen[name] ? name : m.lackierungen[0];
     maleLack(ctx, m, A, O.lackierungen[lack], feldListe, detailBreite);
     lackTex.needsUpdate = true;
     lackName = lack;
@@ -642,5 +644,15 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
     // Für Tests: Drehwinkel der Räder, Teile
     get radWinkel() { return radWinkel[0]; },
     raeder, teilMeshes,
+    // M8c: alles freigeben (Geometrien, Materialien, Texturen), z. B. beim Autowechsel in der Garage
+    dispose() {
+      if (auto.parent) auto.parent.remove(auto);
+      const geos = new Set(), mats = new Set();
+      auto.traverse((o) => { if (o.geometry) geos.add(o.geometry); if (o.material) mats.add(o.material); });
+      for (const g of geos) g.dispose();
+      for (const x of mats) x.dispose();
+      lackTex.dispose(); radTex.dispose();
+      leinwand.width = 0; radLeinwand.width = 0; // (Leinwände klein machen: gibt ihren Speicher sofort frei)
+    },
   };
 }

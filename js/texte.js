@@ -45,6 +45,7 @@ export const TEXTE = {
   'bestzeiten.platz': { de: 'PLATZ', en: 'RANK' },
   'bestzeiten.zeit': { de: 'ZEIT', en: 'TIME' },
   'bestzeiten.datum': { de: 'DATUM', en: 'DATE' },
+  'bestzeiten.auto': { de: 'AUTO', en: 'CAR' }, // M8c: Kurzname des Autos (gemeinsame Liste für alle Autos)
 
   // --- Einstellungen ---
   'einst.titel': { de: 'EINSTELLUNGEN', en: 'SETTINGS' },

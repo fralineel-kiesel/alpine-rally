@@ -46,6 +46,19 @@ export function baueMessung({ CONFIG, Fahrphysik, Getriebe }) {
     return null;
   }
 
+  // M8c: Höchsttempo: Vollgas geradeaus auf Asphalt, bis es nicht mehr schneller wird (km/h; weniger als 0.05 km/h
+  // Zuwachs in 2 s, höchstens 150 s)
+  function hoechstTempo(art = 'asphalt') {
+    const b = boden(art), p = auto(0);
+    let vor2 = 0, max = 0;
+    for (let t = 0, n = 0; t < 150; t += DT, n++) {
+      schritt(p, VOLLGAS, b);
+      max = Math.max(max, p.vVor);
+      if (n % 240 === 239) { if (t > 20 && max - vor2 < 0.05 * KMH) break; vor2 = max; }
+    }
+    return max / KMH;
+  }
+
   // Bremsweg von km/h auf 0 (Vollbremsung geradeaus, Meter)
   function bremsweg(art, vonKmh = 100) {
     const b = boden(art), p = auto(vonKmh * KMH);
@@ -200,7 +213,7 @@ export function baueMessung({ CONFIG, Fahrphysik, Getriebe }) {
     return { max: max / KMH, t95, nach1s: verlauf[119] / KMH };
   }
 
-  return { boden, auto, schritt, maxLenk, beschleunigung, bremsweg, kreisFahrt, kreisGrenze, lenkBedarf, heckReaktion, gasInKurve, handbremsDrift, rueckwaerts, DT };
+  return { boden, auto, schritt, maxLenk, beschleunigung, hoechstTempo, bremsweg, kreisFahrt, kreisGrenze, lenkBedarf, heckReaktion, gasInKurve, handbremsDrift, rueckwaerts, DT };
 }
 
 // Alle Messungen der Tabelle B3 (ohne Testfahrer) für das Profil, das gerade in CONFIG steht
@@ -212,6 +225,7 @@ export function alleMessungen(m) {
   r.beschl60_asphalt = m.beschleunigung('asphalt', 60);
   r.beschl60_schotter = m.beschleunigung('schotter', 60); // M8b (Info): Anfahren auf Schotter, z. B. aus einer Kehre
   r.bremsweg100_asphalt = m.bremsweg('asphalt', 100);
+  if (m.hoechstTempo) r.hoechst_asphalt = m.hoechstTempo('asphalt'); // M8c: Höchsttempo (km/h)
   r.kreis25_asphalt = m.kreisGrenze(25, 'asphalt');
   r.kreis25_schotter = m.kreisGrenze(25, 'schotter');
   r.kreis25_wiesenweg = m.kreisGrenze(25, 'wiesenweg');

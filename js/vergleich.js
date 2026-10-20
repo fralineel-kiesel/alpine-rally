@@ -24,7 +24,8 @@ export function baueVergleich(strecke, checkpoints) {
   // so viele Stellen liegen vor der Ziellinie (die letzte immer echt davor, damit die Spur streng aufsteigt)
   const K = Math.max(1, Math.ceil((zielS - s0) / D));
   // Vorlauf beim Stehstart: Bei GO (Zeit 0) steht die Automitte so weit vor der Startlinie
-  const vorlauf = CONFIG.grenze.wandHuelle.laenge / 2 + RA.schnauzeVorLinie;
+  // (M8c: je nach Auto verschieden lang, darum bei Bedarf gelesen)
+  const vorlaufM = () => CONFIG.grenze.wandHuelle.laenge / 2 + RA.schnauzeVorLinie;
   const runde = (t) => Math.round(t * 100) / 100;
 
   // --- Fahrspur des laufenden Laufs ---
@@ -111,7 +112,7 @@ export function baueVergleich(strecke, checkpoints) {
     const n = ref.n;
     if (!n) return NaN;
     if (s <= refS[0]) {
-      const a = refS[0] - vorlauf;
+      const vorlauf = vorlaufM(), a = refS[0] - vorlauf;
       return s <= a ? 0 : refT[0] * (s - a) / vorlauf;
     }
     if (s >= refS[n - 1]) return refT[n - 1];

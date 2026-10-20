@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8b';
+export const VERSION = '0.8c';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -666,7 +666,8 @@ export const CONFIG = {
     drehzahlFolgenSchalten: 9, // ... während der Schaltpause (Nadel fällt sichtbar ab)
     // --- Seit M8a (Fahrprofile): neue Werte, hier neutral (= wie vor M8a, Profil "prototyp") ---
     zugkraftFaktor: 1,         // Schub aller Gänge mal diesem Wert (1 = wie "zugkraft")
-    // Allrad: so viel mehr Schub geht je Belag auf den Boden (mal traktion; 1 = wie bisher)
+    // Allrad: so viel mehr Schub geht je Belag auf den Boden (mal traktion; 1 = wie bisher). Eigentlich ein
+    // Traktions-Faktor: über 1 = Allrad zieht besser, unter 1 = Hinterradantrieb (M8c, Fard Escorta) zieht schlechter
     allrad: { asphalt: 1, bankett: 1, gras: 1, schotter: 1, wiesenweg: 1 },
     // Turbo: Ladedruck (0..1) baut sich mit Gas oberhalb "ab" in "aufbau" Sekunden auf und fällt ohne Gas in "abbau".
     // Schub mal (1 - verlust) + (verlust + mehr) x Ladedruck. Anti-Lag: in der Schaltpause und beim Gaswegnehmen über
@@ -678,8 +679,11 @@ export const CONFIG = {
   // Die Werte in "auto" und "getriebe" oben sind die Referenz = Profil "prototyp" (Fahrverhalten bis 0.7b). Daran hängen
   // Pace-Notes-Stufen, Abkürzungs-Sperren und Testfahrer-Zeiten. Ein Profil überschreibt nur, was hier steht.
   // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4). Zum Ausprobieren: index.html?fahrlabor=1
+  // M8c: Block "ton" je Profil: turboMal = Turbo-Pfeifen und Blow-off mal diesem Wert (0 = kein Turbo-Geräusch),
+  // knallMal = Knall-Chance (Pops beim Gaswegnehmen) mal diesem Wert. Fehlt er, gilt 1 (= Ton wie 0.8b).
+  // Die Garage (Menü AUTO) wählt das Auto und damit sein Profil; ?auto=<id> in der Adresse geht weiter (Tests).
   fahrprofile: {
-    prototyp: {},              // keine Änderung (Referenz)
+    prototyp: { ton: { turboMal: 1, knallMal: 1 } }, // keine Änderung (Referenz)
     // Audan Quarto (Id rt4): Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
     // schiebt in schnellen Kurven eher über die Vorderräder, das Heck kommt mit der Handbremse oder beim Bremsen in der Kurve.
     rt4: {
@@ -698,6 +702,7 @@ export const CONFIG = {
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },
+      ton: { turboMal: 1, knallMal: 1 }, // M8c: Ton wie 0.8b
     },
   },
 
@@ -772,7 +777,8 @@ export const CONFIG = {
     maxAbstand: 45,            // weiter weg von der Strasse geht es nicht (unsichtbare Wand)
     abhangGrenze: 6.6,         // am Abhang: unsichtbare Grenze (Abstand Strassenmitte)
     wandGrenze: 4.3,           // an der Felswand: hier stoppt die Automitte (seit M3a.3 nur noch für die Abkürzungs-Analyse)
-    // Felswand (seit M3a.3): Das Auto stoppt an der sichtbaren Wandfläche, geprüft mit seinem Umriss
+    // Felswand (seit M3a.3): Das Auto stoppt an der sichtbaren Wandfläche, geprüft mit seinem Umriss.
+    // M8c: laenge und breite setzt main.js beim Autowechsel aus js/autos.js (masse); hier die Werte des Audan Quarto
     wandHuelle: {
       laenge: 4.48,            // so lang ist das Auto für die Felswand (sichtbare Karosserie, Meter)
       breite: 1.86,            // so breit (mit Kotflügeln)
@@ -788,6 +794,7 @@ export const CONFIG = {
   // --- Kollision mit Bäumen, Steinen und Baumstämmen ---------------------
   kollision: {
     // Das Auto als Rechteck mit runden Ecken (flache Front = frontaler Aufprall)
+    // M8c: autoLaenge und autoBreite setzt main.js beim Autowechsel aus js/autos.js (kollision); hier der Audan Quarto
     autoLaenge: 4.4,           // Länge (Meter)
     autoBreite: 1.8,           // Breite (Meter)
     eckRadius: 0.3,            // Rundung der Ecken (Meter)
@@ -1259,6 +1266,9 @@ export const CONFIG = {
       minimap: true,           // Minimap oben rechts an/aus
       vergleich: true,         // Live-Vergleich unter der Zeit an/aus
       vergleichMit: 'best',    // 'best' = Platz 1 der Bestzeiten, 'letzter' = der letzte fertige Lauf
+      // Garage (M8c)
+      auto: 'rt4',             // gewähltes Auto (Id aus js/autos.js; unbekannt = Audan Quarto)
+      lacke: {},               // gewählte Lackierung je Auto, z. B. { rt4: 'gletscher' } (fehlt = die erste des Autos)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick

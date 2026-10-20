@@ -56,10 +56,18 @@ export function baueKollision(hindernisse, artVon = null) {
     }
   }
 
-  // Auto-Rechteck: innerer Kern (ohne runde Ecken) und Eckradius
+  // Auto-Rechteck: innerer Kern (ohne runde Ecken) und Eckradius.
+  // M8c: Länge und Breite gehören zum gewählten Auto (main.js setzt kollision.autoLaenge/-Breite beim Autowechsel);
+  // neu gerechnet, sobald sie sich ändern.
   const ecke = k.eckRadius;
-  const kernL = k.autoLaenge / 2 - ecke, kernB = k.autoBreite / 2 - ecke;
-  const umkreis = Math.hypot(k.autoLaenge / 2, k.autoBreite / 2);
+  let kernL = 0, kernB = 0, umkreis = 0, fuerL = NaN, fuerB = NaN;
+  function masse() {
+    if (k.autoLaenge === fuerL && k.autoBreite === fuerB) return;
+    fuerL = k.autoLaenge; fuerB = k.autoBreite;
+    kernL = k.autoLaenge / 2 - ecke; kernB = k.autoBreite / 2 - ecke;
+    umkreis = Math.hypot(k.autoLaenge / 2, k.autoBreite / 2);
+  }
+  masse();
 
   // Kontakt zwischen Auto und Hindernissen, wenn das Auto bei (x, z) mit
   // Blickrichtung w steht.
@@ -71,6 +79,7 @@ export function baueKollision(hindernisse, artVon = null) {
   const kontakt = { tiefe: 0, nx: 0, nz: 0, i: -1 }; // i (M7a): welches Hindernis (für das Material des Tons)
   const band = k.glaetten;
   function finde(x, z, w) {
+    masse();
     const fx = Math.sin(w), fz = Math.cos(w);   // vorne
     const lx = Math.cos(w), lz = -Math.sin(w);  // links
     let tiefe = 0, px = 0, pz = 0, nx = 0, nz = 0, ti = -1;

@@ -10,6 +10,7 @@ import { tastenVon, tastenName, knopfName } from './input.js';
 import { zeichneKachel, kachelBreite } from './pacenotesbild.js';
 import { ladeBestzeiten, loescheBestzeiten, formatDatum, hundertstel } from './bestzeiten.js';
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
+import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
 
 // api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b),
@@ -68,7 +69,8 @@ export function baueSeiten(api) {
     ],
   };
 
-  // --- Bestzeiten (seit M5b gefüllt): Top 10 der gewählten Etappe als Tabelle Platz | Zeit | Datum ---
+  // --- Bestzeiten (seit M5b gefüllt): Top 10 der gewählten Etappe als Tabelle Platz | Zeit | Auto | Datum ---
+  // M8c: eine gemeinsame Liste für alle Autos, je Zeile der Kurzname des Autos (alte Einträge ohne Id: QUARTO)
   // Der gerade eingetragene Lauf ist orange hervorgehoben (nur bis zum nächsten Start, api.markiert()).
   // Wie die Etappenliste: je Etappe eine eigene Liste (weitere Etappen brauchen keinen Umbau).
   const LUECKE = 12;
@@ -76,27 +78,31 @@ export function baueSeiten(api) {
     a: Math.max(textBreite(t('bestzeiten.platz')), textBreite('10.')),
     b: Math.max(textBreite(t('bestzeiten.zeit')), textBreite('00:00.00')),
     c: Math.max(textBreite(t('bestzeiten.datum')), textBreite(formatDatum('2026-12-31T12:00:00Z', aktuelleSprache()))),
+    d: Math.max(textBreite(t('bestzeiten.auto')), textBreite('PROTO'), ...Object.values(AUTO_MODELLE).map((m) => textBreite(m.kurz))),
   });
-  const breiteZeiten = () => { const s = spaltenZeiten(); return s.a + s.b + s.c + 2 * LUECKE; };
+  const breiteZeiten = () => { const s = spaltenZeiten(); return s.a + s.b + s.d + s.c + 3 * LUECKE; };
   const kopfZeiten = {
     typ: 'info', hoehe: 10, breite: breiteZeiten,
     zeichne(c, x, y, b) {
       const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
       pixelText(c, t('bestzeiten.platz'), x0 + s.a, y + 1, 1, M.farbeGruppe, 'rechts');
       pixelText(c, t('bestzeiten.zeit'), x0 + s.a + LUECKE, y + 1, 1, M.farbeGruppe);
-      pixelText(c, t('bestzeiten.datum'), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, M.farbeGruppe);
+      pixelText(c, t('bestzeiten.auto'), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, M.farbeGruppe);
+      pixelText(c, t('bestzeiten.datum'), x0 + s.a + LUECKE + s.b + LUECKE + s.d + LUECKE, y + 1, 1, M.farbeGruppe);
     },
   };
   const zeitZeile = (z, platz, neu) => ({
     typ: 'info', hoehe: 9, breite: breiteZeiten, neu, // (neu: für Tests)
     inhalt: () => `${platz}. ${formatZeit(z.zeit)} ${formatDatum(z.datum, aktuelleSprache())}`,
+    autoKurz: () => kurzName(z.auto), // M8c (für Tests): Kurzname des Autos in dieser Zeile
     zeichne(c, x, y, b) {
       const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
       const farbe = neu ? RA.farbeNeu : M.farbeText;
       if (neu) { c.fillStyle = M.farbeAuswahlGrund; c.fillRect(x - 4, y, b + 8, 9); }
       pixelText(c, `${platz}.`, x0 + s.a, y + 1, 1, neu ? farbe : M.farbeWert, 'rechts');
       pixelText(c, formatZeit(z.zeit), x0 + s.a + LUECKE, y + 1, 1, farbe);
-      pixelText(c, formatDatum(z.datum, aktuelleSprache()), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, neu ? farbe : M.farbeHinweis);
+      pixelText(c, kurzName(z.auto), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, neu ? farbe : M.farbeGruppe);
+      pixelText(c, formatDatum(z.datum, aktuelleSprache()), x0 + s.a + LUECKE + s.b + LUECKE + s.d + LUECKE, y + 1, 1, neu ? farbe : M.farbeHinweis);
     },
   });
   const bestzeitenSeite = {
@@ -393,7 +399,7 @@ export function baueSeiten(api) {
       },
     };
   };
-  // Statistik in drei Spalten: Überschrift (hellblau), darunter der Wert
+  // Statistik in Spalten (seit M8c vier: dazu das Auto): Überschrift (hellblau), darunter der Wert
   const statWerte = (e) => {
     const mph = einstellungen.einheit === 'mph';
     const v = Math.round(e.hoechstTempo * 3.6 / (mph ? 1.609344 : 1));
@@ -401,15 +407,16 @@ export function baueSeiten(api) {
       [t('ziel.aufpralle'), String(e.aufpralle)],
       [t('ziel.resets'), String(e.resets)],
       [t('ziel.hoechstTempo'), `${v} ${t(mph ? 'einheit.mph' : 'einheit.kmh')}`],
+      [t('bestzeiten.auto'), kurzName(e.auto)], // M8c: mit welchem Auto (gemeinsame Bestzeiten)
     ];
   };
   const statZeile = (e) => ({
     typ: 'info', hoehe: 19,
-    breite: () => 3 * Math.max(...statWerte(e).flat().map((w) => textBreite(w))) + 2 * 10,
+    breite: () => statWerte(e).length * Math.max(...statWerte(e).flat().map((w) => textBreite(w))) + (statWerte(e).length - 1) * 10,
     inhalt: () => statWerte(e).map((w) => w.join(' ')).join(' · '),
     zeichne(c, x, y, b) {
       statWerte(e).forEach(([titel, wert], i) => {
-        const xm = x + Math.round(b * (i + 0.5) / 3);
+        const xm = x + Math.round(b * (i + 0.5) / statWerte(e).length);
         pixelText(c, titel, xm, y + 1, 1, M.farbeGruppe, 'mitte');
         pixelText(c, wert, xm, y + 11, 1, M.farbeText, 'mitte');
       });
