@@ -1851,7 +1851,8 @@ export const CONFIG = {
     farben: {
       schwarz: '#1c1c1e', gitter: '#0d0e10', fuge: '#2a2c30', kante: '#26282c', radhaus: '#121214', unterboden: '#1a1a1c',
       glas: '#1c2834', glasHell: '#3a5266', chrom: '#a4a7aa', rot: '#c8202c', heckblende: '#3a0c0c',
-      helmFahrer: '#f4f4ee', helmBeifahrer: '#f2c22e', visier: '#0c0f13', schulter: '#2b2f36',
+      // Helme im Fenster (M8b: gedeckt statt weiss/gelb, damit nichts leuchtet; zwei leicht andere Töne = zwei Personen)
+      helmFahrer: '#5c6b7a', helmBeifahrer: '#55585e', visier: '#0c0f13', schulter: '#23272d',
       kennzeichen: '#f4f4ee', kennzeichenSchrift: '#1c1c1e',
       scheinwerfer: '#fff6d8', zusatzscheinwerfer: '#fffbe6',
       ruecklichtAus: '#9a1612', ruecklichtAn: '#ff4a30', // Rücklicht (dunkelrot, von hinten gut sichtbar) und Bremslicht (hellrot)
