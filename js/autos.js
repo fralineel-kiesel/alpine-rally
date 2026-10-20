@@ -11,6 +11,8 @@
 //   prisma   Umriss in der Seitenansicht [[z, y], ...], quer von x[0] bis x[1] gezogen (spiegeln: auch auf der anderen Seite)
 //   quader   Kiste von min [x, y, z] bis max [x, y, z]
 //   trapez   Kiste mit schrägen Seiten: unten/oben je [y, halbe Breite, z vorne, z hinten] (Kabine, Flügel, Hutze)
+//            scheiben: ['vorne', 'hinten'] (M8d) = Front-/Heckfläche nimmt die Farbe immer aus der Ansicht vorne/hinten
+//            (für flache Scheiben, deren Normale eher nach oben zeigt; ohne die Option zählt die Richtung der Normale)
 //   zylinder Achse 'x' oder 'z', mitte [x, y, z], radius, laenge, segmente
 //   slot: 'lack' = Lackierung (Textur je Blickrichtung), 'fluegel' = eigene Fläche oben, sonst eine feste Farbe
 //   licht: 'vorne' (Scheinwerfer), 'hinten' (Rücklicht/Bremslicht), 'rueck' (Rückfahrlicht) = eigene, unbeleuchtete Teile
@@ -224,7 +226,8 @@ export const AUTO_MODELLE = {
       // Seitenschweller
       { art: 'quader', slot: 'lack', spiegeln: true, min: [0.84, 0.2, -0.6], max: [0.875, 0.32, 0.6] },
       // Kabine: Frontscheibe schräg, langes flaches Dach, steile Heckklappe bis fast ans Heck (Fliessheck)
-      { art: 'trapez', slot: 'lack', unten: [0.9, 0.8, 0.78, -1.92], oben: [1.41, 0.66, 0.14, -1.54], ohne: ['unten'] },
+      // (scheiben, M8d: die flache Frontscheibe holt ihre Farbe aus der Ansicht vorne, die Heckklappe aus hinten)
+      { art: 'trapez', slot: 'lack', unten: [0.9, 0.8, 0.78, -1.92], oben: [1.41, 0.66, 0.14, -1.54], ohne: ['unten'], scheiben: ['vorne', 'hinten'] },
       // Dachspoiler an der Hinterkante des Dachs (von hinten klar zu sehen)
       { art: 'trapez', slot: 'fluegel', unten: [1.39, 0.66, -1.36, -1.56], oben: [1.45, 0.7, -1.38, -1.74] },
       // Motorhaube mit Wölbung (Lüftungsschlitze werden aufgemalt)
@@ -353,7 +356,8 @@ export const AUTO_MODELLE = {
       { art: 'prisma', slot: 'lack', x: [0.82, 0.88], spiegeln: true, profil: kotfluegel(1.2, 0.42, 1.68, 0.72, 0.26, 0.68, 0.68) },
       { art: 'prisma', slot: 'lack', x: [0.82, 0.88], spiegeln: true, profil: kotfluegel(-1.2, 0.42, -0.72, -1.7, 0.26, 0.68, 0.68) },
       // Kabine: Frontscheibe, gerades Dach, schräge Heckscheibe zum Kofferraum
-      { art: 'trapez', slot: 'lack', unten: [0.84, 0.76, 0.86, -1.16], oben: [1.34, 0.64, 0.22, -0.66], ohne: ['unten'] },
+      // (scheiben, M8d: Front- und Heckscheibe holen ihre Farbe aus der Ansicht vorne bzw. hinten, egal wie flach)
+      { art: 'trapez', slot: 'lack', unten: [0.84, 0.76, 0.86, -1.16], oben: [1.34, 0.64, 0.22, -0.66], ohne: ['unten'], scheiben: ['vorne', 'hinten'] },
       // kleine Spoilerlippe am Kofferraum (statt grossem Flügel)
       { art: 'trapez', slot: 'fluegel', unten: [0.84, 0.74, -1.86, -1.98], oben: [0.9, 0.74, -1.9, -2.0] },
       // Stossstangen (verchromt) vorne und hinten, Frontschürze darunter
