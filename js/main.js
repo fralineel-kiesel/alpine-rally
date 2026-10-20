@@ -907,6 +907,7 @@ function autoWechseln(id, lack = null) {
   auswahl.auto = Math.max(0, AUTOS.findIndex((a) => a.id === w.modell));
   if (neu) {
     waehleFahrprofil(w.profil);
+    ton.motorNeu(); // M8d: Motorklang des neuen Autos (feste Teile und Motor-Puffer; der Motor ist im Menü aus)
     getriebe.reset();
     dreck.menge = 0;
     auto.dreck(dreck);

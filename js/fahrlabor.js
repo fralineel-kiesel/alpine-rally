@@ -109,7 +109,7 @@ export function baueFahrlabor({ physik, getriebe }) {
     for (const b of panel.querySelectorAll('[data-profil]')) b.classList.toggle('an', b.dataset.profil === aktivesProfil());
   }
   for (const b of panel.querySelectorAll('[data-profil]')) {
-    b.addEventListener('click', () => { waehleFahrprofil(b.dataset.profil); alleZeigen(); });
+    b.addEventListener('click', () => { waehleFahrprofil(b.dataset.profil, { motorTon: false }); alleZeigen(); }); // (M8d: Motorklang nur im Menü)
   }
   // Alle geänderten Werte als Text, eine Zeile pro Wert ("auto.gripVorne = 0.95"), zuerst das Profil
   function text() {
@@ -121,7 +121,7 @@ export function baueFahrlabor({ physik, getriebe }) {
     $('fahrlaborText').value = t;
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).catch(() => {});
   });
-  $('fahrlaborZurueck').addEventListener('click', () => { waehleFahrprofil(aktivesProfil()); alleZeigen(); $('fahrlaborText').value = ''; });
+  $('fahrlaborZurueck').addEventListener('click', () => { waehleFahrprofil(aktivesProfil(), { motorTon: false }); alleZeigen(); $('fahrlaborText').value = ''; });
   alleZeigen();
 
   // Live-Anzeige (5 Mal pro Sekunde): Tempo, Gang, Ladedruck, Achslast vorne

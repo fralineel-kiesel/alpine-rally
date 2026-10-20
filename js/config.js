@@ -681,9 +681,12 @@ export const CONFIG = {
   // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4). Zum Ausprobieren: index.html?fahrlabor=1
   // M8c: Block "ton" je Profil: turboMal = Turbo-Pfeifen und Blow-off mal diesem Wert (0 = kein Turbo-Geräusch),
   // knallMal = Knall-Chance (Pops beim Gaswegnehmen) mal diesem Wert. Fehlt er, gilt 1 (= Ton wie 0.8b).
+  // M8d: ton.motor = Motorklang des Autos: nur die Werte aus audio.motor (weiter unten), die vom Audan abweichen (der Audan
+  // ist die Referenz, sein Block bleibt leer). Auch einzelne Werte in pop/klack ({ pop: { mitte: 3000 } }) und Listen
+  // (knisternAnzahl: [2, 4]). Im Ton-Labor (ton-labor.html) live verstellen: FAHRPROFIL (TON) wählen, Feinschliff.
   // Die Garage (Menü AUTO) wählt das Auto und damit sein Profil; ?auto=<id> in der Adresse geht weiter (Tests).
   fahrprofile: {
-    prototyp: { ton: { turboMal: 1, knallMal: 1 } }, // keine Änderung (Referenz)
+    prototyp: { ton: { turboMal: 1, knallMal: 1, motor: {} } }, // keine Änderung (Referenz)
     // Audan Quarto (Id rt4): Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
     // schiebt in schnellen Kurven eher über die Vorderräder, das Heck kommt mit der Handbremse oder beim Bremsen in der Kurve.
     rt4: {
@@ -702,7 +705,7 @@ export const CONFIG = {
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },
-      ton: { turboMal: 1, knallMal: 1 }, // M8c: Ton wie 0.8b
+      ton: { turboMal: 1, knallMal: 1, motor: {} }, // M8c: Ton wie 0.8b; M8d: Motorklang = Referenz (audio.motor)
     },
     // Lanza Delto (Id delto, M8c): wendig, griffig, kurzer Radstand. Leichter und kürzer als der Audan, direkter in der
     // Lenkung, neutral (schiebt nicht über die Front), Allrad-Traktion auf Schotter und Wiesenweg, dezenter Turbo,
@@ -727,7 +730,7 @@ export const CONFIG = {
                                  // (sonst wäre der Testfahrer schneller als mit dem Audan)
         turbo: { an: true, aufbau: 0.4 }, // dezenter Turbo, baut etwas langsamer auf als beim Audan (0.35 s)
       },
-      ton: { turboMal: 1, knallMal: 1 },
+      ton: { turboMal: 1, knallMal: 1, motor: {} },
     },
     // Fard Escorta (Id escorta, M8c): leichter Hinterrad-Drifter ohne Turbo. Das Heck kommt leicht (mit Gas, beim Lupfen,
     // beim Bremsen in der Kurve), lässt sich aber in rund einer Sekunde wieder einfangen; weniger Traktion auf losem
@@ -754,7 +757,7 @@ export const CONFIG = {
         gaenge: [48, 82, 118, 150, 168], // 4. und 5. Gang kürzer: Höchsttempo ca. 8 % tiefer
         turbo: { an: false },    // kein Turbo (auch kein Pfeifen und kein Blow-off im Ton, siehe ton)
       },
-      ton: { turboMal: 0, knallMal: 0.5 }, // kein Turbo-Geräusch, halb so oft Pops
+      ton: { turboMal: 0, knallMal: 0.5, motor: {} }, // kein Turbo-Geräusch, halb so oft Pops
     },
   },
 

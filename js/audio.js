@@ -323,11 +323,13 @@ export function baueKlangwerk(ctx) {
   const amGain = gain(1 - M.amTiefe, saettigung);
   const summe = gain(1, amGain);
   const f0 = ctx.createConstantSource ? ctx.createConstantSource() : null; // Grundton als ein Wert für alle Oszillatoren
-  const saege = osz('sawtooth', f0 ? 0 : 50, gain(M.saege, summe));
-  const puls = osz('sine', f0 ? 0 : 50, gain(M.puls, summe)); puls.setPeriodicWave(welle(W.puls));
+  const saegeGain = gain(M.saege, summe), pulsGain = gain(M.puls, summe);
+  const saege = osz('sawtooth', f0 ? 0 : 50, saegeGain);
+  const puls = osz('sine', f0 ? 0 : 50, pulsGain); puls.setPeriodicWave(welle(W.puls));
   const unterGain = gain(M.unter, summe);
   const unter = osz('triangle', f0 ? 0 : 25, unterGain);
-  const ober = osz('sine', M.schwebung, gain(M.oberwelle, summe));
+  const oberGain = gain(M.oberwelle, summe);
+  const ober = osz('sine', M.schwebung, oberGain);
   const hochGain = gain(0, summe);
   const hoch = osz('sine', f0 ? 0 : 50, hochGain); hoch.setPeriodicWave(welle(W.hoch));
   const amOsz = osz('sine', f0 ? 0 : 25);
@@ -335,21 +337,23 @@ export function baueKlangwerk(ctx) {
   const rauhBp = filter('bandpass', 0, M.rauhGuete, null);
   const rauhGain = gain(0, summe);
   const rauhPuls = gain(1 - M.rauhPuls, rauhGain); rauhBp.connect(rauhPuls); // pulsiert im Takt der Zündungen ...
-  puls.connect(gain(M.rauhPuls, rauhPuls.gain));                                // ... (die Impulswelle steuert die Lautstärke)
+  const rauhPulsTiefe = gain(M.rauhPuls, rauhPuls.gain); puls.connect(rauhPulsTiefe); // ... (die Impulswelle steuert die Lautstärke)
+  let rauhF = null;
   if (f0) {
     f0.offset.value = G.leerlauf / 60 * M.zuendFaktor;
     f0.connect(saege.frequency); f0.connect(puls.frequency); f0.connect(hoch.frequency);
     const halb = gain(0.5); f0.connect(halb); halb.connect(unter.frequency); halb.connect(amOsz.frequency);
     const doppelt = gain(2); f0.connect(doppelt); doppelt.connect(ober.frequency);
-    const rauhF = gain(M.rauhOberwelle); f0.connect(rauhF); rauhF.connect(rauhBp.frequency);
+    rauhF = gain(M.rauhOberwelle); f0.connect(rauhF); rauhF.connect(rauhBp.frequency);
     f0.start();
   } else rauhBp.frequency.value = 300;
   const turboGain = gain(0, motorAus);
   const turbo = osz('sine', M.turboTonMin, turboGain);
   const heulenGain = gain(0, motorAus);
-  const heulen = osz('sine', 200, filter('lowpass', M.heulenFilter, 0.7, heulenGain)); heulen.setPeriodicWave(welle(W.heulen));
+  const heulenLp = filter('lowpass', M.heulenFilter, 0.7, heulenGain);
+  const heulen = osz('sine', 200, heulenLp); heulen.setPeriodicWave(welle(W.heulen));
   const begrenzerTiefe = gain(0, begrenzer.gain);
-  osz('square', M.begrenzerHz, begrenzerTiefe);
+  const begrenzerOsz = osz('square', M.begrenzerHz, begrenzerTiefe);
 
   // --- Reifen (über Pausen-Dämpfung und Ducking) ---
   const reifenPause = gain(1, duck);
@@ -369,6 +373,12 @@ export function baueKlangwerk(ctx) {
 
   // --- Puffer (nach dem Entsperren in Häppchen berechnet) ---
   const puffer = {};
+  // M8d: Motor-Puffer (Pop, Klack, Blow-off) hängen am Motorklang des Autos. Schlüssel = die Werte, aus denen sie gerechnet
+  // werden; gebaute Puffer bleiben gemerkt (zurück zum Audan = wieder genau seine Puffer, nichts wird doppelt gerechnet)
+  const MOTOR_PUFFER = ['pop', 'klack', 'blowOff'];
+  const motorSchluessel = (name) => JSON.stringify(name === 'blowOff' ? [M.blowOffDauer, M.blowOffTon] : M[name]);
+  const pufferVon = {};            // Schlüssel des Puffers, der gerade in puffer[name] liegt
+  const pufferLager = new Map();   // `${name}|${Schlüssel}` -> Puffer
   const quellen = []; // Dauer-Rauschquellen (für Tests und zum Aufräumen)
   let kiesQuelle = null, rutschQuelle = null;
   function dauerQuelle(buf, ziel, versatz) {
@@ -386,9 +396,9 @@ export function baueKlangwerk(ctx) {
       kiesQuelle = dauerQuelle(b, kiesBp, 0.2); rutschQuelle = dauerQuelle(b, rutschBp, 0.9);
       rutschQuelle.playbackRate.value = 1.35;
     }],
-    ['pop', () => popRezept(rate, M.pop, rndP)],
-    ['klack', () => popRezept(rate, M.klack, rndP)],
-    ['blowOff', () => blowOffRezept(rate, M, rndP)],
+    ['pop', () => { pufferVon.pop = motorSchluessel('pop'); return popRezept(rate, M.pop, rndP); }],
+    ['klack', () => { pufferVon.klack = motorSchluessel('klack'); return popRezept(rate, M.klack, rndP); }],
+    ['blowOff', () => { pufferVon.blowOff = motorSchluessel('blowOff'); return blowOffRezept(rate, M, rndP); }],
     ['ratsch', () => ratschRezept(rate, R, rndP)],
     ['schlag', () => klangRezept(rate, AU.schlag, rndP)],
     ...AU.materialien.map((m) => [`aufprall-${m}`, () => klangRezept(rate, AU.klang[m], rndP)]),
@@ -424,7 +434,11 @@ export function baueKlangwerk(ctx) {
     }
     const ms = performance.now() - t0;
     aufbau.ms += ms; aufbau.haeppchen++; aufbau.laengstesMs = Math.max(aufbau.laengstesMs, ms);
-    if (auftrag >= auftraege.length) { aufbau.fertig = true; aufbau.ende = performance.now(); }
+    if (auftrag >= auftraege.length && !aufbau.fertig) {
+      aufbau.fertig = true; aufbau.ende = performance.now();
+      for (const n of MOTOR_PUFFER) pufferLager.set(`${n}|${pufferVon[n]}`, puffer[n]);
+      if (motorWechsel.offen) motorPufferNeu(motorWechsel.sofort); // (M8d: Auto gewechselt, während noch gebaut wurde)
+    }
     return aufbau.fertig;
   }
   // Im Spiel: Häppchen mit Pausen dazwischen (setTimeout), das Spiel bleibt flüssig
@@ -446,6 +460,80 @@ export function baueKlangwerk(ctx) {
     if (rz.schleifeEnde) b.schleifeEnde = rz.schleifeEnde;
     puffer[was] = b;
     return true;
+  }
+
+  // --- M8d: Motorklang eines anderen Autos (die Werte in CONFIG.audio.motor sind schon umgeschaltet, js/fahrprofil.js) ---
+  // Was der Ton jedes Bild liest, wirkt sofort. Hier wird nur neu gesetzt, was beim Bau fest ist: Wellenformen,
+  // Sättigungskurve, Biss-Filter, Güten, Anteile der Schichten, Begrenzer- und Heulen-Werte (an denselben Knoten: keine
+  // neuen Knoten, nichts zu trennen) und die Motor-Puffer (gemerkt oder in Häppchen neu gerechnet wie beim Laden).
+  // Im Spiel nur im Menü (Motor aus). Ist der Motor gerade zu hören (Ton-Labor), wird er dafür 60 ms weich stumm.
+  // sofort = true: Puffer gleich rechnen (Tests mit OfflineAudioContext)
+  const motorWechsel = { offen: false, sofort: false, anzahl: 0, haeppchen: 0, laengstesMs: 0, gerechnet: 0, ausLager: 0, stummBis: -1 };
+  function motorFestSetzen() {
+    const w = wellen(M);
+    puls.setPeriodicWave(welle(w.puls)); hoch.setPeriodicWave(welle(w.hoch)); heulen.setPeriodicWave(welle(w.heulen));
+    saettigung.curve = saettigungsKurve(M);
+    biss.frequency.value = M.bissHz; biss.Q.value = M.bissGuete; biss.gain.value = M.bissDb;
+    motorLp.Q.value = M.filterQ; rauhBp.Q.value = M.rauhGuete;
+    if (rauhF) rauhF.gain.value = M.rauhOberwelle;
+    saegeGain.gain.value = M.saege; pulsGain.gain.value = M.puls; oberGain.gain.value = M.oberwelle; ober.frequency.value = M.schwebung;
+    rauhPuls.gain.value = 1 - M.rauhPuls; rauhPulsTiefe.gain.value = M.rauhPuls;
+    heulenLp.frequency.value = M.heulenFilter; begrenzerOsz.frequency.value = M.begrenzerHz;
+    if (!f0) rauhBp.frequency.value = 300;
+  }
+  // Motor-Puffer zum aktuellen Motorklang: aus dem Lager oder neu (eigene feste Zufallsfolge je Schlüssel)
+  function motorPufferNeu(sofort) {
+    motorWechsel.offen = false;
+    const fehlend = [];
+    for (const n of MOTOR_PUFFER) {
+      const k = motorSchluessel(n);
+      if (pufferVon[n] === k) continue;
+      const alt = pufferLager.get(`${n}|${k}`);
+      if (alt) { puffer[n] = alt; pufferVon[n] = k; motorWechsel.ausLager++; } else fehlend.push([n, k]);
+    }
+    if (!fehlend.length) return;
+    // Häppchen wie beim Laden (512 Samples, höchstens pufferSchritt ms am Stück); der alte Puffer klingt bis dahin weiter
+    const job = fehlend.map(([n, k]) => {
+      let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+      const r = zufall(C.seed + 11 + (h % 100000));
+      const rz = n === 'blowOff' ? blowOffRezept(rate, M, r) : popRezept(rate, M[n], r);
+      const b = ctx.createBuffer(1, rz.laenge, rate);
+      return { n, k, rz, b, d: b.getChannelData(0), pos: 0 };
+    });
+    let j = 0;
+    const motorPufferHappen = (budget) => {
+      const t0 = performance.now();
+      while (j < job.length) {
+        const x = job[j];
+        if (x.pos < x.rz.laenge) { const bis = Math.min(x.rz.laenge, x.pos + 512); x.rz.fuelle(x.d, x.pos, bis); x.pos = bis; } else {
+          if (x.rz.fertig) x.rz.fertig(x.d);
+          pufferLager.set(`${x.n}|${x.k}`, x.b);
+          if (motorSchluessel(x.n) === x.k) { puffer[x.n] = x.b; pufferVon[x.n] = x.k; } // (inzwischen wieder gewechselt: nur ins Lager)
+          motorWechsel.gerechnet++; j++;
+        }
+        if (performance.now() - t0 >= budget) break;
+      }
+      const ms = performance.now() - t0;
+      motorWechsel.haeppchen++; motorWechsel.laengstesMs = Math.max(motorWechsel.laengstesMs, ms);
+      return j >= job.length;
+    };
+    if (sofort) { while (!motorPufferHappen(1e9)); return; }
+    const motorPufferWeiter = () => { if (!motorPufferHappen(C.pufferSchritt)) setTimeout(motorPufferWeiter, 0); };
+    setTimeout(motorPufferWeiter, 0);
+  }
+  // ohneBlende (Ton-Labor, Feinschliff-Regler): sofort umstellen, auch wenn der Motor läuft (sonst stottert er beim Ziehen)
+  function motorNeu(sofort = false, ohneBlende = false) {
+    motorWechsel.anzahl++;
+    const anwenden = () => {
+      motorFestSetzen();
+      if (aufbau.fertig) motorPufferNeu(sofort); else { motorWechsel.offen = true; motorWechsel.sofort = sofort; }
+    };
+    const hoerbar = zu.motorAn > 0 && zu.modus !== 'aus' && zu.modus !== 'pause';
+    if (!hoerbar || sofort || ohneBlende) { anwenden(); return; }
+    // (Labor: Motor kurz weich aus, umstellen, im nächsten Bild blendet aktualisiere() ihn wieder ein)
+    motorWechsel.stummBis = ctx.currentTime + 0.12;
+    setze(W_AUS, motorAus.gain, 0, 0.01);
+    setTimeout(anwenden, 60);
   }
 
   // --- Weiche Änderungen: jeder Wert wird nachgeführt, nie gesprungen. Gleicher Wert = kein neuer Auftrag ---
@@ -630,7 +718,7 @@ export function baueKlangwerk(ctx) {
     // Zielbildschirm: steht das Auto, blendet der Motor aus
     const steht = z.modus === 'ziel' && z.tempo < C.zielStand.ab;
     zu.motorAn = steht ? 0 : 1;
-    setze(W_AUS, motorAus.gain, zu.motorAn, steht ? C.zielStand.blende / 3 : 0.05);
+    setze(W_AUS, motorAus.gain, ctx.currentTime < motorWechsel.stummBis ? 0 : zu.motorAn, steht ? C.zielStand.blende / 3 : 0.05); // (M8d: stumm beim Umschalten)
     // Turbo: Ladedruck läuft Gas und Drehzahl träge hinterher (eigenes Modell, Profil ohne Turbo wie bis 0.8a).
     // M8b: Mit Turbo im Fahrprofil (z.turboAn) folgt er dem echten Ladedruck des Getriebes (z.ladedruck, nur kurz
     // geglättet): das Pfeifen steigt mit dem Aufbau nach dem Gasgeben und reisst mit Anti-Lag in der Schaltpause nicht ab
@@ -867,10 +955,12 @@ export function baueKlangwerk(ctx) {
     ctx, aufbau, puffer, zaehler, protokoll, zustand: zu, zaehl, quellen,
     busse: { master, limiter, decke, fahrzeug, umgebung, signale, signaleRegler, musik, musikRegler, duck, umgDuck, umgFilter, umgPause, reifenFilter, reifenPause },
     // Werte der Knoten (für Tests: echte Parameter)
-    knoten: { surrenLp, weichLp, kiesBp, rutschBp, quietschBp, f0, saege, motorAus, motorLast, motorLp, turboGain, turbo, heulenGain, heulen, begrenzerTiefe, begrenzer, surrenGain, weichGain, kiesGain, quietschGain, quietschOsz, rutschGain, windGain, windLp, schleifenGain, schleifenBp, amTiefe, rauhGain, unterGain, hochGain, saettigung },
+    knoten: { surrenLp, weichLp, kiesBp, rutschBp, quietschBp, f0, saege, motorAus, motorLast, motorLp, turboGain, turbo, heulenGain, heulen, begrenzerTiefe, begrenzer, surrenGain, weichGain, kiesGain, quietschGain, quietschOsz, rutschGain, windGain, windLp, schleifenGain, schleifenBp, amTiefe, rauhGain, unterGain, hochGain, saettigung,
+      biss, rauhBp, saegeGain, pulsGain, oberGain, ober, rauhPuls, rauhPulsTiefe, heulenLp, begrenzerOsz, get rauhF() { return rauhF; } }, // (M8d: feste Teile des Motors)
+    get motorPufferVon() { return { ...pufferVon }; }, motorSchluessel, // M8d (Tests): zu welchem Motorklang die Puffer gehören
     get stimmen() { let n = 0; for (const s of stimmen) if (s.an) n++; return n; },
     stimmenListe: stimmen,
-    puffernStarten, puffernSofort, neuBauen, aktualisiere, allesAus, lautstaerke, signalLautstaerke, musikLautstaerke, spitzen,
+    puffernStarten, puffernSofort, neuBauen, motorNeu, motorWechsel, aktualisiere, allesAus, lautstaerke, signalLautstaerke, musikLautstaerke, spitzen,
     musik: musikWerk, umgebung: umgebungWerk, setzeQuellen: (q) => umgebungWerk.setzeQuellen(q), // M7b
     blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote,
   };
@@ -910,6 +1000,9 @@ export function baueTon({ an = true } = {}) {
     musikLautstaerke(prozent) { mus = prozent; if (werk) werk.musikLautstaerke(prozent); }, // Regler MUSIK (M7b)
     // Quellen der Umgebung (M7b): einmal nach dem Aufbau der Welt; q darf eine Funktion sein (wird erst beim Entsperren gerechnet)
     quellen(q) { quellen = q; if (werk) werk.setzeQuellen(typeof q === 'function' ? q() : q); },
+    // M8d: Motorklang des gerade gewählten Fahrprofils übernehmen (nach waehleFahrprofil; im Spiel nur im Menü).
+    // Ohne Klangwerk nichts zu tun: beim Entsperren wird ohnehin mit den aktuellen Werten gebaut
+    motorNeu() { if (werk) { try { werk.motorNeu(); } catch { /* Ton ist nie wichtiger als das Spiel */ } } },
     // Musik-Zustand für Tests (M7b): ohne Ton { laeuft: false }
     musikStatus() { return werk ? werk.musik.status() : { laeuft: false, art: '', pegel: 0 }; },
   };
