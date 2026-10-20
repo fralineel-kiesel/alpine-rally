@@ -18,6 +18,10 @@
 //               statt die Auswahl zu wechseln (die Auswahl bleibt auf ZURÜCK). Passt sie ganz, ist alles wie sonst.
 // M5b: titelFarbe?(blinkAn) = eigene Farbe der Titelzeile (z. B. blinkend, mit blinkt: true),
 //      kurztaste?(code) = Taste, die sonst nichts tut, auf dieser Seite auswerten (z. B. R = Neu starten); true = erledigt
+// M8c (Garage): breite = feste Tafelbreite, spalte = Einträge nur in einer linken Spalte dieser Breite, minHoehe = Tafel
+//      mindestens so hoch, zeichneRechts(ctx, x, y, b, h) = eigener Inhalt rechts neben der Spalte;
+//      Eintrag beimWaehlen() = wird gerufen, sobald der Eintrag gewählt wird (Tastatur, Gamepad, Maus);
+//      auswahl mit probe(wert) -> [Farbe, ...] = kleine Farbprobe vor dem Wert.
 // Seiten werden nur bei Änderung neu gezeichnet (auf ein eigenes Bild), sonst nur kopiert.
 // M7a: klang(art, wert) = Menü-Ton (tick, bestaetigen, zurueck, regler mit Wert 0..1, fehler); hängt an denselben
 //      Aufrufen für alle Eingabearten. Ein seite.zurueck(), das false liefert, tut nichts (dann auch kein Ton).
@@ -100,6 +104,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     o.wahl = nr;
     schmutzig = true;
     klang('tick');
+    const e = liste(o.seite)[nr];
+    if (e && e.beimWaehlen) e.beimWaehlen(); // M8c: z. B. Garage: Auto sofort wechseln
   }
   function schritt(r) {
     const o = oben();
@@ -276,13 +282,13 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
   function optionText(e, w) { const o = e.optionen().find((x) => x.wert === w); return o ? txt(o.text) : ''; }
   // Werte stehen rechtsbündig an einer gemeinsamen Kante (Platz für den Pfeil ">" daneben).
   // Regler: Balken und Zahl bei allen Reglern einer Seite gleich breit (reglerZahl = breiteste Zahl)
-  const PFEIL = 8, BALKEN = 42;
+  const PFEIL = 8, BALKEN = 42, PROBE = 7; // PROBE (M8c): Farbprobe vor dem Wert einer Auswahl
   let reglerZahl = 0;
   const reglerZahlBreite = (e) => Math.max(textBreite(e.anzeige(e.min)), textBreite(e.anzeige(e.max)));
   // Breite des Wert-Teils rechts (für die Tafelbreite: immer das Breiteste, damit nichts springt)
   function wertBreite(e) {
     if (e.typ === 'umschalter') return Math.max(textBreite(t('wert.an')), textBreite(t('wert.aus'))) + 2 * PFEIL;
-    if (e.typ === 'auswahl') return Math.max(...e.optionen().map((o) => textBreite(txt(o.text)))) + 2 * PFEIL;
+    if (e.typ === 'auswahl') return Math.max(...e.optionen().map((o) => textBreite(txt(o.text)))) + 2 * PFEIL + (e.probe ? PROBE + 3 : 0);
     if (e.typ === 'regler') return BALKEN + 4 + reglerZahl + PFEIL;
     if (e.typ === 'aktion' && e.wert) return textBreite(e.wert()) + PFEIL;
     return 0;
@@ -317,7 +323,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     if (s.hinweis) inhalt = Math.max(inhalt, textBreite(txt(s.hinweis)));
     if (tasten.length) inhalt = Math.max(inhalt, textBreite(t('tasten.abbrechen')), textBreite(t('tasten.druecken')));
     if (meldung) inhalt = Math.max(inhalt, textBreite(meldung.text));
-    const breite = Math.min(B - 4, inhalt + 2 * innen + 2);
+    const breite = s.breite ? Math.min(B - 4, s.breite) : Math.min(B - 4, inhalt + 2 * innen + 2);
+    const spalte = s.spalte ? Math.min(breite, s.spalte) : breite; // M8c: Einträge nur links (Garage)
 
     // Höhe, ggf. mit Rollen
     const sel = l[o.wahl];
@@ -332,7 +339,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     let gesamt = 0;
     for (const e of l) gesamt += zeilenHoehe(e);
     const sichtH = Math.min(gesamt, maxH - kopf - fuss);
-    const hoehe = kopf + sichtH + fuss;
+    const hoehe = Math.max(kopf + sichtH + fuss, Math.min(maxH, s.minHoehe || 0));
     const x0 = Math.round((B - breite) / 2);
     const y0 = yOben ?? Math.round((H - hoehe) / 2);
 
@@ -355,7 +362,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     // Schriftzug über der Tafel (Hauptmenü)
     if (s.logo) pixelText(c, t('titel.name'), B / 2, 8, 2, M.farbeTitel, 'mitte');
     zeichneTafel(c, x0, y0, breite, hoehe, M.ecke, M.farbeTafel, M.farbeRand);
-    const xi = x0 + 1 + innen, xr = x0 + breite - 1 - innen;
+    const xi = x0 + 1 + innen, xr = x0 + spalte - 1 - innen;
     if (s.titel) {
       pixelText(c, txt(s.titel), x0 + breite / 2, y0 + 5, 1, s.titelFarbe ? s.titelFarbe(blinkAn) : M.farbeTitel, 'mitte');
       c.fillStyle = M.farbeRand;
@@ -371,10 +378,12 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     for (let i = 0; i < l.length; i++) {
       const e = l[i], h = zeilenHoehe(e);
       const sichtbar = y + h > yL && y < yL + sichtH;
-      if (sichtbar) zeile(c, e, i, i === o.wahl, x0, xi, xr, y, h, breite, tasteLabel, o);
+      if (sichtbar) zeile(c, e, i, i === o.wahl, x0, xi, xr, y, h, spalte, tasteLabel, o);
       y += h;
     }
     c.restore();
+    // M8c: eigener Inhalt rechts neben der Spalte (Garage: Vorschau-Rahmen, Werte, Texte)
+    if (s.zeichneRechts) s.zeichneRechts(c, x0 + spalte, yL, breite - spalte, hoehe - kopf - fuss, { x0, y0, breite, hoehe });
     // Rollen-Pfeile
     if (gesamt > sichtH) {
       // rechts im Rand, neben den Werten
@@ -420,6 +429,13 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
       // Pfeile zeigen: mit links/rechts umstellen
       if (gewaehlt) { pixelText(c, '<', xw - tb - PFEIL + 1, ty, 1, wf); pixelText(c, '>', xr - 5, ty, 1, wf); }
       h0.mitte = xw - tb / 2;
+      // M8c: Farbprobe (z. B. Lackierung): kleine Kästchen links vom Wert (und vom Pfeil)
+      if (e.probe) {
+        const farben = e.probe(e.lesen()) || [];
+        const px = xw - tb - PFEIL - PROBE - 1, py = ty;
+        c.fillStyle = '#101418'; c.fillRect(px - 1, py - 1, PROBE + 2, 9);
+        farben.forEach((f, k) => { c.fillStyle = f; c.fillRect(px, py + Math.round(k * 7 / farben.length), PROBE, Math.round((k + 1) * 7 / farben.length) - Math.round(k * 7 / farben.length)); });
+      }
     } else if (e.typ === 'aktion' && e.wert) pixelText(c, e.wert(), xw, ty, 1, wf, 'rechts');
     else if (e.typ === 'regler') {
       const bx = xw - reglerZahl - 4 - BALKEN, by = y + Math.floor(h / 2) - 2;
@@ -464,6 +480,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     get rollen() { const o = oben(); return o ? { scroll: o.scroll, max: o.maxScroll, ...o.masse } : null; },
     get stapel() { return stapel; },
     get treffer() { return treffer; },
+    // M8c: wie weit ist die oberste Seite gerade eingeblendet (0..1; beim Seitenwechsel erst aus-, dann einblenden)
+    get einblendung() { return blende < 0.5 ? 0 : blende * 2 - 1; },
     // Jedes Bild: Zeit weiter, bei Bedarf neu zeichnen, auf ctx kopieren (alpha = Sichtbarkeit 0..1)
     zeichne(ctx, dt, alpha = 1) {
       uhr += dt;

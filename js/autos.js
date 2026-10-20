@@ -61,6 +61,8 @@ export const AUTO_MODELLE = {
     schatten: { breite: 2.0, laenge: 4.5 },
     // Flächen nach vorne/hinten zwischen z = ±zBis und unter yBis (Radlauf-Wände, Enden der Kotflügel) in dieser Farbe
     innenFlaechen: { zBis: 1.95, yBis: 0.86, farbe: 'radhaus' },
+    // werte (M8c, Garage, 1 bis 10): aus den Messungen von tools/auto-messung.mjs abgeleitet (siehe WERTE_VORSCHRIFT unten)
+    werte: { beschleunigung: 6, tempo: 6, grip: 6, drift: 4 },
 
     teile: [
       // --- Unterbau: Seitenansicht mit keilförmiger Motorhaube und zwei Radläufen ---

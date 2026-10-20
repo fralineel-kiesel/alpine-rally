@@ -31,6 +31,17 @@ export const TEXTE = {
   'auto.rt4.daten1': { de: 'ALLRAD · TURBO · 5 GÄNGE AUTOMATIK', en: 'AWD · TURBO · 5-SPEED AUTOMATIC' },
   'auto.rt4.daten2': { de: 'SCHWERES RALLYAUTO, VIEL TRAKTION', en: 'HEAVY RALLY CAR, LOTS OF TRACTION' },
   'auswahl.gewaehlt': { de: 'GEWÄHLT', en: 'SELECTED' },
+  // M8c: Garage (Seite AUTO)
+  'garage.titel': { de: 'GARAGE', en: 'GARAGE' },
+  'garage.lack': { de: 'LACK:', en: 'PAINT:' },
+  'garage.beschleunigung': { de: 'BESCHLEUNIGUNG', en: 'ACCELERATION' },
+  'garage.tempo': { de: 'HÖCHSTTEMPO', en: 'TOP SPEED' },
+  'garage.grip': { de: 'GRIP', en: 'GRIP' },
+  'garage.drift': { de: 'DRIFT', en: 'DRIFT' },
+  // Lackierungen (Namen wie in js/config.js, autoOptik.lackierungen)
+  'lack.werk': { de: 'WERK', en: 'WORKS' },
+  'lack.gletscher': { de: 'GLETSCHER', en: 'GLACIER' },
+  'lack.dunkel': { de: 'DUNKEL', en: 'DARK' },
   'auto.spaeter': { de: 'WEITERE AUTOS FOLGEN', en: 'MORE CARS TO COME' },
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },
   'etappe.pass.name': { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },

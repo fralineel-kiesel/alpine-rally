@@ -1338,6 +1338,26 @@ export const CONFIG = {
     },
   },
 
+  // --- Garage (Meilenstein 8c): Menüseite AUTO mit drehendem 3D-Modell (js/garage.js) ----------
+  // Masse in Pixeln des 320x180-Bildes (das 3D-Bild der Vorschau hat dieselbe Pixelgrösse wie das Spiel)
+  garage: {
+    tafelBreite: 312,          // Breite der Tafel
+    tafelHoehe: 172,           // Höhe der Tafel (mindestens)
+    spalte: 120,               // links: Liste der Autos und LACK (so breit), rechts: Vorschau und Werte
+    vorschauHoehe: 80,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts)
+    hintergrund: '#121a24',    // ruhige dunkle Tafel hinter dem Auto
+    drehDauer: 8,              // Sekunden für eine Umdrehung der Drehscheibe
+    startWinkel: 215,          // so steht das Auto beim ersten Öffnen (Grad; 180 = Front zur Kamera)
+    sichtfeld: 26,             // Kamera: Sichtfeld (Grad) ...
+    abstand: 8.6,              // ... Abstand zum Auto (Meter, für 4.48 m Länge; längere Autos etwas weiter) ...
+    neigung: 16,               // ... so steil von oben (Grad) ...
+    blickHoehe: 0.55,          // ... und so hoch schaut sie aufs Auto (Meter)
+    platteRadius: 2.75,        // Drehscheibe: Radius (Meter) ...
+    platteHoehe: 0.06,         // ... Dicke ...
+    platte: '#2a313a',         // ... Farbe der Platte ...
+    platteRand: '#56606a',     // ... und des Rands
+  },
+
   // --- Rennablauf: Countdown, Zielbildschirm, Statistik (Meilenstein 5b) -------------
   // Masse in Pixeln des 320x180-Bildes.
   rennablauf: {

@@ -33,6 +33,7 @@ import { baueWelt } from './world.js';
 import { baueNetz } from './netz.js';
 import { bauePflanzen, baueDeko, spriteGruppe } from './sprites.js';
 import { baueAuto } from './car.js';
+import { baueGarage } from './garage.js';
 import { autoZuordnung, gibtAuto, STANDARD_AUTO } from './autos.js';
 import { baueFederung } from './federung.js';
 import { Fahrphysik } from './physics.js';
@@ -965,6 +966,13 @@ window.addEventListener('blur', pausieren);
 document.addEventListener('visibilitychange', () => { if (document.hidden) pausieren(); });
 
 let sicht = 0, dunkel = 0; // Menü sichtbar (0..1), Abdunkeln der Szene (0..1)
+// M8c: Garage (Menüseite AUTO): zweite kleine Szene im selben Renderer, gezeichnet nur, solange die Seite zu sehen ist
+const garage = baueGarage(renderer);
+const szeneInfo = { calls: 0, dreiecke: 0 }; // Zeichenaufrufe der Spielszene im letzten Bild (ohne Garage)
+function garageSichtbar() {
+  if (!ablauf.def || !ablauf.def.menue || sicht <= 0 || menue.seite !== seiten.auto) return null;
+  return menue.einblendung > 0 ? seiten.garage.rahmen : null;
+}
 // Taste H (M6): ganzes HUD aus/an, nicht gespeichert (jeder Start der Seite mit HUD); hinweis = Sekunden "HUD AUS/AN"
 const hudSchalter = { an: true, hinweis: 0 };
 function hudUmschalten() {
@@ -1058,6 +1066,13 @@ function schleife(jetzt) {
   leben.aktualisiere(dtWelt, kamera.position);
   nebenwegSperrenZeigen(kamera.position);
   renderer.render(szene, kamera);
+  szeneInfo.calls = renderer.info.render.calls; szeneInfo.dreiecke = renderer.info.render.triangles; // M8c: nur die Szene
+  // M8c: Garage – das drehende Modell in den Vorschau-Rahmen (nur solange die Seite AUTO zu sehen ist)
+  const gRahmen = garageSichtbar();
+  if (gRahmen) {
+    const f = renderer.domElement.width / B;
+    garage.zeichne(dt, auto, Math.round(gRahmen.x * f), Math.round((H - gRahmen.y - gRahmen.h) * f), Math.round(gRahmen.b * f), Math.round(gRahmen.h * f));
+  }
 
   // HUD (im Rennen und eingefroren in der Pause), darüber Abdunkeln und Menü
   if (hudSchalter.hinweis > 0) hudSchalter.hinweis = Math.max(0, hudSchalter.hinweis - dt);
@@ -1099,6 +1114,14 @@ function schleife(jetzt) {
     hudCtx.globalAlpha = 1;
   }
   if (sicht > 0) menue.zeichne(hudCtx, dt, sicht);
+  // M8c: im HUD ein Loch über der Garage-Vorschau (das 3D-Bild liegt darunter), so weit wie die Seite eingeblendet ist
+  if (gRahmen) {
+    hudCtx.globalCompositeOperation = 'destination-out';
+    hudCtx.globalAlpha = Math.min(1, sicht * menue.einblendung);
+    hudCtx.fillRect(gRahmen.x, gRahmen.y, gRahmen.b, gRahmen.h);
+    hudCtx.globalAlpha = 1;
+    hudCtx.globalCompositeOperation = 'source-over';
+  }
   tonBild(dt);
   if (fahrlabor) fahrlabor.aktualisiere(dt); // M8a
 }
@@ -1166,7 +1189,7 @@ window.__alpineRally = {
   get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
   get autoModell() { return auto; }, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a (M8c: Modell wechselt)
-  autoWechseln, get autoWahl() { return autoWahl; }, masseSetzen, // M8c
+  autoWechseln, get autoWahl() { return autoWahl; }, masseSetzen, garage, szeneInfo, // M8c
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
 };

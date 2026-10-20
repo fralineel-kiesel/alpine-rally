@@ -14,7 +14,8 @@ import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
 
 // api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b),
-//        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf) }
+//        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf),
+//        M8c: autoWechseln(id, lack), autoWahl() ({ auto, modell, profil }), autoModell() (das gebaute Modell, js/car.js) }
 export function baueSeiten(api) {
   const M = CONFIG.menue;
   const RA = CONFIG.rennablauf;
@@ -54,12 +55,58 @@ export function baueSeiten(api) {
       zeilen().forEach((z, i) => pixelText(c, z, x + 10, y + 13 + i * 9, 1, M.farbeText));
     },
   });
+  // --- Garage (M8c, Seite AUTO): links die Autos und LACK, rechts oben das drehende 3D-Modell (main.js zeichnet es mit
+  // js/garage.js in den Rahmen garageRahmen), rechts unten vier Werte-Balken, unten zwei Zeilen Daten.
+  // Wählen = sofort wechseln (Modell, Fahrprofil, Lackierung); ENTER auf einem Auto = zurück ins Hauptmenü.
+  const GA = CONFIG.garage;
+  const lackVon = (name) => CONFIG.autoOptik.lackierungen[name] || {};
+  const garage = { rahmen: null }; // Vorschau-Rahmen (Pixel im 320x180-Raster), gesetzt beim Zeichnen
+  const WERTE = [['beschleunigung', 'garage.beschleunigung'], ['tempo', 'garage.tempo'], ['grip', 'garage.grip'], ['drift', 'garage.drift']];
+  const modellJetzt = () => (api.autoModell ? api.autoModell().modell : AUTO_MODELLE[AUTOS[auswahl.auto].id]);
+  function garageRechts(c, x, y, b, h, tafel) {
+    // Vorschau: dunkle Tafel mit hellem Rand (die 3D-Szene kommt darüber, nur während die Seite offen ist)
+    const px = x + 2, py = y, pb = (b - M.innen - 4) & ~1, ph = GA.vorschauHoehe;
+    garage.rahmen = { x: px, y: py, b: pb, h: ph };
+    c.fillStyle = M.farbeRand; c.globalAlpha = 0.5; c.fillRect(px - 1, py - 1, pb + 2, ph + 2); c.globalAlpha = 1;
+    c.fillStyle = GA.hintergrund; c.fillRect(px, py, pb, ph);
+    // Werte-Balken: 1 bis 10 Kästchen
+    const m = modellJetzt();
+    const lb = Math.max(...WERTE.map(([, k]) => textBreite(t(k))));
+    WERTE.forEach(([feld, k], i) => {
+      const ly = py + ph + 5 + i * 9;
+      pixelText(c, t(k), px, ly + 1, 1, M.farbeGruppe);
+      const w = Math.max(0, Math.min(10, Math.round(m.werte ? m.werte[feld] : 0)));
+      for (let n = 0; n < 10; n++) {
+        const bx = px + lb + 6 + n * 6;
+        c.fillStyle = '#101418'; c.fillRect(bx + 1, ly + 2, 5, 5);
+        c.fillStyle = n < w ? M.farbeWert : M.farbeRegler; c.fillRect(bx, ly + 1, 5, 5);
+      }
+    });
+    // zwei Zeilen Daten (Antrieb, Bauart), über die ganze Tafel
+    const mitte = tafel.x0 + Math.round(tafel.breite / 2);
+    [`auto.${m.id}.daten1`, `auto.${m.id}.daten2`].forEach((k, i) => pixelText(c, t(k), mitte, y + h - 19 + i * 9, 1, M.farbeText, 'mitte'));
+  }
+  const autoZeile = (a) => ({
+    typ: 'aktion', text: a.name, autoId: a.id, // (autoId: für Tests)
+    beimWaehlen: () => { if (api.autoWechseln) api.autoWechseln(a.id); },
+    aktion: () => menue.schliesse(),
+  });
+  const lackZeile = {
+    typ: 'auswahl', text: () => '', lack: true,
+    optionen: () => modellJetzt().lackierungen.map((n) => ({ wert: n, text: `lack.${n}` })),
+    lesen: () => (api.autoModell ? api.autoModell().lackName : modellJetzt().lackierungen[0]),
+    setzen: (w) => { if (api.autoWechseln) api.autoWechseln(api.autoWahl().auto, w); },
+    probe: (w) => { const l = lackVon(w); return [l.lack, l.streifen0 || l.akzent || l.unten].filter(Boolean); },
+  };
   const autoSeite = {
-    id: 'auto', titel: 'auto.titel',
+    id: 'auto', titel: 'garage.titel', breite: GA.tafelBreite, spalte: GA.spalte, minHoehe: GA.tafelHoehe,
+    // der Zeiger beginnt beim gewählten Auto
+    get start() { return Math.max(0, AUTOS.findIndex((a) => a.id === (api.autoWahl ? api.autoWahl().modell : AUTOS[auswahl.auto].id))); },
     eintraege: () => [
-      ...AUTOS.map((a, i) => karte(a.name, () => a.daten.map((d) => t(d)), () => auswahl.auto === i)),
-      leer(), textZeile('auto.spaeter', M.farbeHinweis, true), leer(3), ZURUECK,
+      ...AUTOS.map(autoZeile),
+      leer(6), { typ: 'gruppe', text: 'garage.lack' }, lackZeile, leer(4), ZURUECK,
     ],
+    zeichneRechts: garageRechts,
   };
   const etappeSeite = {
     id: 'etappe', titel: 'etappe.titel',
@@ -455,6 +502,7 @@ export function baueSeiten(api) {
 
   return {
     ziel: zielSeite,
+    garage, // M8c: Vorschau-Rahmen der Garage (main.js)
     titel, haupt, auto: autoSeite, etappe: etappeSeite, bestzeiten: bestzeitenSeite, einstellungen: einstellungenSeite,
     tasten: tastenSeite, steuerung: steuerungSeite, symbole: legendeSeite, credits: creditsSeite, pause, frage,
   };

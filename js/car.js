@@ -622,6 +622,8 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
       e._x = nicken; e._y = 0; e._z = rollen;
       karosse.position.y = m.schwerpunktHoehe + hub;
     },
+    // M8c (Garage): wie stehen Bremslicht und Rückfahrlicht gerade? [bremse, rueckwaerts]
+    get lichtZustand() { return [bremsAn, rueckAn]; },
     // Bremslicht und Rückfahrlicht (nur bei Änderung: Farbe des vorhandenen Materials setzen)
     lichter(bremse, rueckwaerts) {
       if (bremse !== bremsAn) { bremsAn = bremse; matHinten.color.copy(bremse ? L.hintenAn : L.hintenAus); }
