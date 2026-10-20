@@ -1,14 +1,14 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 8a fertig** – der **Ringwerk RT4** ist jetzt ein **richtiges 3D-Modell** (Keil-Haube,
-Kastenkotflügel, Dachhutze, grosser Heckflügel, vier Zusatzscheinwerfer, Helme im Fenster) mit **Lackierung als
-Pixel-Textur** (werk, gletscher, dunkel), **drehenden Speichenrädern** mit sichtbarem Lenkeinschlag, **Federung mit
-Nachschwingen**, **Brems- und Rückfahrlicht** und **Dreck** je Belag. Dazu ein **eigenes Fahrgefühl**: Allrad-Traktion
-(vor allem auf Schotter und Wiesenweg), Gewichtsverlagerung (das Heck kommt beim Bremsen in der Kurve), etwas
-Untersteuern in schnellen Kurven und ein dezenter Turbo. Das bisherige Fahrverhalten gibt es weiter als
-`index.html?auto=prototyp`. Ansehen ohne Fahren: **`auto-labor.html`**, Werte live nachstellen: **`index.html?fahrlabor=1`**.
-**Wichtig: Ich habe das Fahrgefühl nicht gespürt – bitte zuerst die Test-Anleitung unten (M8a) machen.** Die
-Hörtest-Anleitung von M7b gilt weiter (M7b.1 ist noch offen).
+Aktuell: **Meilenstein 8b fertig** – das Auto heisst jetzt **Audan Quarto** (Marke AUDAN, Modell QUARTO; die interne Id
+bleibt `rt4`, deine Bestzeiten bleiben stehen). **Hinten sieht man keine Fahrer-Köpfe mehr** (ruhige dunkle Heckscheibe),
+von der Seite und von vorne sind die Helme nur noch dezent (kleiner, gedeckte Farben). Das **Fahrgefühl ist stärker anders**
+als beim alten Auto: mehr Grip auf Schotter und Wiesenweg (Kreisbahn Schotter +5.3 % statt +2.6 %, Wiesenweg +12.5 %
+statt +8.5 %), kräftiger aus dem Wiesenweg (0–100 km/h −12.8 %) und das **Heck kommt beim Bremsen in der Kurve
+deutlicher** (+3.6° statt +2.3°). Der **Turbo ist jetzt zu hören**: Pfeifen, Zischen und Pops folgen dem echten
+Ladedruck (dezent). **Wichtig: Fahrgefühl nicht gespürt, Ton nicht gehört – bitte zuerst die Test-Anleitung unten (M8b).**
+Davor: 8a (Ringwerk RT4 – heute Audan Quarto – als richtiges 3D-Modell mit Lackierung, Federung, Lichtern, Dreck,
+Auto-Labor; Fahrprofile mit eigenem Fahrgefühl, Fahr-Labor). Die Hörtest-Anleitung von M7b gilt weiter (M7b.1 ist noch offen).
 Davor: 7b (Umgebungsklänge mit Stereo und Abstand: Kuhglocken, Publikum, Vögel, Brunnen, Windböen; Menü-Musik, Regler MUSIK), 7a.1 (Motor härter und höher, Poppen, Schalten, Signale lauter mit Regler SIGNALTÖNE, Stein dumpf, Heulen), 7a (Ton: Motor, Reifen, Wind, Aufprall, Signale, Ton-Labor; Minimap 49 x 49, farbige Checkpoint-Punkte), 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
@@ -39,7 +39,364 @@ Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start
 
 ---
 
-## Meilenstein 8a: Ringwerk RT4 – 3D-Modell, Federung, Details und eigenes Fahrgefühl ✅
+## Meilenstein 8b: Name „Audan Quarto“, Fahrer-Feinschliff, spürbareres Fahrgefühl, Turbo im Ton ✅
+
+> **Ehrlich vorneweg: Ich habe das Fahrgefühl nicht gespürt und den Ton nicht gehört.** Alles ist **gemessen** (Fahrphysik
+> mit festen Fahrprogrammen, Testfahrer, Ton offline gerechnet und ausgewertet) und mit Bildern in drei Pixelgrössen
+> angeschaut. Ob der Audan Quarto sich jetzt „deutlich anders“ anfühlt und ob der Turbo gut klingt, kannst nur du
+> entscheiden. Darum zuerst die **Test-Anleitung** unten. **Für Änderungen schreib einfach, was dir nicht gefällt, das wird
+> dann M8b.1.**
+
+Vier Teile, vier Commits im selben Pull Request: **A = Fahrer**, **B = Name**, **C = Fahrgefühl**, **D = Turbo im Ton**
+(dazu in D: Tests, Bilder, diese Beschreibung). So kannst du notfalls einen Teil getrennt zurückdrehen.
+
+### Was ist neu?
+
+**A – Fahrer** (`js/autos.js`, `js/car.js`, Farben in `js/config.js` unter `autoOptik.farben`)
+- **Hinten keine Köpfe mehr.** Die Heckscheibe ist eine ruhige dunkle Scheibe mit einem dezenten, etwas helleren
+  Glanzstreifen oben (wie an den Seitenscheiben). Keine hellen Punkte, keine Schultern.
+- **Seite und Front dezenter**: Helme etwa 30 % kleiner (Seite Radius 0.12 → 0.085, Front 0.11 → 0.08), **gedeckte Farben**
+  statt Weiss und Gelb: Fahrer **dunkles Blaugrau** (`helmFahrer` `#5c6b7a`), Beifahrer **dunkles Anthrazit** mit einem
+  etwas anderen Ton (`helmBeifahrer` `#55585e`), damit man zwei Personen ahnt. Visier bleibt (schwarz), Schultern kleiner und
+  dunkler (`schulter` `#23272d`). Der Helligkeitsunterschied zur Scheibe ist **um ca. 2/3 kleiner** als in M8a (mehr als
+  halbiert, weil du „dunkel“ wolltest).
+
+**B – Name: Audan Quarto** (Marke **AUDAN**, Modell **QUARTO**)
+- Überall, wo man den Namen sieht: Menü AUTO (deutsch und englisch), Auto-Labor (Titel und Infozeile), Fahr-Labor (Knopf
+  **AUDAN QUARTO** statt RT4, Anzeige „Profil AUDAN QUARTO“), `config.js` (`auto.name`), `js/autos.js`, Kommentare.
+- **Am Auto**: Seite unten **AUDAN** (statt RINGWERK), Sonnenstreifen vorne **AUDAN** („AUDAN QUARTO“ wäre 71 Pixel breit, der
+  Streifen hat bei 480x270 nur 58 Pixel), Kennzeichen **AQ 4** (statt RR 4). Die anderen Sponsoren bleiben.
+- **Start/Ziel-Banner**: **AUDAN** statt RINGWERK (gleiche Farben, Rot/Weiss). „RINGWERK“ steht im Spiel (js, html) nirgends mehr.
+- **Die Id bleibt `rt4`** (auch `?auto=rt4` und das Fahrprofil `rt4`): **deine Bestzeiten bleiben stehen**.
+- **Namensregel** (neu in `CLAUDE.md` und `KONZEPT.md`): Fantasienamen mit **denselben Anfangsbuchstaben** von Marke und
+  Modell wie beim echten Vorbild, sonst erfunden, nie ein echter Name, keine echten Logos.
+
+**C – Fahrgefühl** (nur Profil `rt4` in `js/config.js`, `fahrprofile.rt4`; `prototyp` ist bit-genau wie vorher)
+- **Neue Schraube `auto.vorneJeBelag`**: Grip der **Vorderachse** je Belag (wie `heckJeBelag` fürs Heck; fehlt ein Belag = 1).
+  Im Prototyp 1 (wirkungslos). Warum? Auf Schotter rutscht im Kreis zuerst die Vorderachse – genau da half der bessere
+  Heck-Grip aus M8a nicht (darum fühlte es sich nur „etwas“ besser an).
+
+| Wert (`fahrprofile.rt4`) | Prototyp | M8a | **M8b** | Was es bewirkt |
+|---|---|---|---|---|
+| `auto.vorneJeBelag` | 1 | – | **Schotter 1.06, Wiesenweg 1.06** | Front beisst auf losem Boden (Asphalt, Bankett, Gras: nichts) |
+| `auto.heckJeBelag` | 1 | Schotter 1.1, Wiesenweg 1.15 | **Schotter 1.15, Wiesenweg 1.25** | Heck hält mit, sonst rutscht jetzt hinten zuerst |
+| `getriebe.allrad` | 1 | Schotter 1.15, Wiesenweg 1.1 | **Schotter 1.2, Wiesenweg 1.15** | kräftiger raus aus Kehren und vom Wiesenweg |
+| `auto.gewichtstransfer` | 0 | 0.35 | **0.45** | Heck kommt beim Bremsen in der Kurve deutlicher |
+| alle anderen | | | wie M8a | (lastVorneAnteil 0.555, schwerpunktVorne 0.46, traegheit 2.5, gasImDrift 0.07, zugkraftFaktor 0.99, Turbo an) |
+
+- **Fahr-Labor** (`index.html?fahrlabor=1`): jetzt **14 Regler**, neu `auto.vorneJeBelag.schotter` und
+  `getriebe.allrad.wiesenweg`.
+
+**D – Turbo im Ton** (`js/audio.js`, `js/main.js`, `js/config.js` unter `audio.motor`, `js/tonlabor.js`, `ton-labor.html`)
+- Das Spiel gibt dem Ton jetzt den **echten Ladedruck** (`getriebe.ladedruck`) und ob das Fahrprofil einen Turbo hat. **Nur
+  mit Turbo** (Audan Quarto) folgt der Ton diesem Ladedruck; im Profil `prototyp` rechnet der Ton wie bisher (identisch).
+- **Pfeifen**: steigt nach dem Gasgeben mit dem Aufbau des Ladedrucks (in ca. 0.35 s, Tonhöhe 2200 → 5200 Hz), bleibt in der
+  **Schaltpause** dank Anti-Lag hörbar (Ladedruck mindestens 0.7) und ist um `turboPegelMal` **1.35** lauter (+2.6 dB) – der
+  Motor bleibt bei Vollgas **16 dB lauter** als das Pfeifen.
+- **Blow-off** (Zischen beim Gaswegnehmen): liest den echten Ladedruck.
+- **Pops**: mit aktivem Anti-Lag (Gas weg über 4000 U/min, Ladedruck hoch) etwas öfter: Knall-Chance **+0.15**
+  (`turboKnallPlus`), Salven, Abstand und Sperre (1 s) unverändert.
+- Motor (Grundton, Oktavschicht, Rauheit, Schaltknall, Klack), Reifen, Wind, Aufprall, Signale, Umgebung, Musik: unverändert.
+- **Ton-Labor** (`ton-labor.html`, Bereich Motor): Schalter **ECHTER LADEDRUCK AN** und Regler **LADEDRUCK (Test)** (0 bis 1);
+  mit dem Schalter liefert auch „Anfahren bis 160 km/h“ den echten Ladedruck (Getriebe mit Turbo). Im Feinschliff neu:
+  `turboPegelMal` und `turboKnallPlus`.
+
+### Messtabelle Fahrgefühl (Audan Quarto gegen `prototyp`)
+
+`node tools/m8b-messung.mjs` (Bild: `screenshots/m8b/80-messtabelle.png`, Zahlen: `tools/m8b-messung.json`). Prozent = Unterschied
+zum Prototyp (bei Zeiten: minus = schneller).
+
+| Messung | Prototyp | M8a | **M8b** | Ziel M8b | erfüllt? |
+|---|---|---|---|---|---|
+| 0–100 km/h Asphalt | 5.13 s | −2.1 % | **−2.1 %** | ±3 % | ✅ |
+| 0–100 km/h Schotter | 5.78 s | −5.2 % | **−5.6 %** | −7 bis −10 % | ❌ Kompromiss |
+| 0–60 km/h Schotter (Info: aus der Kehre) | 3.01 s | −6.9 % | **−7.8 %** | – | – |
+| 0–100 km/h Wiesenweg | 8.28 s | −9.5 % | **−12.8 %** | −11 bis −14 % | ✅ |
+| 0–60 km/h Gras | 10.10 s | ±0 % | **±0 %** | gleich | ✅ |
+| 0–100 km/h Bankett | 6.15 s | −2.0 % | **−2.0 %** | nicht schneller als M8a | ✅ |
+| Bremsweg 100 → 0 Asphalt | 35.8 m | ±0 % | **±0 %** | ±5 % | ✅ |
+| Kreis R 25 m Grenztempo Asphalt | 54.4 km/h | +2.6 % | **+2.5 %** | +1 bis +3 % | ✅ |
+| Kreis R 25 m Grenztempo **Schotter** | 49.3 km/h | +2.6 % | **+5.3 %** | +5 bis +8 % | ✅ (knapp) |
+| Kreis R 25 m Grenztempo Wiesenweg | 40.9 km/h | +8.5 % | **+12.5 %** | +10 bis +14 % | ✅ |
+| Lenkwinkel 80 km/h auf R 60 m | 3.54° | +15.8 % | **+16.9 %** | +10 bis +20 % | ✅ |
+| Heck: 90 km/h, R 80 m, Gas weg + Bremse 60 %: Zusatz-Schwimmwinkel nach 0.5 s | −0.3° | +2.3° | **+3.6°** | +3.5 bis +5° | ✅ (knapp) |
+| … wieder eingefangen nach | – | 0.38 s | **0.57 s** | unter 0.8 s | ✅ |
+| Heck: dasselbe mit Vollbremsung | −0.4° | +4.4° | **+5.3°** | höchstens 7° | ✅ |
+| Vollgas in der Kurve R 80 m: Schwimmwinkel | 3.9° | −25.9 % | **−29.6 %** | kleiner oder gleich | ✅ (Gas hält das Heck ruhig) |
+| … auf Schotter (Info) | 3.3° | −5.6 % | **−1.4 %** | – | – |
+| Handbremsen-Drift Asphalt nach 0.5 s | 6.7° | −8.8 % | **−6.6 %** | ±15 % | ✅ |
+| Rückwärts (Höchsttempo, nach 1 s, Gras) | | identisch | **identisch** | identisch | ✅ |
+
+**Testfahrer (ganze Etappe, ohne Aufprall, ohne Hänger):**
+
+| Fahrer | Prototyp | RT4 0.8a | **Audan Quarto 0.8b** | gegen Prototyp | Wiesenweg | Asphalt-Abschnitte |
+|---|---|---|---|---|---|---|
+| vorsichtig | 2:59.33 | 2:58.73 | **2:58.65** | −0.4 % (−0.68 s) | 17.43 → 17.20 s (−1.3 %) | −0.3 % |
+| mittel | 2:42.35 | 2:41.83 | **2:41.76** | −0.4 % (−0.59 s) | 15.58 → 15.38 s (−1.3 %) | −0.3 % |
+| flott | 2:31.92 | 2:31.24 | **2:31.22** | −0.5 % (−0.70 s) | 14.50 → 14.34 s (−1.1 %) | −0.4 % |
+
+**Zeitunterschied für deine Bestzeiten:** Gegen 0.8a ist der Testfahrer mit dem Audan Quarto nur **0.02 bis 0.08 s**
+schneller, gegen das alte Fahrverhalten (0.7b, `prototyp`) **0.6 bis 0.7 s** (0.4 bis 0.5 %). Deine Bestzeiten bleiben also
+fair. Ein Mensch, der den besseren Grip auf Schotter und Wiesenweg in den Kurven nutzt, sollte mehr gewinnen als der
+Testfahrer (siehe Kompromisse).
+
+**Kompromisse (ehrlich, und welche Ziele ich verfehle):**
+- **0–100 km/h auf Schotter −5.6 % statt −7 bis −10 % (verfehlt).** Auf Schotter ist der Prototyp nur im **1. Gang** (bis
+  48 km/h) durch den Grip begrenzt, darüber bremst ihn der **Motor**, nicht der Boden. Allrad hilft also nur bis 48 km/h – ab
+  `allrad.schotter` ca. 1.21 bringt mehr Allrad gar nichts mehr (gemessen: auch mit 2.0 nur −5.8 %). Mehr ginge nur mit mehr
+  Motorleistung (`zugkraftFaktor`), aber dann wären **Asphalt (−3.1 %) und Bankett (−2.8 %)** ausserhalb – und Asphalt hat
+  Vorrang. Was du auf Schotter spürst, ist eher das Anfahren aus der Kehre: **0–60 km/h −7.8 %**.
+- **Testfahrer nur 0.4 bis 0.5 % schneller statt 0.5 bis 1.5 % (knapp verfehlt).** Wie in M8a: Der Testfahrer plant das
+  Kurventempo für beide Autos gleich (aus Krümmung, Belag und einer festen Querbeschleunigung je Fahrer) und nutzt den
+  besseren Kurven-Grip auf Schotter und Wiesenweg darum nicht. Er gewinnt nur beim Herausbeschleunigen. Mehr ginge wieder
+  nur über mehr Schub auf Asphalt (siehe oben).
+- **Heck beim Bremsen: `gewichtstransfer` 0.45 statt höher.** Mit 0.47 wäre das Heck +3.9°, aber dann rutscht der
+  **flotte Testfahrer bei 695 m** (in der langen Linkskurve 504–749 m, beim Bremsen mit ca. 130 km/h) von der Strasse und
+  prallt auf (126 → 3 km/h; schon ab 0.46 ein leichter Kontakt). 0.45 ist knapp unter dieser Kante: Heck +3.6° (Ziel ab +3.5°), sauber eingefangen nach 0.57 s.
+- **`heckJeBelag` auch erhöht** (Schotter 1.1 → 1.15, Wiesenweg 1.15 → 1.25): Mit mehr Grip vorne allein rutschte im
+  Kreis plötzlich das Heck zuerst (Wiesenweg fiel sogar von +8.5 % auf +3.2 %). Folge: Der Handbremsen-Drift auf Schotter ist
+  jetzt fast wie beim Prototyp (−1.5 % statt −6.6 %), auf Asphalt −6.6 % (Ziel ±15 %).
+- **Kreis Schotter +5.3 % und Heck +3.6°** liegen knapp an der unteren Grenze der Ziele – bewusst, damit Schotter nicht zu
+  viel Grip bekommt und das Heck nicht nervös wird. Mehr: `auto.vorneJeBelag.schotter` 1.08 gibt ca. +5.9 %.
+
+**Pace-Notes mit dem Audan Quarto** (`node tools/pacenotes-test.mjs --auto rt4`, nur gemeldet, nichts neu geschrieben): 24 von
+25 Kurven im Zielbereich (Asphalt −1.7 bis +3.5 %, Schotter und Wiesenweg +1.9 bis +7.2 %). Andere Stufe für den Audan wären:
+**917–979 m** (Schotter, Talschleife) 2 → 3, **1088–1226 m** (Asphalt) 4 → 5 (wie schon in M8a) und **1028–1057 m** (Asphalt,
+direkt nach der Einmündung der Talschleife) **6 → 3**. Die letzte ist ein Effekt der Messkette: Diese Kurve ist nur „Vollgas“,
+weil man aus der Schotterkurve davor (981–1026 m) langsam herauskommt. Der Audan kommt dort ca. 1 km/h schneller heraus
+(64.6 statt 63.5 km/h) und schafft die Kurve dann mit Vollgas nicht mehr ganz (gemessen: **auch der Prototyp** rutscht dort
+mit 64.6 km/h Einfahrt über den Rand). Im Spiel heisst das: Nach der Talschleife bei „RECHTS 6“ evtl. kurz lupfen. Die
+Pace-Notes bleiben wie gewollt auf der Referenz.
+
+**Abkürzungen**: mit `prototyp` und mit `rt4` je **127 / 2 / 342 / 84** übrige Linien, gesperrt durchkommen: 0. Gras und
+Bankett bekommen keinen neuen Vorteil (dort wirken `vorneJeBelag`, `heckJeBelag` und `allrad` nicht). Kreis R 25 m auf Gras
++3.3 %, Bankett +2.9 % – genau wie in M8a (+3.3 / +3.0 %, kommt von der Gewichtsverteilung `lastVorneAnteil` aus M8a);
+Anfahren auf Gras gleich, auf dem Bankett −2.0 % wie in M8a.
+
+### Messungen Turbo-Ton (gerechnet, nicht gehört)
+
+`node tools/m8b-ton.mjs` (Zahlen: `tools/m8b-ton.json`), offline mit `js/audio.js` und dem echten Getriebe, vor dem Limiter:
+
+| Messung | ohne Turbo (Prototyp, wie 0.8a) | mit Turbo (Audan Quarto) | Ziel |
+|---|---|---|---|
+| Pfeifen bei vollem Ladedruck (RMS) | −32.2 dBFS | **−29.5 dBFS** (+2.7 dB) | etwas präsenter (`turboPegelMal` 1.35 = +2.6 dB) ✅ |
+| Spektralschwerpunkt des Pfeifens (voll / halb) | 5200 Hz | **5200 / 3700 Hz** | Tonhöhe steigt mit dem Ladedruck ✅ |
+| Motor bei Vollgas lauter als das Pfeifen (5000 / 7000 U/min) | 18.8 / 19.5 dB | **16.1 / 16.9 dB** | Motor klar lauter, nie dominant ✅ |
+| Spitze Motor + Pfeifen (vor dem Limiter, 5000 U/min) | 0.612 | **0.628** | wie bisher, unter dem Limiter ✅ |
+| Aufbau nach Vollgas (3. Gang, 4400 U/min): Ladedruck im Ton 95 % / Pegel 90 % | 1.32 / 1.28 s (eigenes träges Modell) | **0.35 / 0.42 s** | `turbo.aufbau` 0.35 s ±25 % (0.26–0.44 s) ✅ |
+| Schaltpause 2 → 3 mit Vollgas: Pfeifen in der Pause (RMS, kleinster Wert) | fällt auf 0.0089 (vorher 0.0119) | **0.0186** (Ladedruck nie unter 0.70) | nie unter dem Pegel bei Ladedruck 0.7 (0.0164) ✅ |
+| Pops über eine feste 60-s-Fahrt (24 Mal Gas weg) | 16 Salven, 41 Pops | **22 Salven, 46 Pops** | etwas mehr ✅ |
+
+- **Prototyp-Ton wie 0.8a**: dieselbe Messung wie `tools/ton-messung.mjs` (Motor, Turbo, Aufpralle, Pops, Klack, Signale,
+  Heulen, Audio-Knoten) gegen `tools/ton-messung-08a.json` (gemessen mit 0.8a): gleich. **Ehrlich:** Zwei Läufe weichen in der
+  4. Nachkommastelle ab (z. B. Schwerpunkt 220.721 / 220.7215 Hz) – das tut auch **0.8a gegen sich selbst** (Rechenrauschen
+  des Offline-Renderers im Test-Browser). Der Vergleich lässt darum 0.1 % Unterschied zu; es gibt keine echte Abweichung.
+- **Speicher pro Bild**: mit Turbo-Ton gleich wie ohne (Unterschied 4.5 Byte im Test-Browser, ein neues Objekt wären 16 Byte
+  und mehr; die Messung schwankt dort stark, darum das Minimum aus 4 abwechselnden Läufen).
+
+### Werte zum Drehen
+
+**Fahrgefühl** (`js/config.js`, Block `fahrprofile.rt4`; im Fahr-Labor sofort): Tabelle oben unter „C – Fahrgefühl“. Die Werte
+in `auto` und `getriebe` selbst bleiben die Referenz (Profil `prototyp`), nicht dort ändern.
+
+**Turbo-Ton** (`js/config.js`, `audio.motor`; im Ton-Labor unter Feinschliff sofort):
+
+| Wert | Standard | Was |
+|---|---|---|
+| `turboPegelMal` | 1.35 | Pfeifen mit Turbo so viel lauter als `turboPegel` (0.035) |
+| `turboKnallPlus` | 0.15 | so viel mehr Knall-Chance mit Anti-Lag (Grundwert `knallChance` 0.7) |
+| `turboEchtGlaetten` | 0.03 | so weich (Sekunden) folgt das Pfeifen dem Ladedruck |
+| `turboTonMin` / `turboTonMax` | 2200 / 5200 | Tonhöhe des Pfeifens bei wenig / vollem Ladedruck (Hz) |
+| `blowOffAb`, `blowOffPegel` | 0.5, 0.16 | Zischen ab diesem Ladedruck, so laut |
+
+**Aussehen**: `autoOptik.farben.helmFahrer` / `helmBeifahrer` / `schulter` (Farben), Grösse der Helme in `js/autos.js`
+(`r`, `schulter: [Breite, Höhe]`).
+
+### Test-Anleitung für Lino (M8b)
+
+**Zuerst ansehen (5 Minuten), dann fahren (15 Minuten), dann hören (10 Minuten).** Am besten auf beiden Rechnern.
+
+1. **Auto-Labor** (`…/alpine-rally/auto-labor.html`): oben steht jetzt **AUDAN QUARTO**.
+   - Pixelgrösse **320x180**, Knopf **HECK** (wie im Spiel): In der Heckscheibe sollten **keine Köpfe** mehr sein, nur eine
+     ruhige dunkle Scheibe. Lackierung umschalten (werk, gletscher, dunkel): nirgends ein heller Punkt.
+   - **SEITE LINKS** und **FRONT**: Die Helme sind klein und grau/dunkel. Sieht man noch, dass da jemand sitzt? Stört es?
+   - Bei **480x270**: an der Seite steht **AUDAN**, vorne im Sonnenstreifen **AUDAN**, hinten das Kennzeichen **AQ 4**.
+2. **Menü → AUTO**: Der Name ist **AUDAN QUARTO** (auch auf Englisch). Deine alten Bestzeiten stehen noch unter BESTZEITEN.
+3. **Fahren** (`index.html`), am besten **A/B-Vergleich**: abwechselnd normal und mit `index.html?auto=prototyp` (altes
+   Fahrverhalten) dieselben Stellen fahren:
+   - **Kehren und Nebenwege**: Talschleife (Schotter, ab 800 m), Almweg (ab 1986 m), Wiesenweg (ab 2798 m). Der Audan sollte
+     in den Schotter- und Wiesenkurven **mehr Tempo halten** und **kräftiger herausziehen**.
+   - **In die Kurve bremsen** (z. B. vor Kehre 1 oder in der langen Linkskurve ab 504 m): Das Heck sollte **deutlich, aber
+     kurz** kommen und sich in ca. einer halben Sekunde wieder fangen. **Vorsicht um 695 m**: Wer dort mit ca. 130 km/h hart
+     bremst, kann jetzt quer kommen.
+   - **Handbremse** in den Kehren: wie gewohnt.
+   - Nach der Talschleife (bei 1028 m, Ansage „RECHTS 6“): Mit dem Audan kommst du schneller aus dem Schotter, evtl. kurz lupfen.
+4. **Ton-Labor** (`ton-labor.html`): **TON STARTEN**, dann im Bereich **Motor und Fahrt**:
+   - Drehzahl ca. 5000, Gas 100 %, **LADEDRUCK (Test)** auf 100 %: einmal mit **ECHTER LADEDRUCK AN** und einmal ohne – mit
+     dem Schalter ist das Pfeifen etwas lauter und folgt genau dem Regler (Regler langsam schieben: Tonhöhe steigt).
+   - **Pop-Salve** mehrmals drücken (mit Schalter an und Ladedruck über 50 % kommen öfter Pops).
+   - Schalter an, **Anfahren bis 160 km/h**: Pfeifen baut sich nach dem Gasgeben auf und reisst beim Schalten nicht ab.
+   - Dann **im Spiel**: Vollgas, Gas wegnehmen (Zischen, Pops), Schalten – achte auf das Turbo-Pfeifen und die Pops.
+     Vergleich: `index.html?auto=prototyp` klingt wie vorher.
+5. **Fahr-Labor** (`index.html?fahrlabor=1`): 14 Regler, neu **`auto.vorneJeBelag.schotter`** und **`getriebe.allrad.wiesenweg`**.
+   **WERTE KOPIEREN** und mir schicken.
+
+**Wenn X, dann Y** (Wert in `js/config.js`, oder im Fahr-Labor / Ton-Labor ausprobieren und mir die Zeilen schicken):
+
+| Wenn … | dann … |
+|---|---|
+| das Heck beim Bremsen zu stark oder zu nervös kommt | `fahrprofile.rt4.auto.gewichtstransfer` runter (z. B. 0.4; M8a: 0.35) |
+| das Heck beim Bremsen immer noch zu wenig kommt | `gewichtstransfer` höher (0.46 bis 0.5) – Achtung, ab 0.46 rutscht der flotte Testfahrer bei 695 m weg |
+| Schotter zu viel Grip vorne hat (fährt wie auf Schienen) | `fahrprofile.rt4.auto.vorneJeBelag.schotter` runter (z. B. 1.03; 1 = wie M8a) |
+| Schotter immer noch zu wenig anders ist | `vorneJeBelag.schotter` höher (z. B. 1.08 bis 1.1) und `heckJeBelag.schotter` 1.2 |
+| der Wiesenweg zu leicht ist | `fahrprofile.rt4.auto.vorneJeBelag.wiesenweg` und `heckJeBelag.wiesenweg` runter (z. B. 1.03 / 1.15) |
+| er auf dem Wiesenweg zu wenig zieht | `fahrprofile.rt4.getriebe.allrad.wiesenweg` höher (z. B. 1.2) |
+| er aus Schotter-Kehren zu wenig zieht | `getriebe.allrad.schotter` hilft nur bis 1.21; darüber nichts mehr (siehe Kompromisse) |
+| der Handbremsen-Drift auf Schotter zu kurz ist | `fahrprofile.rt4.auto.heckJeBelag.schotter` runter (z. B. 1.1) |
+| das Turbo-Pfeifen zu laut ist | `audio.motor.turboPegelMal` runter (z. B. 1.0 = wie vorher) |
+| das Turbo-Pfeifen zu leise ist | `turboPegelMal` höher (z. B. 1.8) |
+| zu viele Pops kommen | `audio.motor.turboKnallPlus` runter (z. B. 0.05; 0 = wie der Prototyp) |
+| zu wenig Pops kommen | `turboKnallPlus` höher (z. B. 0.25) |
+| das Pfeifen zu hoch / zu tief klingt | `audio.motor.turboTonMax` (z. B. 4500 statt 5200) |
+| die Helme von der Seite zu dunkel / gar nicht zu sehen sind | `autoOptik.farben.helmFahrer` heller (z. B. `#6e7e8e`) |
+| dir der alte Name lieber war | sag es – die Id bleibt `rt4`, nur der Anzeigename ändert sich |
+
+**Für Änderungen schreib einfach, was dir nicht gefällt (mit Screenshot oder den kopierten Werten), das wird dann M8b.1.**
+
+### So testest du (Werkzeuge)
+
+- `node tools/m8b-test.mjs` (neu: Prüfungen (a) bis (h), mit (h) ca. 1 Stunde; einzeln z. B. `--nur a,b`)
+- `node tools/m8b-messung.mjs [--alt <ordner 0.8a>]` (neu: Fahr-Messtabelle M8a / M8b / Ziel, Bild `80-messtabelle.png`)
+- `node tools/m8b-ton.mjs` (neu: Turbo-Ton-Messungen)
+- `node tools/m8b-bilder.mjs [--alt <ordner 0.8a>]` (neu: alle Bilder unten)
+- wie bisher: `node tools/auto-test.mjs`, `node tools/testfahrer.mjs --auto rt4`, `node tools/pacenotes-test.mjs --auto rt4`,
+  `node tools/abkuerzungen.mjs --pruefen [--auto rt4]`, `node tools/ton-messung.mjs <name> [ordner]`
+
+### Bilder (`screenshots/m8b/`)
+
+| Datei | Was |
+|---|---|
+| `01-vorher-heck/-dreiviertel/-seite/-front` | **0.8a**: Auto an der Startlinie (Heck = Spielkamera), je 1280x720 und `…-320x180` (Originalgrösse) |
+| `02-nachher-heck/-dreiviertel/-seite/-front` | **0.8b**: dasselbe |
+| `10-vorher-ansichten-<grösse>` | Auto-Labor 0.8a: Heck, Seite, Front, Drei-Viertel hinten, Drei-Viertel vorne, oben |
+| `11-nachher-ansichten-<grösse>` | dasselbe 0.8b |
+| `11-nachher-heck-lackierungen-<grösse>` | werk, gletscher, dunkel von hinten (oben wie im Spiel, unten nah) |
+| `11-nachher-helme-nah-<grösse>` | Helme nah: Seite und Front, alle drei Lackierungen |
+| `50-auto-labor-seite` | die Seite `auto-labor.html` mit dem neuen Titel |
+| `60-menue-auto-de/en-320x180/-1280x720` | Menüseite AUTO mit AUDAN QUARTO |
+| `70-fahrlabor` | Fahr-Labor mit den neuen Reglern |
+| `71-ton-labor` | Ton-Labor mit ECHTER LADEDRUCK AN und LADEDRUCK (Test) |
+| `80-messtabelle.png`, `80-messtabelle.md` | die Fahr-Messtabelle |
+
+`<grösse>` = 320x180, 480x270, 640x360 (Originalgrösse, nicht vergrössert).
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/autos.js` | Helme hinten weg, Seite/Front kleiner (mit Schulter-Grösse), Glanzstreifen Heckscheibe, Name, AUDAN, AQ 4 |
+| `js/car.js` | Schulter-Grösse aus den Daten; `zuAtlas` (für Tests) |
+| `js/config.js` | Helmfarben, `auto.name`, neu `auto.vorneJeBelag` (neutral), Profil `rt4` (C), Turbo-Ton-Werte (D), Version 0.8b |
+| `js/physics.js` | Grip vorne je Belag (`vorneJeBelag`, im Prototyp ohne Wirkung) |
+| `js/audio.js` | Pfeifen, Blow-off und Pops folgen mit Turbo dem echten Ladedruck; ohne Turbo wie bisher |
+| `js/main.js` | gibt `ladedruck` und `turboAn` an den Ton |
+| `js/texte.js`, `js/startzielbild.js`, `js/fahrprofil.js`, `js/fahrlabor.js`, `js/autolabor.js`, `auto-labor.html` | Name Audan Quarto (Fahr-Labor: 14 Regler) |
+| `js/tonlabor.js`, `ton-labor.html` | ECHTER LADEDRUCK AN, LADEDRUCK (Test), Feinschliff `turboPegelMal`, `turboKnallPlus` |
+| `CLAUDE.md`, `KONZEPT.md`, `STAND.md` | Namensregel, M8b, als Nächstes M8c |
+| `tools/m8b-test.mjs`, `tools/m8b-messung.mjs`, `tools/m8b-ton.mjs`, `tools/m8b-bilder.mjs` | **neu** (siehe oben) |
+| `tools/m8b-messung.json`, `tools/m8b-ton.json`, `tools/ton-messung-08a.json` | **neu**: Messwerte (0.8a als Vergleich) |
+| `tools/fahrmessung.js` | zusätzlich 0–60 km/h auf Schotter (Info) |
+| `tools/auto-test.mjs` | (g) Anzeigename `auto.name` beim 0.7b-Vergleich ausgenommen; `vorneJeBelag` als neuer neutraler Wert; (h) mit den Zielen von M8b; (m) 14 Regler |
+
+### Selbst getestet
+
+- **`node tools/m8b-test.mjs`** (neu, (a) bis (h)):
+  - (a) Helme: keine Helme in der Ansicht „hinten“, Radius Seite/Front 0.085 / 0.08, Helligkeitsunterschied zur Scheibe
+    −68 % (Fahrer) und −67 % (Beifahrer) gegen M8a; im gemalten Atlas **0 Pixel** mit Helm-, Visier- oder Schulterfarbe in der
+    Heckscheibe, Helme an Seite und Front vorhanden – für **werk, gletscher, dunkel**. ✅
+  - (b) Name: **0 Treffer** für RINGWERK/Ringwerk in `js/` und `*.html`; `auto.name`, Menü (de/en), Auto-Labor, Fahr-Labor,
+    Kennzeichen **AQ 4**, alle Zeichen in der Pixelschrift; Menütafel bei 320x180 227 Pixel breit (passt); Id `rt4`, eine alte
+    Bestzeit im Format von M8a steht nach dem Laden noch da. ✅
+  - (c) **prototyp bit-genau**: Werte wie 0.7b, 70-s-Fahrt-Prüfsumme **3d98a02d**, Testfahrer **2:59.33 / 2:42.35 / 2:31.92** mit
+    Zwischenzeiten, Höchsttempo 148.6 / 153.8 / 157.5 km/h, 0 Aufpralle, 0 Resets; Abkürzungen **127 / 2 / 342 / 84** (auch mit
+    rt4), gesperrt durchkommen 0; **Ton** wie 0.8a (siehe Messungen Turbo-Ton, Rundung in der 4. Stelle). ✅
+  - (d) Fahrmessung nach Teil C: 16 ok, **4 Kompromisse** (0–100 Schotter, Testfahrer ×3, siehe oben); `vorneJeBelag` im
+    Prototyp 1; Vorteile nur auf Schotter und Wiesenweg; Gras/Bankett kein neuer Vorteil gegen M8a. ✅
+  - (e) Pace-Notes mit rt4 (nur gemeldet): 24 von 25 im Zielbereich, drei andere Stufen (siehe oben); Abkürzungen mit rt4
+    127 / 2 / 342 / 84; `js/pacenotes-tempo.js` und `tools/schneiden-zeiten.json` nicht neu geschrieben. ✅ (gemeldet)
+  - (f) Turbo-Ton: alle Ziele aus Teil D.7 erfüllt (Tabelle oben), `turboAn` im Prototyp falsch, Konsole ohne Fehler,
+    Speicher pro Bild gleich. ✅
+  - (g) Fahr-Labor: 14 Regler, die neuen wirken sofort, WERTE KOPIEREN, ALLES ZURÜCK, ohne `?fahrlabor=1` kein Panel;
+    Ton-Labor: ECHTER LADEDRUCK AN und LADEDRUCK (Test) wirken, Feinschliff `turboPegelMal`/`turboKnallPlus` live, ALLES ZURÜCK. ✅
+  - (h) Stabilität (Profil prototyp): `getriebe-test`, `lenk-test`, `handbremse-test`, `belag-test`, `rueckwaerts-test`,
+    `aufprall-test`, `pacenotes-test`, `menue-test`, `rennablauf-test`, `ton-umgebung-test` **bestanden**; `auto-test` (a)–(n)
+    mit rt4 bestanden (97 ok, 5 Kompromisse). **Draw Calls des Autos 9** (höchstens 12), 1306 Dreiecke.
+  - **`ton-test` ehrlich**: Im langen Lauf zweimal an einem Zeit-Prüfpunkt gescheitert („Puffer in Häppchen: längstes 16.7 ms
+    statt unter 15 ms“), einzeln danach viermal gefahren: 0.8b **1× bestanden**, 2× nur „?ton=aus … Tempo 0.4 statt über
+    0.5 m/s nach 0.8 s“, 1× Häppchen-Zeit. **0.8a (vor M8b) im selben Test-Browser: 2 von 2 Läufen gescheitert**, an denselben
+    Zeit-Punkten. Diese Punkte hängen an der Bildzeit des Test-Browsers (ca. 0.3 s pro Bild), nicht am Spiel; alle
+    Ton-Inhalte (Pegel, Klänge, Signale) bestehen.
+- **Was ich an alten Tests ändern musste**: nur `tools/auto-test.mjs`: (g) vergleicht den Anzeigenamen `auto.name` nicht mehr
+  mit 0.7b (der Name ist keine Physik), `vorneJeBelag` ist als neuer neutraler Wert eingetragen, (h) prüft die Ziele von M8b
+  statt M8a, (m) erwartet 14 statt 12 Regler. Alle anderen Tests unverändert.
+- **Leistung**: Renderzeit eines Bildes im Test-Browser (Software-Grafik) **353.5 → 353.1 ms**, 110 Zeichenaufrufe in der
+  Szene (gleich); Physik + Auto **0.10 ms** je Bild (gleich). Ladezeit bis die Welt steht (Median aus 9, abwechselnd)
+  **1507 → 1532 ms** (Streuung ±200 ms). Der Bildabstand (requestAnimationFrame) schwankt im Test-Browser in Stufen von
+  16.7 ms (0.8a 283–317 ms, 0.8b 300–333 ms in drei Läufen) – die Renderzeit selbst ist gleich.
+- **Bilder** in 320x180, 480x270, 640x360 angeschaut (Heck, Seite, Front, Drei-Viertel, alle Lackierungen, Menü, Labore).
+- **Nicht gemacht: das Fahrgefühl gespürt und den Ton gehört.**
+
+### Ehrlich beurteilt – wo ich am unsichersten bin
+
+- **Köpfe hinten**: wirklich weg. Die Heckscheibe ist bei 320x180 eine ruhige dunkle Fläche (der Glanzstreifen ist dort
+  kaum zu sehen, erst nah). Auf allen drei Lackierungen kein heller Punkt (auch vom Test geprüft: 0 Pixel mit Helmfarbe).
+- **Seite und Front**: Von der Seite ist der Helm bei 320x180 ein **kleiner grauer Fleck mit dunklem Visier** – man ahnt einen
+  Kopf, mehr nicht. Von vorne sind es **zwei dunkle Flecken** in der Scheibe. Nichts leuchtet. Wenn dir das zu wenig „Fahrer“
+  ist: `helmFahrer` etwas heller.
+- **Fahrgefühl nicht gespürt.** Am unsichersten bin ich beim **Heck beim Bremsen**: 0.45 liegt knapp unter der Kante, an der
+  der flotte Testfahrer bei 695 m quer kommt. Es kann sich für dich **nervös** anfühlen – oder genau richtig. Zweitens:
+  **Wiesenweg** könnte jetzt **zu leicht** wirken (Kreis +12.5 %, Anfahren −12.8 %). Drittens: Auf **Schotter** ist der
+  Unterschied beim Beschleunigen über 50 km/h klein (Motor-Grenze), spürbar sollte er vor allem in den Kurven sein.
+- **Zuerst ausprobieren**: Talschleife und Wiesenweg im A/B-Vergleich mit `?auto=prototyp`, dann bewusst **in eine Kurve
+  hineinbremsen** (Heck).
+- **Ton nicht gehört, nur gemessen.** Das Pfeifen ist mit +2.6 dB nur leicht präsenter, 16 dB unter dem Motor. Ob man es im
+  Spiel hört, hängt stark von den Lautsprechern ab (5 kHz ist hoch). Die Pops kommen mit Turbo öfter (22 statt 16 von 24
+  Mal) – das kann schnell zu viel werden.
+
+### Bekannte Probleme
+
+- **Zwei Ziele aus Teil C verfehlt** (0–100 km/h Schotter, Testfahrer-Gewinn) – siehe Kompromisse. Kreis Schotter und Heck
+  knapp an der unteren Grenze.
+- **Pace-Notes**: Für den Audan wären drei Kurven eine andere Stufe (eine davon, 1028 m, wegen der Messkette). Die Pace-Notes
+  bleiben auf der Referenz.
+- **Flotter Testfahrer bei 695 m**: Ab `gewichtstransfer` 0.46 kommt er beim harten Bremsen quer. Mit 0.45 nicht.
+- **Ton-Messung**: Der Offline-Renderer im Test-Browser rechnet nicht ganz bit-genau gleich (Abweichung in der 4. Stelle, auch
+  0.8a gegen sich selbst); der Vergleich mit 0.8a lässt darum 0.1 % zu.
+- Die **Unfallautos** an der Strecke sind weiterhin die alten Klötzchen-Autos (siehe Ideen).
+- **`ton-test`** scheitert im Test-Browser oft an Zeit-Prüfpunkten (siehe „Selbst getestet“) – mit 0.8a genauso.
+- Weiter wie in M8a: `ton-umgebung-test` („Pause: leise Variante“) kann im Test-Browser fehlschlagen (Bildzeit), im
+  2. Versuch besteht er; Schrift am Auto erst ab 480x270.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Flamme aus dem Auspuff beim Poppen** (kleiner Pixel-Blitz am Auspuff links, passend zu den Pops, mit Turbo öfter).
+- **Dellen und Schaden** nach harten Aufprallen (schiefer Spoiler, zerbrochenes Licht, Kratzer in der Textur).
+- **3D-Vorschau auf der Seite AUTO mit der Garage (M8c)**: drehendes Modell, Lackierung wählen.
+- **Unfallautos mit dem neuen Modell** (heute noch die alten Klötzchen-Autos).
+- **Namen für die vier weiteren Autos (M8c)**, nach der Namensregel (gleiche Anfangsbuchstaben wie das Vorbild). Sie
+  **ersetzen die alten Vorschläge aus M8a** (Valmora Spada, Valmora Brenta, Hoshiro Raiden, Marlowe Harrier – gelten nicht mehr):
+  - **Lanza 073** – Lancia-037-Typ (Mittelmotor, Hinterrad). Bei einer Zahl lassen sich keine Buchstaben anpassen, darum die
+    Ziffern gedreht; beginnt wie das Vorbild mit 0.
+  - **Lanza Delto** – Lancia-Delta-Typ (kantiger Kompakt-Allrad).
+  - **Subora Imprexa** – Subaru-Impreza-Typ (Limousine, Allrad).
+  - **Fard Escorta** – Ford-Escort-Typ (Hinterrad).
+  Nur eingetragen, nichts gebaut. Jedes Auto bekommt später zwei Texte (Name, Daten) in `js/texte.js` wie `auto.rt4.*`.
+- Ein Regler im Fahr-Labor für die **Heck-Grip-Werte je Belag** (heute nur über `config.js`), falls du am Wiesenweg drehen willst.
+- Der Testfahrer könnte das Kurventempo aus dem Grip des Autos planen (dann zeigt er den Vorteil eines Autos ehrlicher).
+
+---
+
+## Meilenstein 8a: Ringwerk RT4 – 3D-Modell, Federung, Details und eigenes Fahrgefühl ✅ (Verlauf, Stand damals – Name, Helme, Fahrwerte und Turbo-Ton seit M8b anders)
 
 > **Ehrlich vorneweg: Ich habe das Fahrgefühl nicht gespürt** und das Auto nur auf Bildern gesehen. Alles ist **gemessen**
 > (Fahrphysik mit festen Fahrprogrammen, Testfahrer, Bilder in drei Pixelgrössen) und von Tests geprüft. Ob sich der RT4

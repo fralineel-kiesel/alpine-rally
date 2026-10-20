@@ -5,7 +5,7 @@
 //  - labor: Auto-Labor in Originalgrösse 320x180, 480x270, 640x360: Heck, Seite, Front, Drei-Viertel (vorher/nachher),
 //    alle drei Lackierungen von hinten (Heck wie im Spiel und nah), Helme nah (Seite und Front, alle Lackierungen)
 //  - menue: Menüseite AUTO (de und en) in 320x180 und 1280x720
-//  - fahrlabor: Fahr-Labor mit den neuen Reglern; Auto-Labor-Seite
+//  - fahrlabor: Fahr-Labor mit den neuen Reglern; Auto-Labor-Seite (bei labor); Ton-Labor mit ECHTER LADEDRUCK AN
 // Das Spiel selbst lädt diese Datei nicht.
 
 import fs from 'node:fs';
@@ -129,6 +129,27 @@ async function fahrlabor() {
   await spiel.schliessen();
 }
 
+// ------------------------------------------------------------------------------------------------ Ton-Labor
+async function tonlabor() {
+  const spiel = await starteSpiel({ breite: 1400, hoehe: 1000, args: ['--autoplay-policy=no-user-gesture-required'] });
+  const p = spiel.page;
+  await p.goto(`${spiel.url}/ton-labor.html`);
+  await p.waitForFunction(() => window.__tonLabor, null, { timeout: 60000 });
+  await p.click('#tonStarten');
+  await p.waitForFunction(() => window.__tonLabor.ton.werk && window.__tonLabor.ton.werk.aufbau.fertig, null, { timeout: 30000 });
+  await p.evaluate(() => {
+    const $ = (id) => document.getElementById(id);
+    const setze = (id, v) => { $(id).value = v; $(id).dispatchEvent(new Event('input')); };
+    setze('drehzahl', 5200); setze('gas', 1); setze('tempo', 110);
+    $('echterLadedruck').checked = true; $('echterLadedruck').dispatchEvent(new Event('change'));
+    setze('ladedruck', 0.85);
+  });
+  await p.waitForTimeout(800);
+  await p.screenshot({ path: path.join(ORDNER, '71-ton-labor.png') });
+  console.log('   71-ton-labor');
+  await spiel.schliessen();
+}
+
 const alt = arg('--alt') ? path.resolve(arg('--alt')) : null;
 if (NUR.includes('vergleich')) {
   if (alt) await vergleich(alt, '01-vorher');
@@ -139,4 +160,4 @@ if (NUR.includes('labor')) {
   await labor(WURZEL, '11-nachher', { liste: NEU, seite: true });
 }
 if (NUR.includes('menue')) await menue();
-if (NUR.includes('fahrlabor')) await fahrlabor();
+if (NUR.includes('fahrlabor')) { await fahrlabor(); await tonlabor(); }

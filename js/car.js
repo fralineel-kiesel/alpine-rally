@@ -582,6 +582,7 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
     get lackName() { return lackName; },
     uniforms: U,
     leinwand, radLeinwand,
+    zuAtlas: (ansicht, u, v) => zuPixel(A.def[ansicht], u, v), // M8b (für Tests): Punkt einer Ansicht -> Pixel der Lack-Textur
     // Räder: z = { lenkwinkel (rad, sichtbarer Einschlag vorne), strecke (gefahrene Meter seit dem letzten Bild,
     // rückwärts negativ), tempo (m/s, für die Unschärfe der Felge) } – ein Objekt statt drei Zahlen (nichts Neues pro Bild)
     raederBewegen(z) {

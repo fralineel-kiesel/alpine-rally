@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8a';
+export const VERSION = '0.8b';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1437,6 +1437,10 @@ export const CONFIG = {
       turboTonMin: 2200,       // Pfeifen: Tonhöhe bei wenig Ladedruck (Hz) ...
       turboTonMax: 5200,       // ... und bei vollem
       turboPegel: 0.035,       // Lautstärke des Pfeifens bei vollem Ladedruck (leise, nie dominant)
+      // M8b: Auto mit Turbo im Fahrprofil (getriebe.turbo.an, z. B. Audan Quarto): Pfeifen, Blow-off und Pops folgen dem
+      // echten Ladedruck (getriebe.ladedruck); turboAb/-Voll/-Rauf/-Runter gelten dann nicht. Ohne Turbo: wie bisher.
+      turboEchtGlaetten: 0.03, // so weich folgt das Pfeifen dem echten Ladedruck (Sekunden; kein Knacken)
+      turboPegelMal: 1.35,     // Pfeifen so viel lauter als turboPegel (nur mit Turbo; etwas präsenter, nie dominant)
       // Blow-off: Zischen, wenn man bei Ladedruck schnell vom Gas geht (und beim Schalten unter Last)
       blowOffAb: 0.5,          // nur bei Ladedruck über diesem Wert (0..1)
       blowOffGasFall: 0.5,     // ... und wenn das Gas in ca. blowOffZeit Sekunden um so viel gefallen ist
@@ -1455,6 +1459,8 @@ export const CONFIG = {
       popStaerke: [0.7, 1.0],  // jeder Pop so laut (Anteil, zufällig) ...
       popTempo: [0.8, 1.25],   // ... und so hoch/kurz (Abspieltempo; 1 = Puffer wie berechnet)
       knallSperre: 1.0,        // danach so lange kein neues Poppen (M7a: 1.5)
+      turboKnallPlus: 0.15,    // M8b: mit Turbo und Anti-Lag (Gas weg über getriebe.turbo.antiLagAb, Ladedruck über
+                               // blowOffAb) so viel mehr Knall-Chance (ohne Turbo im Fahrprofil: nichts dazu)
       knisternChance: 0.5,     // dazu leises Knistern/Blubbern (0..1) ...
       knisternAnzahl: [1, 3],  // ... so viele Mini-Pops ...
       knisternFenster: 0.8,    // ... in den ersten ... Sekunden nach dem Gaswegnehmen ...
