@@ -180,6 +180,137 @@ export const AUTO_MODELLE = {
       // --- Heckflügel oben ---
       { art: 'rechteck', ansicht: 'fluegel', von: [-0.9, -2.2], bis: [0.9, -2.1], farbe: 'akzent' },
     ],
+  },  // Lanza Delto (Id delto, M8c): kantiger Kompakt-Allrad im Gruppe-B/A-Look (Delta-Typ, eigenes Design, kein Nachbau).
+  // Fliessheck mit steiler Heckklappe und Dachspoiler, breite Kastenkotflügel, Haube mit Wölbung und Lüftungsschlitzen,
+  // zwei grosse Scheinwerfer und zwei runde Zusatzscheinwerfer in der Schürze, Heckwischer, Auspuff rechts.
+  delto: {
+    id: 'delto',
+    name: 'LANZA DELTO',
+    fahrprofil: 'delto',
+    nummer: '3',
+    kennzeichen: 'LD 3',
+    kurz: 'DELTO',
+    lackierungen: ['deltoWerk', 'rosso', 'waldgruen'],
+    masse: { laenge: 4.03, breite: 1.8, radstand: 2.48, spur: 1.52, radRadius: 0.325 },
+    kollision: { laenge: 3.95, breite: 1.74 },
+    staub: { hinten: 1.28, seite: 0.71 },
+    schwerpunktHoehe: 0.5,
+    raeder: {
+      x: 0.76, z: 1.24,
+      radius: 0.325, breite: 0.23, felgeRadius: 0.2, felgeTiefe: 0.03, segmente: 14, speichen: 6,
+      radlaufLuft: 0.08,
+    },
+    textur: { breite: 512, hoehe: 128, seite: 32, oben: 32, vorne: 48, hinten: 48, fluegel: 32, hoeheBis: 1.47, fluegelZ: [-1.34, -1.78] },
+    schatten: { breite: 1.95, laenge: 4.05 },
+    innenFlaechen: { zBis: 1.9, yBis: 0.86, farbe: 'radhaus' },
+    // werte (Garage, 1 bis 10): aus tools/auto-messung.mjs abgeleitet, Rechenvorschrift bei WERTE_VORSCHRIFT unten
+    werte: { beschleunigung: 8, tempo: 5, grip: 8, drift: 6 },
+
+    teile: [
+      // --- Unterbau: kurze, hohe Schnauze, Gürtellinie fast waagrecht bis zur Heckklappe ---
+      {
+        art: 'prisma', slot: 'lack', x: [-0.84, 0.84],
+        profil: [
+          [1.96, 0.2], [1.66, 0.2], ...bogen(1.24, 0.33, 0.42, 6), [0.82, 0.2],
+          [-0.82, 0.2], ...bogen(-1.24, 0.33, 0.42, 6), [-1.66, 0.2],
+          [-1.96, 0.2], [-1.96, 0.9], [0.74, 0.9], [1.9, 0.8], [1.96, 0.72],
+        ],
+      },
+      { art: 'quader', slot: 'radhaus', min: [-0.45, 0.2, 0.84], max: [0.45, 0.72, 1.64] },
+      { art: 'quader', slot: 'radhaus', min: [-0.45, 0.2, -1.64], max: [0.45, 0.72, -0.84] },
+      // breite Kastenkotflügel vorne und hinten (Räder stehen sichtbar in den Radläufen)
+      { art: 'prisma', slot: 'lack', x: [0.84, 0.9], spiegeln: true, profil: kotfluegel(1.24, 0.43, 1.86, 0.6, 0.22, 0.74, 0.8) },
+      { art: 'prisma', slot: 'lack', x: [0.84, 0.9], spiegeln: true, profil: kotfluegel(-1.24, 0.43, -0.6, -1.92, 0.22, 0.82, 0.82) },
+      // Seitenschweller
+      { art: 'quader', slot: 'lack', spiegeln: true, min: [0.84, 0.2, -0.6], max: [0.875, 0.32, 0.6] },
+      // Kabine: Frontscheibe schräg, langes flaches Dach, steile Heckklappe bis fast ans Heck (Fliessheck)
+      { art: 'trapez', slot: 'lack', unten: [0.9, 0.8, 0.78, -1.92], oben: [1.41, 0.66, 0.14, -1.54], ohne: ['unten'] },
+      // Dachspoiler an der Hinterkante des Dachs (von hinten klar zu sehen)
+      { art: 'trapez', slot: 'fluegel', unten: [1.39, 0.66, -1.36, -1.56], oben: [1.45, 0.7, -1.38, -1.74] },
+      // Motorhaube mit Wölbung (Lüftungsschlitze werden aufgemalt)
+      { art: 'trapez', slot: 'lack', unten: [0.86, 0.5, 1.78, 0.9], oben: [0.92, 0.38, 1.68, 0.96], ohne: ['unten'] },
+      // Front- und Heckschürze
+      { art: 'quader', slot: 'lack', min: [-0.88, 0.18, 1.94], max: [0.88, 0.44, 2.0] },
+      { art: 'quader', slot: 'schwarz', min: [-0.86, 0.16, 1.93], max: [0.86, 0.19, 2.01] },
+      { art: 'quader', slot: 'lack', min: [-0.9, 0.18, -2.0], max: [0.9, 0.46, -1.94] },
+      // Aussenspiegel
+      { art: 'quader', slot: 'akzent', spiegeln: true, min: [0.79, 0.95, 0.5], max: [0.89, 1.04, 0.58] },
+      { art: 'quader', slot: 'schwarz', spiegeln: true, min: [0.72, 0.97, 0.52], max: [0.79, 1.0, 0.56] },
+      // Schlammlappen
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.6, 0.07, 0.8], max: [0.88, 0.44, 0.82] },
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.6, 0.07, -1.66], max: [0.88, 0.44, -1.64] },
+      // Auspuff rechts (Beifahrerseite = -x)
+      { art: 'zylinder', slot: 'chrom', achse: 'z', mitte: [-0.5, 0.24, -1.99], radius: 0.045, laenge: 0.12, segmente: 6 },
+      // Abschlepp-Öse vorne links
+      { art: 'quader', slot: 'rot', min: [0.46, 0.2, 1.99], max: [0.52, 0.25, 2.02] },
+      // Gehäuse der zwei runden Zusatzscheinwerfer in der Schürze
+      ...[0.36, -0.36].map((x) => ({ art: 'zylinder', slot: 'schwarz', achse: 'z', mitte: [x, 0.31, 2.0], radius: 0.085, laenge: 0.04, segmente: 8 })),
+
+      // --- Lichter ---
+      // zwei grosse Scheinwerfer (rechteckig, fast so breit wie die halbe Front)
+      { art: 'quader', licht: 'vorne', farbe: 'scheinwerfer', spiegeln: true, min: [0.38, 0.53, 1.96], max: [0.78, 0.66, 1.968] },
+      ...[0.36, -0.36].map((x) => ({ art: 'zylinder', licht: 'vorne', farbe: 'zusatzscheinwerfer', achse: 'z', mitte: [x, 0.31, 2.022], radius: 0.068, laenge: 0.004, segmente: 8 })),
+      { art: 'quader', licht: 'hinten', spiegeln: true, min: [0.4, 0.6, -1.968], max: [0.84, 0.74, -1.96] },
+      { art: 'quader', licht: 'rueck', min: [0.18, 0.62, -1.966], max: [0.32, 0.7, -1.96] },
+    ],
+
+    bemalung: [
+      // --- Seite ---
+      { art: 'rechteck', ansicht: 'seite', von: [-2.1, 0], bis: [2.1, 0.38], farbe: 'unten' },
+      { art: 'rechteck', ansicht: 'seite', von: [-2.1, 0.62], bis: [2.1, 0.74], farbe: 'streifen0' },
+      { art: 'rechteck', ansicht: 'seite', von: [-2.1, 0.56], bis: [2.1, 0.6], farbe: 'streifen1' },
+      { art: 'ring', ansicht: 'seite', mitte: [1.24, 0.33], r: [0.39, 0.47], farbe: 'kante' },
+      { art: 'ring', ansicht: 'seite', mitte: [-1.24, 0.33], r: [0.39, 0.47], farbe: 'kante' },
+      // vier Türen (Fugen) und Türgriffe
+      { art: 'rechteck', ansicht: 'seite', von: [0.64, 0.36], bis: [0.67, 0.88], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.42, 0.36], bis: [-0.39, 1.36], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-1.2, 0.42], bis: [-1.17, 0.9], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.32, 0.8], bis: [-0.22, 0.83], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-1.1, 0.8], bis: [-1.0, 0.83], farbe: 'fuge' },
+      // Seitenscheiben: vordere Tür, hintere Tür, kleines Fenster an der Heckklappe
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[0.7, 0.95], [0.22, 1.36], [-0.35, 1.36], [-0.35, 0.95]] },
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[-0.47, 0.95], [-0.47, 1.36], [-1.12, 1.36], [-1.12, 0.95]] },
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[-1.24, 1.02], [-1.24, 1.33], [-1.36, 1.33], [-1.52, 1.02]] }, // (breite C-Säule)
+      { art: 'rechteck', ansicht: 'seite', von: [-0.35, 1.31], bis: [0.26, 1.34], farbe: 'glasHell' },
+      // Helme (nur dezent, nur seitlich und vorne)
+      { art: 'helm', ansicht: 'seite', nur: 'links', mitte: [-0.12, 1.12], r: 0.08, farbe: 'helmFahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'seite', nur: 'rechts', mitte: [-0.12, 1.12], r: 0.08, farbe: 'helmBeifahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'nummer', ansicht: 'seite', mitte: [0.12, 0.68] },
+      { art: 'text', ansicht: 'seite', text: 'TALBANK', mitte: [0, 0.28], farbe: 'sponsorHell', abBreite: 480 }, // zwischen den Radläufen
+
+      // --- Oben ---
+      { art: 'nummer', ansicht: 'oben', mitte: [0, -0.5], lesbarVon: 'hinten' },
+      { art: 'nummer', ansicht: 'oben', mitte: [0, 0.4], lesbarVon: 'vorne' },
+      // Lüftungsschlitze links und rechts auf der Haubenwölbung
+      ...[1.05, 1.17, 1.29, 1.41].map((z) => ({ art: 'rechteck', ansicht: 'oben', von: [0.14, z], bis: [0.36, z + 0.05], farbe: 'gitter', spiegeln: true })),
+      // Heckklappe oben (schräg, von hinten zu sehen): ruhiger Farbblock
+      { art: 'rechteck', ansicht: 'oben', von: [-0.62, -1.62], bis: [0.62, -1.9], farbe: 'sponsorFeld' },
+
+      // --- Vorne ---
+      { art: 'polygon', ansicht: 'vorne', farbe: 'glas', punkte: [[-0.72, 0.93], [0.72, 0.93], [0.6, 1.37], [-0.6, 1.37]] },
+      { art: 'helm', ansicht: 'vorne', mitte: [0.33, 1.07], r: 0.075, farbe: 'helmFahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'vorne', mitte: [-0.33, 1.07], r: 0.075, farbe: 'helmBeifahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.64, 1.22], bis: [0.64, 1.37], farbe: 'banner' },
+      { art: 'text', ansicht: 'vorne', text: 'ALPENKRAFT', mitte: [0, 1.295], farbe: 'bannerSchrift', abBreite: 480 },
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.36, 0.53], bis: [0.36, 0.66], farbe: 'gitter' },          // Kühlergrill
+      { art: 'rechteck', ansicht: 'vorne', von: [0.36, 0.51], bis: [0.8, 0.68], farbe: 'schwarz', spiegeln: true }, // Scheinwerfer-Rahmen
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.9, 0], bis: [0.9, 0.44], farbe: 'unten' },              // Schürze
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.2, 0.24], bis: [0.2, 0.38], farbe: 'gitter' },          // Lufteinlass Mitte
+
+      // --- Hinten ---
+      // Heckscheibe (ruhig und dunkel, keine Köpfe) mit Heckwischer
+      { art: 'polygon', ansicht: 'hinten', farbe: 'glas', punkte: [[-0.7, 0.95], [0.7, 0.95], [0.6, 1.37], [-0.6, 1.37]] },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.5, 1.32], bis: [0.5, 1.345], farbe: 'glasHell' },
+      { art: 'polygon', ansicht: 'hinten', farbe: 'wischer', punkte: [[-0.02, 0.97], [0.02, 0.97], [0.48, 1.2], [0.46, 1.23]] },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.04, 0.95], bis: [0.04, 1.0], farbe: 'schwarz' },     // Wischer-Achse
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.9, 0.58], bis: [0.9, 0.76], farbe: 'schwarz' },     // Rücklicht-Band
+      { art: 'text', ansicht: 'hinten', text: 'SCHNEEFINK', mitte: [0, 0.83], farbe: 'sponsor0', abBreite: 480 },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.95, 0], bis: [0.95, 0.46], farbe: 'unten' },        // Heckschürze
+      { art: 'kennzeichen', ansicht: 'hinten', mitte: [0, 0.32] },
+
+      // --- Dachspoiler oben ---
+      { art: 'rechteck', ansicht: 'fluegel', von: [-0.72, -1.7], bis: [0.72, -1.74], farbe: 'akzent' },
+    ],
   },
 };
 

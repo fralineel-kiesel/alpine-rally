@@ -704,6 +704,31 @@ export const CONFIG = {
       },
       ton: { turboMal: 1, knallMal: 1 }, // M8c: Ton wie 0.8b
     },
+    // Lanza Delto (Id delto, M8c): wendig, griffig, kurzer Radstand. Leichter und kürzer als der Audan, direkter in der
+    // Lenkung, neutral (schiebt nicht über die Front), Allrad-Traktion auf Schotter und Wiesenweg, dezenter Turbo,
+    // etwas weniger Höchsttempo. Messwerte und Kompromisse: STAND.md, Meilenstein 8c.
+    delto: {
+      auto: {
+        radstand: 2.48,          // kurzer Radstand (Audan 2.52): dreht williger ein
+        traegheit: 2.25,         // leichter als der Audan (2.5); 2.0 machte den Handbremsen-Drift zu wild (+37 %)
+        schwerpunktVorne: 0.49,  // etwas weiter hinten als beim Prototyp (0.48): neutral (Audan 0.46 = schiebt)
+        lastVorneAnteil: 0.53,   // kaum frontlastig (Audan 0.555): Lenkwinkel +7 % statt +17 %
+        gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve (+3.2°) ...
+        stabilitaet: 7.5,        // ... und wird schnell wieder gefangen (Prototyp 5; sonst kam der flotte Testfahrer bei
+                                 // 694 m beim harten Bremsen mit 130 km/h quer)
+        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.08 }, // Allrad zieht die Front auf losem Boden in die Kurve
+        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit (sonst rutscht hinten zuerst)
+      },
+      getriebe: {
+        allrad: { schotter: 1.15, wiesenweg: 1.1, bankett: 0.9 }, // Traktion auf losem Boden; Bankett weniger, damit
+                                 // es dort trotz mehr Schub keinen Vorteil gibt (Abkürzungen)
+        zugkraftFaktor: 1.02,    // leichter = zieht kräftiger (0-100 km/h Asphalt 4 % schneller)
+        gaenge: [48, 80, 112, 140, 166], // 4. und 5. Gang kürzer: Höchsttempo 5 % tiefer, oben herum zieht er weniger
+                                 // (sonst wäre der Testfahrer schneller als mit dem Audan)
+        turbo: { an: true, aufbau: 0.4 }, // dezenter Turbo, baut etwas langsamer auf als beim Audan (0.35 s)
+      },
+      ton: { turboMal: 1, knallMal: 1 },
+    },
   },
 
   // --- Untergrund -------------------------------------------------------
@@ -1863,7 +1888,8 @@ export const CONFIG = {
       felge: 0.5,              // ... die Felgen so viel
     },
 
-    // Lackierungen: Farben für die Bemalung in js/autos.js (null = diesen Teil nicht malen)
+    // Lackierungen: Farben für die Bemalung in js/autos.js (null = diesen Teil nicht malen).
+    // M8c: jede Lackierung gehört zu einem Auto (Liste "lackierungen" des Autos in js/autos.js; Namen eindeutig)
     lackierungen: {
       // Werk: Weiss mit rotem Streifen und dunkelgrauem Unterteil (wie vor M8a)
       werk: {
@@ -1886,11 +1912,34 @@ export const CONFIG = {
         sponsor0: '#ff8a1e', sponsor1: '#f4f4ee', sponsorHell: '#ff8a1e', banner: '#ff8a1e', bannerSchrift: '#1c1c1e',
         sponsorFeld: null, sponsorFeldSchrift: '#ff8a1e',
       },
+      // --- Lanza Delto (M8c) ---
+      // Werk: Weiss mit blauem und rotem Streifen, dunkles Unterteil
+      deltoWerk: {
+        lack: '#f1f1ec', unten: '#2c3038', streifen0: '#1f4f9a', streifen1: '#c8202c', akzent: '#1f4f9a', fluegel: '#f1f1ec',
+        lappen: '#1f4f9a', nummerFeld: '#f4f4ee', nummerRand: '#1f4f9a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#1f4f9a', sponsor1: '#c8202c', sponsorHell: '#f4f4ee', banner: '#1f4f9a', bannerSchrift: '#f4f4ee',
+        sponsorFeld: '#c8202c', sponsorFeldSchrift: '#f4f4ee',
+      },
+      // Rosso: Rot mit schwarzem Unterteil
+      rosso: {
+        lack: '#b8161e', unten: '#18191b', streifen0: '#18191b', streifen1: '#f1f1ec', akzent: '#18191b', fluegel: '#b8161e',
+        lappen: '#18191b', nummerFeld: '#f4f4ee', nummerRand: '#18191b', nummerSchrift: '#18191b',
+        sponsor0: '#f4f4ee', sponsor1: '#18191b', sponsorHell: '#f4f4ee', banner: '#18191b', bannerSchrift: '#f4f4ee',
+        sponsorFeld: '#18191b', sponsorFeldSchrift: '#f4f4ee',
+      },
+      // Waldgrün: Dunkelgrün mit gelben Akzenten
+      waldgruen: {
+        lack: '#1e4a30', unten: '#132a1d', streifen0: '#f2c22e', streifen1: null, akzent: '#f2c22e', fluegel: '#f2c22e',
+        lappen: '#f2c22e', nummerFeld: '#f2c22e', nummerRand: '#132a1d', nummerSchrift: '#132a1d',
+        sponsor0: '#f2c22e', sponsor1: '#f4f4ee', sponsorHell: '#f2c22e', banner: '#f2c22e', bannerSchrift: '#132a1d',
+        sponsorFeld: null, sponsorFeldSchrift: '#f2c22e',
+      },
     },
     // Feste Autofarben (für alle Lackierungen gleich)
     farben: {
       schwarz: '#1c1c1e', gitter: '#0d0e10', fuge: '#2a2c30', kante: '#26282c', radhaus: '#121214', unterboden: '#1a1a1c',
       glas: '#1c2834', glasHell: '#3a5266', chrom: '#a4a7aa', rot: '#c8202c', heckblende: '#3a0c0c',
+      wischer: '#5a5f66',      // M8c: Heckwischer (Lanza Delto), etwas heller als die Scheibe
       // Helme im Fenster (M8b: gedeckt statt weiss/gelb, damit nichts leuchtet; zwei leicht andere Töne = zwei Personen)
       helmFahrer: '#5c6b7a', helmBeifahrer: '#55585e', visier: '#0c0f13', schulter: '#23272d',
       kennzeichen: '#f4f4ee', kennzeichenSchrift: '#1c1c1e',

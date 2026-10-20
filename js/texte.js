@@ -30,6 +30,9 @@ export const TEXTE = {
   'auto.rt4.name': { de: 'AUDAN QUARTO', en: 'AUDAN QUARTO' }, // (Id rt4 bleibt: Bestzeiten)
   'auto.rt4.daten1': { de: 'ALLRAD · TURBO · 5 GÄNGE AUTOMATIK', en: 'AWD · TURBO · 5-SPEED AUTOMATIC' },
   'auto.rt4.daten2': { de: 'SCHWERES RALLYAUTO, VIEL TRAKTION', en: 'HEAVY RALLY CAR, LOTS OF TRACTION' },
+  'auto.delto.name': { de: 'LANZA DELTO', en: 'LANZA DELTO' }, // M8c
+  'auto.delto.daten1': { de: 'ALLRAD · TURBO · 5 GÄNGE AUTOMATIK', en: 'AWD · TURBO · 5-SPEED AUTOMATIC' },
+  'auto.delto.daten2': { de: 'KOMPAKT, WENDIG, GRIFFIG', en: 'COMPACT, NIMBLE, GRIPPY' },
   'auswahl.gewaehlt': { de: 'GEWÄHLT', en: 'SELECTED' },
   // M8c: Garage (Seite AUTO)
   'garage.titel': { de: 'GARAGE', en: 'GARAGE' },
@@ -42,6 +45,9 @@ export const TEXTE = {
   'lack.werk': { de: 'WERK', en: 'WORKS' },
   'lack.gletscher': { de: 'GLETSCHER', en: 'GLACIER' },
   'lack.dunkel': { de: 'DUNKEL', en: 'DARK' },
+  'lack.deltoWerk': { de: 'WERK', en: 'WORKS' },
+  'lack.rosso': { de: 'ROSSO', en: 'ROSSO' },
+  'lack.waldgruen': { de: 'WALDGRÜN', en: 'FOREST GREEN' },
   'auto.spaeter': { de: 'WEITERE AUTOS FOLGEN', en: 'MORE CARS TO COME' },
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },
   'etappe.pass.name': { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
