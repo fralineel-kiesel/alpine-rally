@@ -4,8 +4,8 @@
 // schieben (untersteuern) und mit der Handbremse driften.
 // Diese Datei kennt kein Three.js – reine Rechnerei.
 // Seit M8a (Fahrprofile, js/fahrprofil.js): Achslasten mit statischer Verteilung (lastVorneAnteil) und
-// Gewichtsverlagerung längs (gewichtstransfer), Heck-Grip je Belag (heckJeBelag). Im Profil "prototyp" sind diese
-// Werte neutral (0.5, 0, 1): dann rechnet alles genau wie vorher.
+// Gewichtsverlagerung längs (gewichtstransfer), Heck-Grip je Belag (heckJeBelag), seit M8b Front-Grip je Belag
+// (vorneJeBelag). Im Profil "prototyp" sind diese Werte neutral (0.5, 0, 1, 1): dann rechnet alles genau wie vorher.
 
 import { CONFIG } from './config.js';
 
@@ -103,6 +103,8 @@ export class Fahrphysik {
 
     // --- Grip ---
     let gripV = c.gripVorne * boden.grip;
+    // M8b: Grip vorne je Belag (Allrad zieht die Front auf losem Boden in die Kurve; Prototyp: 1 = ohne Wirkung)
+    if (boden.belag && c.vorneJeBelag) gripV *= c.vorneJeBelag[boden.belag] ?? 1;
     // heck (seit M3a): auf Schotter hält das Heck etwas weniger als die Front -> driftet früher
     // (M8a: mal heckJeBelag des Profils, z. B. Allrad hält das Heck auf Schotter besser; Prototyp: 1)
     let gripH = c.gripHinten * boden.grip * (boden.heck ?? 1);

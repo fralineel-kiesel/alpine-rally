@@ -626,6 +626,8 @@ export const CONFIG = {
     gewichtstransfer: 0,       // Gewichtsverlagerung längs: Bremsen = mehr Last vorne, Gas = mehr hinten (0 = aus, 0.35 = deutlich)
     gewichtstransferGlaettung: 0.1, // ... so weich (Sekunden) folgt die Verlagerung der Beschleunigung (kein Zittern)
     heckJeBelag: { schotter: 1, wiesenweg: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
+    vorneJeBelag: { schotter: 1, wiesenweg: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
+                               // fehlt ein Belag, gilt 1. Asphalt, Bankett und Gras bewusst nicht: sonst lohnen Abkürzungen)
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -685,12 +687,14 @@ export const CONFIG = {
         lastVorneAnteil: 0.555,  // frontlastig: vorne mehr Haftung, hinten weniger
         schwerpunktVorne: 0.46,  // Schwerpunkt weiter vorne (Prototyp 0.48): schiebt in schnellen Kurven eher über die Front
         traegheit: 2.5,          // schwerer, ruhiger Wagen (Prototyp 2.3)
-        gewichtstransfer: 0.35,  // Bremsen in der Kurve = Heck kommt; Gas = Heck stabil, Front schiebt etwas
+        gewichtstransfer: 0.45,  // Bremsen in der Kurve = Heck kommt; Gas = Heck stabil, Front schiebt etwas (M8a: 0.35)
         gasImDrift: 0.07,        // Gas lockert das Heck im Drift weniger (Prototyp 0.12): Allrad zieht gerade
-        heckJeBelag: { schotter: 1.1, wiesenweg: 1.15 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser
+        heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser (M8a: 1.1 / 1.15)
+        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.06 }, // M8b: Allrad zieht die Front auf losem Boden in die Kurve
+                                 // (Asphalt, Bankett, Gras: kein Vorteil, sonst lohnen sich Abkürzungen)
       },
       getriebe: {
-        allrad: { schotter: 1.15, wiesenweg: 1.1 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil)
+        allrad: { schotter: 1.2, wiesenweg: 1.15 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil; M8a: 1.15 / 1.1)
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },

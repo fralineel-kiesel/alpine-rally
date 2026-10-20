@@ -24,8 +24,10 @@ export const REGLER = [
   { pfad: 'auto.gewichtstransfer', min: 0, max: 0.8, schritt: 0.01, info: 'Gewicht wandert beim Bremsen/Gas (0 = aus)' },
   { pfad: 'auto.gasImDrift', min: 0, max: 0.3, schritt: 0.005, info: 'Gas im Drift lockert das Heck' },
   { pfad: 'auto.stabilitaet', min: 0, max: 10, schritt: 0.1, info: 'zieht aus dem Drift gerade (höher = braver)' },
+  { pfad: 'auto.vorneJeBelag.schotter', min: 0.9, max: 1.3, schritt: 0.01, info: 'Haftung vorne auf Schotter (mal; M8b)' },
   { pfad: 'getriebe.traktion', min: 5, max: 12, schritt: 0.1, info: 'so viel Schub geht auf den Boden (mal Grip)' },
   { pfad: 'getriebe.allrad.schotter', min: 0.8, max: 1.4, schritt: 0.01, info: 'Allrad: Traktion auf Schotter (mal)' },
+  { pfad: 'getriebe.allrad.wiesenweg', min: 0.8, max: 1.4, schritt: 0.01, info: 'Allrad: Traktion auf dem Wiesenweg (mal; M8b)' },
   { pfad: 'getriebe.turbo.aufbau', min: 0.05, max: 1.5, schritt: 0.01, info: 'Turbo: Sekunden, bis der Ladedruck voll ist' },
   { pfad: 'getriebe.turbo.verlust', min: 0, max: 0.3, schritt: 0.005, info: 'Turbo: Schub-Verlust ohne Ladedruck (Turboloch)' },
 ];
