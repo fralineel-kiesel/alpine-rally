@@ -218,6 +218,7 @@ if (teil('d')) {
       const e = A.menue.seite.eintraege()[A.menue.wahl];
       if (e.lack) { A.menue.taste('ArrowRight', false); await warte(); continue; }
       if (!e.autoId || e.autoId === vorher) continue;
+      A.menue.taste('Enter', false); // (M8d: erst Bestätigen wählt das Auto)
       wechsel++;
       await warte();
       const m = AUTO_MODELLE[e.autoId], M = A.autoModell;
@@ -241,7 +242,11 @@ if (teil('d')) {
   // zurück zum Audan, messen, 30 Wechsel, zurück zum Audan, messen
   const zumAudan = () => p.evaluate(async () => {
     const A = window.__alpineRally;
-    for (let k = 0; k < 12 && A.autoWahl.auto !== 'rt4'; k++) { A.menue.taste('ArrowDown', false); await new Promise((r) => requestAnimationFrame(r)); }
+    for (let k = 0; k < 12 && A.autoWahl.auto !== 'rt4'; k++) {
+      A.menue.taste('ArrowDown', false);
+      if (A.menue.seite.eintraege()[A.menue.wahl].autoId === 'rt4') A.menue.taste('Enter', false); // (M8d: bestätigen)
+      await new Promise((r) => requestAnimationFrame(r));
+    }
     return { auto: A.autoWahl.auto, mem: { ...A.renderer.info.memory } };
   });
   const v0 = await zumAudan(); await p.waitForTimeout(300);
@@ -561,18 +566,20 @@ if (teil('j')) {
   const bed = await p.evaluate(async () => {
     const A = window.__alpineRally, warte = (ms) => new Promise((r) => setTimeout(r, ms)), erg = {};
     const a0 = A.autoWahl.auto;
-    A.menue.taste('ArrowDown', false); await warte(100); erg.tastatur = [a0, A.autoWahl.auto];
+    A.menue.taste('ArrowDown', false); A.menue.taste('Enter', false); await warte(100); erg.tastatur = [a0, A.autoWahl.auto]; // (M8d: + Enter)
     // zur LACK-Zeile
     for (let k = 0; k < 6 && !A.menue.seite.eintraege()[A.menue.wahl].lack; k++) A.menue.taste('ArrowDown', false);
     const l0 = A.autoModell.lackName; A.menue.taste('ArrowRight', false); await warte(100); erg.lack = [l0, A.autoModell.lackName];
     // Maus: auf die erste Auto-Zeile zeigen
     await warte(300);
     const h = A.menue.treffer.find((t) => A.menue.seite.eintraege()[t.nr].autoId === 'escorta');
-    if (h) A.menue.maus(h.x + 5, h.y + 2, 'bewegen');
+    if (h) { A.menue.maus(h.x + 5, h.y + 2, 'bewegen'); A.menue.maus(h.x + 5, h.y + 2, 'druecken'); A.menue.maus(h.x + 5, h.y + 2, 'loslassen'); } // (M8d: Klick)
     await warte(100); erg.maus = A.autoWahl.auto;
     // Gamepad: Steuerkreuz hoch
     const G = A.CONFIG.menue.gamepad, gedrueckt = []; gedrueckt[G.hoch] = true;
     A.menue.gamepad(0.016, { da: true, neu: [], gedrueckt, achseX: 0, achseY: 0 });
+    const neu = []; neu[G.bestaetigen] = true; // (M8d: A bestätigt)
+    A.menue.gamepad(0.016, { da: true, neu, gedrueckt: [], achseX: 0, achseY: 0 });
     await warte(100); erg.gamepad = A.autoWahl.auto;
     A.menue.gamepad(0.016, { da: true, neu: [], gedrueckt: [], achseX: 0, achseY: 0 });
     // Balken: Werte des gewählten Autos, Texte

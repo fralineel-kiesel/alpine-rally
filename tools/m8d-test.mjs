@@ -143,5 +143,137 @@ if (teil('c')) {
   await s.schliessen();
 }
 
+// ---------------------------------------------------------------- (d) Garage mit Tastatur, Gamepad und Maus
+// Ein Durchgang: Spiel frisch laden (ohne gemerkte Werte), Titel -> Hauptmenü -> AUTO, dann die Schritte von Teil B.7.
+// eingabe: { runter(), hoch(), rechts(), bestaetigen(), zurueck() } – Tastatur, Gamepad (simuliert) oder gemischt mit Maus
+async function garageDurchgang(art) {
+  const s = await starteSpiel({ breite: 640, hoehe: 360, auto: '' });
+  const p = s.page;
+  // simuliertes Gamepad (navigator.getGamepads): Knöpfe und Achsen setzt der Test
+  await p.addInitScript(() => {
+    const knopf = () => ({ pressed: false, value: 0 });
+    window.__testPad = { id: 'Testpad', index: 0, connected: true, mapping: 'standard', buttons: Array.from({ length: 17 }, knopf), axes: [0, 0, 0, 0], timestamp: 0 };
+    window.__padAn = false;
+    navigator.getGamepads = () => (window.__padAn ? [window.__testPad] : []);
+  });
+  await p.goto(`${s.url}/index.html`);
+  await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+  const bilder = (n = 3) => p.evaluate((n) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+  const G = await p.evaluate(() => window.__alpineRally.CONFIG.menue.gamepad);
+  const padKnopf = async (nr) => {
+    await p.evaluate((nr) => { window.__padAn = true; Object.assign(window.__testPad.buttons[nr], { pressed: true, value: 1 }); }, nr); await bilder(3);
+    await p.evaluate((nr) => { Object.assign(window.__testPad.buttons[nr], { pressed: false, value: 0 }); }, nr); await bilder(3);
+  };
+  const padStick = async (achse, wert) => {
+    await p.evaluate(([a, w]) => { window.__padAn = true; window.__testPad.axes[a] = w; }, [achse, wert]); await bilder(2);
+    await p.evaluate((a) => { window.__testPad.axes[a] = 0; }, achse); await bilder(3);
+  };
+  const E = art === 'gamepad'
+    ? { runter: () => padStick(1, 1), hoch: () => padStick(1, -1), rechts: () => padStick(0, 1), bestaetigen: () => padKnopf(G.bestaetigen), zurueck: () => padKnopf(G.abbrechen) }
+    : { runter: () => p.keyboard.press('ArrowDown'), hoch: () => p.keyboard.press('ArrowUp'), rechts: () => p.keyboard.press('ArrowRight'), bestaetigen: () => p.keyboard.press(art === 'leertaste' ? 'Space' : 'Enter'), zurueck: () => p.keyboard.press('Escape') };
+  const z = () => p.evaluate(() => {
+    const A = window.__alpineRally, m = A.menue, l = m.seite.eintraege ? (typeof m.seite.eintraege === 'function' ? m.seite.eintraege() : m.seite.eintraege) : [];
+    const e = l[m.wahl] || {};
+    const gelb = l.filter((x) => x.autoId && x.farbeText && x.farbeText() === A.CONFIG.menue.farbeWert).map((x) => x.autoId);
+    return {
+      seite: m.seite.id, zeiger: e.autoId || (e.lack ? 'LACK' : e.typ === 'zurueck' ? 'ZURUECK' : e.text), auto: A.autoWahl.auto, profil: A.auto, modell: A.autoModell.modell.id,
+      lack: A.autoModell.lackName, lacke: { ...A.einstellungen.lacke }, gelb, vorschau: A.seiten.garage.vorschauId ? A.seiten.garage.vorschauId() : null,
+      vorschauModelle: [...A.vorschauModelle.keys()], zustand: A.ablauf.zustand,
+    };
+  });
+  const pr = (bed, text) => melde(bed, `${art}: ${text}`);
+  // Titel -> Hauptmenü -> AUTO (gleiche Eingabeart)
+  if (art === 'gamepad') await padKnopf(G.bestaetigen); else await p.keyboard.press('Enter');
+  await bilder(5);
+  await E.runter(); await E.bestaetigen(); await p.waitForTimeout(400); await bilder(3);
+  let x = await z();
+  pr(x.seite === 'auto' && x.zeiger === 'rt4' && x.auto === 'rt4', `Garage offen, Zeiger auf ${x.zeiger}, gewählt ${x.auto}`);
+  const lackAudan = x.lacke.rt4 || 'werk';
+  // [unten] markiert Delto: nichts gewählt, Vorschau zeigt Delto
+  await E.runter(); await bilder(3); x = await z();
+  pr(x.zeiger === 'delto' && x.auto === 'rt4' && x.profil === 'rt4' && x.modell === 'rt4' && x.vorschau === 'delto' && x.gelb.join() === 'rt4',
+    `[unten]: Zeiger ${x.zeiger}, gewählt bleibt ${x.auto} (Profil ${x.profil}, Modell ${x.modell}), Vorschau ${x.vorschau}, gelb ${x.gelb}`);
+  // [bestätigen] wählt Delto, Garage bleibt offen, Delto gelb
+  await E.bestaetigen(); await bilder(3); x = await z();
+  pr(x.seite === 'auto' && x.zeiger === 'delto' && x.auto === 'delto' && x.profil === 'delto' && x.modell === 'delto' && x.gelb.join() === 'delto',
+    `[${art === 'gamepad' ? 'A' : art === 'leertaste' ? 'Leertaste' : 'Enter'}]: gewählt ${x.auto} (Profil ${x.profil}, Modell ${x.modell}), Seite ${x.seite} bleibt offen, gelb ${x.gelb}`);
+  const lackDelto0 = x.lack;
+  // [unten, unten] über Escorta nach LACK: nichts ändert sich
+  await E.runter(); await bilder(2); const ueber = await z();
+  await E.runter(); await bilder(2); x = await z();
+  pr(ueber.zeiger === 'escorta' && ueber.auto === 'delto' && ueber.vorschau === 'escorta' && x.zeiger === 'LACK' && x.auto === 'delto' && x.profil === 'delto' && x.modell === 'delto' && x.vorschau === 'delto',
+    `[unten, unten]: über ${ueber.zeiger} (Vorschau ${ueber.vorschau}) nach ${x.zeiger}, gewählt bleibt ${x.auto} / ${x.profil} / ${x.modell}, Vorschau wieder ${x.vorschau}`);
+  // [rechts] wechselt die Lackierung des Delto, Escorta unberührt
+  const lackEscorta0 = x.lacke.escorta;
+  await E.rechts(); await bilder(2); x = await z();
+  pr(x.lack !== lackDelto0 && x.lacke.delto === x.lack && x.lacke.escorta === lackEscorta0 && x.modell === 'delto',
+    `[rechts]: Lackierung Delto ${lackDelto0} -> ${x.lack} (gemerkt ${x.lacke.delto}), Escorta unberührt (${lackEscorta0 ?? 'keine'})`);
+  const lackDelto = x.lack;
+  // frei hoch und runter, ohne dass sich etwas ändert
+  for (const r of ['hoch', 'hoch', 'hoch', 'runter', 'runter', 'runter']) await E[r]();
+  await bilder(2); x = await z();
+  pr(x.zeiger === 'LACK' && x.auto === 'delto' && x.lack === lackDelto, `frei hoch/runter (3x hoch über alle Autos, 3x runter): gewählt ${x.auto}, Lack ${x.lack}`);
+  // schon gewähltes Auto bestätigen: kein Fehler
+  await E.hoch(); await E.hoch(); await bilder(2);
+  const vor = await z(); await E.bestaetigen(); await bilder(2); x = await z();
+  pr(vor.zeiger === 'delto' && x.auto === 'delto' && x.lack === lackDelto && x.seite === 'auto', `gewähltes Auto nochmals bestätigt: bleibt ${x.auto}, Lack ${x.lack}, Garage offen`);
+  // markiert (Escorta), dann Esc: das bestätigte Auto bleibt
+  await E.runter(); await bilder(2);
+  await E.zurueck(); await p.waitForTimeout(400); await bilder(3); x = await z();
+  pr(x.seite === 'haupt' && x.auto === 'delto' && x.vorschauModelle.length === 0, `Escorta markiert, ${art === 'gamepad' ? 'B' : 'Esc'}: Hauptmenü, gewählt bleibt ${x.auto}, Vorschau-Modelle freigegeben (${x.vorschauModelle.length})`);
+  // erneut öffnen: Zeiger auf Delto, Delto gelb
+  await E.bestaetigen(); await p.waitForTimeout(400); await bilder(3); x = await z();
+  pr(x.seite === 'auto' && x.zeiger === 'delto' && x.gelb.join() === 'delto', `erneut geöffnet: Zeiger auf ${x.zeiger}, gelb ${x.gelb}`);
+  // Rennen starten: zurück, STARTEN
+  await E.zurueck(); await p.waitForTimeout(400); await E.hoch(); await E.bestaetigen(); await p.waitForTimeout(1500); await bilder(3); x = await z();
+  pr(['countdown', 'rennen'].includes(x.zustand) && x.auto === 'delto' && x.profil === 'delto' && x.modell === 'delto' && x.lack === lackDelto,
+    `Rennen (${x.zustand}): ${x.modell} fährt mit Profil ${x.profil} und Lackierung ${x.lack}`);
+  pr(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  void lackAudan;
+  await s.schliessen();
+}
+
+async function garageMaus() {
+  const s = await starteSpiel({ breite: 640, hoehe: 360, auto: '' });
+  const p = s.page;
+  await p.goto(`${s.url}/index.html`);
+  await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+  await p.keyboard.press('Enter'); await p.waitForTimeout(300);
+  await p.evaluate(() => { const A = window.__alpineRally; A.menue.oeffne(A.seiten.auto); });
+  await p.waitForFunction(() => window.__alpineRally.menue.treffer.length > 0 && window.__alpineRally.menue.einblendung >= 1, null, { timeout: 30000 });
+  // Bildschirm-Punkt einer Zeile (Trefferfläche im 320x180-Raster -> Seite)
+  const punkt = (pruef) => p.evaluate((pruef) => {
+    const A = window.__alpineRally, l = A.menue.seite.eintraege(), r = document.getElementById('hud').getBoundingClientRect();
+    const h = A.menue.treffer.find((t) => (pruef === 'LACK' ? l[t.nr].lack : l[t.nr].autoId === pruef));
+    return h ? [r.left + (h.x + 12) / 320 * r.width, r.top + (h.y + h.h / 2) / 180 * r.height] : null;
+  }, pruef);
+  const z = () => p.evaluate(() => { const A = window.__alpineRally; return { auto: A.autoWahl.auto, vorschau: A.seiten.garage.vorschauId(), lack: A.autoModell.lackName, wahl: A.menue.wahl }; });
+  let q = await punkt('escorta');
+  await p.mouse.move(q[0], q[1]); await p.waitForTimeout(200);
+  let x = await z();
+  melde(x.auto === 'rt4' && x.vorschau === 'escorta', `Maus: Zeigen auf ESCORTA markiert (Vorschau ${x.vorschau}), gewählt bleibt ${x.auto}`);
+  await p.mouse.click(q[0], q[1]); await p.waitForTimeout(200);
+  x = await z();
+  melde(x.auto === 'escorta', `Maus: Klick auf ESCORTA bestätigt (${x.auto})`);
+  q = await punkt('delto'); await p.mouse.move(q[0], q[1]); await p.waitForTimeout(100);
+  const l = await punkt('LACK'); await p.mouse.move(l[0], l[1]); await p.waitForTimeout(100);
+  x = await z();
+  melde(x.auto === 'escorta' && x.vorschau === 'escorta', `Maus: über DELTO zu LACK gezogen: gewählt ${x.auto}, Vorschau ${x.vorschau}`);
+  const lack0 = x.lack;
+  // Lack-Pfeil rechts: Klick rechts auf der Zeile (rechte Hälfte des Werts)
+  const pr = await p.evaluate(() => { const A = window.__alpineRally, l = A.menue.seite.eintraege(), r = document.getElementById('hud').getBoundingClientRect(); const h = A.menue.treffer.find((t) => l[t.nr].lack); return [r.left + (h.mitte + 8) / 320 * r.width, r.top + (h.y + h.h / 2) / 180 * r.height]; });
+  await p.mouse.click(pr[0], pr[1]); await p.waitForTimeout(200);
+  x = await z();
+  melde(x.auto === 'escorta' && x.lack !== lack0, `Maus: Lack-Pfeil per Klick wechselt die Lackierung des Escorta (${lack0} -> ${x.lack})`);
+  melde(s.fehler.length === 0, `Maus: Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+
+if (teil('d')) {
+  console.log('(d) Garage mit Tastatur, Gamepad und Maus');
+  for (const art of ['enter', 'leertaste', 'gamepad']) await garageDurchgang(art);
+  await garageMaus();
+}
+
 console.log(fehler ? `\n${fehler} FEHLER` : '\nAlles bestanden.');
 process.exit(fehler ? 1 : 0);

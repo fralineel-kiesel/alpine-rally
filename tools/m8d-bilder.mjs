@@ -80,3 +80,32 @@ if (NUR.includes('lacke')) {
   if (s.fehler.length) console.log('Fehler:', s.fehler.slice(0, 3).join(' | '));
   await s.schliessen();
 }
+
+// Garage (Teil B): mit der Tastatur bedient, wie Lino
+if (NUR.includes('garage')) {
+  for (const [b, h] of [[320, 180], [1280, 720]]) {
+    const s = await starteSpiel({ breite: b, hoehe: h, auto: '' });
+    const p = s.page;
+    await p.goto(`${s.url}/index.html`);
+    await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+    const taste = async (...codes) => { for (const c of codes) { await p.keyboard.press(c); await p.waitForTimeout(150); } };
+    const bild = async (name) => {
+      await p.waitForFunction(() => window.__alpineRally.menue.einblendung >= 1, null, { timeout: 30000 });
+      await p.waitForTimeout(1500);
+      await p.screenshot({ path: path.join(ORDNER, `${name}-${b}x${h}.png`) }); console.log('  ', `${name}-${b}x${h}.png`);
+    };
+    await taste('Enter'); await p.waitForTimeout(500);
+    await taste('ArrowDown', 'Enter'); // Hauptmenü -> AUTO
+    await taste('ArrowDown');
+    await bild('30-garage-zeiger-auf-delto-audan-gewaehlt');   // Zeiger auf DELTO (Vorschau Delto), AUDAN gelb
+    await taste('Space');
+    await taste('ArrowDown');
+    await bild('31-garage-delto-bestaetigt-escorta-markiert'); // DELTO gelb, Zeiger auf ESCORTA (Vorschau Escorta)
+    await taste('ArrowDown');
+    await bild('32-garage-zeiger-auf-lack-delto');            // Zeiger auf LACK, Vorschau und Lack wieder Delto
+    await taste('ArrowRight');
+    await bild('33-garage-lack-delto-rosso');
+    if (s.fehler.length) console.log('Fehler:', s.fehler.slice(0, 3).join(' | '));
+    await s.schliessen();
+  }
+}
