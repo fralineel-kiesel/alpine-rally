@@ -1,15 +1,15 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 7b fertig** – der Ton hat jetzt eine **Umgebung mit Stereo und Abstand**: **Kuhglocken**
-(Treicheln) bei den Herden, **Publikum** an Start, Ziel und den drei Fan-Spots (Gemurmel, **Jubel und Klatschen** beim
-Vorbeifahren, bei GO und an der Ziellinie, langer Jubel bei neuer Bestzeit), **Vögel** je nach Abschnitt, **Plätschern
-am Brunnen** der Alpweide und **Windböen auf der Passhöhe** – links/rechts und leiser/dumpfer mit der Entfernung, immer
-unter dem Motor. Dazu **Menü-Musik**: ein eigenes Stück im Stil 80er-Arcade-Rally (2:12, a-Moll, 138 BPM) auf Titel und
-Menü, leise in der Pause, als ruhiger Ausklang auf dem Zielbildschirm, nie im Rennen; neuer Regler **MUSIK** (Standard
-60 %). Das **Ton-Labor** hat die neuen Bereiche **Umgebung** (mit VORBEIFAHREN) und **Musik**.
-**Wichtig: Ich habe nichts davon gehört – bitte zuerst die Hörtest-Anleitung unten (M7b) machen. Einen Bach gibt es im
-Spiel nicht, nur den Brunnen (Bach = Idee).**
-Davor: 7a.1 (Motor härter und höher, Poppen, Schalten, Signale lauter mit Regler SIGNALTÖNE, Stein dumpf, Heulen), 7a (Ton: Motor, Reifen, Wind, Aufprall, Signale, Ton-Labor; Minimap 49 x 49, farbige Checkpoint-Punkte), 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
+Aktuell: **Meilenstein 8a fertig** – der **Ringwerk RT4** ist jetzt ein **richtiges 3D-Modell** (Keil-Haube,
+Kastenkotflügel, Dachhutze, grosser Heckflügel, vier Zusatzscheinwerfer, Helme im Fenster) mit **Lackierung als
+Pixel-Textur** (werk, gletscher, dunkel), **drehenden Speichenrädern** mit sichtbarem Lenkeinschlag, **Federung mit
+Nachschwingen**, **Brems- und Rückfahrlicht** und **Dreck** je Belag. Dazu ein **eigenes Fahrgefühl**: Allrad-Traktion
+(vor allem auf Schotter und Wiesenweg), Gewichtsverlagerung (das Heck kommt beim Bremsen in der Kurve), etwas
+Untersteuern in schnellen Kurven und ein dezenter Turbo. Das bisherige Fahrverhalten gibt es weiter als
+`index.html?auto=prototyp`. Ansehen ohne Fahren: **`auto-labor.html`**, Werte live nachstellen: **`index.html?fahrlabor=1`**.
+**Wichtig: Ich habe das Fahrgefühl nicht gespürt – bitte zuerst die Test-Anleitung unten (M8a) machen.** Die
+Hörtest-Anleitung von M7b gilt weiter (M7b.1 ist noch offen).
+Davor: 7b (Umgebungsklänge mit Stereo und Abstand: Kuhglocken, Publikum, Vögel, Brunnen, Windböen; Menü-Musik, Regler MUSIK), 7a.1 (Motor härter und höher, Poppen, Schalten, Signale lauter mit Regler SIGNALTÖNE, Stein dumpf, Heulen), 7a (Ton: Motor, Reifen, Wind, Aufprall, Signale, Ton-Labor; Minimap 49 x 49, farbige Checkpoint-Punkte), 6.1 (Minimap fährt mit, Vergleich so gross wie die Zeit, Meldungen mit Tafel und Farbe), 6 (Minimap, Live-Vergleich zur Bestzeit oder zum letzten Lauf, Einstellungen ANZEIGE, Taste H = HUD aus/an), 5b (Countdown 3-2-1-GO, Zielbildschirm, Bestzeiten Top 10, Statistik), 5a.1 (Credits mit Namen, Rückwärts auf Asphalt 32 km/h, Felswand ohne Bäume im Fels und ohne Wurf), 5a (Menüs: Titel, Hauptmenü mit Demo-Fahrt, Pause, Einstellungen, Tasten belegen, Deutsch/Englisch), 4.1 (Pace-Notes als kleine Symbol-Kacheln, R mit Wartezeit), 4 (Pace-Notes mit Text und Distanz), 3d (Leben an der Strecke: Alpweide, Fan-Spots, Unfallautos), 3b (Almweg und Wiesenweg), 3c (Start- und Zielbereich), 3a.3 (Felswand: Auto stoppt an der sichtbaren Wand), 3a.2 (Fahrphysik-Feinschliff), 3a.1 (Nebenweg-Korrektur), 3a (erster Nebenweg: bei
 800 m rechts auf Schotter, bei 1020 m zurück auf die Hauptstrasse), 2c (raus aus dem Gras), 2b (Kühe, Büsche,
 Wald in der Ferne), 2a.1 (natürlichere Sperren, Tempo-Tafeln), 2a (Leitplanken, Holzzäune, Schilder), 1.3b (kein
 Dunststreifen), 1.2 (Kurven schneiden, Getriebe, Tachos), 1.1 (harter Aufprall) und 1 (Etappe „Passstrasse“).
@@ -39,7 +39,435 @@ Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start
 
 ---
 
-## Meilenstein 7b: Umgebungsklänge mit Stereo und Abstand, Menü-Musik, Regler MUSIK ✅
+## Meilenstein 8a: Ringwerk RT4 – 3D-Modell, Federung, Details und eigenes Fahrgefühl ✅
+
+> **Ehrlich vorneweg: Ich habe das Fahrgefühl nicht gespürt** und das Auto nur auf Bildern gesehen. Alles ist **gemessen**
+> (Fahrphysik mit festen Fahrprogrammen, Testfahrer, Bilder in drei Pixelgrössen) und von Tests geprüft. Ob sich der RT4
+> wie ein Traktions-Monster anfühlt, ob das Untersteuern zu stark ist und ob der Turbo spürbar ist, kannst nur du
+> entscheiden. Darum zuerst die **Test-Anleitung** unten. **Für Änderungen am Aussehen oder Fahrgefühl schreib einfach,
+> was dir nicht gefällt, das wird dann M8a.1.**
+
+Zwei Teile, zwei Commits im selben Pull Request: **A = Optik** (das neue Auto), **B = Fahrgefühl** (Fahrprofile). So kannst du
+notfalls einen Teil getrennt beurteilen oder zurückdrehen.
+
+### Was ist neu? – Teil A: Optik
+
+**1. Das Modell** (`js/autos.js` = Daten, `js/car.js` = Baukasten). Ein eigenes 80er-Gruppe-B-Allrad-Coupé, kein Nachbau:
+keilförmige Motorhaube, steile Frontscheibe, kantiges Dach mit **Dachlufthutze**, **Kastenkotflügel** vorne und hinten
+(die Räder stehen sichtbar in Radläufen, die hinteren gehen bis ans Heck), **Seitenschweller**, **Frontschürze mit
+Splitter**, **grosser Heckflügel auf zwei Stützen** mit Endplatten, Heckschürze mit **Auspuff links**, **Schlammlappen**
+hinter allen Rädern, **Aussenspiegel**, **Abschlepp-Öse** (rot), vorne **zwei Scheinwerfer und vier runde
+Zusatzscheinwerfer**, hinten ein **Rücklicht-Band** über die ganze Breite.
+- Masse: **Länge 4.475 m** (höchstens 4.48), **Breite 1.86 m** mit Kotflügeln, **Höhe 1.395 m**, Radstand 2.52 m,
+  Spur 1.6 m, Radradius 0.33 m, Radmitten bei x ±0.8 / z ±1.26 (wie bisher: Kollision, Felswand, Staub und Physik
+  bleiben gleich).
+- **Seite**: dunkle Scheiben mit Rahmen (grosse Türscheibe, kleines Fenster dahinter = Coupé), Türfuge und Türgriff,
+  Radlauf-Kanten, breiter Seitenstreifen mit der **Startnummer 4** auf der Tür, darunter dunkles Unterteil mit
+  **RINGWERK** (ab 480x270). Im Fenster ein **Helm** (Fahrer links weiss, Beifahrer rechts gelb, Visier nach vorne).
+- **Front**: Sonnenstreifen „RINGWERK“ an der Frontscheibe, zwei Helme, Startnummer und „MURMELI“ auf der Haube,
+  Kühlergrill, Lufteinlässe in der Schürze.
+- **Heck**: Heckscheibe mit zwei Hinterköpfen, Sponsorfeld auf dem Heckdeckel („SENNEREI HÖCHI“), „TALWERK“ über dem
+  Rücklicht-Band, Kennzeichen **RR 4**, Startnummer auf dem Dach (von hinten lesbar).
+- Alle Sponsoren sind erfunden. **Schrift erscheint erst ab 480x270** (Seite, Heck, Haube, Sonnenstreifen; der
+  Heckdeckel-Text ab 640x360): bei 320x180 wäre sie nur Pixelrauschen, dort sieht man ruhige Farbflächen. Die
+  Startnummer und das Kennzeichen sind immer da.
+
+**2. Lackierung als Pixel-Textur** (512x128 Pixel, im Code gemalt, scharf ohne Verwischen): **werk** (Weiss, roter
+Streifen, dunkelgraues Unterteil, weisser Flügel mit roten Endplatten – Standard), **gletscher** (Weiss mit dunkel- und
+hellblauem Streifen, gelbe Akzente, blauer Flügel), **dunkel** (Anthrazit mit orangem Streifen und orangem Flügel).
+Umschalten: `autoOptik.lackierung` in `js/config.js` oder im Auto-Labor (eine Auswahl im Menü kommt mit der Garage, M8c).
+
+**3. Räder**: Reifen mit Profil und heller Flanke, Felge mit **5 Speichen und Mittelmutter**, man sieht sie drehen
+(rückwärts andersherum). Ab **79 km/h** (`autoOptik.radUnschaerfeAb` 22 m/s) wird die Felge über 6 m/s weich zur
+gleichmässigen Scheibe (sonst sähe ein Speichenrad bei 60 Bildern pro Sekunde rückwärts drehend aus). Die Vorderräder
+schlagen sichtbar ein (bis 35°); sie bleiben in den Radläufen.
+
+**4. Federung mit Nachschwingen** (`js/federung.js`): Nicken (Bremsen = Nase taucht, Gas = Heck setzt sich), Rollen
+(in der Kurve nach aussen), Einfedern über Kuppen und Senken (aus der Krümmung des Bodens) und ein **Stoss beim
+Aufprall** – wie eine gedämpfte Feder (2.2 Hz, Dämpfung 0.55: ein kleiner Überschwinger, nach ca. 0.5 s ruhig).
+Drehpunkt auf Schwerpunkthöhe. Ein **Anschlag** verhindert, dass ein Reifen bei starkem Nicken und Einfedern durch den
+Kotflügel sticht. Nur Optik: Physik, Kamera und die Zählung der Aufpralle merken nichts.
+
+**5. Lichter**: Rücklichter dunkelrot, beim **Bremsen und mit der Handbremse hellrot**; das **Rückfahrlicht** (weiss)
+nur im Rückwärtsgang. Scheinwerfer hell, aber ohne Lichtschein (wie gewünscht).
+
+**6. Dreck**: Auf **Schotter, Wiesenweg, Gras und Bankett** wird das Auto unten schmutzig (Karosserie, Radläufe,
+Schlammlappen, Reifen; Farbe je Belag), höchstens bis 0.85 Deckung. **Asphalt wäscht nichts ab.** Sauber bei jedem Start
+und Neustart (die Demo-Fahrt im Menü nimmt nichts mit). Der Staub kommt weiter aus `js/staub.js` (unverändert) und steigt
+hinter den Hinterrädern auf.
+
+**7. Auto-Labor** (`auto-labor.html`): das Auto in Ruhe ansehen, ohne zu fahren – siehe Test-Anleitung.
+
+### Was ist neu? – Teil B: Fahrgefühl
+
+**1. Fahrprofile** (`js/fahrprofil.js`, Werte in `js/config.js`, Block `fahrprofile`). Das Fahrverhalten bis 0.7b bleibt
+als **Profil „prototyp“** erhalten und ist die **Referenz**: Daran hängen die Pace-Notes-Stufen, die Abkürzungs-Sperren
+und die Testfahrer-Zeiten. Der RT4 ist ein **eigenes Profil**, das nur einzelne Werte überschreibt. Warum so? Die
+Pace-Notes sagen die Kurve an, nicht das Auto – sonst bräuchte jedes Auto eigene Tabellen (später fünf).
+- Auswahl: **`index.html?auto=prototyp`** (alt) oder **`?auto=rt4`**; ohne Angabe (und bei unbekanntem Wert) gilt **rt4**.
+- Mit `prototyp` ist alles **bit-genau wie in 0.7b** (geprüft: Testfahrer-Zeiten, Zwischenzeiten, Statistik, eine feste
+  70-s-Fahrt über alle Beläge mit Prüfsumme).
+- Alle bisherigen Werkzeuge fahren standardmässig `prototyp`, umschaltbar mit `--auto rt4`.
+
+**2. Neue Physikterme** (im Prototyp neutral, also wirkungslos):
+- **Gewichtsverlagerung** (`auto.gewichtstransfer`): Bremsen = mehr Last vorne, weniger hinten (das Heck kommt, wenn man
+  in der Kurve bremst – Rally-Technik); Gas = mehr Last hinten (Heck stabil, Front schiebt etwas). Weich geglättet
+  (0.1 s), je Achse höchstens 0.6 bis 1.4 der normalen Last.
+- **Gewichtsverteilung** (`auto.lastVorneAnteil`): mehr Last = mehr Haftung auf dieser Achse.
+- **Allrad-Traktion** (`getriebe.allrad`, je Belag) und **Heck-Grip je Belag** (`auto.heckJeBelag`).
+- **Turbo** (`getriebe.turbo`): Ladedruck baut sich nach dem Gasgeben in 0.35 s auf (darunter 12 % weniger Schub,
+  voll 4 % mehr), fällt beim Gaswegnehmen in 0.25 s; **Anti-Lag**: in der Schaltpause und beim Gaswegnehmen über
+  4000 U/min bleibt er bei mindestens 0.7. Lesbar als `getriebe.ladedruck`. **Der Motorton liest ihn noch nicht**
+  (Motorton unverändert).
+
+**3. Der RT4** („Traktions-Monster“):
+
+| Wert | Prototyp | RT4 | Was es bewirkt |
+|---|---|---|---|
+| `auto.lastVorneAnteil` | 0.5 | **0.555** | frontlastig: vorne mehr Haftung |
+| `auto.schwerpunktVorne` | 0.48 | **0.46** | schiebt in schnellen Kurven eher über die Vorderräder |
+| `auto.traegheit` | 2.3 | **2.5** | schwerer, ruhiger Wagen |
+| `auto.gewichtstransfer` | 0 | **0.35** | Heck kommt beim Bremsen in der Kurve |
+| `auto.gasImDrift` | 0.12 | **0.07** | Gas lockert das Heck weniger (Allrad zieht) |
+| `auto.heckJeBelag` | 1 | **Schotter 1.1, Wiesenweg 1.15** | Heck hält auf losem Boden besser |
+| `getriebe.allrad` | 1 | **Schotter 1.15, Wiesenweg 1.1** (Gras, Bankett, Asphalt 1) | kräftig raus aus Kehren und von den Nebenwegen |
+| `getriebe.turbo.an` | aus | **an** | dezenter Turbo (0.35 s Aufbau) |
+| `getriebe.zugkraftFaktor` | 1 | **0.99** | siehe Kompromisse |
+
+**4. Fahr-Labor** (`index.html?fahrlabor=1`): Seitenpanel mit 12 Reglern – siehe Test-Anleitung.
+
+**5. Menüseite AUTO**: „ALLRAD · TURBO · 5 GÄNGE AUTOMATIK“ und „SCHWERES RALLYAUTO, VIEL TRAKTION“ (englisch: „AWD ·
+TURBO · 5-SPEED AUTOMATIC“, „HEAVY RALLY CAR, LOTS OF TRACTION“).
+
+**6. Bestzeiten**: Format und Speicher unverändert, der RT4 behält die Id `rt4`, alte Bestzeiten bleiben stehen. Läufe mit
+`?auto=prototyp` werden mit der Id `prototyp` eingetragen (damit Vergleichsfahrten nicht als RT4 zählen).
+**Zeitunterschied für deine Bestzeiten:** Der Testfahrer ist mit dem RT4 **0.3 bis 0.45 % schneller** als mit dem
+alten Fahrverhalten: **2:58.73 / 2:41.83 / 2:31.24** statt 2:59.33 / 2:42.35 / 2:31.92 (vorsichtig / mittel / flott), also
+etwa **0.5 bis 0.7 Sekunden** auf der ganzen Etappe. Deine alten Bestzeiten bleiben fair: Ein neuer Rekord wird mit dem
+RT4 nur ein wenig leichter – am meisten holst du auf Schotter und dem Wiesenweg, wenn du früh aufs Gas gehst.
+
+### Messtabellen
+
+Alle Zahlen: `node tools/auto-messung.mjs` (Ergebnis in `tools/auto-messung.json`, Bild davon in
+`screenshots/m8a/40-messtabelle.png`). Physik ohne Browser mit festen Fahrprogrammen, 120 Schritte pro Sekunde.
+
+**Optik und Leistung (vorher = 0.7b, nachher = 0.8a):**
+
+| Messung | vorher | nachher | Ziel |
+|---|---|---|---|
+| Zeichenaufrufe des Autos | 23 | **9** | höchstens 12 ✅ |
+| Dreiecke des Autos | 412 | **1306** | höchstens 1800 ✅ |
+| Zeichenaufrufe der ganzen Szene bei 60 / 1170 / 2900 m | 122 / 113 / 81 | **108 / 99 / 67** | – (weniger, weil das Auto aus weniger Teilen besteht) |
+| Bildzeit (Test-Browser, Rennen) | 316.6 ms | 316.7 ms | gleich ✅ (`renderer.render` je 1.7 ms) |
+| Ladezeit bis die Welt steht (Median aus 9) | 1336 ms | 1307 ms | höchstens +30 ms ✅ |
+| Speichermüll pro Bild (Auto, Federung, Räder, Lichter, Dreck) | – | 0.06 Byte | keiner ✅ (ein neues Objekt wären 16 Byte) |
+| Auto bauen (`baueAuto`, mit Lackierung malen) | 0.5 ms | 4.6 ms | einmal beim Laden |
+
+**Fahrgefühl: RT4 gegen prototyp (Tabelle B3):**
+
+| Messung | prototyp | RT4 | Unterschied | Ziel | erfüllt? |
+|---|---|---|---|---|---|
+| 0–100 km/h Asphalt | 5.13 s | 5.03 s | -2.1 % | ±3 % | ✅ |
+| 0–100 km/h Schotter | 5.78 s | 5.48 s | -5.2 % | 5–12 % schneller | ✅ |
+| 0–100 km/h Wiesenweg | 8.28 s | 7.50 s | -9.5 % | 5–12 % schneller | ✅ |
+| 0–60 km/h Gras | 10.10 s | 10.10 s | +0.0 % | gleich oder langsamer | ✅ |
+| 0–100 km/h Bankett | 6.15 s | 6.03 s | -2.0 % | gleich oder langsamer | ❌ Kompromiss |
+| Bremsweg 100–0 Asphalt | 35.8 m | 35.8 m | +0.0 % | ±5 % | ✅ |
+| Kreis R 25 m Grenztempo Asphalt | 54.4 km/h | 55.8 km/h | +2.6 % | ±3 % | ✅ |
+| Kreis R 25 m Grenztempo Schotter | 49.3 km/h | 50.6 km/h | +2.6 % | +4 bis +10 % | ❌ Kompromiss |
+| Kreis R 25 m Grenztempo Wiesenweg (Info) | 40.9 km/h | 44.4 km/h | +8.5 % | – | – |
+| Lenkwinkel 80 km/h auf R 60 m | 3.54° | 4.10° | +15.8 % | +8 bis +20 % | ✅ |
+| Heck: 90 km/h R 80 m, Gas weg + Bremse 60 %: Zusatz-Schwimmwinkel nach 0.5 s | -0.3° | 2.3° | 2.5° | +2 bis +5° | ✅ |
+| ... eingefangen nach (s) | 0.00 | 0.38 | | unter ca. 1 s | ✅ |
+| Heck: dasselbe mit Vollbremsung (Info) | -0.4° | 4.4° | 4.8° | – | – |
+| Vollgas in der Kurve R 80 m: Schwimmwinkel max | 3.9° | 2.9° | -25.9 % | kleiner oder gleich | ✅ |
+| ... auf Schotter (Info) | 3.3° | 3.1° | -5.6 % | – | – |
+| Handbremsen-Drift Asphalt: Driftwinkel nach 0.5 s | 6.7° | 6.1° | -8.8 % | ±20 % | ✅ |
+| Handbremsen-Drift Schotter: nach 0.5 s (Info) | 6.1° | 5.7° | -6.6 % | – | – |
+| Rückwärts Asphalt: Höchsttempo | 32.4 km/h | 32.4 km/h | +0.0 % | identisch | ✅ |
+| Rückwärts Asphalt: Tempo nach 1 s | 9.35 km/h | 9.35 km/h | +0.0 % | identisch | ✅ |
+| Rückwärts Gras: Tempo nach 1 s | 13.79 km/h | 13.79 km/h | +0.0 % | identisch | ✅ |
+
+**Kompromisse (ehrlich):**
+- **Bankett 0–100 km/h 2 % schneller statt gleich oder langsamer.** Auf dem Bankett gibt es keinen Allrad-Vorteil (Faktor
+  1), der Unterschied kommt vom Turbo, der in den höheren Gängen 4 % mehr Schub gibt – genauso wie auf Asphalt (dort
+  −2.1 %, im Ziel ±3 %). Ganz weg ginge es nur mit weniger Schub auf Asphalt oder einem Bankett-Faktor unter 1 (Allrad
+  schlechter als Hinterrad – unlogisch). Das Bankett ist ohnehin nur ein schmaler Streifen am Rand.
+- **Kreis R 25 m auf Schotter +2.6 % statt +4 bis +10 %.** Auf Schotter rutscht im Kreis bei beiden Profilen zuerst die
+  **Vorderachse**; der bessere Heck-Grip auf Schotter (`heckJeBelag` 1.1) hilft dort nicht. Mehr Grip vorne (mehr Last
+  vorne) würde Schotter anheben, aber Asphalt gleich stark mit (über die erlaubten +3 %). Auf dem Wiesenweg ist der Kreis
+  +8.5 % schneller.
+- **`lastVorneAnteil` 0.555 statt ca. 0.54, `schwerpunktVorne` 0.46 statt ca. 0.45:** Mit `schwerpunktVorne` 0.45 lag
+  der Lenkbedarf bei 80 km/h bei +20.7 % (knapp über dem Ziel, zu stumpf), mit 0.46 sind es +15.8 %. Mit
+  `lastVorneAnteil` 0.555 statt 0.54 kommt der Kreis auf Schotter näher ans Ziel (+2.6 % statt +1.8 %), Asphalt bleibt
+  mit +2.6 % im Rahmen.
+- **`zugkraftFaktor` 0.99** (die eine erlaubte Zusatz-Schraube, −1 %): Ohne lag 0–100 auf Asphalt bei −3.1 % (Turbo +4 %
+  in den höheren Gängen), also knapp ausserhalb von ±3 %. Mit 0.99 sind es −2.1 %.
+
+**Testfahrer (ganze Etappe, Zeiten je Abschnitt):**
+
+| Profil | prototyp | RT4 | Unterschied | Almweg | Wiesenweg | Talschleife | Asphalt (Summe) | Aufpralle / Hänger RT4 |
+|---|---|---|---|---|---|---|---|---|
+| vorsichtig | 2:59.33 | 2:58.73 | -0.3 % | 20.47 → 20.45 s (-0.1 %) | 17.43 → 17.27 s (-1.0 %) | 18.50 → 18.42 s (-0.5 %) | 122.91 → 122.59 s (-0.3 %) | 0 / 0 |
+| mittel | 2:42.35 | 2:41.83 | -0.3 % | 18.71 → 18.66 s (-0.3 %) | 15.58 → 15.43 s (-1.0 %) | 16.03 → 16.02 s (-0.1 %) | 112.03 → 111.71 s (-0.3 %) | 0 / 0 |
+| flott | 2:31.92 | 2:31.24 | -0.4 % | 17.10 → 17.02 s (-0.4 %) | 14.50 → 14.38 s (-0.8 %) | 14.53 → 14.51 s (-0.2 %) | 105.79 → 105.33 s (-0.4 %) | 0 / 0 |
+
+- **Ganze Etappe: 0.3 bis 0.45 % schneller** (Ziel 0 bis 4 %) ✅, ohne Aufprall und ohne Hängenbleiben.
+- **Asphalt-Abschnitte zusammen −0.3 bis −0.4 %** (Ziel ±2 %) ✅.
+- **Almweg und Wiesenweg nur 0.1 bis 1 % schneller statt 3 bis 8 %** ❌ Kompromiss: Der Testfahrer plant das Kurventempo aus
+  der Krümmung, dem Grip des Belags und einer festen Querbeschleunigung je Fahrer (vorsichtig/mittel/flott) – für beide
+  Autos gleich – und nutzt den besseren Grip des RT4 in der Kurve also nicht. Der RT4 gewinnt bei ihm nur beim
+  Herausbeschleunigen in den unteren Gängen. Ein Mensch, der auf Schotter früher aufs Gas geht, sollte mehr gewinnen
+  (Anfahren auf Schotter −5 %, Wiesenweg −10 %).
+
+**Pace-Notes mit dem RT4** (`node tools/pacenotes-test.mjs --auto rt4`, nur gemeldet): alle 25 Kurven im Zielbereich
+(Asphalt −1.7 bis +3.5 %, Schotter und Wiesenweg +1.3 bis +4.3 %). Nur bei **einer** Kurve (1088–1226 m, Asphalt) wäre die
+Stufe für den RT4 eins höher (4 → 5, Grenztempo 100.1 statt 99.0 km/h, genau an der Grenze 100). Die Pace-Notes bleiben
+wie gewollt auf der Referenz.
+
+**Abkürzungen**: mit prototyp und mit RT4 je **127 / 2 / 342 / 84** übrige Linien (wie 0.7b), gesperrt durchkommen: 0.
+
+### Werte zum Drehen (`js/config.js`)
+
+**Aussehen** (`autoOptik`, wirkt beim nächsten Laden; im Auto-Labor sofort):
+
+| Wert | Standard | Was |
+|---|---|---|
+| `autoOptik.lackierung` | `'werk'` | `'werk'`, `'gletscher'` oder `'dunkel'` |
+| `autoOptik.lackierungen.<name>.*` | – | Farben jeder Lackierung (Lack, Streifen, Unterteil, Flügel, Sponsoren, Startnummer) |
+| `autoOptik.radEinschlagMax` | 35 | so weit (Grad) schlagen die Vorderräder sichtbar ein |
+| `autoOptik.radUnschaerfeAb` / `radUnschaerfeBreite` | 22 / 6 | ab 22 m/s (79 km/h) verwischt die Felge, über 6 m/s weich |
+| `autoOptik.feder.frequenz` / `daempfung` | 2.2 / 0.55 | Federung: höher = straffer / weniger Nachschwingen |
+| `autoOptik.feder.nicken` / `rollen` / `hub` | 0.0045 / 0.009 / 0.012 | wie stark die Karosserie nickt, rollt, einfedert |
+| `autoOptik.feder.nickenMax` / `rollenMax` / `hubMax` | 4° / 5° / 0.12 m | Grenzen |
+| `autoOptik.feder.stossNicken` / `stossRollen` / `stossHub` | 0.05 / 0.04 / 0.02 | Wippen beim Aufprall |
+| `autoOptik.dreck.max` | 0.85 | so schmutzig wird es höchstens |
+| `autoOptik.dreck.belaege.<belag>.aufbau` | Wiesenweg 0.02, Schotter 0.012, Gras 0.03, Bankett 0.004 | Dreck pro gefahrenem Meter |
+| `autoOptik.farben.ruecklichtAus` / `ruecklichtAn` / `rueckfahrAn` | – | Farben der Lichter |
+
+**Fahrgefühl RT4** (`fahrprofile.rt4`, wirkt beim nächsten Laden; im Fahr-Labor sofort): Tabelle oben unter „Der RT4“.
+Dazu für alle Autos mit Turbo `getriebe.turbo`: `ab` 3000 U/min, `aufbau` 0.35 s, `abbau` 0.25 s, `verlust` 0.12,
+`mehr` 0.04, `antiLagAb` 4000 U/min, `antiLagMin` 0.7; und `auto.gewichtstransferGlaettung` 0.1 s.
+**Die Werte in `auto` und `getriebe` selbst nicht ändern**: Sie sind die Referenz (Profil „prototyp“), an der Pace-Notes,
+Sperren und Testfahrer-Zeiten hängen. Für den RT4 immer im Block `fahrprofile.rt4` ändern (fehlt ein Wert dort, einfach
+dazuschreiben, z. B. `gripHinten: 1.05` unter `auto`).
+
+### Test-Anleitung für Lino (M8a)
+
+**Zuerst ansehen (5 Minuten), dann fahren (15 Minuten).** Am besten auf beiden Rechnern.
+
+1. **Auto-Labor** öffnen: `…/alpine-rally/auto-labor.html` (gleiche Adresse wie das Spiel, nur `auto-labor.html` statt
+   `index.html`). Hier fährt nichts, du schaust das Auto nur an.
+   - Rechts die **Pixelgrösse** wählen (320x180 / 480x270 / 640x360) – so gross wie im Spiel. Hintergrund hell/dunkel.
+   - **Maus**: ziehen = drehen, Rad = näher/weiter. Knöpfe für **6 Ansichten** (Heck wie im Spiel, Seite, Heck schräg,
+     Front, Front schräg, oben) und **Drehscheibe**.
+   - Regler: **Lenkung**, **Tempo** (Räder drehen, ab 79 km/h verwischt die Felge), **Nicken**, **Rollen**, **Hub**,
+     **Dreck**; Knöpfe **STOSS** / **BREMSEN** / **GERADE** zeigen das Nachschwingen der Federung.
+   - Schalter: **Bremslicht**, **Rückfahrlicht**, **Lackierung** (werk / gletscher / dunkel), **Staub**.
+   - **BILD SPEICHERN** speichert genau das Bild als PNG – ideal, um mir zu zeigen, was nicht passt.
+2. **Spiel normal starten** (`index.html`): Du fährst jetzt den RT4 mit eigenem Fahrgefühl.
+   - **Anfahren auf Asphalt**: etwa gleich schnell wie vorher (0–100 km/h 5.0 s statt 5.1 s).
+   - **Kehren mit Schotter-Ausgang** (Nebenweg bei 800 m) und **Wiesenweg**: Er sollte spürbar besser herausziehen.
+   - **Schnelle Kurven**: Er schiebt eher über die Vorderräder (braucht mehr Lenkung), das Heck bleibt ruhig.
+   - **In der Kurve bremsen**: Das Heck sollte leicht kommen und sich schnell wieder fangen.
+   - **Handbremse**: Das Heck kommt weiterhin, der Drift ist etwas kürzer.
+   - **Turbo**: Nach dem Gasgeben kommt der volle Schub nach etwa einer Drittelsekunde – das ist absichtlich dezent.
+     Hörbar ist er noch nicht (Motorton unverändert).
+3. **Vergleich mit dem alten Fahrgefühl**: `index.html?auto=prototyp` – die gleiche Etappe mit dem Fahrverhalten bis 0.7b
+   (das Auto sieht trotzdem neu aus). Abwechselnd fahren und vergleichen.
+4. **Fahr-Labor**: `index.html?fahrlabor=1` – rechts ein Panel mit 12 Reglern. Während du fährst, schiebst du Werte
+   (z. B. `auto.gripHinten` = Haftung hinten oder `getriebe.allrad.schotter` = Allrad auf Schotter; jeder Regler
+   hat eine kurze Erklärung und einen Knopf zum Zurücksetzen), oben **PROTOTYP / RT4** schaltet die Werte um.
+   **WERTE KOPIEREN** kopiert die geänderten Werte als Text (z. B. `auto.gripVorne = 0.95`) – den kannst du mir einfach schicken. Nichts wird
+   gespeichert; nach dem Neuladen ist alles wie vorher. **ALLES ZURÜCK** stellt das gewählte Profil wieder her.
+   Mit der Maus auf einen Regler klicken nimmt den Fokus nicht weg: die Tasten fahren weiter das Auto.
+5. **Fahrgefühl beim Fahren beachten** (beim Bremsen taucht die Nase, beim Gas setzt sich das Heck, in der Kurve lehnt das
+   Auto nach aussen, über Kuppen federt es, beim Aufprall wippt es kurz), **Dreck** nach dem Wiesenweg, **Bremslicht**
+   und **Rückfahrlicht** (rückwärts fahren).
+
+**Wenn X, dann Y** (Wert in `js/config.js`, oder im Fahr-Labor ausprobieren und mir die Zeilen schicken):
+
+| Wenn … | dann … |
+|---|---|
+| der RT4 in schnellen Kurven zu viel Lenkung braucht (schiebt über die Front) | `fahrprofile.rt4.auto.schwerpunktVorne` höher (z. B. 0.47; 0.48 = wie früher) |
+| die Front im Grenzbereich zu früh rutscht | `auto.gripVorne` höher oder `fahrprofile.rt4.auto.lastVorneAnteil` höher (mehr Last vorne = mehr Haftung vorne) |
+| das Heck beim Bremsen in der Kurve zu wild kommt | `fahrprofile.rt4.auto.gewichtstransfer` kleiner (z. B. 0.25) |
+| das Heck beim Bremsen gar nicht kommt | `gewichtstransfer` grösser (z. B. 0.45) |
+| er aus Schotter-Kehren zu wenig zieht | `fahrprofile.rt4.getriebe.allrad.schotter` grösser (z. B. 1.25) |
+| er sich zu träge / zu schwer anfühlt | `fahrprofile.rt4.auto.traegheit` kleiner (2.3 = wie früher) |
+| der Turbo zu wenig spürbar ist | `getriebe.turbo.verlust` grösser (z. B. 0.2) oder `aufbau` länger (z. B. 0.5) |
+| der Turbo nervt | im Profil `rt4` bei `getriebe.turbo` `an: false` |
+| der Drift mit Gas zu schnell abbricht | `fahrprofile.rt4.auto.gasImDrift` grösser (0.12 = wie früher) |
+| die Karosserie zu stark wippt | `autoOptik.feder.daempfung` grösser (z. B. 0.7) oder `nicken`/`rollen` kleiner |
+| die Federung zu steif wirkt | `autoOptik.feder.frequenz` kleiner (z. B. 1.8) |
+| das Auto zu schnell / zu langsam dreckig wird | `autoOptik.dreck.belaege.<belag>.aufbau` (z. B. Wiesenweg 0.02 → 0.01) |
+| die Felge zu früh / zu spät verwischt | `autoOptik.radUnschaerfeAb` (m/s; 22 = 79 km/h) |
+| dir eine andere Lackierung besser gefällt | `autoOptik.lackierung`: `'gletscher'` oder `'dunkel'` |
+| dir das alte Fahrgefühl besser gefällt | `index.html?auto=prototyp`, und sag mir, was am RT4 stört |
+
+**Für Änderungen am Aussehen oder Fahrgefühl schreib einfach, was dir auffällt (mit Screenshot oder den kopierten Werten
+aus dem Fahr-Labor), das wird dann M8a.1.**
+
+### So testest du (Werkzeuge)
+
+- `node tools/auto-test.mjs` (neu: Prüfungen (a) bis (n); `--nur o` = alle bisherigen Tests nacheinander, dauert ca. 1 Stunde)
+- `node tools/auto-messung.mjs [--alt <alte Version>]` (neu: Messtabellen, schreibt `tools/auto-messung.json`)
+- `node tools/m8a-bilder.mjs [--alt <alte Version>]` (neu: alle Bilder unten)
+- `node tools/testfahrer.mjs --auto rt4`, `node tools/pacenotes-test.mjs --auto rt4`, `node tools/abkuerzungen.mjs --pruefen --auto rt4`
+
+### Bilder (`screenshots/m8a/`)
+
+Jedes Spielbild gibt es zweimal: gross (1280x720) und in Originalgrösse (`…-320x180.png`, so wie das Spiel rechnet).
+
+| Datei | Was |
+|---|---|
+| `01-vorher-heck/-dreiviertel/-seite` | **0.7b**: das alte Auto an der Startlinie (Spielkamera, schräg von hinten, Seite) |
+| `02-nachher-heck/-dreiviertel/-seite` | **0.8a**: dasselbe mit dem neuen RT4 |
+| `02-nachher-10-start` | Start (Countdown-Stellung, HUD an) |
+| `02-nachher-11-kurve-seite` | in Kehre 2: man sieht die Seite beim Lenken |
+| `02-nachher-12-bremsen` | Vollbremsung von 120 km/h: Nase taucht |
+| `02-nachher-13-beschleunigen` | Vollgas aus dem Stand: Heck setzt sich |
+| `02-nachher-14-kuppe` | schnell über die stärkste Kuppe |
+| `02-nachher-15-drift-handbremse` | Drift mit Handbremse auf Schotter |
+| `02-nachher-16-nach-wiesenweg-dreck` | nach dem Wiesenweg: Dreck unten am Auto |
+| `02-nachher-17-staub-schotter` | Staub auf dem Almweg |
+| `02-nachher-18-rueckwaerts-rueckfahrlicht` | rückwärts: Rückfahrlicht |
+| `02-nachher-19-demo-front-tief/-verfolger-seitlich/-vorn-oben` | die Demo-Kameras im Menü (Menü für das Bild ausgeblendet) |
+| `20-fahrlabor` | Fahr-Labor (`?fahrlabor=1`) mit einem verstellten Wert und WERTE KOPIEREN |
+| `30-auto-labor-seite` | die Seite `auto-labor.html` |
+| `31-labor-ansichten-<grösse>` | sechs Ansichten (Heck, Drei-Viertel hinten, Seite, Drei-Viertel vorne, Front, oben) |
+| `32-labor-lackierungen-<grösse>` | werk, gletscher, dunkel |
+| `33-labor-lenkung-links-rechts-<grösse>` | Vorderräder voll eingeschlagen |
+| `34-labor-nicken-rollen-<grösse>` | Federung am Anschlag (Nicken, Rollen) |
+| `35-labor-dreck-0-05-1-<grösse>` | Dreck 0 / 0.5 / voll |
+| `36-labor-bremslicht-rueckfahrlicht-<grösse>` | aus / Bremslicht / Rückfahrlicht |
+| `37-labor-raeder-stand-tempo-<grösse>` | Räder im Stand (Speichen) und bei Tempo (Scheibe) |
+| `40-messtabelle.png`, `40-messtabelle.md` | die Messtabellen |
+
+`<grösse>` = 320x180, 480x270 und 640x360 (Originalgrösse, nicht vergrössert).
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/autos.js` | **neu**: Modell-Daten des RT4 (Teile, Masse, Räder, Bemalung, Lichter). Weitere Autos (M8c) = neue Einträge |
+| `js/car.js` | **neu geschrieben**: baut das Auto aus den Daten (Karosserie, Räder, Lichter, Schatten), malt die Lackierung, Räder, Federung, Lichter, Dreck |
+| `js/federung.js` | **neu**: Feder und Dämpfer für Nicken, Rollen, Hub, Stoss (nur Optik) |
+| `js/fahrprofil.js` | **neu**: Fahrprofile wählen (`?auto=`), Referenz merken, Profil darüberlegen |
+| `js/fahrlabor.js` | **neu**: Seitenpanel `?fahrlabor=1` (wird nur dann geladen) |
+| `js/physics.js` | Achslasten (Gewichtsverteilung, Gewichtsverlagerung), Heck-Grip je Belag – im Prototyp neutral |
+| `js/getriebe.js` | Allrad-Traktion je Belag, Turbo mit Ladedruck (`getriebe.ladedruck`), `zugkraftFaktor` – im Prototyp neutral |
+| `js/main.js` | Profil vor dem Start wählen, Belag an Getriebe und Physik, Federung, Lichter, Dreck, Fahr-Labor |
+| `js/config.js` | `autoOptik` (Lackierungen, Feder, Dreck, Räder), neue neutrale Werte in `auto`/`getriebe`, Block `fahrprofile`, Version 0.8a |
+| `js/texte.js` | AUTO-Seite: zwei neue Zeilen (de/en) |
+| `auto-labor.html`, `js/autolabor.js` | **neu**: Auto-Labor |
+| `tools/auto-test.mjs` | **neu**: Prüfungen (a)–(o) |
+| `tools/auto-messung.mjs`, `tools/fahrmessung.js`, `tools/auto-messung.json` | **neu**: Messtabellen (Fahrphysik ohne Browser, Optik und Testfahrer im Browser), Ergebnis vorher/nachher |
+| `tools/auto-referenz-07b.json` | **neu**: Schnappschuss der Werte `auto`/`getriebe`/`untergrund` aus 0.7b (Beweis „prototyp = 0.7b“) |
+| `tools/fahrspur.js` | **neu**: feste 70-s-Fahrt über alle Beläge mit Prüfsumme (bit-genauer Vergleich) |
+| `tools/node-three.mjs` | **neu**: lädt das Auto ohne Browser (für die Speicher-Messung) |
+| `tools/m8a-bilder.mjs` | **neu**: alle Bilder unter `screenshots/m8a/` |
+| `tools/spiel-browser.mjs` | Werkzeuge fahren standardmässig `prototyp`, Schalter `--auto rt4` |
+| `tools/abkuerzungen.mjs`, `tools/testfahrer.mjs`, `tools/pacenotes-test.mjs` | Schalter `--auto`; `pacenotes-test --auto rt4` vergleicht mit der Referenz (schreibt nichts) |
+| `KONZEPT.md`, `STAND.md` | M8a eingetragen, als Nächstes M8b |
+
+### Selbst getestet
+
+- **`node tools/auto-test.mjs`** (neu): (a) bis (n) **alles ok**; zwei Messwerte als **KOMP** (Kompromiss, siehe oben).
+  - (a) Masse 4.475 x 1.86 x 1.395 m, Radmitten und Radradius 0.33 exakt, 9 Zeichenaufrufe, 1306 Dreiecke, kein NaN.
+  - (b) nur vorne lenken, höchstens 35°, Drehung = Strecke / Radius, rückwärts umgekehrt, Felge weich zur Scheibe.
+  - (c) Federung: ein Überschwinger, nach 0.4–0.5 s ruhig, Grenzen gehalten, Physik mit/ohne Federung bit-genau gleich,
+    kein Speichermüll pro Bild (0.06 Byte).
+  - (d) Lichter, (e) Dreck je Belag (Asphalt nichts, Obergrenze, sauber bei Start/Neustart/nach der Demo), (f) drei
+    Lackierungen ohne geladene Dateien, (n) Auto-Labor inkl. BILD SPEICHERN.
+  - (g) **prototyp = 0.7b**: Werte gleich dem Schnappschuss, feste 70-s-Fahrt mit Prüfsumme `3d98a02d` wie 0.7b,
+    Testfahrer **2:59.33 / 2:42.35 / 2:31.92** inkl. Zwischenzeiten, Höchsttempo 148.6 / 153.8 / 157.5 km/h, 0 Aufpralle,
+    0 Resets; `?auto=rt4`, ohne `?auto` und `?auto=quattro` geben rt4 ohne Konsolenfehler.
+  - (h) Tabelle B3 wie oben, Testfahrer RT4 **2:58.73 / 2:41.83 / 2:31.24** ohne Aufprall und Hänger.
+  - (i) Turbo: voll nach 0.350 s, leer nach 0.250 s, Anti-Lag nie unter 0.7; im Prototyp nie Ladedruck.
+  - (j) `pacenotes-test --auto rt4`: 25 Kurven im Zielbereich, eine Kurve wäre eine Stufe höher (nur gemeldet);
+    `js/pacenotes-tempo.js` nicht neu geschrieben.
+  - (k) **Abkürzungen 127 / 2 / 342 / 84** mit prototyp und mit rt4, gesperrt durchkommen 0.
+  - (l) Demo-Fahrt mit rt4: ganze Etappe (3653 m) ohne Aufprall und ohne Hängenbleiben, Rennstand unberührt.
+  - (m) Fahr-Labor: 12 Regler, sofort wirksam, WERTE KOPIEREN, Zurücksetzen, PROTOTYP/RT4 nur Werte, Pfeiltasten
+    fahren nach einem Klick ins Panel weiter das Auto (der Regler schluckt sie nicht); ohne `?fahrlabor=1` nicht geladen.
+- **(o) alle 19 bisherigen Tests mit prototyp bestanden** (getriebe, lenk, handbremse, belag, rueckwaerts, aufprall,
+  pacenotes, menue, rennablauf, ton, ton-umgebung (im 2. Versuch, siehe Probleme), felswand, gras, kuh, leben, nebenweg,
+  startziel, strassenrand, overlay). **Mit rt4**: `menue-test` und `ton-umgebung-test` bestanden; `ton-test` 211 von 212
+  Prüfungen – die eine ist ein Rundungsfehler im Testaufbau (siehe Probleme).
+- **Unverändert gegenüber 0.7b** (geprüft mit git): Strecke, Sperren, Pace-Notes und `js/pacenotes-tempo.js`,
+  `tools/schneiden-zeiten.json`, Checkpoints, Kollision, Kühe/Zuschauer, Ton, Musik, HUD, Menüs (ausser den zwei Texten
+  auf der Seite AUTO), Kamera-Werte, Bestzeiten-Format, Demo-Werte.
+- **Leistung**: Bildzeit gleich, Ladezeit nicht länger, 14 Zeichenaufrufe weniger in der Szene (Tabelle oben).
+- **Bilder** in allen drei Pixelgrössen angesehen. Dabei korrigiert: Seitenschrift erst ab 480x270 (sonst Rauschen),
+  das Fahr-Labor-Panel verdeckte den rechten Bildrand (jetzt steht das Spielbild links daneben), Demo-Bilder ohne Menü.
+- **Nicht gemacht: das Fahrgefühl selbst gespürt.**
+
+### Ehrlich beurteilt – wo ich am unsichersten bin
+
+- **Fahrgefühl nicht gespürt.** Alle Zahlen stammen aus festen Fahrprogrammen (gerade beschleunigen, Kreis fahren,
+  bremsen) und dem Testfahrer. Ob „Traktions-Monster“ beim Fahren ankommt, merkt man erst am Lenkrad bzw. an der
+  Tastatur – am ehesten in den Kehren mit Schotter-Ausgang und auf dem Wiesenweg.
+- **Der Unterschied ist bewusst klein.** Auf Asphalt fährt der RT4 fast wie der Prototyp (Kreis +2.6 %, 0–100 −2 %).
+  Spürbar anders sollten sein: Anfahren auf Schotter (−5 %) und Wiesenweg (−10 %), mehr Lenkung in schnellen Kurven
+  (+16 %), das Heck beim Bremsen in der Kurve, ruhigeres Heck mit Gas. Wenn dir das zu wenig ist: Fahr-Labor.
+- **Untersteuern**: +16 % Lenkbedarf bei 80 km/h ist deutlich. Es kann sich „stumpf“ anfühlen. Erster Wert zum Drehen:
+  `fahrprofile.rt4.auto.schwerpunktVorne` (0.48 statt 0.46: Lenkbedarf nur noch +6 % statt +16 %).
+- **Turbo**: Ohne Ton ist ein Ladedruck-Aufbau von 0.35 s kaum zu spüren (12 % weniger Schub nur in der ersten
+  Drittelsekunde nach dem Gasgeben). Hörbar wird er erst mit M8b.
+- **Aussehen bei 320x180**: Das Auto ist dort klein. Helme, Türgriff, Spiegel und Abschlepp-Öse sind nur
+  einzelne Pixel; das ist so gewollt (Pixel-Look), aber ob das Modell „wie ein Rallyauto der 80er“ wirkt, entscheidest du.
+  Die Bilder in `screenshots/m8a/` zeigen alle drei Pixelgrössen nebeneinander.
+- **Federung**: Die Stärken (Nicken 0.0045 rad pro m/s², Rollen 0.009) sind geschätzt. Beim harten Bremsen taucht die
+  Nase ca. 2.6°. Wenn es zu „schwammig“ oder zu steif wirkt: `autoOptik.feder`.
+- **Dreck**: Bei 320x180 sieht der Dreck auf dunklen Teilen (Heckschürze, Schweller) eher wie ein Fleckenmuster aus
+  (helle Flecken auf Schwarz). Wenn dir das zu unruhig ist: `autoOptik.dreck.raster` kleiner (z. B. 8 = gröbere,
+  ruhigere Flecken) oder `max` kleiner.
+
+### Bekannte Probleme
+
+- **Zwei Messwerte und die Nebenweg-Zeiten des Testfahrers verfehlen das Ziel** (Bankett, Kreis auf Schotter,
+  Almweg/Wiesenweg beim Testfahrer) – siehe Kompromisse unter den Messtabellen.
+- **Die Unfallautos an der Strecke** sind noch die alten Klötzchen-Autos (absichtlich unverändert, siehe Ideen).
+- **Der Turbo ist nicht zu hören**: Der Motorton liest den Ladedruck noch nicht (M8b).
+- **Bestzeiten**: Alte Bestzeiten (Fahrverhalten 0.7b) und neue mit dem RT4 stehen in derselben Liste (Id `rt4`). Der
+  RT4 ist beim Testfahrer 0.3–0.45 % schneller (ca. 0.5–0.7 s auf 2:30–3:00), ein neuer Rekord wird also etwas
+  leichter. Läufe mit `?auto=prototyp` stehen mit der Id `prototyp` in derselben Liste.
+- **Test `ton-umgebung-test` (Prüfung „Pause: leise Variante“)** schlägt im Test-Browser manchmal fehl: Er erwartet die
+  Pausen-Musik 0.7 s nach dem Pausieren bei Pegel 0.5. Im Test-Browser dauert ein Bild aber ca. 0.33 s (Software-Grafik),
+  die Musik startet erst mit dem nächsten Bild – je nach Zufall zu spät. **Das passiert mit 0.7b genauso** (gemessen: in
+  4 von 16 Versuchen mit 0.7b, 6 von 16 mit 0.8a, Bildzeit gleich). Im echten Browser mit 60 Bildern pro Sekunde kein
+  Problem. Der Test bleibt unverändert; `auto-test --nur o` wiederholt einen fehlgeschlagenen Test einmal und sagt es.
+- **Test `ton-test` mit `--auto rt4`, Prüfung „CP 3 gleich = gelb“**: Der Test baut die Referenz aus der Zeit an CP 3,
+  **aufgerundet** auf Hundertstel; das Spiel vergleicht (richtig) die **angezeigten, abgeschnittenen** Hundertstel. Mit dem
+  RT4 liegt die Zeit an CP 3 genau auf 123.625 s: angezeigt 2:03.62 gegen Referenz 2:03.63 = „schneller“ = grün statt
+  gelb. Ein Fehler im Testaufbau, nicht im Spiel (mit prototyp, 124.133 s, fällt er nicht auf). Bestehende Tests sollten
+  unverändert bleiben, darum ist er nicht korrigiert; `auto-test --nur o` meldet ihn als **BEKANNT**. In einem Einzellauf
+  schlug zusätzlich einmal „?ton=aus: … das Spiel läuft“ knapp fehl (Tempo 0.5 statt über 0.5 m/s nach 0.8 s): Im
+  Test-Browser laufen in 0.8 s nur zwei, drei Bilder, und der RT4 hat in den ersten 0.35 s 12 % weniger Schub (Turboloch).
+  Im Lauf (o) bestand diese Prüfung.
+- Die Schrift am Auto (Sponsoren) erscheint erst ab 480x270 (bei 320x180 wäre sie Pixelrauschen).
+- Der Staub kommt weiterhin aus `js/staub.js` (unverändert); er steigt hinter den Hinterrädern auf, nicht an jedem Rad
+  einzeln.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Auspuff-Flamme** beim Poppen und Schalten (kleiner Pixel-Blitz am Auspuff links, passend zum Knall aus M7a.1).
+- **Beulen und Schäden** nach harten Aufprallen (z. B. schiefer Spoiler, zerbrochenes Licht, Kratzer in der Textur).
+- **Turbo-Pfeifen** und Abblasen aus dem echten Ladedruck (`getriebe.ladedruck` ist schon lesbar) – passt zu **M8b**
+  (Motorklang für den RT4).
+- **3D-Vorschau auf der Seite AUTO** mit Garage (drehendes Modell, Lackierung wählen) – passt zu **M8c**.
+- **Unfallautos** an der Strecke mit dem neuen Modell (heute noch die alten Klötzchen-Autos, absichtlich unverändert).
+- **Namen für die nächsten Autos** (Fantasienamen, keine echten Marken): **Valmora Spada**, **Valmora Brenta**,
+  **Hoshiro Raiden**, **Marlowe Harrier**.
+- Dreck auch oben auf der Motorhaube nach Wasserdurchfahrten oder Spritzer von vorausfahrenden Autos (wenn es mal
+  Gegner gibt).
+- Das Auto-Labor könnte zusätzlich die Fahrspur einer gespeicherten Bestzeit abspielen (Federung und Räder in Bewegung).
+- Sicht aus der Motorhaube oder dem Cockpit (das Modell hat jetzt Helme und Scheiben, eine Cockpit-Kamera wäre möglich).
+
+---
+
+## Meilenstein 7b: Umgebungsklänge mit Stereo und Abstand, Menü-Musik, Regler MUSIK ✅ (Verlauf, Stand damals)
 
 > **Ehrlich vorneweg: Ich habe nichts davon gehört.** Alles ist **gemessen** (offline gerechnet: Pegel, Spitze,
 > Spektralschwerpunkt, Tonhöhe, Ausklingzeit, Stereo-Verteilung, Spektrogramme) und von Tests geprüft. Ob die Glocken nach

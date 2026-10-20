@@ -4,6 +4,7 @@
 //   node tools/testfahrer.mjs --schneiden  Zeitvergleich Ideallinie / geschnittene Linie je Kurve,
 //                                          schreibt tools/schneiden-zeiten.json (für tools/abkuerzungen.mjs)
 //   --wurzel <ordner>                      ein anderes Projekt fahren (z. B. alte Version zum Vergleich)
+//   --auto rt4                             (seit M8a) mit einem anderen Fahrprofil fahren; Standard "prototyp" (Referenz)
 //
 // Fährt mit der echten Fahrphysik im Headless-Browser (siehe tools/testfahrer-browser.js).
 
@@ -23,7 +24,7 @@ const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.j
 await spiel.page.evaluate((code) => { window.__fahrerUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); }, fahrerCode);
 
 if (!schneiden) {
-  console.log(`Etappe (${wurzel === WURZEL ? 'dieses Projekt' : wurzel}):`);
+  console.log(`Etappe (${wurzel === WURZEL ? 'dieses Projekt' : wurzel}, Fahrprofil ${spiel.auto}):`);
   for (const profil of (arg('--profile') || 'vorsichtig,mittel,flott').split(',')) {
     const r = await spiel.page.evaluate(async (profil) => {
       const f = await import(window.__fahrerUrl);

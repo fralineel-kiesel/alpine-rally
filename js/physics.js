@@ -3,6 +3,9 @@
 // jede Achse hat begrenzten Grip. Dadurch kann das Auto rutschen,
 // schieben (untersteuern) und mit der Handbremse driften.
 // Diese Datei kennt kein Three.js – reine Rechnerei.
+// Seit M8a (Fahrprofile, js/fahrprofil.js): Achslasten mit statischer Verteilung (lastVorneAnteil) und
+// Gewichtsverlagerung längs (gewichtstransfer), Heck-Grip je Belag (heckJeBelag). Im Profil "prototyp" sind diese
+// Werte neutral (0.5, 0, 1): dann rechnet alles genau wie vorher.
 
 import { CONFIG } from './config.js';
 
@@ -38,6 +41,9 @@ export class Fahrphysik {
     this.stabAnteil = 1;      // Stabilitätshilfe (0 während Handbremse)
     this.hbZeit = 0;          // so lange (s) ist die Handbremse schon gezogen (M3a.2)
     this.rueckDeckel = 0;     // zuletzt geltendes Rückwärts-Höchsttempo (m/s, M5a.1: für den weichen Belagwechsel)
+    this.transfer = 0;        // M8a: Gewichtsverlagerung längs, geglättet (m/s² Achslast; + = mehr hinten)
+    this.lastVorne = G / 2;   // M8a: aktuelle Achslast vorne und hinten (m/s², nur zum Anzeigen)
+    this.lastHinten = G / 2;
   }
 
   get tempo() {
@@ -49,7 +55,8 @@ export class Fahrphysik {
   // boden:   { grip, rollen, rollenTempo, steigung (+ = bergauf, als Sinus), rueckwaerts (Faktor Rückwärtsgang),
   //           heck (Faktor Grip hinten), stabilitaet (Faktor Stabilitätshilfe) – beide seit M3a, fehlen = 1,
   //           geradeaus (Faktor Geradeauslauf, seit M3a.2, fehlt = 1),
-  //           rueckwaertsMax (Faktor Rückwärts-Höchsttempo, seit M5a.1, fehlt = 1) }
+  //           rueckwaertsMax (Faktor Rückwärts-Höchsttempo, seit M5a.1, fehlt = 1),
+  //           belag (Name des Untergrunds, seit M8a für auto.heckJeBelag; fehlt = kein Faktor) }
   // motor:   vom Getriebe (getriebe.js): { beschl: Antrieb vorwärts (m/s²), motorbremse (m/s²) }
   schritt(dt, eingabe, boden, motor) {
     const c = CONFIG.auto;
@@ -78,12 +85,28 @@ export class Fahrphysik {
     const L = c.radstand;
     const a = L * c.schwerpunktVorne; // Schwerpunkt -> Vorderachse
     const b = L - a;                  // Schwerpunkt -> Hinterachse
-    const last = G / 2;               // Last pro Achse (als Beschleunigung)
+    const last = G / 2;               // Last pro Achse im Prototyp (als Beschleunigung)
+    // M8a: Achslasten. Statisch: lastVorneAnteil (0.5 = je G/2 wie im Prototyp). Dazu die Gewichtsverlagerung längs:
+    // beim Bremsen mehr Last vorne und weniger hinten, beim Gasgeben umgekehrt (gewichtstransfer, 0 = aus), aus der
+    // Längsbeschleunigung des letzten Schritts, leicht geglättet, je Achse begrenzt auf 0.6 bis 1.4 des Normalwerts.
+    // Die Haftungsgrenze jeder Achse wächst mit ihrer Last; die Seitensteifigkeit der Reifen ändert sich nur mit der
+    // Verlagerung (statisch bleibt sie gleich verteilt).
+    const pV = c.lastVorneAnteil ?? 0.5, kT = c.gewichtstransfer ?? 0;
+    if (kT !== 0) {
+      const ziel = (kT * this.beschlVor) / 2;
+      this.transfer += (ziel - this.transfer) * (1 - Math.exp(-dt / Math.max(1e-3, c.gewichtstransferGlaettung ?? 0.1)));
+    } else this.transfer = 0;
+    const lastV0 = G * pV, lastH0 = G * (1 - pV);
+    const lastV = begrenze(lastV0 - this.transfer, lastV0 * 0.6, lastV0 * 1.4);
+    const lastH = begrenze(lastH0 + this.transfer, lastH0 * 0.6, lastH0 * 1.4);
+    this.lastVorne = lastV; this.lastHinten = lastH;
 
     // --- Grip ---
     let gripV = c.gripVorne * boden.grip;
     // heck (seit M3a): auf Schotter hält das Heck etwas weniger als die Front -> driftet früher
+    // (M8a: mal heckJeBelag des Profils, z. B. Allrad hält das Heck auf Schotter besser; Prototyp: 1)
     let gripH = c.gripHinten * boden.grip * (boden.heck ?? 1);
+    if (boden.belag && c.heckJeBelag) gripH *= c.heckJeBelag[boden.belag] ?? 1;
     const schraeg = Math.atan2(vSeit, Math.max(Math.abs(vVor), 0.5));
     if (Math.abs(schraeg) > 0.12) gripH *= 1 - c.gasImDrift * eingabe.gas;
 
@@ -91,9 +114,9 @@ export class Fahrphysik {
     const vBasis = Math.max(Math.abs(vVor), 0.5);
     const schraeglaufV = Math.atan2(vSeit + this.drehrate * a, vBasis) - delta;
     const schraeglaufH = Math.atan2(vSeit - this.drehrate * b, vBasis);
-    const steif = c.reifenSteifigkeit * last;
-    const kraftV = begrenze(-steif * schraeglaufV, -gripV * last, gripV * last);
-    let kraftH = begrenze(-steif * schraeglaufH, -gripH * last, gripH * last);
+    const steifV = c.reifenSteifigkeit * last * (lastV / lastV0), steifH = c.reifenSteifigkeit * last * (lastH / lastH0);
+    const kraftV = begrenze(-steifV * schraeglaufV, -gripV * lastV, gripV * lastV);
+    let kraftH = begrenze(-steifH * schraeglaufH, -gripH * lastH, gripH * lastH);
     // Handbremse lange gehalten (M3a.2): je länger gezogen, desto stärker bremsen die blockierten
     // Hinterräder und desto weniger Antrieb kommt an (0 = gerade gezogen, 1 = voll nach handbremseAufbau)
     this.hbZeit = eingabe.handbremse ? this.hbZeit + dt : 0;
@@ -102,7 +125,7 @@ export class Fahrphysik {
     if (eingabe.handbremse && vVor > 0.5) {
       // Handbremse: Hinterräder blockieren und rutschen. Sie halten seitlich
       // kaum noch, solange das Heck nicht schon quer steht -> das Heck kommt.
-      kraftH = -Math.sin(schraeglaufH) * c.handbremseGrip * boden.grip * last;
+      kraftH = -Math.sin(schraeglaufH) * c.handbremseGrip * boden.grip * lastH;
     }
 
     // Stabilität: ohne Handbremse zieht der Grip das Auto langsam gerade

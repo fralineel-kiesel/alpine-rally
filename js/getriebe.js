@@ -6,6 +6,8 @@
 // Diese Datei kennt kein Three.js – reine Rechnerei. Alle Werte: config.js "getriebe".
 //
 // Gang: -1 = Rückwärts (R), 0 = Leerlauf (N), 1 bis 5 = Vorwärtsgänge.
+// Seit M8a (Fahrprofile): Allrad-Traktion je Belag (allrad), Turbo mit Ladedruck (turbo, im Prototyp aus) und
+// zugkraftFaktor. Im Profil "prototyp" sind alle neutral: dann rechnet das Getriebe genau wie vorher.
 
 import { CONFIG } from './config.js';
 
@@ -55,6 +57,7 @@ export class Getriebe {
     this.standZeit = 0;       // wie lange das Auto schon ohne Gas und Bremse steht
     this.gasGlatt = 0;        // geglättetes Gaspedal (für die Schaltpunkte)
     this.letzteSchaltung = null; // { von, nach, tempo } für Tests
+    this.ladedruck = 0;       // M8a: Ladedruck des Turbos (0..1; im Prototyp immer 0). Lesbar für Anzeige und Ton
   }
 
   // Für die Anzeige: 'R', 'N' oder '1' bis '5'
@@ -72,9 +75,10 @@ export class Getriebe {
   }
 
   // Ein Schritt. eingabe: { gas, bremse } (0..1), vVor: Tempo in Blickrichtung (m/s),
-  // tempo: Gesamttempo (m/s, beim Driften grösser als vVor), grip: Haftung des Bodens.
+  // tempo: Gesamttempo (m/s, beim Driften grösser als vVor), grip: Haftung des Bodens,
+  // belag (seit M8a, optional): Name des Untergrunds für die Allrad-Traktion (fehlt = Faktor 1).
   // Ergebnis: { beschl: Antrieb in m/s², motorbremse: Motorbremse in m/s² }
-  schritt(dt, eingabe, vVor, tempo, grip) {
+  schritt(dt, eingabe, vVor, tempo, grip, belag) {
     const g = CONFIG.getriebe;
     const gas = eingabe.gas, bremse = eingabe.bremse;
     this.sperre += dt;
@@ -113,7 +117,9 @@ export class Getriebe {
     }
 
     let beschl = 0, motorbremse = 0, ziel;
+    const T = g.turbo, turbo = T && T.an;
     if (this.gang <= 0) {
+      if (turbo) this.ladedruck = Math.max(0, this.ladedruck - dt / T.abbau); // R und N: kein Ladedruck
       // R oder N: Antrieb rückwärts rechnet die Fahrphysik wie bisher
       motorbremse = gas < 0.05 ? CONFIG.auto.motorbremse : 0;
       const rpmR = this.gang < 0 ? drehzahlBei(-vVor, 1) : 0;
@@ -146,12 +152,17 @@ export class Getriebe {
       if (this.schaltet) {
         // Kupplung offen: kein Antrieb, keine Motorbremse. Drehzahl geht auf den neuen Gang.
         ziel = Math.max(g.leerlauf, drehzahlBei(v, this.zielGang));
+        if (turbo) this.turboSchritt(dt, gas, rpm, true);
       } else {
         // Anfahren im 1. Gang: Kupplung schleift, das Drehmoment zählt mindestens bei kupplungDrehzahl
         const rpmMotor = Math.max(rpm, g.leerlauf, this.gang === 1 && gas > 0 ? g.kupplungDrehzahl : 0);
+        if (turbo) this.turboSchritt(dt, gas, rpmMotor, false);
         if (gas > 0) {
-          beschl = gas * g.zugkraft[this.gang - 1] * drehmoment(rpmMotor);
-          beschl = Math.min(beschl, g.traktion * grip); // auf Gras drehen die Räder durch
+          beschl = gas * g.zugkraft[this.gang - 1] * (g.zugkraftFaktor ?? 1) * drehmoment(rpmMotor);
+          // M8a: Turbo – ohne Ladedruck "verlust" weniger Schub, mit vollem "mehr" mehr
+          if (turbo) beschl *= (1 - T.verlust) + (T.verlust + T.mehr) * this.ladedruck;
+          // auf Gras drehen die Räder durch (M8a: Allrad bringt je Belag mehr auf den Boden, Prototyp: 1)
+          beschl = Math.min(beschl, g.traktion * grip * (belag && g.allrad ? g.allrad[belag] ?? 1 : 1));
         }
         if (gas < 0.05) {
           // Motorbremse: niedriger Gang und hohe Drehzahl bremsen mehr (Mittelwert = auto.motorbremse)
@@ -163,9 +174,23 @@ export class Getriebe {
       }
     }
 
+    if (!turbo) this.ladedruck = 0;
     // Angezeigte Drehzahl weich nachführen (in der Schaltpause etwas langsamer)
     const folgen = this.schaltet ? g.drehzahlFolgenSchalten : g.drehzahlFolgen;
     this.drehzahl += (ziel - this.drehzahl) * (1 - Math.exp(-folgen * dt));
     return { beschl, motorbremse };
+  }
+
+  // Turbo (M8a): Ladedruck baut sich mit Gas oberhalb turbo.ab in turbo.aufbau Sekunden auf (gleichmässig, bis zum Gas),
+  // und fällt ohne Last in turbo.abbau Sekunden. Anti-Lag: in der Schaltpause und beim Gaswegnehmen über
+  // turbo.antiLagAb fällt er höchstens auf turbo.antiLagMin (Gruppe-B-Gefühl).
+  turboSchritt(dt, gas, rpm, schaltpause) {
+    const T = CONFIG.getriebe.turbo;
+    const ziel = !schaltpause && gas > 0.05 && rpm >= T.ab ? gas : 0;
+    if (ziel > this.ladedruck) this.ladedruck = Math.min(ziel, this.ladedruck + dt / T.aufbau);
+    else {
+      const antiLag = schaltpause || (gas <= 0.05 && rpm >= T.antiLagAb) ? Math.min(this.ladedruck, T.antiLagMin) : 0;
+      this.ladedruck = Math.max(ziel, antiLag, this.ladedruck - dt / T.abbau);
+    }
   }
 }

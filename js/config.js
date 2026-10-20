@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.7b';
+export const VERSION = '0.8a';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -34,10 +34,7 @@ export const CONFIG = {
     bergFels: '#596070',         // Hintergrundberge, Fels
     bergFuss: '#3f6a30',       // Hintergrundberge, bewaldeter Fuss (passt zum fernen Gelände)
     schnee: '#f2f5fa',         // Schneekappen
-    autoLack: '#f1f1ec',       // Auto: weiss
-    autoStreifen: '#c8202c',   // Auto: der eine farbige Streifen
-    autoScheiben: '#22303c',   // Auto: Fenster
-    autoSchwarz: '#1c1c1e',    // Auto: Stossstangen, Reifen
+    // (Autofarben seit M8a in autoOptik: Lackierungen und feste Farben)
   },
 
   // --- Licht ----------------------------------------------------------
@@ -623,6 +620,12 @@ export const CONFIG = {
     // Dreher (M3a.2): rutscht das Auto schneller als abSeit (m/s) seitwärts, rutscht es mit der Reibung der Reifen
     // weich aus statt schlagartig zu stehen; das Drehen wird dabei höchstens mit drehBremse (rad/s²) gebremst
     dreher: { abSeit: 1.5, drehBremse: 4 },
+    // --- Seit M8a (Fahrprofile): neue Werte, hier neutral (= Verhalten wie vor M8a, Profil "prototyp"); ein Auto mit
+    // eigenem Fahrgefühl setzt sie in "fahrprofile" weiter unten ---
+    lastVorneAnteil: 0.5,      // Anteil des Gewichts auf der Vorderachse (0.5 = gleich). Mehr = vorne mehr Haftung, hinten weniger
+    gewichtstransfer: 0,       // Gewichtsverlagerung längs: Bremsen = mehr Last vorne, Gas = mehr hinten (0 = aus, 0.35 = deutlich)
+    gewichtstransferGlaettung: 0.1, // ... so weich (Sekunden) folgt die Verlagerung der Beschleunigung (kein Zittern)
+    heckJeBelag: { schotter: 1, wiesenweg: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -659,6 +662,39 @@ export const CONFIG = {
     motorbremseBezugDrehzahl: 4000, // ... und bei dieser Drehzahl gilt auto.motorbremse genau
     drehzahlFolgen: 14,        // wie schnell die Drehzahl-Anzeige folgt (höher = direkter)
     drehzahlFolgenSchalten: 9, // ... während der Schaltpause (Nadel fällt sichtbar ab)
+    // --- Seit M8a (Fahrprofile): neue Werte, hier neutral (= wie vor M8a, Profil "prototyp") ---
+    zugkraftFaktor: 1,         // Schub aller Gänge mal diesem Wert (1 = wie "zugkraft")
+    // Allrad: so viel mehr Schub geht je Belag auf den Boden (mal traktion; 1 = wie bisher)
+    allrad: { asphalt: 1, bankett: 1, gras: 1, schotter: 1, wiesenweg: 1 },
+    // Turbo: Ladedruck (0..1) baut sich mit Gas oberhalb "ab" in "aufbau" Sekunden auf und fällt ohne Gas in "abbau".
+    // Schub mal (1 - verlust) + (verlust + mehr) x Ladedruck. Anti-Lag: in der Schaltpause und beim Gaswegnehmen über
+    // antiLagAb fällt er höchstens auf antiLagMin. Der Motorton liest den Ladedruck (noch) nicht.
+    turbo: { an: false, ab: 3000, aufbau: 0.35, abbau: 0.25, verlust: 0.12, mehr: 0.04, antiLagAb: 4000, antiLagMin: 0.7 },
+  },
+
+  // --- Fahrprofile (Meilenstein 8a, js/fahrprofil.js) ----------------------------------------------------
+  // Die Werte in "auto" und "getriebe" oben sind die Referenz = Profil "prototyp" (Fahrverhalten bis 0.7b). Daran hängen
+  // Pace-Notes-Stufen, Abkürzungs-Sperren und Testfahrer-Zeiten. Ein Profil überschreibt nur, was hier steht.
+  // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4). Zum Ausprobieren: index.html?fahrlabor=1
+  fahrprofile: {
+    prototyp: {},              // keine Änderung (Referenz)
+    // Ringwerk RT4: Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
+    // schiebt in schnellen Kurven eher über die Vorderräder, das Heck kommt mit der Handbremse oder beim Bremsen in der Kurve.
+    rt4: {
+      auto: {
+        lastVorneAnteil: 0.555,  // frontlastig: vorne mehr Haftung, hinten weniger
+        schwerpunktVorne: 0.46,  // Schwerpunkt weiter vorne (Prototyp 0.48): schiebt in schnellen Kurven eher über die Front
+        traegheit: 2.5,          // schwerer, ruhiger Wagen (Prototyp 2.3)
+        gewichtstransfer: 0.35,  // Bremsen in der Kurve = Heck kommt; Gas = Heck stabil, Front schiebt etwas
+        gasImDrift: 0.07,        // Gas lockert das Heck im Drift weniger (Prototyp 0.12): Allrad zieht gerade
+        heckJeBelag: { schotter: 1.1, wiesenweg: 1.15 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser
+      },
+      getriebe: {
+        allrad: { schotter: 1.15, wiesenweg: 1.1 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil)
+        zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
+        turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
+      },
+    },
   },
 
   // --- Untergrund -------------------------------------------------------
@@ -1739,11 +1775,89 @@ export const CONFIG = {
     },
   },
 
-  // --- Optik am Auto -----------------------------------------------------
+  // --- Optik am Auto (seit M8a: 3D-Modell aus js/autos.js, gebaut von js/car.js; ansehen ohne Fahren: auto-labor.html) ---
   autoOptik: {
-    rollen: 0.012,             // Karosserie neigt sich in Kurven (pro m/s²)
-    nicken: 0.008,             // Karosserie nickt beim Bremsen/Gas
+    modell: 'rt4',             // welches Modell aus js/autos.js
+    lackierung: 'werk',        // Lackierung (Namen unten bei "lackierungen"): 'werk', 'gletscher' oder 'dunkel'
     blobSchatten: true,        // dunkler Fleck unter dem Auto
     radEinschlagMax: 35,       // so weit (Grad) drehen die Vorderräder sichtbar höchstens ein (nur Optik)
+    radUnschaerfeAb: 22,       // ab diesem Tempo (m/s, 22 = 79 km/h) wird die Felge weich zur gleichmässigen Scheibe ...
+    radUnschaerfeBreite: 6,    // ... über so viele m/s (Speichenräder sehen bei 60 Bildern/s sonst rückwärts drehend aus)
+
+    // Federung (M8a): die Karosserie nickt, rollt und federt mit Nachschwingen (Feder und Dämpfer). Nur Optik:
+    // die Physik und die Kamera merken davon nichts. Drehpunkt auf Schwerpunkthöhe (js/autos.js, schwerpunktHoehe).
+    feder: {
+      an: true,                // false = Karosserie steht starr (nur das Gelände neigt das Auto)
+      frequenz: 2.2,           // Eigenfrequenz (Hz): höher = straffer und schneller
+      daempfung: 0.55,         // Dämpfung (0..1): 0.5-0.6 = ein kleiner Überschwinger, dann ruhig; 1 = kein Nachschwingen
+      nicken: 0.0045,          // Nicken (rad) pro m/s² Längsbeschleunigung: Bremsen = Nase taucht, Gas = Heck setzt sich
+      rollen: 0.009,           // Rollen (rad) pro m/s² Querbeschleunigung: in der Kurve lehnt die Karosserie nach aussen
+      hub: 0.012,              // Einfedern (m) pro m/s² Senkrechtbeschleunigung aus dem Gelände: Senke = tiefer, Kuppe = höher
+      nickenMax: 4,            // Grenzen: Nicken (Grad) ...
+      rollenMax: 5,            // ... Rollen (Grad) ...
+      hubMax: 0.12,            // ... Hub (Meter)
+      stossNicken: 0.05,       // Aufprall: so viel Nick-Schwung (rad/s) pro m/s Tempoverlust längs (frontal: Nase taucht)
+      stossRollen: 0.04,       // ... so viel Roll-Schwung (rad/s) pro m/s Tempoverlust quer
+      stossHub: 0.02,          // ... so viel Hub-Schwung (m/s) pro m/s Tempoverlust (die Karosserie hüpft kurz)
+      stossAb: 1,              // ein Aufprall zählt für die Federung ab so viel Tempoverlust (m/s) in einem Schritt
+      gelaendeAbstand: 1.3,    // Bodenhöhe so weit (m) vor und hinter dem Auto messen (Krümmung = Kuppe/Senke)
+    },
+
+    // Dreck (M8a): je mehr das Auto auf Schotter, Wiesenweg, Gras und Bankett fährt, desto schmutziger wird es unten
+    // (Karosserie, Radkästen, Schlammlappen, Reifen). Asphalt wäscht nichts ab. Sauber bei jedem Start und Neustart.
+    dreck: {
+      an: true,                // false = Auto bleibt sauber
+      max: 0.85,               // höchstens so viel Deckung (0..1) ganz unten
+      // Aufbau je Belag: so viel Dreck pro gefahrenem Meter (= je Sekunde mal Tempo in m/s). Farbe: wie der Staub
+      // (staub.belaege), Gras und Bankett eigene Farben. Fehlt ein Belag (Asphalt), gibt es dort keinen Dreck.
+      belaege: {
+        wiesenweg: { aufbau: 0.02, farbe: '#8c7356' },
+        schotter: { aufbau: 0.012, farbe: '#d6ccb4' },
+        gras: { aufbau: 0.03, farbe: '#5e5a34' },
+        bankett: { aufbau: 0.004, farbe: '#8b6e4a' },
+      },
+      hoeheVoll: 0.22,         // bis zu dieser Höhe (m) voller Dreck ...
+      hoeheAus: 0.75,          // ... nach oben ausdünnend, ab hier keiner mehr (etwa das untere Drittel)
+      raster: 16,              // Flecken-Raster: so viele Pixel-Felder pro Meter (Pixel-Look)
+      reifen: 1.0,             // Reifen bekommen so viel vom Dreck (mal Menge) ...
+      felge: 0.5,              // ... die Felgen so viel
+    },
+
+    // Lackierungen: Farben für die Bemalung in js/autos.js (null = diesen Teil nicht malen)
+    lackierungen: {
+      // Werk: Weiss mit rotem Streifen und dunkelgrauem Unterteil (wie vor M8a)
+      werk: {
+        lack: '#f1f1ec', unten: '#3b3e44', streifen0: '#c8202c', streifen1: null, akzent: '#c8202c', fluegel: '#f1f1ec',
+        lappen: '#c8202c', nummerFeld: '#f4f4ee', nummerRand: '#1c1c1e', nummerSchrift: '#1c1c1e',
+        sponsor0: '#c8202c', sponsor1: '#1c1c1e', sponsorHell: '#f4f4ee', banner: '#c8202c', bannerSchrift: '#f4f4ee',
+        sponsorFeld: '#c8202c', sponsorFeldSchrift: '#f4f4ee',
+      },
+      // Gletscher: Weiss mit hell- und dunkelblauem Streifen, gelbe Akzente
+      gletscher: {
+        lack: '#f1f1ec', unten: '#1f3a6e', streifen0: '#1f4f9a', streifen1: '#7cc0ea', akzent: '#f2c22e', fluegel: '#1f4f9a',
+        lappen: '#1f4f9a', nummerFeld: '#f2c22e', nummerRand: '#1f3a6e', nummerSchrift: '#1f3a6e',
+        sponsor0: '#1f4f9a', sponsor1: '#1f4f9a', sponsorHell: '#f2c22e', banner: '#1f4f9a', bannerSchrift: '#f2c22e',
+        sponsorFeld: '#f2c22e', sponsorFeldSchrift: '#1f3a6e',
+      },
+      // Dunkel: Anthrazit mit orangem Streifen
+      dunkel: {
+        lack: '#4c5058', unten: '#26282c', streifen0: '#ff8a1e', streifen1: null, akzent: '#ff8a1e', fluegel: '#ff8a1e',
+        lappen: '#ff8a1e', nummerFeld: '#f4f4ee', nummerRand: '#ff8a1e', nummerSchrift: '#1c1c1e',
+        sponsor0: '#ff8a1e', sponsor1: '#f4f4ee', sponsorHell: '#ff8a1e', banner: '#ff8a1e', bannerSchrift: '#1c1c1e',
+        sponsorFeld: null, sponsorFeldSchrift: '#ff8a1e',
+      },
+    },
+    // Feste Autofarben (für alle Lackierungen gleich)
+    farben: {
+      schwarz: '#1c1c1e', gitter: '#0d0e10', fuge: '#2a2c30', kante: '#26282c', radhaus: '#121214', unterboden: '#1a1a1c',
+      glas: '#1c2834', glasHell: '#3a5266', chrom: '#a4a7aa', rot: '#c8202c', heckblende: '#3a0c0c',
+      helmFahrer: '#f4f4ee', helmBeifahrer: '#f2c22e', visier: '#0c0f13', schulter: '#2b2f36',
+      kennzeichen: '#f4f4ee', kennzeichenSchrift: '#1c1c1e',
+      scheinwerfer: '#fff6d8', zusatzscheinwerfer: '#fffbe6',
+      ruecklichtAus: '#9a1612', ruecklichtAn: '#ff4a30', // Rücklicht (dunkelrot, von hinten gut sichtbar) und Bremslicht (hellrot)
+      rueckfahrAus: '#4a4c50', rueckfahrAn: '#ffffff',   // Rückfahrlicht aus / an (nur im Rückwärtsgang)
+      reifen: '#222224', reifenProfil: '#38393c', reifenFlanke: '#5c5d61',
+      felge: '#c9ccd0', felgeDunkel: '#4a4d52', felgeVerwischt: '#8c9095', felgeMitte: '#2a2c30',
+    },
   },
 };

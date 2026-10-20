@@ -1,0 +1,157 @@
+{
+  "hinweis": "Schnappschuss von CONFIG.auto und CONFIG.getriebe aus Version 0.7b (Referenz = Profil prototyp). Von tools/auto-test.mjs (g) verglichen. Nicht von Hand ändern.",
+  "version": "0.7b",
+  "auto": {
+    "name": "Ringwerk RT4",
+    "luftwiderstand": 3.25,
+    "motorbremse": 0.35,
+    "bremse": 10,
+    "rueckwaertsTempo": 6,
+    "rueckwaertsBeschl": 3,
+    "steigungsFaktor": 0.45,
+    "radstand": 2.52,
+    "schwerpunktVorne": 0.48,
+    "traegheit": 2.3,
+    "lenkwinkelLangsam": 32,
+    "lenkwinkelSchnell": 4.5,
+    "lenkReferenzTempo": 45,
+    "lenkwinkelStand": 48,
+    "lenkStandBisTempo": 8,
+    "gripVorne": 1,
+    "gripHinten": 1.12,
+    "reifenSteifigkeit": 9,
+    "handbremseGrip": 0.8,
+    "handbremseBremse": 3.5,
+    "handbremseBremseLang": 5,
+    "handbremseAufbau": 1.2,
+    "handbremseAntrieb": 0.3,
+    "gasImDrift": 0.12,
+    "stabilitaet": 5,
+    "stabilitaetRueckkehr": 2.5,
+    "geradeauslauf": {
+      "gier": 8,
+      "schwimm": 4,
+      "lenkBis": 0.15,
+      "rutschAb": 8,
+      "rutschBis": 15
+    },
+    "dreher": {
+      "abSeit": 1.5,
+      "drehBremse": 4
+    }
+  },
+  "getriebe": {
+    "modus": "automatik",
+    "gaenge": [
+      48,
+      82,
+      118,
+      156,
+      195
+    ],
+    "nennDrehzahl": 7000,
+    "leerlauf": 1000,
+    "standgas": 4500,
+    "kupplungDrehzahl": 3500,
+    "drehmoment": [
+      [
+        0,
+        0.45
+      ],
+      [
+        1000,
+        0.5
+      ],
+      [
+        2000,
+        0.55
+      ],
+      [
+        3000,
+        0.78
+      ],
+      [
+        4000,
+        1
+      ],
+      [
+        6000,
+        1
+      ],
+      [
+        7000,
+        0.85
+      ],
+      [
+        8000,
+        0.65
+      ]
+    ],
+    "zugkraft": [
+      8,
+      6.55,
+      5.4,
+      4.45,
+      3.65
+    ],
+    "traktion": 8.5,
+    "schaltDauerHoch": 0.28,
+    "schaltDauerRunter": 0.18,
+    "hochWenigGas": 4500,
+    "hochVollgas": 6900,
+    "runterWenigGas": 1800,
+    "runterVollgas": 2600,
+    "runterBremsen": 3200,
+    "runterReserve": 1.3,
+    "kickdownGas": 0.9,
+    "kickdownUnter": 4200,
+    "kickdownMax": 6500,
+    "gasGlattRauf": 0.1,
+    "gasGlattRunter": 1,
+    "schaltSperre": 0.6,
+    "leerlaufNach": 0.5,
+    "motorbremseBezugGang": 3,
+    "motorbremseBezugDrehzahl": 4000,
+    "drehzahlFolgen": 14,
+    "drehzahlFolgenSchalten": 9
+  },
+  "untergrund": {
+    "asphalt": {
+      "grip": 1,
+      "rollen": 0.05,
+      "rollenTempo": 0,
+      "rueckwaerts": 1,
+      "rueckwaertsMax": 1.5
+    },
+    "bankett": {
+      "grip": 0.85,
+      "rollen": 0.6,
+      "rollenTempo": 0.02,
+      "rueckwaerts": 1.5
+    },
+    "gras": {
+      "grip": 0.62,
+      "rollen": 2.2,
+      "rollenTempo": 0.11,
+      "rueckwaerts": 2.2
+    },
+    "schotter": {
+      "grip": 0.8,
+      "rollen": 0.35,
+      "rollenTempo": 0.01,
+      "rueckwaerts": 1.2,
+      "heck": 0.8,
+      "stabilitaet": 0.5,
+      "geradeaus": 0.4
+    },
+    "wiesenweg": {
+      "grip": 0.64,
+      "rollen": 0.9,
+      "rollenTempo": 0.03,
+      "rueckwaerts": 1.4,
+      "heck": 0.7,
+      "stabilitaet": 0.5,
+      "geradeaus": 0.4
+    }
+  }
+}
