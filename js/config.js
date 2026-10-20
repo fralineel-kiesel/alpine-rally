@@ -576,7 +576,7 @@ export const CONFIG = {
 
   // --- Fahrphysik -----------------------------------------------------
   auto: {
-    name: 'Ringwerk RT4',
+    name: 'Audan Quarto',     // Anzeigename (Id und Fahrprofil heissen weiter rt4)
     // Antrieb und Schalten: siehe "getriebe" weiter unten
     luftwiderstand: 3.25,      // Bremsung durch die Luft bei 190 km/h (m/s²), wächst mit dem Tempo im Quadrat.
                                // Zusammen mit dem 5. Gang ergibt das das Höchsttempo (weich, kein harter Anschlag)
@@ -678,7 +678,7 @@ export const CONFIG = {
   // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4). Zum Ausprobieren: index.html?fahrlabor=1
   fahrprofile: {
     prototyp: {},              // keine Änderung (Referenz)
-    // Ringwerk RT4: Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
+    // Audan Quarto (Id rt4): Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
     // schiebt in schnellen Kurven eher über die Vorderräder, das Heck kommt mit der Handbremse oder beim Bremsen in der Kurve.
     rt4: {
       auto: {

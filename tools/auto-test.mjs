@@ -501,7 +501,8 @@ if (teil('g')) {
   const vergleich = (cfg) => {
     const fehlt = [];
     for (const bereich of ['auto', 'getriebe']) {
-      for (const [k, w] of Object.entries(ref[bereich])) if (JSON.stringify(cfg[bereich][k]) !== JSON.stringify(w)) fehlt.push(`${bereich}.${k}`);
+      // (M8b: auto.name ist nur der Anzeigename, seit M8b "Audan Quarto" statt "Ringwerk RT4" – keine Physik)
+      for (const [k, w] of Object.entries(ref[bereich])) if (k !== 'name' && JSON.stringify(cfg[bereich][k]) !== JSON.stringify(w)) fehlt.push(`${bereich}.${k}`);
       for (const k of Object.keys(cfg[bereich])) {
         if (k in ref[bereich]) continue;
         if (!(k in NEU[bereich]) || !neutral(bereich, k, cfg[bereich][k])) fehlt.push(`${bereich}.${k} (neu, nicht neutral)`);

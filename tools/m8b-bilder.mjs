@@ -96,10 +96,12 @@ async function menue() {
     for (const [b, h] of [[320, 180], [1280, 720]]) {
       const spiel = await starteSpiel({ breite: b, hoehe: h, auto: '' });
       const p = spiel.page;
-      await p.addInitScript((s) => { localStorage.clear(); localStorage.setItem('alpineRally.einstellungen', JSON.stringify({ sprache: s })); }, sprache);
       await p.goto(`${spiel.url}/index.html`);
       await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
-      await p.evaluate((s) => { const A = window.__alpineRally; if (A.einstellungen) { A.einstellungen.sprache = s; } A.menue.oeffne ? A.menue.oeffne('auto') : null; }, sprache);
+      await p.evaluate((s) => { localStorage.setItem(window.__alpineRally.CONFIG.menue.speicherName, JSON.stringify({ sprache: s })); }, sprache);
+      await p.reload();
+      await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+      await p.evaluate(() => { const A = window.__alpineRally; A.zumHauptmenue(); A.menue.zeige(A.seiten.auto, true); });
       await p.waitForTimeout(1200);
       await p.screenshot({ path: path.join(ORDNER, `60-menue-auto-${sprache}-${b}x${h}.png`) });
       console.log('  ', `60-menue-auto-${sprache}-${b}x${h}`);

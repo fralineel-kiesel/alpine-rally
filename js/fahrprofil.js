@@ -1,6 +1,6 @@
 // Fahrprofile (Meilenstein 8a): Das heutige Fahrverhalten steht in config.js unter "auto" und "getriebe" und ist die
 // Referenz (Profil "prototyp": daran hängen Pace-Notes, Abkürzungs-Sperren und die Testfahrer-Zeiten). Ein Auto mit
-// eigenem Fahrgefühl (z. B. der Ringwerk RT4) ist ein Profil in config.js (fahrprofile), das nur einzelne Werte
+// eigenem Fahrgefühl (z. B. der Audan Quarto, Id rt4) ist ein Profil in config.js (fahrprofile), das nur einzelne Werte
 // überschreibt. Beim Start legt main.js das gewählte Profil über die Referenz, bevor gefahren wird.
 // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4, unbekannter Wert: rt4).
 // Das Fahr-Labor (?fahrlabor=1) schaltet hiermit live um. Diese Datei kennt kein Three.js.

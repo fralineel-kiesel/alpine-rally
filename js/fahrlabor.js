@@ -1,12 +1,16 @@
 // Fahr-Labor (Meilenstein 8a): Seitenpanel zum Nachstellen des Fahrgefühls im laufenden Spiel.
 // Nur mit index.html?fahrlabor=1 (main.js lädt diese Datei dann nach; ohne den Schalter gibt es weder Panel noch Aufwand).
 // Regler mit dem Namen des Werts aus config.js, sofort wirksam (die Physik liest CONFIG bei jedem Schritt),
-// Umschalter PROTOTYP / RT4 (schaltet nur die Werte, das Aussehen bleibt), WERTE KOPIEREN und ALLES ZURÜCK.
+// Umschalter PROTOTYP / AUDAN QUARTO (Profil rt4; schaltet nur die Werte, das Aussehen bleibt), WERTE KOPIEREN und ALLES ZURÜCK.
 // Nichts wird gespeichert: Neu laden = wieder die Werte aus config.js. Das Panel nimmt nur Mausklicks an; Tasten gehen
 // weiter ans Spiel (Fahrtasten verhindern ohnehin, dass ein Regler auf Pfeiltasten reagiert).
 
 import { CONFIG } from './config.js';
 import { waehleFahrprofil, aktivesProfil, profilWert } from './fahrprofil.js';
+import { AUTO_MODELLE } from './autos.js';
+
+// Anzeigename eines Profils (M8b: rt4 = AUDAN QUARTO; die Id bleibt)
+const profilName = (id) => (AUTO_MODELLE[id] ? AUTO_MODELLE[id].name : id.toUpperCase());
 
 export const BREITE = 300; // Breite des Panels (Pixel); das Spielbild rückt so weit nach links
 
@@ -67,7 +71,7 @@ export function baueFahrlabor({ physik, getriebe }) {
   panel.innerHTML = `<h1>FAHR-LABOR</h1>
     <p>Werte live verstellen (wirkt sofort). Nur diese Seite: nichts wird gespeichert, neu laden = wieder wie vorher.
     Fahren mit den Tasten wie immer.</p>
-    <div class="profil"><button data-profil="prototyp">PROTOTYP</button><button data-profil="rt4">RT4</button></div>
+    <div class="profil"><button data-profil="prototyp">PROTOTYP</button><button data-profil="rt4">${profilName('rt4')}</button></div>
     <div class="live" id="fahrlaborLive"></div>
     <div id="fahrlaborRegler"></div>
     <div class="profil"><button id="fahrlaborKopieren">WERTE KOPIEREN</button><button id="fahrlaborZurueck">ALLES ZURÜCK</button></div>
@@ -126,7 +130,7 @@ export function baueFahrlabor({ physik, getriebe }) {
       if (warte > 0) return;
       warte = 0.2;
       const last = physik.lastVorne !== undefined ? ` · Last vorne ${Math.round(physik.lastVorne / (physik.lastVorne + physik.lastHinten) * 100)} %` : '';
-      $('fahrlaborLive').textContent = `Profil ${aktivesProfil().toUpperCase()} · ${Math.round(physik.tempo * 3.6)} km/h · Gang ${getriebe.anzeige}` +
+      $('fahrlaborLive').textContent = `Profil ${profilName(aktivesProfil())} · ${Math.round(physik.tempo * 3.6)} km/h · Gang ${getriebe.anzeige}` +
         ` · Ladedruck ${(getriebe.ladedruck || 0).toFixed(2)}${last}`;
     },
   };

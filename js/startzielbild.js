@@ -41,7 +41,7 @@ export const textBreite = (text, schrift = KLEIN) => [...text].reduce((b, z) => 
 
 // Erfundene Sponsoren: Name, Grundfarbe, Schriftfarbe
 export const SPONSOREN = [
-  ['BERGKRAFT', '#1f4fa8', '#f2f0e8'], ['SENNHOF', '#2c7a3a', '#f4e27a'], ['RINGWERK', '#c8202a', '#f2f0e8'], ['PASSGOLD', '#f0c020', '#1c1c1c'],
+  ['BERGKRAFT', '#1f4fa8', '#f2f0e8'], ['SENNHOF', '#2c7a3a', '#f4e27a'], ['AUDAN', '#c8202a', '#f2f0e8'], ['PASSGOLD', '#f0c020', '#1c1c1c'],
 ];
 
 export function startZielAtlas(seed = 91) {

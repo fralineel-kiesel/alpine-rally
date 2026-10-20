@@ -27,7 +27,7 @@ export const TEXTE = {
 
   // --- Auto und Etappe ---
   'auto.titel': { de: 'AUTO', en: 'CAR' },
-  'auto.rt4.name': { de: 'RINGWERK RT4', en: 'RINGWERK RT4' },
+  'auto.rt4.name': { de: 'AUDAN QUARTO', en: 'AUDAN QUARTO' }, // (Id rt4 bleibt: Bestzeiten)
   'auto.rt4.daten1': { de: 'ALLRAD · TURBO · 5 GÄNGE AUTOMATIK', en: 'AWD · TURBO · 5-SPEED AUTOMATIC' },
   'auto.rt4.daten2': { de: 'SCHWERES RALLYAUTO, VIEL TRAKTION', en: 'HEAVY RALLY CAR, LOTS OF TRACTION' },
   'auswahl.gewaehlt': { de: 'GEWÄHLT', en: 'SELECTED' },
