@@ -109,3 +109,22 @@ if (NUR.includes('garage')) {
     await s.schliessen();
   }
 }
+
+// Ton-Labor (Teil C): neue Knöpfe, Feinschliff mit Profil, VERGLEICH läuft
+if (NUR.includes('tonlabor')) {
+  const s = await starteSpiel({ breite: 1280, hoehe: 900, args: ['--autoplay-policy=no-user-gesture-required'] });
+  const p = s.page;
+  await p.goto(`${s.url}/ton-labor.html`);
+  await p.waitForFunction(() => window.__tonLabor && window.__tonLabor.vergleich, null, { timeout: 60000 });
+  await p.click('#tonStarten');
+  await p.waitForFunction(() => window.__tonLabor.ton.werk && window.__tonLabor.ton.werk.aufbau.fertig, null, { timeout: 30000 });
+  await p.evaluate(() => { const $ = (id) => document.getElementById(id); $('tonProfil').value = 'delto'; $('tonProfil').dispatchEvent(new Event('change')); });
+  await p.waitForTimeout(300);
+  await p.screenshot({ path: path.join(ORDNER, '50-ton-labor.png'), fullPage: true }); console.log('   50-ton-labor.png');
+  await p.click('#vergleich');
+  await p.waitForFunction(() => /DELTO$/.test(document.getElementById('vergleichName').textContent), null, { timeout: 60000 });
+  await p.waitForTimeout(3500);
+  await p.screenshot({ path: path.join(ORDNER, '51-ton-labor-vergleich.png') }); console.log('   51-ton-labor-vergleich.png');
+  if (s.fehler.length) console.log('Fehler:', s.fehler.slice(0, 3).join(' | '));
+  await s.schliessen();
+}

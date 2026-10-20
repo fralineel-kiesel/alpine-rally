@@ -1,11 +1,12 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 8c fertig** – es gibt jetzt **drei Autos** und eine **Garage** (Hauptmenü → AUTO): links die
-Autos und die Lackierung, rechts das **drehende 3D-Modell**, **Werte-Balken** und zwei Zeilen zu Antrieb und Bauart. Neu
-sind der **Lanza Delto** (kantiger Kompakt-Allrad mit Dachspoiler, wendig und griffig) und der **Fard Escorta** (kastiges
-Hinterrad-Coupé ohne Turbo, das Heck kommt leicht). Auswahl und Lackierung je Auto merkt sich der Browser. Die
-**Bestzeiten** sind eine gemeinsame Liste für alle Autos, mit dem Kurznamen des Autos in jeder Zeile. Der **Audan Quarto
-ist unverändert**. **Wichtig: Fahrgefühl nicht gespürt, Ton nicht gehört – bitte zuerst die Test-Anleitung unten (M8c).**
+Aktuell: **Meilenstein 8d fertig** – zwei Fehler behoben und **jedes Auto klingt anders**. Die **Frontscheibe** von Lanza
+Delto und Fard Escorta ist jetzt dunkles Glas (statt Wagenfarbe). In der **Garage** wählt der Zeiger nichts mehr von allein:
+mit Pfeilen ansehen, mit **Leertaste oder Enter wählen** (das Auto wird gelb), die Lackierung gehört immer zum gewählten Auto.
+**Motorklang je Auto:** Audan Quarto wie bisher (5-Zylinder-Turbo), **Lanza Delto** als 4-Zylinder-Turbo (höher, heller,
+giftiger, Pfeifen höher), **Fard Escorta** als 4-Zylinder-Sauger (heiser, warm, ohne Pfeifen, mehr Knistern). Im Ton-Labor gibt
+es dafür den Knopf **VERGLEICH**. **Wichtig: Ton nicht gehört, Fahrgefühl nicht gespürt – bitte zuerst die Hör-Anleitung (M8d).**
+Davor: 8c (Garage, Lanza Delto und Fard Escorta, gemeinsame Bestzeiten).
 Davor: 8b (Name Audan Quarto, Fahrer hinten weg, spürbareres Fahrgefühl, Turbo im Ton am echten Ladedruck).
 Davor: 8a (Ringwerk RT4 – heute Audan Quarto – als richtiges 3D-Modell mit Lackierung, Federung, Lichtern, Dreck,
 Auto-Labor; Fahrprofile mit eigenem Fahrgefühl, Fahr-Labor). Die Hörtest-Anleitung von M7b gilt weiter (M7b.1 ist noch offen).
@@ -32,14 +33,324 @@ Das Konzept und der Fahrplan stehen in `KONZEPT.md`.
 
 Im Menü: Pfeile oder WASD (bzw. Steuerkreuz/linker Stick) zum Wählen, **Enter/Leertaste** (A / Kreuz) zum
 Bestätigen, **Esc/Rücktaste** (B / Kreis) für zurück. Die Maus geht auch (zeigen = wählen, klicken = bestätigen,
-Regler ziehen). Tastatur, Gamepad und Maus gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
+Regler ziehen). **Garage (seit M8d):** zeigen/Pfeile = Auto nur ansehen, **Leertaste/Enter** (A / Kreuz, Klick) = Auto wählen. Tastatur, Gamepad und Maus gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
 Alle Tasten ausser Esc, Enter und F3 kann man unter EINSTELLUNGEN → TASTEN BELEGEN ändern.
 
 Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start ist das HUD wieder an.
 
 ---
 
-## Meilenstein 8c: Garage und zwei neue Autos – Lanza Delto und Fard Escorta ✅
+## Meilenstein 8d: Scheiben-Fehler, Garage mit Tastatur, Motorklang je Auto ✅
+
+> **Ehrlich vorneweg: Ich habe den Ton nicht gehört und das Fahrgefühl nicht gespürt.** Die zwei neuen Motorklänge sind
+> **gerechnet und gemessen** (offline, Spektrogramme, Messtabelle unten) – ob der Delto „giftig“ und der Escorta „heiser“
+> klingt, kannst nur du entscheiden. Darum zuerst die **Hör-Anleitung** unten.
+> **Für Änderungen schreib einfach, was dir nicht gefällt, das wird dann M8d.1.**
+
+Vier Teile, vier Commits im selben Pull Request: **A = Scheiben-Fehler**, **B = Garage mit Tastatur**, **C = Motorklang:
+Mechanik und Ton-Labor**, **D = Motorklang: Delto und Escorta** (dazu in D: Tests, Bilder, diese Beschreibung). Der **Audan
+Quarto ist unverändert** (Aussehen, Fahrgefühl, Ton – gemessen, siehe „Selbst getestet“), das Profil `prototyp` auch.
+
+### A – Scheiben-Fehler (Frontscheibe in Wagenfarbe)
+
+- **Fehler:** Bei Lanza Delto und Fard Escorta war die **Frontscheibe in Wagenfarbe** statt dunklem Glas.
+- **Ursache:** Der Baukasten (`js/car.js`) holt die Farbe jeder Fläche aus der „Ansicht“, in die sie am stärksten schaut
+  (vorne, hinten, oben, Seite). Die Kabine ist eine schräge Kiste. Beim Audan ist die Frontscheibe steil (zeigt mehr nach
+  vorne als nach oben) und bekommt die Ansicht **vorne**, wo das Glas gemalt ist. Bei Delto und Escorta ist sie flacher
+  (zeigt mehr nach oben) und bekam die Ansicht **oben** = Dach, ohne Glas. Die Heckscheibe des Escorta liegt genau auf 45°:
+  dort entschied nur die Rundung der Zahlen (zufällig richtig).
+- **Fix im Baukasten** (nicht pro Auto geflickt): Eine Kabine kann jetzt `scheiben: ['vorne', 'hinten']` haben. Dann holen
+  Front- und Heckscheibe ihre Farbe **immer** aus der Ansicht vorne bzw. hinten, egal wie flach sie sind. Gesetzt bei Delto
+  und Escorta (Front und Heck). Ohne die Option ist alles wie bisher: **Audan pixelgleich** (Lack-Textur und Geometrie
+  gleich wie 0.8c, Bilder im Auto-Labor gleich).
+- Die Glas-Flächen mussten nicht verschoben werden: Sie füllen das Fenster schon mit etwas Rahmen in Wagenfarbe (von vorne
+  sieht man bei der flachen Scheibe vor allem den Sonnenstreifen oben und die zwei Helme).
+- **Alle Autos, alle Ansichten, alle Lackierungen angeschaut** (Front, Front schräg, Heck, Heck schräg, Seite, oben):
+  Heckklappe des Delto und Heckfenster des Escorta waren schon dunkel; sonst lag nirgends Wagenfarbe auf einer Scheibe.
+- **Neuer Baukasten-Test** (`tools/m8d-test.mjs`, Teil c): Für jedes Auto und jede Glas-Bemalung vorne/hinten muss eine Fläche
+  der Karosserie in genau diese Ansicht fallen (sonst Fehler mit dem Namen des Autos), und im Bild (Front/Heck, 640x360) muss
+  die Scheibenmitte in **jeder Lackierung** dunkel sein. Mit dem alten Baukasten schlägt er bei Delto und Escorta (Front) an –
+  so fällt ein solcher Fehler beim nächsten Auto (M8e) sofort auf.
+
+### B – Garage mit Tastatur
+
+- **Fehler:** In der Garage wechselte das Auto schon, sobald der Zeiger darauf stand. Mit der Tastatur führte der Weg von
+  DELTO zu LACK über ESCORTA – das dabei gewählt wurde. Nur mit der Maus kam man zur Lackierung des Delto.
+- **Neu:**
+  - **Zeiger bewegen wählt nichts.** Steht der Zeiger auf einem Auto, zeigt die Vorschau (drehendes Modell, Balken, die zwei
+    Textzeilen) **dieses markierte** Auto; auf LACK und ZURÜCK das **gewählte**.
+  - **Leertaste oder Enter** (Gamepad A/Kreuz, Mausklick auf die Zeile) **wählt das Auto**: Modell, Fahrgefühl und Motorklang
+    wechseln, die Zeile wird **gelb**, Bestätigungston, **die Garage bleibt offen**, der Zeiger bleibt stehen. Das schon
+    gewählte Auto nochmals bestätigen: nur der Ton, sonst nichts.
+  - **LACK** gehört immer zum **gewählten (gelben)** Auto (Pfeile links/rechts). Hoch und runter darf man frei.
+  - **Maus:** Zeigen = markieren (Vorschau), **Klick = wählen**. Lack-Pfeile per Klick wie bisher.
+  - **Zurück/Esc:** Garage zu, das gewählte Auto bleibt (ein nur markiertes zählt nicht). Beim nächsten Öffnen steht der Zeiger
+    auf dem gewählten Auto.
+- Technik: Das markierte Auto wird für die Vorschau **erst beim Markieren** gebaut (nicht in der Spielwelt) und beim Schliessen
+  der Garage wieder freigegeben.
+- **Andere Menüseiten geprüft:** Nur die Garage hat beim blossen Bewegen etwas gewählt (Einträge mit `beimWaehlen`). Alle
+  anderen Seiten wählen erst beim Bestätigen oder mit links/rechts – unverändert.
+
+### C – Motorklang je Auto: Mechanik und Ton-Labor
+
+- **Warum klangen alle gleich?** Alle Motorwerte (`audio.motor` in `js/config.js`) waren eine einzige feste Menge; nur
+  Turbo an/aus und die Pop-Häufigkeit kamen seit M8c aus dem Fahrprofil.
+- **Neu:** Der Block `ton` im Fahrprofil hat `motor: { ... }` – **nur die Werte, die vom Audan abweichen** (auch einzelne
+  Werte in `pop`/`klack`, Listen wie `knisternAnzahl`). **Audan und Prototyp: leer** = Ton wie 0.8c. Beim Laden merkt sich
+  das Spiel die Referenz (`audio.motor`), beim Wechsel wird zuerst die Referenz hergestellt und dann das Auto darübergelegt
+  (gleich wie beim Fahrgefühl): **kein Wert bleibt hängen**, auch nicht nach 30 Wechseln.
+- **Umschalten nur im Menü** (Motor ist dort still), nie im Rennen, Countdown, in der Pause oder im Zielbildschirm. Was der
+  Ton jedes Bild liest, wirkt sofort; was beim Bau fest ist (Wellenform, Härte-Kurve, Biss, Rauheit, Anteile der Schichten,
+  die Puffer für Pop, Klack und Blow-off), wird **an denselben Klangbausteinen neu gesetzt** – es entstehen keine neuen
+  Audio-Knoten. Die Puffer werden in kleinen Häppchen gerechnet (wie beim Laden) und gemerkt: zurück zum Audan = wieder genau
+  seine Puffer. Das **gemerkte Auto** klingt schon beim ersten Tastendruck (Ton entsperren) richtig.
+- Das **Fahr-Labor** (`?fahrlabor=1`) schaltet weiter nur das Fahrgefühl um, nicht den Motorklang.
+- **Ton-Labor** (`ton-labor.html`):
+  - Neuer Bereich **MOTORKLANG JE AUTO**: **VERGLEICH** spielt dieselbe kurze Fahrt (je 8 s: Leerlauf, Vollgas aus dem Stand
+    durch zwei Gänge mit Schalten, Gas weg mit Pops, Bremsen, Leerlauf) nacheinander mit **Audan, Delto, Escorta** und zeigt
+    gross den Namen des Autos, das gerade klingt. Dazu je Auto ein Knopf **NUR …** und **STOPP**.
+  - **FAHRPROFIL (TON)** schaltet jetzt auch den Motorklang um. Der **Feinschliff** zeigt und ändert die Motorwerte **des
+    gewählten Autos** (Zeile „Motorwerte von: …“). **WERTE KOPIEREN** liefert Zeilen wie
+    `fahrprofile.delto.ton.motor.rauh = 0.45` (mit dem Auto in jeder Zeile), **ALLES ZURÜCK** stellt **nur das gewählte
+    Auto** auf den Stand von config.js (die anderen behalten ihre Änderungen).
+  - Neue Regler im Feinschliff: `zuendFaktor`, `tonKurve`, `saege`, `puls`, `pulsBreite`, `oberwelle`, `hoch`,
+    `rauhOberwelle`, `rauhGuete`, `clip`, `filterGrund`, `filterDrehzahl`, `bissHz`, `bissDb`, `turboTonMin`, `turboTonMax`,
+    `turboPegel`, `pop.mitte`, `knisternChance`, `zwischengasKnallChance` (dazu die bisherigen).
+
+### D – Motorklang: Lanza Delto und Fard Escorta
+
+Der Audan bleibt die Referenz. Die zwei neuen Klänge entstehen **nur durch wenige Überschreibungen** (Delto 14 Werte,
+Escorta 17, davon 5 nur für Auspuff-Knistern, Knall beim Schalten und den Getriebe-Klack), kein neues Klangmodell.
+
+**Lanza Delto – 4-Zylinder-Turbo, höher und giftiger** (`fahrprofile.delto.ton.motor`):
+
+| Wert | Audan | Delto | Wozu |
+|---|---|---|---|
+| `zuendFaktor` | 2.5 | **2.0** | 4 statt 5 Zylinder: Grundton im Leerlauf −20 % |
+| `hoechstTon` / `tonKurve` | 480 / 1.3 | **540 / 1.4** | dreht höher, ruhigere Mitte |
+| `amTiefe` / `unter` | 0.4 / 0.16 | **0.28 / 0.12** | weniger Brabbeln und Brummen (glatter als der Fünfzylinder) |
+| `rauh` / `rauhOberwelle` | 0.3 / 6 | **0.27 / 7** | Rauheit höher angesetzt (schärfer), nicht mehr Rauschen |
+| `bissHz` / `bissDb` | 2200 / 5 | **2800 / 5** | Biss höher = giftiger |
+| `filterGas` | 4500 | **5000** | unter Gas heller |
+| `turboTonMin` / `turboTonMax` / `turboPegel` | 2200 / 5200 / 0.035 | **2530 / 5980 / 0.04** | Pfeifen 15 % höher und lauter |
+| `pop.mitte` | 2400 | **3000** | Pops härter und heller |
+
+**Fard Escorta – 4-Zylinder-Sauger, heiser, ohne Pfeifen** (`fahrprofile.escorta.ton.motor`; kein Turbo-Geräusch und
+halb so viele Pops gelten seit M8c weiter):
+
+| Wert | Audan | Escorta | Wozu |
+|---|---|---|---|
+| `zuendFaktor` | 2.5 | **2.0** | 4 Zylinder |
+| `hoechstTon` / `tonKurve` | 480 / 1.3 | **440 / 1.2** | dreht tiefer |
+| `rauh` / `rauhOberwelle` / `rauhGuete` | 0.3 / 6 / 3 | **0.54 / 4 / 2.2** | heiser: mehr, tieferes und breiteres Ansaug-Röcheln |
+| `verzerrung` / `puls` / `saege` | 6 / 0.45 / 0.5 | **3.5 / 0.32 / 0.52** | weniger hart, runder |
+| `filterGas` / `bissDb` | 4500 / 5 | **2400 / 1** | dunkler, warm |
+| `pegel` | 0.36 | **0.44** | weniger hart = leiser: so viel lauter gestellt, dass er so laut ist wie der Audan |
+| `knisternChance` / `knisternAnzahl` | 0.5 / [1, 3] | **0.8 / [2, 4]** | mehr Knistern statt Salven |
+| `schaltKnallChance` / `zwischengasKnallChance` | 0.7 / 0.35 | **0.2 / 0.2** | Sauger: selten Knall beim Schalten |
+| `klackPegel` | 0.3 | **0.375** | Getriebe-Klack etwas lauter (+25 %, altes Getriebe) |
+
+**Abweichungen von den Startwerten im Auftrag** (weil die Messung es verlangte): Delto `bissDb` 5 statt 7 und `filterGas`
+5000 statt 5400 (mit 7 dB lag die Energie über 2.5 kHz bei +69 % statt höchstens +40 %), Delto `rauh` 0.27 statt 0.34 (sonst
+Rauschanteil +51 % statt ±10 %); Escorta `rauh` 0.54 statt 0.5 (mehr Abstand zur unteren Grenze), `filterGas` 2400 statt 3400
+und `bissDb` 1 statt 3 (der Tiefpass wirkt bei Vollgas erst über 6 kHz – dunkler wird der Escorta fast nur über den Biss),
+dazu `pegel` 0.44 (sonst −2.3 dB leiser als der Audan).
+
+### Messtabelle Motorklang (gerechnet, nicht gehört)
+
+`node tools/m8d-test.mjs --nur f` (rechnet `node tools/ton-messung.mjs m8d-<auto> --profil <auto>` für alle drei; Zahlen:
+`tools/ton-messung-m8d-rt4.json`, `…-delto.json`, `…-escorta.json`; Bild: `screenshots/m8d/60-messtabelle.png`).
+Prozent = Unterschied zum Audan. Offline gerechnet mit `js/audio.js`, vor dem Limiter.
+
+| Messung | Audan Quarto | Lanza Delto | Ziel Delto | Fard Escorta | Ziel Escorta |
+|---|---|---|---|---|---|
+| Grundton Leerlauf (Hz) | 42 | 33 (-20.0 %) ✅ | -23 bis -17 % | 33 (-20.0 %) ✅ | -23 bis -17 % |
+| Grundton bei 7000 U/min (Hz) | 462 | 517 (+12.0 %) ✅ | 5 bis 15 % | 424 (-8.1 %) ✅ | -12 bis -5 % |
+| Spektralschwerpunkt Vollgas 5000 U/min (Hz) | 822 | 916 (+11.5 %) ✅ | 10 bis 25 % | 641 (-22.0 %) ✅ | -25 bis -10 % |
+| Energie über 2.5 kHz Vollgas (Mittel 3000/5000/7000) | 6.84 % | 9.41 % (+37.6 %) ✅ | 15 bis 40 % | 5.04 % (-26.3 %) ✅ | -45 bis -20 % |
+| Rauschanteil 2-6 kHz (Energie ausserhalb der Obertöne) | 0.92 % | 0.96 % (+4.3 %) ✅ | -10 bis 10 % | 1.54 % (+67.4 %) ✅ | 40 bis 100 % |
+| Turbo-Pfeifen: Tonhöhe (Hz) | 5185 | 5960 (+14.9 %) ✅ | 10 bis 20 % | kein Pfeifen ✅ | kein Pfeifen |
+| Lautstärke Motor Vollgas 5000 (RMS, dB) | 0.213 | 0.231 (+0.68 dB) ✅ | -1.5 bis 1.5 dB | 0.195 (-0.78 dB) ✅ | -1.5 bis 1.5 dB |
+| Spitze vor dem Limiter (dB gegen Audan, höchstens 0) | 1.318 | 1.163 (-1.09 dB) ✅ | nicht höher | 0.584 (-7.08 dB) ✅ | nicht höher |
+| Grosse Pops je Minute (feste 60-s-Fahrt; ohne Knistern und Schaltknall) | 46 | 51 (+10.9 %) ✅ | -20 bis 20 % | 21 (-54.3 %) ✅ | -65 bis -35 % |
+| Knistern je Minute (Faktor) | 34 | 22 (x0.65) | – | 61 (x1.79) ✅ | x1.5 bis x3 |
+
+- **Rauschanteil** = Energie zwischen den Obertönen (alles, was nicht auf einem Vielfachen des halben Grundtons liegt) im
+  Band 2–6 kHz bei Vollgas 5000 U/min. Beim Escorta auch die spektrale Flachheit: 0.061 gegen 0.033 beim Audan (+82 %).
+- **Pops:** auf derselben 60-s-Fahrt wie in M8c. Grosse Pops = einzelne Knalle der Salven (ohne Knistern und Schaltknall).
+  Salven (Gaswegnehmen mit mindestens einem Pop): Audan 22, Delto 21, Escorta 7 – beim Escorta also nur
+  ein Drittel der Salven, aber mit etwas mehr Pops pro Salve (Zufall aus der festen Folge, `knallMal` 0.5 unverändert).
+  Knistern: Audan 34, Delto 22 (Zufall), Escorta 61 (x1.8).
+- **Kein Pfeifen, kein Blow-off beim Escorta:** Pegel des Pfeif-Bandes mit und ohne Pfeif-Oszillator gleich (Rauschboden),
+  0 Blow-off auf der 60-s-Fahrt.
+- **Lautstärke vergleichbar:** Motor bei Vollgas 5000/min innerhalb ±0.8 dB des Audan, also weiter **lauter als Reifen,
+  Wind, Umgebung und Turbo-Pfeifen** (Pfeifen beim Delto −18.3 dB unter dem Motor, Audan −18.8 dB).
+- **Spektrogramme** (Leerlauf → Vollgas → Schalten → Gas weg → Bremsen, dieselbe Fahrt wie VERGLEICH):
+  `screenshots/m8d/61-spektrogramme-vergleichsfahrt.png` (alle drei untereinander) und je Auto `m8d-<auto>-fahrt.png`,
+  `-motor-3000/5000/7000.png`, `-pop-salve.png`, `-schalten-hoch.png`. Gut zu sehen: der Audan mit Pfeif-Linie bei ca. 5 kHz,
+  der Delto mit höherer Pfeif-Linie und höher drehenden Obertönen, der Escorta ohne Pfeif-Linie und mit mehr Rauschen
+  zwischen den Obertönen.
+
+**Kompromisse:** Alle Zeilen im Ziel. Zwei Dinge sind nur indirekt erfüllt: „halb so viele grosse Pops“ beim Escorta stimmt
+für die Zahl der Pops (−54 %), die Zahl der **Salven** ist aber nur ein Drittel (7 statt 22, Zufall); und der Delto knistert auf
+der Testfahrt weniger als der Audan (Zufall, nicht eingestellt).
+
+### Hör-Anleitung für Lino (M8d)
+
+1. **Ton-Labor:** dieselbe Adresse wie das Spiel, nur mit `ton-labor.html` am Schluss (statt `index.html`). **TON STARTEN**,
+   dann im Bereich **MOTORKLANG JE AUTO** auf **VERGLEICH** drücken. Du hörst nacheinander **Audan Quarto, Lanza Delto, Fard
+   Escorta** (je 8 s: Leerlauf, Vollgas mit zwei Mal Schalten, Gas weg mit Pops, Bremsen); der Name des Autos steht gross
+   darunter. Mit **NUR LANZA DELTO** usw. hörst du ein Auto allein, so oft du willst.
+2. **Im Spiel:** Hauptmenü → **AUTO** (Garage) → mit Pfeil runter zum Auto → **Leertaste** (oder Enter) → das Auto wird gelb →
+   ZURÜCK → STARTEN. Einmal kurz fahren: **Vollgas** durch ein paar Gänge, **Gas weg** (Pops), **Leerlauf**. Dann das nächste
+   Auto. Auch ausprobieren: in der Garage mit der Tastatur zu **LACK** gehen und die Lackierung des gewählten Autos wechseln.
+3. **Feinschliff:** im Ton-Labor oben bei **FAHRPROFIL (TON)** das Auto wählen, unten im **Feinschliff** die Regler verstellen
+   (gilt nur für dieses Auto, hörbar mit **NUR …** oder den Knöpfen im Bereich „Motor und Fahrt“), dann **WERTE KOPIEREN** und
+   den Text in den Chat einfügen.
+
+**Wenn X, dann Y** (Werte im Feinschliff des Ton-Labors; in `js/config.js` stehen sie bei `fahrprofile.<auto>.ton.motor`):
+
+| Wenn … | dann … |
+|---|---|
+| der Delto zu schrill ist | `hoechstTon` und `bissDb` runter (z. B. 510 / 3), evtl. `bissHz` 2400 |
+| der Delto zu zahm ist (nicht giftig genug) | `bissDb` hoch (6–7), `rauhOberwelle` 8, `verzerrung` 7 |
+| der Delto zu nah am Audan klingt | `zuendFaktor` (2.0 = Vierzylinder) und `unter` prüfen: `unter` 0.06, `amTiefe` 0.2 |
+| der Delto zu dünn klingt | `unter` hoch (0.16 wie der Audan), `saege` hoch |
+| der Escorta zu dumpf ist | `filterGas` hoch (z. B. 3400), `bissDb` 3 |
+| der Escorta zu wenig heiser ist | `rauh` hoch (0.6–0.7), `rauhGuete` runter (1.5 = breiter) |
+| der Escorta zu kratzig/verrauscht ist | `rauh` runter (0.4), `rauhOberwelle` 5 |
+| der Escorta zu weich ist | `verzerrung` hoch (4.5), `puls` 0.4 |
+| ein Auto zu leise/zu laut ist | `pegel` (Audan 0.36, Escorta 0.44) |
+| das Pfeifen zu laut ist | `turboPegel` runter (Delto 0.04, Audan 0.035) |
+| das Pfeifen zu hoch/zu tief ist | `turboTonMin` / `turboTonMax` |
+| der Escorta zu viel/zu wenig knistert | `knisternChance` (0.8; 0.5 wie der Audan) |
+| die Pops des Delto zu spitz sind | `pop.mitte` runter (2400 wie der Audan) |
+
+**Für Änderungen schreib einfach, was dir nicht gefällt (oder füge die kopierten Werte ein), das wird dann M8d.1.**
+
+### So testest du (Werkzeuge)
+
+- `node tools/m8d-test.mjs` (neu: (a) bis (h); einzeln z. B. `--nur c,d,e`; `--alt <ordner 0.8c>` für die Ladezeit und die
+  Audan-Textur direkt gegen 0.8c; `--ton-alt` nimmt in (b)/(f) vorhandene Messungen statt neu zu rechnen)
+- `node tools/m8d-bilder.mjs` (neu: Scheiben vorher/nachher mit `--name vorher|nachher`, alle Lackierungen, Garage)
+- `node tools/ton-messung.mjs <name> --profil <auto>` (neu: Motorklang eines Autos messen, Spektrogramme nach `screenshots/m8d/`)
+
+### Bilder (`screenshots/m8d/`)
+
+| Datei | Was |
+|---|---|
+| `10-scheibe-vorher-…`, `10-scheibe-nachher-…` | Delto und Escorta: Front, Front schräg, Heck, Heck schräg, je 320x180 und 1280x720 |
+| `20-alle-lacke-ansichten-320x180` | alle drei Autos in allen Lackierungen, sechs Ansichten (Originalgrösse) |
+| `21-<auto>-front-heck-lacke-1280` | Front und Heck je Auto in allen Lackierungen, 4-fach vergrössert |
+| `22-alle-front-heck-640x360` | Front, Heck und schräg, alle Autos und Lackierungen bei 640x360 |
+| `30-garage-zeiger-auf-delto-audan-gewaehlt-…` | Zeiger auf DELTO (Vorschau Delto), AUDAN noch gelb (gewählt) |
+| `31-garage-delto-bestaetigt-escorta-markiert-…` | nach der Leertaste: DELTO gelb, Zeiger auf ESCORTA (Vorschau Escorta) |
+| `32-garage-zeiger-auf-lack-delto-…`, `33-garage-lack-delto-rosso-…` | Zeiger auf LACK (Vorschau wieder Delto), Lackierung des Delto gewechselt |
+| `50-ton-labor`, `51-ton-labor-vergleich` | Ton-Labor mit den neuen Knöpfen, VERGLEICH läuft |
+| `60-messtabelle.png/.md` | die Messtabelle |
+| `61-spektrogramme-vergleichsfahrt`, `m8d-<auto>-…` | Spektrogramme der drei Motoren |
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/car.js`, `js/autos.js` | Option `scheiben` für die Kabine; gesetzt bei Delto und Escorta |
+| `js/menueseiten.js`, `js/menue.js`, `js/main.js` | Garage: Zeiger markiert, Bestätigen wählt, Vorschau-Modelle; Motorklang beim Autowechsel |
+| `js/fahrprofil.js` | Motorklang je Profil (Schnappschuss von `audio.motor`, `waehleMotorTon`) |
+| `js/audio.js` | `motorNeu()`: feste Teile neu setzen, Motor-Puffer gemerkt oder in Häppchen gerechnet |
+| `js/tonfahrt.js` | **neu**: die feste Vergleichsfahrt (Ton-Labor und Messung) |
+| `js/tonlabor.js`, `ton-labor.html` | VERGLEICH, Knöpfe je Auto, Feinschliff je Profil, neue Regler |
+| `js/fahrlabor.js` | schaltet nur das Fahrgefühl um (nicht den Motorklang) |
+| `js/config.js` | `ton.motor` je Profil (Delto, Escorta), Version 0.8d |
+| `tools/m8d-test.mjs`, `tools/m8d-bilder.mjs`, `tools/m8d-referenz-audan.json`, `tools/ton-messung-08c.json` | **neu** |
+| `tools/ton-messung.mjs` | `--profil <id>` |
+| `tools/m8c-test.mjs`, `tools/ton-test.mjs` | angepasst (siehe „Selbst getestet“) |
+
+### Selbst getestet
+
+- **`node tools/m8d-test.mjs --alt <0.8c>`** (neu, (a) bis (h)):
+  - (a) **Profil `prototyp` bit-genau**: Werte wie 0.7b, 70-s-Prüfsumme **3d98a02d**, Testfahrer **2:59.33 / 2:42.35 / 2:31.92**
+    mit gleichen Zwischenzeiten und Statistik, Abkürzungen **127 / 2 / 342 / 84** (gesperrt durchkommen 0). **Ton** gegen 0.8c
+    (`tools/ton-messung-08c.json`): 567 Zahlen gleich, 2 nur in der 6./7. Stelle anders (Rechenrauschen wie in M8b/M8c),
+    107 Audio-Knoten wie 0.8c. ✅
+  - (b) **Audan unverändert**: 20 Fahrmessungen gleich wie M8b, Auto-Labor-Bilder **0 Pixel anders**, 9 Draw Calls / 1306
+    Dreiecke; Motorwerte = `audio.motor` von 0.8c (auch nach Delto/Escorta wieder zurück); Ton-Messung mit `--profil rt4`:
+    Motor wie 0.8c, 60-s-Fahrt 22 Salven / 46 Pops / 25 Blow-off wie in M8c. ✅
+  - (c) **Scheiben**: Baukasten-Test und Bildtest für 3 Autos × 3 Lackierungen × Front/Heck (Scheibenmitte 0.08–0.13, Lack
+    0.22–0.94); Audan-Lack-Textur (3 Lackierungen × 3 Bildbreiten) und Geometrie gleich wie 0.8c. Mit dem alten Baukasten schlägt
+    der Test bei Delto und Escorta (Front) an. ✅
+  - (d) **Garage** nur mit echten Tastatur-Ereignissen (Enter und Leertaste), mit simuliertem Gamepad (Stick und A) und mit der
+    Maus: [unten, bestätigen] wählt Delto; [unten, unten] über Escorta nach LACK ändert nichts; [rechts] wechselt die Lackierung
+    des Delto (Escorta unberührt); frei hoch/runter; gewähltes Auto nochmals bestätigen; Escorta markiert + Esc → Delto bleibt,
+    Vorschau-Modelle freigegeben; erneut öffnen → Zeiger auf Delto, gelb; STARTEN → Delto fährt mit Profil und Lackierung;
+    Maus: zeigen markiert, Klick wählt, Lack-Pfeil per Klick; Konsole ohne Fehler. ✅
+  - (e) **Motorklang-Wechsel**: 30 Wechsel im Menü, nach jedem stimmen Ton-Profil, alle 87 Motorwerte, Sättigung, Biss, Güten,
+    Anteile und Motor-Puffer; **0 neue Audio-Knoten beim Umschalten** (dauerhafte Knoten 6 → 6, Stimmen 0, Dauer-Quellen 8 → 8);
+    JS-Heap +0.38 MB; Puffer: 1 neu gerechnet, 21 aus dem Lager, längstes Häppchen 1.4 ms; **kein Knacken** (grösster Sprung von
+    Sample zu Sample beim Wechsel 0.011, davor durch die Musik 0.026); kein Wechsel im Countdown, Rennen, in der Pause; das
+    gemerkte Auto (Escorta, Delto) klingt beim ersten Entsperren richtig, ohne Umschalten. ✅
+  - (f) **Ton-Messung**: alle Zeilen der Tabelle im Ziel (siehe oben), Escorta ohne Pfeifen und ohne Blow-off. ✅
+  - (g) **Ton-Labor**: neue Regler da, Feinschliff wirkt je Profil, WERTE KOPIEREN nennt das Profil in jeder Zeile, ALLES ZURÜCK
+    nur für das gewählte Profil, VERGLEICH (Audan, Delto, Escorta, 26 s) und die drei Einzelknöpfe spielen ohne Fehler. Beim
+    ersten Lauf **gefunden und behoben**: ein Wert aus config.js zwischen zwei Reglerstufen (Escorta `klackPegel` 0.375, der
+    Regler zeigt 0.38) zählte als „geändert“. ✅ (nach der Korrektur)
+  - (h) **Stabilität** (Profil prototyp): `getriebe-test`, `lenk-test`, `handbremse-test`, `belag-test`, `rueckwaerts-test`,
+    `aufprall-test`, `pacenotes-test`, `menue-test`, `rennablauf-test`, **`ton-test`** (diesmal im ersten Versuch) und
+    `ton-umgebung-test` bestanden; `auto-test` (97 ok), `m8b-test` (78 ok), `m8c-test` (a)–(k) (211 ok, mit den drei bekannten
+    Testfahrer-Kompromissen aus M8c) bestanden. **Draw Calls**: je Auto weiter 9 (höchstens 12); die Garage zeichnet wie in M8c
+    nur auf der Seite AUTO. **Ladezeit**: im Testlauf (Median aus 9) 0.8c 1510 ms, 0.8d 1567 ms (+57 ms – über dem Ziel), in
+    einer zweiten Messung mit 21 Ladungen abwechselnd 1479 → 1495 ms (**+16 ms**, im Ziel); beim Laden passiert nichts Neues
+    (die Motor-Puffer der zwei neuen Klänge werden erst bei der Wahl gebaut), die Streuung im Test-Browser ist ca. ±100 ms.
+    Bildzeit: im Spiel kommt pro Bild nur eine Zahl-Vergleichung im Ton dazu.
+- **Was ich an alten Tests ändern musste**:
+  - `tools/m8c-test.mjs` (d) und (j): Das Wählen in der Garage braucht jetzt **Bestätigen** (Enter, Mausklick, Gamepad A) –
+    vorher reichte das Zeigen. Sonst unverändert.
+  - `tools/ton-test.mjs` (Ton-Labor-Feinschliff): WERTE KOPIEREN schreibt Motorwerte jetzt mit dem Profil
+    (`fahrprofile.prototyp.ton.motor.verzerrung = 9.5` statt `audio.motor.verzerrung = 9.5`); die Prüfung erwartet das neue Format.
+  - Alle anderen Tests unverändert.
+- **Bilder** angeschaut: Scheiben vorher/nachher, alle Lackierungen in sechs Ansichten (320x180, 640x360, vergrössert), Garage
+  (320x180 und 1280x720), Ton-Labor, Spektrogramme.
+- **Nicht gemacht: den Ton gehört und das Fahrgefühl gespürt.**
+
+### Ehrlich beurteilt – wo ich am unsichersten bin
+
+- **Ton nicht gehört, Fahrgefühl nicht gespürt.** Sicher messbar sind **Grundton** (Leerlauf −20 %, bei 7000/min Delto +12 %,
+  Escorta −8 %), **Helligkeit** (Spektralschwerpunkt, Energie über 2.5 kHz), **Lautstärke** und **Pfeif-Tonhöhe**. „Giftig“ und
+  „heiser“ sind nur **indirekt** gemessen: giftig ≈ heller + mehr Biss + höheres Pfeifen, heiser ≈ mehr Rauschen zwischen den
+  Obertönen. Ob das im Ohr so ankommt, weiss ich nicht.
+- **Am unsichersten:** beim **Escorta**, ob „heiser“ wirklich heiser klingt oder einfach **verrauscht/kratzig**: Der Rauschanteil
+  ist +67 %, liegt aber absolut immer noch klein (1.5 % der Energie zwischen 2 und 6 kHz) – vielleicht hört man es kaum, vielleicht
+  zu stark. Beim **Delto**, ob er sich genug vom Audan abhebt: Biss und Pfeifen sind nur moderat anders (der Grundton ist tiefer
+  im Leerlauf und höher oben – das sollte man am deutlichsten hören).
+- **Zuerst im Ton-Labor ausprobieren:** Escorta `rauh` (0.4 / 0.54 / 0.7) und `filterGas` (2400 / 3400); Delto `bissDb`
+  (5 / 7) und `hoechstTon` (510 / 540 / 570).
+- **Scheiben:** In allen 9 Lackierungen und allen 6 Ansichten angeschaut und mit dem Bildtest geprüft (Front und Heck): stimmt.
+  Die Scheibe des Delto ist von vorne sehr flach (man sieht viel Sonnenstreifen) – das ist die Form, nicht die Farbe.
+- **Garage:** Tastatur (Enter und Leertaste), Gamepad (Stick und A), Maus (zeigen, klicken, Lack-Pfeil), Esc mit markiertem
+  Auto, erneutes Öffnen, Lack wechseln, hin und her, Rennstart mit gewähltem Auto und Lack: alles getestet und stimmt. Was
+  ich nicht testen kann: echtes Gamepad (nur simuliert) und Touch.
+
+### Bekannte Probleme
+
+- `ton-test` bleibt im Test-Browser zeitkritisch (siehe M8a–M8c), wird bei einem Fehler einmal wiederholt (diesmal nicht nötig).
+- Ladezeit schwankt im Test-Browser stark (+57 ms in einer Messung mit 9, +16 ms mit 21 Ladungen).
+- Von vorne ist die flache Frontscheibe von Delto und Escorta nur ein schmaler dunkler Streifen mit dem Sonnenstreifen
+  darüber (Form der Kabine, wie beim echten Vorbild).
+- Die Garage sagt nicht, dass man mit Leertaste/Enter wählt (kein Hinweistext; siehe Ideen).
+- Pops sind Zufall aus einer festen Folge: auf kurzen Fahrten kann der Escorta auch einmal mehr poppen als der Audan.
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Motor in der Garage kurz aufheulen** lassen, wenn man ein Auto wählt (dann hört man den Klang ohne zu fahren).
+- **Klang für Lanza 073** (Kompressor-Heulen, Mittelmotor) und **Subora Imprexa** (Boxer-Blubbern) in **M8e**, gleich mit den Autos.
+- **Motorgeräusch von innen und von aussen** (je nach Kamera; im Spiel gibt es nur die Kamera hinter dem Auto).
+- **Flamme aus dem Auspuff beim Poppen** (kleiner Pixel-Blitz; Escorta seltener).
+- **Hinweis in der Garage** „LEERTASTE = WÄHLEN“ (unten in der Tafel), falls die Bedienung nicht von selbst klar ist.
+- Die **Vergleichsfahrt** auch im Spiel (z. B. im Ton-Labor-Stil auf der Garage-Seite).
+
+---
+
+## Meilenstein 8c: Garage und zwei neue Autos – Lanza Delto und Fard Escorta ✅ (Verlauf, Stand damals – Garage-Bedienung, Frontscheibe von Delto/Escorta und Motorklang seit M8d anders)
 
 > **Ehrlich vorneweg: Ich habe das Fahrgefühl nicht gespürt und den Ton nicht gehört.** Alles ist **gemessen** (Fahrphysik
 > mit festen Fahrprogrammen, Testfahrer über die ganze Etappe, Ton offline gerechnet) und auf Bildern in drei Pixelgrössen

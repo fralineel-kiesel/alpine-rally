@@ -1,12 +1,12 @@
 {
- "version": "0.8c",
+ "version": "0.8d",
  "motor": [
   {
    "rpm": 1500,
    "f0": 58.2762,
    "fGemessen": 58.3641,
    "pegelA": 54.1016,
-   "schwerpunkt": 220.7214,
+   "schwerpunkt": 220.7212,
    "ueber1k": 0.048,
    "ueber2k5": 0.0144,
    "spitze": 0.5983,
@@ -19,7 +19,7 @@
    "f0": 142.3678,
    "fGemessen": 142.4784,
    "pegelA": 58.7881,
-   "schwerpunkt": 504.1313,
+   "schwerpunkt": 504.1312,
    "ueber1k": 0.1242,
    "ueber2k5": 0.0393,
    "spitze": 0.5531,

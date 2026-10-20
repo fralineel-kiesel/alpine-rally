@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8c';
+export const VERSION = '0.8d';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -730,7 +730,26 @@ export const CONFIG = {
                                  // (sonst wäre der Testfahrer schneller als mit dem Audan)
         turbo: { an: true, aufbau: 0.4 }, // dezenter Turbo, baut etwas langsamer auf als beim Audan (0.35 s)
       },
-      ton: { turboMal: 1, knallMal: 1, motor: {} },
+      ton: {
+        turboMal: 1, knallMal: 1,
+        // M8d: Motorklang 4-Zylinder-Turbo, höher und giftiger als der Audan (nur die Abweichungen von audio.motor)
+        motor: {
+          zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf ca. -20 % (Audan 2.5 = 5 Zylinder)
+          hoechstTon: 540,       // dreht höher (Audan 480)
+          tonKurve: 1.4,         // ruhigere Mitte, oben steiler (Audan 1.3)
+          amTiefe: 0.28,         // weniger Brabbeln als der Fünfzylinder (Audan 0.4)
+          unter: 0.12,           // weniger tiefes Brummen (Audan 0.16)
+          rauh: 0.27,            // Rauheit höher angesetzt (schärfer), dafür etwas weniger davon (Audan 0.3) ...
+          rauhOberwelle: 7,      // ... um die 7. statt 6. Oberwelle
+          bissHz: 2800,          // Biss höher ...
+          bissDb: 5,             // ... gleich stark: giftiger, weil höher (Audan 2200 Hz / 5 dB; 7 dB machte ihn zu schrill)
+          filterGas: 5000,       // unter Gas heller (Audan 4500)
+          turboTonMin: 2530,     // Turbo-Pfeifen ca. 15 % höher ...
+          turboTonMax: 5980,
+          turboPegel: 0.04,      // ... und ca. 15 % lauter (bleibt unter dem Motor)
+          pop: { mitte: 3000 },  // Pops härter und heller (Audan 2400 Hz)
+        },
+      },
     },
     // Fard Escorta (Id escorta, M8c): leichter Hinterrad-Drifter ohne Turbo. Das Heck kommt leicht (mit Gas, beim Lupfen,
     // beim Bremsen in der Kurve), lässt sich aber in rund einer Sekunde wieder einfangen; weniger Traktion auf losem
@@ -757,7 +776,29 @@ export const CONFIG = {
         gaenge: [48, 82, 118, 150, 168], // 4. und 5. Gang kürzer: Höchsttempo ca. 8 % tiefer
         turbo: { an: false },    // kein Turbo (auch kein Pfeifen und kein Blow-off im Ton, siehe ton)
       },
-      ton: { turboMal: 0, knallMal: 0.5, motor: {} }, // kein Turbo-Geräusch, halb so oft Pops
+      ton: {
+        turboMal: 0, knallMal: 0.5, // kein Turbo-Geräusch, halb so oft Pops (M8c)
+        // M8d: Motorklang 4-Zylinder-Sauger, heiser und warm, ohne Pfeifen (nur die Abweichungen von audio.motor)
+        motor: {
+          zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf ca. -20 %
+          pegel: 0.44,           // weniger hart = leiser: so viel lauter gestellt, dass er so laut ist wie der Audan (0.36)
+          hoechstTon: 440,       // dreht tiefer als der Audan (480)
+          tonKurve: 1.2,
+          rauh: 0.54,            // heiser: mehr Ansaug-Röcheln (Audan 0.3) ...
+          rauhOberwelle: 4,      // ... tiefer angesetzt ...
+          rauhGuete: 2.2,        // ... und breiter (Audan 3)
+          verzerrung: 3.5,       // weniger hart (Audan 6)
+          puls: 0.32,            // weniger Kanten (Audan 0.45) ...
+          saege: 0.52,           // ... etwas mehr runder Körper (Audan 0.5)
+          filterGas: 2400,       // dunkler (Audan 4500) ...
+          bissDb: 1,             // ... kaum Biss (Audan 5): der Biss macht am meisten aus, wie hell er klingt
+          knisternChance: 0.8,   // Sauger: mehr Knistern statt Salven (Audan 0.5) ...
+          knisternAnzahl: [2, 4], // ... und mehr davon (Audan [1, 3])
+          schaltKnallChance: 0.2, // seltener Schaltknall (Audan 0.7)
+          zwischengasKnallChance: 0.2, // seltener Knall beim Zwischengas (Audan 0.35)
+          klackPegel: 0.375,     // Getriebe-Klack etwas lauter (+25 %, altes Getriebe; Audan 0.3)
+        },
+      },
     },
   },
 

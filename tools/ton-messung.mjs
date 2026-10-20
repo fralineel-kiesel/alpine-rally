@@ -238,7 +238,8 @@ const erg = await p.evaluate(async ({ rueck, profil }) => {
   return out;
 }, { rueck, profil: PROFIL });
 
-for (const [n, url] of Object.entries(erg.bilder)) fs.writeFileSync(path.join(BILDER, `${name}-${n}.png`), Buffer.from(url.split(',')[1], 'base64'));
+// (mit --profil nur die Motor-Bilder: Motor, Pop-Salve, Hochschalten, Vergleichsfahrt)
+for (const [n, url] of Object.entries(erg.bilder)) if (!PROFIL || /^(motor|pop|schalten-hoch|fahrt)/.test(n)) fs.writeFileSync(path.join(BILDER, `${name}-${n}.png`), Buffer.from(url.split(',')[1], 'base64'));
 delete erg.bilder;
 erg.rueckFahrt = rueck;
 fs.writeFileSync(path.join(WURZEL, `tools/ton-messung-${name}.json`), `${JSON.stringify(erg, (k, v) => (typeof v === 'number' ? Math.round(v * 10000) / 10000 : v), 1)}\n`);

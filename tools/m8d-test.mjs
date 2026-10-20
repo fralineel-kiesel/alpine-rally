@@ -60,6 +60,49 @@ async function audanAbdruck(wurzel = WURZEL) {
   return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, hash(v)]));
 }
 
+// ---------------------------------------------------------------- (a) prototyp bit-genau
+if (teil('a')) {
+  console.log('(a) Profil prototyp bit-genau (über tools/m8b-test.mjs --nur c) und Ton wie 0.8c');
+  teilWerkzeug('m8b-test.mjs', ['--nur', 'c'], 'prototyp = 0.7b (Testfahrer, Zwischenzeiten, Statistik, Prüfsumme, Abkürzungen 127/2/342/84)');
+  // Ton: tools/ton-messung.mjs ohne Profil (= prototyp) gegen den Stand von 0.8c (tools/ton-messung-08c.json)
+  const r = werkzeug('ton-messung.mjs', ['m8d-prototyp']);
+  const alt = JSON.parse(fs.readFileSync(path.join(WURZEL, 'tools/ton-messung-08c.json'), 'utf8'));
+  const neu = JSON.parse(fs.readFileSync(path.join(WURZEL, 'tools/ton-messung-m8d-prototyp.json'), 'utf8'));
+  const anders = [];
+  let rauschen = 0, gleich = 0;
+  const vergleiche = (a, b, p) => {
+    if (p === '.version') return;
+    if (typeof a === 'number') {
+      if (a === b) { gleich++; return; }
+      if (typeof b === 'number' && Math.abs(a - b) <= Math.max(1e-3, Math.abs(a) * 1e-5)) { rauschen++; return; }
+      anders.push(`${p}: ${a} -> ${b}`); return;
+    }
+    if (a && typeof a === 'object') for (const k of Object.keys(a)) vergleiche(a[k], b ? b[k] : undefined, `${p}.${k}`);
+    else if (a !== b) anders.push(`${p}: ${a} -> ${b}`);
+  };
+  vergleiche(alt, neu, '');
+  melde(r.code === 0 && anders.length === 0, `Ton prototyp (tools/ton-messung.mjs) gegen 0.8c: ${gleich} Zahlen gleich, ${rauschen} nur in der 5. bis 7. Stelle anders (Rechenrauschen wie in M8b/M8c), ${anders.length} anders${anders.length ? `: ${anders.slice(0, 4).join('; ')}` : ''}; Audio-Knoten ${neu.knoten.summe} (0.8c ${alt.knoten.summe})`);
+}
+
+// ---------------------------------------------------------------- (b) Audan Quarto unverändert
+if (teil('b')) {
+  console.log('(b) Audan Quarto unverändert (Fahrmessung, Bilder, Draw Calls über tools/m8c-test.mjs --nur b,c; Ton)');
+  teilWerkzeug('m8c-test.mjs', ['--nur', 'b,c'], 'm8c-test (b) Audan wie M8b, (c) Modelle');
+  const { CONFIG } = await import(new URL('../js/config.js', import.meta.url).href);
+  const FP = await import(new URL('../js/fahrprofil.js', import.meta.url).href);
+  const ref = JSON.parse(fs.readFileSync(path.join(WURZEL, 'tools/m8d-referenz-audan.json'), 'utf8')).audioMotor08c;
+  const ergebnis = {};
+  for (const id of ['rt4', 'prototyp', 'delto', 'escorta', 'rt4']) { FP.waehleFahrprofil(id); ergebnis[id] = JSON.stringify(CONFIG.audio.motor) === JSON.stringify(ref); }
+  melde(ergebnis.rt4 && ergebnis.prototyp && !ergebnis.delto && !ergebnis.escorta, `Motorwerte Audan und Prototyp = audio.motor von 0.8c (auch nach Delto und Escorta wieder zurück): ${JSON.stringify(ergebnis)}`);
+  // Ton-Messung des Audan (mit --profil rt4) gegen den Prototyp: der Motorkörper ist derselbe
+  const datei = path.join(WURZEL, 'tools/ton-messung-m8d-rt4.json');
+  if (!fs.existsSync(datei) || !process.argv.includes('--ton-alt')) werkzeug('ton-messung.mjs', ['m8d-rt4', '--profil', 'rt4']);
+  const a = JSON.parse(fs.readFileSync(datei, 'utf8')), p08 = JSON.parse(fs.readFileSync(path.join(WURZEL, 'tools/ton-messung-08c.json'), 'utf8'));
+  const motorGleich = a.motor.every((m, i) => ['f0', 'fGemessen', 'schwerpunkt', 'ueber2k5', 'spitze', 'rms'].every((k) => Math.abs(m[k] - p08.motor[i][k]) <= Math.max(1e-3, Math.abs(m[k]) * 1e-5)));
+  melde(motorGleich && a.profil.pops.salvenMitPops === 22 && a.profil.pops.pops === 46 && a.profil.pops.blowOff === 25,
+    `Ton Audan (ton-messung --profil rt4): Motor bei 1500/3000/5000/7000 wie 0.8c, 60-s-Fahrt ${a.profil.pops.salvenMitPops} Salven / ${a.profil.pops.pops} Pops / ${a.profil.pops.blowOff} Blow-off (M8c: 22 / 46 / 25)`);
+}
+
 // ---------------------------------------------------------------- (c) Scheiben
 if (teil('c')) {
   console.log('(c) Scheiben (Front- und Heckscheibe)');
@@ -443,7 +486,7 @@ const ZIELE_TON = [
   ['turboTon', 'Turbo-Pfeifen: Tonhöhe (Hz)', [10, 20], null, 'pz'],
   ['rms', 'Lautstärke Motor Vollgas 5000 (RMS, dB)', [-1.5, 1.5], [-1.5, 1.5], 'db'],
   ['spitze', 'Spitze vor dem Limiter (dB gegen Audan, höchstens 0)', [-99, 0.05], [-99, 0.05], 'db'],
-  ['salven', 'Grosse Pops je Minute (Salven mit Pops, feste Fahrt)', [-20, 20], [-65, -35], 'pz'],
+  ['pops', 'Grosse Pops je Minute (feste 60-s-Fahrt; ohne Knistern und Schaltknall)', [-20, 20], [-65, -35], 'pz'],
   ['knistern', 'Knistern je Minute (Faktor)', null, [1.5, 3], 'x'],
 ];
 function tonKennzahlen(j) {
@@ -496,6 +539,7 @@ if (teil('f')) {
   // Zusätze: Escorta ohne Blow-off, Motor bei Vollgas lauter als das Turbo-Pfeifen, Pops-Zählung
   melde(K.escorta.blowOff === 0 && K.delto.blowOff > 0, `Blow-off auf der 60-s-Fahrt: Audan ${A.blowOff}, Delto ${K.delto.blowOff}, Escorta ${K.escorta.blowOff} (kein Blow-off)`);
   melde(K.delto.turboVerhaeltnisDb < -12 && A.turboVerhaeltnisDb < -12, `Pfeifen bleibt unter dem Motor (Turbo gegen Motor bei 5000/min: Audan ${A.turboVerhaeltnisDb.toFixed(1)} dB, Delto ${K.delto.turboVerhaeltnisDb.toFixed(1)} dB)`);
+  console.log(`       Salven mit Pops (Gaswegnehmen mit mindestens einem Pop): Audan ${A.salven}, Delto ${K.delto.salven}, Escorta ${K.escorta.salven}`);
   console.log(`       Pops je Minute (feste Fahrt): Audan ${A.salven} Salven / ${A.pops} Pops / ${A.knistern} Knistern, Delto ${K.delto.salven} / ${K.delto.pops} / ${K.delto.knistern}, Escorta ${K.escorta.salven} / ${K.escorta.pops} / ${K.escorta.knistern}`);
   // Messtabelle als Text und Bild
   const kopf = ['Messung', 'Audan Quarto', 'Lanza Delto', 'Ziel Delto', 'Fard Escorta', 'Ziel Escorta'];
@@ -575,6 +619,26 @@ if (teil('g')) {
   melde(s.fehler.length === 0, `Ton-Labor ohne Konsolenfehler (${s.fehler.length})`);
   await s.page.screenshot({ path: path.join(WURZEL, 'screenshots/m8d/50-ton-labor.png'), fullPage: false });
   await s.schliessen();
+}
+
+// ---------------------------------------------------------------- (h) Stabilität
+if (teil('h')) {
+  console.log('(h) Stabilität: bisherige Tests mit prototyp (lang), Draw Calls, Ladezeit');
+  for (const t of ['getriebe-test', 'lenk-test', 'handbremse-test', 'belag-test', 'rueckwaerts-test', 'aufprall-test', 'pacenotes-test', 'menue-test',
+    'rennablauf-test', 'ton-test', 'ton-umgebung-test']) {
+    let r = werkzeug(`${t}.mjs`), versuch = 1;
+    if (r.code !== 0) { r = werkzeug(`${t}.mjs`); versuch = 2; } // (zeitkritische Prüfungen im Test-Browser, siehe STAND.md M8a-M8c)
+    melde(r.code === 0, `${t} (prototyp): ${r.code === 0 ? `bestanden${versuch > 1 ? ' im 2. Versuch' : ''}` : `FEHLER – ${(r.text.match(/FEHLER.*$/m) || [''])[0].slice(0, 200)}`}`);
+  }
+  teilWerkzeug('auto-test.mjs', [], 'auto-test (a)-(n)');
+  teilWerkzeug('m8b-test.mjs', ['--nur', 'a,b,c,d,e,f,g'], 'm8b-test (a)-(g)');
+  teilWerkzeug('m8c-test.mjs', ['--nur', 'a,b,c,d,e,f,g,h,i,j,k'], 'm8c-test (a)-(k) ((l) = die Tests oben)');
+  if (ALT) {
+    const r = werkzeug('ladezeit.mjs', [ALT, '9']);
+    const med = (n) => +((r.text.match(new RegExp(`${n} .*Median (\\d+)`)) || [])[1]);
+    const a = med('alt'), b = med('neu');
+    melde(b - a <= 30, `Ladezeit (Median aus 9, abwechselnd): 0.8c ${a} ms, 0.8d ${b} ms (${b - a >= 0 ? '+' : ''}${b - a} ms; Ziel höchstens +30 ms, Streuung im Test-Browser ca. ±200 ms)`);
+  }
 }
 
 console.log(fehler ? `\n${fehler} FEHLER` : '\nAlles bestanden.');

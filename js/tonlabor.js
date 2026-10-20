@@ -480,7 +480,8 @@ function feinText() {
     for (const f of FEIN) {
       if (!f.motor) continue;
       const w = motorJetzt(profil, f.motor);
-      if (+f.zeige(w) !== motorOriginal(profil, f.motor)) zeilen.push(`fahrprofile.${profil}.ton.motor.${f.motor} = ${f.zeige(w)}`);
+      // (verglichen wird, was der Regler zeigt: ein Wert aus config.js zwischen zwei Reglerstufen zählt nicht als geändert)
+      if (f.zeige(w) !== f.zeige(motorOriginal(profil, f.motor))) zeilen.push(`fahrprofile.${profil}.ton.motor.${f.motor} = ${f.zeige(w)}`);
     }
   }
   for (const f of FEIN) if (!f.motor && +f.zeige(stelle(f.pfad)[0][stelle(f.pfad)[1]]) !== f.original) zeilen.push(`${f.pfad} = ${f.zeige(stelle(f.pfad)[0][stelle(f.pfad)[1]])}`);
