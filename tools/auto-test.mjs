@@ -389,7 +389,8 @@ if (teil('f')) {
     const texte = Object.values(AUTO_MODELLE).flatMap(texteDesModells);
     const fehlt = [...new Set(texte.join('').split(''))].filter((z) => !SCHRIFT_ZEICHEN.includes(z));
     const wechsel = [];
-    for (const n of Object.keys(L)) {
+    // (M8c: jede Lackierung gehört zu einem Auto; hier die des gebauten Modells)
+    for (const n of M.modell.lackierungen) {
       try { const name = M.lackierung(n); A.renderer.render(A.szene, A.kamera); wechsel.push([n, name === n]); } catch (e) { wechsel.push([n, String(e)]); }
     }
     M.lackierung(A.CONFIG.autoOptik.lackierung);

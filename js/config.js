@@ -729,6 +729,33 @@ export const CONFIG = {
       },
       ton: { turboMal: 1, knallMal: 1 },
     },
+    // Fard Escorta (Id escorta, M8c): leichter Hinterrad-Drifter ohne Turbo. Das Heck kommt leicht (mit Gas, beim Lupfen,
+    // beim Bremsen in der Kurve), lässt sich aber in rund einer Sekunde wieder einfangen; weniger Traktion auf losem
+    // Boden, etwas weniger Leistung, kürzere Höchstgeschwindigkeit. Messwerte und Kompromisse: STAND.md, Meilenstein 8c.
+    escorta: {
+      auto: {
+        radstand: 2.4,           // kurz (Audan 2.52)
+        traegheit: 2.2,          // leicht (Prototyp 2.3); 2.0 machte den Handbremsen-Drift zu wild (+44 %)
+        schwerpunktVorne: 0.5,   // Schwerpunkt in der Mitte: dreht leicht ein (Lenkwinkel -12 %)
+        lastVorneAnteil: 0.5,    // Gewicht gleich verteilt
+        gewichtstransfer: 0.6,   // Bremsen in der Kurve: das Heck kommt deutlich (+6.3°)
+        gripHinten: 1.04,        // Heck hält weniger als beim Prototyp (1.12)
+        gasImDrift: 0.22,        // Gas im Drift lockert das Heck mehr (Prototyp 0.12)
+        stabilitaet: 4.5,        // Drift hält etwas länger (Prototyp 5), eingefangen in ca. 1 s
+        antriebHinten: 1.12,     // Hinterradantrieb: Schub braucht hinten Haftung auf, das Heck schiebt unter Gas
+                                 // (Vollgas in der Kurve +2.4° mehr Schwimmwinkel). Achtung: ab ca. 1.13 kippt es in einen
+                                 // langen Drift (+5.9°), darunter ruhig – kleine Schritte! (0 = aus)
+        heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // gleicht antriebHinten im Kreis auf losem Boden aus (sonst
+                                 // Grenztempo Schotter -5 %, Wiesenweg -3 %); im Drift unter Gas bleibt das Heck locker
+      },
+      getriebe: {
+        allrad: { schotter: 0.95, wiesenweg: 0.9 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden
+        zugkraftFaktor: 0.92,    // etwas weniger Leistung (kein Turbo)
+        gaenge: [48, 82, 118, 150, 168], // 4. und 5. Gang kürzer: Höchsttempo ca. 8 % tiefer
+        turbo: { an: false },    // kein Turbo (auch kein Pfeifen und kein Blow-off im Ton, siehe ton)
+      },
+      ton: { turboMal: 0, knallMal: 0.5 }, // kein Turbo-Geräusch, halb so oft Pops
+    },
   },
 
   // --- Untergrund -------------------------------------------------------
@@ -1933,6 +1960,28 @@ export const CONFIG = {
         lappen: '#f2c22e', nummerFeld: '#f2c22e', nummerRand: '#132a1d', nummerSchrift: '#132a1d',
         sponsor0: '#f2c22e', sponsor1: '#f4f4ee', sponsorHell: '#f2c22e', banner: '#f2c22e', bannerSchrift: '#132a1d',
         sponsorFeld: null, sponsorFeldSchrift: '#f2c22e',
+      },
+      // --- Fard Escorta (M8c) --- (haube: Farbe der Motorhaube, dach: Farbe des Dachs; null = wie der Lack)
+      // Werk: Weiss mit blauem Streifen und blauer Haube
+      escortaWerk: {
+        lack: '#f1f1ec', unten: '#1f3a6e', streifen0: '#1f4f9a', streifen1: null, akzent: '#1f4f9a', fluegel: '#1f4f9a',
+        lappen: '#1f4f9a', nummerFeld: '#f4f4ee', nummerRand: '#1f3a6e', nummerSchrift: '#1f3a6e',
+        sponsor0: '#f4f4ee', sponsor1: '#1f4f9a', sponsorHell: '#f4f4ee', banner: '#1f4f9a', bannerSchrift: '#f4f4ee',
+        sponsorFeld: '#1f4f9a', sponsorFeldSchrift: '#f4f4ee', haube: '#1f4f9a', dach: null,
+      },
+      // Kanarie: Gelb mit schwarzem Unterteil
+      kanarie: {
+        lack: '#f2c81e', unten: '#18191b', streifen0: '#18191b', streifen1: null, akzent: '#18191b', fluegel: '#18191b',
+        lappen: '#18191b', nummerFeld: '#f4f4ee', nummerRand: '#18191b', nummerSchrift: '#18191b',
+        sponsor0: '#18191b', sponsor1: '#18191b', sponsorHell: '#f2c81e', banner: '#18191b', bannerSchrift: '#f2c81e',
+        sponsorFeld: '#18191b', sponsorFeldSchrift: '#f2c81e', haube: null, dach: null,
+      },
+      // Tannengrün: Hellgrün mit weissem Dach
+      tannengruen: {
+        lack: '#6fae4a', unten: '#2e5a24', streifen0: '#f1f1ec', streifen1: '#2e5a24', akzent: '#f1f1ec', fluegel: '#f1f1ec',
+        lappen: '#2e5a24', nummerFeld: '#f4f4ee', nummerRand: '#2e5a24', nummerSchrift: '#2e5a24',
+        sponsor0: '#2e5a24', sponsor1: '#f4f4ee', sponsorHell: '#f4f4ee', banner: '#2e5a24', bannerSchrift: '#f4f4ee',
+        sponsorFeld: null, sponsorFeldSchrift: '#2e5a24', haube: null, dach: '#f1f1ec',
       },
     },
     // Feste Autofarben (für alle Lackierungen gleich)

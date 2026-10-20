@@ -6,6 +6,8 @@
 // Seit M8a (Fahrprofile, js/fahrprofil.js): Achslasten mit statischer Verteilung (lastVorneAnteil) und
 // Gewichtsverlagerung längs (gewichtstransfer), Heck-Grip je Belag (heckJeBelag), seit M8b Front-Grip je Belag
 // (vorneJeBelag). Im Profil "prototyp" sind diese Werte neutral (0.5, 0, 1, 1): dann rechnet alles genau wie vorher.
+// Seit M8c: Hinterradantrieb (antriebHinten, nur im Profil escorta gesetzt, sonst ohne Wirkung): der Antrieb an der
+// Hinterachse braucht einen Teil ihrer Haftung auf, mit Gas bleibt hinten weniger Seitenhalt (Heck kommt unter Gas).
 
 import { CONFIG } from './config.js';
 
@@ -111,12 +113,24 @@ export class Fahrphysik {
     if (boden.belag && c.heckJeBelag) gripH *= c.heckJeBelag[boden.belag] ?? 1;
     const schraeg = Math.atan2(vSeit, Math.max(Math.abs(vVor), 0.5));
     if (Math.abs(schraeg) > 0.12) gripH *= 1 - c.gasImDrift * eingabe.gas;
+    // M8c: Hinterradantrieb (antriebHinten = Anteil des Antriebs, der die Haftung hinten aufbraucht; fehlt/0 = aus):
+    // wie ein Reibungskreis – je mehr Schub auf die Hinterräder geht, desto weniger halten sie seitlich, und sie bauen
+    // die Seitenkraft weicher auf (das Heck schiebt unter Gas nach aussen). Gerechnet gegen die Haftung hinten auf
+    // Asphalt (nicht gegen den kleineren Grip auf losem Boden: sonst verlöre das Auto beim Tempo-Halten auf dem
+    // Wiesenweg mit seinem hohen Rollwiderstand über ein Drittel des Seitenhalts)
+    let heckSchub = 1;
+    const aH = c.antriebHinten || 0;
+    if (aH > 0 && eingabe.gas > 0 && vVor > -0.5 && motor.beschl > 0) {
+      const anteil = begrenze((motor.beschl * aH) / Math.max(1e-6, c.gripHinten * lastH), 0, 0.9);
+      heckSchub = Math.sqrt(1 - anteil * anteil);
+      gripH *= heckSchub;
+    }
 
     // --- Seitenkräfte der Reifen (Schräglauf) ---
     const vBasis = Math.max(Math.abs(vVor), 0.5);
     const schraeglaufV = Math.atan2(vSeit + this.drehrate * a, vBasis) - delta;
     const schraeglaufH = Math.atan2(vSeit - this.drehrate * b, vBasis);
-    const steifV = c.reifenSteifigkeit * last * (lastV / lastV0), steifH = c.reifenSteifigkeit * last * (lastH / lastH0);
+    const steifV = c.reifenSteifigkeit * last * (lastV / lastV0), steifH = c.reifenSteifigkeit * last * (lastH / lastH0) * heckSchub;
     const kraftV = begrenze(-steifV * schraeglaufV, -gripV * lastV, gripV * lastV);
     let kraftH = begrenze(-steifH * schraeglaufH, -gripH * lastH, gripH * lastH);
     // Handbremse lange gehalten (M3a.2): je länger gezogen, desto stärker bremsen die blockierten

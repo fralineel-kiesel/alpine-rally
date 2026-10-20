@@ -1189,7 +1189,7 @@ window.__alpineRally = {
   get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
   get autoModell() { return auto; }, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a (M8c: Modell wechselt)
-  autoWechseln, get autoWahl() { return autoWahl; }, masseSetzen, garage, szeneInfo, // M8c
+  autoWechseln, get autoWahl() { return autoWahl; }, masseSetzen, garage, szeneInfo, staubAuto, // M8c
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
 };

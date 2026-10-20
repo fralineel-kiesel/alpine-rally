@@ -21,7 +21,7 @@
 // M8c (Garage): breite = feste Tafelbreite, spalte = Einträge nur in einer linken Spalte dieser Breite, minHoehe = Tafel
 //      mindestens so hoch, zeichneRechts(ctx, x, y, b, h) = eigener Inhalt rechts neben der Spalte;
 //      Eintrag beimWaehlen() = wird gerufen, sobald der Eintrag gewählt wird (Tastatur, Gamepad, Maus);
-//      auswahl mit probe(wert) -> [Farbe, ...] = kleine Farbprobe vor dem Wert.
+//      auswahl mit probe(wert) -> [Farbe, ...] = kleine Farbprobe vor dem Wert; farbeText() = Textfarbe, wenn nicht gewählt.
 // Seiten werden nur bei Änderung neu gezeichnet (auf ein eigenes Bild), sonst nur kopiert.
 // M7a: klang(art, wert) = Menü-Ton (tick, bestaetigen, zurueck, regler mit Wert 0..1, fehler); hängt an denselben
 //      Aufrufen für alle Eingabearten. Ein seite.zurueck(), das false liefert, tut nichts (dann auch kein Ton).
@@ -411,7 +411,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
       if (e.waehlbar) treffer.push({ nr: i, x: x0, y, b: breite, h });
       return;
     }
-    const farbe = gewaehlt ? M.farbeAuswahl : M.farbeText;
+    const farbe = gewaehlt ? M.farbeAuswahl : e.farbeText ? e.farbeText() : M.farbeText; // (M8c: farbeText = eigene Farbe, z. B. gewähltes Auto)
     if (gewaehlt) {
       c.fillStyle = M.farbeAuswahlGrund;
       c.fillRect(x0 + 2, y, breite - 4, h);

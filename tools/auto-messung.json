@@ -1,5 +1,5 @@
 {
- "hinweis": "Automatisch erzeugt von node tools/auto-messung.mjs (Meilenstein 8a). vorher = Version vor M8a (nur Profil prototyp), nachher = jetzt (prototyp und rt4).",
+ "hinweis": "Automatisch erzeugt von node tools/auto-messung.mjs (seit M8a, M8c: alle Profile). vorher = eine ältere Version (--alt), nachher = jetzt (alle Profile aus config.js).",
  "vorher": {
   "version": "0.7b",
   "wurzel": "0.7b (Stand main vor M8a)",
@@ -232,7 +232,7 @@
   }
  },
  "nachher": {
-  "version": "0.8a",
+  "version": "0.8c",
   "wurzel": ".",
   "physik": {
    "prototyp": {
@@ -242,7 +242,9 @@
     "beschl100_bankett": 6.150000000000095,
     "beschl60_gras": 10.100000000000067,
     "beschl60_asphalt": 2.6583333333333266,
+    "beschl60_schotter": 3.0083333333333253,
     "bremsweg100_asphalt": 35.75241244888199,
+    "hoechst_asphalt": 188.079222526498,
     "kreis25_asphalt": 54.378808593749994,
     "kreis25_schotter": 49.300048828125,
     "kreis25_wiesenweg": 40.913525390625,
@@ -301,56 +303,190 @@
    },
    "rt4": {
     "beschl100_asphalt": 5.025000000000039,
-    "beschl100_schotter": 5.475000000000062,
-    "beschl100_wiesenweg": 7.5000000000001625,
+    "beschl100_schotter": 5.450000000000061,
+    "beschl100_wiesenweg": 7.225000000000149,
     "beschl100_bankett": 6.025000000000089,
     "beschl60_gras": 10.100000000000067,
     "beschl60_asphalt": 2.61666666666666,
+    "beschl60_schotter": 2.774999999999993,
     "bremsweg100_asphalt": 35.75241244888199,
-    "kreis25_asphalt": 55.807031249999994,
-    "kreis25_schotter": 50.596875,
-    "kreis25_wiesenweg": 44.404101562499996,
+    "hoechst_asphalt": 189.8231192837363,
+    "kreis25_asphalt": 55.732763671875,
+    "kreis25_schotter": 51.91083984375,
+    "kreis25_wiesenweg": 46.043701171875,
     "lenk80_r60": {
-     "grad": 4.09927272192017,
+     "grad": 4.138890809740569,
      "kinematisch": 2.4050092587054004,
-     "versatz": 0.5793631621242734,
-     "schwimm": 2.9602615872068676
+     "versatz": 0.5929162828772042,
+     "schwimm": 2.940526682721101
     },
     "heck90_r80": {
-     "vorher": 3.0559067230533543,
-     "nach05": 5.343522991994265,
-     "zusatz": 2.2876162689409103,
-     "max": 6.930866468378051,
-     "einfangen": 0.3833333333334652,
-     "dreher": false
-    },
-    "heck90_r80_voll": {
-     "vorher": 3.0559067230533543,
-     "nach05": 7.450020679033317,
-     "zusatz": 4.394113955979963,
-     "max": 9.583216464478017,
+     "vorher": 3.0358280155874473,
+     "nach05": 6.628325035365144,
+     "zusatz": 3.5924970197776966,
+     "max": 9.539027527834019,
      "einfangen": 0.5666666666668077,
      "dreher": false
     },
+    "heck90_r80_voll": {
+     "vorher": 3.0358280155874473,
+     "nach05": 8.311631445372162,
+     "zusatz": 5.275803429784715,
+     "max": 10.873711751020497,
+     "einfangen": 0.7416666666668164,
+     "dreher": false
+    },
     "gas_r80": {
-     "max": 2.913569487682009,
-     "tempoEnde": 101.74946966293571,
-     "versatzEnde": 2.5907107806673793
+     "max": 2.765240009243189,
+     "tempoEnde": 101.75851875397954,
+     "versatzEnde": 2.9329697646190453
     },
     "gas_r80_schotter": {
-     "max": 3.1466824560793754,
-     "tempoEnde": 93.93661186656367,
-     "versatzEnde": 1.814213317954625
+     "max": 3.288381547456077,
+     "tempoEnde": 93.85150702548715,
+     "versatzEnde": 1.9905887956380894
     },
     "hb_asphalt": {
-     "nach05": 6.114988638279923,
-     "max": 20.2489623955798,
-     "gerade": 0.7833333333333309
+     "nach05": 6.260401573588249,
+     "max": 21.448297273834672,
+     "gerade": 0.8249999999999974
     },
     "hb_schotter": {
-     "nach05": 5.686669753720284,
-     "max": 20.098803762760248,
-     "gerade": 1.08333333333333
+     "nach05": 5.995827053329442,
+     "max": 23.213906788399573,
+     "gerade": 1.2833333333333292
+    },
+    "rueck_asphalt": {
+     "max": 32.4,
+     "t95": 3.3333333333333335,
+     "nach1s": 9.350664289592048
+    },
+    "rueck_gras": {
+     "max": 21.599999999999998,
+     "t95": 1.5416666666666667,
+     "nach1s": 13.79237253521174
+    }
+   },
+   "delto": {
+    "beschl100_asphalt": 4.908333333333367,
+    "beschl100_schotter": 5.366666666666723,
+    "beschl100_wiesenweg": 7.416666666666825,
+    "beschl100_bankett": 6.258333333333434,
+    "beschl60_gras": 10.100000000000067,
+    "beschl60_asphalt": 2.5499999999999936,
+    "beschl60_schotter": 2.749999999999993,
+    "bremsweg100_asphalt": 35.63450819997484,
+    "hoechst_asphalt": 177.89776242541015,
+    "kreis25_asphalt": 55.435693359374994,
+    "kreis25_schotter": 51.562353515625,
+    "kreis25_wiesenweg": 45.780908203125,
+    "lenk80_r60": {
+     "grad": 3.803035061723331,
+     "kinematisch": 2.366878273393092,
+     "versatz": 0.48530550174529535,
+     "schwimm": 3.1913684711802612
+    },
+    "heck90_r80": {
+     "vorher": 3.246609917707874,
+     "nach05": 6.419534594187521,
+     "zusatz": 3.172924676479647,
+     "max": 7.845135107147175,
+     "einfangen": 0.37500000000013145,
+     "dreher": false
+    },
+    "heck90_r80_voll": {
+     "vorher": 3.246609917707874,
+     "nach05": 8.833002755269801,
+     "zusatz": 5.586392837561927,
+     "max": 10.48242931784577,
+     "einfangen": 0.5750000000001414,
+     "dreher": false
+    },
+    "gas_r80": {
+     "max": 3.146100434152337,
+     "tempoEnde": 102.5712978913708,
+     "versatzEnde": 2.721601489454372
+    },
+    "gas_r80_schotter": {
+     "max": 3.426640474207855,
+     "tempoEnde": 95.14026390577429,
+     "versatzEnde": 1.5112237391225847
+    },
+    "hb_asphalt": {
+     "nach05": 8.029094701114794,
+     "max": 24.290603617612536,
+     "gerade": 0.841666666666664
+    },
+    "hb_schotter": {
+     "nach05": 7.64730373644099,
+     "max": 28.969669423562888,
+     "gerade": 1.3249999999999957
+    },
+    "rueck_asphalt": {
+     "max": 32.4,
+     "t95": 3.3333333333333335,
+     "nach1s": 9.350664289592048
+    },
+    "rueck_gras": {
+     "max": 21.599999999999998,
+     "t95": 1.5416666666666667,
+     "nach1s": 13.79237253521174
+    }
+   },
+   "escorta": {
+    "beschl100_asphalt": 5.558333333333399,
+    "beschl100_schotter": 6.233333333333433,
+    "beschl100_wiesenweg": 9.608333333333428,
+    "beschl100_bankett": 6.71666666666679,
+    "beschl60_gras": 10.100000000000067,
+    "beschl60_asphalt": 2.8749999999999925,
+    "beschl60_schotter": 3.191666666666658,
+    "bremsweg100_asphalt": 35.61930165637565,
+    "hoechst_asphalt": 172.4182168575972,
+    "kreis25_asphalt": 54.58447265625,
+    "kreis25_schotter": 49.265771484374994,
+    "kreis25_wiesenweg": 41.119189453124996,
+    "lenk80_r60": {
+     "grad": 3.1322421568391774,
+     "kinematisch": 2.2906100426385296,
+     "versatz": 0.23104205454603285,
+     "schwimm": 3.703615165068853
+    },
+    "heck90_r80": {
+     "vorher": 3.473399470907269,
+     "nach05": 9.75863218532279,
+     "zusatz": 6.285232714415521,
+     "max": 15.62634564462944,
+     "einfangen": 1.050000000000165,
+     "dreher": false
+    },
+    "heck90_r80_voll": {
+     "vorher": 3.473399470907269,
+     "nach05": 11.057813615897246,
+     "zusatz": 7.584414144989976,
+     "max": 20.30750449928675,
+     "einfangen": 1.116666666666835,
+     "dreher": false
+    },
+    "gas_r80": {
+     "max": 6.352864620977007,
+     "tempoEnde": 95.97618952379129,
+     "versatzEnde": 0.6280280849893529
+    },
+    "gas_r80_schotter": {
+     "max": 28.573644219724617,
+     "tempoEnde": 83.60853965493091,
+     "versatzEnde": 0.672913872382793
+    },
+    "hb_asphalt": {
+     "nach05": 8.466271734496994,
+     "max": 35.397631348723436,
+     "gerade": 1.2083333333333295
+    },
+    "hb_schotter": {
+     "nach05": 7.769188557179416,
+     "max": 40.161190001047295,
+     "gerade": 1.7833333333333274
     },
     "rueck_asphalt": {
      "max": 32.4,
@@ -553,132 +689,450 @@
     },
     "testfahrer": {
      "vorsichtig": {
-      "zeit": 178.72500000000178,
+      "zeit": 178.65000000000185,
       "ziel": true,
       "cps": [
        34.16666666666537,
-       100.00000000002565,
-       146.65000000003096
+       99.99166666669231,
+       146.62500000003098
       ],
       "aufpralle": [],
       "haenger": 0,
-      "maxAbstand": 1.9898949206488215,
+      "maxAbstand": 2.2322371252310096,
       "wege": [
        {
         "name": "Talschleife",
         "belag": "schotter",
-        "zeit": 18.416666666666263,
+        "zeit": 18.424999999999596,
         "daneben": 0,
-        "maxAbstand": 0.7093555260225122
+        "maxAbstand": 0.7100230208710385
        },
        {
         "name": "Almweg",
         "belag": "schotter",
         "zeit": 20.44999999999948,
         "daneben": 0,
-        "maxAbstand": 0.7184676185926878
+        "maxAbstand": 0.7332294130414185
        },
        {
         "name": "Wiesenweg",
         "belag": "wiesenweg",
-        "zeit": 17.266666666666328,
+        "zeit": 17.199999999999665,
         "daneben": 0,
-        "maxAbstand": 0.5956621822540022
+        "maxAbstand": 0.6073822433588982
        }
       ],
       "jeBelag": {
-       "asphalt": 122.5916666667103,
+       "asphalt": 122.58333333337696,
        "schotter": 38.8916666666651,
-       "wiesenweg": 17.24166666666633
+       "wiesenweg": 17.174999999999667
       },
       "aufpralleStat": 0,
-      "hoechstTempo": 41.495532308557095,
+      "hoechstTempo": 41.48758042251205,
       "resets": 0
      },
      "mittel": {
-      "zeit": 161.82500000001716,
+      "zeit": 161.75833333335055,
       "ziel": true,
       "cps": [
        31.108333333332208,
-       90.25000000001789,
-       132.3583333333773
+       90.24166666668455,
+       132.34166666671064
       ],
       "aufpralle": [],
       "haenger": 0,
-      "maxAbstand": 3.0456398545712307,
+      "maxAbstand": 3.2903496812785553,
       "wege": [
        {
         "name": "Talschleife",
         "belag": "schotter",
         "zeit": 16.0166666666664,
         "daneben": 0,
-        "maxAbstand": 0.6971899785846661
+        "maxAbstand": 0.7149368800319225
        },
        {
         "name": "Almweg",
         "belag": "schotter",
         "zeit": 18.658333333332916,
         "daneben": 0,
-        "maxAbstand": 0.7557810967868617
+        "maxAbstand": 0.7935304933865034
        },
        {
         "name": "Wiesenweg",
         "belag": "wiesenweg",
-        "zeit": 15.433333333333097,
+        "zeit": 15.3833333333331,
         "daneben": 0,
-        "maxAbstand": 0.5810748150400856
+        "maxAbstand": 0.5858838510843523
        }
       ],
       "jeBelag": {
-       "asphalt": 111.7083333333683,
-       "schotter": 34.69166666666534,
-       "wiesenweg": 15.424999999999764
+       "asphalt": 111.69166666670162,
+       "schotter": 34.699999999998674,
+       "wiesenweg": 15.366666666666434
       },
       "aufpralleStat": 0,
-      "hoechstTempo": 42.77115697171001,
+      "hoechstTempo": 42.76416005495086,
       "resets": 0
      },
      "flott": {
-      "zeit": 151.24166666669345,
+      "zeit": 151.21666666669347,
       "ziel": true,
       "cps": [
-       29.07499999999899,
-       84.48333333334664,
-       123.62500000004445
+       29.09999999999899,
+       84.49166666667998,
+       123.63333333337779
       ],
       "aufpralle": [],
       "haenger": 0,
-      "maxAbstand": 3.6960029587787173,
+      "maxAbstand": 4.957932578644316,
       "wege": [
        {
         "name": "Talschleife",
         "belag": "schotter",
-        "zeit": 14.50833333333315,
+        "zeit": 14.499999999999817,
         "daneben": 0,
-        "maxAbstand": 0.6466874838851846
+        "maxAbstand": 0.6677942986070485
+       },
+       {
+        "name": "Almweg",
+        "belag": "schotter",
+        "zeit": 17.033333333333008,
+        "daneben": 0,
+        "maxAbstand": 1.0337466342273842
+       },
+       {
+        "name": "Wiesenweg",
+        "belag": "wiesenweg",
+        "zeit": 14.341666666666493,
+        "daneben": 0,
+        "maxAbstand": 0.7261650187480091
+       }
+      ],
+      "jeBelag": {
+       "asphalt": 105.32500000002989,
+       "schotter": 31.558333333332182,
+       "wiesenweg": 14.33333333333316
+      },
+      "aufpralleStat": 0,
+      "hoechstTempo": 44.02533747334185,
+      "resets": 0
+     }
+    }
+   },
+   "delto": {
+    "profil": "delto",
+    "optik": {
+     "nurAuto": {
+      "calls": 9,
+      "dreiecke": 1150
+     },
+     "meshes": 9,
+     "dreieckeStatisch": 1150,
+     "szene": [
+      {
+       "s": 60,
+       "calls": 108,
+       "dreiecke": 150944
+      },
+      {
+       "s": 1170,
+       "calls": 99,
+       "dreiecke": 155396
+      },
+      {
+       "s": 2900,
+       "calls": 67,
+       "dreiecke": 147026
+      }
+     ]
+    },
+    "testfahrer": {
+     "vorsichtig": {
+      "zeit": 178.60833333333522,
+      "ziel": true,
+      "cps": [
+       34.21666666666537,
+       99.95000000002561,
+       146.5666666666977
+      ],
+      "aufpralle": [],
+      "haenger": 0,
+      "maxAbstand": 2.0020491665446767,
+      "wege": [
+       {
+        "name": "Talschleife",
+        "belag": "schotter",
+        "zeit": 18.391666666666264,
+        "daneben": 0,
+        "maxAbstand": 0.7303068034919588
+       },
+       {
+        "name": "Almweg",
+        "belag": "schotter",
+        "zeit": 20.441666666666148,
+        "daneben": 0,
+        "maxAbstand": 0.741408434722768
+       },
+       {
+        "name": "Wiesenweg",
+        "belag": "wiesenweg",
+        "zeit": 17.258333333332995,
+        "daneben": 0,
+        "maxAbstand": 0.6021520118940958
+       }
+      ],
+      "jeBelag": {
+       "asphalt": 122.5083333333769,
+       "schotter": 38.85833333333177,
+       "wiesenweg": 17.24166666666633
+      },
+      "aufpralleStat": 0,
+      "hoechstTempo": 40.36483076948801,
+      "resets": 0
+     },
+     "mittel": {
+      "zeit": 161.60000000001736,
+      "ziel": true,
+      "cps": [
+       31.016666666665547,
+       90.05833333335107,
+       132.08333333337754
+      ],
+      "aufpralle": [],
+      "haenger": 0,
+      "maxAbstand": 2.797239074863463,
+      "wege": [
+       {
+        "name": "Talschleife",
+        "belag": "schotter",
+        "zeit": 15.983333333333066,
+        "daneben": 0,
+        "maxAbstand": 0.7199781558440802
+       },
+       {
+        "name": "Almweg",
+        "belag": "schotter",
+        "zeit": 18.566666666666254,
+        "daneben": 0,
+        "maxAbstand": 0.7307151084937127
+       },
+       {
+        "name": "Wiesenweg",
+        "belag": "wiesenweg",
+        "zeit": 15.449999999999763,
+        "daneben": 0,
+        "maxAbstand": 0.5623305854097591
+       }
+      ],
+      "jeBelag": {
+       "asphalt": 111.60000000003488,
+       "schotter": 34.57499999999868,
+       "wiesenweg": 15.424999999999764
+      },
+      "aufpralleStat": 0,
+      "hoechstTempo": 42.33900906209025,
+      "resets": 0
+     },
+     "flott": {
+      "zeit": 151.21666666669347,
+      "ziel": true,
+      "cps": [
+       29.083333333332323,
+       84.34166666667986,
+       123.55000000004439
+      ],
+      "aufpralle": [],
+      "haenger": 0,
+      "maxAbstand": 5.307905986839746,
+      "wege": [
+       {
+        "name": "Talschleife",
+        "belag": "schotter",
+        "zeit": 14.474999999999818,
+        "daneben": 0,
+        "maxAbstand": 0.6666560603608572
        },
        {
         "name": "Almweg",
         "belag": "schotter",
         "zeit": 17.024999999999675,
         "daneben": 0,
-        "maxAbstand": 0.9486813823827518
+        "maxAbstand": 0.9059900112076005
        },
        {
         "name": "Wiesenweg",
         "belag": "wiesenweg",
-        "zeit": 14.383333333333157,
+        "zeit": 14.374999999999824,
         "daneben": 0,
-        "maxAbstand": 0.7462655958824294
+        "maxAbstand": 0.7127186147284299
        }
       ],
       "jeBelag": {
-       "asphalt": 105.33333333336323,
-       "schotter": 31.541666666665517,
-       "wiesenweg": 14.366666666666491
+       "asphalt": 105.34166666669657,
+       "schotter": 31.516666666665518,
+       "wiesenweg": 14.358333333333158
       },
       "aufpralleStat": 0,
-      "hoechstTempo": 44.02632906472131,
+      "hoechstTempo": 43.48415745876205,
+      "resets": 0
+     }
+    }
+   },
+   "escorta": {
+    "profil": "escorta",
+    "optik": {
+     "nurAuto": {
+      "calls": 9,
+      "dreiecke": 1196
+     },
+     "meshes": 9,
+     "dreieckeStatisch": 1196,
+     "szene": [
+      {
+       "s": 60,
+       "calls": 108,
+       "dreiecke": 150990
+      },
+      {
+       "s": 1170,
+       "calls": 99,
+       "dreiecke": 155442
+      },
+      {
+       "s": 2900,
+       "calls": 67,
+       "dreiecke": 147072
+      }
+     ]
+    },
+    "testfahrer": {
+     "vorsichtig": {
+      "zeit": 180.675,
+      "ziel": true,
+      "cps": [
+       34.59999999999868,
+       100.89166666669303,
+       148.01666666669638
+      ],
+      "aufpralle": [],
+      "haenger": 0,
+      "maxAbstand": 1.391179554806815,
+      "wege": [
+       {
+        "name": "Talschleife",
+        "belag": "schotter",
+        "zeit": 18.44166666666626,
+        "daneben": 0,
+        "maxAbstand": 0.7561722795749849
+       },
+       {
+        "name": "Almweg",
+        "belag": "schotter",
+        "zeit": 20.616666666666138,
+        "daneben": 0,
+        "maxAbstand": 0.7869472632306168
+       },
+       {
+        "name": "Wiesenweg",
+        "belag": "wiesenweg",
+        "zeit": 17.70833333333297,
+        "daneben": 0,
+        "maxAbstand": 0.6288897902906273
+       }
+      ],
+      "jeBelag": {
+       "asphalt": 123.90833333337801,
+       "schotter": 39.08333333333176,
+       "wiesenweg": 17.68333333333297
+      },
+      "aufpralleStat": 0,
+      "hoechstTempo": 40.4401931415917,
+      "resets": 0
+     },
+     "mittel": {
+      "zeit": 164.01666666668183,
+      "ziel": true,
+      "cps": [
+       31.52499999999885,
+       91.21666666668533,
+       133.94166666670918
+      ],
+      "aufpralle": [],
+      "haenger": 0,
+      "maxAbstand": 2.1048800471708824,
+      "wege": [
+       {
+        "name": "Talschleife",
+        "belag": "schotter",
+        "zeit": 16.083333333333062,
+        "daneben": 0,
+        "maxAbstand": 0.7726514251312812
+       },
+       {
+        "name": "Almweg",
+        "belag": "schotter",
+        "zeit": 18.883333333332903,
+        "daneben": 0,
+        "maxAbstand": 0.7266462652308665
+       },
+       {
+        "name": "Wiesenweg",
+        "belag": "wiesenweg",
+        "zeit": 15.816666666666409,
+        "daneben": 0,
+        "maxAbstand": 0.5917924182293376
+       }
+      ],
+      "jeBelag": {
+       "asphalt": 113.22500000003618,
+       "schotter": 34.991666666665324,
+       "wiesenweg": 15.799999999999743
+      },
+      "aufpralleStat": 0,
+      "hoechstTempo": 41.56884846655771,
+      "resets": 0
+     },
+     "flott": {
+      "zeit": 154.67500000002366,
+      "ziel": true,
+      "cps": [
+       30.458333333332245,
+       86.47500000001489,
+       126.41666666671334
+      ],
+      "aufpralle": [],
+      "haenger": 0,
+      "maxAbstand": 4.10946882415569,
+      "wege": [
+       {
+        "name": "Talschleife",
+        "belag": "schotter",
+        "zeit": 15.133333333333114,
+        "daneben": 0,
+        "maxAbstand": 1.1317577755891841
+       },
+       {
+        "name": "Almweg",
+        "belag": "schotter",
+        "zeit": 17.374999999999655,
+        "daneben": 0,
+        "maxAbstand": 0.7412356373273307
+       },
+       {
+        "name": "Wiesenweg",
+        "belag": "wiesenweg",
+        "zeit": 14.658333333333141,
+        "daneben": 0,
+        "maxAbstand": 0.5864397917152656
+       }
+      ],
+      "jeBelag": {
+       "asphalt": 107.50000000003162,
+       "schotter": 32.53333333333213,
+       "wiesenweg": 14.641666666666476
+      },
+      "aufpralleStat": 0,
+      "hoechstTempo": 42.27703100012473,
       "resets": 0
      }
     }

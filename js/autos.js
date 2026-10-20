@@ -62,7 +62,7 @@ export const AUTO_MODELLE = {
     // Flächen nach vorne/hinten zwischen z = ±zBis und unter yBis (Radlauf-Wände, Enden der Kotflügel) in dieser Farbe
     innenFlaechen: { zBis: 1.95, yBis: 0.86, farbe: 'radhaus' },
     // werte (M8c, Garage, 1 bis 10): aus den Messungen von tools/auto-messung.mjs abgeleitet (siehe WERTE_VORSCHRIFT unten)
-    werte: { beschleunigung: 6, tempo: 6, grip: 6, drift: 4 },
+    werte: { beschleunigung: 7, tempo: 6, grip: 8, drift: 5 },
 
     teile: [
       // --- Unterbau: Seitenansicht mit keilförmiger Motorhaube und zwei Radläufen ---
@@ -204,7 +204,7 @@ export const AUTO_MODELLE = {
     schatten: { breite: 1.95, laenge: 4.05 },
     innenFlaechen: { zBis: 1.9, yBis: 0.86, farbe: 'radhaus' },
     // werte (Garage, 1 bis 10): aus tools/auto-messung.mjs abgeleitet, Rechenvorschrift bei WERTE_VORSCHRIFT unten
-    werte: { beschleunigung: 8, tempo: 5, grip: 8, drift: 6 },
+    werte: { beschleunigung: 8, tempo: 3, grip: 8, drift: 7 },
 
     teile: [
       // --- Unterbau: kurze, hohe Schnauze, Gürtellinie fast waagrecht bis zur Heckklappe ---
@@ -240,7 +240,7 @@ export const AUTO_MODELLE = {
       { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.6, 0.07, 0.8], max: [0.88, 0.44, 0.82] },
       { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.6, 0.07, -1.66], max: [0.88, 0.44, -1.64] },
       // Auspuff rechts (Beifahrerseite = -x)
-      { art: 'zylinder', slot: 'chrom', achse: 'z', mitte: [-0.5, 0.24, -1.99], radius: 0.045, laenge: 0.12, segmente: 6 },
+      { art: 'zylinder', slot: 'chrom', achse: 'z', mitte: [-0.5, 0.24, -1.975], radius: 0.045, laenge: 0.06, segmente: 6 },
       // Abschlepp-Öse vorne links
       { art: 'quader', slot: 'rot', min: [0.46, 0.2, 1.99], max: [0.52, 0.25, 2.02] },
       // Gehäuse der zwei runden Zusatzscheinwerfer in der Schürze
@@ -311,8 +311,145 @@ export const AUTO_MODELLE = {
       // --- Dachspoiler oben ---
       { art: 'rechteck', ansicht: 'fluegel', von: [-0.72, -1.7], bis: [0.72, -1.74], farbe: 'akzent' },
     ],
+  },  // Fard Escorta (Id escorta, M8c): kastiges Rallye-Coupé der 70er/80er mit Hinterradantrieb (Escort-Typ, eigenes
+  // Design). Drei Kästen (flache Haube, Kabine, Kofferraum), gerade schmale Karosserie mit dezent verbreiterten
+  // Kotflügeln, zwei runde Scheinwerfer und zwei Zusatzscheinwerfer im Kühlergrill, kleine Spoilerlippe, keine Dachhutze,
+  // verchromte Stossstangen, Auspuff hinten links.
+  escorta: {
+    id: 'escorta',
+    name: 'FARD ESCORTA',
+    fahrprofil: 'escorta',
+    nummer: '5',
+    kennzeichen: 'FE 5',
+    kurz: 'ESCORTA',
+    lackierungen: ['escortaWerk', 'kanarie', 'tannengruen'],
+    masse: { laenge: 4.1, breite: 1.76, radstand: 2.4, spur: 1.48, radRadius: 0.325 },
+    kollision: { laenge: 4.02, breite: 1.7 },
+    staub: { hinten: 1.24, seite: 0.69 },
+    schwerpunktHoehe: 0.48,
+    raeder: {
+      x: 0.74, z: 1.2,
+      radius: 0.325, breite: 0.22, felgeRadius: 0.19, felgeTiefe: 0.03, segmente: 14, speichen: 4,
+      radlaufLuft: 0.08,
+    },
+    textur: { breite: 512, hoehe: 128, seite: 32, oben: 32, vorne: 48, hinten: 48, fluegel: 32, hoeheBis: 1.38, fluegelZ: [-1.86, -2.02] },
+    schatten: { breite: 1.9, laenge: 4.1 },
+    innenFlaechen: { zBis: 1.9, yBis: 0.82, farbe: 'radhaus' },
+    werte: { beschleunigung: 3, tempo: 2, grip: 6, drift: 10 },
+
+    teile: [
+      // --- Unterbau: flache Haube und flacher Kofferraum auf gleicher Höhe (Stufenheck) ---
+      {
+        art: 'prisma', slot: 'lack', x: [-0.82, 0.82],
+        profil: [
+          [1.98, 0.22], [1.62, 0.22], ...bogen(1.2, 0.33, 0.41, 6), [0.79, 0.22],
+          [-0.79, 0.22], ...bogen(-1.2, 0.33, 0.41, 6), [-1.62, 0.22],
+          [-1.98, 0.22], [-1.98, 0.8], [-1.9, 0.84], [1.9, 0.84], [1.98, 0.8],
+        ],
+      },
+      { art: 'quader', slot: 'radhaus', min: [-0.44, 0.22, 0.82], max: [0.44, 0.7, 1.58] },
+      { art: 'quader', slot: 'radhaus', min: [-0.44, 0.22, -1.58], max: [0.44, 0.7, -0.82] },
+      // dezent verbreiterte Kotflügel (schmaler als beim Audan, runde Radläufe)
+      { art: 'prisma', slot: 'lack', x: [0.82, 0.88], spiegeln: true, profil: kotfluegel(1.2, 0.42, 1.68, 0.72, 0.26, 0.68, 0.68) },
+      { art: 'prisma', slot: 'lack', x: [0.82, 0.88], spiegeln: true, profil: kotfluegel(-1.2, 0.42, -0.72, -1.7, 0.26, 0.68, 0.68) },
+      // Kabine: Frontscheibe, gerades Dach, schräge Heckscheibe zum Kofferraum
+      { art: 'trapez', slot: 'lack', unten: [0.84, 0.76, 0.86, -1.16], oben: [1.34, 0.64, 0.22, -0.66], ohne: ['unten'] },
+      // kleine Spoilerlippe am Kofferraum (statt grossem Flügel)
+      { art: 'trapez', slot: 'fluegel', unten: [0.84, 0.74, -1.86, -1.98], oben: [0.9, 0.74, -1.9, -2.0] },
+      // Stossstangen (verchromt) vorne und hinten, Frontschürze darunter
+      { art: 'quader', slot: 'chrom', min: [-0.86, 0.26, 1.97], max: [0.86, 0.36, 2.05] },
+      { art: 'quader', slot: 'chrom', min: [-0.86, 0.26, -2.05], max: [0.86, 0.36, -1.97] },
+      { art: 'quader', slot: 'schwarz', min: [-0.8, 0.16, 1.9], max: [0.8, 0.24, 1.99] },
+      // Aussenspiegel (rund, auf der Tür)
+      { art: 'quader', slot: 'chrom', spiegeln: true, min: [0.79, 0.88, 0.62], max: [0.86, 0.95, 0.7] },
+      // Schlammlappen
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.58, 0.07, 0.76], max: [0.84, 0.42, 0.78] },
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.58, 0.07, -1.64], max: [0.84, 0.42, -1.62] },
+      // Auspuff links (Fahrerseite = +x)
+      { art: 'zylinder', slot: 'chrom', achse: 'z', mitte: [0.52, 0.2, -1.99], radius: 0.04, laenge: 0.12, segmente: 6 },
+      // Gehäuse der runden Scheinwerfer und der Zusatzscheinwerfer im Grill
+      ...[0.58, -0.58].map((x) => ({ art: 'zylinder', slot: 'schwarz', achse: 'z', mitte: [x, 0.6, 1.98], radius: 0.12, laenge: 0.03, segmente: 10 })),
+      ...[0.27, -0.27].map((x) => ({ art: 'zylinder', slot: 'schwarz', achse: 'z', mitte: [x, 0.6, 1.985], radius: 0.08, laenge: 0.03, segmente: 8 })),
+
+      // --- Lichter ---
+      ...[0.58, -0.58].map((x) => ({ art: 'zylinder', licht: 'vorne', farbe: 'scheinwerfer', achse: 'z', mitte: [x, 0.6, 1.997], radius: 0.1, laenge: 0.004, segmente: 10 })),
+      ...[0.27, -0.27].map((x) => ({ art: 'zylinder', licht: 'vorne', farbe: 'zusatzscheinwerfer', achse: 'z', mitte: [x, 0.6, 2.002], radius: 0.064, laenge: 0.004, segmente: 8 })),
+      { art: 'quader', licht: 'hinten', spiegeln: true, min: [0.5, 0.48, -1.988], max: [0.8, 0.76, -1.98] },
+      { art: 'quader', licht: 'rueck', spiegeln: true, min: [0.38, 0.5, -1.986], max: [0.48, 0.58, -1.98] },
+    ],
+
+    bemalung: [
+      // --- Seite ---
+      { art: 'rechteck', ansicht: 'seite', von: [-2.1, 0], bis: [2.1, 0.36], farbe: 'unten' },
+      { art: 'rechteck', ansicht: 'seite', von: [-2.1, 0.6], bis: [2.1, 0.7], farbe: 'streifen0' },
+      { art: 'rechteck', ansicht: 'seite', von: [-2.1, 0.54], bis: [2.1, 0.57], farbe: 'streifen1' },
+      { art: 'ring', ansicht: 'seite', mitte: [1.2, 0.33], r: [0.38, 0.46], farbe: 'kante' },
+      { art: 'ring', ansicht: 'seite', mitte: [-1.2, 0.33], r: [0.38, 0.46], farbe: 'kante' },
+      // lange Coupé-Tür mit Griff
+      { art: 'rechteck', ansicht: 'seite', von: [0.7, 0.38], bis: [0.73, 0.82], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.52, 0.38], bis: [-0.49, 1.3], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.44, 0.76], bis: [-0.32, 0.79], farbe: 'chrom' },
+      // Seitenscheiben: Türscheibe und kleines Seitenfenster hinten
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[0.76, 0.88], [0.26, 1.29], [-0.44, 1.29], [-0.44, 0.88]] },
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[-0.58, 0.88], [-0.58, 1.29], [-0.7, 1.29], [-1.06, 0.88]] },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.44, 1.25], bis: [0.3, 1.28], farbe: 'glasHell' },
+      // Helme (dezent, nur seitlich und vorne)
+      { art: 'helm', ansicht: 'seite', nur: 'links', mitte: [-0.2, 1.05], r: 0.08, farbe: 'helmFahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'seite', nur: 'rechts', mitte: [-0.2, 1.05], r: 0.08, farbe: 'helmBeifahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'nummer', ansicht: 'seite', mitte: [0.2, 0.65] },
+      { art: 'text', ansicht: 'seite', text: 'SENNHOF', mitte: [0, 0.27], farbe: 'sponsorHell', abBreite: 480 }, // zwischen den Radläufen
+
+      // --- Oben ---
+      { art: 'rechteck', ansicht: 'oben', von: [-0.88, 0.84], bis: [0.88, 1.99], farbe: 'haube' },  // Haube (Werk: blau)
+      { art: 'rechteck', ansicht: 'oben', von: [-0.66, 0.24], bis: [0.66, -0.68], farbe: 'dach' },  // Dach (Tannengrün: weiss)
+      { art: 'nummer', ansicht: 'oben', mitte: [0, 1.4], lesbarVon: 'vorne' },
+      { art: 'nummer', ansicht: 'oben', mitte: [0, -0.24], lesbarVon: 'hinten' },
+      { art: 'text', ansicht: 'oben', text: 'MURMELI', mitte: [0, 1.82], lesbarVon: 'vorne', farbe: 'sponsor0', abBreite: 480 },
+      { art: 'rechteck', ansicht: 'oben', von: [-0.7, -1.3], bis: [0.7, -1.75], farbe: 'sponsorFeld' },  // Kofferraum
+      { art: 'text', ansicht: 'oben', text: 'SENNHOF', mitte: [0, -1.52], lesbarVon: 'hinten', farbe: 'sponsorFeldSchrift', abBreite: 640 },
+
+      // --- Vorne ---
+      { art: 'polygon', ansicht: 'vorne', farbe: 'glas', punkte: [[-0.7, 0.88], [0.7, 0.88], [0.6, 1.3], [-0.6, 1.3]] },
+      { art: 'helm', ansicht: 'vorne', mitte: [0.32, 1.02], r: 0.075, farbe: 'helmFahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'vorne', mitte: [-0.32, 1.02], r: 0.075, farbe: 'helmBeifahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.62, 1.16], bis: [0.62, 1.3], farbe: 'banner' },
+      { art: 'text', ansicht: 'vorne', text: 'BERGBLICK', mitte: [0, 1.23], farbe: 'bannerSchrift', abBreite: 480 },
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.8, 0.44], bis: [0.8, 0.76], farbe: 'gitter' },        // breiter Kühlergrill
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.9, 0], bis: [0.9, 0.26], farbe: 'unten' },
+
+      // --- Hinten ---
+      { art: 'polygon', ansicht: 'hinten', farbe: 'glas', punkte: [[-0.68, 0.88], [0.68, 0.88], [0.6, 1.3], [-0.6, 1.3]] },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.48, 1.25], bis: [0.48, 1.275], farbe: 'glasHell' },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.84, 0.46], bis: [0.84, 0.78], farbe: 'schwarz' },     // Heckblende mit Lichtern
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.9, 0], bis: [0.9, 0.26], farbe: 'unten' },
+      { art: 'kennzeichen', ansicht: 'hinten', mitte: [0, 0.62] },                                       // zwischen den Rücklichtern
+
+      // --- Spoilerlippe oben ---
+      { art: 'rechteck', ansicht: 'fluegel', von: [-0.74, -1.97], bis: [0.74, -2.0], farbe: 'akzent' },
+    ],
   },
 };
+
+// WERTE_VORSCHRIFT (M8c): so entstehen die Werte-Balken der Garage (werte, 1 bis 10) aus den Messungen von
+// tools/auto-messung.mjs (Physik ohne Browser, jedes Auto gegen das Profil prototyp; tools/m8c-test.mjs rechnet nach):
+//   beschleunigung = 5.5 + 40 x (Mittel aus prototyp/Auto der Zeiten 0-100 km/h Asphalt und Schotter - 1)
+//   tempo          = 5.5 + 40 x (Höchsttempo Auto / prototyp - 1)
+//   grip           = 5.5 + 40 x (Mittel aus Auto/prototyp der Grenztempi Kreis R 25 m Asphalt, Schotter, Wiesenweg - 1)
+//   drift          = 2 + Zusatz-Schwimmwinkel beim Bremsen in der Kurve (90 km/h, R 80 m, Grad)
+//                      + 10 x (Handbremsen-Drift Asphalt nach 0.5 s Auto/prototyp - 1)
+//   gerundet, höchstens 10, mindestens 1. Der Prototyp hätte 6 / 6 / 6 / 2. Nach einer Änderung am Fahrprofil neu messen
+//   (node tools/auto-messung.mjs) und die Zahlen hier nachtragen (der Test meldet, wenn sie nicht mehr passen).
+export function werteAusMessung(P, X) {
+  const runde = (w) => Math.max(1, Math.min(10, Math.round(w)));
+  const b = (P.beschl100_asphalt / X.beschl100_asphalt + P.beschl100_schotter / X.beschl100_schotter) / 2;
+  const g = ['asphalt', 'schotter', 'wiesenweg'].reduce((s, a) => s + X[`kreis25_${a}`] / P[`kreis25_${a}`], 0) / 3;
+  return {
+    beschleunigung: runde(5.5 + 40 * (b - 1)),
+    tempo: runde(5.5 + 40 * (X.hoechst_asphalt / P.hoechst_asphalt - 1)),
+    grip: runde(5.5 + 40 * (g - 1)),
+    drift: runde(2 + X.heck90_r80.zusatz + 10 * (X.hb_asphalt.nach05 / P.hb_asphalt.nach05 - 1)),
+  };
+}
 
 // Das Modell zu einer Id (unbekannt: das erste)
 export function autoModell(id) {

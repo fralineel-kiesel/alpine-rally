@@ -88,6 +88,8 @@ export function baueSeiten(api) {
   }
   const autoZeile = (a) => ({
     typ: 'aktion', text: a.name, autoId: a.id, // (autoId: für Tests)
+    // das gewählte Auto steht gelb, auch wenn der Zeiger woanders ist (z. B. auf LACK)
+    farbeText: () => ((api.autoWahl ? api.autoWahl().modell : AUTOS[auswahl.auto].id) === a.id ? M.farbeWert : M.farbeText),
     beimWaehlen: () => { if (api.autoWechseln) api.autoWechseln(a.id); },
     aktion: () => menue.schliesse(),
   });
