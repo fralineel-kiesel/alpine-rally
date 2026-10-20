@@ -36,10 +36,10 @@ const kotfluegel = (zRad, r, zVon, zBis, yUnten, yObenVorne, yObenHinten) => [
 export const AUTO_MODELLE = {
   rt4: {
     id: 'rt4',
-    name: 'RINGWERK RT4',
+    name: 'AUDAN QUARTO',       // Anzeigename (M8b; die Id rt4 bleibt, daran hängen Bestzeiten und Fahrprofil)
     fahrprofil: 'rt4',          // Fahrprofil in config.js (fahrprofile)
     nummer: '4',                // Startnummer (Türen, Dach, Motorhaube)
-    kennzeichen: 'RR 4',        // erfundenes Kennzeichen (hinten)
+    kennzeichen: 'AQ 4',        // erfundenes Kennzeichen (hinten)
     lackierungen: ['werk', 'gletscher', 'dunkel'], // Lackierungen aus config.js, autoOptik.lackierungen
     // Masse (Kollision, Felswand, Staub und Physik hängen daran; car.js prüft sie nicht, tools/auto-test.mjs schon)
     masse: { laenge: 4.48, breite: 1.86, radstand: 2.52, spur: 1.6, radRadius: 0.33 },
@@ -126,12 +126,13 @@ export const AUTO_MODELLE = {
       { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[0.6, 0.9], [0.3, 1.285], [-0.4, 1.285], [-0.4, 0.9]] },
       { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[-0.53, 0.9], [-0.53, 1.285], [-0.72, 1.285], [-0.98, 0.9]] },
       { art: 'rechteck', ansicht: 'seite', von: [-0.4, 1.24], bis: [0.33, 1.27], farbe: 'glasHell' },
-      // Helme (Fahrer links, Beifahrer rechts; man sieht jeweils den Kopf auf der eigenen Seite), Visier nach vorne
-      { art: 'helm', ansicht: 'seite', nur: 'links', mitte: [-0.15, 1.11], r: 0.12, farbe: 'helmFahrer', visier: 'vorne' },
-      { art: 'helm', ansicht: 'seite', nur: 'rechts', mitte: [-0.15, 1.11], r: 0.12, farbe: 'helmBeifahrer', visier: 'vorne' },
+      // Helme (Fahrer links, Beifahrer rechts; man sieht jeweils den Kopf auf der eigenen Seite), Visier nach vorne.
+      // M8b: kleiner und in gedeckten Farben (nur dezent zu ahnen); schulter = [Breite, Höhe] der Schultern mal r
+      { art: 'helm', ansicht: 'seite', nur: 'links', mitte: [-0.15, 1.08], r: 0.085, farbe: 'helmFahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'seite', nur: 'rechts', mitte: [-0.15, 1.08], r: 0.085, farbe: 'helmBeifahrer', visier: 'vorne', schulter: [1.3, 1.6] },
       // Startnummer auf der Tür (auf dem Streifen), Sponsoren
       { art: 'nummer', ansicht: 'seite', mitte: [0.22, 0.62] },
-      { art: 'text', ansicht: 'seite', text: 'RINGWERK', mitte: [0, 0.29], farbe: 'sponsorHell', abBreite: 480 }, // (schräg von hinten bei 320x180 nur Rauschen)
+      { art: 'text', ansicht: 'seite', text: 'AUDAN', mitte: [0, 0.29], farbe: 'sponsorHell', abBreite: 480 }, // (schräg von hinten bei 320x180 nur Rauschen)
 
       // --- Oben ---
       { art: 'nummer', ansicht: 'oben', mitte: [0, 1.36], lesbarVon: 'vorne' },
@@ -148,10 +149,10 @@ export const AUTO_MODELLE = {
 
       // --- Vorne ---
       { art: 'polygon', ansicht: 'vorne', farbe: 'glas', punkte: [[-0.72, 0.89], [0.72, 0.89], [0.565, 1.285], [-0.565, 1.285]] },
-      { art: 'helm', ansicht: 'vorne', mitte: [0.36, 1.06], r: 0.11, farbe: 'helmFahrer', visier: 'mitte' },
-      { art: 'helm', ansicht: 'vorne', mitte: [-0.36, 1.06], r: 0.11, farbe: 'helmBeifahrer', visier: 'mitte' },
+      { art: 'helm', ansicht: 'vorne', mitte: [0.36, 1.04], r: 0.08, farbe: 'helmFahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'vorne', mitte: [-0.36, 1.04], r: 0.08, farbe: 'helmBeifahrer', visier: 'mitte', schulter: [1.3, 1.6] },
       { art: 'rechteck', ansicht: 'vorne', von: [-0.6, 1.15], bis: [0.6, 1.3], farbe: 'banner' }, // Sonnenstreifen
-      { art: 'text', ansicht: 'vorne', text: 'RINGWERK', mitte: [0, 1.225], farbe: 'bannerSchrift', abBreite: 480 },
+      { art: 'text', ansicht: 'vorne', text: 'AUDAN', mitte: [0, 1.225], farbe: 'bannerSchrift', abBreite: 480 }, // (AUDAN QUARTO wäre 71 Pixel, der Streifen hat 58)
       { art: 'rechteck', ansicht: 'vorne', von: [-0.58, 0.46], bis: [0.58, 0.63], farbe: 'gitter' },      // Kühlergrill
       { art: 'rechteck', ansicht: 'vorne', von: [0.57, 0.48], bis: [0.87, 0.63], farbe: 'schwarz', spiegeln: true }, // Scheinwerfer-Rahmen
       { art: 'rechteck', ansicht: 'vorne', von: [-0.9, 0], bis: [0.9, 0.44], farbe: 'unten' },           // Frontschürze
@@ -159,9 +160,10 @@ export const AUTO_MODELLE = {
       { art: 'rechteck', ansicht: 'vorne', von: [0.6, 0.24], bis: [0.8, 0.34], farbe: 'gitter', spiegeln: true },
 
       // --- Hinten ---
+      // Heckscheibe: ruhig und dunkel (M8b: keine Köpfe mehr, die wirkten von hinten wie helle Punkte), oben ein
+      // dezenter Glanzstreifen wie an den Seitenscheiben
       { art: 'polygon', ansicht: 'hinten', farbe: 'glas', punkte: [[-0.72, 0.89], [0.72, 0.89], [0.565, 1.285], [-0.565, 1.285]] },
-      { art: 'helm', ansicht: 'hinten', mitte: [0.36, 1.06], r: 0.11, farbe: 'helmFahrer', visier: 'keins' },
-      { art: 'helm', ansicht: 'hinten', mitte: [-0.36, 1.06], r: 0.11, farbe: 'helmBeifahrer', visier: 'keins' },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.5, 1.23], bis: [0.5, 1.255], farbe: 'glasHell' },
       { art: 'rechteck', ansicht: 'hinten', von: [-0.95, 0.55], bis: [0.95, 0.7], farbe: 'schwarz' },     // Rücklicht-Band
       { art: 'rechteck', ansicht: 'hinten', von: [-0.34, 0.57], bis: [0.34, 0.685], farbe: 'heckblende' },
       { art: 'text', ansicht: 'hinten', text: 'TALWERK', mitte: [0, 0.78], farbe: 'sponsor0', abBreite: 480 },

@@ -1066,6 +1066,7 @@ const tonZ = {
   musikModus: 'aus', hx: 0, hz: 0, hyaw: 0, s: 0, // M7b: Hörer = Kamera (Ort, Blickrichtung), Streckenmeter
   modus: 'aus', drehzahl: 0, gang: 0, zielGang: 0, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt', drift: 0,
   handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
+  ladedruck: 0, turboAn: false, // M8b: echter Ladedruck des Getriebes und ob das Fahrprofil einen Turbo hat
 };
 function tonBild(dt) {
   tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm (nur Musik)
@@ -1074,6 +1075,7 @@ function tonBild(dt) {
   tonZ.drehzahl = getriebe.drehzahl; tonZ.gang = getriebe.gang; tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
+  tonZ.ladedruck = getriebe.ladedruck; tonZ.turboAn = !!CONFIG.getriebe.turbo.an; // M8b
   tonZ.aufprall = tonInfo.wucht; tonZ.aufprallArt = tonInfo.art; tonZ.kontaktArt = tonInfo.kontaktArt; tonZ.kontaktTempo = tonInfo.kontaktTempo;
   tonInfo.wucht = 0; tonInfo.kontaktArt = -1;
   ton.aktualisiere(dt, tonZ);

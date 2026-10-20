@@ -210,6 +210,7 @@ export function alleMessungen(m) {
   // Gras: 100 km/h erreicht das Auto auf der Wiese nie (Rollwiderstand), darum 0 auf 60
   r.beschl60_gras = m.beschleunigung('gras', 60);
   r.beschl60_asphalt = m.beschleunigung('asphalt', 60);
+  r.beschl60_schotter = m.beschleunigung('schotter', 60); // M8b (Info): Anfahren auf Schotter, z. B. aus einer Kehre
   r.bremsweg100_asphalt = m.bremsweg('asphalt', 100);
   r.kreis25_asphalt = m.kreisGrenze(25, 'asphalt');
   r.kreis25_schotter = m.kreisGrenze(25, 'schotter');

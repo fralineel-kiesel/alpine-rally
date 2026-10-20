@@ -1,0 +1,427 @@
+{
+ "hinweis": "Automatisch erzeugt von node tools/m8b-messung.mjs. m8a = Version 0.8a, m8b = jetzt; je Profil prototyp und rt4 (Audan Quarto).",
+ "m8a": {
+  "physik": {
+   "version": "0.8a",
+   "prototyp": {
+    "beschl100_asphalt": 5.133333333333378,
+    "beschl100_schotter": 5.775000000000077,
+    "beschl100_wiesenweg": 8.283333333333504,
+    "beschl100_bankett": 6.150000000000095,
+    "beschl60_gras": 10.100000000000067,
+    "beschl60_asphalt": 2.6583333333333266,
+    "beschl60_schotter": 3.0083333333333253,
+    "bremsweg100_asphalt": 35.75241244888199,
+    "kreis25_asphalt": 54.378808593749994,
+    "kreis25_schotter": 49.300048828125,
+    "kreis25_wiesenweg": 40.913525390625,
+    "lenk80_r60": {
+     "grad": 3.540983315241466,
+     "kinematisch": 2.4050092587054004,
+     "versatz": 0.35230680879458276,
+     "schwimm": 3.307221216476918
+    },
+    "heck90_r80": {
+     "vorher": 3.374501574716248,
+     "nach05": 3.118414118468859,
+     "zusatz": -0.2560874562473887,
+     "max": 3.444966811731651,
+     "einfangen": 1.127986593019159e-13,
+     "dreher": false
+    },
+    "heck90_r80_voll": {
+     "vorher": 3.374501574716248,
+     "nach05": 2.930096061356534,
+     "zusatz": -0.444405513359714,
+     "max": 3.479479963274319,
+     "einfangen": 1.127986593019159e-13,
+     "dreher": false
+    },
+    "gas_r80": {
+     "max": 3.929926508847589,
+     "tempoEnde": 100.74877656009701,
+     "versatzEnde": 1.0594752145128723
+    },
+    "gas_r80_schotter": {
+     "max": 3.3335095669145627,
+     "tempoEnde": 93.15455644187392,
+     "versatzEnde": 0.5640412689942451
+    },
+    "hb_asphalt": {
+     "nach05": 6.705581909463974,
+     "max": 17.17586405076352,
+     "gerade": 0.6249999999999981
+    },
+    "hb_schotter": {
+     "nach05": 6.08987563781765,
+     "max": 17.058493467584942,
+     "gerade": 0.8333333333333307
+    },
+    "rueck_asphalt": {
+     "max": 32.4,
+     "t95": 3.3333333333333335,
+     "nach1s": 9.350664289592048
+    },
+    "rueck_gras": {
+     "max": 21.599999999999998,
+     "t95": 1.5416666666666667,
+     "nach1s": 13.79237253521174
+    }
+   },
+   "rt4": {
+    "beschl100_asphalt": 5.025000000000039,
+    "beschl100_schotter": 5.475000000000062,
+    "beschl100_wiesenweg": 7.5000000000001625,
+    "beschl100_bankett": 6.025000000000089,
+    "beschl60_gras": 10.100000000000067,
+    "beschl60_asphalt": 2.61666666666666,
+    "beschl60_schotter": 2.7999999999999927,
+    "bremsweg100_asphalt": 35.75241244888199,
+    "kreis25_asphalt": 55.807031249999994,
+    "kreis25_schotter": 50.596875,
+    "kreis25_wiesenweg": 44.404101562499996,
+    "lenk80_r60": {
+     "grad": 4.09927272192017,
+     "kinematisch": 2.4050092587054004,
+     "versatz": 0.5793631621242734,
+     "schwimm": 2.9602615872068676
+    },
+    "heck90_r80": {
+     "vorher": 3.0559067230533543,
+     "nach05": 5.343522991994265,
+     "zusatz": 2.2876162689409103,
+     "max": 6.930866468378051,
+     "einfangen": 0.3833333333334652,
+     "dreher": false
+    },
+    "heck90_r80_voll": {
+     "vorher": 3.0559067230533543,
+     "nach05": 7.450020679033317,
+     "zusatz": 4.394113955979963,
+     "max": 9.583216464478017,
+     "einfangen": 0.5666666666668077,
+     "dreher": false
+    },
+    "gas_r80": {
+     "max": 2.913569487682009,
+     "tempoEnde": 101.74946966293571,
+     "versatzEnde": 2.5907107806673793
+    },
+    "gas_r80_schotter": {
+     "max": 3.1466824560793754,
+     "tempoEnde": 93.93661186656367,
+     "versatzEnde": 1.814213317954625
+    },
+    "hb_asphalt": {
+     "nach05": 6.114988638279923,
+     "max": 20.2489623955798,
+     "gerade": 0.7833333333333309
+    },
+    "hb_schotter": {
+     "nach05": 5.686669753720284,
+     "max": 20.098803762760248,
+     "gerade": 1.08333333333333
+    },
+    "rueck_asphalt": {
+     "max": 32.4,
+     "t95": 3.3333333333333335,
+     "nach1s": 9.350664289592048
+    },
+    "rueck_gras": {
+     "max": 21.599999999999998,
+     "t95": 1.5416666666666667,
+     "nach1s": 13.79237253521174
+    }
+   }
+  },
+  "testfahrer": {
+   "rt4": {
+    "vorsichtig": {
+     "zeit": 178.73,
+     "cps": [
+      34.17,
+      100,
+      146.65
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 18.42,
+      "Almweg": 20.45,
+      "Wiesenweg": 17.27
+     },
+     "asphalt": 122.58999999999999
+    },
+    "mittel": {
+     "zeit": 161.82999999999998,
+     "cps": [
+      31.11,
+      90.25,
+      132.36
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 16.02,
+      "Almweg": 18.66,
+      "Wiesenweg": 15.43
+     },
+     "asphalt": 111.71999999999998
+    },
+    "flott": {
+     "zeit": 151.24,
+     "cps": [
+      29.07,
+      84.48,
+      123.63
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 14.51,
+      "Almweg": 17.02,
+      "Wiesenweg": 14.38
+     },
+     "asphalt": 105.33000000000001
+    }
+   }
+  }
+ },
+ "m8b": {
+  "physik": {
+   "version": "0.8b",
+   "prototyp": {
+    "beschl100_asphalt": 5.133333333333378,
+    "beschl100_schotter": 5.775000000000077,
+    "beschl100_wiesenweg": 8.283333333333504,
+    "beschl100_bankett": 6.150000000000095,
+    "beschl60_gras": 10.100000000000067,
+    "beschl60_asphalt": 2.6583333333333266,
+    "beschl60_schotter": 3.0083333333333253,
+    "bremsweg100_asphalt": 35.75241244888199,
+    "kreis25_asphalt": 54.378808593749994,
+    "kreis25_schotter": 49.300048828125,
+    "kreis25_wiesenweg": 40.913525390625,
+    "lenk80_r60": {
+     "grad": 3.540983315241466,
+     "kinematisch": 2.4050092587054004,
+     "versatz": 0.35230680879458276,
+     "schwimm": 3.307221216476918
+    },
+    "heck90_r80": {
+     "vorher": 3.374501574716248,
+     "nach05": 3.118414118468859,
+     "zusatz": -0.2560874562473887,
+     "max": 3.444966811731651,
+     "einfangen": 1.127986593019159e-13,
+     "dreher": false
+    },
+    "heck90_r80_voll": {
+     "vorher": 3.374501574716248,
+     "nach05": 2.930096061356534,
+     "zusatz": -0.444405513359714,
+     "max": 3.479479963274319,
+     "einfangen": 1.127986593019159e-13,
+     "dreher": false
+    },
+    "gas_r80": {
+     "max": 3.929926508847589,
+     "tempoEnde": 100.74877656009701,
+     "versatzEnde": 1.0594752145128723
+    },
+    "gas_r80_schotter": {
+     "max": 3.3335095669145627,
+     "tempoEnde": 93.15455644187392,
+     "versatzEnde": 0.5640412689942451
+    },
+    "hb_asphalt": {
+     "nach05": 6.705581909463974,
+     "max": 17.17586405076352,
+     "gerade": 0.6249999999999981
+    },
+    "hb_schotter": {
+     "nach05": 6.08987563781765,
+     "max": 17.058493467584942,
+     "gerade": 0.8333333333333307
+    },
+    "rueck_asphalt": {
+     "max": 32.4,
+     "t95": 3.3333333333333335,
+     "nach1s": 9.350664289592048
+    },
+    "rueck_gras": {
+     "max": 21.599999999999998,
+     "t95": 1.5416666666666667,
+     "nach1s": 13.79237253521174
+    }
+   },
+   "rt4": {
+    "beschl100_asphalt": 5.025000000000039,
+    "beschl100_schotter": 5.450000000000061,
+    "beschl100_wiesenweg": 7.225000000000149,
+    "beschl100_bankett": 6.025000000000089,
+    "beschl60_gras": 10.100000000000067,
+    "beschl60_asphalt": 2.61666666666666,
+    "beschl60_schotter": 2.774999999999993,
+    "bremsweg100_asphalt": 35.75241244888199,
+    "kreis25_asphalt": 55.732763671875,
+    "kreis25_schotter": 51.91083984375,
+    "kreis25_wiesenweg": 46.043701171875,
+    "lenk80_r60": {
+     "grad": 4.138890809740569,
+     "kinematisch": 2.4050092587054004,
+     "versatz": 0.5929162828772042,
+     "schwimm": 2.940526682721101
+    },
+    "heck90_r80": {
+     "vorher": 3.0358280155874473,
+     "nach05": 6.628325035365144,
+     "zusatz": 3.5924970197776966,
+     "max": 9.539027527834019,
+     "einfangen": 0.5666666666668077,
+     "dreher": false
+    },
+    "heck90_r80_voll": {
+     "vorher": 3.0358280155874473,
+     "nach05": 8.311631445372162,
+     "zusatz": 5.275803429784715,
+     "max": 10.873711751020497,
+     "einfangen": 0.7416666666668164,
+     "dreher": false
+    },
+    "gas_r80": {
+     "max": 2.765240009243189,
+     "tempoEnde": 101.75851875397954,
+     "versatzEnde": 2.9329697646190453
+    },
+    "gas_r80_schotter": {
+     "max": 3.288381547456077,
+     "tempoEnde": 93.85150702548715,
+     "versatzEnde": 1.9905887956380894
+    },
+    "hb_asphalt": {
+     "nach05": 6.260401573588249,
+     "max": 21.448297273834672,
+     "gerade": 0.8249999999999974
+    },
+    "hb_schotter": {
+     "nach05": 5.995827053329442,
+     "max": 23.213906788399573,
+     "gerade": 1.2833333333333292
+    },
+    "rueck_asphalt": {
+     "max": 32.4,
+     "t95": 3.3333333333333335,
+     "nach1s": 9.350664289592048
+    },
+    "rueck_gras": {
+     "max": 21.599999999999998,
+     "t95": 1.5416666666666667,
+     "nach1s": 13.79237253521174
+    }
+   }
+  },
+  "testfahrer": {
+   "prototyp": {
+    "vorsichtig": {
+     "zeit": 179.32999999999998,
+     "cps": [
+      34.37,
+      100.31,
+      147.07
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 18.5,
+      "Almweg": 20.47,
+      "Wiesenweg": 17.43
+     },
+     "asphalt": 122.92999999999998
+    },
+    "mittel": {
+     "zeit": 162.35,
+     "cps": [
+      31.21,
+      90.46000000000001,
+      132.73
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 16.03,
+      "Almweg": 18.71,
+      "Wiesenweg": 15.58
+     },
+     "asphalt": 112.03
+    },
+    "flott": {
+     "zeit": 151.92000000000002,
+     "cps": [
+      29.34,
+      84.82,
+      124.13
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 14.53,
+      "Almweg": 17.1,
+      "Wiesenweg": 14.5
+     },
+     "asphalt": 105.79000000000002
+    }
+   },
+   "rt4": {
+    "vorsichtig": {
+     "zeit": 178.65,
+     "cps": [
+      34.17,
+      99.99000000000001,
+      146.63
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 18.42,
+      "Almweg": 20.45,
+      "Wiesenweg": 17.2
+     },
+     "asphalt": 122.58
+    },
+    "mittel": {
+     "zeit": 161.76,
+     "cps": [
+      31.11,
+      90.24,
+      132.34
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 16.02,
+      "Almweg": 18.66,
+      "Wiesenweg": 15.38
+     },
+     "asphalt": 111.69999999999999
+    },
+    "flott": {
+     "zeit": 151.22,
+     "cps": [
+      29.1,
+      84.49,
+      123.63
+     ],
+     "aufpralle": "keine",
+     "haenger": 0,
+     "wege": {
+      "Talschleife": 14.5,
+      "Almweg": 17.03,
+      "Wiesenweg": 14.34
+     },
+     "asphalt": 105.35
+    }
+   }
+  }
+ }
+}

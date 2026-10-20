@@ -4,6 +4,8 @@
 // Neuladen; das Spiel lädt seine eigene config.js), WERTE KOPIEREN für den Chat, ALLES ZURÜCK.
 // M7b: Bereich "Umgebung" (eine Quelle, Hörer im Abstand und Winkel daneben, VORBEIFAHREN mit 90 km/h in 15 m Abstand)
 // und "Musik" (Abschnitte, Art, Tempo, Kanäle stumm, Regler Musik); Feinschliff um Umgebung und Musik erweitert.
+// M8b: Schalter ECHTER LADEDRUCK AN (Ton wie im Audan Quarto: Pfeifen, Blow-off und Pops folgen dem Ladedruck des
+// Getriebes) mit Regler LADEDRUCK (Test); beim Anfahren liefert das echte Getriebe mit Turbo den Ladedruck.
 
 import { CONFIG } from './config.js';
 import { baueTon, materialNr } from './audio.js';
@@ -21,6 +23,7 @@ const z = {
   modus: 'rennen', drehzahl: G.leerlauf, gang: 1, zielGang: 1, schaltet: false, gas: 0, bremse: 0, tempo: 0, vVor: 0, untergrund: 'asphalt',
   drift: 0, handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
   musikModus: 'aus', hx: 0, hz: -10, hyaw: 0, s: 500, // M7b: Hörer (die Quelle steht im Ursprung)
+  ladedruck: 0, turboAn: false, // M8b
 };
 let schaltRest = 0, schaltVon = 0, schaltHoch = true, demo = null;
 
@@ -34,8 +37,12 @@ const anzeigen = () => {
   $('driftW').textContent = `${$('drift').value}°`;
   $('lautW').textContent = `${$('laut').value} %`;
   $('signaleW').textContent = `${$('signale').value} %`;
+  $('ladedruckW').textContent = `${Math.round(+$('ladedruck').value * 100)} %`;
+  $('echterLadedruckW').textContent = $('echterLadedruck').checked ? 'AN' : 'AUS';
 };
-for (const id of ['drehzahl', 'gas', 'tempo', 'drift', 'laut', 'signale']) $(id).addEventListener('input', () => { demo = null; anzeigen(); });
+for (const id of ['drehzahl', 'gas', 'tempo', 'drift', 'laut', 'signale', 'ladedruck']) $(id).addEventListener('input', () => { demo = null; anzeigen(); });
+// M8b: Turbo wie im Fahrprofil des Audan Quarto (nur auf dieser Seite: das Getriebe fürs Anfahren baut dann Ladedruck auf)
+$('echterLadedruck').addEventListener('change', () => { G.turbo.an = $('echterLadedruck').checked; anzeigen(); });
 $('laut').addEventListener('input', () => ton.lautstaerke(+$('laut').value));
 // Regler Signaltöne (M7a.1, wie im Spiel): danach der Regler-Tick, damit man die neue Stärke hört
 $('signale').addEventListener('input', () => { ton.signalLautstaerke(+$('signale').value); if (ton.werk) ton.werk.menue('regler', +$('signale').value / 100); });
@@ -62,7 +69,7 @@ function tu(was) {
   switch (was) {
     case 'blowOff': w.zustand.druck = Math.max(w.zustand.druck, 0.9); w.blowOff(); break;
     case 'knall': w.knall(0, 1); break;
-    case 'salve': w.salve(); break;
+    case 'salve': w.salve(z.turboAn && z.ladedruck >= A.motor.blowOffAb); break; // M8b: mit Anti-Lag etwas öfter
     case 'schalten': schaltRest = G.schaltDauerHoch; schaltVon = +drehzahl.value; schaltHoch = true; break;
     case 'runterschalten': schaltRest = G.schaltDauerRunter; schaltVon = +drehzahl.value; schaltHoch = false; break;
     case 'countdown': w.countdown(); break;
@@ -75,7 +82,7 @@ function tu(was) {
     case 'weiter': w.pauseTon(false); break;
     case 'beschleunigen': demo = { getriebe: new Getriebe(), v: 0, phase: 'gas', zeit: 0 }; $('modus').value = 'rennen'; break;
     case 'stopp':
-      demo = null; drehzahl.value = G.leerlauf; $('gas').value = 0; $('tempo').value = 0; $('drift').value = 0;
+      demo = null; drehzahl.value = G.leerlauf; $('gas').value = 0; $('tempo').value = 0; $('drift').value = 0; $('ladedruck').value = 0;
       $('handbremse').checked = false; $('rueckwaerts').checked = false; $('schleifen').value = -1; anzeigen(); w.allesAus(); break;
     default:
   }
@@ -181,6 +188,7 @@ function bild(jetzt) {
     if (demo.phase === 'aus' && demo.v < 2) demo = null;
     if (demo) {
       drehzahl.value = demo.getriebe.drehzahl; $('gas').value = e.gas; $('tempo').value = Math.round(demo.v * 3.6);
+      $('ladedruck').value = demo.getriebe.ladedruck; // M8b: echter Ladedruck (0 ohne ECHTER LADEDRUCK AN)
       z.schaltet = demo.getriebe.schaltet; z.gang = demo.getriebe.gang; z.zielGang = demo.getriebe.zielGang;
       anzeigen();
     }
@@ -199,6 +207,7 @@ function bild(jetzt) {
     }
   }
   z.drehzahl = +drehzahl.value; z.gas = +$('gas').value; z.tempo = +$('tempo').value / 3.6;
+  z.turboAn = $('echterLadedruck').checked; z.ladedruck = +$('ladedruck').value; // M8b
   z.vVor = $('rueckwaerts').checked ? -z.tempo : z.tempo;
   if ($('rueckwaerts').checked && !demo) { z.gang = -1; z.zielGang = -1; }
   z.untergrund = $('untergrund').value; z.drift = +$('drift').value; z.handbremse = $('handbremse').checked;
@@ -236,7 +245,7 @@ function bild(jetzt) {
   $('anzeige').textContent = [
     `Grundton      ${s.f0.toFixed(1)} Hz`,
     `Heulen        ${s.heulen > 0 ? `${s.heulenHz.toFixed(0)} Hz` : '-'}`,
-    `Ladedruck     ${(s.druck * 100).toFixed(0)} %`,
+    `Ladedruck     ${(s.druck * 100).toFixed(0)} %${z.turboAn ? ' (echter Ladedruck, Pfeifen mal turboPegelMal)' : ' (eigenes Modell aus Gas und Drehzahl)'}`,
     `Begrenzer     ${s.begrenzer > 0 ? 'STOTTERT' : '-'}`,
     `Stimmen       ${w.stimmen} / ${A.maxStimmen}`,
     `Puffer        ${w.aufbau.fertig ? `fertig in ${w.aufbau.ms.toFixed(0)} ms (${w.aufbau.haeppchen} Häppchen, längstes ${w.aufbau.laengstesMs.toFixed(1)} ms)` : 'werden gebaut …'}`,
@@ -262,6 +271,9 @@ const FEIN = [
   { pfad: 'audio.motor.unter', name: 'Anteil tiefes Brummen (unter)', min: 0, max: 0.6, schritt: 0.01 },
   { pfad: 'audio.motor.pegel', name: 'Motor-Lautstärke', min: 0, max: 1, schritt: 0.01 },
   { pfad: 'audio.motor.knallChance', name: 'Knall-Chance (Poppen)', min: 0, max: 1, schritt: 0.05 },
+  // M8b: Turbo im Audan Quarto (wirken nur mit ECHTER LADEDRUCK AN bzw. im Spiel mit Turbo-Profil)
+  { pfad: 'audio.motor.turboPegelMal', name: 'Turbo-Pfeifen lauter (mal turboPegel)', min: 0, max: 3, schritt: 0.05 },
+  { pfad: 'audio.motor.turboKnallPlus', name: 'Mehr Pops mit Anti-Lag (plus Knall-Chance)', min: 0, max: 0.3, schritt: 0.01 },
   { pfad: 'audio.motor.popPegel', name: 'Pop-Lautstärke', min: 0, max: 2, schritt: 0.05 },
   { pfad: 'audio.motor.schaltKnallChance', name: 'Schaltknall-Chance', min: 0, max: 1, schritt: 0.05 },
   { pfad: 'audio.motor.klackPegel', name: 'Klack-Lautstärke', min: 0, max: 1, schritt: 0.02 },

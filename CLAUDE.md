@@ -8,6 +8,6 @@
 - Kleine Meilensteine. Nur das bauen, was im Prompt steht. Ideen ausserhalb des Auftrags in STAND.md unter "Ideen/Vorschläge" notieren statt umsetzen.
 - Nach jedem Meilenstein STAND.md aktualisieren (auf Deutsch, verständlich ohne Programmierkenntnisse): was gebaut wurde, wie man es testet, bekannte Probleme.
 - Code-Kommentare auf Deutsch, kurz und verständlich.
-- Keine echten Automarken, Logos oder Originaldesigns. Autos haben Fantasienamen.
+- Keine echten Automarken, Logos oder Originaldesigns. Autos haben Fantasienamen. Fantasienamen: Anfangsbuchstaben von Marke und Modell wie beim echten Vorbild, sonst erfunden und nie ein echter Name (z. B. Audan Quarto für den Quattro-Typ, Id `rt4`).
 - Keine externen Assets (Bilder, Modelle, Fonts) ohne Rückfrage. Grafiken werden aus Formen gebaut oder im Code als Pixel-Textur erzeugt.
 

@@ -173,9 +173,10 @@ function male(ctx, d, n, b, lack, m) {
       fuellePixel(ctx, d, (x, y) => y >= my - Math.max(1, r * 0.3) && y <= my + 0.2 && imVisier(x), farbeVon('visier', lack),
         [mx - r, my - Math.max(1, r * 0.3), mx + r, my + 0.2]);
     }
-    // Schultern darunter (dunkel)
-    fuellePixel(ctx, d, (x, y) => y > my + r && y <= my + r * 1.9 && Math.abs(x - mx) <= r * 1.5, farbeVon('schulter', lack),
-      [mx - r * 1.5, my + r, mx + r * 1.5, my + r * 1.9]);
+    // Schultern darunter (dunkel); b.schulter = [Breite, Höhe] mal r (fehlt: 1.5 / 1.9 wie in M8a)
+    const [sb, sh] = b.schulter || [1.5, 1.9];
+    fuellePixel(ctx, d, (x, y) => y > my + r && y <= my + r * sh && Math.abs(x - mx) <= r * sb, farbeVon('schulter', lack),
+      [mx - r * sb, my + r, mx + r * sb, my + r * sh]);
   } else if (b.art === 'text') {
     maleText(ctx, d, n, b, b.text, [b.gespiegelt ? -b.mitte[0] : b.mitte[0], b.mitte[1]], farbe);
   } else if (b.art === 'nummer' || b.art === 'kennzeichen') {
@@ -581,6 +582,7 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
     get lackName() { return lackName; },
     uniforms: U,
     leinwand, radLeinwand,
+    zuAtlas: (ansicht, u, v) => zuPixel(A.def[ansicht], u, v), // M8b (für Tests): Punkt einer Ansicht -> Pixel der Lack-Textur
     // Räder: z = { lenkwinkel (rad, sichtbarer Einschlag vorne), strecke (gefahrene Meter seit dem letzten Bild,
     // rückwärts negativ), tempo (m/s, für die Unschärfe der Felge) } – ein Objekt statt drei Zahlen (nichts Neues pro Bild)
     raederBewegen(z) {

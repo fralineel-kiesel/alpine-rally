@@ -563,7 +563,8 @@ export function baueKlangwerk(ctx) {
 
   // Ein Bild. z: { modus ('aus' | 'countdown' | 'rennen' | 'ziel' | 'pause'), drehzahl, gang, schaltet, gas, bremse,
   //   tempo, vVor, untergrund, drift (Grad), handbremse, aufprall (Wucht m/s in diesem Bild), aufprallArt (Material),
-  //   kontaktArt (-1 = kein Kontakt), kontaktTempo }
+  //   kontaktArt (-1 = kein Kontakt), kontaktTempo, M8b: ladedruck (0..1, echter Ladedruck des Getriebes),
+  //   turboAn (Fahrprofil mit Turbo; fehlt/false = eigenes Turbo-Modell wie bis 0.8a) }
   function aktualisiere(dt, z) {
     zu.uhr += dt;
     zu.modus = z.modus;
@@ -628,10 +629,17 @@ export function baueKlangwerk(ctx) {
     const steht = z.modus === 'ziel' && z.tempo < C.zielStand.ab;
     zu.motorAn = steht ? 0 : 1;
     setze(W_AUS, motorAus.gain, zu.motorAn, steht ? C.zielStand.blende / 3 : 0.05);
-    // Turbo: Ladedruck läuft Gas und Drehzahl träge hinterher
-    const druckZiel = gas * begr((rpm - M.turboAb) / (M.turboVoll - M.turboAb), 0, 1);
-    zu.druck += (druckZiel - zu.druck) * (1 - Math.exp(-dt / (druckZiel > zu.druck ? M.turboRauf : M.turboRunter)));
-    zu.turbo = M.turboPegel * zu.druck * zu.druck;
+    // Turbo: Ladedruck läuft Gas und Drehzahl träge hinterher (eigenes Modell, Profil ohne Turbo wie bis 0.8a).
+    // M8b: Mit Turbo im Fahrprofil (z.turboAn) folgt er dem echten Ladedruck des Getriebes (z.ladedruck, nur kurz
+    // geglättet): das Pfeifen steigt mit dem Aufbau nach dem Gasgeben und reisst mit Anti-Lag in der Schaltpause nicht ab
+    if (z.turboAn) {
+      zu.druck += (begr(z.ladedruck || 0, 0, 1) - zu.druck) * (1 - Math.exp(-dt / M.turboEchtGlaetten));
+      zu.turbo = M.turboPegel * M.turboPegelMal * zu.druck * zu.druck;
+    } else {
+      const druckZiel = gas * begr((rpm - M.turboAb) / (M.turboVoll - M.turboAb), 0, 1);
+      zu.druck += (druckZiel - zu.druck) * (1 - Math.exp(-dt / (druckZiel > zu.druck ? M.turboRauf : M.turboRunter)));
+      zu.turbo = M.turboPegel * zu.druck * zu.druck;
+    }
     setze(W_TURBO, turboGain.gain, zu.turbo);
     setze(W_TURBOHZ, turbo.frequency, mische(M.turboTonMin, M.turboTonMax, zu.druck));
     // Blow-off: Gas (inkl. Schaltpause) schnell gefallen bei Ladedruck; beim Schalten unter Last lauter
@@ -641,12 +649,13 @@ export function baueKlangwerk(ctx) {
       blowOff(z.schaltet && zu.schaltLast > M.schaltLastAb);
     }
     if (gas > 0.6) zu.blowOffBereit = true;
-    // Poppen: Pedal schnell weg aus hoher Last über knallAb (Zufall aus fester Folge, danach Sperre)
+    // Poppen: Pedal schnell weg aus hoher Last über knallAb (Zufall aus fester Folge, danach Sperre).
+    // M8b: mit Turbo und aktivem Anti-Lag (Drehzahl über turbo.antiLagAb, Ladedruck hoch) etwas öfter (turboKnallPlus)
     zu.pedalLangsam += (pedal - zu.pedalLangsam) * (1 - Math.exp(-dt / M.blowOffZeit));
     if (zu.knallBereit && zu.pedalLangsam - pedal > 0.5 && rpm > M.knallAb && zu.uhr > zu.knallSperre) {
       zu.knallBereit = false;
       zu.knallSperre = zu.uhr + M.knallSperre;
-      salve();
+      salve(!!z.turboAn && rpm >= G.turbo.antiLagAb && (z.ladedruck || 0) >= M.blowOffAb);
     }
     if (pedal > 0.6) zu.knallBereit = true;
     // Drehzahlbegrenzer
@@ -716,10 +725,11 @@ export function baueKlangwerk(ctx) {
     merke(art, wann);
     spiele(art, 'pop', motorAus, M.popPegel * staerke, wann, zwischen(M.popTempo, rnd()));
   }
-  // Gaswegnehmen aus hoher Last: mit knallChance eine Salve (1-4 Pops), dazu manchmal leises Knistern. Ergebnis: Anzahl Pops
-  function salve() {
+  // Gaswegnehmen aus hoher Last: mit knallChance eine Salve (1-4 Pops), dazu manchmal leises Knistern. Ergebnis: Anzahl Pops.
+  // antiLag (M8b): Turbo mit Anti-Lag aktiv -> Chance plus turboKnallPlus (gleich viele Zufallszahlen wie ohne)
+  function salve(antiLag = false) {
     let t = zwischen(M.knallFenster, rnd());
-    const n = rnd() < M.knallChance ? ganzZwischen(M.popAnzahl) : 0;
+    const n = rnd() < M.knallChance + (antiLag ? M.turboKnallPlus : 0) ? ganzZwischen(M.popAnzahl) : 0;
     for (let k = 0; k < n; k++) { knall(t, zwischen(M.popStaerke, rnd())); t += zwischen(M.popAbstand, rnd()); }
     if (rnd() < M.knisternChance) {
       const m = ganzZwischen(M.knisternAnzahl);

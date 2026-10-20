@@ -42,6 +42,7 @@ const kamera = new THREE.PerspectiveCamera(CONFIG.kamera.sichtfeld, 16 / 9, 0.1,
 // --- Das Auto (dieselbe Funktion wie im Spiel) ---
 auto = baueAuto(undefined, undefined, renderer.domElement.width);
 szene.add(auto.objekt);
+$('titel').textContent = `ALPINE RALLY · AUTO-LABOR · ${auto.modell.name}`; // (Name aus js/autos.js)
 const federung = baueFederung();
 const staub = baueStaub(szene);
 const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: true, belag: 'schotter' };

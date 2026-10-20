@@ -1,0 +1,104 @@
+{
+ "pegel": {
+  "ohneTurbo": {
+   "5000": {
+    "turboRms": 0.02448,
+    "turboSpitze": 0.03462,
+    "schwerpunkt": 5183.56238,
+    "motorRms": 0.21328,
+    "motorGegenTurboDb": 18.80339,
+    "mischungSpitze": 0.61226,
+    "mischungRms": 0.21468
+   },
+   "7000": {
+    "turboRms": 0.02475,
+    "turboSpitze": 0.035,
+    "schwerpunkt": 5199.99978,
+    "motorRms": 0.23288,
+    "motorGegenTurboDb": 19.47164,
+    "mischungSpitze": 0.57718,
+    "mischungRms": 0.23419
+   }
+  },
+  "mitTurbo": {
+   "5000": {
+    "turboRms": 0.03341,
+    "turboSpitze": 0.04725,
+    "schwerpunkt": 5199.99978,
+    "motorRms": 0.21328,
+    "motorGegenTurboDb": 16.10141,
+    "mischungSpitze": 0.62826,
+    "mischungRms": 0.21589
+   },
+   "7000": {
+    "turboRms": 0.03341,
+    "turboSpitze": 0.04725,
+    "schwerpunkt": 5199.99978,
+    "motorRms": 0.23288,
+    "motorGegenTurboDb": 16.86497,
+    "mischungSpitze": 0.58918,
+    "mischungRms": 0.23527
+   }
+  },
+  "halb": {
+   "turboRms": 0.00835,
+   "schwerpunkt": 3700.00006
+  }
+ },
+ "aufbau": {
+  "prototyp": {
+   "pegel90": 1.28,
+   "druck95": 1.31667,
+   "druckEnde": 0.91928,
+   "aufbau": 0.35
+  },
+  "rt4": {
+   "pegel90": 0.42,
+   "druck95": 0.35,
+   "druckEnde": 1,
+   "aufbau": 0.35
+  }
+ },
+ "antiLag": {
+  "prototyp": {
+   "pauseVon": 0.41667,
+   "pauseBis": 0.68333,
+   "minRmsPause": 0.00894,
+   "rmsVorher": 0.01185,
+   "minDruckPause": 0.35312,
+   "minLadedruckPause": 0
+  },
+  "rt4": {
+   "pauseVon": 0.41667,
+   "pauseBis": 0.7,
+   "minRmsPause": 0.01864,
+   "rmsVorher": 0.0317,
+   "minDruckPause": 0.7001,
+   "minLadedruckPause": 0.7
+  },
+  "bezug07": 0.01637
+ },
+ "pops": {
+  "prototyp": {
+   "salven": 24,
+   "mitAntiLag": 0,
+   "pops": 41,
+   "salvenMitPops": 16,
+   "blowOff": 24
+  },
+  "rt4": {
+   "salven": 24,
+   "mitAntiLag": 24,
+   "pops": 46,
+   "salvenMitPops": 22,
+   "blowOff": 25
+  }
+ },
+ "werte": {
+  "turboPegel": 0.035,
+  "turboPegelMal": 1.35,
+  "turboKnallPlus": 0.15,
+  "knallChance": 0.7,
+  "aufbau": 0.35
+ }
+}

@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8a';
+export const VERSION = '0.8b';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -576,7 +576,7 @@ export const CONFIG = {
 
   // --- Fahrphysik -----------------------------------------------------
   auto: {
-    name: 'Ringwerk RT4',
+    name: 'Audan Quarto',     // Anzeigename (Id und Fahrprofil heissen weiter rt4)
     // Antrieb und Schalten: siehe "getriebe" weiter unten
     luftwiderstand: 3.25,      // Bremsung durch die Luft bei 190 km/h (m/s²), wächst mit dem Tempo im Quadrat.
                                // Zusammen mit dem 5. Gang ergibt das das Höchsttempo (weich, kein harter Anschlag)
@@ -626,6 +626,8 @@ export const CONFIG = {
     gewichtstransfer: 0,       // Gewichtsverlagerung längs: Bremsen = mehr Last vorne, Gas = mehr hinten (0 = aus, 0.35 = deutlich)
     gewichtstransferGlaettung: 0.1, // ... so weich (Sekunden) folgt die Verlagerung der Beschleunigung (kein Zittern)
     heckJeBelag: { schotter: 1, wiesenweg: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
+    vorneJeBelag: { schotter: 1, wiesenweg: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
+                               // fehlt ein Belag, gilt 1. Asphalt, Bankett und Gras bewusst nicht: sonst lohnen Abkürzungen)
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -678,19 +680,21 @@ export const CONFIG = {
   // Auswahl: index.html?auto=prototyp oder ?auto=rt4 (Standard: rt4). Zum Ausprobieren: index.html?fahrlabor=1
   fahrprofile: {
     prototyp: {},              // keine Änderung (Referenz)
-    // Ringwerk RT4: Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
+    // Audan Quarto (Id rt4): Traktions-Monster mit Allrad und Turbo. Viel Grip beim Beschleunigen (vor allem auf Schotter),
     // schiebt in schnellen Kurven eher über die Vorderräder, das Heck kommt mit der Handbremse oder beim Bremsen in der Kurve.
     rt4: {
       auto: {
         lastVorneAnteil: 0.555,  // frontlastig: vorne mehr Haftung, hinten weniger
         schwerpunktVorne: 0.46,  // Schwerpunkt weiter vorne (Prototyp 0.48): schiebt in schnellen Kurven eher über die Front
         traegheit: 2.5,          // schwerer, ruhiger Wagen (Prototyp 2.3)
-        gewichtstransfer: 0.35,  // Bremsen in der Kurve = Heck kommt; Gas = Heck stabil, Front schiebt etwas
+        gewichtstransfer: 0.45,  // Bremsen in der Kurve = Heck kommt; Gas = Heck stabil, Front schiebt etwas (M8a: 0.35)
         gasImDrift: 0.07,        // Gas lockert das Heck im Drift weniger (Prototyp 0.12): Allrad zieht gerade
-        heckJeBelag: { schotter: 1.1, wiesenweg: 1.15 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser
+        heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser (M8a: 1.1 / 1.15)
+        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.06 }, // M8b: Allrad zieht die Front auf losem Boden in die Kurve
+                                 // (Asphalt, Bankett, Gras: kein Vorteil, sonst lohnen sich Abkürzungen)
       },
       getriebe: {
-        allrad: { schotter: 1.15, wiesenweg: 1.1 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil)
+        allrad: { schotter: 1.2, wiesenweg: 1.15 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil; M8a: 1.15 / 1.1)
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },
@@ -1433,6 +1437,10 @@ export const CONFIG = {
       turboTonMin: 2200,       // Pfeifen: Tonhöhe bei wenig Ladedruck (Hz) ...
       turboTonMax: 5200,       // ... und bei vollem
       turboPegel: 0.035,       // Lautstärke des Pfeifens bei vollem Ladedruck (leise, nie dominant)
+      // M8b: Auto mit Turbo im Fahrprofil (getriebe.turbo.an, z. B. Audan Quarto): Pfeifen, Blow-off und Pops folgen dem
+      // echten Ladedruck (getriebe.ladedruck); turboAb/-Voll/-Rauf/-Runter gelten dann nicht. Ohne Turbo: wie bisher.
+      turboEchtGlaetten: 0.03, // so weich folgt das Pfeifen dem echten Ladedruck (Sekunden; kein Knacken)
+      turboPegelMal: 1.35,     // Pfeifen so viel lauter als turboPegel (nur mit Turbo; etwas präsenter, nie dominant)
       // Blow-off: Zischen, wenn man bei Ladedruck schnell vom Gas geht (und beim Schalten unter Last)
       blowOffAb: 0.5,          // nur bei Ladedruck über diesem Wert (0..1)
       blowOffGasFall: 0.5,     // ... und wenn das Gas in ca. blowOffZeit Sekunden um so viel gefallen ist
@@ -1451,6 +1459,8 @@ export const CONFIG = {
       popStaerke: [0.7, 1.0],  // jeder Pop so laut (Anteil, zufällig) ...
       popTempo: [0.8, 1.25],   // ... und so hoch/kurz (Abspieltempo; 1 = Puffer wie berechnet)
       knallSperre: 1.0,        // danach so lange kein neues Poppen (M7a: 1.5)
+      turboKnallPlus: 0.15,    // M8b: mit Turbo und Anti-Lag (Gas weg über getriebe.turbo.antiLagAb, Ladedruck über
+                               // blowOffAb) so viel mehr Knall-Chance (ohne Turbo im Fahrprofil: nichts dazu)
       knisternChance: 0.5,     // dazu leises Knistern/Blubbern (0..1) ...
       knisternAnzahl: [1, 3],  // ... so viele Mini-Pops ...
       knisternFenster: 0.8,    // ... in den ersten ... Sekunden nach dem Gaswegnehmen ...
@@ -1851,7 +1861,8 @@ export const CONFIG = {
     farben: {
       schwarz: '#1c1c1e', gitter: '#0d0e10', fuge: '#2a2c30', kante: '#26282c', radhaus: '#121214', unterboden: '#1a1a1c',
       glas: '#1c2834', glasHell: '#3a5266', chrom: '#a4a7aa', rot: '#c8202c', heckblende: '#3a0c0c',
-      helmFahrer: '#f4f4ee', helmBeifahrer: '#f2c22e', visier: '#0c0f13', schulter: '#2b2f36',
+      // Helme im Fenster (M8b: gedeckt statt weiss/gelb, damit nichts leuchtet; zwei leicht andere Töne = zwei Personen)
+      helmFahrer: '#5c6b7a', helmBeifahrer: '#55585e', visier: '#0c0f13', schulter: '#23272d',
       kennzeichen: '#f4f4ee', kennzeichenSchrift: '#1c1c1e',
       scheinwerfer: '#fff6d8', zusatzscheinwerfer: '#fffbe6',
       ruecklichtAus: '#9a1612', ruecklichtAn: '#ff4a30', // Rücklicht (dunkelrot, von hinten gut sichtbar) und Bremslicht (hellrot)
