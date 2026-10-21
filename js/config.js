@@ -1412,7 +1412,7 @@ export const CONFIG = {
     // Hier weitere Namen eintragen, Grossbuchstaben, ohne Sonderzeichen. Leere Liste [] = Gruppe erscheint nicht.
     credits: {
       mitwirkende: ['LOUIS'],      // Überschrift MITWIRKENDE / CONTRIBUTORS
-      unterstuetzer: ['SHAI-RON'], // Überschrift UNTERSTÜTZER / SUPPORTERS
+      unterstuetzer: ['SHAI-RON, BENJAMIN'], // Überschrift UNTERSTÜTZER / SUPPORTERS
     },
 
     // Demo-Fahrt hinter Titel und Hauptmenü: der Testfahrer fährt die Etappe, die Kamera wechselt
