@@ -16,7 +16,11 @@ Branch `claude/stoic-davinci-osu37c`, ein Commit je Teil (0, A–E).
   Gänge [48,82,117,149,188] (+4..+15 %), hochVollgas 6600, drehmoment ab 5800 fallend. Drehzahl gg. Audan max +4.7 %, Schaltpunkte
   darunter, vmax 182.6 (-2.93 %, Ziel -3 knapp VERFEHLT, Drehzahl vor Tempo), 6799/min (M8e 7700). Testfahrer 178.03/160.96/153.37,
   0 Aufpralle (4. Gang 150 → Aufprall 2760 m!). Luftwiderstand verworfen (ändert Rückwärts-Tempo).
-- [ ] Teil D – Subora Blau-Gelb, Schaltpunkte höher, Tacho-Skala je Profil
+- [x] Teil D – Subora: imprexaWerk Blau #1d46a8/#0f2150 mit Gelb #f5d020, alter Werk-Lack = imprexaRot (4. Lack), keine Felgen-Slot →
+  keine Goldfelgen. Getriebe nenn 8000, gaenge [48,82,118,150,190], hoch 7800/5200, runter 3000, kickdown 4800/7400, zkf 1.03,
+  allrad.gras 0.99, drehmoment bis 8800. vmax 185.7 (-1.3 %) bei 7820/min. Ton: hoechstDrehzahl 8300, begrenzerAb 8200, hoechstTon 540
+  (f0@7000 434 wie M8e), schaltKnallPegel 1.1 (Spitze 1.21). Testfahrer 178.89/161.62/150.98 (P -0.25/-0.45/-0.62 %, A +0.13/-0.09/-0.16).
+  Tacho: profil.tacho {9,8}, tacho.setzeSkala(id) in hud.js; andere Autos pixelgleich 0.8e (Ziffern 4/5 beim Subora eng).
 - [ ] Teil E – tools/m8f-test.mjs, Bilder, Bericht docs/meilensteine/m8f.md, Version
 
 Werte / offene Fragen: (noch keine)

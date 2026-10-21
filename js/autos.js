@@ -584,7 +584,7 @@ export const AUTO_MODELLE = {
     nummer: '6',
     kennzeichen: 'SI 6',
     kurz: 'IMPREXA',
-    lackierungen: ['imprexaWerk', 'imprexaPolar', 'imprexaDunkel'],
+    lackierungen: ['imprexaWerk', 'imprexaPolar', 'imprexaDunkel', 'imprexaRot'], // M8f: Werk = Blau-Gelb, dazu ROT (der alte Werk-Lack)
     masse: { laenge: 4.35, breite: 1.77, radstand: 2.52, spur: 1.5, radRadius: 0.325 },
     kollision: { laenge: 4.27, breite: 1.71 },
     staub: { hinten: 1.32, seite: 0.72 },

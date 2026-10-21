@@ -890,18 +890,36 @@ export const CONFIG = {
         heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit
       },
       getriebe: {
-        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9 }, // Traktion auf losem Boden; Bankett weniger (Abkürzungen)
-        zugkraftFaktor: 1.0,     // Schub wie der Prototyp (der Turbo gibt voll 4 % mehr)
-        gaenge: [48, 82, 118, 148, 180], // 4. und 5. Gang etwas kürzer: Höchsttempo ca. 2 % tiefer (sonst wäre der
-                                 // Testfahrer flott mehr als 0.7 % schneller als mit dem Prototyp)
+        // Traktion auf losem Boden; Bankett und Gras weniger (Abkürzungen; M8f Gras 0.99: mit mehr Schub wäre der Subora
+        // auf der Wiese sonst 0.08 % schneller als der Prototyp)
+        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9, gras: 0.99 },
+        zugkraftFaktor: 1.03,    // Schub 3 % mehr als der Prototyp (M8e 1.0; gleicht die längeren Gänge aus, der Turbo gibt
+                                 // voll noch 4 % dazu)
+        // M8f (Lino: „soll höher drehen“, der Boxer dreht hoch): Schaltpunkte höher, Gänge auf 8000/min bezogen,
+        // im 5. Gang bei Höchsttempo ca. 7800/min (M8e: 6900er Schaltpunkte, 7160/min bei Höchsttempo)
+        nennDrehzahl: 8000,      // "gaenge" gilt bei 8000/min (Prototyp 7000)
+        gaenge: [48, 82, 118, 150, 190],
+        hochVollgas: 7800,       // hochschalten mit Vollgas (Prototyp 6900) ...
+        hochWenigGas: 5200,      // ... mit wenig Gas (Prototyp 4500)
+        runterVollgas: 3000,     // runterschalten mit Vollgas unter (Prototyp 2600)
+        kickdownUnter: 4800,     // Kickdown passend zur höheren Drehzahl (Prototyp 4200) ...
+        kickdownMax: 7400,       // ... wenn die Drehzahl im tieferen Gang unter 7400 bleibt (Prototyp 6500)
+        // Drehmoment: bis 8000/min noch Zug (sonst klebt er am Begrenzer), darüber fällt es ab
+        drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [6000, 1.0], [7000, 0.93], [8000, 0.78], [8800, 0.5]],
         turbo: { an: true, aufbau: 0.3 }, // dezenter Turbo, spricht schnell an (Audan 0.35 s)
       },
+      // M8f: Tacho-Skala (nur Zahlen; fehlt der Block, gilt hud.tacho): Drehzahl bis 9000, rot ab 8000
+      tacho: { drehzahlMax: 9, drehzahlRotAb: 8 },
       ton: {
         turboMal: 1, knallMal: 1,
         // M8e: Motorklang Boxer: tief, blubbernd, dezenter Turbo (nur die Abweichungen vom Audan)
         motor: {
           zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 %
-          hoechstTon: 450,       // dreht tiefer: bei 7000/min -6 % (Audan 480)
+          // M8f: dreht höher – Ton bis 8300/min (Audan 7200), der Grundton steigt weiter: bei 7000/min wie M8e (-6 % zum
+          // Audan), bei 8000/min ca. 515 Hz. Der Boxer bleibt dumpf (Filter wie M8e)
+          hoechstDrehzahl: 8300,
+          begrenzerAb: 8200,     // Begrenzer erst ab 8200/min (Audan 6850; geschaltet wird bei 7800)
+          hoechstTon: 540,       // Grundton bei 8300/min (M8e 450 bei 7200/min)
           tonKurve: 1.2,
           pegel: 0.4,            // so laut wie der Audan (0.36; dumpfer = leiser, darum etwas lauter gestellt)
           schubPegel: 0.6,       // bei Teillast lauter (Audan 0.42): der Boxer blubbert mit halbem Gas kräftig
@@ -917,6 +935,8 @@ export const CONFIG = {
           turboTonMax: 4160,
           turboPegel: 0.023,     // ... und leiser (-35 %)
           blowOffPegel: 0.08,    // dezentes Zischen (Audan 0.16)
+          schaltKnallPegel: 1.1, // M8f: Schaltknall etwas leiser (Audan 1.25): bei 7800/min geschaltet wäre die Spitze
+                                 // sonst 1.35 statt höchstens wie der Audan (1.32)
           pop: { mitte: 1800 },  // viele kleine, tiefe Pops ...
           knallChance: 0.4,
           popAnzahl: [2, 5],
@@ -2209,8 +2229,17 @@ export const CONFIG = {
         sponsorFeld: null, sponsorFeldSchrift: '#2a4a66',
       },
       // --- Subora Imprexa (M8e) ---
-      // Werk: Dunkelrot mit silbernem Streifen
+      // M8f (Linos Wunsch): Werk = sattes Rallye-Blau mit gelber Schrift, gelben Nummern und gelben Streifen (nur die
+      // Farbgebung der Rallye-Zeit; Namen und Sponsoren bleiben erfunden, keine Logos, kein Originaldekor). Heckflügel blau
+      // mit gelbem Akzent. (Die Felgen sind für alle Autos gleich, es gibt keinen Felgen-Slot je Lackierung.)
       imprexaWerk: {
+        lack: '#1d46a8', unten: '#0f2150', streifen0: '#f5d020', streifen1: '#0f2150', akzent: '#f5d020', fluegel: '#1d46a8',
+        lappen: '#0f2150', nummerFeld: '#0f2150', nummerRand: '#f5d020', nummerSchrift: '#f5d020',
+        sponsor0: '#f5d020', sponsor1: '#f5d020', sponsorHell: '#f5d020', banner: '#0f2150', bannerSchrift: '#f5d020',
+        sponsorFeld: '#0f2150', sponsorFeldSchrift: '#f5d020',
+      },
+      // Rot (bis M8e der Werk-Lack): Dunkelrot mit silbernem Streifen
+      imprexaRot: {
         lack: '#86141e', unten: '#2a2c30', streifen0: '#b9bdc3', streifen1: '#1c1c1e', akzent: '#b9bdc3', fluegel: '#86141e',
         lappen: '#1c1c1e', nummerFeld: '#f4f4ee', nummerRand: '#1c1c1e', nummerSchrift: '#86141e',
         sponsor0: '#b9bdc3', sponsor1: '#f4f4ee', sponsorHell: '#b9bdc3', banner: '#b9bdc3', bannerSchrift: '#86141e',
