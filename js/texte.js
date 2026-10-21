@@ -39,6 +39,9 @@ export const TEXTE = {
   'auto.l073.name': { de: 'LANZA 073', en: 'LANZA 073' }, // M8e
   'auto.l073.daten1': { de: 'MITTELMOTOR · HINTERRAD · KOMPRESSOR', en: 'MID-ENGINE · RWD · SUPERCHARGER' },
   'auto.l073.daten2': { de: 'LEICHT, SCHNELL, ZICKIG', en: 'LIGHT, FAST, TWITCHY' },
+  'auto.imprexa.name': { de: 'SUBORA IMPREXA', en: 'SUBORA IMPREXA' }, // M8e
+  'auto.imprexa.daten1': { de: 'ALLRAD · TURBO · BOXERMOTOR', en: 'AWD · TURBO · BOXER ENGINE' },
+  'auto.imprexa.daten2': { de: 'AUSGEWOGEN, RUHIG, GUTMÜTIG', en: 'BALANCED, CALM, FORGIVING' },
   'auswahl.gewaehlt': { de: 'GEWÄHLT', en: 'SELECTED' },
   // M8c: Garage (Seite AUTO)
   'garage.titel': { de: 'GARAGE', en: 'GARAGE' },
@@ -60,6 +63,9 @@ export const TEXTE = {
   'lack.l073Werk': { de: 'WERK', en: 'WORKS' },
   'lack.l073Nacht': { de: 'NACHT', en: 'NIGHT' },
   'lack.l073Eis': { de: 'EIS', en: 'ICE' },
+  'lack.imprexaWerk': { de: 'WERK', en: 'WORKS' },
+  'lack.imprexaPolar': { de: 'POLAR', en: 'POLAR' },
+  'lack.imprexaDunkel': { de: 'DUNKEL', en: 'DARK' },
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },
   'etappe.pass.name': { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
   'etappe.daten1': { de: '{km} KM · {cps} CHECKPOINTS', en: '{km} KM · {cps} CHECKPOINTS' },

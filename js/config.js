@@ -836,6 +836,31 @@ export const CONFIG = {
       },
       ton: { turboMal: 0, knallMal: 1, motor: {} }, // kein Turbo-Pfeifen, kein Blow-off; Klang: Teil D (Lader)
     },
+    // Subora Imprexa (Id imprexa, M8e): ausgewogener Allrad-Allrounder mit Boxermotor (tiefer Schwerpunkt). Ruhig,
+    // neutral, vorhersagbar: kaum Schieben über die Front, das Heck kommt nur leicht und ist sofort wieder gefangen.
+    // Schwerer und ruhiger als der Delto, neutraler als der Audan. Messwerte und Kompromisse: STAND.md, Meilenstein 8e.
+    imprexa: {
+      auto: {
+        radstand: 2.52,          // Limousine, Radstand wie der Audan
+        traegheit: 2.4,          // ruhig (Audan 2.5, Delto 2.25)
+        schwerpunktVorne: 0.495, // Schwerpunkt fast in der Mitte: neutral (Lenkwinkel +4 %; Audan 0.46 = schiebt)
+        lastVorneAnteil: 0.52,   // kaum frontlastig (Boxer sitzt tief und weit hinten in der Front); 0.5 liess den flotten
+                                 // Testfahrer bei 694 m (lange Linkskurve, 140 km/h) an die Leitplanke schieben
+        gripVorne: 1.05,         // tiefer Schwerpunkt: die Front hält etwas mehr (Prototyp 1.0)
+        gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve nur leicht (+3.0°) ...
+        stabilitaet: 6.5,        // ... und ist sofort wieder gefangen (0.33 s; Prototyp 5)
+        vorneJeBelag: { schotter: 1.05, wiesenweg: 1.05 }, // Allrad zieht die Front auf losem Boden in die Kurve ...
+        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit
+      },
+      getriebe: {
+        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9 }, // Traktion auf losem Boden; Bankett weniger (Abkürzungen)
+        zugkraftFaktor: 1.0,     // Schub wie der Prototyp (der Turbo gibt voll 4 % mehr)
+        gaenge: [48, 82, 118, 148, 180], // 4. und 5. Gang etwas kürzer: Höchsttempo ca. 2 % tiefer (sonst wäre der
+                                 // Testfahrer flott mehr als 0.7 % schneller als mit dem Prototyp)
+        turbo: { an: true, aufbau: 0.3 }, // dezenter Turbo, spricht schnell an (Audan 0.35 s)
+      },
+      ton: { turboMal: 1, knallMal: 1, motor: {} }, // Klang: Teil D (Boxer)
+    },
   },
 
   // --- Untergrund -------------------------------------------------------
@@ -2084,6 +2109,28 @@ export const CONFIG = {
         lappen: '#2a4a66', nummerFeld: '#8fd0f0', nummerRand: '#2a4a66', nummerSchrift: '#2a4a66',
         sponsor0: '#2a4a66', sponsor1: '#2a4a66', sponsorHell: '#8fd0f0', banner: '#2a4a66', bannerSchrift: '#8fd0f0',
         sponsorFeld: null, sponsorFeldSchrift: '#2a4a66',
+      },
+      // --- Subora Imprexa (M8e) ---
+      // Werk: Dunkelrot mit silbernem Streifen
+      imprexaWerk: {
+        lack: '#86141e', unten: '#2a2c30', streifen0: '#b9bdc3', streifen1: '#1c1c1e', akzent: '#b9bdc3', fluegel: '#86141e',
+        lappen: '#1c1c1e', nummerFeld: '#f4f4ee', nummerRand: '#1c1c1e', nummerSchrift: '#86141e',
+        sponsor0: '#b9bdc3', sponsor1: '#f4f4ee', sponsorHell: '#b9bdc3', banner: '#b9bdc3', bannerSchrift: '#86141e',
+        sponsorFeld: '#b9bdc3', sponsorFeldSchrift: '#86141e',
+      },
+      // Polar: Weiss mit orangem Akzent
+      imprexaPolar: {
+        lack: '#f1f1ec', unten: '#3a3d42', streifen0: '#ff7a1a', streifen1: null, akzent: '#ff7a1a', fluegel: '#ff7a1a',
+        lappen: '#ff7a1a', nummerFeld: '#f4f4ee', nummerRand: '#ff7a1a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#ff7a1a', sponsor1: '#1c1c1e', sponsorHell: '#f4f4ee', banner: '#ff7a1a', bannerSchrift: '#f4f4ee',
+        sponsorFeld: null, sponsorFeldSchrift: '#ff7a1a',
+      },
+      // Dunkel: Anthrazit mit grünem Akzent
+      imprexaDunkel: {
+        lack: '#3a3d42', unten: '#1f2124', streifen0: '#3fbf5a', streifen1: null, akzent: '#3fbf5a', fluegel: '#3a3d42',
+        lappen: '#3fbf5a', nummerFeld: '#f4f4ee', nummerRand: '#3fbf5a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#3fbf5a', sponsor1: '#f4f4ee', sponsorHell: '#3fbf5a', banner: '#3fbf5a', bannerSchrift: '#1f2124',
+        sponsorFeld: null, sponsorFeldSchrift: '#3fbf5a',
       },
     },
     // Feste Autofarben (für alle Lackierungen gleich)
