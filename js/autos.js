@@ -36,6 +36,11 @@ const kotfluegel = (zRad, r, zVon, zBis, yUnten, yObenVorne, yObenHinten) => [
   [zVon, yUnten], [zRad + r, yUnten], ...bogen(zRad, 0.33, r, 6), [zRad - r, yUnten], [zBis, yUnten], [zBis, yObenHinten], [zVon, yObenVorne],
 ];
 
+// Lanza 073 (M8f): Oberkante des Motordeckels (Mitte) und der Hinterkotflügel (Kamm) in der Seitenansicht, [z, y] von
+// hinten nach vorne. Der Deckel fällt durchgehend nach hinten ab, der Kamm steht über dem Rad etwas höher als der Deckel.
+const L073_DECKEL = [[-1.75, 0.86], [-1.45, 0.91], [-1.15, 0.957], [-0.9, 0.998], [-0.7, 1.03]];
+const L073_KAMM = [[-1.9, 0.865], [-1.72, 0.925], [-1.5, 0.96], [-1.25, 0.985], [-1.02, 0.995], [-0.82, 0.965], [-0.6, 0.9]];
+
 export const AUTO_MODELLE = {
   rt4: {
     id: 'rt4',
@@ -435,9 +440,10 @@ export const AUTO_MODELLE = {
       { art: 'rechteck', ansicht: 'fluegel', von: [-0.74, -1.97], bis: [0.74, -2.0], farbe: 'akzent' },
     ],
   },  // Lanza 073 (Id l073, M8e): flaches, kurzes Mittelmotor-Coupé der Gruppe B (037-Typ, eigenes Design, kein Nachbau).
-  // Niedrige Keilnase, Kabine weit vorne mit grossen Scheiben, dahinter der hohe Motordeckel mit Lüftungsschlitzen,
-  // Lufteinlässe seitlich hinter den Türen, deutlich breitere Hinterkotflügel und Hinterräder, kleine Spoilerlippe,
-  // Doppelauspuff in der Mitte hinten, kein Heckfenster.
+  // Niedrige Keilnase, Kabine weit vorne mit grossen Scheiben, dahinter der Motordeckel mit Lüftungsschlitzen,
+  // Lufteinlässe seitlich hinter den Türen, deutlich breitere Hinterkotflügel und Hinterräder, Doppelauspuff in der
+  // Mitte hinten, kein Heckfenster. M8f: Heck als Keil statt Pritsche – der Deckel fällt nach hinten ab (ca. 9°), die
+  // Hinterkotflügel stehen als Kamm seitlich darüber (Tal in der Mitte), kurze Rückwand, Heckflügel auf zwei Stützen.
   l073: {
     id: 'l073',
     name: 'LANZA 073',
@@ -457,33 +463,44 @@ export const AUTO_MODELLE = {
       breiteHinten: 0.28, xHinten: 0.77, // M8e: hinten breitere Reifen und weiter aussen (breite Hinterkotflügel)
       radlaufLuft: 0.08,
     },
-    textur: { breite: 512, hoehe: 128, seite: 32, oben: 32, vorne: 48, hinten: 48, fluegel: 32, hoeheBis: 1.28, fluegelZ: [-1.8, -2.02] },
+    textur: { breite: 512, hoehe: 128, seite: 32, oben: 32, vorne: 48, hinten: 48, fluegel: 32, hoeheBis: 1.28, fluegelZ: [-1.72, -2.02] },
     schatten: { breite: 1.95, laenge: 4.0 },
     innenFlaechen: { zBis: 1.88, yBis: 0.86, farbe: 'radhaus' },
     werte: { beschleunigung: 9, tempo: 4, grip: 6, drift: 10 }, // (Drift gerechnet 14.5, auf 10 begrenzt)
 
     teile: [
-      // --- Unterbau: flache Keilnase, Gürtellinie tief bei der Kabine, dahinter der hohe Motordeckel ---
+      // --- Unterbau: flache Keilnase, Gürtellinie tief bei der Kabine, dahinter der Motordeckel ---
+      // M8f: der Deckel fällt von ca. 1.03 m an der Kabine leicht gewölbt auf ca. 0.83 m am Heck, kurze Rückwand
       {
         art: 'prisma', slot: 'lack', x: [-0.82, 0.82],
         profil: [
           [1.975, 0.22], [1.64, 0.22], ...bogen(1.21, 0.33, 0.43, 6), [0.78, 0.22],
           [-0.78, 0.22], ...bogen(-1.21, 0.33, 0.44, 6), [-1.65, 0.22],
-          [-1.975, 0.22], [-1.975, 0.96], [-0.82, 1.0], [-0.64, 0.84], [0.86, 0.8], [1.9, 0.5], [1.975, 0.42],
+          [-1.975, 0.22], [-1.975, 0.78], [-1.94, 0.83], ...L073_DECKEL, [-0.62, 0.84], [0.86, 0.8], [1.9, 0.5], [1.975, 0.42],
         ],
       },
       { art: 'quader', slot: 'radhaus', min: [-0.45, 0.22, 0.78], max: [0.45, 0.56, 1.6] }, // (unter der flachen Haube)
       { art: 'quader', slot: 'radhaus', min: [-0.45, 0.22, -1.65], max: [0.45, 0.76, -0.77] },
       // Kotflügel: vorne schmal, hinten deutlich breiter (die breiten Hinterräder stehen darin)
       { art: 'prisma', slot: 'lack', x: [0.82, 0.86], spiegeln: true, profil: kotfluegel(1.21, 0.43, 1.88, 0.62, 0.24, 0.52, 0.8) },
-      { art: 'prisma', slot: 'lack', x: [0.82, 0.91], spiegeln: true, profil: kotfluegel(-1.21, 0.44, -0.6, -1.975, 0.24, 0.9, 0.96) },
+      // M8f: hinten mit Kamm (Oberkante ca. 1.0 m über dem Rad, fällt nach hinten ab); innen ein Kamm-Teil über dem
+      // Deckel, damit der Deckel in der Mitte tiefer liegt (Tal) und die Kotflügel seitlich darüber stehen
+      {
+        art: 'prisma', slot: 'lack', x: [0.82, 0.91], spiegeln: true,
+        profil: [[-0.6, 0.24], [-0.77, 0.24], ...bogen(-1.21, 0.33, 0.44, 6), [-1.65, 0.24], [-1.975, 0.24], [-1.975, 0.78], ...L073_KAMM],
+      },
+      { art: 'prisma', slot: 'lack', x: [0.6, 0.82], spiegeln: true, profil: [[-0.72, 0.8], [-1.93, 0.8], ...L073_KAMM.filter(([z]) => z > -1.93 && z < -0.72), [-0.72, 0.92]] },
       // Seitenschweller
       { art: 'quader', slot: 'lack', spiegeln: true, min: [0.82, 0.22, -0.6], max: [0.86, 0.34, 0.62] },
       // Kabine weit vorne: flache Frontscheibe, kurzes Dach, Rückwand fällt steil in den Motordeckel
       // (scheiben: die flache Frontscheibe holt ihre Farbe aus der Ansicht vorne)
       { art: 'trapez', slot: 'lack', unten: [0.8, 0.8, 0.86, -0.84], oben: [1.25, 0.64, 0.18, -0.56], ohne: ['unten'], scheiben: ['vorne'] },
-      // kleine Spoilerlippe am Heck
-      { art: 'trapez', slot: 'fluegel', unten: [0.96, 0.8, -1.82, -1.98], oben: [1.03, 0.8, -1.86, -2.0] },
+      // M8f: Finnen vom Dach schräg hinunter auf die Kotflügel (die Seitenlinie fällt vom Dach bis zum Heck durchgehend ab,
+      // dazwischen die steile Rückwand der Kabine und tiefer der Deckel)
+      { art: 'prisma', slot: 'lack', x: [0.55, 0.65], spiegeln: true, profil: [[-0.5, 1.0], [-0.5, 1.24], [-0.62, 1.232], [-0.9, 1.125], [-1.18, 1.005], [-1.32, 0.975], [-1.32, 0.9], [-0.75, 0.9]] },
+      // M8f: Heckflügel auf zwei kurzen Stützen (Oberkante ca. 1.04 m), statt der kleinen Lippe
+      { art: 'trapez', slot: 'fluegel', unten: [0.995, 0.84, -1.74, -1.96], oben: [1.04, 0.84, -1.78, -2.0] },
+      { art: 'quader', slot: 'schwarz', spiegeln: true, min: [0.42, 0.82, -1.92], max: [0.47, 1.0, -1.86] },
       // Lufteinlässe seitlich hinter den Türen (dunkle Kästen vor den Hinterkotflügeln)
       { art: 'quader', slot: 'gitter', spiegeln: true, min: [0.8, 0.58, -0.62], max: [0.86, 0.8, -0.5] },
       // Frontsplitter und Heckschürze
@@ -504,8 +521,8 @@ export const AUTO_MODELLE = {
       { art: 'quader', licht: 'vorne', farbe: 'scheinwerfer', spiegeln: true, min: [0.42, 0.34, 1.97], max: [0.74, 0.43, 1.978] },
       { art: 'zylinder', licht: 'vorne', farbe: 'zusatzscheinwerfer', achse: 'z', mitte: [0, 0.34, 1.978], radius: 0.068, laenge: 0.004, segmente: 8 },
       // runde Heckleuchten paarweise (eckig angedeutet), Rückfahrlicht dazwischen
-      ...[0.48, 0.72].flatMap((x) => [x, -x]).map((x) => ({ art: 'zylinder', licht: 'hinten', achse: 'z', mitte: [x, 0.72, -1.978], radius: 0.085, laenge: 0.006, segmente: 8 })),
-      { art: 'quader', licht: 'rueck', min: [0.2, 0.68, -1.98], max: [0.32, 0.76, -1.975] },
+      ...[0.48, 0.72].flatMap((x) => [x, -x]).map((x) => ({ art: 'zylinder', licht: 'hinten', achse: 'z', mitte: [x, 0.67, -1.978], radius: 0.08, laenge: 0.006, segmente: 8 })),
+      { art: 'quader', licht: 'rueck', min: [0.2, 0.63, -1.98], max: [0.32, 0.71, -1.975] },
     ],
 
     bemalung: [
@@ -534,9 +551,9 @@ export const AUTO_MODELLE = {
       { art: 'polygon', ansicht: 'oben', farbe: 'streifen0', punkte: [[-0.3, 1.95], [0.3, 1.95], [0.3, 0.86], [-0.3, 0.86]] }, // Mittelstreifen auf der Haube
       { art: 'nummer', ansicht: 'oben', mitte: [0, 1.36], lesbarVon: 'vorne' },
       { art: 'nummer', ansicht: 'oben', mitte: [0, -0.2], lesbarVon: 'hinten' },
-      // Motordeckel: Lüftungsschlitze in zwei Reihen
-      ...[-0.95, -1.1, -1.25, -1.4, -1.55].map((z) => ({ art: 'rechteck', ansicht: 'oben', von: [0.12, z - 0.05], bis: [0.62, z], farbe: 'gitter', spiegeln: true })),
-      { art: 'text', ansicht: 'oben', text: 'GIPFELWERK', mitte: [0, -1.74], lesbarVon: 'hinten', farbe: 'sponsor0', abBreite: 640 },
+      // Motordeckel (im Tal zwischen den Kotflügeln): Lüftungsschlitze in zwei Reihen, dahinter der Schriftzug
+      ...[-0.9, -1.03, -1.16, -1.29, -1.42].map((z) => ({ art: 'rechteck', ansicht: 'oben', von: [0.1, z - 0.05], bis: [0.54, z], farbe: 'gitter', spiegeln: true })),
+      { art: 'text', ansicht: 'oben', text: 'GIPFELWERK', mitte: [0, -1.6], lesbarVon: 'hinten', farbe: 'sponsor0', abBreite: 640 },
 
       // --- Vorne ---
       { art: 'polygon', ansicht: 'vorne', farbe: 'glas', punkte: [[-0.76, 0.82], [0.76, 0.82], [0.62, 1.24], [-0.62, 1.24]] },
@@ -548,14 +565,13 @@ export const AUTO_MODELLE = {
       { art: 'rechteck', ansicht: 'vorne', von: [-0.3, 0.24], bis: [0.3, 0.3], farbe: 'gitter' },                 // Lufteinlass unter dem Zusatzlicht
       { art: 'rechteck', ansicht: 'vorne', von: [-0.9, 0], bis: [0.9, 0.24], farbe: 'unten' },
 
-      // --- Hinten (kein Heckfenster: Rückwand der Kabine und Motordeckel) ---
-      { art: 'rechteck', ansicht: 'hinten', von: [-0.6, 1.02], bis: [0.6, 1.2], farbe: 'gitter' },        // Rückwand (Lüftung)
-      { art: 'rechteck', ansicht: 'hinten', von: [-0.86, 0.6], bis: [0.86, 0.84], farbe: 'schwarz' },    // Heckblende mit Leuchten
-      ...[0.88, 0.92].map((y) => ({ art: 'rechteck', ansicht: 'hinten', von: [-0.7, y - 0.015], bis: [0.7, y], farbe: 'gitter' })), // Schlitze im Motordeckel
+      // --- Hinten (kein Heckfenster: Rückwand der Kabine, kurze Rückwand am Heck) ---
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.6, 1.04], bis: [0.6, 1.2], farbe: 'gitter' },        // Rückwand der Kabine (Lüftung)
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.86, 0.56], bis: [0.86, 0.78], farbe: 'schwarz' },   // Heckblende mit Leuchten
       { art: 'rechteck', ansicht: 'hinten', von: [-0.95, 0], bis: [0.95, 0.42], farbe: 'unten' },
       { art: 'kennzeichen', ansicht: 'hinten', mitte: [0, 0.5] },
 
-      // --- Spoilerlippe oben ---
+      // --- Heckflügel oben (hintere Kante als Akzent) ---
       { art: 'rechteck', ansicht: 'fluegel', von: [-0.8, -1.96], bis: [0.8, -2.0], farbe: 'akzent' },
     ],
   },  // Subora Imprexa (Id imprexa, M8e): kompakte Allrad-Limousine mit Boxermotor und Turbo (Impreza-Typ, eigenes
