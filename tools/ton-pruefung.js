@@ -238,3 +238,31 @@ function fft(re, im) {
 }
 
 export { materialNr, CONFIG };
+
+// M8e: Band-Filter (je zwei Hoch- und Tiefpässe 2. Ordnung, Butterworth) für Messungen in einem Frequenzband
+export function band(d, lo, hi) {
+  const biquad = (x, f, hoch) => {
+    const w = 2 * Math.PI * f / RATE, c = Math.cos(w), al = Math.sin(w) / (2 * Math.SQRT1_2);
+    const b0 = hoch ? (1 + c) / 2 : (1 - c) / 2, b1 = hoch ? -(1 + c) : 1 - c, b2 = b0, a0 = 1 + al, a1 = -2 * c, a2 = 1 - al;
+    const y = new Float32Array(x.length);
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    for (let i = 0; i < x.length; i++) {
+      const v = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+      x2 = x1; x1 = x[i]; y2 = y1; y1 = v; y[i] = v;
+    }
+    return y;
+  };
+  let y = d;
+  for (let k = 0; k < 2; k++) { y = biquad(y, lo, true); y = biquad(y, hi, false); }
+  return y;
+}
+// M8e: Unregelmässigkeit = Schwankung der Kurzzeit-Energie: Energie in Fenstern von "fenster" Sekunden, Standardabweichung
+// geteilt durch den Mittelwert (0 = gleichmässig). Dazu die mittlere Energie (für Vergleiche "Energie im Band")
+export function schwankung(d, von, bis, fenster = 0.02) {
+  const n = Math.round(fenster * RATE), a = Math.round(von * RATE), b = Math.min(d.length, Math.round(bis * RATE));
+  const e = [];
+  for (let i = a; i + n <= b; i += n) { let s = 0; for (let k = i; k < i + n; k++) s += d[k] * d[k]; e.push(s / n); }
+  const m = e.reduce((x, y) => x + y, 0) / e.length;
+  const sd = Math.sqrt(e.reduce((x, y) => x + (y - m) ** 2, 0) / e.length);
+  return { cv: sd / (m || 1e-30), energie: m, fenster: e.length };
+}

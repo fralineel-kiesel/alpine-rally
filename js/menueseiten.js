@@ -95,14 +95,17 @@ export function baueSeiten(api) {
     });
     // zwei Zeilen Daten (Antrieb, Bauart), über die ganze Tafel
     const mitte = tafel.x0 + Math.round(tafel.breite / 2);
-    [`auto.${m.id}.daten1`, `auto.${m.id}.daten2`].forEach((k, i) => pixelText(c, t(k), mitte, y + h - 19 + i * 9, 1, M.farbeText, 'mitte'));
+    // (M8e: mit Hinweiszeile darunter 3 Pixel tiefer, damit zwischen Werte-Balken und Daten Luft bleibt)
+    const dy = autoSeite.hinweis ? 16 : 19;
+    [`auto.${m.id}.daten1`, `auto.${m.id}.daten2`].forEach((k, i) => pixelText(c, t(k), mitte, y + h - dy + i * 9, 1, M.farbeText, 'mitte'));
   }
   const autoZeile = (a) => ({
     typ: 'aktion', text: a.name, autoId: a.id, // (autoId: für Tests)
     // das gewählte Auto steht gelb, auch wenn der Zeiger woanders ist (z. B. auf LACK)
     farbeText: () => ((api.autoWahl ? api.autoWahl().modell : AUTOS[auswahl.auto].id) === a.id ? M.farbeWert : M.farbeText),
     // M8d: bestätigen = dieses Auto wählen, die Garage bleibt offen (schon gewählt: nichts zu tun, nur der Ton)
-    aktion: () => { if (api.autoWechseln) api.autoWechseln(a.id); },
+    // M8e: dazu heult der Motor kurz auf, statt des Bestätigungstons (ohne Ton: der Bestätigungston wie bisher)
+    aktion: () => { if (api.autoWechseln) api.autoWechseln(a.id); return api.aufheulen && api.aufheulen() ? 'ohneTon' : undefined; },
   });
   const lackZeile = {
     typ: 'auswahl', text: () => '', lack: true,
@@ -120,6 +123,8 @@ export function baueSeiten(api) {
       leer(6), { typ: 'gruppe', text: 'garage.lack' }, lackZeile, leer(4), ZURUECK,
     ],
     zeichneRechts: garageRechts,
+    // M8e: Hinweiszeile unten (wie wählt man?), mit der Taste der zuletzt benutzten Eingabe (Gamepad: A)
+    hinweis: () => t(menue.letzteEingabe === 'gamepad' ? 'garage.hinweisPad' : 'garage.hinweis'),
   };
   const etappeSeite = {
     id: 'etappe', titel: 'etappe.titel',

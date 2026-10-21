@@ -1,0 +1,995 @@
+{
+ "version": "0.8e",
+ "motor": [
+  {
+   "rpm": 1500,
+   "f0": 53.1547,
+   "fGemessen": 53.1523,
+   "pegelA": 51.7349,
+   "schwerpunkt": 151.0709,
+   "ueber1k": 0.025,
+   "ueber2k5": 0.0062,
+   "spitze": 0.5836,
+   "rms": 0.1736,
+   "mittel": 0.0003,
+   "nan": 0
+  },
+  {
+   "rpm": 3000,
+   "f0": 137.9509,
+   "fGemessen": 137.9148,
+   "pegelA": 56.8414,
+   "schwerpunkt": 365.2614,
+   "ueber1k": 0.0712,
+   "ueber2k5": 0.0225,
+   "spitze": 0.5367,
+   "rms": 0.1804,
+   "mittel": -0.0001,
+   "nan": 0
+  },
+  {
+   "rpm": 5000,
+   "f0": 273.6813,
+   "fGemessen": 273.7868,
+   "pegelA": 60.343,
+   "schwerpunkt": 640.7627,
+   "ueber1k": 0.1212,
+   "ueber2k5": 0.0523,
+   "spitze": 0.5546,
+   "rms": 0.1951,
+   "mittel": 0.0001,
+   "nan": 0
+  },
+  {
+   "rpm": 7000,
+   "f0": 424.3093,
+   "fGemessen": 424.3645,
+   "pegelA": 63.0709,
+   "schwerpunkt": 964.4141,
+   "ueber1k": 0.1983,
+   "ueber2k5": 0.0764,
+   "spitze": 0.4952,
+   "rms": 0.215,
+   "mittel": 0,
+   "nan": 0
+  }
+ ],
+ "turbo": [
+  {
+   "rpm": 5000,
+   "turboRms": 0,
+   "motorRms": 0.1951,
+   "gesamtRms": 0.1949,
+   "verhaeltnisDb": -180
+  },
+  {
+   "rpm": 7000,
+   "turboRms": 0,
+   "motorRms": 0.215,
+   "gesamtRms": 0.215,
+   "verhaeltnisDb": -180
+  }
+ ],
+ "aufprall": {
+  "baum": {
+   "leicht": {
+    "v": 1.5,
+    "pegelRms": 0.1208,
+    "rmsMat": 0.1208,
+    "rmsSchlag": 0,
+    "spitze": 0.4063,
+    "rms100": 0.1403,
+    "rmsAktiv": 0.0949,
+    "ausklingen40": 0.6615,
+    "schwerpunkt": 86.8098,
+    "spitzeUeber1k": -33.7029,
+    "schwerpunktAllein": 86.8098,
+    "spitzeUeber1kAllein": -33.7029
+   },
+   "mittel": {
+    "v": 7,
+    "pegelRms": 0.369,
+    "rmsMat": 0.2817,
+    "rmsSchlag": 0.2384,
+    "spitze": 1.5275,
+    "rms100": 0.4397,
+    "rmsAktiv": 0.3066,
+    "ausklingen40": 0.5362,
+    "schwerpunkt": 78.2584,
+    "spitzeUeber1k": -36.0951,
+    "schwerpunktAllein": 92.2058,
+    "spitzeUeber1kAllein": -34.954
+   },
+   "hart": {
+    "v": 16,
+    "pegelRms": 0.6304,
+    "rmsMat": 0.4123,
+    "rmsSchlag": 0.4768,
+    "spitze": 2.5524,
+    "rms100": 0.7486,
+    "rmsAktiv": 0.5245,
+    "ausklingen40": 0.5312,
+    "schwerpunkt": 71.0909,
+    "spitzeUeber1k": -37.9639,
+    "schwerpunktAllein": 92.8954,
+    "spitzeUeber1kAllein": -35.1093
+   }
+  },
+  "stein": {
+   "leicht": {
+    "v": 1.5,
+    "pegelRms": 0.0997,
+    "rmsMat": 0.0997,
+    "rmsSchlag": 0,
+    "spitze": 0.4924,
+    "rms100": 0.1216,
+    "rmsAktiv": 0.1215,
+    "ausklingen40": 0.1904,
+    "schwerpunkt": 111.5332,
+    "spitzeUeber1k": -30.9906,
+    "schwerpunktAllein": 111.5332,
+    "spitzeUeber1kAllein": -30.9906
+   },
+   "mittel": {
+    "v": 7,
+    "pegelRms": 0.292,
+    "rmsMat": 0.292,
+    "rmsSchlag": 0,
+    "spitze": 1.4499,
+    "rms100": 0.3564,
+    "rmsAktiv": 0.356,
+    "ausklingen40": 0.1904,
+    "schwerpunkt": 110.0945,
+    "spitzeUeber1k": -32.2113,
+    "schwerpunktAllein": 110.0945,
+    "spitzeUeber1kAllein": -32.2113
+   },
+   "hart": {
+    "v": 16,
+    "pegelRms": 0.4742,
+    "rmsMat": 0.4742,
+    "rmsSchlag": 0,
+    "spitze": 2.3606,
+    "rms100": 0.5788,
+    "rmsAktiv": 0.5782,
+    "ausklingen40": 0.1904,
+    "schwerpunkt": 109.7786,
+    "spitzeUeber1k": -32.3634,
+    "schwerpunktAllein": 109.7786,
+    "spitzeUeber1kAllein": -32.3634
+   }
+  },
+  "holz": {
+   "leicht": {
+    "v": 1.5,
+    "pegelRms": 0.0875,
+    "rmsMat": 0.0875,
+    "rmsSchlag": 0,
+    "spitze": 0.3881,
+    "rms100": 0.1025,
+    "rmsAktiv": 0.0727,
+    "ausklingen40": 0.5061,
+    "schwerpunkt": 239.1744,
+    "spitzeUeber1k": -22.8711,
+    "schwerpunktAllein": 239.1744,
+    "spitzeUeber1kAllein": -22.8711
+   },
+   "mittel": {
+    "v": 7,
+    "pegelRms": 0.3135,
+    "rmsMat": 0.2036,
+    "rmsSchlag": 0.2384,
+    "spitze": 1.4656,
+    "rms100": 0.3336,
+    "rmsAktiv": 0.2237,
+    "ausklingen40": 0.451,
+    "schwerpunkt": 134.689,
+    "spitzeUeber1k": -28.7478,
+    "schwerpunktAllein": 268.9331,
+    "spitzeUeber1kAllein": -24.1472
+   },
+   "hart": {
+    "v": 16,
+    "pegelRms": 0.5623,
+    "rmsMat": 0.2979,
+    "rmsSchlag": 0.4768,
+    "spitze": 2.3226,
+    "rms100": 0.6003,
+    "rmsAktiv": 0.4053,
+    "ausklingen40": 0.451,
+    "schwerpunkt": 106.8952,
+    "spitzeUeber1k": -31.7773,
+    "schwerpunktAllein": 273.2951,
+    "spitzeUeber1kAllein": -24.3139
+   }
+  },
+  "weich": {
+   "leicht": {
+    "v": 1.5,
+    "pegelRms": 0.1654,
+    "rmsMat": 0.1654,
+    "rmsSchlag": 0,
+    "spitze": 0.4163,
+    "rms100": 0.187,
+    "rmsAktiv": 0.115,
+    "ausklingen40": 0.4109,
+    "schwerpunkt": 54.6701,
+    "spitzeUeber1k": -46.3318,
+    "schwerpunktAllein": 54.6701,
+    "spitzeUeber1kAllein": -46.3318
+   },
+   "mittel": {
+    "v": 7,
+    "pegelRms": 0.4533,
+    "rmsMat": 0.3856,
+    "rmsSchlag": 0.2384,
+    "spitze": 1.5313,
+    "rms100": 0.687,
+    "rmsAktiv": 0.5067,
+    "ausklingen40": 0.441,
+    "schwerpunkt": 54.4969,
+    "spitzeUeber1k": -51.0327,
+    "schwerpunktAllein": 54.954,
+    "spitzeUeber1kAllein": -47.7179
+   },
+   "hart": {
+    "v": 16,
+    "pegelRms": 0.7389,
+    "rmsMat": 0.5645,
+    "rmsSchlag": 0.4768,
+    "spitze": 2.538,
+    "rms100": 1.1463,
+    "rmsAktiv": 0.8433,
+    "ausklingen40": 0.441,
+    "schwerpunkt": 54.3625,
+    "spitzeUeber1k": -52.2618,
+    "schwerpunktAllein": 55.076,
+    "spitzeUeber1kAllein": -47.9076
+   }
+  },
+  "metall": {
+   "leicht": {
+    "v": 1.5,
+    "pegelRms": 0.115,
+    "rmsMat": 0.115,
+    "rmsSchlag": 0,
+    "spitze": 0.3377,
+    "rms100": 0.1232,
+    "rmsAktiv": 0.0625,
+    "ausklingen40": 1.1426,
+    "schwerpunkt": 633.841,
+    "spitzeUeber1k": -4.9734,
+    "schwerpunktAllein": 633.841,
+    "spitzeUeber1kAllein": -4.9734
+   },
+   "mittel": {
+    "v": 7,
+    "pegelRms": 0.3515,
+    "rmsMat": 0.2583,
+    "rmsSchlag": 0.2384,
+    "spitze": 1.1617,
+    "rms100": 0.3892,
+    "rmsAktiv": 0.2011,
+    "ausklingen40": 1.1376,
+    "schwerpunkt": 452.6647,
+    "spitzeUeber1k": -6.1497,
+    "schwerpunktAllein": 626.9278,
+    "spitzeUeber1kAllein": -6.1495
+   },
+   "hart": {
+    "v": 16,
+    "pegelRms": 0.6072,
+    "rmsMat": 0.3759,
+    "rmsSchlag": 0.4768,
+    "spitze": 2.0142,
+    "rms100": 0.679,
+    "rmsAktiv": 0.3534,
+    "ausklingen40": 1.1326,
+    "schwerpunkt": 361.8985,
+    "spitzeUeber1k": -8.3037,
+    "schwerpunktAllein": 616.6794,
+    "spitzeUeber1kAllein": -6.3116
+   }
+  },
+  "fels": {
+   "leicht": {
+    "v": 1.5,
+    "pegelRms": 0.1763,
+    "rmsMat": 0.1763,
+    "rmsSchlag": 0,
+    "spitze": 0.4079,
+    "rms100": 0.193,
+    "rmsAktiv": 0.1167,
+    "ausklingen40": 0.7968,
+    "schwerpunkt": 50.2983,
+    "spitzeUeber1k": -39.7092,
+    "schwerpunktAllein": 50.2983,
+    "spitzeUeber1kAllein": -39.7092
+   },
+   "mittel": {
+    "v": 7,
+    "pegelRms": 0.4754,
+    "rmsMat": 0.4113,
+    "rmsSchlag": 0.2384,
+    "spitze": 1.3725,
+    "rms100": 0.5342,
+    "rmsAktiv": 0.3106,
+    "ausklingen40": 0.7968,
+    "schwerpunkt": 52.2697,
+    "spitzeUeber1k": -41.2403,
+    "schwerpunktAllein": 52.813,
+    "spitzeUeber1kAllein": -40.3786
+   },
+   "hart": {
+    "v": 16,
+    "pegelRms": 0.7681,
+    "rmsMat": 0.6021,
+    "rmsSchlag": 0.4768,
+    "spitze": 2.2694,
+    "rms100": 0.8696,
+    "rmsAktiv": 0.4984,
+    "ausklingen40": 0.7968,
+    "schwerpunkt": 52.4634,
+    "spitzeUeber1k": -42.2569,
+    "schwerpunktAllein": 53.2614,
+    "spitzeUeber1kAllein": -40.8417
+   }
+  }
+ },
+ "signale": {
+  "menue-tick": {
+   "spitze": 0.2195,
+   "rmsAktiv": 0.1353,
+   "dauer": 0.02,
+   "gegenMotorDb": -3.1708
+  },
+  "menue-bestaetigen": {
+   "spitze": 0.3692,
+   "rmsAktiv": 0.2638,
+   "dauer": 0.0702,
+   "gegenMotorDb": 2.6289
+  },
+  "menue-zurueck": {
+   "spitze": 0.369,
+   "rmsAktiv": 0.2648,
+   "dauer": 0.0702,
+   "gegenMotorDb": 2.6634
+  },
+  "menue-fehler": {
+   "spitze": 0.3697,
+   "rmsAktiv": 0.2739,
+   "dauer": 0.1754,
+   "gegenMotorDb": 2.956
+  },
+  "menue-regler": {
+   "spitze": 0.2137,
+   "rmsAktiv": 0.1049,
+   "dauer": 0.0351,
+   "gegenMotorDb": -5.3799
+  },
+  "countdown": {
+   "spitze": 0.529,
+   "rmsAktiv": 0.3912,
+   "dauer": 0.1453,
+   "gegenMotorDb": 6.0529
+  },
+  "go": {
+   "spitze": 0.5392,
+   "rmsAktiv": 0.3978,
+   "dauer": 0.3909,
+   "gegenMotorDb": 6.1972
+  },
+  "cp-schneller": {
+   "spitze": 0.5486,
+   "rmsAktiv": 0.2555,
+   "dauer": 0.2105,
+   "gegenMotorDb": 2.3514
+  },
+  "cp-langsamer": {
+   "spitze": 0.5524,
+   "rmsAktiv": 0.2525,
+   "dauer": 0.2155,
+   "gegenMotorDb": 2.251
+  },
+  "cp-neutral": {
+   "spitze": 0.549,
+   "rmsAktiv": 0.2526,
+   "dauer": 0.2155,
+   "gegenMotorDb": 2.2525
+  },
+  "verpasst": {
+   "spitze": 0.5285,
+   "rmsAktiv": 0.3942,
+   "dauer": 0.3708,
+   "gegenMotorDb": 6.1179
+  },
+  "pause": {
+   "spitze": 0.5288,
+   "rmsAktiv": 0.392,
+   "dauer": 0.1153,
+   "gegenMotorDb": 6.0708
+  },
+  "weiter": {
+   "spitze": 0.5279,
+   "rmsAktiv": 0.3921,
+   "dauer": 0.1153,
+   "gegenMotorDb": 6.0723
+  },
+  "paceNote": {
+   "spitze": 0.22,
+   "rmsAktiv": 0.1306,
+   "dauer": 0.0501,
+   "gegenMotorDb": -3.4777
+  },
+  "fanfare-kurz": {
+   "spitze": 0.594,
+   "rmsAktiv": 0.2232,
+   "dauer": 2.1348,
+   "gegenMotorDb": 1.1783
+  },
+  "fanfare-lang": {
+   "spitze": 0.594,
+   "rmsAktiv": 0.2053,
+   "dauer": 3.2223,
+   "gegenMotorDb": 0.4517
+  }
+ },
+ "heulen": [
+  {
+   "t": 0.25,
+   "rpm": 3424.5065,
+   "v": -0.7033,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 314,
+   "rms": 0.0144,
+   "motorRms": 0.0785
+  },
+  {
+   "t": 0.5,
+   "rpm": 3497.7203,
+   "v": -1.4063,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.0288,
+   "motorRms": 0.0788
+  },
+  {
+   "t": 0.75,
+   "rpm": 3499.9312,
+   "v": -2.1087,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.0409,
+   "motorRms": 0.0788
+  },
+  {
+   "t": 1,
+   "rpm": 3499.9979,
+   "v": -2.8103,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.0409,
+   "motorRms": 0.0788
+  },
+  {
+   "t": 1.25,
+   "rpm": 3499.9999,
+   "v": -3.5108,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.0409,
+   "motorRms": 0.0788
+  },
+  {
+   "t": 1.5,
+   "rpm": 3500,
+   "v": -4.2099,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.0409,
+   "motorRms": 0.0788
+  },
+  {
+   "t": 1.75,
+   "rpm": 3500,
+   "v": -4.9073,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.0409,
+   "motorRms": 0.0788
+  },
+  {
+   "t": 2,
+   "rpm": 3500,
+   "v": -5.6029,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.041,
+   "motorRms": 0.0789
+  },
+  {
+   "t": 2.25,
+   "rpm": 3500,
+   "v": -6.2964,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 320,
+   "rms": 0.041,
+   "motorRms": 0.0789
+  },
+  {
+   "t": 2.5,
+   "rpm": 3580.3671,
+   "v": -6.9876,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 328,
+   "rms": 0.0413,
+   "motorRms": 0.0789
+  },
+  {
+   "t": 2.75,
+   "rpm": 3921.3163,
+   "v": -7.6762,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 360,
+   "rms": 0.0414,
+   "motorRms": 0.0802
+  },
+  {
+   "t": 3,
+   "rpm": 4281.0201,
+   "v": -8.3615,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 392,
+   "rms": 0.0417,
+   "motorRms": 0.0815
+  },
+  {
+   "t": 3.25,
+   "rpm": 4638.3847,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 426,
+   "rms": 0.0425,
+   "motorRms": 0.0828
+  },
+  {
+   "t": 3.5,
+   "rpm": 4721.8273,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 432,
+   "rms": 0.0424,
+   "motorRms": 0.0832
+  },
+  {
+   "t": 3.75,
+   "rpm": 4724.3463,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 434,
+   "rms": 0.0426,
+   "motorRms": 0.0831
+  },
+  {
+   "t": 4,
+   "rpm": 4724.4216,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 434,
+   "rms": 0.0426,
+   "motorRms": 0.0831
+  },
+  {
+   "t": 4.25,
+   "rpm": 4724.4228,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 434,
+   "rms": 0.0426,
+   "motorRms": 0.0831
+  },
+  {
+   "t": 4.5,
+   "rpm": 4724.4219,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 434,
+   "rms": 0.0426,
+   "motorRms": 0.0831
+  },
+  {
+   "t": 4.75,
+   "rpm": 4724.4213,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 434,
+   "rms": 0.0426,
+   "motorRms": 0.0831
+  },
+  {
+   "t": 5,
+   "rpm": 4724.4205,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt",
+   "hz": 434,
+   "rms": 0.0426,
+   "motorRms": 0.0831
+  }
+ ],
+ "knoten": {
+  "summe": 107,
+  "je": {
+   "createGain": 58,
+   "createDynamicsCompressor": 2,
+   "createWaveShaper": 3,
+   "createBiquadFilter": 24,
+   "createConstantSource": 1,
+   "createOscillator": 11,
+   "createBufferSource": 8
+  }
+ },
+ "motorBezugRms": 0.1949,
+ "pop": {
+  "spitze": 1.0563,
+  "dauer": 0.0251,
+  "schwerpunkt": 2533.5771
+ },
+ "klack": {
+  "spitze": 0.3374,
+  "dauer": 0.0451,
+  "schwerpunkt": 418.3696
+ },
+ "profil": {
+  "id": "escorta",
+  "ton": {
+   "turboMal": 0,
+   "knallMal": 0.5
+  },
+  "motorWerte": {
+   "zuendFaktor": 2,
+   "hoechstDrehzahl": 7200,
+   "hoechstTon": 440,
+   "tonKurve": 1.2,
+   "pegel": 0.44,
+   "saege": 0.52,
+   "puls": 0.32,
+   "pulsBreite": 0.16,
+   "unter": 0.16,
+   "oberwelle": 0.12,
+   "schwebung": 3.5,
+   "hoch": 0.4,
+   "hochAb": 0.2,
+   "hochSchub": 0.55,
+   "amTiefe": 0.4,
+   "amTiefeLeerlauf": 0.42,
+   "leerlaufZittern": 0.01,
+   "rauh": 0.54,
+   "rauhOberwelle": 4,
+   "rauhGuete": 2.2,
+   "rauhPuls": 0.85,
+   "verzerrung": 3.5,
+   "clip": 0.8,
+   "filterGrund": 450,
+   "filterDrehzahl": 0.6,
+   "filterGas": 2400,
+   "filterQ": 1.6,
+   "bissHz": 2200,
+   "bissDb": 1,
+   "bissGuete": 1.1,
+   "lastPegel": 1,
+   "schubPegel": 0.42,
+   "leerlaufPegel": 0.55,
+   "drehzahlPegel": 0.35,
+   "turboAb": 3000,
+   "turboVoll": 5500,
+   "turboRauf": 0.4,
+   "turboRunter": 0.6,
+   "turboTonMin": 2200,
+   "turboTonMax": 5200,
+   "turboPegel": 0.035,
+   "turboEchtGlaetten": 0.03,
+   "turboPegelMal": 1.35,
+   "blowOffAb": 0.5,
+   "blowOffGasFall": 0.5,
+   "blowOffZeit": 0.12,
+   "blowOffDauer": 0.3,
+   "blowOffTon": 2600,
+   "blowOffPegel": 0.16,
+   "knallAb": 3500,
+   "knallChance": 0.7,
+   "popAnzahl": [
+    1,
+    4
+   ],
+   "popAbstand": [
+    0.04,
+    0.14
+   ],
+   "knallFenster": [
+    0.04,
+    0.22
+   ],
+   "popPegel": 1.2,
+   "popStaerke": [
+    0.7,
+    1
+   ],
+   "popTempo": [
+    0.8,
+    1.25
+   ],
+   "knallSperre": 1,
+   "turboKnallPlus": 0.15,
+   "knisternChance": 0.8,
+   "knisternAnzahl": [
+    2,
+    4
+   ],
+   "knisternFenster": 0.8,
+   "knisternPegel": 0.16,
+   "pop": {
+    "laenge": 0.03,
+    "mitte": 2400,
+    "guete": 1.3,
+    "abklingen": 0.0055,
+    "tief": [
+     170,
+     85,
+     0.006,
+     0.35
+    ]
+   },
+   "schaltLastAb": 0.5,
+   "schaltOhneLast": 0.2,
+   "schaltDip": 0.2,
+   "schaltDipZeit": 0.007,
+   "schaltKnallChance": 0.2,
+   "schaltKnallPegel": 1.25,
+   "schaltBlowOff": 1.3,
+   "klackPegel": 0.375,
+   "klackLeise": 0.45,
+   "klack": {
+    "laenge": 0.045,
+    "mitte": 1300,
+    "guete": 0.9,
+    "abklingen": 0.007,
+    "tief": [
+     90,
+     80,
+     0.012,
+     0.45
+    ]
+   },
+   "zwischengasDauer": 0.15,
+   "zwischengasStaerke": 0.9,
+   "zwischengasOhneLast": true,
+   "zwischengasKnallChance": 0.2,
+   "schaltTonSperre": 0.15,
+   "begrenzerAb": 6850,
+   "begrenzerNach": 0.12,
+   "begrenzerHz": 13,
+   "begrenzerTiefe": 0.85,
+   "heulenFaktor": 5.5,
+   "heulenOberwelle": 0.3,
+   "heulenFilter": 1200,
+   "heulenPegel": 0.06,
+   "unrund": 0,
+   "lader": {
+    "an": false,
+    "faktor": 14,
+    "pegel": 0.03,
+    "gasAnteil": 0.7,
+    "ansprechen": 0.015
+   }
+  },
+  "leerlauf": {
+   "f0": 33.3017,
+   "fGemessen": 33.2715,
+   "rms": 0.0938
+  },
+  "rauschen": {
+   "ausserhalbObertoene": 0.0154,
+   "flachheit": 0.0607,
+   "f0": 273.6813
+  },
+  "turbo": {
+   "rms": 0,
+   "verhaeltnisDb": -180,
+   "ton": 0,
+   "tonSoll": 5200,
+   "bandMitDb": 43.1786,
+   "bandOhneDb": 43.1786
+  },
+  "pops": {
+   "salvenMitPops": 7,
+   "pops": 21,
+   "knistern": 61,
+   "schaltknall": 1,
+   "blowOff": 0,
+   "minuten": 1
+  },
+  "teillast": {
+   "unter200": 0.0074,
+   "gesamt": 0.0134,
+   "schwankung": 0.1097
+  },
+  "unrund": {
+   "leerlauf": 0.6554,
+   "teillast": 0.1097,
+   "mittel": 0.3825
+  },
+  "lader": {
+   "an": false
+  },
+  "fahrt": {
+   "spitze": 0.5607,
+   "rmsVollgas": 0.1816,
+   "pops": 0,
+   "knistern": 2,
+   "blowOff": 0
+  },
+  "spitze": 0.5836
+ },
+ "rueckFahrt": [
+  {
+   "t": 0.25,
+   "rpm": 3424.5065,
+   "v": -0.7033,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 0.5,
+   "rpm": 3497.7203,
+   "v": -1.4063,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 0.75,
+   "rpm": 3499.9312,
+   "v": -2.1087,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 1,
+   "rpm": 3499.9979,
+   "v": -2.8103,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 1.25,
+   "rpm": 3499.9999,
+   "v": -3.5108,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 1.5,
+   "rpm": 3500,
+   "v": -4.2099,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 1.75,
+   "rpm": 3500,
+   "v": -4.9073,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 2,
+   "rpm": 3500,
+   "v": -5.6029,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 2.25,
+   "rpm": 3500,
+   "v": -6.2964,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 2.5,
+   "rpm": 3580.3671,
+   "v": -6.9876,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 2.75,
+   "rpm": 3921.3163,
+   "v": -7.6762,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 3,
+   "rpm": 4281.0201,
+   "v": -8.3615,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 3.25,
+   "rpm": 4638.3847,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 3.5,
+   "rpm": 4721.8273,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 3.75,
+   "rpm": 4724.3463,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 4,
+   "rpm": 4724.4216,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 4.25,
+   "rpm": 4724.4228,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 4.5,
+   "rpm": 4724.4219,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 4.75,
+   "rpm": 4724.4213,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  },
+  {
+   "t": 5,
+   "rpm": 4724.4205,
+   "v": -8.9977,
+   "gang": -1,
+   "untergrund": "asphalt"
+  }
+ ]
+}

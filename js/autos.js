@@ -51,6 +51,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 4.4, breite: 1.8 }, // M8c: Rechteck mit runden Ecken gegen Bäume, Steine, Zäune (kollision.js)
     staub: { hinten: 1.3, seite: 0.75 },     // M8c: Staub tritt so weit hinter der Mitte und so weit seitlich aus (Hinterräder)
     schwerpunktHoehe: 0.5,      // um diesen Punkt (Höhe) neigt sich die Karosserie (Federung)
+    auspuff: [{ x: 0.52, y: 0.25, z: -2.24 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.8, z: 1.26,          // Radmitten bei (±x, Radius, ±z)
       radius: 0.33, breite: 0.24, felgeRadius: 0.2, felgeTiefe: 0.03, segmente: 14, speichen: 5,
@@ -197,6 +198,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 3.95, breite: 1.74 },
     staub: { hinten: 1.28, seite: 0.71 },
     schwerpunktHoehe: 0.5,
+    auspuff: [{ x: -0.5, y: 0.24, z: -2.005 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.76, z: 1.24,
       radius: 0.325, breite: 0.23, felgeRadius: 0.2, felgeTiefe: 0.03, segmente: 14, speichen: 6,
@@ -330,6 +332,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 4.02, breite: 1.7 },
     staub: { hinten: 1.24, seite: 0.69 },
     schwerpunktHoehe: 0.48,
+    auspuff: [{ x: 0.52, y: 0.2, z: -2.05 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.74, z: 1.2,
       radius: 0.325, breite: 0.22, felgeRadius: 0.19, felgeTiefe: 0.03, segmente: 14, speichen: 4,
@@ -430,6 +433,256 @@ export const AUTO_MODELLE = {
 
       // --- Spoilerlippe oben ---
       { art: 'rechteck', ansicht: 'fluegel', von: [-0.74, -1.97], bis: [0.74, -2.0], farbe: 'akzent' },
+    ],
+  },  // Lanza 073 (Id l073, M8e): flaches, kurzes Mittelmotor-Coupé der Gruppe B (037-Typ, eigenes Design, kein Nachbau).
+  // Niedrige Keilnase, Kabine weit vorne mit grossen Scheiben, dahinter der hohe Motordeckel mit Lüftungsschlitzen,
+  // Lufteinlässe seitlich hinter den Türen, deutlich breitere Hinterkotflügel und Hinterräder, kleine Spoilerlippe,
+  // Doppelauspuff in der Mitte hinten, kein Heckfenster.
+  l073: {
+    id: 'l073',
+    name: 'LANZA 073',
+    fahrprofil: 'l073',
+    nummer: '7',
+    kennzeichen: 'LZ 7',
+    kurz: '073',
+    lackierungen: ['l073Werk', 'l073Nacht', 'l073Eis'],
+    masse: { laenge: 3.95, breite: 1.82, radstand: 2.42, spur: 1.48, radRadius: 0.33 },
+    kollision: { laenge: 3.88, breite: 1.76 },
+    staub: { hinten: 1.24, seite: 0.74 },
+    schwerpunktHoehe: 0.44,
+    auspuff: [{ x: 0.1, y: 0.3, z: -2.05 }, { x: -0.1, y: 0.3, z: -2.05 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
+    raeder: {
+      x: 0.74, z: 1.21,
+      radius: 0.33, breite: 0.22, felgeRadius: 0.21, felgeTiefe: 0.03, segmente: 14, speichen: 5,
+      breiteHinten: 0.28, xHinten: 0.77, // M8e: hinten breitere Reifen und weiter aussen (breite Hinterkotflügel)
+      radlaufLuft: 0.08,
+    },
+    textur: { breite: 512, hoehe: 128, seite: 32, oben: 32, vorne: 48, hinten: 48, fluegel: 32, hoeheBis: 1.28, fluegelZ: [-1.8, -2.02] },
+    schatten: { breite: 1.95, laenge: 4.0 },
+    innenFlaechen: { zBis: 1.88, yBis: 0.86, farbe: 'radhaus' },
+    werte: { beschleunigung: 9, tempo: 4, grip: 6, drift: 10 }, // (Drift gerechnet 14.5, auf 10 begrenzt)
+
+    teile: [
+      // --- Unterbau: flache Keilnase, Gürtellinie tief bei der Kabine, dahinter der hohe Motordeckel ---
+      {
+        art: 'prisma', slot: 'lack', x: [-0.82, 0.82],
+        profil: [
+          [1.975, 0.22], [1.64, 0.22], ...bogen(1.21, 0.33, 0.43, 6), [0.78, 0.22],
+          [-0.78, 0.22], ...bogen(-1.21, 0.33, 0.44, 6), [-1.65, 0.22],
+          [-1.975, 0.22], [-1.975, 0.96], [-0.82, 1.0], [-0.64, 0.84], [0.86, 0.8], [1.9, 0.5], [1.975, 0.42],
+        ],
+      },
+      { art: 'quader', slot: 'radhaus', min: [-0.45, 0.22, 0.78], max: [0.45, 0.56, 1.6] }, // (unter der flachen Haube)
+      { art: 'quader', slot: 'radhaus', min: [-0.45, 0.22, -1.65], max: [0.45, 0.76, -0.77] },
+      // Kotflügel: vorne schmal, hinten deutlich breiter (die breiten Hinterräder stehen darin)
+      { art: 'prisma', slot: 'lack', x: [0.82, 0.86], spiegeln: true, profil: kotfluegel(1.21, 0.43, 1.88, 0.62, 0.24, 0.52, 0.8) },
+      { art: 'prisma', slot: 'lack', x: [0.82, 0.91], spiegeln: true, profil: kotfluegel(-1.21, 0.44, -0.6, -1.975, 0.24, 0.9, 0.96) },
+      // Seitenschweller
+      { art: 'quader', slot: 'lack', spiegeln: true, min: [0.82, 0.22, -0.6], max: [0.86, 0.34, 0.62] },
+      // Kabine weit vorne: flache Frontscheibe, kurzes Dach, Rückwand fällt steil in den Motordeckel
+      // (scheiben: die flache Frontscheibe holt ihre Farbe aus der Ansicht vorne)
+      { art: 'trapez', slot: 'lack', unten: [0.8, 0.8, 0.86, -0.84], oben: [1.25, 0.64, 0.18, -0.56], ohne: ['unten'], scheiben: ['vorne'] },
+      // kleine Spoilerlippe am Heck
+      { art: 'trapez', slot: 'fluegel', unten: [0.96, 0.8, -1.82, -1.98], oben: [1.03, 0.8, -1.86, -2.0] },
+      // Lufteinlässe seitlich hinter den Türen (dunkle Kästen vor den Hinterkotflügeln)
+      { art: 'quader', slot: 'gitter', spiegeln: true, min: [0.8, 0.58, -0.62], max: [0.86, 0.8, -0.5] },
+      // Frontsplitter und Heckschürze
+      { art: 'quader', slot: 'schwarz', min: [-0.84, 0.16, 1.88], max: [0.84, 0.22, 2.0] },
+      { art: 'quader', slot: 'schwarz', min: [-0.9, 0.18, -2.0], max: [0.9, 0.42, -1.94] },
+      // Aussenspiegel
+      { art: 'quader', slot: 'akzent', spiegeln: true, min: [0.78, 0.9, 0.58], max: [0.88, 0.98, 0.66] },
+      // Schlammlappen
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.6, 0.07, 0.76], max: [0.84, 0.4, 0.78] },
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.62, 0.07, -1.67], max: [0.9, 0.42, -1.65] },
+      // Doppelauspuff in der Mitte
+      ...[0.1, -0.1].map((x) => ({ art: 'zylinder', slot: 'chrom', achse: 'z', mitte: [x, 0.3, -2.0], radius: 0.045, laenge: 0.1, segmente: 6 })),
+      // Gehäuse des runden Zusatzlichts in der Nase
+      { art: 'zylinder', slot: 'schwarz', achse: 'z', mitte: [0, 0.34, 1.955], radius: 0.085, laenge: 0.04, segmente: 8 },
+
+      // --- Lichter ---
+      // zwei flache Scheinwerfer in der Keilnase und ein Zusatzlicht in der Mitte
+      { art: 'quader', licht: 'vorne', farbe: 'scheinwerfer', spiegeln: true, min: [0.42, 0.34, 1.97], max: [0.74, 0.43, 1.978] },
+      { art: 'zylinder', licht: 'vorne', farbe: 'zusatzscheinwerfer', achse: 'z', mitte: [0, 0.34, 1.978], radius: 0.068, laenge: 0.004, segmente: 8 },
+      // runde Heckleuchten paarweise (eckig angedeutet), Rückfahrlicht dazwischen
+      ...[0.48, 0.72].flatMap((x) => [x, -x]).map((x) => ({ art: 'zylinder', licht: 'hinten', achse: 'z', mitte: [x, 0.72, -1.978], radius: 0.085, laenge: 0.006, segmente: 8 })),
+      { art: 'quader', licht: 'rueck', min: [0.2, 0.68, -1.98], max: [0.32, 0.76, -1.975] },
+    ],
+
+    bemalung: [
+      // --- Seite ---
+      { art: 'rechteck', ansicht: 'seite', von: [-2.1, 0], bis: [2.1, 0.36], farbe: 'unten' },
+      // breiter Schrägstreifen (Werk: grün und gelb) von der Nase unten zum Motordeckel oben
+      { art: 'polygon', ansicht: 'seite', farbe: 'streifen0', punkte: [[1.7, 0.36], [1.1, 0.36], [-0.7, 1.02], [-0.05, 1.02]] },
+      { art: 'polygon', ansicht: 'seite', farbe: 'streifen1', punkte: [[1.98, 0.36], [1.82, 0.36], [0.0, 1.02], [0.18, 1.02]] },
+      { art: 'ring', ansicht: 'seite', mitte: [1.21, 0.33], r: [0.42, 0.46], farbe: 'kante' }, // (schmal: die Nase ist niedrig)
+      { art: 'ring', ansicht: 'seite', mitte: [-1.21, 0.33], r: [0.42, 0.47], farbe: 'kante' },
+      // Tür (Fuge, Griff) und Lufteinlass
+      { art: 'rechteck', ansicht: 'seite', von: [0.72, 0.36], bis: [0.75, 0.8], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.47, 0.36], bis: [-0.44, 1.2], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.36, 0.74], bis: [-0.26, 0.77], farbe: 'fuge' },
+      { art: 'polygon', ansicht: 'seite', farbe: 'gitter', punkte: [[-0.5, 0.6], [-0.5, 0.8], [-0.66, 0.84], [-0.66, 0.6]] },
+      // grosse Seitenscheibe (die Kabine sitzt weit vorne)
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[0.8, 0.84], [0.22, 1.215], [-0.48, 1.215], [-0.6, 0.86]] },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.46, 1.17], bis: [0.26, 1.2], farbe: 'glasHell' },
+      // Helme (dezent, nur seitlich und vorne)
+      { art: 'helm', ansicht: 'seite', nur: 'links', mitte: [-0.12, 1.0], r: 0.08, farbe: 'helmFahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'seite', nur: 'rechts', mitte: [-0.12, 1.0], r: 0.08, farbe: 'helmBeifahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'nummer', ansicht: 'seite', mitte: [0.3, 0.56] },
+      { art: 'text', ansicht: 'seite', text: 'ALPGAS', mitte: [-1.3, 0.87], farbe: 'sponsor0', abBreite: 480 }, // auf dem Hinterkotflügel
+
+      // --- Oben ---
+      { art: 'polygon', ansicht: 'oben', farbe: 'streifen0', punkte: [[-0.3, 1.95], [0.3, 1.95], [0.3, 0.86], [-0.3, 0.86]] }, // Mittelstreifen auf der Haube
+      { art: 'nummer', ansicht: 'oben', mitte: [0, 1.36], lesbarVon: 'vorne' },
+      { art: 'nummer', ansicht: 'oben', mitte: [0, -0.2], lesbarVon: 'hinten' },
+      // Motordeckel: Lüftungsschlitze in zwei Reihen
+      ...[-0.95, -1.1, -1.25, -1.4, -1.55].map((z) => ({ art: 'rechteck', ansicht: 'oben', von: [0.12, z - 0.05], bis: [0.62, z], farbe: 'gitter', spiegeln: true })),
+      { art: 'text', ansicht: 'oben', text: 'GIPFELWERK', mitte: [0, -1.74], lesbarVon: 'hinten', farbe: 'sponsor0', abBreite: 640 },
+
+      // --- Vorne ---
+      { art: 'polygon', ansicht: 'vorne', farbe: 'glas', punkte: [[-0.76, 0.82], [0.76, 0.82], [0.62, 1.24], [-0.62, 1.24]] },
+      { art: 'helm', ansicht: 'vorne', mitte: [0.33, 0.98], r: 0.075, farbe: 'helmFahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'vorne', mitte: [-0.33, 0.98], r: 0.075, farbe: 'helmBeifahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.62, 1.11], bis: [0.62, 1.24], farbe: 'banner' },
+      { art: 'text', ansicht: 'vorne', text: 'FIRNBRAU', mitte: [0, 1.175], farbe: 'bannerSchrift', abBreite: 480 },
+      { art: 'rechteck', ansicht: 'vorne', von: [0.4, 0.32], bis: [0.78, 0.45], farbe: 'schwarz', spiegeln: true }, // Scheinwerfer-Rahmen
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.3, 0.24], bis: [0.3, 0.3], farbe: 'gitter' },                 // Lufteinlass unter dem Zusatzlicht
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.9, 0], bis: [0.9, 0.24], farbe: 'unten' },
+
+      // --- Hinten (kein Heckfenster: Rückwand der Kabine und Motordeckel) ---
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.6, 1.02], bis: [0.6, 1.2], farbe: 'gitter' },        // Rückwand (Lüftung)
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.86, 0.6], bis: [0.86, 0.84], farbe: 'schwarz' },    // Heckblende mit Leuchten
+      ...[0.88, 0.92].map((y) => ({ art: 'rechteck', ansicht: 'hinten', von: [-0.7, y - 0.015], bis: [0.7, y], farbe: 'gitter' })), // Schlitze im Motordeckel
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.95, 0], bis: [0.95, 0.42], farbe: 'unten' },
+      { art: 'kennzeichen', ansicht: 'hinten', mitte: [0, 0.5] },
+
+      // --- Spoilerlippe oben ---
+      { art: 'rechteck', ansicht: 'fluegel', von: [-0.8, -1.96], bis: [0.8, -2.0], farbe: 'akzent' },
+    ],
+  },  // Subora Imprexa (Id imprexa, M8e): kompakte Allrad-Limousine mit Boxermotor und Turbo (Impreza-Typ, eigenes
+  // Design, kein Nachbau). Stufenheck mit vier Türen, Haubenhutze (Ladeluftkühler), grosser Heckflügel auf dem
+  // Kofferraum, breite Kotflügel, zwei Scheinwerfer und Zusatzleuchten in der Schürze, tiefer Lufteinlass, ein Auspuff.
+  imprexa: {
+    id: 'imprexa',
+    name: 'SUBORA IMPREXA',
+    fahrprofil: 'imprexa',
+    nummer: '6',
+    kennzeichen: 'SI 6',
+    kurz: 'IMPREXA',
+    lackierungen: ['imprexaWerk', 'imprexaPolar', 'imprexaDunkel'],
+    masse: { laenge: 4.35, breite: 1.77, radstand: 2.52, spur: 1.5, radRadius: 0.325 },
+    kollision: { laenge: 4.27, breite: 1.71 },
+    staub: { hinten: 1.32, seite: 0.72 },
+    schwerpunktHoehe: 0.46,
+    auspuff: [{ x: -0.5, y: 0.25, z: -2.25 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
+    raeder: {
+      x: 0.75, z: 1.26,
+      radius: 0.325, breite: 0.23, felgeRadius: 0.2, felgeTiefe: 0.03, segmente: 14, speichen: 5,
+      radlaufLuft: 0.08,
+    },
+    textur: { breite: 512, hoehe: 128, seite: 32, oben: 32, vorne: 48, hinten: 48, fluegel: 32, hoeheBis: 1.44, fluegelZ: [-1.76, -2.2] },
+    schatten: { breite: 1.9, laenge: 4.35 },
+    innenFlaechen: { zBis: 2.05, yBis: 0.86, farbe: 'radhaus' },
+    werte: { beschleunigung: 8, tempo: 5, grip: 8, drift: 6 },
+
+    teile: [
+      // --- Unterbau: lange Haube, Stufenheck mit Kofferraum ---
+      {
+        art: 'prisma', slot: 'lack', x: [-0.84, 0.84],
+        profil: [
+          [2.175, 0.22], [1.69, 0.22], ...bogen(1.26, 0.33, 0.43, 6), [0.83, 0.22],
+          [-0.83, 0.22], ...bogen(-1.26, 0.33, 0.43, 6), [-1.69, 0.22],
+          [-2.175, 0.22], [-2.175, 0.86], [-2.12, 0.92], [-1.24, 0.92], [0.98, 0.9], [2.1, 0.78], [2.175, 0.7],
+        ],
+      },
+      { art: 'quader', slot: 'radhaus', min: [-0.45, 0.22, 0.83], max: [0.45, 0.72, 1.69] },
+      { art: 'quader', slot: 'radhaus', min: [-0.45, 0.22, -1.69], max: [0.45, 0.72, -0.83] },
+      // breite Kotflügel vorne und hinten
+      { art: 'prisma', slot: 'lack', x: [0.84, 0.885], spiegeln: true, profil: kotfluegel(1.26, 0.43, 2.0, 0.66, 0.24, 0.76, 0.86) },
+      { art: 'prisma', slot: 'lack', x: [0.84, 0.885], spiegeln: true, profil: kotfluegel(-1.26, 0.43, -0.66, -2.05, 0.24, 0.86, 0.86) },
+      // Seitenschweller
+      { art: 'quader', slot: 'lack', spiegeln: true, min: [0.84, 0.22, -0.66], max: [0.87, 0.34, 0.66] },
+      // Kabine (Limousine): schräge Frontscheibe, Dach, schräge Heckscheibe zum Kofferraum
+      // (scheiben: Front- und Heckscheibe holen ihre Farbe aus der Ansicht vorne bzw. hinten)
+      { art: 'trapez', slot: 'lack', unten: [0.9, 0.8, 0.98, -1.26], oben: [1.42, 0.66, 0.24, -0.74], ohne: ['unten'], scheiben: ['vorne', 'hinten'] },
+      // Haubenhutze (Ladeluftkühler; Öffnung vorne wird schwarz gemalt)
+      { art: 'trapez', slot: 'lack', unten: [0.84, 0.24, 1.62, 1.12], oben: [0.93, 0.2, 1.56, 1.12], ohne: ['unten'] },
+      // grosser Heckflügel auf zwei Stützen
+      { art: 'trapez', slot: 'fluegel', unten: [1.1, 0.82, -1.8, -2.17], oben: [1.15, 0.82, -1.78, -2.17] },
+      { art: 'quader', slot: 'akzent', spiegeln: true, min: [0.82, 0.96, -2.19], max: [0.85, 1.2, -1.76] },
+      { art: 'quader', slot: 'schwarz', spiegeln: true, min: [0.5, 0.92, -2.06], max: [0.55, 1.1, -1.92] },
+      // Frontschürze (tief, mit Splitter) und Heckschürze
+      { art: 'quader', slot: 'lack', min: [-0.88, 0.18, 2.13], max: [0.88, 0.46, 2.21] },
+      { art: 'quader', slot: 'schwarz', min: [-0.86, 0.15, 2.12], max: [0.86, 0.18, 2.24] },
+      { art: 'quader', slot: 'lack', min: [-0.88, 0.18, -2.21], max: [0.88, 0.46, -2.15] },
+      // Aussenspiegel
+      { art: 'quader', slot: 'akzent', spiegeln: true, min: [0.79, 0.95, 0.66], max: [0.88, 1.03, 0.74] },
+      { art: 'quader', slot: 'schwarz', spiegeln: true, min: [0.72, 0.97, 0.68], max: [0.79, 1.0, 0.72] },
+      // Schlammlappen
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.6, 0.07, 0.81], max: [0.87, 0.42, 0.83] },
+      { art: 'quader', slot: 'lappen', spiegeln: true, min: [0.6, 0.07, -1.71], max: [0.87, 0.42, -1.69] },
+      // ein Auspuff hinten rechts (Beifahrerseite = -x)
+      { art: 'zylinder', slot: 'chrom', achse: 'z', mitte: [-0.5, 0.25, -2.2], radius: 0.05, laenge: 0.1, segmente: 6 },
+      // Gehäuse der Zusatzleuchten in der Schürze
+      ...[0.58, -0.58].map((x) => ({ art: 'zylinder', slot: 'schwarz', achse: 'z', mitte: [x, 0.33, 2.21], radius: 0.085, laenge: 0.03, segmente: 8 })),
+
+      // --- Lichter ---
+      { art: 'quader', licht: 'vorne', farbe: 'scheinwerfer', spiegeln: true, min: [0.44, 0.6, 2.176], max: [0.78, 0.69, 2.182] },
+      ...[0.58, -0.58].map((x) => ({ art: 'zylinder', licht: 'vorne', farbe: 'zusatzscheinwerfer', achse: 'z', mitte: [x, 0.33, 2.227], radius: 0.066, laenge: 0.004, segmente: 8 })),
+      { art: 'quader', licht: 'hinten', spiegeln: true, min: [0.42, 0.72, -2.183], max: [0.84, 0.84, -2.176] },
+      { art: 'quader', licht: 'rueck', min: [0.26, 0.74, -2.18], max: [0.38, 0.82, -2.176] },
+    ],
+
+    bemalung: [
+      // --- Seite ---
+      { art: 'rechteck', ansicht: 'seite', von: [-2.3, 0], bis: [2.3, 0.36], farbe: 'unten' },
+      { art: 'rechteck', ansicht: 'seite', von: [-2.3, 0.6], bis: [2.3, 0.72], farbe: 'streifen0' }, // breiter Streifen
+      { art: 'rechteck', ansicht: 'seite', von: [-2.3, 0.54], bis: [2.3, 0.57], farbe: 'streifen1' },
+      { art: 'ring', ansicht: 'seite', mitte: [1.26, 0.33], r: [0.4, 0.47], farbe: 'kante' },
+      { art: 'ring', ansicht: 'seite', mitte: [-1.26, 0.33], r: [0.4, 0.47], farbe: 'kante' },
+      // vier Türen (Fugen) und Türgriffe
+      { art: 'rechteck', ansicht: 'seite', von: [0.78, 0.36], bis: [0.81, 0.88], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.3, 0.36], bis: [-0.27, 1.38], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-1.18, 0.42], bis: [-1.15, 0.9], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.2, 0.8], bis: [-0.1, 0.83], farbe: 'fuge' },
+      { art: 'rechteck', ansicht: 'seite', von: [-1.06, 0.8], bis: [-0.96, 0.83], farbe: 'fuge' },
+      // Seitenscheiben: vordere und hintere Tür
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[0.88, 0.95], [0.3, 1.38], [-0.24, 1.38], [-0.24, 0.95]] },
+      { art: 'polygon', ansicht: 'seite', farbe: 'glas', punkte: [[-0.34, 0.95], [-0.34, 1.38], [-0.72, 1.38], [-1.12, 0.95]] },
+      { art: 'rechteck', ansicht: 'seite', von: [-0.24, 1.33], bis: [0.32, 1.36], farbe: 'glasHell' },
+      // Helme (dezent, nur seitlich und vorne)
+      { art: 'helm', ansicht: 'seite', nur: 'links', mitte: [0.02, 1.13], r: 0.08, farbe: 'helmFahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'seite', nur: 'rechts', mitte: [0.02, 1.13], r: 0.08, farbe: 'helmBeifahrer', visier: 'vorne', schulter: [1.3, 1.6] },
+      { art: 'nummer', ansicht: 'seite', mitte: [0.3, 0.66] },
+      { art: 'text', ansicht: 'seite', text: 'NORDHANG', mitte: [0, 0.28], farbe: 'sponsorHell', abBreite: 480 }, // zwischen den Radläufen
+
+      // --- Oben ---
+      { art: 'rechteck', ansicht: 'oben', von: [-0.2, 1.62], bis: [0.2, 1.56], farbe: 'gitter' }, // Öffnung der Haubenhutze
+      { art: 'nummer', ansicht: 'oben', mitte: [0, -0.25], lesbarVon: 'hinten' },
+      { art: 'nummer', ansicht: 'oben', mitte: [0, 0.0], lesbarVon: 'vorne' },
+      { art: 'rechteck', ansicht: 'oben', von: [-0.7, -1.3], bis: [0.7, -1.72], farbe: 'sponsorFeld' }, // Kofferraum
+
+      // --- Vorne ---
+      { art: 'polygon', ansicht: 'vorne', farbe: 'glas', punkte: [[-0.76, 0.93], [0.76, 0.93], [0.63, 1.4], [-0.63, 1.4]] },
+      { art: 'helm', ansicht: 'vorne', mitte: [0.33, 1.1], r: 0.075, farbe: 'helmFahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'helm', ansicht: 'vorne', mitte: [-0.33, 1.1], r: 0.075, farbe: 'helmBeifahrer', visier: 'mitte', schulter: [1.3, 1.6] },
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.64, 1.26], bis: [0.64, 1.4], farbe: 'banner' },
+      { art: 'text', ansicht: 'vorne', text: 'TALFUNK', mitte: [0, 1.33], farbe: 'bannerSchrift', abBreite: 480 },
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.22, 0.85], bis: [0.22, 0.92], farbe: 'gitter' },          // Öffnung Hutze
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.4, 0.6], bis: [0.4, 0.7], farbe: 'gitter' },            // Kühlergrill
+      { art: 'rechteck', ansicht: 'vorne', von: [0.42, 0.58], bis: [0.8, 0.72], farbe: 'schwarz', spiegeln: true }, // Scheinwerfer-Rahmen
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.9, 0], bis: [0.9, 0.46], farbe: 'unten' },              // Schürze
+      { art: 'rechteck', ansicht: 'vorne', von: [-0.4, 0.2], bis: [0.4, 0.4], farbe: 'gitter' },            // tiefer Lufteinlass
+
+      // --- Hinten ---
+      { art: 'polygon', ansicht: 'hinten', farbe: 'glas', punkte: [[-0.72, 0.95], [0.72, 0.95], [0.62, 1.39], [-0.62, 1.39]] },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.5, 1.33], bis: [0.5, 1.355], farbe: 'glasHell' },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.86, 0.7], bis: [0.86, 0.86], farbe: 'schwarz' },      // Rücklicht-Band
+      { art: 'text', ansicht: 'hinten', text: 'KRISTALL', mitte: [0, 0.61], farbe: 'sponsor0', abBreite: 480 },
+      { art: 'rechteck', ansicht: 'hinten', von: [-0.95, 0], bis: [0.95, 0.46], farbe: 'unten' },
+      { art: 'kennzeichen', ansicht: 'hinten', mitte: [0, 0.36] },
+
+      // --- Heckflügel oben ---
+      { art: 'rechteck', ansicht: 'fluegel', von: [-0.84, -2.14], bis: [0.84, -2.18], farbe: 'akzent' },
     ],
   },
 };

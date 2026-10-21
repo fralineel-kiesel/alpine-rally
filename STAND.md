@@ -1,11 +1,12 @@
 # Alpine Rally – Stand
 
-Aktuell: **Meilenstein 8d fertig** – zwei Fehler behoben und **jedes Auto klingt anders**. Die **Frontscheibe** von Lanza
-Delto und Fard Escorta ist jetzt dunkles Glas (statt Wagenfarbe). In der **Garage** wählt der Zeiger nichts mehr von allein:
-mit Pfeilen ansehen, mit **Leertaste oder Enter wählen** (das Auto wird gelb), die Lackierung gehört immer zum gewählten Auto.
-**Motorklang je Auto:** Audan Quarto wie bisher (5-Zylinder-Turbo), **Lanza Delto** als 4-Zylinder-Turbo (höher, heller,
-giftiger, Pfeifen höher), **Fard Escorta** als 4-Zylinder-Sauger (heiser, warm, ohne Pfeifen, mehr Knistern). Im Ton-Labor gibt
-es dafür den Knopf **VERGLEICH**. **Wichtig: Ton nicht gehört, Fahrgefühl nicht gespürt – bitte zuerst die Hör-Anleitung (M8d).**
+Aktuell: **Meilenstein 8e fertig** – die **Auto-Reihe ist komplett** (fünf Autos). Neu: **Lanza 073** (Mittelmotor,
+Hinterrad, Kompressor – das schnellste und zickigste Auto) und **Subora Imprexa** (Allrad-Limousine mit Boxer und Turbo – der
+ausgewogene Allrounder), beide mit eigenem **Motorklang** (Lanza: Kompressor-Heulen, Subora: Boxer-Blubbern). In der Garage
+haben alle fünf Platz, unten steht **LEERTASTE ODER ENTER = WÄHLEN**, und beim Wählen **heult der Motor kurz auf**. Beim
+Poppen blitzt eine **Flamme aus dem Auspuff**. **Wichtig: Ton nicht gehört, Fahrgefühl nicht gespürt – bitte zuerst die
+Test-Anleitung (M8e).**
+Davor: 8d (Scheiben-Fehler, Garage mit Tastatur, Motorklang je Auto: Delto als 4-Zylinder-Turbo, Escorta als Sauger).
 Davor: 8c (Garage, Lanza Delto und Fard Escorta, gemeinsame Bestzeiten).
 Davor: 8b (Name Audan Quarto, Fahrer hinten weg, spürbareres Fahrgefühl, Turbo im Ton am echten Ladedruck).
 Davor: 8a (Ringwerk RT4 – heute Audan Quarto – als richtiges 3D-Modell mit Lackierung, Federung, Lichtern, Dreck,
@@ -40,7 +41,390 @@ Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start
 
 ---
 
-## Meilenstein 8d: Scheiben-Fehler, Garage mit Tastatur, Motorklang je Auto ✅
+## Meilenstein 8e: Lanza 073 und Subora Imprexa (mit Motorklang), Garage-Extras ✅
+
+> **Ehrlich vorneweg: Ich habe den Ton nicht gehört und das Fahrgefühl nicht gespürt.** Alles ist **gemessen**: Fahrphysik
+> mit festen Fahrprogrammen und dem Testfahrer über die ganze Etappe, Ton offline gerechnet (Spektrogramme, Messtabellen),
+> Bilder in drei Pixelgrössen angeschaut. Ob der Lanza „zickig“, das Kompressor-Heulen „nach Kompressor“ und der Subora „nach
+> Boxer“ klingt, kannst nur du entscheiden. Darum zuerst die **Test-Anleitung** unten.
+> **Für Änderungen schreib einfach, was dir nicht gefällt (oder füge die kopierten Werte ein), das wird dann M8e.1.**
+
+Vier Teile, vier Commits im selben Pull Request: **A = Lanza 073**, **B = Subora Imprexa**, **C = Garage für fünf Autos,
+Hinweiszeile, Aufheulen, Auspuff-Flamme**, **D = Motorklang der zwei neuen Autos** (dazu in D: Tests, Bilder, diese
+Beschreibung). **Audan Quarto, Lanza Delto und Fard Escorta sind unverändert** (Aussehen, Fahrgefühl, Ton – gegen 0.8d
+gemessen), das Profil `prototyp` auch (Testfahrer 2:59.33 / 2:42.35 / 2:31.92, Abkürzungen 127 / 2 / 342 / 84).
+
+### A – Lanza 073 (Id `l073`, Mittelmotor, Hinterrad, Kompressor)
+
+- **Flaches, kurzes Mittelmotor-Coupé** (037-Typ, eigenes Design, kein Nachbau): niedrige Keilnase mit zwei flachen
+  Scheinwerfern und einem runden Zusatzlicht, **Kabine weit vorne** mit grosser, flacher Frontscheibe und grossen
+  Seitenscheiben, dahinter der **hohe Motordeckel** mit zwei Reihen **Lüftungsschlitzen**, **Lufteinlässe** seitlich hinter
+  den Türen, **breite Hinterkotflügel mit breiteren Hinterrädern** (0.28 statt 0.22 m, weiter aussen), kleine
+  Spoilerlippe, **Doppelauspuff in der Mitte**, kein Heckfenster, vier runde Heckleuchten. Masse **3.95 x 1.82 x 1.25 m**,
+  Radstand 2.42 m, Radradius 0.33 m. Nummer **7**, Kennzeichen **LZ 7**, Kurzname **073**.
+- **Baukasten:** die Räder können jetzt hinten breiter sein und weiter aussen stehen (`raeder.breiteHinten`, `xHinten`);
+  ohne diese Werte genau wie bisher (Audan, Delto, Escorta pixelgleich, geprüft).
+- **Lackierungen:** **Werk** (weiss mit grün-gelbem Schrägstreifen, grüne Akzente), **Nacht** (schwarz mit orangem
+  Streifen), **Eis** (weiss mit hellblauem Streifen, dunkelblaues Unterteil). Sponsoren erfunden: GIPFELWERK, ALPGAS,
+  FIRNBRAU (Schrift erst ab 480x270).
+- **Fahrgefühl** (`fahrprofile.l073`): das schnellste Auto aus dem Stand, dreht sehr willig ein, das Heck kommt beim
+  Bremsen in der Kurve deutlich (+10°) und ist erst nach gut einer Sekunde wieder eingefangen, unter Vollgas in der Kurve
+  schiebt das Heck nach aussen (+2.5°). Der Lader schiebt sofort (kein Turbo).
+
+### B – Subora Imprexa (Id `imprexa`, Allrad, Boxer, Turbo)
+
+- **Kompakte Allrad-Limousine** (Impreza-Typ, eigenes Design): Stufenheck mit **vier Türen**, **Haubenhutze**, **grosser
+  Heckflügel** auf zwei Stützen, breite Kotflügel, zwei Scheinwerfer und **zwei runde Zusatzleuchten in der Schürze**, tiefer
+  Lufteinlass, **ein Auspuff** hinten rechts. Masse **4.35 x 1.77 x 1.42 m**, Radstand 2.52 m, Radradius 0.325 m. Nummer
+  **6**, Kennzeichen **SI 6**, Kurzname **IMPREXA**.
+- **Lackierungen:** **Werk** (dunkelrot mit silbernem Streifen – bewusst nicht blau-gold), **Polar** (weiss mit orangem
+  Streifen), **Dunkel** (anthrazit mit grünem Streifen). Sponsoren erfunden: TALFUNK, NORDHANG, KRISTALL.
+- **Fahrgefühl** (`fahrprofile.imprexa`): ruhig, neutral, vorhersagbar – kaum Schieben über die Front (anders als der
+  Audan), das Heck kommt nur leicht (+3°) und ist sofort wieder gefangen (0.33 s), Allrad-Traktion auf losem Boden,
+  dezenter, schnell ansprechender Turbo (0.3 s).
+
+### Messtabelle Fahrgefühl (gerechnet, nicht gespürt)
+
+Feste Fahrprogramme ohne Browser (`tools/fahrmessung.js`), Unterschied zum Profil `prototyp`. **Alle 36 Zeilen im Ziel.**
+Ehrlich: einige liegen **knapp am Rand** – Lanza Lenkwinkel −19.95 % (Grenze −20), Vollgas in der Kurve +2.52° (Grenze +2.5),
+Handbremse +25.3 % (Grenze 25), Kreis Asphalt +3.04 % (Grenze 3); Subora Kreis Asphalt +3.93 % (Grenze 4), 0–100 Asphalt
+−3.25 % (Grenze −3). Kleine Änderungen können diese Zeilen also kippen lassen – das ist Absicht (das Ziel war „gerade noch drin“),
+aber gut zu wissen.
+
+| Messung | Prototyp | Lanza 073 | Ziel Lanza 073 | Subora Imprexa | Ziel Subora |
+|---|---|---|---|---|---|
+| 0-100 km/h Asphalt | 5.13 s | 4.60 s (-10.4 %) ✅ | -13 bis -8 % | 4.97 s (-3.2 %) ✅ | -6 bis -3 % |
+| 0-100 km/h Schotter | 5.78 s | 5.47 s (-5.3 %) ✅ | -6 bis 0 % | 5.41 s (-6.3 %) ✅ | -9 bis -5 % |
+| 0-100 km/h Wiesenweg | 8.28 s | 8.86 s (+6.9 %) ✅ | 0 bis 10 % | 7.34 s (-11.4 %) ✅ | -14 bis -9 % |
+| 0-60 km/h Gras | 10.10 s | 10.22 s (+1.2 %) ✅ | mindestens -0.05 % | 10.10 s (+0.0 %) ✅ | mindestens -0.05 % |
+| 0-100 km/h Bankett | 6.15 s | 6.38 s (+3.8 %) ✅ | mindestens -0.05 % | 6.29 s (+2.3 %) ✅ | mindestens -0.05 % |
+| Höchsttempo (Vollgas) | 188.1 km/h | 180.4 km/h (-4.1 %) ✅ | -8 bis -3 % | 184.1 km/h (-2.1 %) ✅ | -4 bis 0 % |
+| Bremsweg 100-0 Asphalt | 35.8 m | 35.6 m (-0.3 %) ✅ | -6 bis 6 % | 35.6 m (-0.4 %) ✅ | -5 bis 5 % |
+| Kreis R 25 m Asphalt | 54.4 km/h | 56.0 km/h (+3.0 %) ✅ | 3 bis 7 % | 56.5 km/h (+3.9 %) ✅ | 1.5 bis 4 % |
+| Kreis R 25 m Schotter | 49.3 km/h | 51.0 km/h (+3.5 %) ✅ | 0 bis 5 % | 52.1 km/h (+5.7 %) ✅ | 4 bis 8 % |
+| Kreis R 25 m Wiesenweg | 40.9 km/h | 41.2 km/h (+0.7 %) ✅ | 0 bis 6 % | 46.0 km/h (+12.3 %) ✅ | 9 bis 13 % |
+| Lenkwinkel 80 km/h auf R 60 m | 3.54 ° | 2.83 ° (-19.9 %) ✅ | -20 bis -10 % | 3.67 ° (+3.7 %) ✅ | -3 bis 5 % |
+| Heck: Gas weg + Bremse 60 %: Zusatz-Schwimmwinkel nach 0.5 s | -0.26 ° | 10.00 ° ✅ | 8 bis 12 ° | 2.99 ° ✅ | 2.5 bis 4.5 ° |
+| ... wieder eingefangen nach | 0.00 s | 1.28 s ✅ | 0.9 bis 1.5 s | 0.33 s ✅ | 0 bis 0.6 s |
+| Vollgas in der Kurve R 80 m: Schwimmwinkel | 3.93 ° | 6.45 ° (+2.5°) ✅ | 2.5 bis 6° mehr | 3.21 ° (-0.7°) ✅ | höchstens 0° mehr |
+| Handbremsen-Drift Asphalt nach 0.5 s | 6.71 ° | 8.40 ° (+25.3 %) ✅ | 25 bis 45 % | 7.62 ° (+13.6 %) ✅ | -15 bis 15 % |
+| Rückwärts Höchsttempo | 32.4 km/h | 32.4 km/h ✅ | identisch | 32.4 km/h ✅ | identisch |
+| Rückwärts nach 1 s Asphalt | 9.4 km/h | 9.4 km/h ✅ | identisch | 9.4 km/h ✅ | identisch |
+| Rückwärts nach 1 s Gras | 13.8 km/h | 13.8 km/h ✅ | identisch | 13.8 km/h ✅ | identisch |
+
+**Kippschwelle (Lanza, Vollgas in der Kurve gegen `antriebHinten`):** 0.9: +0.12°, 1.0: +1.78°, **1.1: +2.50°, 1.2: +2.52°**,
+1.3: +2.54° … 2.3: +2.81°, 2.4: +3.27°. Kein Sprung über 1° zwischen 0.9 und 2.4; der eingestellte Wert 1.2 liegt mitten im
+ruhigen Bereich (Abstand zur Kante bei 1.0–1.05 deutlich über 0.03). **Werte-Balken** in der Garage (unveränderte Vorschrift):
+Lanza 073 **9 / 4 / 6 / 10** (Drift gerechnet 14.5, auf 10 begrenzt), Subora **8 / 5 / 8 / 6**.
+
+### Testfahrer (ganze Etappe, drei Fahrstile)
+
+| Fahrstil | Prototyp | Audan Quarto | Lanza Delto | **Lanza 073** | **Subora Imprexa** |
+|---|---|---|---|---|---|
+| vorsichtig | 2:59.33 | 2:58.65 | 2:58.61 | **2:57.95** (−0.37 % gegen Delto, −0.39 % gegen Audan) | **2:58.53** (−0.45 % gegen Prototyp, −0.07 % gegen Audan) |
+| mittel | 2:42.35 | 2:41.76 | 2:41.60 | **2:41.04** (−0.35 % / −0.44 %) | **2:41.55** (−0.49 % / −0.13 %) |
+| flott | 2:31.92 | 2:31.22 | 2:31.22 | **2:32.03** (+0.53 % / +0.53 %) | **2:30.91** (−0.66 % / −0.20 %) |
+
+Alle Läufe **ohne Aufprall, ohne Wandkontakt, ohne Hänger**. Ziele: Lanza ±1.5 % zum Delto und höchstens 1 % schneller als der
+Audan ✅; Subora 0.2–0.7 % schneller als der Prototyp ✅ und höchstens ±0.3 % zum Audan ✅. Beim **flotten** Fahrer ist der
+Lanza etwas **langsamer** als die Allradler: er muss in den schnellen Kurven Gas wegnehmen, damit das Heck bleibt (fürs
+Testfahrer-Programm bekommt er dafür `gasImDrift [3, 9]` in `tools/testfahrer-browser.js`, wie Delto/Escorta ihre Anpassung).
+**Pace-Notes** (nur gemeldet, nichts neu geschrieben): mit dem Lanza liegen 4, mit dem Subora 5 Kurven ausserhalb des
+Zielbereichs der Ansagen (Lanza z. B. die Schotter-Links bei 2027 m −25 % langsamer; Subora die vier Kehren +5 % schneller) –
+wie bei Delto und Escorta eine Folge des anderen Autos, die Ansagen gelten weiter für den Prototyp. **Abkürzungen** mit beiden:
+127 / 2 / 342 / 84, gesperrt durchkommen 0.
+
+### Die fünf Autos im Vergleich (gegen den Prototyp)
+
+| Messung (gegen Prototyp) | Audan Quarto | Lanza Delto | Fard Escorta | Lanza 073 | Subora Imprexa |
+|---|---|---|---|---|---|
+| 0-100 km/h Asphalt | -2.1 % | -4.4 % | +8.3 % | -10.4 % | -3.2 % |
+| 0-100 km/h Schotter | -5.6 % | -7.1 % | +7.9 % | -5.3 % | -6.3 % |
+| 0-100 km/h Wiesenweg | -12.8 % | -10.5 % | +16.0 % | +6.9 % | -11.4 % |
+| 0-60 km/h Gras | +0.0 % | +0.0 % | +0.0 % | +1.2 % | +0.0 % |
+| 0-100 km/h Bankett | -2.0 % | +1.8 % | +9.2 % | +3.8 % | +2.3 % |
+| Höchsttempo (Vollgas) | +0.9 % | -5.4 % | -8.3 % | -4.1 % | -2.1 % |
+| Bremsweg 100-0 Asphalt | +0.0 % | -0.3 % | -0.4 % | -0.3 % | -0.4 % |
+| Kreis R 25 m Asphalt | +2.5 % | +1.9 % | +0.4 % | +3.0 % | +3.9 % |
+| Kreis R 25 m Schotter | +5.3 % | +4.6 % | -0.1 % | +3.5 % | +5.7 % |
+| Kreis R 25 m Wiesenweg | +12.5 % | +11.9 % | +0.5 % | +0.7 % | +12.3 % |
+| Lenkwinkel 80 km/h auf R 60 m | +16.9 % | +7.4 % | -11.5 % | -19.9 % | +3.7 % |
+| Heck: Gas weg + Bremse 60 %: Zusatz-Schwimmwinkel nach 0.5 s | 3.59° | 3.17° | 6.29° | 10.00° | 2.99° |
+| ... wieder eingefangen nach | 0.57 s | 0.38 s | 1.05 s | 1.28 s | 0.33 s |
+| Vollgas in der Kurve R 80 m: Schwimmwinkel | -1.2° | -0.8° | +2.4° | +2.5° | -0.7° |
+| Handbremsen-Drift Asphalt nach 0.5 s | -6.6 % | +19.7 % | +26.3 % | +25.3 % | +13.6 % |
+| Rückwärts Höchsttempo | gleich | gleich | gleich | gleich | gleich |
+| Rückwärts nach 1 s Asphalt | gleich | gleich | gleich | gleich | gleich |
+| Rückwärts nach 1 s Gras | gleich | gleich | gleich | gleich | gleich |
+
+**Zu ähnlich?** Regel: höchstens 2 von 12 Zeilen dürfen bei zwei Autos weniger als 3 Prozentpunkte (bzw. 1° / 0.2 s)
+auseinanderliegen. **Das schaffe ich nicht bei allen Paaren** – ehrlich aufgelistet:
+
+| Paar | Zeilen nah beieinander | Wo sie sich trotzdem unterscheiden |
+|---|---|---|
+| Audan / Delto | 8 von 12 | Lenkwinkel (+17 % / +7 %), Höchsttempo (+0.9 / −5.4 %), Handbremse (−7 / +20 %) |
+| Audan / **Subora** | 8 von 12 | Lenkwinkel (+17 % / +4 %: der Subora schiebt kaum), Handbremse (−7 / +14 %), Höchsttempo |
+| Delto / **Subora** | 9 von 12 | Höchsttempo (−5.4 / −2.1 %), Lenkwinkel (+7 / +4 %), Handbremse knapp |
+| Delto / **Lanza 073** | 4 von 12 | Antrieb, Heck (+3° / +10°), Lenkwinkel, Wiesenweg |
+| Escorta / **Lanza 073** | 4 von 12 | 0–100 (+8 / −10 %), Lenkwinkel, Höchsttempo |
+| **Lanza 073 / Subora** | 4 von 12 | Antrieb, Heck, Lenkwinkel, Wiesenweg |
+| Audan / **Lanza 073** | 3 von 12 | fast überall |
+| Audan / Escorta, Delto / Escorta, Escorta / Subora | 0–2 | ✅ |
+
+Der Grund: Die **Zielbereiche** der drei Allradler (Audan, Delto, Subora) überlappen sich in Beschleunigung und Kreisfahrt
+schon in den Vorgaben (z. B. Subora Schotter −9 bis −5 %, Audan −5.6 %, Delto −7.1 %). Wenn alle drei im Ziel liegen sollen,
+müssen sie dort nah beieinander sein. Unterscheiden sollen sie sich vor allem im **Charakter**: Audan schiebt über die Front,
+Delto ist kurz übersetzt und dreht williger, der Subora ist neutral und fängt das Heck sofort.
+
+### C – Garage für fünf Autos, Hinweiszeile, Aufheulen, Flamme
+
+- **Garage:** fünf Auto-Zeilen, LACK, ZURÜCK und die Hinweiszeile passen auf die 320x180-Tafel (Tafel wie bisher 172 Pixel
+  hoch – mehr geht bei 180 Pixeln Bildhöhe nicht –, dafür Vorschau 76 statt 80 Pixel), Deutsch und Englisch, ohne Abschneiden und ohne Rollen. Bedienung wie in M8d (Zeiger
+  markiert, Leertaste/Enter/A/Klick wählt, LACK gehört zum gewählten Auto). Die Vorschau-Kamera steht wie bisher (längere
+  Autos weiter weg; der kurze Lanza ist so gross wie der Delto). Die Bestzeiten-Spalte AUTO hat Platz für IMPREXA und 073.
+- **Hinweiszeile** unten in der Garage (Hinweisfarbe): **LEERTASTE ODER ENTER = WÄHLEN** / SPACE OR ENTER = SELECT; wer
+  zuletzt das Gamepad benutzt hat, sieht **A = WÄHLEN** / A = SELECT.
+- **Aufheulen:** Beim Bestätigen eines Autos (auch wenn es schon gewählt ist) heult sein Motor ca. 1.4 s auf: Leerlauf →
+  hoch auf ca. 4700/min (60 % des Bereichs) → kurz halten → fallen lassen, mit dem **Klang dieses Autos** (Turbo-Pfeifen und
+  Blow-off beim Audan/Delto/Subora, Lader-Heulen beim Lanza, kein Pfeifen beim Escorta, Pop beim Gaswegnehmen wie im Spiel).
+  Es **ersetzt den Bestätigungston**; ist der Ton aus oder noch gesperrt, kommt wie bisher der Bestätigungston. Lautstärke
+  wie der Motor im Spiel. Schnelles Mehrfach-Bestätigen beginnt neu, wo der Motor gerade ist (kein Sprung, kein Knacken).
+  Nur in der Garage; Verlassen (Esc/ZURÜCK) blendet es weich aus. Werte: `CONFIG.garage.aufheulen` (`an`, `dauer`, `spitze`,
+  `rauf`, `halten`). Technik: dieselbe Erzeugung wie die VERGLEICH-Fahrt des Ton-Labors (`js/tonfahrt.js`, `baueAufheulen`),
+  der Ton kennt dafür den Modus „garage“ (nur Motor, keine Reifen, kein Wind, keine Umgebung).
+- **Flamme aus dem Auspuff:** Bei jedem Pop (Knall und Schaltknall; beim Knistern nur jedes zweite bis dritte Mal und dann
+  die kleinste) blitzt hinter **jedem Rohr** eine kleine Flamme auf: drei Stufen gelb-weiss → orange → rot, 0.08–0.14 s,
+  0.25–0.7 m lang je nach Stärke des Pops. Gleichzeitig mit dem Ton: der Ton meldet jeden Pop mit seiner geplanten Zeit, das
+  Bild zeigt die Flamme, sobald man diese Stelle hört (Ausgabe-Verzögerung mitgerechnet). Ein Teil pro Auto (additiv,
+  unbeleuchtet, ohne Nebel), unsichtbar ohne Flamme = kein Zeichenaufruf; mit Flamme +1 (10 statt 9). Werte:
+  `CONFIG.auspuffFlamme`. **Rein optisch:** Ton und Fahrphysik sind mit und ohne Flamme bit-gleich (geprüft).
+  Hinweis: Im Auftrag stand „Audan, Delto, Escorta mit zwei Rohren“ – ihre Modelle haben aber **ein** Rohr, und sie sollten
+  unverändert bleiben. Die Flamme kommt darum dort aus dem einen Rohr (Lanza 073: zwei, Subora: eins).
+
+### D – Motorklang: Lanza 073 (Kompressor) und Subora Imprexa (Boxer)
+
+- **Zwei neue Bausteine im Motor** (beide im normalen Motorklang aus, für Audan/Delto/Escorta/Prototyp unverändert):
+  - **`lader`** – das **Kompressor-Heulen**: ein heller Ton fest an der Drehzahl (Tonhöhe = Zündfrequenz × `faktor`, bei
+    7000/min ca. 3.3 kHz), lauter unter Gas (`gasAnteil`), sofort da (`ansprechen` 0.015 s – kein Aufbau wie beim Turbo).
+    Die Audio-Knoten dafür gibt es **nur**, wenn das gewählte Auto einen Lader hat; beim Autowechsel werden sie gebaut bzw.
+    sauber getrennt.
+  - **`unrund`** – das **Boxer-Blubbern**: eine zweite, langsame Lautstärke-Schwankung auf einem Viertel des Grundtons (der
+    typische „ungleichmässige“ Boxer-Takt). Standard 0 = aus, dann ohne Knoten.
+  - Werte in `js/config.js`: `audio.motor.lader` (`an`, `faktor`, `pegel`, `gasAnteil`, `ansprechen`) und `audio.motor.unrund`;
+    je Auto in `fahrprofile.<auto>.ton.motor`.
+- **Lanza 073:** 4-Zylinder mit Kompressor – **hell, mechanisch, drehfreudig**: tiefer Leerlauf (−20 %), dreht am höchsten
+  (+20 % bei 7000/min), der hellste der fünf, lauterer Getriebe-Klack (Getriebe hinter dem Fahrer), **kein Turbo-Pfeifen, kein
+  Blow-off**, dafür das Lader-Heulen ca. 11 dB unter dem Motor. Pops trockener, etwa so oft wie beim Audan.
+- **Subora Imprexa:** Boxer mit Turbo – **dumpf, blubbernd**: mehr Bass bei Teillast (+45 %), unruhiger Takt (`unrund` 0.35),
+  dunkler (−13 %), dezentes, tieferes Turbo-Pfeifen (−20 %, 23 dB unter dem Motor), **knallt und knistert am meisten** (×1.7
+  Pops je Minute), tiefere Pops.
+- **Ton-Labor:** **VERGLEICH** spielt jetzt alle **fünf** Autos nacheinander (je 8 s, Name gross darunter), dazu Knöpfe **NUR
+  LANZA 073** und **NUR SUBORA IMPREXA**; im Feinschliff neu: Lader-Heulen (Pegel, Tonhöhe, Gas-Anteil, Ansprechen), Unrund,
+  Unruhe im Leerlauf, Lautstärke bei Teillast. **Fahr-Labor:** Knöpfe für alle fünf Autos plus Prototyp. **Auto-Labor:** alle
+  fünf Autos mit allen Lackierungen.
+
+### Messtabelle Motorklang (gerechnet, nicht gehört)
+
+Offline gerechnet (`tools/ton-messung.mjs`), Unterschied zum **Audan Quarto**. **Alle Zeilen im Ziel.**
+
+| Messung | Audan Quarto | Lanza 073 | Ziel Lanza 073 | Subora Imprexa | Ziel Subora |
+|---|---|---|---|---|---|
+| Grundton Leerlauf (Hz) | 41.63 | 33.30 (-20.0 %) ✅ | -23 bis -17 % | 33.30 (-20.0 %) ✅ | -23 bis -17 % |
+| Grundton bei 7000 U/min (Hz) | 462 | 554 (+19.9 %) ✅ | 15 bis 30 % | 434 (-6.0 %) ✅ | -10 bis -3 % |
+| Spektralschwerpunkt Vollgas 5000 U/min (Hz) | 822 | 1100 (+33.8 %) ✅ | 20 bis 45 % | 716 (-12.8 %) ✅ | -20 bis -5 % |
+| Energie unter 200 Hz bei Teillast (2500 U/min, Gas 0.4) | 0.00780 | 0.00590 (-24.4 %) ✅ | -45 bis -20 % | 0.0113 (+44.9 %) ✅ | 25 bis 60 % |
+| Unregelmässigkeit (Schwankung 20 ms, 20-200 Hz; Mittel Leerlauf und Teillast) | 0.307 | 0.422 (+37.6 %) ✅ | 20 bis 60 % | 0.470 (+53.2 %) ✅ | 50 bis 150 % |
+| Lader-Heulen: Tonhöhe bei 7000 U/min (Hz) | -- | 3266 ✅ | 2500 bis 4000 | kein Lader | – |
+| Lader-Heulen: Korrelation Tonhöhe/Drehzahl (Vergleichsfahrt) | -- | 0.999 ✅ | 0.98 bis 1 | kein Lader | – |
+| Lader-Heulen: Pegel gegen den Motor (dB, Vollgas 5000) | -- | -11.13 ✅ | -14 bis -8 | kein Lader | – |
+| Lader-Heulen: Anstieg nach Gasstoss (s, bis 90 %) | -- | 0.0325 ✅ | 0 bis 0.06 | kein Lader | – |
+| Turbo-Pfeifen: Tonhöhe (Hz) | 5185 | 0.00 | – | 4150 (-20.0 %) ✅ | -25 bis -15 % |
+| Turbo-Pfeifen: Pegel (RMS) | 0.0245 | 0.00 | – | 0.0161 (-34.3 %) ✅ | -50 bis -30 % |
+| Lautstärke Motor Vollgas 5000 (RMS) | 0.213 | 0.191 (-0.97 dB) ✅ | -1.5 bis 1.5 dB | 0.220 (+0.25 dB) ✅ | -1.5 bis 1.5 dB |
+| Spitze vor dem Limiter | 1.32 | 1.28 (-0.27 dB) ✅ | nicht höher | 1.27 (-0.32 dB) ✅ | nicht höher |
+| Pops je Minute (Knall, Knistern, Schaltknall; feste 60-s-Fahrt) | 82.00 | 77.00 (x0.94) ✅ | 0.8 bis 1.2 (mal) | 140 (x1.71) ✅ | 1.3 bis 2.2 (mal) |
+| Pop-Mittelfrequenz (Schwerpunkt eines Pops, Hz) | 2534 | 1964 (-22.5 %) ✅ | -25 bis -10 % | 1696 (-33.1 %) ✅ | -40 bis -25 % |
+
+Zur Ehrlichkeit: Die **Unregelmässigkeit** ist der Mittelwert aus Leerlauf und Teillast (Lanza: Leerlauf +54 %, Teillast −6 %;
+Subora: +48 % / +66 %) – einzeln liegt der Lanza bei Teillast nicht unruhiger als der Audan. Die Lader-Tonhöhe folgt der echten
+Zündfrequenz (Faktor 14); im Auftrag stand „Faktor ca. 7“ zusammen mit „ca. 3–4 kHz“ – beides geht nicht zugleich, ich habe die
+Tonhöhe (3.3 kHz) genommen. Spektrogramme: `screenshots/m8e/m8e-<auto>-*.png` und `62-spektrogramme-fuenf-motoren.png`.
+
+### Test-Anleitung für Lino (M8e)
+
+1. **Im Spiel:** Hauptmenü → **AUTO** (Garage) → mit **Pfeil runter** zu **LANZA 073** → **Leertaste** (der Motor heult
+   auf, das Auto wird gelb) → **ZURÜCK** → **STARTEN**. Dasselbe danach mit **SUBORA IMPREXA**.
+2. **Fahren:** Vollgas durch ein paar Gänge, dann **Gas weg** (Pops und Flamme – am besten mit der Kamera hinter dem Auto
+   sichtbar), in einer Kurve **bremsen** (beim Lanza kommt das Heck deutlich), mit **Gas aus der Kurve** beschleunigen (beim
+   Lanza fein dosieren!), auch auf **Schotter** (Almweg nach dem Abzweig bei ca. 1980 m).
+3. **Ton-Labor:** dieselbe Adresse wie das Spiel, nur mit `ton-labor.html` am Schluss. **TON STARTEN** → **VERGLEICH** (die
+   fünf Autos nacheinander, je 8 s, der Name steht gross darunter), oder **NUR LANZA 073** / **NUR SUBORA IMPREXA**. Oben bei
+   **FAHRPROFIL (TON)** ein Auto wählen, unten im **Feinschliff** verstellen (neu: Lader-Heulen, Unrund, Lautstärke bei
+   Teillast), dann **WERTE KOPIEREN** und den Text in den Chat einfügen.
+4. **Fahr-Labor:** `index.html?fahrlabor=1` – oben ein Knopf je Auto (jetzt fünf plus Prototyp), Regler live verstellen,
+   **WERTE KOPIEREN**.
+
+**Wenn X, dann Y – Fahrgefühl** (Fahr-Labor oder `js/config.js`, Block `fahrprofile.l073` bzw. `fahrprofile.imprexa`):
+
+| Wenn … | dann … |
+|---|---|
+| der Lanza sich bei Vollgas aus der Kurve dreht | `antriebHinten` runter (1.2 → 1.1; unter 1.05 kommt das Heck kaum noch), `stabilitaet` hoch (4.5 → 5.5) |
+| der Lanza zu zahm ist | `stabilitaet` runter (4.5 → 3.5), `gripHinten` runter (1.0 → 0.98, kleine Schritte!), `antriebHinten` hoch (1.2 → 1.25: Heck beim Bremsen +13°) |
+| der Lanza beim Bremsen in der Kurve zu wild ist | `stabilitaet` hoch (4.5 → 5.5); `gewichtstransfer` wirkt hier nicht gleichmässig (1.2 liess den Testfahrer bei 130 km/h quer kommen) – nur in kleinen Schritten (0.8 → 0.7) |
+| der Lanza auf Schotter nicht vom Fleck kommt | `getriebe.allrad.schotter` hoch (1.0 → 1.1) |
+| der Lanza zu wenig einlenkt / zu nervös einlenkt | `schwerpunktVorne` hoch / runter (0.525; ±0.005 wirkt schon deutlich) |
+| der Subora zu langweilig ist | `gewichtstransfer` hoch (0.4 → 0.5), `gasImDrift` hoch (0.12 → 0.18) |
+| der Subora schiebt (über die Front) | `schwerpunktVorne` hoch (0.495 → 0.51) |
+| der Subora auf Schotter zu wenig zieht | `getriebe.allrad.schotter` hoch (1.17 → 1.25) |
+| ein Auto zu schnell / zu langsam ist | `getriebe.zugkraftFaktor` (Lanza 1.15, Subora 1.0) |
+
+**Wenn X, dann Y – Ton** (Feinschliff im Ton-Labor; in `js/config.js` bei `fahrprofile.<auto>.ton.motor`):
+
+| Wenn … | dann … |
+|---|---|
+| das Lader-Heulen zu schrill oder zu laut ist | `lader.pegel` runter (0.075 → 0.05), `lader.faktor` runter (14 → 11) |
+| das Heulen fehlt / zu leise ist | `lader.pegel` hoch (0.075 → 0.1) |
+| das Heulen beim Gaswegnehmen zu laut bleibt | `lader.gasAnteil` hoch (0.7 → 0.9) |
+| der Lanza zu hell / zu dünn ist | `bissHz` runter (3000 → 2600), `saege` hoch (0.42 → 0.5) |
+| der Subora zu wenig blubbert | `unrund` hoch (0.35 → 0.5), `amTiefe` hoch (0.45 → 0.55) |
+| der Subora zu sehr stottert | `unrund` runter (0.35 → 0.2) |
+| der Subora zu dumpf ist | `filterGas` hoch (3800 → 4500), `bissDb` hoch (4 → 5) |
+| der Subora bei halbem Gas zu laut ist | `schubPegel` runter (0.6 → 0.5) |
+| das Turbo-Pfeifen des Subora fehlt | `turboPegel` hoch (0.023 → 0.035) |
+| die Flamme zu gross / zu klein wirkt | `auspuffFlamme.laengeMax` (0.7) und `laengeMin` (0.25) in `js/config.js` |
+| das Aufheulen zu lang / zu hoch ist | `garage.aufheulen.dauer` (1.4), `spitze` (0.6) in `js/config.js` |
+
+**Für Änderungen schreib einfach, was dir nicht gefällt (oder füge die kopierten Werte ein), das wird dann M8e.1.**
+
+### So testest du (Werkzeuge)
+
+- `node tools/m8e-test.mjs` – alle Prüfungen (a) bis (j); einzelne Teile mit `--nur d,g`. Dauert lange (Testfahrer, Ton).
+- `node tools/m8e-bilder.mjs` – alle Bilder nach `screenshots/m8e/` (einzeln: `--nur garage,flamme`).
+- `node tools/ton-messung.mjs m8e-l073 --profil l073 --bilder screenshots/m8e` – Ton-Messung eines Autos mit Spektrogrammen.
+- `node tools/auto-messung.mjs` – Fahrmessung aller Profile, Messtabellen M8e.
+
+### Bilder (`screenshots/m8e/`)
+
+- `10-…`/`11-…`/`12-…` je Auto: alle Lackierungen in sechs Ansichten (320x180 und 1280x720), Front/Heck/Seite (640x360).
+- `20-`/`21-alle-fuenf-…`: die fünf Autos nebeneinander.
+- `30-` bis `32-garage-…` (320x180 und 1280x720, Deutsch und Englisch): Garage mit fünf Autos und Hinweiszeile.
+- `40-`/`41-`/`42-flamme-…`: die drei Stufen der Auspuff-Flamme.
+- `50-`/`51-ton-labor-…`: Ton-Labor mit fünf Autos und VERGLEICH.
+- `60-`/`61-`/`70-…` (`.md` und `.png`): die Messtabellen; `62-spektrogramme-fuenf-motoren.png`, `m8e-<auto>-*.png`: Spektrogramme.
+
+### Neue und geänderte Dateien
+
+| Datei | Was |
+|---|---|
+| `js/autos.js` | **Lanza 073** und **Subora Imprexa** (Modell, Bemalung, Werte-Balken); `auspuff` für alle fünf Autos (Flamme) |
+| `js/car.js` | breitere Hinterräder (`breiteHinten`, `xHinten`); Auspuff-Flamme (`flammePlanen`, `flammeBild`) |
+| `js/config.js` | `fahrprofile.l073`, `fahrprofile.imprexa` (Fahrgefühl und Klang), sechs Lackierungen, `garage.aufheulen`, `auspuffFlamme`, `audio.motor.lader`/`unrund`, Vorschau 76, Version 0.8e |
+| `js/texte.js` | Namen und Daten der zwei Autos, Lackierungen, Hinweiszeile (Deutsch/Englisch) |
+| `js/menue.js`, `js/menueseiten.js` | letzte Eingabe (Tastatur/Gamepad) für die Hinweiszeile; Aufheulen statt Bestätigungston |
+| `js/main.js` | Aufheulen starten, Flamme mit dem Ton verbinden |
+| `js/audio.js` | Ton-Modus „garage“, Pop-Meldung an die Flamme, **Lader** und **unrund** |
+| `js/tonfahrt.js` | `baueAufheulen` (die Aufheul-Kurve) |
+| `js/tonlabor.js`, `ton-labor.html` | fünf Autos im VERGLEICH, neue Knöpfe und Regler |
+| `tools/m8e-test.mjs`, `tools/m8e-bilder.mjs`, `tools/m8e-ziele.js`, `tools/m8e-referenz-08d.json`, `tools/m8e-testfahrer.json`, `tools/ton-messung-m8e-*.json` | **neu** |
+| `tools/ton-messung.mjs`, `tools/ton-pruefung.js`, `tools/auto-messung.mjs`, `tools/testfahrer-browser.js` | Lader/unrund messen, `--bilder`, Tabellen für fünf Autos, Testfahrer-Anpassung Lanza |
+| `tools/m8c-test.mjs`, `tools/m8d-test.mjs` | angepasst (siehe „Selbst getestet“) |
+
+### Selbst getestet
+
+- **`node tools/m8e-test.mjs`** (neu, (a) bis (j)):
+  - (a) **Profil `prototyp` bit-genau**: Werte wie 0.7b, 70-s-Prüfsumme **3d98a02d**, Testfahrer **2:59.33 / 2:42.35 / 2:31.92**
+    mit gleichen Zwischenzeiten und Statistik, Abkürzungen **127 / 2 / 342 / 84**; Ton wie 0.8d. ✅
+  - (b) **Audan, Delto, Escorta unverändert gegen 0.8d**: Fahrmessung, Motorwerte (Lader aus, unrund 0), Ton-Messung,
+    Lack-Textur und Geometrie gleich. ✅
+  - (c) **Modelle**: Lanza 073 und Subora je **9 Draw Calls** ohne Flamme, **10** mit Flamme (höchstens 12), 1164 bzw. 1194
+    Dreiecke (höchstens 1800); Scheiben in allen 6 Lackierungen dunkel; Texte nur in der Pixelschrift, kein echter Name. Beim
+    ersten Lauf **gefunden und behoben**: die Flamme kostete 2 Zeichenaufrufe statt 1 (durchsichtig + beidseitig = zwei
+    Durchgänge), und beim Lanza „Nacht“ war der schwarze Lack so dunkel wie das Glas (jetzt anthrazit). ✅
+  - (d) **Fahrmessung** (36 Zeilen im Ziel), Kippschwelle, Testfahrer (alle Ziele, 0 Aufpralle), Pace-Notes (nur gemeldet),
+    Abkürzungen 127 / 2 / 342 / 84 mit beiden Autos, Werte-Balken = Messung. **Nicht erfüllt:** die Ähnlichkeits-Regel (siehe
+    Vergleich). ✅ (bis auf diese Regel)
+  - (e) **Garage** mit Tastatur, Gamepad (simuliert) und Maus durch alle fünf Zeilen, Lanza wählen, Lack wechseln, Esc, erneut
+    öffnen, Rennstart; Hinweiszeile wechselt mit der Eingabe; 320x180 Deutsch und Englisch ohne Abschneiden; Bestzeiten mit 073 und
+    IMPREXA; `menue-test` (50 ok). ✅
+  - (f) **Aufheulen**: alle fünf Autos 1.40 s, Motor bis ca. 4700/min, am Ende still, Turbo/Lader wie das Auto; **20 Mal in 2 s
+    bestätigt: keine hängenden Audio-Knoten**; nur in der Garage; ohne Ton der Bestätigungston. ✅
+  - (g) **Flamme**: an jedem Rohr, drei Stufen, nur bei Pops; mit echter Audio-Uhr (424 Bilder in 7 s) **Versatz 0 Bilder**;
+    Physik mit/ohne Flamme **bit-gleich**; Ton mit/ohne Flamme: Ereignisse identisch, Samples im Rechenrauschen (Abstand 7e-5,
+    zwei gleiche Rechnungen ohne Flamme unterscheiden sich schon um 7e-5 – der Browser rechnet offline nicht Bit für Bit gleich). ✅
+  - (h) **Ton-Messung** (alle Zeilen im Ziel, Tabelle oben); **30 Wechsel über alle fünf Autos**: Ton-Profil, Motorwerte, Lader-
+    und unrund-Knoten, Puffer stimmen jedes Mal, danach gleich viele Audio-Knoten wie vorher; gemerktes Auto (Lanza, Subora)
+    klingt beim ersten Entsperren richtig. ✅
+  - (i) **Ton-Labor** (fünf Autos, VERGLEICH, Einzelknöpfe, Regler Lader/unrund, WERTE KOPIEREN, ALLES ZURÜCK je Profil),
+    **Fahr-Labor** (sechs Knöpfe), **Auto-Labor** (alle fünf Autos, alle Lackierungen). ✅
+  - (j) **Stabilität**: **Ladezeit** (Median aus 9) 0.8d 2334 ms, 0.8e 2287 ms (**−47 ms**; die Streuung im Test-Browser ist
+    ca. ±100 ms). ✅
+- **Alte Tests** (alle mit Profil `prototyp`): `m8c-test` (a)–(l) und `m8d-test` (b)–(g) bestanden, mit den bekannten
+  Testfahrer-Kompromissen aus M8c. Darin laufen auch `getriebe-`, `lenk-`, `handbremse-`, `belag-`, `rueckwaerts-`,
+  `aufprall-`, `pacenotes-`, `menue-`, `rennablauf-`, `auto-` und `m8b-test`. **Zwei Fehler, die es mit dem unveränderten 0.8d
+  im selben Test-Browser genauso gibt** (also nicht von M8e): `ton-test` (zeitkritisch: Puffer-Häppchen 17 ms statt höchstens
+  15 ms, u. a.) und in `auto-test` (j) eine Kurve der Pace-Notes-Liste mit dem Audan (1028 m, Vollgas) ausserhalb des Zielbereichs.
+- **Was ich an alten Tests ändern musste** (nur, weil es jetzt fünf Autos und zwei neue Motor-Werte gibt):
+  - `tools/m8c-test.mjs` (k): Fahr-Labor-Knöpfe und Auto-Labor: die alten Autos müssen vorne stehen, neue dürfen dazukommen
+    (vorher „genau vier“ bzw. „genau drei“). (d) Speicher: vor beiden Messungen läuft der Zeiger einmal ganz durch die Garage,
+    damit dieselben Vorschau-Modelle gebaut sind (mit fünf Autos war das vom Zufall abhängig: 106 → 87 Geometrien, also
+    *weniger*, kein Leck).
+  - `tools/m8d-test.mjs` (b): Motorwerte gegen 0.8c ohne die neuen Werte `lader`/`unrund` (die müssen aus sein); (c): der
+    Eintrag `audioMotor08c` der Referenzdatei wird nicht mehr als Prüfsumme mitgezählt (**Altfehler aus 0.8d**, schlug dort
+    genauso an); (d) und (g): zusätzliche Autos in der Garage und im VERGLEICH erlaubt (die drei alten vorne).
+  - Alle anderen Tests unverändert.
+- **Bilder** angeschaut: beide Autos in allen Lackierungen und sechs Ansichten, alle fünf nebeneinander, Garage (320x180 und
+  1280x720, Deutsch und Englisch), Flamme, Ton-Labor, Spektrogramme.
+- **Nicht gemacht: den Ton gehört und das Fahrgefühl gespürt.**
+
+### Ehrlich beurteilt – wo ich am unsichersten bin
+
+- **Ton nicht gehört, Fahrgefühl nicht gespürt.** Sicher messbar sind Grundton, Helligkeit (Spektralschwerpunkt), Bass bei
+  Teillast, die Schwankung der Lautstärke (Unregelmässigkeit), Tonhöhe, Pegel, Anstieg und Korrelation des Lader-Heulens,
+  Pops je Minute und Lautstärke. **Nur indirekt:** ob das Heulen wirklich „nach Kompressor“ klingt (ein reiner Sinus fest an
+  der Drehzahl, kein Rauschen dazu), ob das Blubbern „nach Boxer“ klingt (zweite Lautstärke-Schwankung auf einem Viertel des
+  Grundtons) und ob der Lanza „zickig“ oder einfach „unfahrbar“ wirkt.
+- **Am unsichersten:**
+  - **Lanza, Heck:** Die Messung „Heck beim Bremsen in der Kurve“ springt in diesem Bereich stark (antriebHinten 1.15 →
+    +7.3°, 1.2 → +10°, 1.25 → +13°; schwerpunktVorne 0.525 → 0.53 ändert das Heck unter Vollgas von +2.5° auf +3.6°). Das
+    ist genau die scharfe Kante eines Mittelmotor-Hinterradlers – kann sich aber **plötzlich** anfühlen. Der flotte
+    Testfahrer kommt bei ca. 500 m (Linkskurve mit 120–135 km/h) bis 34° quer, fängt es aber ohne Aufprall wieder.
+  - **Lanza, Lader-Heulen:** −11 dB unter dem Motor ist laut für ein Nebengeräusch; ob es zu schrill ist, weiss ich nicht.
+  - **Subora gegen Delto und Audan:** Die Zielbereiche der drei Allradler überlappen sich; gemessen liegen sie in 8 bis 9 von
+    12 Zeilen nah beieinander (siehe Vergleich). Der Subora unterscheidet sich vor allem beim Einlenken (neutral statt
+    schiebend), beim Heck (sofort gefangen) und beim Höchsttempo. Ob man das spürt, ist offen.
+  - **Flamme:** 0.7 m beim Schaltknall – auf dem Bildschirm sind das wenige Pixel, aber hell (additiv). Vielleicht zu auffällig.
+- **Zuerst ausprobieren:** Lanza `antriebHinten` (1.1 / 1.2), `stabilitaet` (4.5 / 5.5) und `lader.pegel` (0.05 / 0.075 /
+  0.1); Subora `unrund` (0.2 / 0.35 / 0.5) und `schwerpunktVorne` (0.495 / 0.51).
+
+### Bekannte Probleme
+
+- **Ähnlichkeit der Allradler:** Audan, Delto und Subora liegen in 8–9 von 12 Messzeilen nah beieinander (Regel: höchstens 2),
+  siehe Vergleich – weil sich ihre Zielbereiche überlappen.
+- Mehrere Fahrmesswerte liegen **knapp am Rand** des Ziels (siehe Messtabelle); schon kleine Änderungen an Lanza-Werten
+  (`antriebHinten`, `schwerpunktVorne`, `gripHinten`) können eine Zeile kippen lassen.
+- Im Auftrag hatten Audan, Delto und Escorta „zwei Rohre“ – ihre Modelle haben **ein** Rohr und sollten unverändert bleiben;
+  die Flamme kommt dort aus dem einen Rohr.
+- `ton-test` scheitert im Test-Browser an vier zeitkritischen Prüfungen (Puffer-Häppchen 17 ms, Tempo mit `?ton=aus`, Neustart
+  mit 8 Rauschquellen, Gas im Countdown) – **genauso mit dem unveränderten Stand 0.8d** im selben Browser, also die Umgebung,
+  nicht M8e. `ton-umgebung-test` (in `m8b-test`) wackelt aus demselben Grund manchmal.
+- Offline-Ton ist im Test-Browser nicht Sample für Sample wiederholbar (zwei gleiche Rechnungen unterscheiden sich um ca.
+  1e-4); der Flammen-Test prüft darum „Ereignisse identisch, Samples im Rechenrauschen“.
+- Die Flamme beim Aufheulen in der Garage sieht man nur, wenn das Heck gerade zur Kamera zeigt (die Vorschau dreht sich).
+- Kein echtes Gamepad und kein Touch getestet (nur simuliert).
+
+### Ideen/Vorschläge (nicht umgesetzt)
+
+- **Bestzeiten je Auto getrennt** (eine Liste je Auto oder ein Filter): mit gemeinsamer Liste kann das schnellste Auto
+  (Lanza 073) die Liste füllen. Lino hat „gemeinsam“ gewählt, darum nur hier notiert.
+- **Motorgeräusch von innen und von aussen** (je nach Kamera; im Spiel gibt es nur die Kamera hinter dem Auto).
+- **Getriebeheulen beim Mittelmotor** (Lanza: das Getriebe sitzt hinter dem Fahrer, ein leises Zahnrad-Heulen unter Last).
+- **Schaltvorgang animiert** (z. B. kurzes Nicken der Karosserie beim Schalten oder ein Schalthebel im HUD).
+- **Flamme auch beim Aufheulen in der Garage gut sichtbar machen** (die Vorschau dreht sich, das Heck ist nicht immer zu sehen).
+- **Rauschen im Lader-Heulen** (etwas Bandrauschen um die Heulton-Höhe), falls der reine Ton zu „elektronisch“ klingt.
+
+---
+
+## Meilenstein 8d: Scheiben-Fehler, Garage mit Tastatur, Motorklang je Auto ✅ (Verlauf, Stand damals – seit M8e fünf Autos, Hinweiszeile, Aufheulen und Flamme)
 
 > **Ehrlich vorneweg: Ich habe den Ton nicht gehört und das Fahrgefühl nicht gespürt.** Die zwei neuen Motorklänge sind
 > **gerechnet und gemessen** (offline, Spektrogramme, Messtabelle unten) – ob der Delto „giftig“ und der Escorta „heiser“

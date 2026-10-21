@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8d';
+export const VERSION = '0.8e';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -800,6 +800,114 @@ export const CONFIG = {
         },
       },
     },
+    // Lanza 073 (Id l073, M8e): Mittelmotor mit Hinterradantrieb und Kompressor, das schnellste und zickigste Auto. Der
+    // Motor sitzt über den Antriebsrädern (bessere Traktion als der Escorta), das Auto dreht sehr willig ein, das Heck
+    // kommt schnell (beim Bremsen in der Kurve, mit Gas, beim Lupfen) und will mit feinem Gas geführt werden. Der Lader
+    // schiebt sofort, ohne Turbo-Verzögerung. Messwerte und Kompromisse: STAND.md, Meilenstein 8e.
+    l073: {
+      auto: {
+        radstand: 2.42,          // kurz (Audan 2.52)
+        traegheit: 2.45,         // Drehträgheit etwas über dem Prototyp (2.3): leichter ging nicht, sonst wird der
+                                 // Handbremsen-Drift zu wild (2.25 = +56 %); die Leichtigkeit steckt im Schub
+        schwerpunktVorne: 0.525, // Schwerpunkt weit hinten (Mittelmotor): dreht sehr willig ein (Lenkwinkel -20 %).
+                                 // Achtung, scharf: 0.53 lässt das Heck unter Vollgas in der Kurve deutlich mehr kommen
+        lastVorneAnteil: 0.49,   // leicht hecklastig (Prototyp 0.5)
+        gripVorne: 1.113,        // breite Reifen, leichte Front: vorne mehr Haftung (Prototyp 1.0) ...
+        gripHinten: 1.0,         // ... hinten weniger als der Prototyp (1.12): das Heck kommt schnell.
+                                 // Achtung, scharf: 0.97 = Heck unter Vollgas in der Kurve +3.5° statt +2.5°
+        gewichtstransfer: 0.8,   // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt deutlich (+10°). Mehr (1.2)
+                                 // liess den Testfahrer beim Bremsen mit 130 km/h quer kommen
+        stabilitaet: 4.5,        // das Heck ist schwerer einzufangen als beim Escorta (eingefangen nach ca. 1.3 s)
+        gasImDrift: 0.15,        // Gas im Drift lockert das Heck (Prototyp 0.12)
+        antriebHinten: 1.2,      // Hinterradantrieb: Schub braucht hinten Haftung auf (Vollgas in der Kurve +2.5°).
+                                 // Gemessen: unter 1.05 deutlich weniger (1.0 = +1.8°), von 1.05 bis 2.4 fast gleich
+                                 // (kein Kippen). Aber: es wirkt auch beim Tempo-Halten in der Kurve, das Heck beim
+                                 // Bremsen in der Kurve springt (1.15 = +7.3°, 1.25 = +13°). Kleine Schritte!
+        heckJeBelag: { schotter: 1.36, wiesenweg: 1.4 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
+                                 // losem Boden aus (sonst Kreis Schotter -5 %); unter Gas bleibt das Heck locker
+      },
+      getriebe: {
+        allrad: { schotter: 1.0, wiesenweg: 0.95, bankett: 0.85, gras: 0.995 }, // Hinterrad, aber der Motor drückt auf
+                                 // die Antriebsräder (besser als der Escorta 0.95 / 0.9); Bankett und Gras weniger, damit
+                                 // es dort trotz viel Schub keinen Vorteil gibt (Abkürzungen)
+        zugkraftFaktor: 1.15,    // leicht und kräftig: das schnellste Auto aus dem Stand (0-100 km/h -10 %)
+        gaenge: [46, 78, 108, 136, 164], // kurze Gänge: Höchsttempo ca. 4 % tiefer
+        turbo: { an: false },    // Lader (Kompressor) statt Turbo: Schub sofort, kein Aufbau
+      },
+      ton: {
+        turboMal: 0, knallMal: 1, // kein Turbo: kein Pfeifen, kein Blow-off; Pops wie der Audan
+        // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): hell, mechanisch, drehfreudig (nur die Abweichungen vom Audan)
+        motor: {
+          zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 % (Audan 2.5)
+          hoechstTon: 580,       // dreht am höchsten: bei 7000/min +20 % (Delto 540, Audan 480)
+          tonKurve: 1.5,         // ruhige Mitte, oben steil
+          pegel: 0.37,           // so laut wie der Audan (0.36)
+          saege: 0.42,           // weniger runder Körper (Audan 0.5) ...
+          puls: 0.5,             // ... mehr Kanten (Audan 0.45): heller, weniger Tiefes
+          unter: 0.06,           // wenig Tiefes (Audan 0.16)
+          amTiefe: 0.5,          // unruhiger Leerlauf (Delto 0.28, Audan 0.4) ...
+          amTiefeLeerlauf: 0.55, // ... auch ganz ohne Gas
+          rauh: 0.4,             // mechanisch, der Motor sitzt hinter dem Fahrer (Audan 0.3)
+          bissHz: 3000,          // Biss höher (Audan 2200) ...
+          filterGas: 5200,       // ... und unter Gas heller (Audan 4500): der hellste der fünf
+          klackPegel: 0.42,      // Getriebe-Klack lauter (+40 %, das Getriebe sitzt hinter dem Fahrer)
+          pop: { mitte: 2000 },  // Pops trockener (Audan 2400)
+          lader: { an: true, pegel: 0.075 }, // Lader-Heulen ca. 11 dB unter dem Motor (übrige Werte: audio.motor.lader)
+        },
+      },
+    },
+    // Subora Imprexa (Id imprexa, M8e): ausgewogener Allrad-Allrounder mit Boxermotor (tiefer Schwerpunkt). Ruhig,
+    // neutral, vorhersagbar: kaum Schieben über die Front, das Heck kommt nur leicht und ist sofort wieder gefangen.
+    // Schwerer und ruhiger als der Delto, neutraler als der Audan. Messwerte und Kompromisse: STAND.md, Meilenstein 8e.
+    imprexa: {
+      auto: {
+        radstand: 2.52,          // Limousine, Radstand wie der Audan
+        traegheit: 2.4,          // ruhig (Audan 2.5, Delto 2.25)
+        schwerpunktVorne: 0.495, // Schwerpunkt fast in der Mitte: neutral (Lenkwinkel +4 %; Audan 0.46 = schiebt)
+        lastVorneAnteil: 0.52,   // kaum frontlastig (Boxer sitzt tief und weit hinten in der Front); 0.5 liess den flotten
+                                 // Testfahrer bei 694 m (lange Linkskurve, 140 km/h) an die Leitplanke schieben
+        gripVorne: 1.05,         // tiefer Schwerpunkt: die Front hält etwas mehr (Prototyp 1.0)
+        gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve nur leicht (+3.0°) ...
+        stabilitaet: 6.5,        // ... und ist sofort wieder gefangen (0.33 s; Prototyp 5)
+        vorneJeBelag: { schotter: 1.05, wiesenweg: 1.05 }, // Allrad zieht die Front auf losem Boden in die Kurve ...
+        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit
+      },
+      getriebe: {
+        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9 }, // Traktion auf losem Boden; Bankett weniger (Abkürzungen)
+        zugkraftFaktor: 1.0,     // Schub wie der Prototyp (der Turbo gibt voll 4 % mehr)
+        gaenge: [48, 82, 118, 148, 180], // 4. und 5. Gang etwas kürzer: Höchsttempo ca. 2 % tiefer (sonst wäre der
+                                 // Testfahrer flott mehr als 0.7 % schneller als mit dem Prototyp)
+        turbo: { an: true, aufbau: 0.3 }, // dezenter Turbo, spricht schnell an (Audan 0.35 s)
+      },
+      ton: {
+        turboMal: 1, knallMal: 1,
+        // M8e: Motorklang Boxer: tief, blubbernd, dezenter Turbo (nur die Abweichungen vom Audan)
+        motor: {
+          zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 %
+          hoechstTon: 450,       // dreht tiefer: bei 7000/min -6 % (Audan 480)
+          tonKurve: 1.2,
+          pegel: 0.4,            // so laut wie der Audan (0.36; dumpfer = leiser, darum etwas lauter gestellt)
+          schubPegel: 0.6,       // bei Teillast lauter (Audan 0.42): der Boxer blubbert mit halbem Gas kräftig
+          unter: 0.3,            // viel Tiefe (Audan 0.16)
+          amTiefe: 0.45,         // Blubbern unter Last ...
+          amTiefeLeerlauf: 0.7,  // ... und stark im Leerlauf (Audan 0.42)
+          unrund: 0.35,          // ungleicher Zündabstand (neu in M8e; 0 = aus): das Blubbern wird unregelmässig
+          puls: 0.45,
+          rauh: 0.38,            // mittel (Escorta 0.54, Audan 0.3)
+          filterGas: 3800,       // dumpfer (Audan 4500) ...
+          bissDb: 4,             // ... und weniger Biss (Audan 5)
+          turboTonMin: 1760,     // Turbo-Pfeifen tiefer (-20 %) ...
+          turboTonMax: 4160,
+          turboPegel: 0.023,     // ... und leiser (-35 %)
+          blowOffPegel: 0.08,    // dezentes Zischen (Audan 0.16)
+          pop: { mitte: 1800 },  // viele kleine, tiefe Pops ...
+          knallChance: 0.4,
+          popAnzahl: [2, 5],
+          knisternChance: 0.9,   // ... und Knistern beim Gaswegnehmen
+          knisternAnzahl: [3, 6],
+        },
+      },
+    },
   },
 
   // --- Untergrund -------------------------------------------------------
@@ -1438,9 +1546,9 @@ export const CONFIG = {
   // Masse in Pixeln des 320x180-Bildes (das 3D-Bild der Vorschau hat dieselbe Pixelgrösse wie das Spiel)
   garage: {
     tafelBreite: 312,          // Breite der Tafel
-    tafelHoehe: 172,           // Höhe der Tafel (mindestens)
+    tafelHoehe: 172,           // Höhe der Tafel (mindestens; höchstens 172 = Bildhöhe minus Rand; M8e: Platz für die Hinweiszeile kommt von vorschauHoehe)
     spalte: 120,               // links: Liste der Autos und LACK (so breit), rechts: Vorschau und Werte
-    vorschauHoehe: 80,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts)
+    vorschauHoehe: 76,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts; M8e: 80 -> 76 für die Hinweiszeile)
     hintergrund: '#121a24',    // ruhige dunkle Tafel hinter dem Auto
     drehDauer: 8,              // Sekunden für eine Umdrehung der Drehscheibe
     startWinkel: 215,          // so steht das Auto beim ersten Öffnen (Grad; 180 = Front zur Kamera)
@@ -1452,6 +1560,16 @@ export const CONFIG = {
     platteHoehe: 0.06,         // ... Dicke ...
     platte: '#2a313a',         // ... Farbe der Platte ...
     platteRand: '#56606a',     // ... und des Rands
+    // Motor kurz aufheulen beim Bestätigen eines Autos (M8e): Leerlauf -> hochdrehen -> halten -> fallen lassen, mit dem
+    // Klang dieses Autos (Turbo/Lader, Pop beim Gaswegnehmen wie im Spiel). Lautstärke wie der Motor im Spiel.
+    // Statt des Bestätigungstons; ist der Ton aus oder noch gesperrt, bleibt der Bestätigungston.
+    aufheulen: {
+      an: true,                // false = kein Aufheulen (nur der Bestätigungston wie bis M8d)
+      dauer: 1.4,              // so lange dauert es ganz (Sekunden)
+      spitze: 0.6,             // so hoch dreht der Motor (Anteil vom Leerlauf bis zur Höchstdrehzahl, 0.6 = ca. 4700/min)
+      rauf: 0.35,              // in so vielen Sekunden ist er oben ...
+      halten: 0.25,            // ... hält so lange und fällt dann zurück in den Leerlauf
+    },
   },
 
   // --- Rennablauf: Countdown, Zielbildschirm, Statistik (Meilenstein 5b) -------------
@@ -1620,6 +1738,18 @@ export const CONFIG = {
       heulenOberwelle: 0.3,    // dazu ein bisschen 2. Oberwelle (klingt nach Getriebe, nicht nach Pfeifen) ...
       heulenFilter: 1200,      // ... und ein Tiefpass (Hz)
       heulenPegel: 0.06,       // Lautstärke (M7a: 0.05; nie lauter als der Motor)
+      // M8e: unrund = Boxer-Blubbern (ungleicher Zündabstand): zweite Lautstärke-Schwankung auf einem Viertel des
+      // Grundtons, so tief (0 = aus, Standard: dann keine Audio-Knoten dafür, Ton wie 0.8d; Subora Imprexa: siehe Fahrprofil)
+      unrund: 0,
+      // M8e: Lader-Heulen (Kompressor, Lanza 073): heller Ton, fest an die Drehzahl gekoppelt (steigt und fällt sofort,
+      // kein Aufbau, kein Blow-off). Standard aus (dann gibt es dafür keine Audio-Knoten, Ton wie 0.8d)
+      lader: {
+        an: false,             // true = Lader-Heulen (nur im Fahrprofil setzen)
+        faktor: 14,            // Tonhöhe = Zündfrequenz (Drehzahl / 60 x zuendFaktor) mal diesem Wert (7000/min, 4 Zyl.: 3.3 kHz)
+        pegel: 0.03,           // Lautstärke mit Vollgas (Sinus-Spitze; soll 8 bis 14 dB unter dem Motor bleiben)
+        gasAnteil: 0.7,        // so viel davon hängt am Gas: ohne Gas bleibt 1 - gasAnteil (leiser, aber hörbar)
+        ansprechen: 0.015,     // so schnell (Zeitkonstante s) folgt der Pegel dem Gas (Turbo: Aufbau 0.35 s)
+      },
     },
 
     // Reifen und Untergrund
@@ -1911,6 +2041,18 @@ export const CONFIG = {
     },
   },
 
+  // --- Flamme aus dem Auspuff beim Poppen (M8e, nur Optik: ändert weder Ton noch Fahrphysik) ---
+  // Bei jedem Pop (Knall, Schaltknall; Knistern nur in ca. 40 % der Fälle und kleiner) blitzt hinter jedem Auspuffrohr
+  // (js/autos.js, auspuff) eine kleine Flamme auf, gleichzeitig mit dem Ton. Wie oft, kommt vom Ton (ton.knallMal).
+  auspuffFlamme: {
+    an: true,                  // false = keine Flamme
+    laengeMin: 0.25,           // Länge (Meter) beim leisesten Pop (Knistern) ...
+    laengeMax: 0.7,            // ... und beim stärksten (Schaltknall)
+    dauer: [0.08, 0.14],       // so lange (Sekunden) leuchtet sie, kleiner Pop ... grosser Pop
+    farben: ['#fff2b0', '#ff9a2e', '#d8401c'], // drei Stufen nacheinander: gelb-weiss, orange, rot
+    knisternAnteil: 0.4,       // beim Knistern bekommt nur dieser Anteil eine Flamme (immer die kleinste, laengeMin)
+  },
+
   // --- Optik am Auto (seit M8a: 3D-Modell aus js/autos.js, gebaut von js/car.js; ansehen ohne Fahren: auto-labor.html) ---
   autoOptik: {
     modell: 'rt4',             // welches Modell aus js/autos.js
@@ -2026,6 +2168,50 @@ export const CONFIG = {
         lappen: '#2e5a24', nummerFeld: '#f4f4ee', nummerRand: '#2e5a24', nummerSchrift: '#2e5a24',
         sponsor0: '#2e5a24', sponsor1: '#f4f4ee', sponsorHell: '#f4f4ee', banner: '#2e5a24', bannerSchrift: '#f4f4ee',
         sponsorFeld: null, sponsorFeldSchrift: '#2e5a24', haube: null, dach: '#f1f1ec',
+      },
+      // --- Lanza 073 (M8e) --- (streifen0: breiter Schrägstreifen und Haubenstreifen, streifen1: schmaler Streifen davor)
+      // Werk: Weiss mit grün-gelbem Schrägstreifen, grüne Akzente
+      l073Werk: {
+        lack: '#f1f1ec', unten: '#1e3a26', streifen0: '#2e9a46', streifen1: '#f2d22e', akzent: '#2e9a46', fluegel: '#2e9a46',
+        lappen: '#2e9a46', nummerFeld: '#f4f4ee', nummerRand: '#1e3a26', nummerSchrift: '#1c1c1e',
+        sponsor0: '#2e9a46', sponsor1: '#1c1c1e', sponsorHell: '#f4f4ee', banner: '#2e9a46', bannerSchrift: '#f2d22e',
+        sponsorFeld: null, sponsorFeldSchrift: '#2e9a46',
+      },
+      // Nacht: fast schwarz (Anthrazit, damit die dunkle Scheibe sichtbar bleibt) mit orangem Streifen
+      l073Nacht: {
+        lack: '#303239', unten: '#121316', streifen0: '#ff7a1a', streifen1: null, akzent: '#ff7a1a', fluegel: '#ff7a1a',
+        lappen: '#ff7a1a', nummerFeld: '#f4f4ee', nummerRand: '#ff7a1a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#ff7a1a', sponsor1: '#f4f4ee', sponsorHell: '#ff7a1a', banner: '#ff7a1a', bannerSchrift: '#121316',
+        sponsorFeld: null, sponsorFeldSchrift: '#ff7a1a',
+      },
+      // Eis: Weiss mit hellblauem Schrägstreifen und dunkelblauem Unterteil (kühl)
+      l073Eis: {
+        lack: '#f4f7f8', unten: '#2a4a66', streifen0: '#8fd0f0', streifen1: '#2a4a66', akzent: '#8fd0f0', fluegel: '#f4f7f8',
+        lappen: '#2a4a66', nummerFeld: '#8fd0f0', nummerRand: '#2a4a66', nummerSchrift: '#2a4a66',
+        sponsor0: '#2a4a66', sponsor1: '#2a4a66', sponsorHell: '#8fd0f0', banner: '#2a4a66', bannerSchrift: '#8fd0f0',
+        sponsorFeld: null, sponsorFeldSchrift: '#2a4a66',
+      },
+      // --- Subora Imprexa (M8e) ---
+      // Werk: Dunkelrot mit silbernem Streifen
+      imprexaWerk: {
+        lack: '#86141e', unten: '#2a2c30', streifen0: '#b9bdc3', streifen1: '#1c1c1e', akzent: '#b9bdc3', fluegel: '#86141e',
+        lappen: '#1c1c1e', nummerFeld: '#f4f4ee', nummerRand: '#1c1c1e', nummerSchrift: '#86141e',
+        sponsor0: '#b9bdc3', sponsor1: '#f4f4ee', sponsorHell: '#b9bdc3', banner: '#b9bdc3', bannerSchrift: '#86141e',
+        sponsorFeld: '#b9bdc3', sponsorFeldSchrift: '#86141e',
+      },
+      // Polar: Weiss mit orangem Akzent
+      imprexaPolar: {
+        lack: '#f1f1ec', unten: '#3a3d42', streifen0: '#ff7a1a', streifen1: null, akzent: '#ff7a1a', fluegel: '#ff7a1a',
+        lappen: '#ff7a1a', nummerFeld: '#f4f4ee', nummerRand: '#ff7a1a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#ff7a1a', sponsor1: '#1c1c1e', sponsorHell: '#f4f4ee', banner: '#ff7a1a', bannerSchrift: '#f4f4ee',
+        sponsorFeld: null, sponsorFeldSchrift: '#ff7a1a',
+      },
+      // Dunkel: Anthrazit mit grünem Akzent
+      imprexaDunkel: {
+        lack: '#3a3d42', unten: '#1f2124', streifen0: '#3fbf5a', streifen1: null, akzent: '#3fbf5a', fluegel: '#3a3d42',
+        lappen: '#3fbf5a', nummerFeld: '#f4f4ee', nummerRand: '#3fbf5a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#3fbf5a', sponsor1: '#f4f4ee', sponsorHell: '#3fbf5a', banner: '#3fbf5a', bannerSchrift: '#1f2124',
+        sponsorFeld: null, sponsorFeldSchrift: '#3fbf5a',
       },
     },
     // Feste Autofarben (für alle Lackierungen gleich)

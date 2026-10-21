@@ -38,6 +38,7 @@ import { autoZuordnung, gibtAuto, STANDARD_AUTO } from './autos.js';
 import { baueFederung } from './federung.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
+import { baueAufheulen } from './tonfahrt.js';
 import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL, tonWerte } from './fahrprofil.js';
 import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
 import { baueHud, formatZeit } from './hud.js';
@@ -883,7 +884,22 @@ const seiten = baueSeiten({
   menue, zumMenue, starten: () => starten(), weiter, neustartEtappe: neuStarten, zumHauptmenue, zumTitel, paceNotes, vollbild,
   neuStarten, ergebnis: () => lauf.ergebnis, markiert: () => lauf.markiert,
   autoWechseln: (id, lack) => autoWechseln(id, lack), autoWahl: () => autoWahl, autoModell: () => auto, // M8c: Garage
+  aufheulen: () => aufheulenStarten(), // M8e: Motor kurz aufheulen (true = läuft, statt des Bestätigungstons)
 });
+
+// --- Aufheulen in der Garage (M8e): nach dem Bestätigen eines Autos dreht sein Motor kurz hoch (js/tonfahrt.js) ---
+// Nur im Menü auf der Seite AUTO; Verlassen der Garage beendet es (der Ton blendet den Motor weich aus). Ein neues
+// Bestätigen, während es noch läuft, beginnt neu bei der Drehzahl von gerade (kein Sprung). Ohne Ton (aus, noch gesperrt,
+// Klänge noch nicht berechnet): false, dann kommt wie bisher der Bestätigungston.
+let aufheulen = null;
+function aufheulenStarten() {
+  const A = CONFIG.garage.aufheulen;
+  if (!A || !A.an || !ton.an || !ton.werk || ton.zustand !== 'running' || !ton.werk.aufbau.fertig) return false;
+  if (!ablauf.ist('menue') || menue.seite !== seiten.auto) return false;
+  const von = aufheulen ? aufheulen.zustand.drehzahl : CONFIG.getriebe.leerlauf;
+  aufheulen = baueAufheulen(Getriebe, A, CONFIG.getriebe.leerlauf, CONFIG.audio.motor.hoechstDrehzahl, !!CONFIG.getriebe.turbo.an, von);
+  return true;
+}
 
 // --- Autowechsel (M8c, Garage): nur im Menü, nie im Rennen, Countdown, in der Pause oder im Zielbildschirm ---
 // id: Auto (rt4, delto, escorta, prototyp), lack: Lackierung (null = die gemerkte bzw. erste des Autos).
@@ -1171,8 +1187,33 @@ function tonBild(dt) {
   tonZ.turboMal = tonWerte.turboMal; tonZ.knallMal = tonWerte.knallMal; // M8c: Ton je Auto (Fahrprofil, Block "ton")
   tonZ.aufprall = tonInfo.wucht; tonZ.aufprallArt = tonInfo.art; tonZ.kontaktArt = tonInfo.kontaktArt; tonZ.kontaktTempo = tonInfo.kontaktTempo;
   tonInfo.wucht = 0; tonInfo.kontaktArt = -1;
+  // M8e: Aufheulen in der Garage (Ton-Modus 'garage': Motor an, keine Reifen, kein Wind, keine Umgebung)
+  if (aufheulen && !(ablauf.ist('menue') && menue.seite === seiten.auto)) aufheulen = null;
+  if (aufheulen) {
+    const f = aufheulen.schritt(dt);
+    tonZ.modus = 'garage';
+    tonZ.drehzahl = f.drehzahl; tonZ.gang = 0; tonZ.zielGang = 0; tonZ.schaltet = false; tonZ.gas = f.gas; tonZ.bremse = 0;
+    tonZ.handbremse = false; tonZ.tempo = 0; tonZ.vVor = 0; tonZ.drift = 0; tonZ.ladedruck = f.ladedruck;
+    tonZ.aufprall = 0; tonZ.kontaktArt = -1;
+    if (f.fertig) aufheulen = null;
+  }
   ton.aktualisiere(dt, tonZ);
+  // M8e: Flamme aus dem Auspuff, zur Zeit des Tons, die man gerade hört (gleichzeitig mit dem Pop)
+  const hz = ton.hoerZeit ? ton.hoerZeit() : null;
+  if (hz !== null) auto.flammeBild(hz);
 }
+// M8e: jeder Pop des Tons plant eine Flamme (Knistern nur jedes zweite bis dritte Mal und klein). Stärke 0..1 aus der
+// Lautstärke des Pops (Knall 0.7-1.0, Schaltknall 1.25). Nur Optik: liest den Ton, ändert nichts daran
+let knisterNr = 0;
+ton.beiKnall((art, zeit, staerke) => {
+  const F = CONFIG.auspuffFlamme;
+  if (!F || !F.an) return;
+  if (art === 'knistern') {
+    knisterNr++;
+    if ((knisterNr * 0.6180339887) % 1 >= F.knisternAnteil) return; // (gleichmässig verteilt, ohne Zufallszahl)
+    auto.flammePlanen(zeit, 0);
+  } else auto.flammePlanen(zeit, Math.max(0, Math.min(1, (staerke - 0.1) / 1.15)));
+});
 
 neustart();
 lade.style.display = 'none';
@@ -1202,6 +1243,7 @@ window.__alpineRally = {
   rennSchritt, lauf, stat, statResets, neuStarten,
   hud, vergleich, referenzLaden, hudSchalter, hudUmschalten, minimapMs, // M6
   ton, tonZ, tonInfo, tonEingabe, zumMenue, tonBild, paceSignal, // M7a
+  aufheulenStarten, get aufheulen() { return aufheulen; }, // M8e: Aufheulen in der Garage
   get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
   get autoModell() { return auto; }, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a (M8c: Modell wechselt)

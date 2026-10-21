@@ -36,6 +36,12 @@ export const TEXTE = {
   'auto.escorta.name': { de: 'FARD ESCORTA', en: 'FARD ESCORTA' }, // M8c
   'auto.escorta.daten1': { de: 'HINTERRAD · OHNE TURBO · 5 GÄNGE AUTOMATIK', en: 'RWD · NO TURBO · 5-SPEED AUTOMATIC' },
   'auto.escorta.daten2': { de: 'LEICHT, VERSPIELT, DRIFTET GERN', en: 'LIGHT, PLAYFUL, LOVES TO DRIFT' },
+  'auto.l073.name': { de: 'LANZA 073', en: 'LANZA 073' }, // M8e
+  'auto.l073.daten1': { de: 'MITTELMOTOR · HINTERRAD · KOMPRESSOR', en: 'MID-ENGINE · RWD · SUPERCHARGER' },
+  'auto.l073.daten2': { de: 'LEICHT, SCHNELL, ZICKIG', en: 'LIGHT, FAST, TWITCHY' },
+  'auto.imprexa.name': { de: 'SUBORA IMPREXA', en: 'SUBORA IMPREXA' }, // M8e
+  'auto.imprexa.daten1': { de: 'ALLRAD · TURBO · BOXERMOTOR', en: 'AWD · TURBO · BOXER ENGINE' },
+  'auto.imprexa.daten2': { de: 'AUSGEWOGEN, RUHIG, GUTMÜTIG', en: 'BALANCED, CALM, FORGIVING' },
   'auswahl.gewaehlt': { de: 'GEWÄHLT', en: 'SELECTED' },
   // M8c: Garage (Seite AUTO)
   'garage.titel': { de: 'GARAGE', en: 'GARAGE' },
@@ -44,6 +50,8 @@ export const TEXTE = {
   'garage.tempo': { de: 'HÖCHSTTEMPO', en: 'TOP SPEED' },
   'garage.grip': { de: 'GRIP', en: 'GRIP' },
   'garage.drift': { de: 'DRIFT', en: 'DRIFT' },
+  'garage.hinweis': { de: 'LEERTASTE ODER ENTER = WÄHLEN', en: 'SPACE OR ENTER = SELECT' }, // M8e: Hinweiszeile unten
+  'garage.hinweisPad': { de: 'A = WÄHLEN', en: 'A = SELECT' },
   // Lackierungen (Namen wie in js/config.js, autoOptik.lackierungen)
   'lack.werk': { de: 'WERK', en: 'WORKS' },
   'lack.gletscher': { de: 'GLETSCHER', en: 'GLACIER' },
@@ -54,6 +62,12 @@ export const TEXTE = {
   'lack.escortaWerk': { de: 'WERK', en: 'WORKS' },
   'lack.kanarie': { de: 'KANARIE', en: 'CANARY' },
   'lack.tannengruen': { de: 'TANNENGRÜN', en: 'FIR GREEN' },
+  'lack.l073Werk': { de: 'WERK', en: 'WORKS' },
+  'lack.l073Nacht': { de: 'NACHT', en: 'NIGHT' },
+  'lack.l073Eis': { de: 'EIS', en: 'ICE' },
+  'lack.imprexaWerk': { de: 'WERK', en: 'WORKS' },
+  'lack.imprexaPolar': { de: 'POLAR', en: 'POLAR' },
+  'lack.imprexaDunkel': { de: 'DUNKEL', en: 'DARK' },
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },
   'etappe.pass.name': { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
   'etappe.daten1': { de: '{km} KM · {cps} CHECKPOINTS', en: '{km} KM · {cps} CHECKPOINTS' },

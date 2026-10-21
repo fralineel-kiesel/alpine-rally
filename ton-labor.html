@@ -8,7 +8,8 @@
   <!-- Hilfsseite (M7a, nicht im Menü verlinkt): alle Töne des Spiels einzeln anhören. Benutzt js/audio.js wie das Spiel.
        M7a.1: Bereich "Feinschliff" (Werte live verstellen, WERTE KOPIEREN für den Chat), Regler Signaltöne.
        M7b: Bereiche "Umgebung" (Klangart, Abstand, Seite, VORBEIFAHREN) und "Musik" (Abschnitte, Kanäle, Tempo), Regler Musik.
-       M8d: Bereich "Motorklang je Auto" (VERGLEICH, je Auto ein Knopf); Feinschliff der Motorwerte je Fahrprofil. -->
+       M8d: Bereich "Motorklang je Auto" (VERGLEICH, je Auto ein Knopf); Feinschliff der Motorwerte je Fahrprofil.
+       M8e: VERGLEICH mit fünf Autos, Feinschliff für Lader-Heulen und unrund (Boxer-Blubbern). -->
   <script type="importmap">
     { "imports": { "three": "./lib/three.module.min.js" } }
   </script>
@@ -93,7 +94,8 @@
     <section>
       <h2>Motorklang je Auto</h2>
       <p class="hinweis">VERGLEICH spielt dieselbe kurze Fahrt (je ca. 8 s: Leerlauf, Vollgas durch zwei Gänge mit Schalten,
-        Gas weg mit Pops, Bremsen, Leerlauf) nacheinander mit Audan, Delto und Escorta. Oder ein Auto allein.</p>
+        Gas weg mit Pops, Bremsen, Leerlauf) nacheinander mit allen fünf Autos (Audan, Delto, Escorta, Lanza 073,
+        Subora Imprexa; zusammen ca. 43 s). Oder ein Auto allein.</p>
       <div class="knoepfe"><button class="gross" id="vergleich">VERGLEICH</button></div>
       <div class="knoepfe" id="vergleichKnoepfe"><button id="vergleichStopp">STOPP</button></div>
       <div id="vergleichName" style="color: var(--gelb); font-size: 22px; letter-spacing: 2px; min-height: 30px">–</div>
