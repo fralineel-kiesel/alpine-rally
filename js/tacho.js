@@ -179,7 +179,8 @@ export function baueTachos(ctx, text) {
       Object.assign(dreh, drehBlatt());
       if (kmhAlt !== null && kmhAlt !== skala.tempoMax) { Object.assign(tempo, tempoBlatt('kmh')); skalaMax = skala.tempoMax; }
     },
-    skala: () => ({ ...skala }), // (für Tests)
+    skala: () => ({ ...skala }), // (für Tests: Skala und Anzahl gemalter Zifferblätter im Vorrat)
+    vorrat: () => Object.keys(blaetter).length,
     // Einheit des Tempo-Tachos: 'kmh' oder 'mph' (M5a)
     setzeEinheit(e) {
       if (e === einheit) return;

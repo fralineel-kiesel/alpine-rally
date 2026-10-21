@@ -1,12 +1,12 @@
 {
- "version": "0.8e",
+ "version": "0.8f",
  "motor": [
   {
    "rpm": 1500,
    "f0": 53.6335,
    "fGemessen": 53.5928,
    "pegelA": 53.5309,
-   "schwerpunkt": 190.1293,
+   "schwerpunkt": 190.1291,
    "ueber1k": 0.0392,
    "ueber2k5": 0.0118,
    "spitze": 0.6738,
@@ -19,7 +19,7 @@
    "f0": 140.4781,
    "fGemessen": 140.4898,
    "pegelA": 58.4684,
-   "schwerpunkt": 453.8998,
+   "schwerpunkt": 453.8993,
    "ueber1k": 0.1057,
    "ueber2k5": 0.0348,
    "spitze": 0.616,
@@ -32,7 +32,7 @@
    "f0": 279.4873,
    "fGemessen": 279.3783,
    "pegelA": 61.5627,
-   "schwerpunkt": 736.2023,
+   "schwerpunkt": 736.2021,
    "ueber1k": 0.1685,
    "ueber2k5": 0.0681,
    "spitze": 0.6289,
@@ -50,7 +50,7 @@
    "ueber2k5": 0.071,
    "spitze": 0.5788,
    "rms": 0.2365,
-   "mittel": -0.0001,
+   "mittel": 0,
    "nan": 0
   }
  ],

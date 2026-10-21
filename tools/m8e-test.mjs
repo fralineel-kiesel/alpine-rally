@@ -936,7 +936,8 @@ if (teil('i')) {
     for (const o of document.getElementById('modell').options) { L.modellWaehlen(o.value); out[o.value] = [...document.getElementById('lackierung').options].map((x) => x.value); }
     return out;
   });
-  melde(Object.keys(al).join() === ALLE.join() && Object.values(al).every((l) => l.length === 3), `Auto-Labor: ${Object.entries(al).map(([id, l]) => `${id} (${l.join(', ')})`).join('; ')}`);
+  // (M8f: der Subora hat seit M8f vier Lackierungen, alle anderen drei)
+  melde(Object.keys(al).join() === ALLE.join() && Object.entries(al).every(([id, l]) => l.length === (id === 'imprexa' ? 4 : 3)), `Auto-Labor: ${Object.entries(al).map(([id, l]) => `${id} (${l.join(', ')})`).join('; ')}`);
   melde(a.fehler.length === 0, `Auto-Labor: Konsole ohne Fehler (${a.fehler.length})`);
   await a.schliessen();
 }

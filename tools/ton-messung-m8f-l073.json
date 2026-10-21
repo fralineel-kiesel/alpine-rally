@@ -1,12 +1,12 @@
 {
- "version": "0.8e",
+ "version": "0.8f",
  "motor": [
   {
    "rpm": 1500,
    "f0": 42.6467,
    "fGemessen": 42.735,
    "pegelA": 52.0901,
-   "schwerpunkt": 158.2027,
+   "schwerpunkt": 158.2029,
    "ueber1k": 0.0323,
    "ueber2k5": 0.0082,
    "spitze": 0.69,
@@ -32,7 +32,7 @@
    "f0": 244.0704,
    "fGemessen": 244.0448,
    "pegelA": 60.7701,
-   "schwerpunkt": 757.7214,
+   "schwerpunkt": 757.7213,
    "ueber1k": 0.168,
    "ueber2k5": 0.0704,
    "spitze": 0.6401,
@@ -48,7 +48,7 @@
    "schwerpunkt": 1076.077,
    "ueber1k": 0.2618,
    "ueber2k5": 0.0856,
-   "spitze": 0.5638,
+   "spitze": 0.5637,
    "rms": 0.2173,
    "mittel": -0.0001,
    "nan": 0
