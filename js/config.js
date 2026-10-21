@@ -835,28 +835,41 @@ export const CONFIG = {
                                  // die Antriebsräder (besser als der Escorta 0.95 / 0.9); Bankett und Gras weniger, damit
                                  // es dort trotz viel Schub keinen Vorteil gibt (Abkürzungen)
         zugkraftFaktor: 1.15,    // leicht und kräftig: das schnellste Auto aus dem Stand (0-100 km/h -10 %)
-        gaenge: [46, 78, 108, 136, 164], // kurze Gänge: Höchsttempo ca. 4 % tiefer
+        // M8f (Lino: „dreht zu hoch“): Gänge länger (M8e [46, 78, 108, 136, 164] lief bei Höchsttempo mit 7700/min am
+        // Begrenzer). Bei gleichem Tempo jetzt höchstens 4.7 % mehr Drehzahl als der Audan (4. und 5. Gang müssen dafür
+        // +10 % und +15 % länger sein: bei 140 km/h Konstantfahrt zählt nur die Übersetzung). Achtung: der flotte
+        // Testfahrer prallt mit 4. Gang 150 oder 3. Gang 116/118 bei 2760 m (spätes Bremsen vor der Rechtskurve) an
+        gaenge: [48, 82, 117, 149, 188],
+        hochVollgas: 6600,       // früher hochschalten (Audan 6900): oben lässt der Kompressor-Motor nach (siehe unten)
+        // Kompressor-Motor: kräftig unten und in der Mitte, ab 5800/min weniger Zug (Prototyp: voll bis 6000, 7000 = 0.85).
+        // Begrenzt das Höchsttempo (2.9 % unter dem Prototyp bei 6800/min, nicht mehr am Begrenzer) trotz der langen Gänge
+        drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [5800, 1.0], [6400, 0.9], [7000, 0.64], [8000, 0.3]],
         turbo: { an: false },    // Lader (Kompressor) statt Turbo: Schub sofort, kein Aufbau
       },
       ton: {
         turboMal: 0, knallMal: 1, // kein Turbo: kein Pfeifen, kein Blow-off; Pops wie der Audan
-        // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): hell, mechanisch, drehfreudig (nur die Abweichungen vom Audan)
+        // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): mechanisch, rauh (nur die Abweichungen vom Audan).
+        // M8f (Lino: „tönt viel zu hoch“): tiefer, mehr Körper, weniger hell; der Lader deutlich lauter
         motor: {
           zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 % (Audan 2.5)
-          hoechstTon: 580,       // dreht am höchsten: bei 7000/min +20 % (Delto 540, Audan 480)
+          hoechstTon: 440,       // M8f: tiefer als der Audan (480; M8e 580 = das höchste Auto)
           tonKurve: 1.5,         // ruhige Mitte, oben steil
           pegel: 0.37,           // so laut wie der Audan (0.36)
-          saege: 0.42,           // weniger runder Körper (Audan 0.5) ...
-          puls: 0.5,             // ... mehr Kanten (Audan 0.45): heller, weniger Tiefes
-          unter: 0.06,           // wenig Tiefes (Audan 0.16)
+          saege: 0.5,            // M8f: runder Körper wie der Audan (M8e 0.42) ...
+          puls: 0.45,            // ... und Kanten wie der Audan (M8e 0.5)
+          unter: 0.25,           // M8f: mehr Tiefes (Audan 0.16, M8e 0.06)
           amTiefe: 0.5,          // unruhiger Leerlauf (Delto 0.28, Audan 0.4) ...
           amTiefeLeerlauf: 0.55, // ... auch ganz ohne Gas
           rauh: 0.4,             // mechanisch, der Motor sitzt hinter dem Fahrer (Audan 0.3)
-          bissHz: 3000,          // Biss höher (Audan 2200) ...
-          filterGas: 5200,       // ... und unter Gas heller (Audan 4500): der hellste der fünf
+          bissHz: 2300,          // M8f: Biss fast wie der Audan (2200; M8e 3000) ...
+          filterGas: 3800,       // ... und unter Gas dunkler (Audan 4500; M8e 5200 = der hellste der fünf)
           klackPegel: 0.42,      // Getriebe-Klack lauter (+40 %, das Getriebe sitzt hinter dem Fahrer)
           pop: { mitte: 2000 },  // Pops trockener (Audan 2400)
-          lader: { an: true, pegel: 0.075 }, // Lader-Heulen ca. 11 dB unter dem Motor (übrige Werte: audio.motor.lader)
+          schaltKnallPegel: 1.1, // M8f: Schaltknall etwas leiser (Audan 1.25): mit den neuen Schaltpunkten trifft er auf
+                                 // Vollgas mit dem lauten Lader, sonst Spitze 1.36 statt höchstens wie der Audan (1.32)
+          // M8f: Lader deutlich lauter (+7 dB; M8e 0.075), tiefer (faktor 9.5: bei 7000/min ca. 2.2 kHz statt 3.3 kHz,
+          // hörbar, aber nicht schrill) und noch stärker am Gas (ohne Gas nur 15 %: im Leerlauf und Schub so leise wie M8e)
+          lader: { an: true, pegel: 0.17, faktor: 9.5, gasAnteil: 0.85 },
         },
       },
     },

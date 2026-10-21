@@ -11,7 +11,11 @@ Branch `claude/stoic-davinci-osu37c`, ein Commit je Teil (0, A–E).
   K1 23.8°/1.67 s → 17.5°/1.17 s; K2 1.14 s (Ziel 0.8 NICHT, Delto 1.10, Escorta 1.72); K3 104°→34° (kein Dreher); K4 17.5→11.9 m
   (Ziel 4 NICHT, Escorta 21.3, Prototyp 9.3). Testfahrer 177.84/161.06/152.68 (Delto 178.61/161.60/151.22), 0 Aufpralle.
   Kippschwelle glatt. Werte grip 6→7. Pace-Notes l073: 3 ausserhalb (M8e 4). testfahrer-browser.js unverändert ([3,9] bleibt).
-- [ ] Teil C – Lanza Klang tiefer, Lader lauter, Gänge länger
+- [x] Teil C – Lanza Klang: hoechstTon 580→440 (f0@7000 554→420 Hz, Audan 462), saege .5 puls .45 unter .25 bissHz 2300 filterGas 3800,
+  Lader pegel .075→.17 faktor 9.5 gasAnteil .85 (2216 Hz, +7.1 dB, ohne Gas +1.1 dB, -4.2 dB gg. Motor), schaltKnallPegel 1.1 (Spitze).
+  Gänge [48,82,117,149,188] (+4..+15 %), hochVollgas 6600, drehmoment ab 5800 fallend. Drehzahl gg. Audan max +4.7 %, Schaltpunkte
+  darunter, vmax 182.6 (-2.93 %, Ziel -3 knapp VERFEHLT, Drehzahl vor Tempo), 6799/min (M8e 7700). Testfahrer 178.03/160.96/153.37,
+  0 Aufpralle (4. Gang 150 → Aufprall 2760 m!). Luftwiderstand verworfen (ändert Rückwärts-Tempo).
 - [ ] Teil D – Subora Blau-Gelb, Schaltpunkte höher, Tacho-Skala je Profil
 - [ ] Teil E – tools/m8f-test.mjs, Bilder, Bericht docs/meilensteine/m8f.md, Version
 

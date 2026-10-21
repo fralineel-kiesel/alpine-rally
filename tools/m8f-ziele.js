@@ -113,3 +113,66 @@ export const K_ZEILEN = [
   ['K3 Slalom Asphalt 120 km/h (je 1 s): grösster Gierwinkel', (k) => k.k3.gier, [-I, 60], '°'],
   ['K4 Wiesenweg 60 km/h, Vollgas, leichter Einschlag 3 s: seitlich gerutscht', (k) => k.k4.quer, [-I, 4], 'm'],
 ];
+
+// Drehzahl bei gleichem Tempo (Teil C/D): Vollgas aus dem Stand auf Asphalt, Drehzahl beim Durchfahren von 50, 100 und
+// 140 km/h; Konstantfahrt (Tempo 6 s gehalten, Automatik wählt den Gang): Drehzahl am Ende; Schaltpunkte unter Vollgas
+// (höchste Drehzahl vor jedem Hochschalten) und Drehzahl bei Höchsttempo.
+export function drehzahlen(m, tempi = [50, 100, 140]) {
+  const b = m.boden('asphalt'), DT = m.DT;
+  const voll = {}, schalt = [];
+  let p = m.auto(0), gang = p.g.gang, maxRpm = 0, vmax = 0, rpmVmax = 0;
+  for (let t = 0; t < 90; t += DT) {
+    m.schritt(p, { gas: 1, bremse: 0, lenkung: 0, handbremse: false }, b);
+    const kmh = p.vVor * 3.6;
+    for (const v of tempi) if (voll[v] == null && kmh >= v) voll[v] = p.g.drehzahl;
+    if (p.g.gang > gang && gang > 0) schalt.push(Math.round(maxRpm));
+    if (p.g.gang !== gang) { gang = p.g.gang; maxRpm = 0; }
+    maxRpm = Math.max(maxRpm, p.g.drehzahl);
+    if (kmh > vmax + 0.01) { vmax = kmh; rpmVmax = p.g.drehzahl; }
+  }
+  const konstant = {};
+  for (const v of tempi) {
+    p = m.auto(v / 3.6);
+    let gas = 0.4;
+    for (let t = 0; t < 6; t += DT) {
+      gas = Math.max(0, Math.min(1, gas + (v / 3.6 - p.vVor) * 0.6 * DT));
+      m.schritt(p, { gas, bremse: 0, lenkung: 0, handbremse: false }, b);
+    }
+    konstant[v] = { rpm: p.g.drehzahl, gang: p.g.gang };
+  }
+  return { voll, konstant, schalt, hoechst: { kmh: vmax, rpm: rpmVmax } };
+}
+
+// Motorklang M8f gegen den Audan (A) und, wo nötig, gegen die eigene Messung von 0.8e (V; tools/ton-messung-m8e-<id>.json).
+// [Text, Wert(m), Art, Ziel l073, Ziel imprexa]; Arten wie M8E.pruefeTon ('prozent', 'db', 'faktor', 'wert',
+// 'hoechstens' gegen den Audan) und 'dbAlt' (Unterschied in dB gegen 0.8e).
+const motorBei = (rpm) => (m) => m.motor.find((x) => x.rpm === rpm);
+export const TON_ZEILEN = [
+  ['Grundton Leerlauf (Hz)', (m) => m.profil.leerlauf.f0, 'prozent', [-23, -17], [-23, -17]],
+  ['Grundton bei 7000 U/min (Hz)', (m) => motorBei(7000)(m).f0, 'wert', [400, 440], null],
+  ['Grundton bei 7000 U/min gegen den Audan', (m) => motorBei(7000)(m).f0, 'prozent', [-I, -3], [-10, -3]],
+  ['Spektralschwerpunkt Vollgas 5000 U/min (Hz)', (m) => motorBei(5000)(m).schwerpunkt, 'prozent', [-20, 10], [-20, -5]],
+  ['Energie unter 200 Hz bei Teillast (2500 U/min, Gas 0.4)', (m) => m.profil.teillast.unter200, 'prozent', [-30, 30], [25, 60]],
+  ['Unregelmässigkeit (Schwankung 20 ms, 20-200 Hz)', (m) => m.profil.unrund.mittel, 'prozent', [20, 80], [50, 150]],
+  ['Lader-Heulen: Tonhöhe bei 7000 U/min (Hz)', (m) => (m.profil.lader.an ? m.profil.lader.hz7000 : null), 'wert', [2100, 2400], null],
+  ['Lader-Heulen: Korrelation Tonhöhe/Drehzahl (Vergleichsfahrt)', (m) => (m.profil.lader.an ? m.profil.lader.korrelation : null), 'wert', [0.98, 1], null],
+  ['Lader-Heulen: Pegel gegen den Motor (dB, Vollgas 5000)', (m) => (m.profil.lader.an ? m.profil.lader.gegenMotorDb : null), 'wert', [-6, 0], null],
+  ['Lader-Heulen: lauter als 0.8e (dB, Vollgas 5000)', (m) => (m.profil.lader.an ? m.profil.lader.rms5000 : null), 'dbAlt', [6, 8], null],
+  ['Lader-Heulen ohne Gas gegen 0.8e (dB, Leerlauf/Schub)', (m) => (m.profil.lader.an ? m.profil.lader.rms5000 * m.profil.lader.ohneGas : null), 'dbAlt', [-I, 1.5], null],
+  ['Lader-Heulen: Anstieg nach Gasstoss (s, bis 90 %)', (m) => (m.profil.lader.an ? m.profil.lader.anstieg : null), 'wert', [0, 0.06], null],
+  ['Turbo-Pfeifen: Tonhöhe (Hz)', (m) => m.profil.turbo.ton, 'prozent', null, [-25, -15]],
+  ['Turbo-Pfeifen: Pegel (RMS)', (m) => m.profil.turbo.rms, 'prozent', null, [-50, -30]],
+  ['Lautstärke Motor Vollgas 5000 (RMS)', (m) => motorBei(5000)(m).rms, 'db', [-1.5, 1.5], [-1.5, 1.5]],
+  ['Spitze vor dem Limiter', (m) => m.profil.spitze, 'hoechstens', [-I, 0], [-I, 0]],
+  ['Pops je Minute (Knall, Knistern, Schaltknall; feste 60-s-Fahrt)', M8E.POPS, 'faktor', [0.8, 1.2], [1.3, 2.2]],
+  ['Pop-Mittelfrequenz (Schwerpunkt eines Pops, Hz)', (m) => m.pop.schwerpunkt, 'prozent', [-25, -10], [-40, -25]],
+];
+export function pruefeTon([text, wert, art, zielA, zielB], A, X, auto, V = null) {
+  const ziel = auto === 'l073' ? zielA : zielB;
+  if (!ziel) return null;
+  const a = art === 'dbAlt' ? (V ? wert(V) : null) : wert(A), b = wert(X);
+  const d = art === 'prozent' ? (b / a - 1) * 100 : art === 'db' || art === 'hoechstens' || art === 'dbAlt' ? 20 * Math.log10(b / a)
+    : art === 'faktor' ? b / a : b;
+  const ok = b != null && Number.isFinite(d) && d >= ziel[0] - 1e-9 && d <= ziel[1] + 1e-9;
+  return { text, a, b, d, ok, art, ziel };
+}
