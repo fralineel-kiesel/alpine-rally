@@ -649,7 +649,8 @@ export function baueKlangwerk(ctx) {
     zu.pause = an;
   }
 
-  // Ein Bild. z: { modus ('aus' | 'countdown' | 'rennen' | 'ziel' | 'pause'), drehzahl, gang, schaltet, gas, bremse,
+  // Ein Bild. z: { modus ('aus' | 'countdown' | 'rennen' | 'ziel' | 'pause' | M8e: 'garage' = nur der Motor, das Auto
+  //   steht: Aufheulen in der Garage, ohne Reifen, Wind und Umgebung), drehzahl, gang, schaltet, gas, bremse,
   //   tempo, vVor, untergrund, drift (Grad), handbremse, aufprall (Wucht m/s in diesem Bild), aufprallArt (Material),
   //   kontaktArt (-1 = kein Kontakt), kontaktTempo, M8b: ladedruck (0..1, echter Ladedruck des Getriebes),
   //   turboAn (Fahrprofil mit Turbo; fehlt/false = eigenes Turbo-Modell wie bis 0.8a),
@@ -818,9 +819,13 @@ export function baueKlangwerk(ctx) {
     spiele('blowOff', 'blowOff', motorAus, M.blowOffPegel * (0.6 + 0.4 * zu.druck) * (schalten ? M.schaltBlowOff : 1) * turboMal);
   }
   // Ein Pop (Auspuff) in wann Sekunden, staerke 0..1 (mal popPegel); art: 'knall', 'knistern' oder 'schaltknall'
+  // M8e: knallHoerer(art, zeit, staerke) bekommt jeden Pop mit seiner geplanten Zeit (ctx.currentTime + wann), z. B. für
+  // die Flamme aus dem Auspuff. Nur Lesen: keine Zufallszahl, kein Knoten (Ton bleibt bit-gleich)
+  let knallHoerer = null;
   function knall(wann = 0, staerke = 1, art = 'knall') {
     merke(art, wann);
     spiele(art, 'pop', motorAus, M.popPegel * staerke, wann, zwischen(M.popTempo, rnd()));
+    if (knallHoerer) knallHoerer(art, ctx.currentTime + wann, staerke);
   }
   // Gaswegnehmen aus hoher Last: mit knallChance eine Salve (1-4 Pops), dazu manchmal leises Knistern. Ergebnis: Anzahl Pops.
   // antiLag (M8b): Turbo mit Anti-Lag aktiv -> Chance plus turboKnallPlus (gleich viele Zufallszahlen wie ohne)
@@ -963,6 +968,7 @@ export function baueKlangwerk(ctx) {
     puffernStarten, puffernSofort, neuBauen, motorNeu, motorWechsel, aktualisiere, allesAus, lautstaerke, signalLautstaerke, musikLautstaerke, spitzen,
     musik: musikWerk, umgebung: umgebungWerk, setzeQuellen: (q) => umgebungWerk.setzeQuellen(q), // M7b
     blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote,
+    setzeKnallHoerer: (f) => { knallHoerer = f; }, // M8e
   };
 }
 
@@ -970,7 +976,7 @@ export function baueKlangwerk(ctx) {
 // an = false: alles stumm (Tests mit ?menue=aus, ?ton=aus, audio.an = false). Fehlt Web Audio: ebenso, ohne Fehler.
 export function baueTon({ an = true } = {}) {
   const Klasse = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
-  let ctx = null, werk = null, laut = 70, sig = 100, mus = 60, quellen = null;
+  let ctx = null, werk = null, laut = 70, sig = 100, mus = 60, quellen = null, knallHoerer = null;
   const ton = {
     an: !!(an && Klasse),
     get ctx() { return ctx; },
@@ -987,6 +993,7 @@ export function baueTon({ an = true } = {}) {
           werk.signalLautstaerke(sig);
           werk.musikLautstaerke(mus);
           if (quellen) werk.setzeQuellen(typeof quellen === 'function' ? quellen() : quellen);
+          if (knallHoerer) werk.setzeKnallHoerer(knallHoerer);
           werk.puffernStarten();
         }
         if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {});
@@ -1000,6 +1007,10 @@ export function baueTon({ an = true } = {}) {
     musikLautstaerke(prozent) { mus = prozent; if (werk) werk.musikLautstaerke(prozent); }, // Regler MUSIK (M7b)
     // Quellen der Umgebung (M7b): einmal nach dem Aufbau der Welt; q darf eine Funktion sein (wird erst beim Entsperren gerechnet)
     quellen(q) { quellen = q; if (werk) werk.setzeQuellen(typeof q === 'function' ? q() : q); },
+    // M8e: wer soll von jedem Pop erfahren (Flamme)? f(art, zeit in ctx.currentTime, staerke)
+    beiKnall(f) { knallHoerer = f; if (werk) werk.setzeKnallHoerer(f); },
+    // M8e: Zeit des Tons, die man gerade hört (ctx.currentTime minus Ausgabe-Verzögerung); ohne Ton null
+    hoerZeit() { return ctx && ctx.state === 'running' ? ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0) : null; },
     // M8d: Motorklang des gerade gewählten Fahrprofils übernehmen (nach waehleFahrprofil; im Spiel nur im Menü).
     // Ohne Klangwerk nichts zu tun: beim Entsperren wird ohnehin mit den aktuellen Werten gebaut
     motorNeu() { if (werk) { try { werk.motorNeu(); } catch { /* Ton ist nie wichtiger als das Spiel */ } } },

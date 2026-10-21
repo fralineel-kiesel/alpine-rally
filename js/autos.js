@@ -51,6 +51,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 4.4, breite: 1.8 }, // M8c: Rechteck mit runden Ecken gegen Bäume, Steine, Zäune (kollision.js)
     staub: { hinten: 1.3, seite: 0.75 },     // M8c: Staub tritt so weit hinter der Mitte und so weit seitlich aus (Hinterräder)
     schwerpunktHoehe: 0.5,      // um diesen Punkt (Höhe) neigt sich die Karosserie (Federung)
+    auspuff: [{ x: 0.52, y: 0.25, z: -2.24 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.8, z: 1.26,          // Radmitten bei (±x, Radius, ±z)
       radius: 0.33, breite: 0.24, felgeRadius: 0.2, felgeTiefe: 0.03, segmente: 14, speichen: 5,
@@ -197,6 +198,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 3.95, breite: 1.74 },
     staub: { hinten: 1.28, seite: 0.71 },
     schwerpunktHoehe: 0.5,
+    auspuff: [{ x: -0.5, y: 0.24, z: -2.005 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.76, z: 1.24,
       radius: 0.325, breite: 0.23, felgeRadius: 0.2, felgeTiefe: 0.03, segmente: 14, speichen: 6,
@@ -330,6 +332,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 4.02, breite: 1.7 },
     staub: { hinten: 1.24, seite: 0.69 },
     schwerpunktHoehe: 0.48,
+    auspuff: [{ x: 0.52, y: 0.2, z: -2.05 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.74, z: 1.2,
       radius: 0.325, breite: 0.22, felgeRadius: 0.19, felgeTiefe: 0.03, segmente: 14, speichen: 4,
@@ -447,6 +450,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 3.88, breite: 1.76 },
     staub: { hinten: 1.24, seite: 0.74 },
     schwerpunktHoehe: 0.44,
+    auspuff: [{ x: 0.1, y: 0.3, z: -2.05 }, { x: -0.1, y: 0.3, z: -2.05 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.74, z: 1.21,
       radius: 0.33, breite: 0.22, felgeRadius: 0.21, felgeTiefe: 0.03, segmente: 14, speichen: 5,
@@ -569,6 +573,7 @@ export const AUTO_MODELLE = {
     kollision: { laenge: 4.27, breite: 1.71 },
     staub: { hinten: 1.32, seite: 0.72 },
     schwerpunktHoehe: 0.46,
+    auspuff: [{ x: -0.5, y: 0.25, z: -2.25 }], // M8e: Enden der Auspuffrohre (dort kommt beim Poppen die Flamme heraus)
     raeder: {
       x: 0.75, z: 1.26,
       radius: 0.325, breite: 0.23, felgeRadius: 0.2, felgeTiefe: 0.03, segmente: 14, speichen: 5,

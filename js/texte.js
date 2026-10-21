@@ -50,6 +50,8 @@ export const TEXTE = {
   'garage.tempo': { de: 'HÖCHSTTEMPO', en: 'TOP SPEED' },
   'garage.grip': { de: 'GRIP', en: 'GRIP' },
   'garage.drift': { de: 'DRIFT', en: 'DRIFT' },
+  'garage.hinweis': { de: 'LEERTASTE ODER ENTER = WÄHLEN', en: 'SPACE OR ENTER = SELECT' }, // M8e: Hinweiszeile unten
+  'garage.hinweisPad': { de: 'A = WÄHLEN', en: 'A = SELECT' },
   // Lackierungen (Namen wie in js/config.js, autoOptik.lackierungen)
   'lack.werk': { de: 'WERK', en: 'WORKS' },
   'lack.gletscher': { de: 'GLETSCHER', en: 'GLACIER' },

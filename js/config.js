@@ -1499,9 +1499,9 @@ export const CONFIG = {
   // Masse in Pixeln des 320x180-Bildes (das 3D-Bild der Vorschau hat dieselbe Pixelgrösse wie das Spiel)
   garage: {
     tafelBreite: 312,          // Breite der Tafel
-    tafelHoehe: 172,           // Höhe der Tafel (mindestens)
+    tafelHoehe: 176,           // Höhe der Tafel (mindestens; M8e: 172 -> 176 für die Hinweiszeile unten)
     spalte: 120,               // links: Liste der Autos und LACK (so breit), rechts: Vorschau und Werte
-    vorschauHoehe: 80,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts)
+    vorschauHoehe: 76,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts; M8e: 80 -> 76 für die Hinweiszeile)
     hintergrund: '#121a24',    // ruhige dunkle Tafel hinter dem Auto
     drehDauer: 8,              // Sekunden für eine Umdrehung der Drehscheibe
     startWinkel: 215,          // so steht das Auto beim ersten Öffnen (Grad; 180 = Front zur Kamera)
@@ -1513,6 +1513,16 @@ export const CONFIG = {
     platteHoehe: 0.06,         // ... Dicke ...
     platte: '#2a313a',         // ... Farbe der Platte ...
     platteRand: '#56606a',     // ... und des Rands
+    // Motor kurz aufheulen beim Bestätigen eines Autos (M8e): Leerlauf -> hochdrehen -> halten -> fallen lassen, mit dem
+    // Klang dieses Autos (Turbo/Lader, Pop beim Gaswegnehmen wie im Spiel). Lautstärke wie der Motor im Spiel.
+    // Statt des Bestätigungstons; ist der Ton aus oder noch gesperrt, bleibt der Bestätigungston.
+    aufheulen: {
+      an: true,                // false = kein Aufheulen (nur der Bestätigungston wie bis M8d)
+      dauer: 1.4,              // so lange dauert es ganz (Sekunden)
+      spitze: 0.6,             // so hoch dreht der Motor (Anteil vom Leerlauf bis zur Höchstdrehzahl, 0.6 = ca. 4700/min)
+      rauf: 0.35,              // in so vielen Sekunden ist er oben ...
+      halten: 0.25,            // ... hält so lange und fällt dann zurück in den Leerlauf
+    },
   },
 
   // --- Rennablauf: Countdown, Zielbildschirm, Statistik (Meilenstein 5b) -------------
@@ -1970,6 +1980,18 @@ export const CONFIG = {
     pruefung: {
       rmsMotor: [0.03, 0.45], rmsKlang: [0.01, 0.5], spitzeMax: 0.98,
     },
+  },
+
+  // --- Flamme aus dem Auspuff beim Poppen (M8e, nur Optik: ändert weder Ton noch Fahrphysik) ---
+  // Bei jedem Pop (Knall, Schaltknall; Knistern nur in ca. 40 % der Fälle und kleiner) blitzt hinter jedem Auspuffrohr
+  // (js/autos.js, auspuff) eine kleine Flamme auf, gleichzeitig mit dem Ton. Wie oft, kommt vom Ton (ton.knallMal).
+  auspuffFlamme: {
+    an: true,                  // false = keine Flamme
+    laengeMin: 0.25,           // Länge (Meter) beim leisesten Pop (Knistern) ...
+    laengeMax: 0.7,            // ... und beim stärksten (Schaltknall)
+    dauer: [0.08, 0.14],       // so lange (Sekunden) leuchtet sie, kleiner Pop ... grosser Pop
+    farben: ['#fff2b0', '#ff9a2e', '#d8401c'], // drei Stufen nacheinander: gelb-weiss, orange, rot
+    knisternAnteil: 0.4,       // beim Knistern bekommt nur dieser Anteil eine Flamme (immer die kleinste, laengeMin)
   },
 
   // --- Optik am Auto (seit M8a: 3D-Modell aus js/autos.js, gebaut von js/car.js; ansehen ohne Fahren: auto-labor.html) ---

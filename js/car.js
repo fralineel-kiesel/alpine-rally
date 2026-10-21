@@ -581,6 +581,45 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
     auto.add(s);
   }
 
+  // --- M8e: Flamme aus dem Auspuff beim Poppen: ein gemeinsames Teil für alle Rohre (modell.auspuff), unbeleuchtet,
+  // additiv (leuchtet, unabhängig von Licht und Nebel), unsichtbar ohne Flamme (dann kein Draw Call). Je Rohr zwei
+  // gekreuzte Dreiecke nach hinten, am Rohr hell, an der Spitze dunkel (Farbstufe über die Materialfarbe).
+  const FL = CONFIG.auspuffFlamme, rohre = m.auspuff || [];
+  let flamme = null;
+  const flammen = []; // geplante Flammen { start, dauer, laenge } (feste Anzahl, kein neues Objekt pro Pop)
+  if (rohre.length) {
+    const n = rohre.length * 2 * 3, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { const spitze = i % 3 === 2 ? 0.25 : 1; col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = spitze; }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    flamme = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+      vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide,
+    }));
+    flamme.name = 'auto-flamme';
+    flamme.visible = false;
+    flamme.frustumCulled = false; // (die Form ändert sich; klein und nur kurz sichtbar)
+    flamme.position.y = -m.schwerpunktHoehe;
+    flamme.renderOrder = 2;
+    karosse.add(flamme);
+    for (let k = 0; k < 8; k++) flammen.push({ start: -1, dauer: 0, laenge: 0 });
+  }
+  let flammeLaenge = -1, flammeStufe = -1;
+  const flammeFarben = (FL ? FL.farben : []).map((f) => new THREE.Color(f));
+  // Form für eine Länge setzen (nur wenn sie sich ändert): je Rohr ein senkrechtes und ein waagrechtes Dreieck
+  function flammeForm(L) {
+    if (L === flammeLaenge) return;
+    flammeLaenge = L;
+    const a = flamme.geometry.attributes.position, p = a.array, b = Math.min(0.09, 0.05 + L * 0.07);
+    let i = 0;
+    const punkt = (x, y, z) => { p[i++] = x; p[i++] = y; p[i++] = z; };
+    for (const r of rohre) {
+      punkt(r.x, r.y - b, r.z); punkt(r.x, r.y + b, r.z); punkt(r.x, r.y, r.z - L);
+      punkt(r.x - b, r.y, r.z); punkt(r.x + b, r.y, r.z); punkt(r.x, r.y, r.z - L);
+    }
+    a.needsUpdate = true;
+  }
+
   let bremsAn = null, rueckAn = null;
   const radWinkel = new Float64Array(1); // Drehwinkel der Räder (Zahlenfeld: kein neues Objekt pro Bild)
   return {
@@ -628,6 +667,30 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
       e._x = nicken; e._y = 0; e._z = rollen;
       karosse.position.y = m.schwerpunktHoehe + hub;
     },
+    // M8e: Flamme planen: start (Sekunden in der Zeit von flammeBild), staerke 0..1 (Länge und Dauer dazwischen)
+    flammePlanen(start, staerke) {
+      if (!flamme || !FL || !FL.an) return false;
+      let f = flammen[0];
+      for (const x of flammen) if (x.start + x.dauer < f.start + f.dauer) f = x; // die älteste ersetzen
+      const k = Math.max(0, Math.min(1, staerke));
+      f.start = start; f.dauer = FL.dauer[0] + (FL.dauer[1] - FL.dauer[0]) * k; f.laenge = FL.laengeMin + (FL.laengeMax - FL.laengeMin) * k;
+      return true;
+    },
+    // ... und jedes Bild zeigen (jetzt: gleiche Zeit wie bei flammePlanen). Ohne Flamme: unsichtbar, sonst nichts zu tun.
+    // Stufe 0, 1, 2 (gelb-weiss, orange, rot) nach der verstrichenen Zeit, in der letzten Stufe etwas kürzer
+    flammeBild(jetzt) {
+      if (!flamme) return;
+      let f = null;
+      for (const x of flammen) if (x.start <= jetzt && jetzt < x.start + x.dauer && (!f || x.laenge > f.laenge)) f = x;
+      if (!f) { if (flamme.visible) flamme.visible = false; return; }
+      const stufe = Math.min(2, Math.floor(((jetzt - f.start) / f.dauer) * 3));
+      flammeForm(stufe === 2 ? f.laenge * 0.75 : f.laenge);
+      if (stufe !== flammeStufe) { flammeStufe = stufe; flamme.material.color.copy(flammeFarben[stufe]); }
+      flamme.visible = true;
+    },
+    get flammeSichtbar() { return !!(flamme && flamme.visible); },
+    get flammeStufeJetzt() { return flamme && flamme.visible ? flammeStufe : -1; },
+    flamme,
     // M8c (Garage): wie stehen Bremslicht und Rückfahrlicht gerade? [bremse, rueckwaerts]
     get lichtZustand() { return [bremsAn, rueckAn]; },
     // Bremslicht und Rückfahrlicht (nur bei Änderung: Farbe des vorhandenen Materials setzen)

@@ -36,6 +36,8 @@ const teilWerkzeug = (name, argumente, titel) => {
 };
 const hash = (s) => crypto.createHash('sha1').update(s).digest('hex').slice(0, 12);
 const AUTOS = ['rt4', 'delto', 'escorta'];
+// M8e: weitere Autos in der Garage unter dem Escorta (Lanza 073, Subora Imprexa): so oft mehr runter bis LACK
+const WEITERE = Object.keys((await import(new URL('../js/autos.js', import.meta.url))).AUTO_MODELLE).length - AUTOS.length;
 
 // Audan: Lack-Textur (alle Lackierungen, drei Bildbreiten) und Geometrie als Prüfsumme – im Auto-Labor gerechnet
 async function audanAbdruck(wurzel = WURZEL) {
@@ -243,6 +245,7 @@ async function garageDurchgang(art) {
   const lackDelto0 = x.lack;
   // [unten, unten] über Escorta nach LACK: nichts ändert sich
   await E.runter(); await bilder(2); const ueber = await z();
+  for (let k = 0; k < WEITERE; k++) await E.runter(); // (M8e: unter Escorta stehen weitere Autos)
   await E.runter(); await bilder(2); x = await z();
   pr(ueber.zeiger === 'escorta' && ueber.auto === 'delto' && ueber.vorschau === 'escorta' && x.zeiger === 'LACK' && x.auto === 'delto' && x.profil === 'delto' && x.modell === 'delto' && x.vorschau === 'delto',
     `[unten, unten]: über ${ueber.zeiger} (Vorschau ${ueber.vorschau}) nach ${x.zeiger}, gewählt bleibt ${x.auto} / ${x.profil} / ${x.modell}, Vorschau wieder ${x.vorschau}`);
@@ -257,7 +260,8 @@ async function garageDurchgang(art) {
   await bilder(2); x = await z();
   pr(x.zeiger === 'LACK' && x.auto === 'delto' && x.lack === lackDelto, `frei hoch/runter (3x hoch über alle Autos, 3x runter): gewählt ${x.auto}, Lack ${x.lack}`);
   // schon gewähltes Auto bestätigen: kein Fehler
-  await E.hoch(); await E.hoch(); await bilder(2);
+  await E.hoch(); await E.hoch(); for (let k = 0; k < WEITERE; k++) await E.hoch();
+  await bilder(2);
   const vor = await z(); await E.bestaetigen(); await bilder(2); x = await z();
   pr(vor.zeiger === 'delto' && x.auto === 'delto' && x.lack === lackDelto && x.seite === 'auto', `gewähltes Auto nochmals bestätigt: bleibt ${x.auto}, Lack ${x.lack}, Garage offen`);
   // markiert (Escorta), dann Esc: das bestätigte Auto bleibt

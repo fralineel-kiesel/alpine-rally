@@ -56,6 +56,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
   let druckNr = -1;           // Maus gedrückt auf Eintrag Nr.
   let treffer = [];           // Trefferflächen der sichtbaren Einträge (für Maus und später Touch)
   const padZustand = { richtung: 0, zeit: 0 };
+  let letzteEingabe = 'tastatur'; // M8e: zuletzt benutzt ('tastatur' oder 'gamepad'), für die Hinweiszeile der Garage
+  const eingabe = (art) => { if (art !== letzteEingabe) { letzteEingabe = art; schmutzig = true; } };
   beiSprachwechsel(() => { schmutzig = true; });
 
   const txt = (x) => (typeof x === 'function' ? x() : t(x));
@@ -153,7 +155,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     const e = eintrag();
     if (!e) return;
     // (der Ton kommt nach der Aktion: wird dabei weitergefahren, hat der Pausenton Vorrang)
-    if (e.typ === 'aktion') { e.aktion(); klang('bestaetigen'); }
+    // (M8e: gibt die Aktion 'ohneTon' zurück, macht sie selbst einen Klang, z. B. Aufheulen in der Garage)
+    if (e.typ === 'aktion') { if (e.aktion() !== 'ohneTon') klang('bestaetigen'); }
     else if (e.typ === 'zurueck') zurueck();
     else if (e.typ === 'umschalter' || e.typ === 'auswahl') aendern(e, 1);
     else if (e.typ === 'taste') { warten = { aktion: e.aktion, platz: o.platz }; meldung = null; klang('bestaetigen'); }
@@ -176,6 +179,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
 
   // Tastatur. Ergebnis true = Taste erledigt
   function taste(code, wiederholt) {
+    eingabe('tastatur');
     const o = oben();
     if (!o) return false;
     if (warten) {
@@ -210,6 +214,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
   function gamepad(dt, pad) {
     const o = oben();
     if (!o || !pad.da) return;
+    if (pad.irgendeinNeu || Math.abs(pad.achseX) > M.stickSchwelle || Math.abs(pad.achseY) > M.stickSchwelle) eingabe('gamepad');
     const G = M.gamepad;
     if (warten) { if (pad.neu[G.abbrechen]) { warten = null; schmutzig = true; klang('zurueck'); } return; }
     if (o.seite.zeichne) { if (pad.irgendeinNeu && o.seite.taste) { o.seite.taste(); klang('bestaetigen'); } return; }
@@ -477,6 +482,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     get seite() { const o = oben(); return o ? o.seite : null; },
     get wahl() { const o = oben(); return o ? o.wahl : -1; },
     get wartet() { return !!warten; },
+    get letzteEingabe() { return letzteEingabe; }, // M8e: 'tastatur' oder 'gamepad'
     // für Tests (M5a.1): wie weit ist die Seite gerollt, wie weit kann sie rollen, Masse der Tafel (Pixel)
     get rollen() { const o = oben(); return o ? { scroll: o.scroll, max: o.maxScroll, ...o.masse } : null; },
     get stapel() { return stapel; },

@@ -42,3 +42,37 @@ export function baueTonFahrt(Getriebe) {
     },
   };
 }
+
+// M8e: Aufheulen in der Garage (beim Bestätigen eines Autos): das Auto steht, der Motor dreht kurz hoch, hält, fällt.
+// Gleicher Aufbau wie die Fahrt oben (Zahlen für den Ton, Schritt für Schritt); der Ladedruck kommt aus dem echten
+// Turbo-Modell des Getriebes (turboSchritt) des gewählten Fahrprofils, Lader und Pops macht der Ton selbst.
+// A: { dauer (s), spitze (Anteil des Drehzahlbereichs), halten (s), rauf (s bis zur Spitze) } (config.js, garage.aufheulen)
+// leerlauf / hoechst: Drehzahlbereich (getriebe.leerlauf, audio.motor.hoechstDrehzahl), mitTurbo: Fahrprofil mit Turbo,
+// von: Drehzahl am Anfang (ein neues Aufheulen, während das alte noch läuft: dort weiter, kein Sprung)
+export function baueAufheulen(Getriebe, A, leerlauf, hoechst, mitTurbo, von = leerlauf) {
+  const g = new Getriebe();
+  const z = { t: 0, phase: 'leerlauf', gas: 0, drehzahl: von, gang: 0, zielGang: 0, schaltet: false, tempo: 0, ladedruck: 0, fertig: false };
+  const spitze = leerlauf + A.spitze * (hoechst - leerlauf);
+  const an = 0.1, aus = an + A.rauf + A.halten; // Gas von "an" bis "aus" Sekunden
+  let rest = 0;
+  return {
+    zustand: z,
+    schritt(dt) {
+      rest += dt;
+      while (rest >= TON_FAHRT.schritt) {
+        const h = TON_FAHRT.schritt;
+        rest -= h;
+        z.t += h;
+        z.phase = z.t < an ? 'leerlauf' : z.t < an + A.rauf ? 'rauf' : z.t < aus ? 'halten' : 'fallen';
+        z.gas = z.t >= an && z.t < aus ? 1 : 0;
+        // Drehzahl: mit Gas schnell zur Spitze (in ca. "rauf" Sekunden), ohne Gas langsamer zurück in den Leerlauf
+        const ziel = z.gas ? spitze : leerlauf, k = z.gas ? 3 / A.rauf : 4;
+        z.drehzahl += (ziel - z.drehzahl) * (1 - Math.exp(-k * h));
+        if (mitTurbo) g.turboSchritt(h, z.gas, z.drehzahl, false);
+        z.fertig = z.t >= A.dauer;
+      }
+      z.ladedruck = mitTurbo ? g.ladedruck : 0;
+      return z;
+    },
+  };
+}
