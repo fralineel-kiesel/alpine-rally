@@ -556,11 +556,13 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
   const radMat = new THREE.MeshLambertMaterial({ map: radTex, flatShading: true });
   radShader(radMat, U);
   const radGeo = radGeometrie(r);
+  // M8e: breitere Hinterräder (raeder.breiteHinten, xHinten; fehlen = wie vorne): eigene Geometrie, gleiches Material
+  const radGeoHinten = r.breiteHinten && r.breiteHinten !== r.breite ? radGeometrie({ ...r, breite: r.breiteHinten }) : radGeo;
   const raeder = [];
   for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
     const lenk = new THREE.Group();
-    lenk.position.set(sx * r.x, r.radius, sz * r.z);
-    const dreh = new THREE.Mesh(radGeo, radMat);
+    lenk.position.set(sx * (sz < 0 ? r.xHinten ?? r.x : r.x), r.radius, sz * r.z);
+    const dreh = new THREE.Mesh(sz < 0 ? radGeoHinten : radGeo, radMat);
     dreh.name = 'auto-rad';
     if (sx < 0) dreh.scale.x = -1; // rechte Räder: gespiegelt (Aussenseite nach rechts)
     lenk.add(dreh);

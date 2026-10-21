@@ -14,8 +14,10 @@ const begrenze = (w, a, b) => Math.max(a, Math.min(b, w));
 // M8c: Anpassung je Auto (Fahrprofil-Id): gasImDrift = [ab, bis] Grad Schwimmwinkel: darüber nimmt der Fahrer das Gas
 // zurück (ab: noch voll, bis: ganz weg), wie ein Mensch, wenn das Heck kommt. Nur für den Fard Escorta (Hinterradantrieb:
 // sonst dreht er sich beim Herausbeschleunigen); alle anderen Autos fahren genau wie bisher.
+// M8e: der Lanza 073 (auch Hinterrad, Heck kommt schnell) bekommt dieselbe Anpassung.
 export const ANPASSUNG = {
   escorta: { gasImDrift: [3, 9] },
+  l073: { gasImDrift: [3, 9] },
 };
 
 // Fahrprofile: Querbeschleunigung (m/s²) in Kurven und Bremsverzögerung (m/s²)

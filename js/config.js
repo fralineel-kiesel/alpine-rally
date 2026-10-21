@@ -800,6 +800,42 @@ export const CONFIG = {
         },
       },
     },
+    // Lanza 073 (Id l073, M8e): Mittelmotor mit Hinterradantrieb und Kompressor, das schnellste und zickigste Auto. Der
+    // Motor sitzt über den Antriebsrädern (bessere Traktion als der Escorta), das Auto dreht sehr willig ein, das Heck
+    // kommt schnell (beim Bremsen in der Kurve, mit Gas, beim Lupfen) und will mit feinem Gas geführt werden. Der Lader
+    // schiebt sofort, ohne Turbo-Verzögerung. Messwerte und Kompromisse: STAND.md, Meilenstein 8e.
+    l073: {
+      auto: {
+        radstand: 2.42,          // kurz (Audan 2.52)
+        traegheit: 2.45,         // Drehträgheit etwas über dem Prototyp (2.3): leichter ging nicht, sonst wird der
+                                 // Handbremsen-Drift zu wild (2.25 = +56 %); die Leichtigkeit steckt im Schub
+        schwerpunktVorne: 0.525, // Schwerpunkt weit hinten (Mittelmotor): dreht sehr willig ein (Lenkwinkel -20 %).
+                                 // Achtung, scharf: 0.53 lässt das Heck unter Vollgas in der Kurve deutlich mehr kommen
+        lastVorneAnteil: 0.49,   // leicht hecklastig (Prototyp 0.5)
+        gripVorne: 1.113,        // breite Reifen, leichte Front: vorne mehr Haftung (Prototyp 1.0) ...
+        gripHinten: 1.0,         // ... hinten weniger als der Prototyp (1.12): das Heck kommt schnell.
+                                 // Achtung, scharf: 0.97 = Heck unter Vollgas in der Kurve +3.5° statt +2.5°
+        gewichtstransfer: 0.8,   // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt deutlich (+8.5°). Mehr (1.2)
+                                 // liess den Testfahrer beim Bremsen mit 130 km/h quer kommen
+        stabilitaet: 4.5,        // das Heck ist schwerer einzufangen als beim Escorta (eingefangen nach ca. 1.3 s)
+        gasImDrift: 0.15,        // Gas im Drift lockert das Heck (Prototyp 0.12)
+        antriebHinten: 1.2,      // Hinterradantrieb: Schub braucht hinten Haftung auf (Vollgas in der Kurve +2.5°).
+                                 // Gemessen: unter 1.05 deutlich weniger (1.0 = +1.8°), von 1.05 bis 2.4 fast gleich
+                                 // (kein Kippen). Aber: es wirkt auch beim Tempo-Halten in der Kurve, das Heck beim
+                                 // Bremsen in der Kurve springt (1.15 = +7.3°, 1.25 = +13°). Kleine Schritte!
+        heckJeBelag: { schotter: 1.36, wiesenweg: 1.4 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
+                                 // losem Boden aus (sonst Kreis Schotter -5 %); unter Gas bleibt das Heck locker
+      },
+      getriebe: {
+        allrad: { schotter: 1.0, wiesenweg: 0.95, bankett: 0.85, gras: 0.995 }, // Hinterrad, aber der Motor drückt auf
+                                 // die Antriebsräder (besser als der Escorta 0.95 / 0.9); Bankett und Gras weniger, damit
+                                 // es dort trotz viel Schub keinen Vorteil gibt (Abkürzungen)
+        zugkraftFaktor: 1.15,    // leicht und kräftig: das schnellste Auto aus dem Stand (0-100 km/h -10 %)
+        gaenge: [46, 78, 108, 136, 164], // kurze Gänge: Höchsttempo ca. 4 % tiefer
+        turbo: { an: false },    // Lader (Kompressor) statt Turbo: Schub sofort, kein Aufbau
+      },
+      ton: { turboMal: 0, knallMal: 1, motor: {} }, // kein Turbo-Pfeifen, kein Blow-off; Klang: Teil D (Lader)
+    },
   },
 
   // --- Untergrund -------------------------------------------------------
@@ -2026,6 +2062,28 @@ export const CONFIG = {
         lappen: '#2e5a24', nummerFeld: '#f4f4ee', nummerRand: '#2e5a24', nummerSchrift: '#2e5a24',
         sponsor0: '#2e5a24', sponsor1: '#f4f4ee', sponsorHell: '#f4f4ee', banner: '#2e5a24', bannerSchrift: '#f4f4ee',
         sponsorFeld: null, sponsorFeldSchrift: '#2e5a24', haube: null, dach: '#f1f1ec',
+      },
+      // --- Lanza 073 (M8e) --- (streifen0: breiter Schrägstreifen und Haubenstreifen, streifen1: schmaler Streifen davor)
+      // Werk: Weiss mit grün-gelbem Schrägstreifen, grüne Akzente
+      l073Werk: {
+        lack: '#f1f1ec', unten: '#1e3a26', streifen0: '#2e9a46', streifen1: '#f2d22e', akzent: '#2e9a46', fluegel: '#2e9a46',
+        lappen: '#2e9a46', nummerFeld: '#f4f4ee', nummerRand: '#1e3a26', nummerSchrift: '#1c1c1e',
+        sponsor0: '#2e9a46', sponsor1: '#1c1c1e', sponsorHell: '#f4f4ee', banner: '#2e9a46', bannerSchrift: '#f2d22e',
+        sponsorFeld: null, sponsorFeldSchrift: '#2e9a46',
+      },
+      // Nacht: Schwarz mit orangem Streifen
+      l073Nacht: {
+        lack: '#1d1e22', unten: '#111214', streifen0: '#ff7a1a', streifen1: null, akzent: '#ff7a1a', fluegel: '#ff7a1a',
+        lappen: '#ff7a1a', nummerFeld: '#f4f4ee', nummerRand: '#ff7a1a', nummerSchrift: '#1c1c1e',
+        sponsor0: '#ff7a1a', sponsor1: '#f4f4ee', sponsorHell: '#ff7a1a', banner: '#ff7a1a', bannerSchrift: '#1d1e22',
+        sponsorFeld: null, sponsorFeldSchrift: '#ff7a1a',
+      },
+      // Eis: Weiss mit hellblauem Schrägstreifen und dunkelblauem Unterteil (kühl)
+      l073Eis: {
+        lack: '#f4f7f8', unten: '#2a4a66', streifen0: '#8fd0f0', streifen1: '#2a4a66', akzent: '#8fd0f0', fluegel: '#f4f7f8',
+        lappen: '#2a4a66', nummerFeld: '#8fd0f0', nummerRand: '#2a4a66', nummerSchrift: '#2a4a66',
+        sponsor0: '#2a4a66', sponsor1: '#2a4a66', sponsorHell: '#8fd0f0', banner: '#2a4a66', bannerSchrift: '#8fd0f0',
+        sponsorFeld: null, sponsorFeldSchrift: '#2a4a66',
       },
     },
     // Feste Autofarben (für alle Lackierungen gleich)
