@@ -460,7 +460,7 @@ export const AUTO_MODELLE = {
     textur: { breite: 512, hoehe: 128, seite: 32, oben: 32, vorne: 48, hinten: 48, fluegel: 32, hoeheBis: 1.28, fluegelZ: [-1.8, -2.02] },
     schatten: { breite: 1.95, laenge: 4.0 },
     innenFlaechen: { zBis: 1.88, yBis: 0.86, farbe: 'radhaus' },
-    werte: { beschleunigung: 9, tempo: 4, grip: 6, drift: 10 }, // (Drift gerechnet 13, auf 10 begrenzt)
+    werte: { beschleunigung: 9, tempo: 4, grip: 6, drift: 10 }, // (Drift gerechnet 14.5, auf 10 begrenzt)
 
     teile: [
       // --- Unterbau: flache Keilnase, Gürtellinie tief bei der Kabine, dahinter der hohe Motordeckel ---

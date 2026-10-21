@@ -94,7 +94,9 @@ if (teil('b')) {
   const FP = await import(new URL('../js/fahrprofil.js', import.meta.url).href);
   const ref = JSON.parse(fs.readFileSync(path.join(WURZEL, 'tools/m8d-referenz-audan.json'), 'utf8')).audioMotor08c;
   const ergebnis = {};
-  for (const id of ['rt4', 'prototyp', 'delto', 'escorta', 'rt4']) { FP.waehleFahrprofil(id); ergebnis[id] = JSON.stringify(CONFIG.audio.motor) === JSON.stringify(ref); }
+  // seit 0.8e: lader und unrund sind neu; sie müssen aus sein (lader.an false, unrund 0), der Rest gleich wie 0.8c
+  const ohneM8e = (m) => { const { lader, unrund, ...rest } = m; return (!lader || !lader.an) && !unrund ? rest : m; };
+  for (const id of ['rt4', 'prototyp', 'delto', 'escorta', 'rt4']) { FP.waehleFahrprofil(id); ergebnis[id] = JSON.stringify(ohneM8e(CONFIG.audio.motor)) === JSON.stringify(ref); }
   melde(ergebnis.rt4 && ergebnis.prototyp && !ergebnis.delto && !ergebnis.escorta, `Motorwerte Audan und Prototyp = audio.motor von 0.8c (auch nach Delto und Escorta wieder zurück): ${JSON.stringify(ergebnis)}`);
   // Ton-Messung des Audan (mit --profil rt4) gegen den Prototyp: der Motorkörper ist derselbe
   const datei = path.join(WURZEL, 'tools/ton-messung-m8d-rt4.json');
@@ -182,8 +184,10 @@ if (teil('c')) {
   const ref = ALT ? await audanAbdruck(ALT) : JSON.parse(fs.readFileSync(refDatei, 'utf8'));
   if (ALT && process.argv.includes('--referenz-schreiben')) fs.writeFileSync(refDatei, `${JSON.stringify(ref, null, 1)}\n`);
   const jetzt = await audanAbdruck();
-  const anders = Object.keys(ref).filter((k) => ref[k] !== jetzt[k]);
-  melde(anders.length === 0 && Object.keys(ref).length === Object.keys(jetzt).length, `Audan: Lack-Textur (3 Lackierungen x 3 Bildbreiten) und Geometrie gleich wie 0.8c (${Object.keys(ref).length} Prüfsummen${anders.length ? `, anders: ${anders.join(', ')}` : ''})`);
+  // (audioMotor08c in der Referenzdatei ist keine Prüfsumme, sondern für (b); seit 0.8e hier ausgenommen)
+  const pruef = Object.keys(ref).filter((k) => k !== 'audioMotor08c');
+  const anders = pruef.filter((k) => ref[k] !== jetzt[k]);
+  melde(anders.length === 0 && pruef.length === Object.keys(jetzt).length, `Audan: Lack-Textur (3 Lackierungen x 3 Bildbreiten) und Geometrie gleich wie 0.8c (${pruef.length} Prüfsummen${anders.length ? `, anders: ${anders.join(', ')}` : ''})`);
   melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
   await s.schliessen();
 }
@@ -617,9 +621,10 @@ if (teil('g')) {
     `WERTE KOPIEREN nennt das Profil in jeder Zeile: ${zeilen.join(' | ')}`);
   melde(r.nachZurueck.delto !== 0.45 && r.textNach === 'fahrprofile.escorta.ton.motor.filterGas = 3000' && r.escortaBleibt === 3000,
     `ALLES ZURÜCK nur für das gewählte Profil (Delto zurück auf rauh ${r.nachZurueck.delto}; Escorta bleibt filterGas ${r.escortaBleibt}: "${r.textNach}")`);
-  melde(r.vergleich.gehoert.join() === 'rt4,delto,escorta' && ['AUDAN QUARTO', 'LANZA DELTO', 'FARD ESCORTA'].every((n) => r.vergleich.namen.includes(n)) && r.vergleich.pops > 0,
+  // seit 0.8e spielt VERGLEICH auch die neuen Autos: die drei alten müssen vorne stehen
+  melde(r.vergleich.gehoert.slice(0, 3).join() === 'rt4,delto,escorta' && ['AUDAN QUARTO', 'LANZA DELTO', 'FARD ESCORTA'].every((n) => r.vergleich.namen.includes(n)) && r.vergleich.pops > 0,
     `VERGLEICH spielt Audan, Delto, Escorta nacheinander (${r.vergleich.gehoert.join(', ')}; angezeigt: ${r.vergleich.namen.join(' / ')}; ${r.vergleich.dauer.toFixed(1)} s, ${r.vergleich.pops} Pops)`);
-  melde(r.einzeln.length === 3 && r.einzeln.every(([id, , g]) => g === id), `Einzelknöpfe: ${r.einzeln.map(([, t, g]) => `${t} -> ${g}`).join(', ')}`);
+  melde(r.einzeln.length >= 3 && r.einzeln.every(([id, , g]) => g === id), `Einzelknöpfe: ${r.einzeln.map(([, t, g]) => `${t} -> ${g}`).join(', ')}`);
   melde(s.fehler.length === 0, `Ton-Labor ohne Konsolenfehler (${s.fehler.length})`);
   await s.page.screenshot({ path: path.join(WURZEL, 'screenshots/m8d/50-ton-labor.png'), fullPage: false });
   await s.schliessen();

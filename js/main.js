@@ -1243,6 +1243,7 @@ window.__alpineRally = {
   rennSchritt, lauf, stat, statResets, neuStarten,
   hud, vergleich, referenzLaden, hudSchalter, hudUmschalten, minimapMs, // M6
   ton, tonZ, tonInfo, tonEingabe, zumMenue, tonBild, paceSignal, // M7a
+  aufheulenStarten, get aufheulen() { return aufheulen; }, // M8e: Aufheulen in der Garage
   get tonQuellen() { return tonQuellen(); }, kam, // M7b
   get blenden() { return { sicht, dunkel }; },
   get autoModell() { return auto; }, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a (M8c: Modell wechselt)

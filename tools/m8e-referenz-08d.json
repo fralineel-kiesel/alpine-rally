@@ -1,0 +1,830 @@
+{
+ "physik": {
+  "prototyp": {
+   "beschl100_asphalt": 5.133333333333378,
+   "beschl100_schotter": 5.775000000000077,
+   "beschl100_wiesenweg": 8.283333333333504,
+   "beschl100_bankett": 6.150000000000095,
+   "beschl60_gras": 10.100000000000067,
+   "beschl60_asphalt": 2.6583333333333266,
+   "beschl60_schotter": 3.0083333333333253,
+   "bremsweg100_asphalt": 35.75241244888199,
+   "hoechst_asphalt": 188.079222526498,
+   "kreis25_asphalt": 54.378808593749994,
+   "kreis25_schotter": 49.300048828125,
+   "kreis25_wiesenweg": 40.913525390625,
+   "lenk80_r60": {
+    "grad": 3.540983315241466,
+    "kinematisch": 2.4050092587054004,
+    "versatz": 0.35230680879458276,
+    "schwimm": 3.307221216476918
+   },
+   "heck90_r80": {
+    "vorher": 3.374501574716248,
+    "nach05": 3.118414118468859,
+    "zusatz": -0.2560874562473887,
+    "max": 3.444966811731651,
+    "einfangen": 1.127986593019159e-13,
+    "dreher": false
+   },
+   "heck90_r80_voll": {
+    "vorher": 3.374501574716248,
+    "nach05": 2.930096061356534,
+    "zusatz": -0.444405513359714,
+    "max": 3.479479963274319,
+    "einfangen": 1.127986593019159e-13,
+    "dreher": false
+   },
+   "gas_r80": {
+    "max": 3.929926508847589,
+    "tempoEnde": 100.74877656009701,
+    "versatzEnde": 1.0594752145128723
+   },
+   "gas_r80_schotter": {
+    "max": 3.3335095669145627,
+    "tempoEnde": 93.15455644187392,
+    "versatzEnde": 0.5640412689942451
+   },
+   "hb_asphalt": {
+    "nach05": 6.705581909463974,
+    "max": 17.17586405076352,
+    "gerade": 0.6249999999999981
+   },
+   "hb_schotter": {
+    "nach05": 6.08987563781765,
+    "max": 17.058493467584942,
+    "gerade": 0.8333333333333307
+   },
+   "rueck_asphalt": {
+    "max": 32.4,
+    "t95": 3.3333333333333335,
+    "nach1s": 9.350664289592048
+   },
+   "rueck_gras": {
+    "max": 21.599999999999998,
+    "t95": 1.5416666666666667,
+    "nach1s": 13.79237253521174
+   }
+  },
+  "rt4": {
+   "beschl100_asphalt": 5.025000000000039,
+   "beschl100_schotter": 5.450000000000061,
+   "beschl100_wiesenweg": 7.225000000000149,
+   "beschl100_bankett": 6.025000000000089,
+   "beschl60_gras": 10.100000000000067,
+   "beschl60_asphalt": 2.61666666666666,
+   "beschl60_schotter": 2.774999999999993,
+   "bremsweg100_asphalt": 35.75241244888199,
+   "hoechst_asphalt": 189.8231192837363,
+   "kreis25_asphalt": 55.732763671875,
+   "kreis25_schotter": 51.91083984375,
+   "kreis25_wiesenweg": 46.043701171875,
+   "lenk80_r60": {
+    "grad": 4.138890809740569,
+    "kinematisch": 2.4050092587054004,
+    "versatz": 0.5929162828772042,
+    "schwimm": 2.940526682721101
+   },
+   "heck90_r80": {
+    "vorher": 3.0358280155874473,
+    "nach05": 6.628325035365144,
+    "zusatz": 3.5924970197776966,
+    "max": 9.539027527834019,
+    "einfangen": 0.5666666666668077,
+    "dreher": false
+   },
+   "heck90_r80_voll": {
+    "vorher": 3.0358280155874473,
+    "nach05": 8.311631445372162,
+    "zusatz": 5.275803429784715,
+    "max": 10.873711751020497,
+    "einfangen": 0.7416666666668164,
+    "dreher": false
+   },
+   "gas_r80": {
+    "max": 2.765240009243189,
+    "tempoEnde": 101.75851875397954,
+    "versatzEnde": 2.9329697646190453
+   },
+   "gas_r80_schotter": {
+    "max": 3.288381547456077,
+    "tempoEnde": 93.85150702548715,
+    "versatzEnde": 1.9905887956380894
+   },
+   "hb_asphalt": {
+    "nach05": 6.260401573588249,
+    "max": 21.448297273834672,
+    "gerade": 0.8249999999999974
+   },
+   "hb_schotter": {
+    "nach05": 5.995827053329442,
+    "max": 23.213906788399573,
+    "gerade": 1.2833333333333292
+   },
+   "rueck_asphalt": {
+    "max": 32.4,
+    "t95": 3.3333333333333335,
+    "nach1s": 9.350664289592048
+   },
+   "rueck_gras": {
+    "max": 21.599999999999998,
+    "t95": 1.5416666666666667,
+    "nach1s": 13.79237253521174
+   }
+  },
+  "delto": {
+   "beschl100_asphalt": 4.908333333333367,
+   "beschl100_schotter": 5.366666666666723,
+   "beschl100_wiesenweg": 7.416666666666825,
+   "beschl100_bankett": 6.258333333333434,
+   "beschl60_gras": 10.100000000000067,
+   "beschl60_asphalt": 2.5499999999999936,
+   "beschl60_schotter": 2.749999999999993,
+   "bremsweg100_asphalt": 35.63450819997484,
+   "hoechst_asphalt": 177.89776242541015,
+   "kreis25_asphalt": 55.435693359374994,
+   "kreis25_schotter": 51.562353515625,
+   "kreis25_wiesenweg": 45.780908203125,
+   "lenk80_r60": {
+    "grad": 3.803035061723331,
+    "kinematisch": 2.366878273393092,
+    "versatz": 0.48530550174529535,
+    "schwimm": 3.1913684711802612
+   },
+   "heck90_r80": {
+    "vorher": 3.246609917707874,
+    "nach05": 6.419534594187521,
+    "zusatz": 3.172924676479647,
+    "max": 7.845135107147175,
+    "einfangen": 0.37500000000013145,
+    "dreher": false
+   },
+   "heck90_r80_voll": {
+    "vorher": 3.246609917707874,
+    "nach05": 8.833002755269801,
+    "zusatz": 5.586392837561927,
+    "max": 10.48242931784577,
+    "einfangen": 0.5750000000001414,
+    "dreher": false
+   },
+   "gas_r80": {
+    "max": 3.146100434152337,
+    "tempoEnde": 102.5712978913708,
+    "versatzEnde": 2.721601489454372
+   },
+   "gas_r80_schotter": {
+    "max": 3.426640474207855,
+    "tempoEnde": 95.14026390577429,
+    "versatzEnde": 1.5112237391225847
+   },
+   "hb_asphalt": {
+    "nach05": 8.029094701114794,
+    "max": 24.290603617612536,
+    "gerade": 0.841666666666664
+   },
+   "hb_schotter": {
+    "nach05": 7.64730373644099,
+    "max": 28.969669423562888,
+    "gerade": 1.3249999999999957
+   },
+   "rueck_asphalt": {
+    "max": 32.4,
+    "t95": 3.3333333333333335,
+    "nach1s": 9.350664289592048
+   },
+   "rueck_gras": {
+    "max": 21.599999999999998,
+    "t95": 1.5416666666666667,
+    "nach1s": 13.79237253521174
+   }
+  },
+  "escorta": {
+   "beschl100_asphalt": 5.558333333333399,
+   "beschl100_schotter": 6.233333333333433,
+   "beschl100_wiesenweg": 9.608333333333428,
+   "beschl100_bankett": 6.71666666666679,
+   "beschl60_gras": 10.100000000000067,
+   "beschl60_asphalt": 2.8749999999999925,
+   "beschl60_schotter": 3.191666666666658,
+   "bremsweg100_asphalt": 35.61930165637565,
+   "hoechst_asphalt": 172.4182168575972,
+   "kreis25_asphalt": 54.58447265625,
+   "kreis25_schotter": 49.265771484374994,
+   "kreis25_wiesenweg": 41.119189453124996,
+   "lenk80_r60": {
+    "grad": 3.1322421568391774,
+    "kinematisch": 2.2906100426385296,
+    "versatz": 0.23104205454603285,
+    "schwimm": 3.703615165068853
+   },
+   "heck90_r80": {
+    "vorher": 3.473399470907269,
+    "nach05": 9.75863218532279,
+    "zusatz": 6.285232714415521,
+    "max": 15.62634564462944,
+    "einfangen": 1.050000000000165,
+    "dreher": false
+   },
+   "heck90_r80_voll": {
+    "vorher": 3.473399470907269,
+    "nach05": 11.057813615897246,
+    "zusatz": 7.584414144989976,
+    "max": 20.30750449928675,
+    "einfangen": 1.116666666666835,
+    "dreher": false
+   },
+   "gas_r80": {
+    "max": 6.352864620977007,
+    "tempoEnde": 95.97618952379129,
+    "versatzEnde": 0.6280280849893529
+   },
+   "gas_r80_schotter": {
+    "max": 28.573644219724617,
+    "tempoEnde": 83.60853965493091,
+    "versatzEnde": 0.672913872382793
+   },
+   "hb_asphalt": {
+    "nach05": 8.466271734496994,
+    "max": 35.397631348723436,
+    "gerade": 1.2083333333333295
+   },
+   "hb_schotter": {
+    "nach05": 7.769188557179416,
+    "max": 40.161190001047295,
+    "gerade": 1.7833333333333274
+   },
+   "rueck_asphalt": {
+    "max": 32.4,
+    "t95": 3.3333333333333335,
+    "nach1s": 9.350664289592048
+   },
+   "rueck_gras": {
+    "max": 21.599999999999998,
+    "t95": 1.5416666666666667,
+    "nach1s": 13.79237253521174
+   }
+  }
+ },
+ "motor": {
+  "prototyp": {
+   "zuendFaktor": 2.5,
+   "hoechstDrehzahl": 7200,
+   "hoechstTon": 480,
+   "tonKurve": 1.3,
+   "pegel": 0.36,
+   "saege": 0.5,
+   "puls": 0.45,
+   "pulsBreite": 0.16,
+   "unter": 0.16,
+   "oberwelle": 0.12,
+   "schwebung": 3.5,
+   "hoch": 0.4,
+   "hochAb": 0.2,
+   "hochSchub": 0.55,
+   "amTiefe": 0.4,
+   "amTiefeLeerlauf": 0.42,
+   "leerlaufZittern": 0.01,
+   "rauh": 0.3,
+   "rauhOberwelle": 6,
+   "rauhGuete": 3,
+   "rauhPuls": 0.85,
+   "verzerrung": 6,
+   "clip": 0.8,
+   "filterGrund": 450,
+   "filterDrehzahl": 0.6,
+   "filterGas": 4500,
+   "filterQ": 1.6,
+   "bissHz": 2200,
+   "bissDb": 5,
+   "bissGuete": 1.1,
+   "lastPegel": 1,
+   "schubPegel": 0.42,
+   "leerlaufPegel": 0.55,
+   "drehzahlPegel": 0.35,
+   "turboAb": 3000,
+   "turboVoll": 5500,
+   "turboRauf": 0.4,
+   "turboRunter": 0.6,
+   "turboTonMin": 2200,
+   "turboTonMax": 5200,
+   "turboPegel": 0.035,
+   "turboEchtGlaetten": 0.03,
+   "turboPegelMal": 1.35,
+   "blowOffAb": 0.5,
+   "blowOffGasFall": 0.5,
+   "blowOffZeit": 0.12,
+   "blowOffDauer": 0.3,
+   "blowOffTon": 2600,
+   "blowOffPegel": 0.16,
+   "knallAb": 3500,
+   "knallChance": 0.7,
+   "popAnzahl": [
+    1,
+    4
+   ],
+   "popAbstand": [
+    0.04,
+    0.14
+   ],
+   "knallFenster": [
+    0.04,
+    0.22
+   ],
+   "popPegel": 1.2,
+   "popStaerke": [
+    0.7,
+    1
+   ],
+   "popTempo": [
+    0.8,
+    1.25
+   ],
+   "knallSperre": 1,
+   "turboKnallPlus": 0.15,
+   "knisternChance": 0.5,
+   "knisternAnzahl": [
+    1,
+    3
+   ],
+   "knisternFenster": 0.8,
+   "knisternPegel": 0.16,
+   "pop": {
+    "laenge": 0.03,
+    "mitte": 2400,
+    "guete": 1.3,
+    "abklingen": 0.0055,
+    "tief": [
+     170,
+     85,
+     0.006,
+     0.35
+    ]
+   },
+   "schaltLastAb": 0.5,
+   "schaltOhneLast": 0.2,
+   "schaltDip": 0.2,
+   "schaltDipZeit": 0.007,
+   "schaltKnallChance": 0.7,
+   "schaltKnallPegel": 1.25,
+   "schaltBlowOff": 1.3,
+   "klackPegel": 0.3,
+   "klackLeise": 0.45,
+   "klack": {
+    "laenge": 0.045,
+    "mitte": 1300,
+    "guete": 0.9,
+    "abklingen": 0.007,
+    "tief": [
+     90,
+     80,
+     0.012,
+     0.45
+    ]
+   },
+   "zwischengasDauer": 0.15,
+   "zwischengasStaerke": 0.9,
+   "zwischengasOhneLast": true,
+   "zwischengasKnallChance": 0.35,
+   "schaltTonSperre": 0.15,
+   "begrenzerAb": 6850,
+   "begrenzerNach": 0.12,
+   "begrenzerHz": 13,
+   "begrenzerTiefe": 0.85,
+   "heulenFaktor": 5.5,
+   "heulenOberwelle": 0.3,
+   "heulenFilter": 1200,
+   "heulenPegel": 0.06
+  },
+  "rt4": {
+   "zuendFaktor": 2.5,
+   "hoechstDrehzahl": 7200,
+   "hoechstTon": 480,
+   "tonKurve": 1.3,
+   "pegel": 0.36,
+   "saege": 0.5,
+   "puls": 0.45,
+   "pulsBreite": 0.16,
+   "unter": 0.16,
+   "oberwelle": 0.12,
+   "schwebung": 3.5,
+   "hoch": 0.4,
+   "hochAb": 0.2,
+   "hochSchub": 0.55,
+   "amTiefe": 0.4,
+   "amTiefeLeerlauf": 0.42,
+   "leerlaufZittern": 0.01,
+   "rauh": 0.3,
+   "rauhOberwelle": 6,
+   "rauhGuete": 3,
+   "rauhPuls": 0.85,
+   "verzerrung": 6,
+   "clip": 0.8,
+   "filterGrund": 450,
+   "filterDrehzahl": 0.6,
+   "filterGas": 4500,
+   "filterQ": 1.6,
+   "bissHz": 2200,
+   "bissDb": 5,
+   "bissGuete": 1.1,
+   "lastPegel": 1,
+   "schubPegel": 0.42,
+   "leerlaufPegel": 0.55,
+   "drehzahlPegel": 0.35,
+   "turboAb": 3000,
+   "turboVoll": 5500,
+   "turboRauf": 0.4,
+   "turboRunter": 0.6,
+   "turboTonMin": 2200,
+   "turboTonMax": 5200,
+   "turboPegel": 0.035,
+   "turboEchtGlaetten": 0.03,
+   "turboPegelMal": 1.35,
+   "blowOffAb": 0.5,
+   "blowOffGasFall": 0.5,
+   "blowOffZeit": 0.12,
+   "blowOffDauer": 0.3,
+   "blowOffTon": 2600,
+   "blowOffPegel": 0.16,
+   "knallAb": 3500,
+   "knallChance": 0.7,
+   "popAnzahl": [
+    1,
+    4
+   ],
+   "popAbstand": [
+    0.04,
+    0.14
+   ],
+   "knallFenster": [
+    0.04,
+    0.22
+   ],
+   "popPegel": 1.2,
+   "popStaerke": [
+    0.7,
+    1
+   ],
+   "popTempo": [
+    0.8,
+    1.25
+   ],
+   "knallSperre": 1,
+   "turboKnallPlus": 0.15,
+   "knisternChance": 0.5,
+   "knisternAnzahl": [
+    1,
+    3
+   ],
+   "knisternFenster": 0.8,
+   "knisternPegel": 0.16,
+   "pop": {
+    "laenge": 0.03,
+    "mitte": 2400,
+    "guete": 1.3,
+    "abklingen": 0.0055,
+    "tief": [
+     170,
+     85,
+     0.006,
+     0.35
+    ]
+   },
+   "schaltLastAb": 0.5,
+   "schaltOhneLast": 0.2,
+   "schaltDip": 0.2,
+   "schaltDipZeit": 0.007,
+   "schaltKnallChance": 0.7,
+   "schaltKnallPegel": 1.25,
+   "schaltBlowOff": 1.3,
+   "klackPegel": 0.3,
+   "klackLeise": 0.45,
+   "klack": {
+    "laenge": 0.045,
+    "mitte": 1300,
+    "guete": 0.9,
+    "abklingen": 0.007,
+    "tief": [
+     90,
+     80,
+     0.012,
+     0.45
+    ]
+   },
+   "zwischengasDauer": 0.15,
+   "zwischengasStaerke": 0.9,
+   "zwischengasOhneLast": true,
+   "zwischengasKnallChance": 0.35,
+   "schaltTonSperre": 0.15,
+   "begrenzerAb": 6850,
+   "begrenzerNach": 0.12,
+   "begrenzerHz": 13,
+   "begrenzerTiefe": 0.85,
+   "heulenFaktor": 5.5,
+   "heulenOberwelle": 0.3,
+   "heulenFilter": 1200,
+   "heulenPegel": 0.06
+  },
+  "delto": {
+   "zuendFaktor": 2,
+   "hoechstDrehzahl": 7200,
+   "hoechstTon": 540,
+   "tonKurve": 1.4,
+   "pegel": 0.36,
+   "saege": 0.5,
+   "puls": 0.45,
+   "pulsBreite": 0.16,
+   "unter": 0.12,
+   "oberwelle": 0.12,
+   "schwebung": 3.5,
+   "hoch": 0.4,
+   "hochAb": 0.2,
+   "hochSchub": 0.55,
+   "amTiefe": 0.28,
+   "amTiefeLeerlauf": 0.42,
+   "leerlaufZittern": 0.01,
+   "rauh": 0.27,
+   "rauhOberwelle": 7,
+   "rauhGuete": 3,
+   "rauhPuls": 0.85,
+   "verzerrung": 6,
+   "clip": 0.8,
+   "filterGrund": 450,
+   "filterDrehzahl": 0.6,
+   "filterGas": 5000,
+   "filterQ": 1.6,
+   "bissHz": 2800,
+   "bissDb": 5,
+   "bissGuete": 1.1,
+   "lastPegel": 1,
+   "schubPegel": 0.42,
+   "leerlaufPegel": 0.55,
+   "drehzahlPegel": 0.35,
+   "turboAb": 3000,
+   "turboVoll": 5500,
+   "turboRauf": 0.4,
+   "turboRunter": 0.6,
+   "turboTonMin": 2530,
+   "turboTonMax": 5980,
+   "turboPegel": 0.04,
+   "turboEchtGlaetten": 0.03,
+   "turboPegelMal": 1.35,
+   "blowOffAb": 0.5,
+   "blowOffGasFall": 0.5,
+   "blowOffZeit": 0.12,
+   "blowOffDauer": 0.3,
+   "blowOffTon": 2600,
+   "blowOffPegel": 0.16,
+   "knallAb": 3500,
+   "knallChance": 0.7,
+   "popAnzahl": [
+    1,
+    4
+   ],
+   "popAbstand": [
+    0.04,
+    0.14
+   ],
+   "knallFenster": [
+    0.04,
+    0.22
+   ],
+   "popPegel": 1.2,
+   "popStaerke": [
+    0.7,
+    1
+   ],
+   "popTempo": [
+    0.8,
+    1.25
+   ],
+   "knallSperre": 1,
+   "turboKnallPlus": 0.15,
+   "knisternChance": 0.5,
+   "knisternAnzahl": [
+    1,
+    3
+   ],
+   "knisternFenster": 0.8,
+   "knisternPegel": 0.16,
+   "pop": {
+    "laenge": 0.03,
+    "mitte": 3000,
+    "guete": 1.3,
+    "abklingen": 0.0055,
+    "tief": [
+     170,
+     85,
+     0.006,
+     0.35
+    ]
+   },
+   "schaltLastAb": 0.5,
+   "schaltOhneLast": 0.2,
+   "schaltDip": 0.2,
+   "schaltDipZeit": 0.007,
+   "schaltKnallChance": 0.7,
+   "schaltKnallPegel": 1.25,
+   "schaltBlowOff": 1.3,
+   "klackPegel": 0.3,
+   "klackLeise": 0.45,
+   "klack": {
+    "laenge": 0.045,
+    "mitte": 1300,
+    "guete": 0.9,
+    "abklingen": 0.007,
+    "tief": [
+     90,
+     80,
+     0.012,
+     0.45
+    ]
+   },
+   "zwischengasDauer": 0.15,
+   "zwischengasStaerke": 0.9,
+   "zwischengasOhneLast": true,
+   "zwischengasKnallChance": 0.35,
+   "schaltTonSperre": 0.15,
+   "begrenzerAb": 6850,
+   "begrenzerNach": 0.12,
+   "begrenzerHz": 13,
+   "begrenzerTiefe": 0.85,
+   "heulenFaktor": 5.5,
+   "heulenOberwelle": 0.3,
+   "heulenFilter": 1200,
+   "heulenPegel": 0.06
+  },
+  "escorta": {
+   "zuendFaktor": 2,
+   "hoechstDrehzahl": 7200,
+   "hoechstTon": 440,
+   "tonKurve": 1.2,
+   "pegel": 0.44,
+   "saege": 0.52,
+   "puls": 0.32,
+   "pulsBreite": 0.16,
+   "unter": 0.16,
+   "oberwelle": 0.12,
+   "schwebung": 3.5,
+   "hoch": 0.4,
+   "hochAb": 0.2,
+   "hochSchub": 0.55,
+   "amTiefe": 0.4,
+   "amTiefeLeerlauf": 0.42,
+   "leerlaufZittern": 0.01,
+   "rauh": 0.54,
+   "rauhOberwelle": 4,
+   "rauhGuete": 2.2,
+   "rauhPuls": 0.85,
+   "verzerrung": 3.5,
+   "clip": 0.8,
+   "filterGrund": 450,
+   "filterDrehzahl": 0.6,
+   "filterGas": 2400,
+   "filterQ": 1.6,
+   "bissHz": 2200,
+   "bissDb": 1,
+   "bissGuete": 1.1,
+   "lastPegel": 1,
+   "schubPegel": 0.42,
+   "leerlaufPegel": 0.55,
+   "drehzahlPegel": 0.35,
+   "turboAb": 3000,
+   "turboVoll": 5500,
+   "turboRauf": 0.4,
+   "turboRunter": 0.6,
+   "turboTonMin": 2200,
+   "turboTonMax": 5200,
+   "turboPegel": 0.035,
+   "turboEchtGlaetten": 0.03,
+   "turboPegelMal": 1.35,
+   "blowOffAb": 0.5,
+   "blowOffGasFall": 0.5,
+   "blowOffZeit": 0.12,
+   "blowOffDauer": 0.3,
+   "blowOffTon": 2600,
+   "blowOffPegel": 0.16,
+   "knallAb": 3500,
+   "knallChance": 0.7,
+   "popAnzahl": [
+    1,
+    4
+   ],
+   "popAbstand": [
+    0.04,
+    0.14
+   ],
+   "knallFenster": [
+    0.04,
+    0.22
+   ],
+   "popPegel": 1.2,
+   "popStaerke": [
+    0.7,
+    1
+   ],
+   "popTempo": [
+    0.8,
+    1.25
+   ],
+   "knallSperre": 1,
+   "turboKnallPlus": 0.15,
+   "knisternChance": 0.8,
+   "knisternAnzahl": [
+    2,
+    4
+   ],
+   "knisternFenster": 0.8,
+   "knisternPegel": 0.16,
+   "pop": {
+    "laenge": 0.03,
+    "mitte": 2400,
+    "guete": 1.3,
+    "abklingen": 0.0055,
+    "tief": [
+     170,
+     85,
+     0.006,
+     0.35
+    ]
+   },
+   "schaltLastAb": 0.5,
+   "schaltOhneLast": 0.2,
+   "schaltDip": 0.2,
+   "schaltDipZeit": 0.007,
+   "schaltKnallChance": 0.2,
+   "schaltKnallPegel": 1.25,
+   "schaltBlowOff": 1.3,
+   "klackPegel": 0.375,
+   "klackLeise": 0.45,
+   "klack": {
+    "laenge": 0.045,
+    "mitte": 1300,
+    "guete": 0.9,
+    "abklingen": 0.007,
+    "tief": [
+     90,
+     80,
+     0.012,
+     0.45
+    ]
+   },
+   "zwischengasDauer": 0.15,
+   "zwischengasStaerke": 0.9,
+   "zwischengasOhneLast": true,
+   "zwischengasKnallChance": 0.2,
+   "schaltTonSperre": 0.15,
+   "begrenzerAb": 6850,
+   "begrenzerNach": 0.12,
+   "begrenzerHz": 13,
+   "begrenzerTiefe": 0.85,
+   "heulenFaktor": 5.5,
+   "heulenOberwelle": 0.3,
+   "heulenFilter": 1200,
+   "heulenPegel": 0.06
+  }
+ },
+ "abdruck": {
+  "rt4-textur-werk-320": "53e4e47a996b",
+  "rt4-textur-gletscher-320": "da2d0ff341b9",
+  "rt4-textur-dunkel-320": "e3ca294650b9",
+  "rt4-textur-werk-480": "01882420ae07",
+  "rt4-textur-gletscher-480": "2b7d5bdb0c75",
+  "rt4-textur-dunkel-480": "bc0616894239",
+  "rt4-textur-werk-640": "1db7122a1adc",
+  "rt4-textur-gletscher-640": "01be6f645616",
+  "rt4-textur-dunkel-640": "02647077183a",
+  "rt4-geo-auto-karosserie": "212584a3abcc",
+  "rt4-geo-auto-scheinwerfer": "231736b45d69",
+  "rt4-geo-auto-ruecklicht": "7f31fa4598be",
+  "rt4-geo-auto-rueckfahrlicht": "b4efc69ec128",
+  "rt4-raeder": "6c019d830667",
+  "delto-textur-deltoWerk-320": "399ca0fefbaf",
+  "delto-textur-rosso-320": "6331cfca49e5",
+  "delto-textur-waldgruen-320": "5445491acf93",
+  "delto-textur-deltoWerk-480": "4565d5ed8dab",
+  "delto-textur-rosso-480": "6c9e8d43c33c",
+  "delto-textur-waldgruen-480": "cbfdf2376048",
+  "delto-textur-deltoWerk-640": "4565d5ed8dab",
+  "delto-textur-rosso-640": "6c9e8d43c33c",
+  "delto-textur-waldgruen-640": "cbfdf2376048",
+  "delto-geo-auto-karosserie": "4a0fb4aedd08",
+  "delto-geo-auto-scheinwerfer": "7c78b971fd34",
+  "delto-geo-auto-ruecklicht": "31ceeb1688b0",
+  "delto-geo-auto-rueckfahrlicht": "4f6e81cdaeb9",
+  "delto-raeder": "3c6a13181d2e",
+  "escorta-textur-escortaWerk-320": "dbf65164cee4",
+  "escorta-textur-kanarie-320": "763b629db2be",
+  "escorta-textur-tannengruen-320": "8c29aa49f438",
+  "escorta-textur-escortaWerk-480": "da6b527c3539",
+  "escorta-textur-kanarie-480": "9210a3a8bfef",
+  "escorta-textur-tannengruen-480": "7d52dd393de2",
+  "escorta-textur-escortaWerk-640": "2203f12e3ce4",
+  "escorta-textur-kanarie-640": "ea079c52a2b4",
+  "escorta-textur-tannengruen-640": "f22b8472c1cf",
+  "escorta-geo-auto-karosserie": "2021ddf33825",
+  "escorta-geo-auto-scheinwerfer": "12e3674ee14a",
+  "escorta-geo-auto-ruecklicht": "f42c1cc71ec4",
+  "escorta-geo-auto-rueckfahrlicht": "7c7cc5c7c675",
+  "escorta-raeder": "af0564248a75"
+ }
+}

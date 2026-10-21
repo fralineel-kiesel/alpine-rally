@@ -19,6 +19,7 @@ import { pathToFileURL } from 'node:url';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
 import { baueMessung, alleMessungen } from './fahrmessung.js';
 import { ZEILEN, TESTFAHRER, pruefeZeile } from './m8c-ziele.js';
+import * as M8E from './m8e-ziele.js';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 const schnell = process.argv.includes('--schnell');
@@ -235,8 +236,30 @@ if (n && n.physik.delto && n.physik.escorta) {
     console.log(`(Ziele: Delto ${TESTFAHRER.delto.join(' bis ')} % und nicht schneller als der Audan, Escorta ${TESTFAHRER.escorta.join(' bis ')} %, ohne Aufprall und Hänger)`);
   }
   console.log('\n=== Werte-Balken der Garage (WERTE_VORSCHRIFT in js/autos.js) ===');
-  for (const id of ['rt4', 'delto', 'escorta']) {
+  for (const id of Object.keys(AUTO_MODELLE).filter((x) => n.physik[x])) { // (M8e: alle Autos)
     const w = werteAusMessung(P, n.physik[id]), m = AUTO_MODELLE[id].werte;
     console.log(`${AUTO_MODELLE[id].name.padEnd(13)} gemessen ${JSON.stringify(w)}  in autos.js ${JSON.stringify(m)} ${JSON.stringify(w) === JSON.stringify(m) ? '(passt)' : '(NICHT nachgetragen!)'}`);
+  }
+}
+
+// --- M8e: Tabelle Lanza 073 und Subora Imprexa gegen prototyp (Ziele aus tools/m8e-ziele.js) und Vergleich aller fünf ---
+if (n && n.physik.l073 && n.physik.imprexa) {
+  const P = n.physik.prototyp;
+  const zahl = (z, r) => { const w = z[1](r); return w == null ? '--' : Number(w).toFixed(z[5] === 'm' || z[5] === 'km/h' ? 1 : 2); };
+  const zeige = (z, x, r) => `${zahl(z, r)} ${z[5]}${x.art === 'prozent' ? ` (${x.d >= 0 ? '+' : ''}${x.d.toFixed(1)} %)` : x.art === 'diff' ? ` (${x.d >= 0 ? '+' : ''}${x.d.toFixed(1)}°)` : ''}`;
+  console.log('\n=== Tabelle M8e: prototyp / Lanza 073 / Subora Imprexa (Physik ohne Browser) ===');
+  console.log('| Messung | prototyp | Lanza 073 | Ziel Lanza 073 | Subora Imprexa | Ziel Subora |');
+  console.log('|---|---|---|---|---|---|');
+  for (const z of M8E.ZEILEN) {
+    const l = M8E.pruefeZeile(z, P, n.physik.l073, 'l073'), i = M8E.pruefeZeile(z, P, n.physik.imprexa, 'imprexa');
+    console.log(`| ${z[0]} | ${zahl(z, P)} ${z[5]} | ${zeige(z, l, n.physik.l073)} ${l.ok ? '✅' : '❌'} | ${l.ziel} | ${zeige(z, i, n.physik.imprexa)} ${i.ok ? '✅' : '❌'} | ${i.ziel} |`);
+  }
+  const alle = ['rt4', 'delto', 'escorta', 'l073', 'imprexa'].filter((id) => n.physik[id]);
+  console.log('\n=== Vergleich der fünf Autos (Unterschied zum Prototyp; Grad bei Heck/Vollgas, s bei eingefangen) ===');
+  console.log(`| Messung | ${alle.map((id) => AUTO_MODELLE[id].name).join(' | ')} |`);
+  console.log(`|---|${alle.map(() => '---').join('|')}|`);
+  for (const z of M8E.ZEILEN) {
+    const werte = alle.map((id) => { const x = M8E.pruefeZeile(z, P, n.physik[id], 'l073'); return x.art === 'gleich' ? (x.ok ? 'gleich' : 'ANDERS') : x.art === 'prozent' ? `${x.d >= 0 ? '+' : ''}${x.d.toFixed(1)} %` : `${x.d >= 0 && x.art === 'diff' ? '+' : ''}${x.d.toFixed(2)}`; });
+    console.log(`| ${z[0]} | ${werte.join(' | ')} |`);
   }
 }

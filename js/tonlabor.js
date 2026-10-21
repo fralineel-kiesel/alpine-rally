@@ -11,7 +11,7 @@
 // M8d: Motorklang je Auto. FAHRPROFIL (TON) schaltet auch den Motorklang um (Block ton.motor im Fahrprofil). Der
 // Feinschliff der Motorwerte wirkt auf das gewählte Profil (Regler zeigen den Wert dieses Autos), WERTE KOPIEREN nennt das
 // Profil in jeder Zeile (fahrprofile.delto.ton.motor.rauh = 0.45), ALLES ZURÜCK nur für das gewählte Profil.
-// Knopf VERGLEICH: dieselbe kurze Fahrt (js/tonfahrt.js) nacheinander mit Audan, Delto, Escorta; je Auto ein Knopf.
+// Knopf VERGLEICH: dieselbe kurze Fahrt (js/tonfahrt.js) nacheinander mit allen Autos (M8e: fünf); je Auto ein Knopf.
 
 import { CONFIG } from './config.js';
 import { baueTon, materialNr } from './audio.js';
@@ -200,7 +200,7 @@ const spitzen = {}, halten = {};
 
 // --- M8d: VERGLEICH – dieselbe kurze Fahrt (js/tonfahrt.js) mit jedem Auto nacheinander (oder einem Auto allein) ---
 // Vor jedem Auto 0.6 s Stille (Motor aus): dort wird der Motorklang umgeschaltet (wie im Spiel nur bei stillem Motor)
-const VERGLEICH_AUTOS = ['rt4', 'delto', 'escorta'];
+const VERGLEICH_AUTOS = Object.keys(AUTO_MODELLE); // M8e: alle fünf Autos (Reihenfolge wie in der Garage)
 let vergleich = null; // { liste, i, phase: 'pause' | 'fahrt', t, fahrt, vorher (Profil vorher) }
 function vergleichStarten(liste) {
   if (!ton.werk) return;
@@ -385,6 +385,14 @@ const FEIN = [
   { pfad: 'audio.motor.popPegel', name: 'Pop-Lautstärke', min: 0, max: 2, schritt: 0.05 },
   { pfad: 'audio.motor.schaltKnallChance', name: 'Schaltknall-Chance', min: 0, max: 1, schritt: 0.05 },
   { pfad: 'audio.motor.klackPegel', name: 'Klack-Lautstärke', min: 0, max: 1, schritt: 0.02 },
+  // M8e: Boxer-Blubbern und Lader-Heulen (Lader nur hörbar bei Autos mit lader.an, z. B. Lanza 073)
+  { pfad: 'audio.motor.amTiefeLeerlauf', name: 'Brabbeln im Leerlauf (amTiefeLeerlauf)', min: 0, max: 0.9, schritt: 0.01 },
+  { pfad: 'audio.motor.schubPegel', name: 'Lautstärke ohne/mit wenig Gas (Teillast)', min: 0, max: 1, schritt: 0.01 },
+  { pfad: 'audio.motor.unrund', name: 'Unrund: ungleicher Zündabstand (Boxer-Blubbern, 0 = aus)', min: 0, max: 0.8, schritt: 0.01, neu: 'motor' },
+  { pfad: 'audio.motor.lader.pegel', name: 'Lader-Heulen: Lautstärke', min: 0, max: 0.25, schritt: 0.005 },
+  { pfad: 'audio.motor.lader.faktor', name: 'Lader-Heulen: Tonhöhe (mal Zündfrequenz)', min: 4, max: 24, schritt: 0.5 },
+  { pfad: 'audio.motor.lader.gasAnteil', name: 'Lader-Heulen: so viel hängt am Gas', min: 0, max: 1, schritt: 0.05 },
+  { pfad: 'audio.motor.lader.ansprechen', name: 'Lader-Heulen: Ansprechen (s)', min: 0.005, max: 0.2, schritt: 0.005 },
   { pfad: 'audio.aufprall.klang.stein.knall[2]', name: 'Aufprall Stein: Helligkeit (Hz)', min: 500, max: 8000, schritt: 100, neu: 'aufprall-stein' },
   { pfad: 'audio.aufprall.pegel', name: 'Aufprall-Lautstärke gesamt', min: 0, max: 3, schritt: 0.05 },
   { pfad: 'audio.motor.heulenFaktor', name: 'Heulen-Faktor (rückwärts)', min: 2, max: 10, schritt: 0.1 },

@@ -354,6 +354,45 @@ export function baueKlangwerk(ctx) {
   const heulen = osz('sine', 200, heulenLp); heulen.setPeriodicWave(welle(W.heulen));
   const begrenzerTiefe = gain(0, begrenzer.gain);
   const begrenzerOsz = osz('square', M.begrenzerHz, begrenzerTiefe);
+  // M8e: Lader-Heulen (Kompressor, z. B. Lanza 073): heller Ton bei lader.faktor mal der Zündfrequenz (Drehzahl / 60 x
+  // zuendFaktor), fest an die Drehzahl gekoppelt (steigt und fällt sofort, kein Aufbau wie beim Turbo), Pegel nach dem
+  // Gas. Die Knoten gibt es nur, solange lader.an gilt (Autowechsel: motorFestSetzen baut sie oder trennt sie wieder)
+  let lader = null;
+  function laderBauen() {
+    if (lader || !(M.lader && M.lader.an)) return;
+    const g = gain(0, motorAus);
+    lader = { gain: g, osz: osz('sine', 200, g) };
+    zaehl.laderGebaut = (zaehl.laderGebaut || 0) + 1;
+    letzte[W_LADER] = NaN; letzte[W_LADERHZ] = NaN; // (neue Knoten: der nächste Wert wird sicher gesetzt)
+  }
+  // M8e: unrund (Boxer-Blubbern, ungleicher Zündabstand wie bei ungleich langen Krümmern): eine zweite, langsamere
+  // Lautstärke-Schwankung auf einem Viertel des Grundtons (die erste, amTiefe, läuft auf der Hälfte). Zusammen ergeben sie
+  // ein Muster, das sich erst nach vier Zündungen wiederholt (ungleichmässige Stösse). Knoten nur, solange unrund > 0
+  let unrund = null;
+  function unrundSetzen() {
+    if (!(M.unrund > 0)) {
+      if (unrund) {
+        // (auch die Verbindung vom Grundton weg trennen, sonst hielte er den Knoten am Leben)
+        try { unrund.osz.stop(); if (f0 && unrund.viertel !== unrund.tiefe) f0.disconnect(unrund.viertel); for (const k of [unrund.osz, unrund.tiefe, unrund.viertel]) k.disconnect(); } catch { /* schon weg */ }
+        unrund = null; zaehl.unrundGetrennt = (zaehl.unrundGetrennt || 0) + 1;
+      }
+      return;
+    }
+    if (!unrund) {
+      const tiefe = gain(0, amGain.gain), o = osz('sine', f0 ? 0 : 12, tiefe);
+      const viertel = f0 ? gain(0.25) : null;
+      if (f0) { f0.connect(viertel); viertel.connect(o.frequency); }
+      unrund = { osz: o, tiefe, viertel: viertel || tiefe };
+      zaehl.unrundGebaut = (zaehl.unrundGebaut || 0) + 1;
+    }
+    unrund.tiefe.gain.value = M.unrund;
+  }
+  function laderWeg() {
+    if (!lader) return;
+    try { lader.osz.stop(); lader.osz.disconnect(); lader.gain.disconnect(); } catch { /* schon weg */ }
+    lader = null;
+    zaehl.laderGetrennt = (zaehl.laderGetrennt || 0) + 1;
+  }
 
   // --- Reifen (über Pausen-Dämpfung und Ducking) ---
   const reifenPause = gain(1, duck);
@@ -480,6 +519,8 @@ export function baueKlangwerk(ctx) {
     rauhPuls.gain.value = 1 - M.rauhPuls; rauhPulsTiefe.gain.value = M.rauhPuls;
     heulenLp.frequency.value = M.heulenFilter; begrenzerOsz.frequency.value = M.begrenzerHz;
     if (!f0) rauhBp.frequency.value = 300;
+    if (M.lader && M.lader.an) laderBauen(); else laderWeg(); // M8e
+    unrundSetzen(); // M8e
   }
   // Motor-Puffer zum aktuellen Motorklang: aus dem Lager oder neu (eigene feste Zufallsfolge je Schlüssel)
   function motorPufferNeu(sofort) {
@@ -549,7 +590,9 @@ export function baueKlangwerk(ctx) {
     W_BEGR = 9, W_BEGRG = 10, W_HEUL = 11, W_HEULHZ = 12, W_SURR = 13, W_SURRLP = 14, W_WEICH = 15, W_WEICHLP = 16,
     W_KIES = 17, W_KIESRATE = 18, W_KIESBP = 19, W_QUIETSCH = 20, W_QHZ = 21, W_QBP = 22, W_RUTSCH = 23, W_WIND = 24,
     W_WINDLP = 25, W_SCHL = 26, W_SCHLHZ = 27, W_SCHLQ = 28, W_RFILTER = 29, W_RPAUSE = 30, W_UFILTER = 31, W_UPAUSE = 32,
-    W_MASTER = 33, W_HOCH = 34, W_UNTER = 35, W_SIGNALE = 36, W_MUSIK = 37;
+    W_MASTER = 33, W_HOCH = 34, W_UNTER = 35, W_SIGNALE = 36, W_MUSIK = 37, W_LADER = 38, W_LADERHZ = 39;
+  laderBauen(); // M8e (erst hier: braucht die Nummern oben)
+  unrundSetzen();
 
   // --- Einmalige Klänge: Stimmen (höchstens maxStimmen gleichzeitig, die älteste wird ausgeblendet) ---
   const stimmen = [];
@@ -639,6 +682,7 @@ export function baueKlangwerk(ctx) {
     setze(W_QUIETSCH, quietschGain.gain, 0, tau); setze(W_RUTSCH, rutschGain.gain, 0, tau);
     setze(W_WIND, windGain.gain, 0, tau); setze(W_SCHL, schleifenGain.gain, 0, tau);
     setze(W_BEGR, begrenzerTiefe.gain, 0, tau); setze(W_BEGRG, begrenzer.gain, 1, tau);
+    if (lader) { setze(W_LADER, lader.gain.gain, 0, tau); zu.lader = 0; } // M8e
     zu.motorAn = 0; zu.motorPegel = 0; zu.turbo = 0; zu.heulen = 0; zu.surren = 0; zu.weich = 0; zu.kies = 0;
     zu.quietschen = 0; zu.rutschen = 0; zu.wind = 0; zu.schleifen = 0; zu.begrenzer = 0;
   }
@@ -739,6 +783,15 @@ export function baueKlangwerk(ctx) {
     }
     setze(W_TURBO, turboGain.gain, zu.turbo);
     setze(W_TURBOHZ, turbo.frequency, mische(M.turboTonMin, M.turboTonMax, zu.druck));
+    // M8e: Lader-Heulen (nur mit lader.an): Tonhöhe folgt der Drehzahl wie der Grundton, Pegel dem Gas (mit Gas voll,
+    // ohne Gas (1 - gasAnteil)), in lader.ansprechen Sekunden
+    if (lader) {
+      const L = M.lader;
+      zu.lader = L.pegel * (1 - L.gasAnteil + L.gasAnteil * gasTon);
+      zu.laderHz = (rpm / 60) * M.zuendFaktor * L.faktor;
+      setze(W_LADER, lader.gain.gain, zu.lader, L.ansprechen);
+      setze(W_LADERHZ, lader.osz.frequency, zu.laderHz, 0.02);
+    }
     // Blow-off: Gas (inkl. Schaltpause) schnell gefallen bei Ladedruck; beim Schalten unter Last lauter
     zu.gasLangsam += (gas - zu.gasLangsam) * (1 - Math.exp(-dt / M.blowOffZeit));
     if (zu.blowOffBereit && zu.gasLangsam - gas > M.blowOffGasFall && zu.druck > M.blowOffAb) {
@@ -963,6 +1016,8 @@ export function baueKlangwerk(ctx) {
     knoten: { surrenLp, weichLp, kiesBp, rutschBp, quietschBp, f0, saege, motorAus, motorLast, motorLp, turboGain, turbo, heulenGain, heulen, begrenzerTiefe, begrenzer, surrenGain, weichGain, kiesGain, quietschGain, quietschOsz, rutschGain, windGain, windLp, schleifenGain, schleifenBp, amTiefe, rauhGain, unterGain, hochGain, saettigung,
       biss, rauhBp, saegeGain, pulsGain, oberGain, ober, rauhPuls, rauhPulsTiefe, heulenLp, begrenzerOsz, get rauhF() { return rauhF; } }, // (M8d: feste Teile des Motors)
     get motorPufferVon() { return { ...pufferVon }; }, motorSchluessel, // M8d (Tests): zu welchem Motorklang die Puffer gehören
+    get lader() { return lader; }, // M8e (Tests): Lader-Knoten (null = kein Lader)
+    get unrund() { return unrund; }, // M8e (Tests): Knoten für unrund (null = aus)
     get stimmen() { let n = 0; for (const s of stimmen) if (s.an) n++; return n; },
     stimmenListe: stimmen,
     puffernStarten, puffernSofort, neuBauen, motorNeu, motorWechsel, aktualisiere, allesAus, lautstaerke, signalLautstaerke, musikLautstaerke, spitzen,

@@ -247,6 +247,13 @@ if (teil('d')) {
       if (A.menue.seite.eintraege()[A.menue.wahl].autoId === 'rt4') A.menue.taste('Enter', false); // (M8d: bestätigen)
       await new Promise((r) => requestAnimationFrame(r));
     }
+    // seit 0.8e (fünf Autos): Zeiger einmal ganz herum, damit bei beiden Messungen dieselben Vorschau-Modelle gebaut sind
+    const start = A.menue.wahl;
+    for (let k = 0; k < 20; k++) {
+      A.menue.taste('ArrowDown', false);
+      for (let b = 0; b < 2; b++) await new Promise((r) => requestAnimationFrame(r));
+      if (A.menue.wahl === start) break;
+    }
     return { auto: A.autoWahl.auto, mem: { ...A.renderer.info.memory } };
   });
   const v0 = await zumAudan(); await p.waitForTimeout(300);
@@ -636,7 +643,8 @@ if (teil('k')) {
     erg.modell = A.autoModell.modell.id;
     return erg;
   });
-  melde(JSON.stringify(fl.knoepfe) === JSON.stringify(['prototyp', 'rt4', 'delto', 'escorta']) && fl.profile.every((x) => x.split(':')[0] === x.split(':')[1]),
+  // seit 0.8e kommen weitere Autos dazu: die vier alten müssen vorne stehen
+  melde(JSON.stringify(fl.knoepfe.slice(0, 4)) === JSON.stringify(['prototyp', 'rt4', 'delto', 'escorta']) && fl.profile.every((x) => x.split(':')[0] === x.split(':')[1]),
     `Fahr-Labor: Knöpfe ${fl.knoepfe.join(' / ')} schalten live (${fl.profile.join(', ')}), Aussehen bleibt (${fl.modell})`);
   melde(fl.wirkt === 0.9 && fl.text.split('\n')[0] === 'profil = escorta' && /auto\.gripVorne = 0\.9/.test(fl.text), `Regler wirken auf das gewählte Profil, WERTE KOPIEREN: ${JSON.stringify(fl.text)}`);
   await s.page.goto(`${s.url}/index.html?menue=aus`);
@@ -654,7 +662,7 @@ if (teil('k')) {
     }
     return out;
   });
-  melde(al.length === 3 && al.every((x) => x.split('/').length === 3), `Auto-Labor: ${al.join('; ')}`);
+  melde(al.length >= 3 && al.every((x) => x.split('/').length === 3), `Auto-Labor: ${al.join('; ')}`);
   melde(s.fehler.length === 0, `keine Konsolenfehler (${s.fehler.length})`);
   await s.schliessen();
 }

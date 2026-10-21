@@ -53,7 +53,8 @@ export function baueAufheulen(Getriebe, A, leerlauf, hoechst, mitTurbo, von = le
   const g = new Getriebe();
   const z = { t: 0, phase: 'leerlauf', gas: 0, drehzahl: von, gang: 0, zielGang: 0, schaltet: false, tempo: 0, ladedruck: 0, fertig: false };
   const spitze = leerlauf + A.spitze * (hoechst - leerlauf);
-  const an = 0.1, aus = an + A.rauf + A.halten; // Gas von "an" bis "aus" Sekunden
+  // Gas von "an" bis "aus" Sekunden (dreht er noch, gleich wieder Gas: kein kurzes Absacken beim schnellen Bestätigen)
+  const an = von > leerlauf + 200 ? 0 : 0.1, aus = an + A.rauf + A.halten;
   let rest = 0;
   return {
     zustand: z,

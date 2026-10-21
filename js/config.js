@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8d';
+export const VERSION = '0.8e';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -815,7 +815,7 @@ export const CONFIG = {
         gripVorne: 1.113,        // breite Reifen, leichte Front: vorne mehr Haftung (Prototyp 1.0) ...
         gripHinten: 1.0,         // ... hinten weniger als der Prototyp (1.12): das Heck kommt schnell.
                                  // Achtung, scharf: 0.97 = Heck unter Vollgas in der Kurve +3.5° statt +2.5°
-        gewichtstransfer: 0.8,   // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt deutlich (+8.5°). Mehr (1.2)
+        gewichtstransfer: 0.8,   // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt deutlich (+10°). Mehr (1.2)
                                  // liess den Testfahrer beim Bremsen mit 130 km/h quer kommen
         stabilitaet: 4.5,        // das Heck ist schwerer einzufangen als beim Escorta (eingefangen nach ca. 1.3 s)
         gasImDrift: 0.15,        // Gas im Drift lockert das Heck (Prototyp 0.12)
@@ -834,7 +834,27 @@ export const CONFIG = {
         gaenge: [46, 78, 108, 136, 164], // kurze Gänge: Höchsttempo ca. 4 % tiefer
         turbo: { an: false },    // Lader (Kompressor) statt Turbo: Schub sofort, kein Aufbau
       },
-      ton: { turboMal: 0, knallMal: 1, motor: {} }, // kein Turbo-Pfeifen, kein Blow-off; Klang: Teil D (Lader)
+      ton: {
+        turboMal: 0, knallMal: 1, // kein Turbo: kein Pfeifen, kein Blow-off; Pops wie der Audan
+        // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): hell, mechanisch, drehfreudig (nur die Abweichungen vom Audan)
+        motor: {
+          zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 % (Audan 2.5)
+          hoechstTon: 580,       // dreht am höchsten: bei 7000/min +20 % (Delto 540, Audan 480)
+          tonKurve: 1.5,         // ruhige Mitte, oben steil
+          pegel: 0.37,           // so laut wie der Audan (0.36)
+          saege: 0.42,           // weniger runder Körper (Audan 0.5) ...
+          puls: 0.5,             // ... mehr Kanten (Audan 0.45): heller, weniger Tiefes
+          unter: 0.06,           // wenig Tiefes (Audan 0.16)
+          amTiefe: 0.5,          // unruhiger Leerlauf (Delto 0.28, Audan 0.4) ...
+          amTiefeLeerlauf: 0.55, // ... auch ganz ohne Gas
+          rauh: 0.4,             // mechanisch, der Motor sitzt hinter dem Fahrer (Audan 0.3)
+          bissHz: 3000,          // Biss höher (Audan 2200) ...
+          filterGas: 5200,       // ... und unter Gas heller (Audan 4500): der hellste der fünf
+          klackPegel: 0.42,      // Getriebe-Klack lauter (+40 %, das Getriebe sitzt hinter dem Fahrer)
+          pop: { mitte: 2000 },  // Pops trockener (Audan 2400)
+          lader: { an: true, pegel: 0.075 }, // Lader-Heulen ca. 11 dB unter dem Motor (übrige Werte: audio.motor.lader)
+        },
+      },
     },
     // Subora Imprexa (Id imprexa, M8e): ausgewogener Allrad-Allrounder mit Boxermotor (tiefer Schwerpunkt). Ruhig,
     // neutral, vorhersagbar: kaum Schieben über die Front, das Heck kommt nur leicht und ist sofort wieder gefangen.
@@ -859,7 +879,34 @@ export const CONFIG = {
                                  // Testfahrer flott mehr als 0.7 % schneller als mit dem Prototyp)
         turbo: { an: true, aufbau: 0.3 }, // dezenter Turbo, spricht schnell an (Audan 0.35 s)
       },
-      ton: { turboMal: 1, knallMal: 1, motor: {} }, // Klang: Teil D (Boxer)
+      ton: {
+        turboMal: 1, knallMal: 1,
+        // M8e: Motorklang Boxer: tief, blubbernd, dezenter Turbo (nur die Abweichungen vom Audan)
+        motor: {
+          zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 %
+          hoechstTon: 450,       // dreht tiefer: bei 7000/min -6 % (Audan 480)
+          tonKurve: 1.2,
+          pegel: 0.4,            // so laut wie der Audan (0.36; dumpfer = leiser, darum etwas lauter gestellt)
+          schubPegel: 0.6,       // bei Teillast lauter (Audan 0.42): der Boxer blubbert mit halbem Gas kräftig
+          unter: 0.3,            // viel Tiefe (Audan 0.16)
+          amTiefe: 0.45,         // Blubbern unter Last ...
+          amTiefeLeerlauf: 0.7,  // ... und stark im Leerlauf (Audan 0.42)
+          unrund: 0.35,          // ungleicher Zündabstand (neu in M8e; 0 = aus): das Blubbern wird unregelmässig
+          puls: 0.45,
+          rauh: 0.38,            // mittel (Escorta 0.54, Audan 0.3)
+          filterGas: 3800,       // dumpfer (Audan 4500) ...
+          bissDb: 4,             // ... und weniger Biss (Audan 5)
+          turboTonMin: 1760,     // Turbo-Pfeifen tiefer (-20 %) ...
+          turboTonMax: 4160,
+          turboPegel: 0.023,     // ... und leiser (-35 %)
+          blowOffPegel: 0.08,    // dezentes Zischen (Audan 0.16)
+          pop: { mitte: 1800 },  // viele kleine, tiefe Pops ...
+          knallChance: 0.4,
+          popAnzahl: [2, 5],
+          knisternChance: 0.9,   // ... und Knistern beim Gaswegnehmen
+          knisternAnzahl: [3, 6],
+        },
+      },
     },
   },
 
@@ -1499,7 +1546,7 @@ export const CONFIG = {
   // Masse in Pixeln des 320x180-Bildes (das 3D-Bild der Vorschau hat dieselbe Pixelgrösse wie das Spiel)
   garage: {
     tafelBreite: 312,          // Breite der Tafel
-    tafelHoehe: 176,           // Höhe der Tafel (mindestens; M8e: 172 -> 176 für die Hinweiszeile unten)
+    tafelHoehe: 172,           // Höhe der Tafel (mindestens; höchstens 172 = Bildhöhe minus Rand; M8e: Platz für die Hinweiszeile kommt von vorschauHoehe)
     spalte: 120,               // links: Liste der Autos und LACK (so breit), rechts: Vorschau und Werte
     vorschauHoehe: 76,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts; M8e: 80 -> 76 für die Hinweiszeile)
     hintergrund: '#121a24',    // ruhige dunkle Tafel hinter dem Auto
@@ -1691,6 +1738,18 @@ export const CONFIG = {
       heulenOberwelle: 0.3,    // dazu ein bisschen 2. Oberwelle (klingt nach Getriebe, nicht nach Pfeifen) ...
       heulenFilter: 1200,      // ... und ein Tiefpass (Hz)
       heulenPegel: 0.06,       // Lautstärke (M7a: 0.05; nie lauter als der Motor)
+      // M8e: unrund = Boxer-Blubbern (ungleicher Zündabstand): zweite Lautstärke-Schwankung auf einem Viertel des
+      // Grundtons, so tief (0 = aus, Standard: dann keine Audio-Knoten dafür, Ton wie 0.8d; Subora Imprexa: siehe Fahrprofil)
+      unrund: 0,
+      // M8e: Lader-Heulen (Kompressor, Lanza 073): heller Ton, fest an die Drehzahl gekoppelt (steigt und fällt sofort,
+      // kein Aufbau, kein Blow-off). Standard aus (dann gibt es dafür keine Audio-Knoten, Ton wie 0.8d)
+      lader: {
+        an: false,             // true = Lader-Heulen (nur im Fahrprofil setzen)
+        faktor: 14,            // Tonhöhe = Zündfrequenz (Drehzahl / 60 x zuendFaktor) mal diesem Wert (7000/min, 4 Zyl.: 3.3 kHz)
+        pegel: 0.03,           // Lautstärke mit Vollgas (Sinus-Spitze; soll 8 bis 14 dB unter dem Motor bleiben)
+        gasAnteil: 0.7,        // so viel davon hängt am Gas: ohne Gas bleibt 1 - gasAnteil (leiser, aber hörbar)
+        ansprechen: 0.015,     // so schnell (Zeitkonstante s) folgt der Pegel dem Gas (Turbo: Aufbau 0.35 s)
+      },
     },
 
     // Reifen und Untergrund
@@ -2118,11 +2177,11 @@ export const CONFIG = {
         sponsor0: '#2e9a46', sponsor1: '#1c1c1e', sponsorHell: '#f4f4ee', banner: '#2e9a46', bannerSchrift: '#f2d22e',
         sponsorFeld: null, sponsorFeldSchrift: '#2e9a46',
       },
-      // Nacht: Schwarz mit orangem Streifen
+      // Nacht: fast schwarz (Anthrazit, damit die dunkle Scheibe sichtbar bleibt) mit orangem Streifen
       l073Nacht: {
-        lack: '#1d1e22', unten: '#111214', streifen0: '#ff7a1a', streifen1: null, akzent: '#ff7a1a', fluegel: '#ff7a1a',
+        lack: '#303239', unten: '#121316', streifen0: '#ff7a1a', streifen1: null, akzent: '#ff7a1a', fluegel: '#ff7a1a',
         lappen: '#ff7a1a', nummerFeld: '#f4f4ee', nummerRand: '#ff7a1a', nummerSchrift: '#1c1c1e',
-        sponsor0: '#ff7a1a', sponsor1: '#f4f4ee', sponsorHell: '#ff7a1a', banner: '#ff7a1a', bannerSchrift: '#1d1e22',
+        sponsor0: '#ff7a1a', sponsor1: '#f4f4ee', sponsorHell: '#ff7a1a', banner: '#ff7a1a', bannerSchrift: '#121316',
         sponsorFeld: null, sponsorFeldSchrift: '#ff7a1a',
       },
       // Eis: Weiss mit hellblauem Schrägstreifen und dunkelblauem Unterteil (kühl)

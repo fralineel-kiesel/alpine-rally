@@ -25,7 +25,8 @@ const frei = process.argv.slice(2).filter((a, i, l) => !a.startsWith('--') && !(
 const name = frei[0] || 'nachher';
 const wurzel = frei[1] ? path.resolve(frei[1]) : WURZEL;
 if (wurzel !== WURZEL) fs.copyFileSync(path.join(WURZEL, 'tools/ton-pruefung.js'), path.join(wurzel, 'tools/ton-pruefung.js'));
-const BILDER = path.join(WURZEL, PROFIL ? 'screenshots/m8d' : 'screenshots/m7a-1');
+// (M8e: --bilder <ordner>, z. B. screenshots/m8e; sonst wie bisher)
+const BILDER = path.join(WURZEL, arg('--bilder') || (PROFIL ? 'screenshots/m8d' : 'screenshots/m7a-1'));
 fs.mkdirSync(BILDER, { recursive: true });
 
 const spiel = await starteSpiel({ wurzel, breite: 640, hoehe: 360, args: ['--autoplay-policy=no-user-gesture-required'] });
@@ -63,7 +64,8 @@ const erg = await p.evaluate(async ({ rueck, profil }) => {
   const motorZ = (rpm) => P.zustand({ drehzahl: rpm, gas: 1, gang: 3, zielGang: 3, ...TW });
   for (const rpm of [1500, 3000, 5000, 7000]) {
     let f0 = 0;
-    const x = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(rpm)); f0 = w.zustand.f0; w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); }, 2, { limiter: false });
+    // (M8e: auch ohne Lader-Heulen; das misst der Block "profil" getrennt)
+    const x = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(rpm)); f0 = w.zustand.f0; w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); if (w.lader) w.lader.gain.disconnect(); }, 2, { limiter: false });
     const s = P.spektrum(x.daten, 0.5, 1.9), m = P.miss(x.daten, 0.5, 1.9);
     const fGemessen = P.staerksteFrequenz(x.daten, 0.5, 1.5, f0 * 0.92, f0 * 1.08, 0.25);
     const sRoh = P.spektrum(x.daten, 0.5, 1.9);
@@ -105,7 +107,7 @@ const erg = await p.evaluate(async ({ rueck, profil }) => {
 
   // --- Pops, Schaltknall, Klack (Spitze vor dem Limiter) ---
   {
-    const an = (w) => { w.aktualisiere(1 / 60, P.zustand({ drehzahl: 1000 })); w.knoten.motorLast.disconnect(); };
+    const an = (w) => { w.aktualisiere(1 / 60, P.zustand({ drehzahl: 1000 })); w.knoten.motorLast.disconnect(); if (w.lader) w.lader.gain.disconnect(); };
     // (erst nach 0.4 s: dann ist der Motor-Ausgang ganz offen)
     const pop = await P.rendere((w) => { an(w); w.knall(0.4, 1); }, 0.8, { limiter: false });
     const pd = pop.daten.subarray(Math.round(P.RATE * 0.38));
@@ -182,7 +184,7 @@ const erg = await p.evaluate(async ({ rueck, profil }) => {
     // Rauschanteil bei Vollgas 5000/min (nur Motor): Energie ausserhalb der Obertöne des halben Grundtons (das tiefste
     // Brummen liegt auf f0/2) im Band 2-6 kHz, und die spektrale Flachheit dort (1 = Rauschen, 0 = reine Töne)
     const m5 = out.motor.find((m) => m.rpm === 5000);
-    const x5 = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); }, 2, { limiter: false });
+    const x5 = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); if (w.lader) w.lader.gain.disconnect(); }, 2, { limiter: false });
     const s5 = P.spektrum(x5.daten, 0.5, 1.9), halb = m5.f0 / 2;
     let innen = 0, aussen = 0, logSumme = 0, summe = 0, n = 0;
     for (let k = 1; k < s5.p.length; k++) {
@@ -196,7 +198,7 @@ const erg = await p.evaluate(async ({ rueck, profil }) => {
     // Turbo-Pfeifen bei vollem Ladedruck (eigenes Modell, wie oben): Tonhöhe und Pegel; ohne Turbo: Pegel des Bandes
     // um die Pfeif-Tonhöhe des Audan (Referenzwerte) mit und ohne Pfeif-Oszillator = Rauschboden
     const t5 = out.turbo.find((t) => t.rpm === 5000);
-    const nurTurbo = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.motorLast.disconnect(); w.knoten.heulenGain.disconnect(); }, 1.5, { limiter: false });
+    const nurTurbo = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.motorLast.disconnect(); w.knoten.heulenGain.disconnect(); if (w.lader) w.lader.gain.disconnect(); }, 1.5, { limiter: false });
     const tRms = P.miss(nurTurbo.daten, 0.5, 1.4).rms;
     pr.turbo = { rms: tRms, verhaeltnisDb: t5.verhaeltnisDb, ton: tRms > 1e-6 ? P.staerksteFrequenz(nurTurbo.daten, 0.5, 1.0, 1000, 9000, 5) : 0, tonSoll: M.turboTonMax };
     const ref = FP.motorReferenz('turboTonMax');
@@ -221,8 +223,59 @@ const erg = await p.evaluate(async ({ rueck, profil }) => {
       }
       pr.pops = { salvenMitPops: w.protokoll.filter((e) => e.art === 'salve' && e.wert > 0).length, pops: w.zaehler.knall || 0, knistern: w.zaehler.knistern || 0, schaltknall: w.zaehler.schaltknall || 0, blowOff: w.zaehler.blowOff || 0, minuten: 1 };
     }
+    // --- M8e: Bass bei Teillast, Unregelmässigkeit (Blubbern), Lader-Heulen ---
+    // Teillast: 2500/min, Gas 0.4 (nur Motor). Energie unter 200 Hz (Band 20-200 Hz) und Schwankung der Kurzzeit-Energie
+    // (20-ms-Fenster, Band 20-200 Hz) im Leerlauf und bei Teillast
+    {
+      const nurMotor = (w) => { w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); if (w.lader) w.lader.gain.disconnect(); };
+      const tl = await P.rendere((w) => { w.aktualisiere(1 / 60, P.zustand({ drehzahl: 2500, gas: 0.4, gang: 3, zielGang: 3, ...TW })); nurMotor(w); }, 2.5, { limiter: false });
+      const bTl = P.band(tl.daten, 20, 200), bL = P.band(xl.daten, 20, 200);
+      const sTl = P.schwankung(bTl, 0.5, 2.4), sL = P.schwankung(bL, 0.5, 1.9);
+      pr.teillast = { unter200: sTl.energie, gesamt: P.miss(tl.daten, 0.5, 2.4).rms ** 2, schwankung: sTl.cv };
+      pr.unrund = { leerlauf: sL.cv, teillast: sTl.cv, mittel: (sL.cv + sTl.cv) / 2 };
+    }
+    // Lader (nur mit lader.an): Tonhöhe bei 7000/min, Pegel gegen den Motor bei Vollgas 5000/min, Anstieg nach einem
+    // Gasstoss (Zeit bis 90 % des Endpegels), Korrelation Tonhöhe/Drehzahl über die Vergleichsfahrt (weiter unten)
+    pr.lader = { an: !!(M.lader && M.lader.an) };
+    if (pr.lader.an) {
+      const nurLader = (w) => { w.knoten.motorLast.disconnect(); w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); };
+      const l7 = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(7000)); nurLader(w); }, 1.5, { limiter: false });
+      const l5 = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(5000)); nurLader(w); }, 1.5, { limiter: false });
+      pr.lader.hz7000 = P.staerksteFrequenz(l7.daten, 0.5, 1.4, 1000, 8000, 2);
+      pr.lader.rms5000 = P.miss(l5.daten, 0.5, 1.4).rms;
+      pr.lader.gegenMotorDb = P.dB(pr.lader.rms5000 / m5.rms);
+      // Gasstoss bei 4000/min: 0.5 s ohne Gas, dann Vollgas; Pegel in 5-ms-Fenstern
+      const st = await P.rendereVerlauf((w, t) => { w.aktualisiere(1 / 60, P.zustand({ drehzahl: 4000, gas: t < 0.5 ? 0 : 1, gang: 3, zielGang: 3, ...TW })); if (t === 0) nurLader(w); }, 1.2, { limiter: false });
+      const fen = (a) => P.miss(st.daten, a, a + 0.005).rms;
+      const vor = fen(0.4), end = fen(1.0);
+      let t90 = null;
+      for (let a = 0.5; a < 1.0; a += 0.0025) if (fen(a) >= vor + 0.9 * (end - vor)) { t90 = a - 0.5; break; }
+      pr.lader.anstieg = t90; pr.lader.ohneGas = vor / end;
+      // (Bezug: Turbo des Audan baut den Ladedruck in getriebe.turbo.aufbau = 0.35 s auf)
+    }
     // Vergleichsfahrt (js/tonfahrt.js, wie VERGLEICH im Ton-Labor): Spektrogramm, Spitze vor dem Limiter, RMS unter Vollgas
     const { baueTonFahrt, TON_FAHRT } = await import('/js/tonfahrt.js');
+    // M8e: Lader allein auf derselben Fahrt: Tonhöhe je 40 ms gegen die Drehzahl (Korrelation)
+    if (pr.lader.an) {
+      let fa = null; const rpmT = [];
+      const lf = await P.rendereVerlauf((w, t) => {
+        if (!fa) fa = baueTonFahrt(Getriebe);
+        const f = t === 0 ? fa.zustand : fa.schritt(1 / 60);
+        rpmT.push(f.drehzahl || leer);
+        w.aktualisiere(1 / 60, P.zustand({ drehzahl: f.drehzahl || leer, gang: f.gang, zielGang: f.zielGang, schaltet: f.schaltet, gas: f.gas, tempo: f.tempo, vVor: f.tempo, ladedruck: f.ladedruck, turboAn: !!P.CONFIG.getriebe.turbo.an, ...TW }));
+        if (t === 0) { w.knoten.motorLast.disconnect(); w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); }
+      }, TON_FAHRT.dauer, { limiter: false });
+      const xs = [], ys = [];
+      for (let a = 0.2; a < TON_FAHRT.dauer - 0.1; a += 0.1) {
+        const rpm = rpmT[Math.min(rpmT.length - 1, Math.round((a + 0.02) * 60))];
+        const soll = rpm / 60 * M.zuendFaktor * M.lader.faktor;
+        xs.push(rpm); ys.push(P.staerksteFrequenz(lf.daten, a, a + 0.04, soll * 0.7, soll * 1.3, 4));
+      }
+      const mw = (v) => v.reduce((x, y) => x + y, 0) / v.length, mx = mw(xs), my = mw(ys);
+      let sxy = 0, sxx = 0, syy = 0;
+      for (let i = 0; i < xs.length; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; syy += (ys[i] - my) ** 2; }
+      pr.lader.korrelation = sxy / Math.sqrt(sxx * syy); pr.lader.punkte = xs.length;
+    }
     let fahrt = null;
     const fx = await P.rendereVerlauf((w, t) => {
       if (!fahrt) fahrt = baueTonFahrt(Getriebe);
@@ -231,7 +284,7 @@ const erg = await p.evaluate(async ({ rueck, profil }) => {
     }, TON_FAHRT.dauer, { limiter: false });
     pr.fahrt = { spitze: P.miss(fx.daten).spitze, rmsVollgas: P.miss(fx.daten, 3.6, 5.0).rms, pops: fx.werk.zaehler.knall || 0, knistern: fx.werk.zaehler.knistern || 0, blowOff: fx.werk.zaehler.blowOff || 0 };
     pr.spitze = Math.max(pr.fahrt.spitze, ...out.motor.map((m) => m.spitze));
-    const AUTO = { rt4: 'Audan Quarto', delto: 'Lanza Delto', escorta: 'Fard Escorta', prototyp: 'Prototyp' }[profil] || profil;
+    const AUTO = { rt4: 'Audan Quarto', delto: 'Lanza Delto', escorta: 'Fard Escorta', l073: 'Lanza 073', imprexa: 'Subora Imprexa', prototyp: 'Prototyp' }[profil] || profil;
     out.bilder.fahrt = P.spektrogramm(fx.daten, `${P.CONFIG.version} ${AUTO}: Leerlauf, Vollgas 1.-3. Gang, Gas weg, Bremsen (Vergleichsfahrt)`, { breite: 800 });
     FP.waehleFahrprofil('prototyp');
   }
@@ -263,6 +316,8 @@ if (erg.profil) {
   const q = erg.profil;
   console.log(`Profil ${q.id} (turboMal ${q.ton.turboMal}, knallMal ${q.ton.knallMal}): Leerlauf ${f(q.leerlauf.f0, 1)} Hz (gemessen ${f(q.leerlauf.fGemessen, 1)}), Rauschen ausserhalb der Obertöne 2-6 kHz ${f(q.rauschen.ausserhalbObertoene * 100, 1)} %, Flachheit ${f(q.rauschen.flachheit, 3)}`);
   console.log(`  Turbo: Tonhöhe ${f(q.turbo.ton)} Hz (Soll ${f(q.turbo.tonSoll)}), RMS ${f(q.turbo.rms, 4)}, Band um ${f(q.turbo.tonSoll)} Hz mit/ohne Pfeifen ${f(q.turbo.bandMitDb, 1)} / ${f(q.turbo.bandOhneDb, 1)} dB`);
+  console.log(`  M8e: Teillast 2500 Energie <200 Hz ${q.teillast.unter200.toExponential(3)}, Unregelmässigkeit Leerlauf ${f(q.unrund.leerlauf, 3)} / Teillast ${f(q.unrund.teillast, 3)}` +
+    (q.lader.an ? `; Lader ${f(q.lader.hz7000)} Hz bei 7000, ${f(q.lader.gegenMotorDb, 1)} dB gegen Motor, Anstieg ${q.lader.anstieg == null ? '--' : f(q.lader.anstieg * 1000)} ms, Korrelation ${f(q.lader.korrelation, 4)}` : '; kein Lader'));
   console.log(`  60-s-Fahrt: ${q.pops.salvenMitPops} Salven mit ${q.pops.pops} Pops, ${q.pops.knistern} Knistern, ${q.pops.schaltknall} Schaltknall, ${q.pops.blowOff} Blow-off; Spitze ${f(q.spitze, 3)}; Vergleichsfahrt Spitze ${f(q.fahrt.spitze, 3)}, RMS Vollgas ${f(q.fahrt.rmsVollgas, 3)}`);
 }
 if (spiel.fehler.length) console.log('FEHLER:', spiel.fehler.join(' | '));

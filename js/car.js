@@ -595,6 +595,7 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     flamme = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
       vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide,
+      forceSinglePass: true, // (durchsichtig und zweiseitig: sonst zeichnet three.js es in zwei Durchgängen)
     }));
     flamme.name = 'auto-flamme';
     flamme.visible = false;
