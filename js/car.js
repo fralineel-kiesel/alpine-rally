@@ -244,10 +244,13 @@ function flaechenVon(t) {
     const o = [[xo, yo, zov], [-xo, yo, zov], [-xo, yo, zoh], [xo, yo, zoh]];
     const ohne = t.ohne || [];
     const mitte = V(0, (yu + yo) / 2, (zuv + zuh + zov + zoh) / 4);
+    // M8d: scheiben: ['vorne', 'hinten'] = diese Flächen (Front-/Heckscheibe der Kabine) holen ihre Farbe aus der
+    // Ansicht vorne bzw. hinten, auch wenn sie so flach liegen, dass ihre Normale eher nach oben zeigt (sonst Dach-Farbe)
+    const scheiben = t.scheiben || [];
     const add = (name, punkte) => {
       if (ohne.includes(name)) return;
       const c = punkte.reduce((s, p) => s.add(V(...p)), V(0, 0, 0)).multiplyScalar(1 / punkte.length);
-      F.push({ punkte, aussen: c.sub(mitte) });
+      F.push(scheiben.includes(name) ? { punkte, aussen: c.sub(mitte), ansicht: name } : { punkte, aussen: c.sub(mitte) });
     };
     add('unten', u); add('oben', o);
     add('vorne', [u[0], u[1], o[1], o[0]]); add('hinten', [u[3], u[2], o[2], o[3]]);
@@ -284,7 +287,7 @@ function flaechenVon(t) {
     }
   }
   if (t.spiegeln) {
-    const gesp = F.map((f) => ({ punkte: f.punkte.map(([x, y, z]) => [-x, y, z]), aussen: V(-f.aussen.x, f.aussen.y, f.aussen.z) }));
+    const gesp = F.map((f) => ({ ...f, punkte: f.punkte.map(([x, y, z]) => [-x, y, z]), aussen: V(-f.aussen.x, f.aussen.y, f.aussen.z) }));
     F.push(...gesp);
   }
   return F;
@@ -480,8 +483,9 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
   // bekommen eine feste Farbe statt der Front-/Heck-Bemalung (sonst erscheinen dort Streifen von Scheinwerfern & Co.)
   const I = m.innenFlaechen;
   const innen = (a, b, c) => I && [a, b, c].every((q) => Math.abs(q[2]) < I.zBis && q[1] < I.yBis + 1e-9);
-  const uvFuer = (slot) => (p, nrm, a, b, c) => {
-    const r = richtung(nrm);
+  // fest (M8d): Ansicht, die eine Fläche vorgibt (Scheiben der Kabine), statt der Richtung ihrer Normale
+  const uvFuer = (slot, fest) => (p, nrm, a, b, c) => {
+    const r = fest || richtung(nrm);
     if (slot === 'lack' && (r === 'vorne' || r === 'hinten') && innen(a, b, c)) return feldUV(I.farbe);
     if (slot === 'lack') return r === 'unten' ? feldUV('unterboden') : ansichtUV(r, p);
     if (slot === 'fluegel') return r === 'oben' ? ansichtUV('fluegel', p) : feldUV('fluegel');
@@ -498,7 +502,7 @@ export function baueAuto(modell = autoModell(CONFIG.autoOptik.modell), lackierun
       for (const f of flaechen) flaecheAnhaengen(lichter[t.licht], f, null, farbe);
     } else {
       const uv = uvFuer(t.slot);
-      for (const f of flaechen) flaecheAnhaengen(karosserie, f, uv);
+      for (const f of flaechen) flaecheAnhaengen(karosserie, f, f.ansicht ? uvFuer(t.slot, f.ansicht) : uv);
     }
   }
 

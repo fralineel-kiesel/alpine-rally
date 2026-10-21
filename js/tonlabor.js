@@ -8,14 +8,19 @@
 // Getriebes) mit Regler LADEDRUCK (Test); beim Anfahren liefert das echte Getriebe mit Turbo den Ladedruck.
 // M8c: Auswahl FAHRPROFIL (TON): dieselben Werte wie im Spiel (Turbo an/aus des Getriebes, turboMal, knallMal), z. B.
 // Fard Escorta (kein Turbo: kein Pfeifen, kein Blow-off, halb so viele Pops) gegen Audan Quarto. Standard: prototyp.
+// M8d: Motorklang je Auto. FAHRPROFIL (TON) schaltet auch den Motorklang um (Block ton.motor im Fahrprofil). Der
+// Feinschliff der Motorwerte wirkt auf das gewählte Profil (Regler zeigen den Wert dieses Autos), WERTE KOPIEREN nennt das
+// Profil in jeder Zeile (fahrprofile.delto.ton.motor.rauh = 0.45), ALLES ZURÜCK nur für das gewählte Profil.
+// Knopf VERGLEICH: dieselbe kurze Fahrt (js/tonfahrt.js) nacheinander mit Audan, Delto, Escorta; je Auto ein Knopf.
 
 import { CONFIG } from './config.js';
 import { baueTon, materialNr } from './audio.js';
 import { raumWerte } from './umgebung.js';
 import { HAUPT_STUECK, KANAELE } from './musik.js';
 import { Getriebe } from './getriebe.js';
-import { waehleFahrprofil, aktivesProfil, tonWerte } from './fahrprofil.js';
+import { waehleFahrprofil, waehleMotorTon, aktivesProfil, tonWerte, motorReferenz } from './fahrprofil.js';
 import { AUTO_MODELLE } from './autos.js';
+import { baueTonFahrt, TON_FAHRT } from './tonfahrt.js';
 
 const G = CONFIG.getriebe, A = CONFIG.audio;
 const $ = (id) => document.getElementById(id);
@@ -37,11 +42,15 @@ for (const id of Object.keys(CONFIG.fahrprofile)) {
 }
 function tonProfil(id) {
   waehleFahrprofil(id);
+  ton.motorNeu(); // M8d: Motorklang dieses Autos (feste Teile, Motor-Puffer)
   $('tonProfil').value = aktivesProfil();
   $('echterLadedruck').checked = !!G.turbo.an;
   z.turboMal = tonWerte.turboMal; z.knallMal = tonWerte.knallMal;
   $('tonProfilW').textContent = `TURBO ${G.turbo.an ? 'AN' : 'AUS'} · turboMal ${z.turboMal} · knallMal ${z.knallMal}`;
+  if (feinBereit) feinProfilZeigen();
 }
+let feinBereit = false; // (M8d: die Feinschliff-Regler gibt es erst weiter unten)
+const autoName = (id) => (AUTO_MODELLE[id] ? AUTO_MODELLE[id].name : id.toUpperCase());
 let schaltRest = 0, schaltVon = 0, schaltHoch = true, demo = null;
 
 // --- Regler ---
@@ -189,6 +198,62 @@ const BUSSE = ['master', 'fahrzeug', 'umgebung', 'signale', 'musik'];
 for (const b of BUSSE) $('pegel').insertAdjacentHTML('beforeend', `<div class="pegel">${b}<div class="balken"><div id="p-${b}"></div></div><span id="pw-${b}">-</span></div>`);
 const spitzen = {}, halten = {};
 
+// --- M8d: VERGLEICH – dieselbe kurze Fahrt (js/tonfahrt.js) mit jedem Auto nacheinander (oder einem Auto allein) ---
+// Vor jedem Auto 0.6 s Stille (Motor aus): dort wird der Motorklang umgeschaltet (wie im Spiel nur bei stillem Motor)
+const VERGLEICH_AUTOS = ['rt4', 'delto', 'escorta'];
+let vergleich = null; // { liste, i, phase: 'pause' | 'fahrt', t, fahrt, vorher (Profil vorher) }
+function vergleichStarten(liste) {
+  if (!ton.werk) return;
+  demo = null; schaltRest = 0;
+  vergleich = { liste, i: 0, phase: 'pause', t: 0, fahrt: null, vorher: aktivesProfil(), gehoert: [] };
+  ton.werk.allesAus();
+  tonProfil(liste[0]);
+  $('vergleichName').textContent = `${autoName(liste[0])} …`;
+}
+function vergleichBild(dt) {
+  const V = vergleich;
+  V.t += dt;
+  if (V.phase === 'pause') {
+    if (V.t >= 0.6) { V.phase = 'fahrt'; V.t = 0; V.fahrt = baueTonFahrt(Getriebe); V.gehoert.push(V.liste[V.i]); $('vergleichName').textContent = autoName(V.liste[V.i]); }
+    return;
+  }
+  const f = V.fahrt.schritt(dt);
+  drehzahl.value = f.drehzahl; $('gas').value = f.gas; $('tempo').value = Math.round(f.tempo * 3.6); $('ladedruck').value = f.ladedruck;
+  z.schaltet = f.schaltet; z.gang = f.gang; z.zielGang = f.zielGang;
+  $('vergleichInfo').textContent = `${f.phase.toUpperCase()} · ${f.gang}. Gang · ${Math.round(f.drehzahl)} /min · ${Math.round(f.tempo * 3.6)} km/h`;
+  anzeigen();
+  if (V.t >= TON_FAHRT.dauer) {
+    V.i++;
+    if (V.i >= V.liste.length) {
+      vergleich = null;
+      drehzahl.value = G.leerlauf; $('gas').value = 0; $('tempo').value = 0; $('ladedruck').value = 0; anzeigen();
+      $('vergleichName').textContent = `fertig (${V.liste.map(autoName).join(', ')})`; $('vergleichInfo').textContent = '';
+      zuletzt = V;
+      tonProfil(V.vorher);
+      return;
+    }
+    V.phase = 'pause'; V.t = 0;
+    tonProfil(V.liste[V.i]);
+    $('vergleichName').textContent = `${autoName(V.liste[V.i])} …`;
+  }
+}
+let zuletzt = null; // (für Tests: der letzte fertige Vergleich)
+$('vergleich').addEventListener('click', () => vergleichStarten(VERGLEICH_AUTOS));
+for (const id of VERGLEICH_AUTOS) {
+  const k = document.createElement('button'); k.textContent = `NUR ${autoName(id)}`; k.dataset.vergleich = id;
+  k.addEventListener('click', () => vergleichStarten([id]));
+  $('vergleichKnoepfe').append(k);
+}
+$('vergleichStopp').addEventListener('click', () => {
+  if (!vergleich) return;
+  const vorher = vergleich.vorher; vergleich = null;
+  drehzahl.value = G.leerlauf; $('gas').value = 0; $('tempo').value = 0; anzeigen();
+  if (ton.werk) ton.werk.allesAus();
+  tonProfil(vorher);
+  $('vergleichName').textContent = 'gestoppt'; $('vergleichInfo').textContent = '';
+});
+window.__tonLabor.vergleich = { starten: vergleichStarten, get laeuft() { return vergleich; }, get zuletzt() { return zuletzt; }, AUTOS: VERGLEICH_AUTOS };
+
 // --- Jedes Bild: Regler -> Zustand -> Ton ---
 let letzte = performance.now();
 function bild(jetzt) {
@@ -198,7 +263,8 @@ function bild(jetzt) {
   const w = ton.werk;
   if (!w) return;
   z.modus = $('modus').value;
-  if (demo) {
+  if (vergleich) vergleichBild(dt);
+  else if (demo) {
     // Anfahren mit dem echten Getriebe (Automatik, Schaltpausen) und einer einfachen Fahrt: Gas bis 160 km/h, dann ausrollen
     const e = { gas: demo.phase === 'gas' ? 1 : 0, bremse: 0 };
     const m = demo.getriebe.schritt(dt, e, demo.v, demo.v, 1);
@@ -225,6 +291,7 @@ function bild(jetzt) {
       anzeigen();
     }
   }
+  if (vergleich) z.modus = vergleich.phase === 'fahrt' ? 'rennen' : 'aus';
   z.drehzahl = +drehzahl.value; z.gas = +$('gas').value; z.tempo = +$('tempo').value / 3.6;
   z.turboAn = $('echterLadedruck').checked; z.ladedruck = +$('ladedruck').value; // M8b
   z.vVor = $('rueckwaerts').checked ? -z.tempo : z.tempo;
@@ -239,7 +306,7 @@ function bild(jetzt) {
     if (vorbei.t > 8) vorbei = null;
   }
   hoererSetzen();
-  if (!vorbei && !demo) z.tempo = +$('tempo').value / 3.6;
+  if (!vorbei && !demo && !vergleich) z.tempo = +$('tempo').value / 3.6;
   raumWerte(z.hx, z.hz, z.hyaw, 0, 0, uTyp(), raumAnzeige);
   ton.aktualisiere(dt, z);
   // Anzeige
@@ -281,15 +348,37 @@ function uTyp() {
 
 // --- Feinschliff (M7a.1): Werte aus config.js live verstellen. pfad = Name in config.js, neu = Teil, der dafür neu gebaut
 // werden muss (Sättigungskurve, Stein-Puffer); alles andere liest der Ton ohnehin jedes Bild bzw. bei jedem Ereignis ---
+// M8d: alle Werte unter audio.motor gehören zum gewählten Fahrprofil (FAHRPROFIL (TON)); neu: 'motor' = feste Teile des
+// Motors neu setzen (Wellenform, Sättigung, Biss, Güten, Anteile, Pop-Puffer)
 const FEIN = [
+  { pfad: 'audio.motor.zuendFaktor', name: 'Zylinder: Grundton im Leerlauf (5 Zyl. 2.5, 4 Zyl. 2.0)', min: 1, max: 4, schritt: 0.05 },
   { pfad: 'audio.motor.hoechstTon', name: 'Tonlage bei Höchstdrehzahl (Hz)', min: 250, max: 750, schritt: 5 },
-  { pfad: 'audio.motor.verzerrung', name: 'Härte (Verzerrung)', min: 1, max: 14, schritt: 0.1, neu: 'saettigung' },
-  { pfad: 'audio.motor.rauh', name: 'Rauheit', min: 0, max: 0.8, schritt: 0.01 },
-  { pfad: 'audio.motor.amTiefe', name: 'Brabbeln (amTiefe)', min: 0, max: 0.9, schritt: 0.01 },
-  { pfad: 'audio.motor.filterGas', name: 'Helligkeit unter Gas (Hz)', min: 0, max: 9000, schritt: 100 },
+  { pfad: 'audio.motor.tonKurve', name: 'Ton-Kurve (mehr = Mitte tiefer, oben steiler)', min: 0.6, max: 2.5, schritt: 0.05 },
+  { pfad: 'audio.motor.saege', name: 'Körper: Sägezahn', min: 0, max: 1, schritt: 0.01, neu: 'motor' },
+  { pfad: 'audio.motor.puls', name: 'Körper: Impulswelle (Kanten)', min: 0, max: 1, schritt: 0.01, neu: 'motor' },
+  { pfad: 'audio.motor.pulsBreite', name: 'Impulsbreite (kleiner = schärfer)', min: 0.04, max: 0.5, schritt: 0.01, neu: 'motor' },
   { pfad: 'audio.motor.unter', name: 'Anteil tiefes Brummen (unter)', min: 0, max: 0.6, schritt: 0.01 },
+  { pfad: 'audio.motor.oberwelle', name: 'Brabbeln: 2. Oberwelle', min: 0, max: 0.5, schritt: 0.01, neu: 'motor' },
+  { pfad: 'audio.motor.hoch', name: 'Oktav-Schicht (Höhe beim Hochdrehen)', min: 0, max: 1, schritt: 0.01 },
+  { pfad: 'audio.motor.amTiefe', name: 'Brabbeln (amTiefe)', min: 0, max: 0.9, schritt: 0.01 },
+  { pfad: 'audio.motor.rauh', name: 'Rauheit (heiser)', min: 0, max: 0.8, schritt: 0.01 },
+  { pfad: 'audio.motor.rauhOberwelle', name: 'Rauheit: um welche Oberwelle (höher = heller)', min: 2, max: 12, schritt: 0.5, neu: 'motor' },
+  { pfad: 'audio.motor.rauhGuete', name: 'Rauheit: Bündelung (kleiner = breiter, heiserer)', min: 0.5, max: 6, schritt: 0.1, neu: 'motor' },
+  { pfad: 'audio.motor.verzerrung', name: 'Härte (Verzerrung)', min: 1, max: 14, schritt: 0.1, neu: 'motor' },
+  { pfad: 'audio.motor.clip', name: 'Härte: abschneiden bei (kleiner = kantiger)', min: 0.3, max: 1, schritt: 0.01, neu: 'motor' },
+  { pfad: 'audio.motor.filterGrund', name: 'Helligkeit im Leerlauf (Hz)', min: 100, max: 1500, schritt: 10 },
+  { pfad: 'audio.motor.filterDrehzahl', name: 'Helligkeit pro U/min (Hz)', min: 0, max: 1.5, schritt: 0.01 },
+  { pfad: 'audio.motor.filterGas', name: 'Helligkeit unter Gas (Hz)', min: 0, max: 9000, schritt: 100 },
+  { pfad: 'audio.motor.bissHz', name: 'Biss: Frequenz (Hz)', min: 800, max: 5000, schritt: 50, neu: 'motor' },
+  { pfad: 'audio.motor.bissDb', name: 'Biss: Anhebung (dB)', min: 0, max: 12, schritt: 0.5, neu: 'motor' },
   { pfad: 'audio.motor.pegel', name: 'Motor-Lautstärke', min: 0, max: 1, schritt: 0.01 },
+  { pfad: 'audio.motor.turboTonMin', name: 'Turbo-Pfeifen: Tonhöhe bei wenig Ladedruck (Hz)', min: 1000, max: 5000, schritt: 50 },
+  { pfad: 'audio.motor.turboTonMax', name: 'Turbo-Pfeifen: Tonhöhe bei vollem Ladedruck (Hz)', min: 2000, max: 9000, schritt: 50 },
+  { pfad: 'audio.motor.turboPegel', name: 'Turbo-Pfeifen: Lautstärke', min: 0, max: 0.12, schritt: 0.001 },
   { pfad: 'audio.motor.knallChance', name: 'Knall-Chance (Poppen)', min: 0, max: 1, schritt: 0.05 },
+  { pfad: 'audio.motor.pop.mitte', name: 'Pop: Helligkeit (Hz)', min: 800, max: 6000, schritt: 50, neu: 'motor' },
+  { pfad: 'audio.motor.knisternChance', name: 'Knister-Chance (leise Mini-Pops)', min: 0, max: 1, schritt: 0.05 },
+  { pfad: 'audio.motor.zwischengasKnallChance', name: 'Zwischengas-Knall-Chance', min: 0, max: 1, schritt: 0.05 },
   // M8b: Turbo im Audan Quarto (wirken nur mit ECHTER LADEDRUCK AN bzw. im Spiel mit Turbo-Profil)
   { pfad: 'audio.motor.turboPegelMal', name: 'Turbo-Pfeifen lauter (mal turboPegel)', min: 0, max: 3, schritt: 0.05 },
   { pfad: 'audio.motor.turboKnallPlus', name: 'Mehr Pops mit Anti-Lag (plus Knall-Chance)', min: 0, max: 0.3, schritt: 0.01 },
@@ -325,31 +414,78 @@ function stelle(pfad) {
   return [o, teile[teile.length - 1]];
 }
 const stellen = (x) => Math.max(0, -Math.floor(Math.log10(x) + 1e-9));
+// M8d: Motorwerte je Fahrprofil. ORIGINAL_PROFILE = die Profile aus config.js (beim Laden); Änderungen landen in
+// CONFIG.fahrprofile[profil].ton.motor (nur auf dieser Seite) und werden über die Referenz gelegt (waehleMotorTon)
+const kopie = (o) => JSON.parse(JSON.stringify(o));
+const ORIGINAL_PROFILE = kopie(CONFIG.fahrprofile);
+const lies = (o, pfad) => pfad.split('.').reduce((w, k) => (w == null ? undefined : w[k]), o);
+const motorOriginal = (profil, m) => { const w = lies(((ORIGINAL_PROFILE[profil] || {}).ton || {}).motor, m); return w !== undefined ? w : motorReferenz(m); };
+const motorJetzt = (profil, m) => { const w = lies(((CONFIG.fahrprofile[profil] || {}).ton || {}).motor, m); return w !== undefined ? w : motorReferenz(m); };
+function motorSchreiben(profil, m, wert) {
+  const p = CONFIG.fahrprofile[profil];
+  if (!p.ton) p.ton = {};
+  if (!p.ton.motor) p.ton.motor = {};
+  const teile = m.split('.');
+  let o = p.ton.motor;
+  for (let i = 0; i < teile.length - 1; i++) { if (!o[teile[i]] || typeof o[teile[i]] !== 'object') o[teile[i]] = {}; o = o[teile[i]]; }
+  o[teile[teile.length - 1]] = wert;
+}
 for (const f of FEIN) {
   const [o, k] = stelle(f.pfad);
+  if (f.pfad.startsWith('audio.motor.')) f.motor = f.pfad.slice('audio.motor.'.length);
   f.original = o[k];
   f.zeige = (w) => w.toFixed(stellen(f.schritt));
   const id = f.pfad.replace(/[^a-z0-9]/gi, '_');
   $('fein').insertAdjacentHTML('beforeend', `<span>${f.name}</span><span class="pfad">${f.pfad}</span>`
     + `<input type="range" id="f_${id}" min="${f.min}" max="${f.max}" step="${f.schritt}" value="${f.original}">`
     + `<span class="wert" id="fw_${id}"></span><button title="zurück auf ${f.original}" id="fz_${id}">↺</button>`);
-  f.regler = $(`f_${id}`); f.wert = $(`fw_${id}`);
+  f.regler = $(`f_${id}`); f.wert = $(`fw_${id}`); f.knopf = $(`fz_${id}`);
   f.regler.addEventListener('input', () => feinSetzen(f, +f.regler.value));
-  $(`fz_${id}`).addEventListener('click', () => feinSetzen(f, f.original));
-  feinSetzen(f, f.original);
+  f.knopf.addEventListener('click', () => feinSetzen(f, f.original));
+  if (!f.motor) feinSetzen(f, f.original);
 }
+feinBereit = true;
+feinProfilZeigen();
 function feinSetzen(f, wert) {
   const [o, k] = stelle(f.pfad);
-  o[k] = wert;
+  if (f.motor) { // M8d: Wert des gewählten Profils (Überschreibung), dann das Profil neu über die Referenz legen
+    const profil = aktivesProfil();
+    motorSchreiben(profil, f.motor, wert);
+    waehleMotorTon(profil);
+    if (f.neu === 'motor' && ton.werk) ton.werk.motorNeu(false, true);
+  } else o[k] = wert;
   f.regler.value = wert;
   f.wert.textContent = f.zeige(wert);
   f.wert.classList.toggle('geaendert', wert !== f.original);
-  if (f.neu === 'musik') { if (ton.werk) ton.werk.musik.pegelSetzen(); } else if (f.neu && ton.werk) ton.werk.neuBauen(f.neu);
+  if (f.neu === 'musik') { if (ton.werk) ton.werk.musik.pegelSetzen(); } else if (f.neu && f.neu !== 'motor' && ton.werk) ton.werk.neuBauen(f.neu);
 }
-// Geänderte Werte als Text, eine Zeile pro Wert: "audio.motor.verzerrung = 6.2"
+// M8d: Regler der Motorwerte auf das gewählte Profil stellen (Wert dieses Autos, "geändert" gegen config.js)
+function feinProfilZeigen() {
+  const profil = aktivesProfil();
+  for (const f of FEIN) {
+    if (!f.motor) continue;
+    f.original = motorOriginal(profil, f.motor);
+    const w = stelle(f.pfad)[0][stelle(f.pfad)[1]];
+    f.regler.value = w; f.wert.textContent = f.zeige(w);
+    f.wert.classList.toggle('geaendert', w !== f.original);
+    f.knopf.title = `zurück auf ${f.original} (${autoName(profil)} in config.js)`;
+  }
+  $('feinProfil').textContent = `Motorwerte von: ${autoName(profil)} (Profil ${profil})`;
+}
+// Geänderte Werte als Text, eine Zeile pro Wert. Motorwerte mit dem Profil: "fahrprofile.delto.ton.motor.rauh = 0.45"
+// (alle Profile, deren Motorwerte hier geändert wurden), sonst wie bisher: "audio.aufprall.pegel = 1.2"
 function feinText() {
-  return FEIN.filter((f) => +f.zeige(stelle(f.pfad)[0][stelle(f.pfad)[1]]) !== f.original)
-    .map((f) => `${f.pfad} = ${f.zeige(stelle(f.pfad)[0][stelle(f.pfad)[1]])}`).join('\n');
+  const zeilen = [];
+  for (const profil of Object.keys(CONFIG.fahrprofile)) {
+    for (const f of FEIN) {
+      if (!f.motor) continue;
+      const w = motorJetzt(profil, f.motor);
+      // (verglichen wird, was der Regler zeigt: ein Wert aus config.js zwischen zwei Reglerstufen zählt nicht als geändert)
+      if (f.zeige(w) !== f.zeige(motorOriginal(profil, f.motor))) zeilen.push(`fahrprofile.${profil}.ton.motor.${f.motor} = ${f.zeige(w)}`);
+    }
+  }
+  for (const f of FEIN) if (!f.motor && +f.zeige(stelle(f.pfad)[0][stelle(f.pfad)[1]]) !== f.original) zeilen.push(`${f.pfad} = ${f.zeige(stelle(f.pfad)[0][stelle(f.pfad)[1]])}`);
+  return zeilen.join('\n');
 }
 $('kopieren').addEventListener('click', async () => {
   const text = feinText() || '(keine Werte geändert)';
@@ -359,10 +495,21 @@ $('kopieren').addEventListener('click', async () => {
     $('kopieInfo').textContent = 'Kopieren ging nicht automatisch: Text unten markieren und kopieren.';
   }
 });
-$('allesZurueck').addEventListener('click', () => { for (const f of FEIN) feinSetzen(f, f.original); $('kopieText').value = ''; $('kopieInfo').textContent = 'ALLE WERTE WIE IN CONFIG.JS'; });
+// ALLES ZURÜCK (M8d): Motorwerte nur des gewählten Profils auf config.js (die anderen Autos bleiben, wie sie sind), dazu
+// die übrigen Werte (Aufprall, Signale, Umgebung, Musik: gehören keinem Auto)
+$('allesZurueck').addEventListener('click', () => {
+  const profil = aktivesProfil();
+  const orig = ORIGINAL_PROFILE[profil] && ORIGINAL_PROFILE[profil].ton;
+  if (CONFIG.fahrprofile[profil].ton) CONFIG.fahrprofile[profil].ton.motor = kopie((orig && orig.motor) || {});
+  waehleMotorTon(profil);
+  if (ton.werk) ton.werk.motorNeu(false, true);
+  for (const f of FEIN) if (!f.motor) feinSetzen(f, f.original);
+  feinProfilZeigen();
+  $('kopieText').value = ''; $('kopieInfo').textContent = `${autoName(profil)}: MOTORWERTE WIE IN CONFIG.JS (übrige Werte auch)`;
+});
 // Nach TON STARTEN: geänderte Bau-Werte anwenden (vorher gibt es noch kein Klangwerk)
 $('tonStarten').addEventListener('click', () => {
-  const warte = () => { if (!ton.werk || !ton.werk.aufbau.fertig) { setTimeout(warte, 50); return; } for (const f of FEIN) if (f.neu && f.original !== stelle(f.pfad)[0][stelle(f.pfad)[1]]) { if (f.neu === 'musik') ton.werk.musik.pegelSetzen(); else ton.werk.neuBauen(f.neu); } };
+  const warte = () => { if (!ton.werk || !ton.werk.aufbau.fertig) { setTimeout(warte, 50); return; } for (const f of FEIN) if (f.neu && f.neu !== 'motor' && f.original !== stelle(f.pfad)[0][stelle(f.pfad)[1]]) { if (f.neu === 'musik') ton.werk.musik.pegelSetzen(); else ton.werk.neuBauen(f.neu); } };
   warte();
 });
-window.__tonLabor.fein = { FEIN, text: feinText, stelle };
+window.__tonLabor.fein = { FEIN, text: feinText, stelle, profilZeigen: feinProfilZeigen };

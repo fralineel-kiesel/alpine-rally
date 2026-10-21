@@ -9,15 +9,23 @@
 //  - Audio-Knoten (dauerhaft angelegt)
 // Ergebnis: tools/ton-messung-<name>.json (für den Vergleich in tools/ton-test.mjs) und Spektrogramme in
 // screenshots/m7a-1/<name>-*.png. Für die alte Version wird diese Mess-Hilfe (tools/ton-pruefung.js) dorthin kopiert.
+// M8d: --profil <id> (rt4, delto, escorta, prototyp): Motorklang dieses Fahrprofils (Block ton.motor, turboMal, knallMal);
+//   zusätzlich Block "profil": Grundton im Leerlauf, Rauschanteil (Energie ausserhalb der Obertöne und spektrale Flachheit
+//   2-6 kHz bei Vollgas 5000/min), Tonhöhe und Pegel des Turbo-Pfeifens, Spitze, Pops auf einer festen 60-s-Fahrt (grosse
+//   Pops und Knistern je Minute) und die Vergleichsfahrt des Ton-Labors (js/tonfahrt.js) als Spektrogramm.
+//   Bilder dann nach screenshots/m8d/<name>-*.png. Ohne --profil alles wie bisher (Profil prototyp der Seite).
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
 
-const name = process.argv[2] || 'nachher';
-const wurzel = process.argv[3] ? path.resolve(process.argv[3]) : WURZEL;
+const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
+const PROFIL = arg('--profil');
+const frei = process.argv.slice(2).filter((a, i, l) => !a.startsWith('--') && !(i > 0 && l[i - 1].startsWith('--')));
+const name = frei[0] || 'nachher';
+const wurzel = frei[1] ? path.resolve(frei[1]) : WURZEL;
 if (wurzel !== WURZEL) fs.copyFileSync(path.join(WURZEL, 'tools/ton-pruefung.js'), path.join(wurzel, 'tools/ton-pruefung.js'));
-const BILDER = path.join(WURZEL, 'screenshots/m7a-1');
+const BILDER = path.join(WURZEL, PROFIL ? 'screenshots/m8d' : 'screenshots/m7a-1');
 fs.mkdirSync(BILDER, { recursive: true });
 
 const spiel = await starteSpiel({ wurzel, breite: 640, hoehe: 360, args: ['--autoplay-policy=no-user-gesture-required'] });
@@ -40,15 +48,19 @@ const rueck = await p.evaluate(() => {
   return liste;
 });
 
-const erg = await p.evaluate(async ({ rueck }) => {
+const erg = await p.evaluate(async ({ rueck, profil }) => {
   const P = await import('/tools/ton-pruefung.js');
+  // M8d: Motorklang eines Fahrprofils (vor allem anderen: alle Klangwerke werden mit diesen Werten gebaut)
+  const FP = profil ? await import('/js/fahrprofil.js') : null;
+  if (FP) FP.waehleFahrprofil(profil);
+  const TW = FP ? { turboMal: FP.tonWerte.turboMal, knallMal: FP.tonWerte.knallMal } : {};
   const C = P.CONFIG.audio, M = C.motor, AU = C.aufprall;
   const { VERSION } = await import('/js/config.js');
   P.CONFIG.version = VERSION;
   const out = { version: VERSION, motor: [], turbo: [], aufprall: {}, signale: {}, heulen: [], bilder: {} };
   out.knoten = P.zaehleKnoten();
   // --- Motor: nur der Motorkörper (Turbo und Heulen abgehängt), Vollgas, ein Bild (Begrenzer noch nicht aktiv) ---
-  const motorZ = (rpm) => P.zustand({ drehzahl: rpm, gas: 1, gang: 3, zielGang: 3 });
+  const motorZ = (rpm) => P.zustand({ drehzahl: rpm, gas: 1, gang: 3, zielGang: 3, ...TW });
   for (const rpm of [1500, 3000, 5000, 7000]) {
     let f0 = 0;
     const x = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(rpm)); f0 = w.zustand.f0; w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); }, 2, { limiter: false });
@@ -131,6 +143,7 @@ const erg = await p.evaluate(async ({ rueck }) => {
 
   // --- Spektrogramme mit Verlauf: Pop-Salve, Schalten hoch (unter Last) und runter (beim Bremsen), Heulen ---
   const { Getriebe } = await import('/js/getriebe.js');
+  const { baueKlangwerk } = await import('/js/audio.js');
   // Pop-Salve: 0.6 s Vollgas bei 5500/min, dann Gas weg (Knall-Chance für das Bild auf 1)
   const altChance = M.knallChance, altZweiter = M.knallZweiter;
   M.knallChance = 1; if (altZweiter != null) M.knallZweiter = 1;
@@ -157,10 +170,76 @@ const erg = await p.evaluate(async ({ rueck }) => {
     w.aktualisiere(1 / 60, P.zustand({ drehzahl: r.rpm, gang: r.gang, zielGang: r.gang, tempo: Math.abs(r.v), vVor: r.v, bremse: 1 }));
   }, 5);
   out.bilder.heulen = P.spektrogramm(heul.daten, `${P.CONFIG.version}: Rückwärts anfahren bis 9 m/s (Motor + Getriebeheulen)`);
-  return out;
-}, { rueck });
 
-for (const [n, url] of Object.entries(erg.bilder)) fs.writeFileSync(path.join(BILDER, `${name}-${n}.png`), Buffer.from(url.split(',')[1], 'base64'));
+  // --- M8d: Messungen je Auto (nur mit --profil) ---
+  if (profil) {
+    const pr = out.profil = { id: profil, ton: { ...TW }, motorWerte: JSON.parse(JSON.stringify(M)) };
+    // Grundton im Leerlauf (Gas 0, Leerlaufdrehzahl; das leichte Zittern stört die Messung nicht)
+    const leer = P.CONFIG.getriebe.leerlauf;
+    let f0L = 0;
+    const xl = await P.rendere((w) => { w.aktualisiere(1 / 60, P.zustand({ drehzahl: leer, gas: 0, gang: 0, zielGang: 0, ...TW })); f0L = w.zustand.f0; w.knoten.turboGain.disconnect(); }, 2, { limiter: false });
+    pr.leerlauf = { f0: f0L, fGemessen: P.staerksteFrequenz(xl.daten, 0.5, 1.9, f0L * 0.9, f0L * 1.1, 0.1), rms: P.miss(xl.daten, 0.5, 1.9).rms };
+    // Rauschanteil bei Vollgas 5000/min (nur Motor): Energie ausserhalb der Obertöne des halben Grundtons (das tiefste
+    // Brummen liegt auf f0/2) im Band 2-6 kHz, und die spektrale Flachheit dort (1 = Rauschen, 0 = reine Töne)
+    const m5 = out.motor.find((m) => m.rpm === 5000);
+    const x5 = await P.rendere((w) => { w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.turboGain.disconnect(); w.knoten.heulenGain.disconnect(); }, 2, { limiter: false });
+    const s5 = P.spektrum(x5.daten, 0.5, 1.9), halb = m5.f0 / 2;
+    let innen = 0, aussen = 0, logSumme = 0, summe = 0, n = 0;
+    for (let k = 1; k < s5.p.length; k++) {
+      const f = k * s5.df;
+      if (f < 2000 || f > 6000) continue;
+      const naechste = Math.round(f / halb) * halb;
+      if (Math.abs(f - naechste) <= 1.5 * s5.df + naechste * 0.004) innen += s5.p[k]; else aussen += s5.p[k];
+      logSumme += Math.log(s5.p[k] + 1e-30); summe += s5.p[k]; n++;
+    }
+    pr.rauschen = { ausserhalbObertoene: aussen / (innen + aussen), flachheit: Math.exp(logSumme / n) / (summe / n), f0: m5.f0 };
+    // Turbo-Pfeifen bei vollem Ladedruck (eigenes Modell, wie oben): Tonhöhe und Pegel; ohne Turbo: Pegel des Bandes
+    // um die Pfeif-Tonhöhe des Audan (Referenzwerte) mit und ohne Pfeif-Oszillator = Rauschboden
+    const t5 = out.turbo.find((t) => t.rpm === 5000);
+    const nurTurbo = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.motorLast.disconnect(); w.knoten.heulenGain.disconnect(); }, 1.5, { limiter: false });
+    const tRms = P.miss(nurTurbo.daten, 0.5, 1.4).rms;
+    pr.turbo = { rms: tRms, verhaeltnisDb: t5.verhaeltnisDb, ton: tRms > 1e-6 ? P.staerksteFrequenz(nurTurbo.daten, 0.5, 1.0, 1000, 9000, 5) : 0, tonSoll: M.turboTonMax };
+    const ref = FP.motorReferenz('turboTonMax');
+    const band = (d) => { const sp = P.spektrum(d, 0.5, 1.4); let e = 0; for (let k = 1; k < sp.p.length; k++) { const f = k * sp.df; if (Math.abs(f - ref) < ref * 0.12) e += sp.p[k]; } return e; };
+    const mit = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.heulenGain.disconnect(); }, 1.5, { limiter: false });
+    const ohne = await P.rendere((w) => { w.zustand.druck = 1; w.aktualisiere(1 / 60, motorZ(5000)); w.knoten.heulenGain.disconnect(); w.knoten.turboGain.disconnect(); }, 1.5, { limiter: false });
+    pr.turbo.bandMitDb = 10 * Math.log10(band(mit.daten) + 1e-30); pr.turbo.bandOhneDb = 10 * Math.log10(band(ohne.daten) + 1e-30);
+    // Pops und Blow-off über eine feste 60-s-Fahrt (dieselbe wie in tools/m8c-test.mjs (h)), mit echtem Getriebe
+    {
+      const ctx = new OfflineAudioContext(1, P.RATE, P.RATE);
+      const w = baueKlangwerk(ctx);
+      const g = new Getriebe();
+      let v = 12;
+      const takt = [[1.6, 1], [0.9, 0], [0.5, 0.5], [1.2, 1], [0.7, 0], [1.4, 1], [0.6, 0.2], [2.0, 1], [1.0, 0]];
+      const dauer = takt.reduce((a, [d]) => a + d, 0);
+      for (let k = 0; k < 60 * 60; k++) {
+        const t = (k / 60) % dauer;
+        let s0 = 0, gas = 0;
+        for (const [d, xx] of takt) { if (t < s0 + d) { gas = xx; break; } s0 += d; }
+        for (let i = 0; i < 2; i++) { const m = g.schritt(1 / 120, { gas, bremse: 0 }, v, v, 1, 'asphalt'); v = Math.max(3, Math.min(48, v + (m.beschl - m.motorbremse * (gas ? 0 : 1) - 0.0004 * v * v - 0.15) / 120)); }
+        w.aktualisiere(1 / 60, P.zustand({ drehzahl: g.drehzahl, gang: g.gang, zielGang: g.zielGang, schaltet: g.schaltet, gas, tempo: v, vVor: v, ladedruck: g.ladedruck, turboAn: !!P.CONFIG.getriebe.turbo.an, ...TW }));
+      }
+      pr.pops = { salvenMitPops: w.protokoll.filter((e) => e.art === 'salve' && e.wert > 0).length, pops: w.zaehler.knall || 0, knistern: w.zaehler.knistern || 0, schaltknall: w.zaehler.schaltknall || 0, blowOff: w.zaehler.blowOff || 0, minuten: 1 };
+    }
+    // Vergleichsfahrt (js/tonfahrt.js, wie VERGLEICH im Ton-Labor): Spektrogramm, Spitze vor dem Limiter, RMS unter Vollgas
+    const { baueTonFahrt, TON_FAHRT } = await import('/js/tonfahrt.js');
+    let fahrt = null;
+    const fx = await P.rendereVerlauf((w, t) => {
+      if (!fahrt) fahrt = baueTonFahrt(Getriebe);
+      const f = t === 0 ? fahrt.zustand : fahrt.schritt(1 / 60);
+      w.aktualisiere(1 / 60, P.zustand({ drehzahl: f.drehzahl || leer, gang: f.gang, zielGang: f.zielGang, schaltet: f.schaltet, gas: f.gas, tempo: f.tempo, vVor: f.tempo, ladedruck: f.ladedruck, turboAn: !!P.CONFIG.getriebe.turbo.an, ...TW }));
+    }, TON_FAHRT.dauer, { limiter: false });
+    pr.fahrt = { spitze: P.miss(fx.daten).spitze, rmsVollgas: P.miss(fx.daten, 3.6, 5.0).rms, pops: fx.werk.zaehler.knall || 0, knistern: fx.werk.zaehler.knistern || 0, blowOff: fx.werk.zaehler.blowOff || 0 };
+    pr.spitze = Math.max(pr.fahrt.spitze, ...out.motor.map((m) => m.spitze));
+    const AUTO = { rt4: 'Audan Quarto', delto: 'Lanza Delto', escorta: 'Fard Escorta', prototyp: 'Prototyp' }[profil] || profil;
+    out.bilder.fahrt = P.spektrogramm(fx.daten, `${P.CONFIG.version} ${AUTO}: Leerlauf, Vollgas 1.-3. Gang, Gas weg, Bremsen (Vergleichsfahrt)`, { breite: 800 });
+    FP.waehleFahrprofil('prototyp');
+  }
+  return out;
+}, { rueck, profil: PROFIL });
+
+// (mit --profil nur die Motor-Bilder: Motor, Pop-Salve, Hochschalten, Vergleichsfahrt)
+for (const [n, url] of Object.entries(erg.bilder)) if (!PROFIL || /^(motor|pop|schalten-hoch|fahrt)/.test(n)) fs.writeFileSync(path.join(BILDER, `${name}-${n}.png`), Buffer.from(url.split(',')[1], 'base64'));
 delete erg.bilder;
 erg.rueckFahrt = rueck;
 fs.writeFileSync(path.join(WURZEL, `tools/ton-messung-${name}.json`), `${JSON.stringify(erg, (k, v) => (typeof v === 'number' ? Math.round(v * 10000) / 10000 : v), 1)}\n`);
@@ -180,5 +259,11 @@ console.log(`Signale (Motor-Bezug 5000/min Vollgas mit Turbo, RMS ${f(erg.motorB
 for (const [n, s] of Object.entries(erg.signale)) console.log(`  ${n} | ${f(s.spitze, 3)} | ${f(s.rmsAktiv, 3)} | ${f(s.gegenMotorDb, 1)} dB`);
 console.log('Heulen rückwärts:  t | U/min | m/s | Tonhöhe | RMS | Motor-RMS');
 for (const h of erg.heulen) console.log(`  ${f(h.t, 2)} | ${f(h.rpm)} | ${f(h.v, 2)} | ${f(h.hz)} Hz | ${f(h.rms, 4)} | ${f(h.motorRms, 3)}`);
+if (erg.profil) {
+  const q = erg.profil;
+  console.log(`Profil ${q.id} (turboMal ${q.ton.turboMal}, knallMal ${q.ton.knallMal}): Leerlauf ${f(q.leerlauf.f0, 1)} Hz (gemessen ${f(q.leerlauf.fGemessen, 1)}), Rauschen ausserhalb der Obertöne 2-6 kHz ${f(q.rauschen.ausserhalbObertoene * 100, 1)} %, Flachheit ${f(q.rauschen.flachheit, 3)}`);
+  console.log(`  Turbo: Tonhöhe ${f(q.turbo.ton)} Hz (Soll ${f(q.turbo.tonSoll)}), RMS ${f(q.turbo.rms, 4)}, Band um ${f(q.turbo.tonSoll)} Hz mit/ohne Pfeifen ${f(q.turbo.bandMitDb, 1)} / ${f(q.turbo.bandOhneDb, 1)} dB`);
+  console.log(`  60-s-Fahrt: ${q.pops.salvenMitPops} Salven mit ${q.pops.pops} Pops, ${q.pops.knistern} Knistern, ${q.pops.schaltknall} Schaltknall, ${q.pops.blowOff} Blow-off; Spitze ${f(q.spitze, 3)}; Vergleichsfahrt Spitze ${f(q.fahrt.spitze, 3)}, RMS Vollgas ${f(q.fahrt.rmsVollgas, 3)}`);
+}
 if (spiel.fehler.length) console.log('FEHLER:', spiel.fehler.join(' | '));
 await spiel.schliessen();

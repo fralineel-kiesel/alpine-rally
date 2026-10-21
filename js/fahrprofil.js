@@ -6,7 +6,12 @@
 // (Garage) das Auto und damit sein Profil (main.js); ?auto= setzt weiter beides (Tests).
 // M8c: Block "ton" im Profil ({ turboMal, knallMal }, fehlt = 1): wie stark Turbo-Pfeifen/Blow-off und Pops klingen.
 // Er liegt nicht in CONFIG, sondern in tonWerte (immer dasselbe Objekt, js/audio.js liest es über main.js).
-// Das Fahr-Labor (?fahrlabor=1) schaltet hiermit live um. Diese Datei kennt kein Three.js.
+// M8d: Motorklang je Auto: ton.motor = nur die Werte aus audio.motor, die vom Audan (Referenz) abweichen (auch einzelne
+// Werte in pop/klack, Listen als Ganzes). Wie bei auto und getriebe: Schnappschuss der Referenz beim Laden, das gewählte
+// Profil darüber, bei jedem Wechsel zuerst zurück auf die Referenz (kein Wert bleibt hängen). js/audio.js liest die
+// Werte direkt aus CONFIG.audio.motor; was dort beim Bau fest ist, setzt main.js nach dem Wechsel neu (ton.motorNeu).
+// Das Fahr-Labor (?fahrlabor=1) schaltet hiermit live um (nur das Fahrgefühl, den Motorklang nicht: der wechselt nur im
+// Menü). Diese Datei kennt kein Three.js.
 
 import { CONFIG } from './config.js';
 
@@ -15,7 +20,7 @@ export const REFERENZ_PROFIL = 'prototyp';
 
 // Kopie der Referenz (nur Zahlen, Texte, Wahrheitswerte, Felder, null), gemerkt beim Laden – bevor ein Profil darüberliegt
 const kopie = (o) => JSON.parse(JSON.stringify(o));
-const REFERENZ = { auto: kopie(CONFIG.auto), getriebe: kopie(CONFIG.getriebe), ton: { turboMal: 1, knallMal: 1 } };
+const REFERENZ = { auto: kopie(CONFIG.auto), getriebe: kopie(CONFIG.getriebe), ton: { turboMal: 1, knallMal: 1 }, motor: kopie(CONFIG.audio.motor) };
 // M8c: Ton-Werte des gewählten Profils (Turbo-Pfeifen und Blow-off mal turboMal, Knall-Chance mal knallMal)
 export const tonWerte = { ...REFERENZ.ton };
 
@@ -40,15 +45,16 @@ function ueberlagere(ziel, profil) {
   }
 }
 
-let aktiv = null;
+let aktiv = null, aktivTon = null;
 // Welches Profil gilt gerade? ('prototyp', 'rt4', ...)
 export const aktivesProfil = () => aktiv;
 // Gibt es dieses Profil?
 export const gibtProfil = (id) => !!(id && CONFIG.fahrprofile && Object.prototype.hasOwnProperty.call(CONFIG.fahrprofile, id));
 
 // Profil wählen: Referenz wiederherstellen, dann die Werte des Profils darüberlegen. Unbekannt oder leer: Standard (rt4).
+// motorTon (M8d): auch den Motorklang umschalten (Standard ja; das Fahr-Labor schaltet nur das Fahrgefühl).
 // Ergebnis: die Id des Profils, das jetzt gilt.
-export function waehleFahrprofil(id) {
+export function waehleFahrprofil(id, { motorTon = true } = {}) {
   const name = gibtProfil(id) ? id : STANDARD_PROFIL;
   setzeGleich(CONFIG.auto, REFERENZ.auto);
   setzeGleich(CONFIG.getriebe, REFERENZ.getriebe);
@@ -56,9 +62,26 @@ export function waehleFahrprofil(id) {
   if (p.auto) ueberlagere(CONFIG.auto, p.auto);
   if (p.getriebe) ueberlagere(CONFIG.getriebe, p.getriebe);
   setzeGleich(tonWerte, REFERENZ.ton);
-  if (p.ton) ueberlagere(tonWerte, p.ton);
+  if (p.ton) { const { motor, ...rest } = p.ton; ueberlagere(tonWerte, rest); }
   aktiv = name;
+  if (motorTon) waehleMotorTon(name);
   return name;
+}
+
+// M8d: nur den Motorklang eines Profils über die Referenz (audio.motor) legen. Ergebnis: Id des Profils
+export function waehleMotorTon(id) {
+  const name = gibtProfil(id) ? id : STANDARD_PROFIL;
+  setzeGleich(CONFIG.audio.motor, REFERENZ.motor);
+  const p = (CONFIG.fahrprofile || {})[name] || {};
+  if (p.ton && p.ton.motor) ueberlagere(CONFIG.audio.motor, p.ton.motor);
+  aktivTon = name;
+  return name;
+}
+// Welcher Motorklang gilt gerade?
+export const aktivesTonProfil = () => aktivTon;
+// Referenzwert des Motorklangs (audio.motor aus config.js, wie beim Laden) an einem Pfad ('rauh', 'pop.mitte')
+export function motorReferenz(pfad) {
+  return pfad.split('.').reduce((w, k) => (w == null ? undefined : w[k]), REFERENZ.motor);
 }
 
 // Profil aus der Adresse (?auto=...), null = keins angegeben

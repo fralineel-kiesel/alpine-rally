@@ -20,7 +20,8 @@
 //      kurztaste?(code) = Taste, die sonst nichts tut, auf dieser Seite auswerten (z. B. R = Neu starten); true = erledigt
 // M8c (Garage): breite = feste Tafelbreite, spalte = Einträge nur in einer linken Spalte dieser Breite, minHoehe = Tafel
 //      mindestens so hoch, zeichneRechts(ctx, x, y, b, h) = eigener Inhalt rechts neben der Spalte;
-//      Eintrag beimWaehlen() = wird gerufen, sobald der Eintrag gewählt wird (Tastatur, Gamepad, Maus);
+//      Eintrag beimWaehlen() = wird gerufen, sobald der Zeiger auf den Eintrag kommt (Tastatur, Gamepad, Maus);
+//      (seit M8d benutzt keine Seite mehr beimWaehlen: die Garage wählt erst beim Bestätigen)
 //      auswahl mit probe(wert) -> [Farbe, ...] = kleine Farbprobe vor dem Wert; farbeText() = Textfarbe, wenn nicht gewählt.
 // Seiten werden nur bei Änderung neu gezeichnet (auf ein eigenes Bild), sonst nur kopiert.
 // M7a: klang(art, wert) = Menü-Ton (tick, bestaetigen, zurueck, regler mit Wert 0..1, fehler); hängt an denselben

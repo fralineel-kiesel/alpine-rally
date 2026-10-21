@@ -1582,8 +1582,9 @@ console.log('M7a.1 (j) Ton-Labor: Feinschliff');
   pruefe(r.f0Nach > r.f0Vor * 1.1 && r.kurve[0] !== r.kurve[1] && r.steinNeu && Math.abs(r.rauh - 0.5 * 0.65) < 0.05 && Math.abs(r.unter - 0.3) < 0.02,
     'die Regler wirken sofort (Tonlage, Härte baut die Sättigung neu, Stein-Puffer neu, Rauheit, Brummen, Helligkeit)',
     `Grundton ${r.f0Vor.toFixed(0)} -> ${r.f0Nach.toFixed(0)} Hz, Kurve ${r.kurve.map((x) => x.toFixed(3)).join(' -> ')}, Rauheit ${r.rauh.toFixed(3)}, Brummen ${r.unter.toFixed(2)}, Tiefpass ${r.filter.toFixed(0)} Hz`);
-  pruefe(zeilen.length === 6 && zeilen.every((z) => /^audio\.[\w.]+(\[\d+\])? = -?\d+(\.\d+)?$/.test(z)) && zeilen.includes('audio.motor.verzerrung = 9.5') && zeilen.includes('audio.aufprall.klang.stein.knall[2] = 3000'),
-    'WERTE KOPIEREN: eine Zeile pro geändertem Wert im Format audio.motor.verzerrung = 9.5', zeilen.join(' | '));
+  // (M8d: Motorwerte gehören zum Fahrprofil des Labors (Standard prototyp): fahrprofile.prototyp.ton.motor.verzerrung = 9.5)
+  pruefe(zeilen.length === 6 && zeilen.every((z) => /^(audio|fahrprofile\.\w+\.ton)\.[\w.]+(\[\d+\])? = -?\d+(\.\d+)?$/.test(z)) && zeilen.includes('fahrprofile.prototyp.ton.motor.verzerrung = 9.5') && zeilen.includes('audio.aufprall.klang.stein.knall[2] = 3000'),
+    'WERTE KOPIEREN: eine Zeile pro geändertem Wert im Format fahrprofile.prototyp.ton.motor.verzerrung = 9.5 (M8d) bzw. audio.aufprall.pegel = 1.2', zeilen.join(' | '));
   pruefe(r.zurueck.every(Boolean) && Math.abs(r.f0Zurueck - r.f0Vor) < 2, 'ALLES ZURÜCK: alle Werte wie in config.js');
   // Spielseite unberührt: CONFIG.audio im Spiel = config.js
   const spielSeite = await spiel.page.context().browser().newPage();

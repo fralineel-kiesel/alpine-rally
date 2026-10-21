@@ -895,6 +895,8 @@ function autoWechseln(id, lack = null) {
   const lackName = lack ?? lackFuer(w.modell);
   const modellNeu = w.modell !== auto.modell.id;
   if (modellNeu) {
+    const v = vorschauModelle.get(w.modell); // (M8d: die Vorschau dieses Autos wird nicht mehr gebraucht)
+    if (v) { v.dispose(); vorschauModelle.delete(w.modell); }
     auto.dispose();
     auto = baueAuto(w.modell, lackName, renderer.domElement.width);
     szene.add(auto.objekt);
@@ -905,6 +907,7 @@ function autoWechseln(id, lack = null) {
   auswahl.auto = Math.max(0, AUTOS.findIndex((a) => a.id === w.modell));
   if (neu) {
     waehleFahrprofil(w.profil);
+    ton.motorNeu(); // M8d: Motorklang des neuen Autos (feste Teile und Motor-Puffer; der Motor ist im Menü aus)
     getriebe.reset();
     dreck.menge = 0;
     auto.dreck(dreck);
@@ -972,6 +975,19 @@ const szeneInfo = { calls: 0, dreiecke: 0 }; // Zeichenaufrufe der Spielszene im
 function garageSichtbar() {
   if (!ablauf.def || !ablauf.def.menue || sicht <= 0 || menue.seite !== seiten.auto) return null;
   return menue.einblendung > 0 ? seiten.garage.rahmen : null;
+}
+// M8d: Vorschau-Modelle für Autos, die in der Garage nur markiert (noch nicht bestätigt) sind: erst beim Markieren
+// gebaut (mit der gemerkten Lackierung), nicht in der Spielszene, freigegeben, sobald die Garage zu ist
+const vorschauModelle = new Map();
+function vorschauAuto(id) {
+  if (id === auto.modell.id) return auto;
+  let v = vorschauModelle.get(id);
+  if (!v) { v = baueAuto(id, lackFuer(id), renderer.domElement.width); vorschauModelle.set(id, v); }
+  return v;
+}
+function vorschauFreigeben() {
+  for (const v of vorschauModelle.values()) v.dispose();
+  vorschauModelle.clear();
 }
 // Taste H (M6): ganzes HUD aus/an, nicht gespeichert (jeder Start der Seite mit HUD); hinweis = Sekunden "HUD AUS/AN"
 const hudSchalter = { an: true, hinweis: 0 };
@@ -1071,8 +1087,8 @@ function schleife(jetzt) {
   const gRahmen = garageSichtbar();
   if (gRahmen) {
     const f = renderer.domElement.width / B;
-    garage.zeichne(dt, auto, Math.round(gRahmen.x * f), Math.round((H - gRahmen.y - gRahmen.h) * f), Math.round(gRahmen.b * f), Math.round(gRahmen.h * f));
-  }
+    garage.zeichne(dt, vorschauAuto(seiten.garage.vorschauId()), Math.round(gRahmen.x * f), Math.round((H - gRahmen.y - gRahmen.h) * f), Math.round(gRahmen.b * f), Math.round(gRahmen.h * f));
+  } else if (vorschauModelle.size) vorschauFreigeben();
 
   // HUD (im Rennen und eingefroren in der Pause), darüber Abdunkeln und Menü
   if (hudSchalter.hinweis > 0) hudSchalter.hinweis = Math.max(0, hudSchalter.hinweis - dt);
@@ -1190,6 +1206,7 @@ window.__alpineRally = {
   get blenden() { return { sicht, dunkel }; },
   get autoModell() { return auto; }, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a (M8c: Modell wechselt)
   autoWechseln, get autoWahl() { return autoWahl; }, masseSetzen, garage, szeneInfo, staubAuto, // M8c
+  vorschauModelle, // M8d (Tests): gerade gebaute Vorschau-Modelle der Garage
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
 };

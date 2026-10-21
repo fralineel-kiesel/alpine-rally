@@ -7,7 +7,8 @@
   <link rel="icon" href="data:,">
   <!-- Hilfsseite (M7a, nicht im Menü verlinkt): alle Töne des Spiels einzeln anhören. Benutzt js/audio.js wie das Spiel.
        M7a.1: Bereich "Feinschliff" (Werte live verstellen, WERTE KOPIEREN für den Chat), Regler Signaltöne.
-       M7b: Bereiche "Umgebung" (Klangart, Abstand, Seite, VORBEIFAHREN) und "Musik" (Abschnitte, Kanäle, Tempo), Regler Musik. -->
+       M7b: Bereiche "Umgebung" (Klangart, Abstand, Seite, VORBEIFAHREN) und "Musik" (Abschnitte, Kanäle, Tempo), Regler Musik.
+       M8d: Bereich "Motorklang je Auto" (VERGLEICH, je Auto ein Knopf); Feinschliff der Motorwerte je Fahrprofil. -->
   <script type="importmap">
     { "imports": { "three": "./lib/three.module.min.js" } }
   </script>
@@ -88,6 +89,17 @@
       </div>
     </section>
 
+    <!-- M8d: dieselbe kurze Fahrt mit jedem Auto: Leerlauf, Vollgas durch zwei Gänge, Gas weg (Pops), Bremsen, Leerlauf -->
+    <section>
+      <h2>Motorklang je Auto</h2>
+      <p class="hinweis">VERGLEICH spielt dieselbe kurze Fahrt (je ca. 8 s: Leerlauf, Vollgas durch zwei Gänge mit Schalten,
+        Gas weg mit Pops, Bremsen, Leerlauf) nacheinander mit Audan, Delto und Escorta. Oder ein Auto allein.</p>
+      <div class="knoepfe"><button class="gross" id="vergleich">VERGLEICH</button></div>
+      <div class="knoepfe" id="vergleichKnoepfe"><button id="vergleichStopp">STOPP</button></div>
+      <div id="vergleichName" style="color: var(--gelb); font-size: 22px; letter-spacing: 2px; min-height: 30px">–</div>
+      <div id="vergleichInfo" class="hinweis" style="min-height: 20px"></div>
+    </section>
+
     <section>
       <h2>Aufprall</h2>
       <div class="knoepfe" id="aufprallKnoepfe"></div>
@@ -151,7 +163,10 @@
       <h2>Feinschliff</h2>
       <p class="hinweis">Diese Regler verstellen Werte aus js/config.js (Block "audio") – aber nur hier auf dieser Seite und nur,
         bis du sie neu lädst. Das Spiel selbst bleibt unverändert, gespeichert wird nichts. Gefällt dir etwas: WERTE KOPIEREN
-        und den Text in den Chat einfügen (eine Zeile pro geänderten Wert).</p>
+        und den Text in den Chat einfügen (eine Zeile pro geänderten Wert).
+        Die Motorwerte (audio.motor) gehören zum Auto, das oben bei FAHRPROFIL (TON) gewählt ist: jedes Auto hat seine eigenen.
+        ALLES ZURÜCK stellt nur dieses Auto zurück.</p>
+      <p id="feinProfil" style="color: var(--gelb); margin: 0 0 8px"></p>
       <div class="fein" id="fein"></div>
       <div class="knoepfe" style="margin-top:10px">
         <button id="kopieren">WERTE KOPIEREN</button><button id="allesZurueck">ALLES ZURÜCK</button>

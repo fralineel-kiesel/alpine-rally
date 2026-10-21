@@ -57,20 +57,31 @@ export function baueSeiten(api) {
   });
   // --- Garage (M8c, Seite AUTO): links die Autos und LACK, rechts oben das drehende 3D-Modell (main.js zeichnet es mit
   // js/garage.js in den Rahmen garageRahmen), rechts unten vier Werte-Balken, unten zwei Zeilen Daten.
-  // Wählen = sofort wechseln (Modell, Fahrprofil, Lackierung); ENTER auf einem Auto = zurück ins Hauptmenü.
+  // M8d: Zeiger bewegen wählt nichts (die Vorschau zeigt nur das markierte Auto); erst Bestätigen (Enter, Leertaste,
+  // Gamepad A, Klick) wählt das Auto (Modell, Fahrprofil, Ton), die Garage bleibt offen. LACK gehört immer zum
+  // bestätigten Auto. (Bis M8c wechselte schon das blosse Zeigen das Auto – mit der Tastatur kam man so nur über
+  // ESCORTA zu LACK.)
   const GA = CONFIG.garage;
   const lackVon = (name) => CONFIG.autoOptik.lackierungen[name] || {};
   const garage = { rahmen: null }; // Vorschau-Rahmen (Pixel im 320x180-Raster), gesetzt beim Zeichnen
   const WERTE = [['beschleunigung', 'garage.beschleunigung'], ['tempo', 'garage.tempo'], ['grip', 'garage.grip'], ['drift', 'garage.drift']];
-  const modellJetzt = () => (api.autoModell ? api.autoModell().modell : AUTO_MODELLE[AUTOS[auswahl.auto].id]);
+  const modellJetzt = () => (api.autoModell ? api.autoModell().modell : AUTO_MODELLE[AUTOS[auswahl.auto].id]); // bestätigt
+  // M8d: Auto der Vorschau = das markierte (Zeiger auf einer Auto-Zeile), sonst das bestätigte
+  const markiertesAuto = () => {
+    if (menue.seite !== autoSeite) return null;
+    const e = autoSeite.eintraege()[menue.wahl];
+    return e && e.autoId ? e.autoId : null;
+  };
+  const vorschauModell = () => AUTO_MODELLE[markiertesAuto()] || modellJetzt();
+  garage.vorschauId = () => vorschauModell().id; // (main.js: welches Modell dreht sich in der Vorschau)
   function garageRechts(c, x, y, b, h, tafel) {
     // Vorschau: dunkle Tafel mit hellem Rand (die 3D-Szene kommt darüber, nur während die Seite offen ist)
     const px = x + 2, py = y, pb = (b - M.innen - 4) & ~1, ph = GA.vorschauHoehe;
     garage.rahmen = { x: px, y: py, b: pb, h: ph };
     c.fillStyle = M.farbeRand; c.globalAlpha = 0.5; c.fillRect(px - 1, py - 1, pb + 2, ph + 2); c.globalAlpha = 1;
     c.fillStyle = GA.hintergrund; c.fillRect(px, py, pb, ph);
-    // Werte-Balken: 1 bis 10 Kästchen
-    const m = modellJetzt();
+    // Werte-Balken: 1 bis 10 Kästchen (des markierten Autos)
+    const m = vorschauModell();
     const lb = Math.max(...WERTE.map(([, k]) => textBreite(t(k))));
     WERTE.forEach(([feld, k], i) => {
       const ly = py + ph + 5 + i * 9;
@@ -90,8 +101,8 @@ export function baueSeiten(api) {
     typ: 'aktion', text: a.name, autoId: a.id, // (autoId: für Tests)
     // das gewählte Auto steht gelb, auch wenn der Zeiger woanders ist (z. B. auf LACK)
     farbeText: () => ((api.autoWahl ? api.autoWahl().modell : AUTOS[auswahl.auto].id) === a.id ? M.farbeWert : M.farbeText),
-    beimWaehlen: () => { if (api.autoWechseln) api.autoWechseln(a.id); },
-    aktion: () => menue.schliesse(),
+    // M8d: bestätigen = dieses Auto wählen, die Garage bleibt offen (schon gewählt: nichts zu tun, nur der Ton)
+    aktion: () => { if (api.autoWechseln) api.autoWechseln(a.id); },
   });
   const lackZeile = {
     typ: 'auswahl', text: () => '', lack: true,
