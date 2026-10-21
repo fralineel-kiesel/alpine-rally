@@ -804,6 +804,8 @@ export const CONFIG = {
     // Motor sitzt über den Antriebsrädern (bessere Traktion als der Escorta), das Auto dreht sehr willig ein, das Heck
     // kommt schnell (beim Bremsen in der Kurve, mit Gas, beim Lupfen) und will mit feinem Gas geführt werden. Der Lader
     // schiebt sofort, ohne Turbo-Verzögerung. Messwerte und Kompromisse: STAND.md, Meilenstein 8e.
+    // M8f (Lino: „wie Seife auf Glatteis“): fangbarer – das Heck kommt weiter zuerst, ist aber schneller wieder
+    // gefangen, kein Dreher im Tastatur-Slalom mehr. Bericht: docs/meilensteine/m8f.md.
     l073: {
       auto: {
         radstand: 2.42,          // kurz (Audan 2.52)
@@ -813,17 +815,19 @@ export const CONFIG = {
                                  // Achtung, scharf: 0.53 lässt das Heck unter Vollgas in der Kurve deutlich mehr kommen
         lastVorneAnteil: 0.49,   // leicht hecklastig (Prototyp 0.5)
         gripVorne: 1.113,        // breite Reifen, leichte Front: vorne mehr Haftung (Prototyp 1.0) ...
-        gripHinten: 1.0,         // ... hinten weniger als der Prototyp (1.12): das Heck kommt schnell.
-                                 // Achtung, scharf: 0.97 = Heck unter Vollgas in der Kurve +3.5° statt +2.5°
-        gewichtstransfer: 0.8,   // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt deutlich (+10°). Mehr (1.2)
-                                 // liess den Testfahrer beim Bremsen mit 130 km/h quer kommen
-        stabilitaet: 4.5,        // das Heck ist schwerer einzufangen als beim Escorta (eingefangen nach ca. 1.3 s)
-        gasImDrift: 0.15,        // Gas im Drift lockert das Heck (Prototyp 0.12)
-        antriebHinten: 1.2,      // Hinterradantrieb: Schub braucht hinten Haftung auf (Vollgas in der Kurve +2.5°).
-                                 // Gemessen: unter 1.05 deutlich weniger (1.0 = +1.8°), von 1.05 bis 2.4 fast gleich
-                                 // (kein Kippen). Aber: es wirkt auch beim Tempo-Halten in der Kurve, das Heck beim
-                                 // Bremsen in der Kurve springt (1.15 = +7.3°, 1.25 = +13°). Kleine Schritte!
-        heckJeBelag: { schotter: 1.36, wiesenweg: 1.4 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
+        gripHinten: 1.0,         // ... hinten weniger als der Prototyp (1.12): das Heck kommt schnell. M8f: 1.05 wäre
+                                 // ruhiger, aber dann schiebt der flotte Testfahrer an der Wiesenweg-Einfahrt (2794 m) in
+                                 // die Absperrung (das Auto lenkt weniger ein); darum bleibt 1.0, stabilitaet fängt
+        gewichtstransfer: 0.75,  // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt (+6.1°, M8e 0.8 = +10°).
+                                 // Weniger (0.5) lässt das Heck unter Vollgas in der Kurve mehr kommen (+9°)
+        stabilitaet: 6.8,        // M8f: das Heck ist schnell wieder gefangen (0.78 s; M8e 4.5 = 1.28 s und Dreher im
+                                 // Tastatur-Slalom). Mehr (7) macht die Lenkung träger (Lenkwinkel nur noch -9 %)
+        gasImDrift: 0.1,         // Gas im Drift lockert das Heck etwas weniger als beim Prototyp (0.12; M8e 0.15)
+        antriebHinten: 1.2,      // Hinterradantrieb: Schub braucht hinten Haftung auf (Vollgas in der Kurve +1.6°).
+                                 // Gemessen: unter 1.05 deutlich weniger, von 1.05 bis 2.4 fast gleich (kein Kippen).
+                                 // M8e sprang das Heck beim Bremsen in der Kurve (1.15 = +7.3°, 1.25 = +13°); seit M8f
+                                 // (stabilitaet 6.8) glatt: 1.05 bis 1.35 = +6.2° bis +6.0°
+        heckJeBelag: { schotter: 1.34, wiesenweg: 1.4 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
                                  // losem Boden aus (sonst Kreis Schotter -5 %); unter Gas bleibt das Heck locker
       },
       getriebe: {
@@ -868,7 +872,7 @@ export const CONFIG = {
                                  // Testfahrer bei 694 m (lange Linkskurve, 140 km/h) an die Leitplanke schieben
         gripVorne: 1.05,         // tiefer Schwerpunkt: die Front hält etwas mehr (Prototyp 1.0)
         gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve nur leicht (+3.0°) ...
-        stabilitaet: 6.5,        // ... und ist sofort wieder gefangen (0.33 s; Prototyp 5)
+        stabilitaet: 6.8,        // ... und ist sofort wieder gefangen (0.33 s; Prototyp 5)
         vorneJeBelag: { schotter: 1.05, wiesenweg: 1.05 }, // Allrad zieht die Front auf losem Boden in die Kurve ...
         heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit
       },
