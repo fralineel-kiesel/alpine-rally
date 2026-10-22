@@ -498,12 +498,32 @@ export function baueSeiten(api) {
       });
     },
   });
+  // Zeile über der grossen Zeit (M8h): "PLATZ p VON n" (Liste des Autos) und/oder "GESAMT PLATZ 2" (nur 2 und 3, der
+  // Rekord steht im Titel); beide in einer Zeile, damit die Seite nicht höher wird als bis 0.8g
+  const platzZeile = (e) => {
+    const teile = [];
+    if (!e.neueBest && e.platz > 0 && e.bisher) teile.push({ text: () => t('ziel.platz', { p: e.platz, n: e.anzahl }), farbe: M.farbeGruppe });
+    if (!e.gesamtRekord && (e.gesamtPlatz === 2 || e.gesamtPlatz === 3)) teile.push({ text: () => t('ziel.gesamtPlatz', { p: e.gesamtPlatz }), farbe: M.farbeTitel });
+    if (!teile.length) return [];
+    const LUECKE_P = 14;
+    const breite = () => teile.reduce((b, x) => b + textBreite(x.text()), 0) + (teile.length - 1) * LUECKE_P;
+    return [{
+      typ: 'info', hoehe: 10, breite, inhalt: () => teile.map((x) => x.text()).join(' · '), farbe: teile[teile.length - 1].farbe,
+      farben: teile.map((x) => x.farbe), // (für Tests)
+      zeichne(c, x, y, b) {
+        let xl = x + Math.round((b - breite()) / 2);
+        for (const tl of teile) { pixelText(c, tl.text(), xl, y + 1, 1, tl.farbe); xl += textBreite(tl.text()) + LUECKE_P; }
+      },
+    }];
+  };
+  // Titel: Gesamtrekord (M8h) vor neuer Bestzeit des Autos vor ZIEL!; beide blinken (gelb / grün)
+  const feiern = () => { const e = erg(); return !!(e && (e.gesamtRekord || e.neueBest)); };
   const zielSeite = {
     id: 'ziel',
-    titel: () => t(erg() && erg().neueBest ? 'ziel.neueBestzeit' : 'ziel.titel'),
-    // neue Bestzeit: Titel blinkt (gelb / grün); sonst wird die Seite nicht neu gezeichnet
-    get blinkt() { const e = erg(); return !!(e && e.neueBest); },
-    titelFarbe: (blinkAn) => (erg() && erg().neueBest && !blinkAn ? RA.farbeSchneller : M.farbeTitel),
+    titel: () => { const e = erg(); return t(e && e.gesamtRekord ? 'ziel.gesamtRekord' : e && e.neueBest ? 'ziel.neueBestzeit' : 'ziel.titel'); },
+    // neue Bestzeit oder Gesamtrekord: Titel blinkt (gelb / grün); sonst wird die Seite nicht neu gezeichnet
+    get blinkt() { return feiern(); },
+    titelFarbe: (blinkAn) => (feiern() && !blinkAn ? RA.farbeSchneller : M.farbeTitel),
     zurueck: () => false, // Esc / B tun hier nichts (keine Pause im Zielbildschirm, auch kein Ton)
     kurztaste: (code) => { const T = einstellungen.tasten.zurueck; if (code === T[0] || code === T[1]) api.neuStarten(); },
     eintraege: () => {
@@ -513,10 +533,9 @@ export function baueSeiten(api) {
         { typ: 'aktion', text: 'ziel.hauptmenue', aktion: () => api.zumHauptmenue() },
       ];
       if (!e) return knoepfe;
-      const platz = !e.neueBest && e.platz > 0 && e.bisher
-        ? [textZeile(() => t('ziel.platz', { p: e.platz, n: e.anzahl }), M.farbeGruppe, true)] : [];
+      // (vergleichZeile und Zwischenzeiten vergleichen mit e.bisher = Bestzeit dieses Autos vor dem Lauf, M8h)
       return [
-        ...platz,
+        ...platzZeile(e),
         grosseZeit(e.zeit),
         vergleichZeile(e),
         leer(4),

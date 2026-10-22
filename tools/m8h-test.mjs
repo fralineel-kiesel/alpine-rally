@@ -8,6 +8,10 @@
 //   (e) Speicher blockiert, kaputtes JSON, Speicher voll; geschätzte Speichergrösse
 //   (f) loescheBestzeiten löscht beide Schlüssel
 //   (g) die alten Aufrufe in rennablauf-test, overlay-test, m8c-test bleiben grün (ruft die Tests auf, dauert)
+//   Teil B – Live-Vergleich und Zielbildschirm je Auto:
+//   (h) Referenz je Auto (Audan-Bestzeit trägt nicht in den Delto-Vergleich; Auto ohne Zeit = keine Referenz; Garage lädt nach)
+//   (i) Zielbildschirm: Titel, Zeilen, Farben für alle Fälle, Fanfare, Layout in drei Auflösungen, de/en; Einstellungstext
+//   (j) Live-Vergleich mit Auto-Referenz über echte Testfahrer-Läufe: Anzeige stimmt, Zeit unverändert
 // Die Übernahme ist mit erfundenen Altdaten geprüft, nicht mit echten Browser-Daten von Lino.
 
 import fs from 'node:fs';
@@ -260,6 +264,233 @@ if (teil('e') || teil('f')) {
       'loescheBestzeiten: alter und neuer Schlüssel weg, alle Listen leer (keine erneute Übernahme)');
     melde(r.nachLoeschen.letzter, '"Letzter Lauf" bleibt (wie bisher)');
   }
+  melde(s.fehler.length === 0, `keine Fehler in der Konsole ${s.fehler.join(' | ')}`);
+  await s.schliessen();
+}
+
+// --- Spiel mit Menü (Teil B und C) ---------------------------------------------------------------------------------
+const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+async function bilderAbwarten(p, n = 3) {
+  await p.evaluate((n) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+}
+// Spiel laden (mit Menü) mit diesem Auto; Speicher leer; Hilfe insZiel wie in rennablauf-test (Fahrt über die Ziellinie
+// mit vorgegebener Zeit, eingetragen wie im Spiel)
+async function spielMitMenue(auto, { breite = 640, hoehe = 360, gamepad = false } = {}) {
+  const s = await starteSpiel({ breite, hoehe, auto });
+  if (gamepad) {
+    await s.page.addInitScript(() => {
+      window.__knopf = -1;
+      navigator.getGamepads = () => [{ connected: true, axes: [0, 0], buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: i === window.__knopf, value: i === window.__knopf ? 1 : 0 })) }];
+    });
+  }
+  await s.page.addInitScript(() => { try { if (!sessionStorage.getItem('m8h')) { localStorage.clear(); sessionStorage.setItem('m8h', '1'); } } catch { /* blockiert */ } });
+  await s.page.goto(`${s.url}/index.html`);
+  await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  await bilderAbwarten(s.page);
+  await s.page.evaluate((code) => {
+    window.__fahrerUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+    const A = window.__alpineRally;
+    const LEER = { gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false };
+    window.__T = {
+      LEER,
+      insZiel(zeit, cps) {
+        A.anhalten = true;
+        A.start({ countdown: false });
+        A.setzeAuf(A.strecke.zielS - 30);
+        const p = A.physik;
+        p.vx = Math.sin(p.richtung) * 20; p.vz = Math.cos(p.richtung) * 20; p.vVor = 20;
+        A.rennen.zustand = 'laeuft';
+        A.rennen.zwischenzeiten = cps.slice(); A.rennen.naechsterCp = A.checkpoints.length;
+        for (let n = 0; n < 2000 && A.rennen.zustand !== 'ziel'; n++) A.physikSchritt(A.SCHRITT, { ...LEER, gas: 0.5 });
+        A.rennen.endZeit = zeit; A.rennen.zeit = zeit;
+        A.rennSchritt(A.SCHRITT, LEER);
+        return A.lauf.ergebnis;
+      },
+      bisZielschirm() { let n = 0; while (A.ablauf.zustand !== 'ziel' && n < 5000) { A.rennSchritt(A.SCHRITT, LEER); n++; } return n; },
+      zielZeilen() { return A.seiten.ziel.eintraege().map((e) => ({ typ: e.typ, text: e.inhalt ? e.inhalt() : e.text, farbe: e.farbe || null, farben: e.farben || null })); },
+    };
+  }, fahrerCode);
+  return s;
+}
+
+// =====================================================================
+if (teil('h')) {
+  console.log('(h) Referenz für den Live-Vergleich je Auto');
+  const s = await spielMitMenue('');
+  const r = await s.page.evaluate(async () => {
+    const A = window.__alpineRally, B = await import('/js/bestzeiten.js'), E = await import('/js/einstellungen.js');
+    localStorage.clear(); B.loescheBestzeiten();
+    const ref = () => ({ n: A.vergleich.ref.n, quelle: A.vergleich.ref.quelle, ziel: Math.round(A.vergleich.referenzBei(A.strecke.zielS) * 100) / 100 });
+    const out = {};
+    A.ablauf.wechsle('menue');
+    A.autoWechseln('rt4');
+    B.speichereBestzeit('passstrasse', { zeit: 150, cps: [30, 90, 130], auto: 'rt4' });
+    B.speichereBestzeit('passstrasse', { zeit: 140, cps: [28, 85, 125], auto: 'prototyp' }); // gesamtbeste, ohne Auto
+    A.referenzLaden();
+    out.rt4 = ref();
+    A.autoWechseln('delto'); // Garage: Referenz sofort nachgeladen
+    out.deltoGarage = ref();
+    A.start({ countdown: false });
+    out.deltoStart = ref();
+    A.zumHauptmenue();
+    A.autoWechseln('rt4');
+    out.rt4Garage = ref();
+    A.autoWechseln('delto');
+    B.speichereBestzeit('passstrasse', { zeit: 165, cps: [33, 95, 140], auto: 'delto' });
+    A.start({ countdown: false });
+    out.deltoMitZeit = ref();
+    // LETZTER LAUF: egal mit welchem Auto (wie bisher)
+    B.speichereLetztenLauf('passstrasse', { zeit: 170, cps: [34, 96, 150], spur: null });
+    E.setze('vergleichMit', 'letzter');
+    out.letzter = ref();
+    E.setze('vergleichMit', 'best');
+    out.zurueck = ref();
+    A.zumHauptmenue();
+    return out;
+  });
+  melde(r.rt4.n > 0 && r.rt4.ziel === 150 && r.rt4.quelle === 'best', `Audan: Referenz = Audan-Bestzeit (${r.rt4.ziel} s), nicht die gesamtbeste 140 s ohne Auto`);
+  melde(r.deltoGarage.n === 0 && r.deltoStart.n === 0, 'Delto ohne eigene Zeit: keine Referenz (in der Garage und beim Start), kein Rückfall auf andere Autos');
+  melde(r.rt4Garage.n > 0 && r.rt4Garage.ziel === 150, 'zurück zum Audan in der Garage: Referenz sofort wieder die Audan-Bestzeit');
+  melde(r.deltoMitZeit.n > 0 && r.deltoMitZeit.ziel === 165, `Delto mit eigener Zeit: Referenz ${r.deltoMitZeit.ziel} s (nicht die schnellere Audan-Zeit)`);
+  melde(r.letzter.quelle === 'letzter' && r.letzter.ziel === 170 && r.zurueck.ziel === 165, 'Einstellung LETZTER LAUF: der letzte Lauf egal mit welchem Auto; zurück auf BESTZEIT AUTO');
+  melde(s.fehler.length === 0, `keine Fehler in der Konsole ${s.fehler.join(' | ')}`);
+  await s.schliessen();
+}
+
+// =====================================================================
+if (teil('i')) {
+  console.log('(i) Zielbildschirm: Titel, Zeilen, Farben, Fanfare, Layout');
+  const s = await spielMitMenue('delto');
+  const p = s.page;
+  const fall = (vorher, zeit, { voll = false } = {}) => p.evaluate(async ([vorher, zeit, voll]) => {
+    const A = window.__alpineRally, B = await import('/js/bestzeiten.js'), T = window.__T;
+    B.loescheBestzeiten();
+    for (const [z, a] of vorher) B.speichereBestzeit('passstrasse', { zeit: z, cps: [z * 0.2, z * 0.55, z * 0.9], auto: a });
+    const P = Storage.prototype, set = P.setItem;
+    if (voll) P.setItem = function (k, v) { if (k === 'alpineRally.bestzeiten2') throw new DOMException('voll', 'QuotaExceededError'); return set.call(this, k, v); };
+    const fanfaren = [], f0 = A.ton.fanfare;
+    A.ton.fanfare = (lang) => { fanfaren.push(lang); };
+    const erg = JSON.parse(JSON.stringify(T.insZiel(zeit, [zeit * 0.2, zeit * 0.55, zeit * 0.9])));
+    T.bisZielschirm();
+    A.ton.fanfare = f0; P.setItem = set;
+    const z = A.seiten.ziel;
+    const out = { erg: { neueBest: erg.neueBest, gesamtRekord: erg.gesamtRekord, gesamtPlatz: erg.gesamtPlatz, platz: erg.platz, gespeichert: erg.gespeichert },
+      titel: z.titel(), blinkt: z.blinkt, farbe: [z.titelFarbe(true), z.titelFarbe(false)], zeilen: T.zielZeilen(), fanfaren, masse: {} };
+    // Layout: Tafel in drei Auflösungen, de und en (das Menü ist immer 320x180, die Pixelgrösse betrifft nur das 3D-Bild)
+    const E = await import('/js/einstellungen.js'), TX = await import('/js/texte.js');
+    for (const sp of ['de', 'en']) {
+      TX.setzeSprache(sp);
+      for (const a of [0, 1, 2]) {
+        E.setze('aufloesung', a);
+        A.menue.neuZeichnen();
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const m = A.menue.rollen;
+        out.masse[`${sp}-${a}`] = { hoehe: m.hoehe, max: m.max, breite: m.breite, inhalt: m.inhalt, titel: z.titel() };
+      }
+    }
+    TX.setzeSprache('de'); E.setze('aufloesung', 0);
+    A.zumHauptmenue();
+    return out;
+  }, [vorher, zeit, voll]);
+  const C = await p.evaluate(() => ({ ...window.__alpineRally.CONFIG.rennablauf, M: window.__alpineRally.CONFIG.menue }));
+  const text = (f, re) => f.zeilen.find((z) => re.test(String(z.text)));
+  const diff = (f) => text(f, /^[+-]?\d+\.\d\d$/);
+  const layoutOk = (f) => Object.values(f.masse).every((m) => m.max === 0 && m.hoehe <= 163 && m.breite <= 316);
+  const lay = (f) => `Tafel ${Math.max(...Object.values(f.masse).map((m) => m.hoehe))} hoch, ${Math.max(...Object.values(f.masse).map((m) => m.breite))} breit`;
+  const faelle = {};
+  // 1. allererste Zeit überhaupt
+  faelle.erste = await fall([], 160);
+  // 2. erste Zeit des Delto, ein anderes Auto ist schneller: GESAMT PLATZ 2
+  faelle.ersteAuto = await fall([[150, 'rt4']], 160);
+  // 3. Delto langsamer als die eigene Bestzeit, Gesamtplatz 3: beide Plätze in einer Zeile
+  faelle.langsamer = await fall([[150, 'rt4'], [158, 'delto']], 160);
+  // 4. neue Delto-Bestzeit, Gesamtplatz 2
+  faelle.neueBest = await fall([[150, 'rt4'], [165, 'delto']], 160);
+  // 5. Gesamtrekord (auch neue Delto-Bestzeit)
+  faelle.rekord = await fall([[150, 'rt4'], [165, 'delto']], 145);
+  // 6. Gesamtrekord mit der ersten Delto-Zeit
+  faelle.rekordErste = await fall([[150, 'rt4']], 145);
+  // 7. ungünstigster Fall für die Höhe: beide Platz-Zeilen und "ZEIT WIRD NICHT GESPEICHERT" (Speicher voll)
+  faelle.voll = await fall([[150, 'rt4'], [158, 'delto']], 160, { voll: true });
+  // 8. englisch: Titel
+  const f = faelle;
+  melde(f.erste.titel === 'ZIEL!' && !f.erste.blinkt && text(f.erste, /^ERSTE ZEIT$/) && !text(f.erste, /PLATZ/) && !f.erste.erg.gesamtRekord && f.erste.fanfaren.join() === 'false',
+    `allererste Zeit: ZIEL!, ERSTE ZEIT, keine Platz-Zeile, kein Rekord, kurze Fanfare (${lay(f.erste)})`);
+  const g2 = text(f.ersteAuto, /^GESAMT PLATZ/);
+  melde(f.ersteAuto.titel === 'ZIEL!' && text(f.ersteAuto, /^ERSTE ZEIT$/) && g2 && g2.text === 'GESAMT PLATZ 2' && g2.farbe === C.M.farbeTitel,
+    `erste Delto-Zeit hinter dem Audan: ZIEL!, ERSTE ZEIT, "${g2 && g2.text}" (gelb)`);
+  const pl = text(f.langsamer, /^PLATZ/), dl = diff(f.langsamer);
+  melde(f.langsamer.titel === 'ZIEL!' && pl && pl.text === 'PLATZ 2 VON 2 · GESAMT PLATZ 3' && pl.farben.join() === `${C.M.farbeGruppe},${C.M.farbeTitel}` && dl.text === '+2.00' && dl.farbe === C.farbeLangsamer,
+    `langsamer als die eigene Bestzeit: "${pl && pl.text}" in einer Zeile, rot ${dl && dl.text} (gegen die Delto-Bestzeit, nicht den Audan)`);
+  const nb = diff(f.neueBest), g3 = text(f.neueBest, /GESAMT PLATZ/);
+  melde(f.neueBest.titel === 'NEUE BESTZEIT!' && f.neueBest.blinkt && f.neueBest.farbe[1] === C.farbeSchneller && nb.text === '-5.00' && nb.farbe === C.farbeSchneller
+    && g3 && g3.text === 'GESAMT PLATZ 2' && !text(f.neueBest, /^PLATZ/) && f.neueBest.fanfaren.join() === 'false,true',
+    `neue Delto-Bestzeit: NEUE BESTZEIT! (blinkt), grün ${nb && nb.text}, "${g3 && g3.text}", lange Fanfare`);
+  const rd = diff(f.rekord);
+  melde(f.rekord.titel === 'GESAMTREKORD!' && f.rekord.blinkt && f.rekord.erg.gesamtRekord && f.rekord.erg.neueBest && rd.text === '-20.00' && !text(f.rekord, /GESAMT PLATZ/) && f.rekord.fanfaren.join() === 'false,true',
+    `Gesamtrekord: GESAMTREKORD! (blinkt, vor NEUE BESTZEIT), Vergleich mit der Delto-Bestzeit ${rd && rd.text}, keine GESAMT-PLATZ-Zeile, lange Fanfare`);
+  melde(f.rekordErste.titel === 'GESAMTREKORD!' && f.rekordErste.blinkt && text(f.rekordErste, /^ERSTE ZEIT$/) && !f.rekordErste.erg.neueBest && f.rekordErste.fanfaren.join() === 'false,true',
+    'Gesamtrekord mit der ersten Delto-Zeit: GESAMTREKORD!, ERSTE ZEIT, lange Fanfare');
+  melde(!f.voll.erg.gespeichert && text(f.voll, /NICHT GESPEICHERT/) && text(f.voll, /^PLATZ 2 VON 2 · GESAMT PLATZ 3$/),
+    `ungünstigster Fall (beide Plätze, nicht gespeichert): ${lay(f.voll)}`);
+  melde(Object.values(f).every(layoutOk), `Layout in 320x180, 480x270, 640x360, de und en: nichts gerollt, Tafel höchstens 163 hoch (wie bis 0.8g), höchstens 316 breit; ${Object.entries(f).map(([k, v]) => `${k} ${lay(v)}`).join('; ')}`);
+  melde(f.rekord.masse['en-0'].titel === 'OVERALL RECORD!' && f.neueBest.masse['en-0'].titel === 'NEW BEST TIME!' && f.erste.masse['en-0'].titel === 'FINISH!', 'englisch: OVERALL RECORD!, NEW BEST TIME!, FINISH!');
+  // Einstellung VERGLEICH MIT: Text BESTZEIT AUTO, Seite nicht breiter (Tafelbreite gegen den Text "BESTZEIT" von 0.8g)
+  const e = await p.evaluate(async () => {
+    const A = window.__alpineRally, TX = await import('/js/texte.js'), P = await import('/js/pixel.js');
+    const out = {};
+    for (const sp of ['de', 'en']) {
+      TX.setzeSprache(sp);
+      A.ablauf.wechsle('menue'); A.menue.zeige(A.seiten.einstellungen, true); A.menue.neuZeichnen();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const l = A.menue.seite.eintraege, v = l.find((x) => x.text === 'einst.vergleichMit');
+      out[sp] = { breite: A.menue.rollen.breite, inhalt: A.menue.rollen.inhalt, wert: TX.t('wert.bestzeit'), andere: TX.t('wert.letzterLauf'),
+        zeichenOk: [...TX.t('wert.bestzeit'), ...TX.t('ziel.gesamtRekord'), ...TX.t('ziel.gesamtPlatz', { p: 2 })].every((ch) => ch === ' ' || P.SCHRIFT[ch]), optionen: v.optionen().length };
+    }
+    TX.setzeSprache('de');
+    return out;
+  });
+  melde(e.de.wert === 'BESTZEIT AUTO' && e.en.wert === 'CAR BEST' && e.de.zeichenOk && e.en.zeichenOk, `Einstellung VERGLEICH MIT: "${e.de.wert}" / "${e.en.wert}", alle Zeichen in der Pixelschrift`);
+  melde(e.de.breite === 283, `EINSTELLUNGEN nicht breiter als in 0.8g (de ${e.de.breite} Pixel, 0.8g 283; en ${e.en.breite})`);
+  melde(s.fehler.length === 0, `keine Fehler in der Konsole ${s.fehler.join(' | ')}`);
+  await s.schliessen();
+}
+
+// =====================================================================
+if (teil('j')) {
+  console.log('(j) Live-Vergleich gegen die Auto-Bestzeit über echte Testfahrer-Läufe');
+  const s = await spielMitMenue('delto');
+  const r = await s.page.evaluate(async () => {
+    const A = window.__alpineRally, B = await import('/js/bestzeiten.js');
+    const f = await import(window.__fahrerUrl);
+    B.loescheBestzeiten();
+    // eine schnelle Audan-Zeit (mit Spur) liegt vor: sie darf den Delto-Vergleich nicht füttern
+    const spur = Array.from({ length: A.vergleich.K + 1 }, (_, k) => Math.round(k * 0.38 * 100) / 100);
+    B.speichereBestzeit('passstrasse', { zeit: spur[spur.length - 1], cps: [30, 80, 120], auto: 'rt4', spur });
+    A.ablauf.wechsle('menue'); A.autoWechseln('delto'); A.anhalten = true;
+    const lauf = () => {
+      const proben = { n: 0, sichtbar: 0, maxRoh: 0 };
+      const r = f.fahreEtappe(A, 'mittel', () => {
+        if (A.rennen.zustand !== 'laeuft' || ++proben.n % 60) return;
+        const a = A.vergleich.aktualisiere(1, A.rennen.letztesS, A.rennen.zeit, true);
+        if (a.sichtbar) { proben.sichtbar++; proben.maxRoh = Math.max(proben.maxRoh, Math.abs(A.vergleich.roh)); }
+      });
+      for (let i = 0; i < 2000 && !A.lauf.zielErledigt; i++) A.rennSchritt(A.SCHRITT, { gas: 0, bremse: 0, lenkung: 0, handbremse: false });
+      const e = A.lauf.ergebnis;
+      return { zeit: r.zeit, ziel: r.ziel, aufpralle: r.aufpralle ? r.aufpralle.length : null, ref: A.vergleich.ref.n, proben, auto: e.auto, bisher: e.bisher && e.bisher.zeit, neueBest: e.neueBest, gesamtPlatz: e.gesamtPlatz, platz: e.platz };
+    };
+    A.start({ countdown: false });
+    const eins = lauf();
+    const zwei = lauf();
+    A.zumHauptmenue();
+    return { eins, zwei, audan: spur[spur.length - 1] };
+  });
+  const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+  melde(r.eins.ziel && r.eins.ref === 0 && r.eins.proben.sichtbar === 0 && r.eins.auto === 'delto' && r.eins.bisher === null && r.eins.gesamtPlatz === 2,
+    `1. Delto-Lauf ${fmt(r.eins.zeit)}: keine Referenz (die Audan-Zeit ${fmt(r.audan)} zählt nicht), Live-Vergleich nie sichtbar, ERSTE ZEIT, Gesamtplatz ${r.eins.gesamtPlatz}`);
+  melde(r.zwei.ziel && r.zwei.ref > 0 && r.zwei.proben.sichtbar > 100 && r.zwei.proben.maxRoh < 0.05 && r.zwei.bisher === r.eins.zeit,
+    `2. Delto-Lauf: Referenz = 1. Delto-Lauf (Spur), Anzeige in ${r.zwei.proben.sichtbar} Proben sichtbar, Unterschied höchstens ${r.zwei.proben.maxRoh.toFixed(3)} s (gleiche Fahrt)`);
+  melde(r.zwei.zeit === r.eins.zeit && fmt(r.eins.zeit) === '2:41.60', `Zeit unverändert: ${fmt(r.eins.zeit)} beide Male (M8f-Tabelle Delto mittel 2:41.60)`);
   melde(s.fehler.length === 0, `keine Fehler in der Konsole ${s.fehler.join(' | ')}`);
   await s.schliessen();
 }

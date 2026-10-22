@@ -123,7 +123,7 @@ export const TEXTE = {
   'einst.vergleich': { de: 'LIVE-VERGLEICH', en: 'LIVE DELTA' },
   'einst.vergleichHinweis': { de: 'GRÜN = SCHNELLER, ROT = LANGSAMER', en: 'GREEN = FASTER, RED = SLOWER' },
   'einst.vergleichMit': { de: 'VERGLEICH MIT', en: 'COMPARE WITH' },
-  'wert.bestzeit': { de: 'BESTZEIT', en: 'BEST TIME' },
+  'wert.bestzeit': { de: 'BESTZEIT AUTO', en: 'CAR BEST' }, // M8h: Bestzeit des gefahrenen Autos
   'wert.letzterLauf': { de: 'LETZTER LAUF', en: 'LAST RUN' },
   // M5b: Gruppe DATEN
   'einst.daten': { de: 'DATEN', en: 'DATA' },
@@ -236,6 +236,8 @@ export const TEXTE = {
   // --- Zielbildschirm (M5b) ---
   'ziel.titel': { de: 'ZIEL!', en: 'FINISH!' },
   'ziel.neueBestzeit': { de: 'NEUE BESTZEIT!', en: 'NEW BEST TIME!' },
+  'ziel.gesamtRekord': { de: 'GESAMTREKORD!', en: 'OVERALL RECORD!' }, // M8h: schnellste Zeit aller Autos
+  'ziel.gesamtPlatz': { de: 'GESAMT PLATZ {p}', en: 'OVERALL RANK {p}' }, // M8h: Platz 2 oder 3 der Gesamtwertung
   'ziel.platz': { de: 'PLATZ {p} VON {n}', en: 'RANK {p} OF {n}' },
   'ziel.ersteZeit': { de: 'ERSTE ZEIT', en: 'FIRST TIME' },
   'ziel.cp': { de: 'CP {n}', en: 'CP {n}' },

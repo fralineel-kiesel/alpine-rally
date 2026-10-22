@@ -306,11 +306,15 @@ function zeigeMeldung(text, farbe, verpasstCp = -1) {
   rennen.meldung = { text, farbe, bis: rennen.uhr + CONFIG.checkpoints.anzeigeDauer, verpasstCp };
 }
 
+// Mit welcher Auto-Id wird ein Lauf eingetragen? (M8a: im Vergleichsprofil ?auto=prototyp "prototyp", sonst das Auto)
+const laufAuto = () => (aktivesProfil() === REFERENZ_PROFIL ? REFERENZ_PROFIL : AUTOS[auswahl.auto].id);
 // Referenz für den Live-Vergleich (M6): Platz 1 der Bestzeiten oder der letzte Lauf dieser Etappe (Einstellung)
+// M8h: "Bestzeit" = die Bestzeit des gefahrenen Autos (hat es noch keine: keine Referenz, kein Rückfall auf andere Autos);
+// der letzte Lauf gilt weiter egal mit welchem Auto
 function referenzLaden() {
   const etappe = ETAPPEN[auswahl.etappe].id;
   const quelle = einstellungen.vergleichMit === 'letzter' ? 'letzter' : 'best';
-  const eintrag = quelle === 'letzter' ? ladeLetztenLauf(etappe) : (ladeBestzeiten(etappe)[0] || null);
+  const eintrag = quelle === 'letzter' ? ladeLetztenLauf(etappe) : (ladeBestzeiten(etappe, laufAuto())[0] || null);
   vergleich.setzeReferenz(eintrag, quelle);
 }
 
@@ -835,16 +839,19 @@ function zielErreicht() {
   const spur = vergleich.fertigeSpur(rennen.endZeit);
   // (M8a: Läufe im Vergleichsprofil ?auto=prototyp tragen die Id "prototyp", sonst die Id des Autos wie bisher)
   const eintrag = {
-    zeit: rennen.endZeit, cps, auto: aktivesProfil() === REFERENZ_PROFIL ? REFERENZ_PROFIL : AUTOS[auswahl.auto].id,
+    zeit: rennen.endZeit, cps, auto: laufAuto(),
     aufpralle: stat.aufpralle, resets: statResets(), hoechstTempo: stat.hoechstTempo, spur,
   };
   const erg = speichereBestzeit(etappe.id, eintrag);
   speichereLetztenLauf(etappe.id, { zeit: rennen.endZeit, cps, spur });
   lauf.ergebnis = {
     ...eintrag, platz: erg.platz, anzahl: erg.anzahl, bisher: erg.bisher, gespeichert: erg.gespeichert,
-    neueBest: !!erg.bisher && hundertstel(eintrag.zeit) < hundertstel(erg.bisher.zeit), // nur echte Verbesserung
+    neueBest: !!erg.bisher && hundertstel(eintrag.zeit) < hundertstel(erg.bisher.zeit), // nur echte Verbesserung (dieses Autos)
+    // M8h: Gesamtwertung (alle Autos): Platz 1-3 (0 = nicht drin), gesamtbeste Zeit vor dem Lauf, Rekord = echt schneller
+    gesamtPlatz: erg.gesamtPlatz, gesamtBisher: erg.gesamtBisher,
+    gesamtRekord: !!erg.gesamtBisher && hundertstel(eintrag.zeit) < hundertstel(erg.gesamtBisher.zeit),
   };
-  lauf.markiert = erg.platz > 0 ? { etappe: etappe.id, datum: erg.datum } : null;
+  lauf.markiert = erg.platz > 0 ? { etappe: etappe.id, datum: erg.datum, auto: eintrag.auto } : null; // (M8h: mit Auto)
   ton.fanfare(false); // M7a: kurze Fanfare beim Überfahren der Ziellinie (neue Bestzeit: die lange zum Zielbildschirm)
 }
 // Pause aus dem Rennen oder dem Countdown (nicht im Zielbildschirm); Weiter geht dorthin zurück
@@ -931,6 +938,7 @@ function autoWechseln(id, lack = null) {
     auto.dreck(dreck);
     federung.reset();
     if (ablauf.ist('titel', 'menue')) demo.start(); else neustart(); // (Fahrphysik sauber auf den Start)
+    referenzLaden(); // M8h: Live-Vergleich gegen die Bestzeit des neuen Autos (beim Start wird sie ohnehin neu geladen)
     if (fahrlabor && fahrlabor.alleZeigen) fahrlabor.alleZeigen();
   }
   // merken (das Auto der Adresse ?auto= nur, wenn im Menü gewählt; prototyp gibt es in der Garage nicht)
@@ -950,7 +958,8 @@ ablauf.registriere('pause', { welt: null, hud: true, menue: true, abdunkeln: M.a
 ablauf.registriere('countdown', { welt: 'rennen', hud: true, betreten: () => { eingabeLeeren(); akku = 0; } });
 ablauf.registriere('ziel', {
   welt: 'rennen', hud: true, menue: true, abdunkeln: RA.abdunkeln,
-  betreten: () => { menue.zeige(seiten.ziel); if (lauf.ergebnis && lauf.ergebnis.neueBest) ton.fanfare(true); }, // M7a: lange Fanfare
+  // M7a: lange Fanfare bei neuer Bestzeit (M8h: dieselbe beim Gesamtrekord)
+  betreten: () => { menue.zeige(seiten.ziel); if (lauf.ergebnis && (lauf.ergebnis.neueBest || lauf.ergebnis.gesamtRekord)) ton.fanfare(true); },
 });
 
 // Einstellungen wirken sofort
