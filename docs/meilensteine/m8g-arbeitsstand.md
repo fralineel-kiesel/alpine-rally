@@ -8,7 +8,10 @@ Vergleichsstand 0.8f: `git worktree add <scratchpad>/alt-08f 3ed7aae` → `node 
       Profil-Block `tacho: { stil, …, klassisch: {…} }` (Subora 9/8 in beiden), `tacho.js`: tachoStil(), tachoFuer(),
       Vorrat je (Stil, Skala, Einheit) für alle Tachos, setzeModus(); Einstellung `tacho` (Standard auto), Menü TACHO
       neben EINHEITEN, Texte de/en. Prüfung (a): 60 direkt gemalte Fälle + 30 HUD-Ausschnitte pixelgleich zu 0.8f.
-- [ ] B Stile und Skalen
+- [x] B Skalen nach Regel (Begrenzer 6850 -> 8000, rot 6500; Subora 9000/8000), Tempo 200 km/h / 130 mph; Stile delto
+      (schwarz, blauer Ring, weisse Nadel mit roter Spitze), escorta (creme, schwarz, Digitalfenster), l073 (LED: Segmentband,
+      Punkte, grün, gelbe Nadel), imprexa (blau, Innenring, gelb); audan = klassisch + Skala. Ziffern: zahlenLage() ohne
+      Berührung; beim Tempo fällt die 200 weg (über der Digitalanzeige), Escorta (ohne Schatten) zeigt alle. Test (b) ok.
 - [ ] C Gang-Anzeige, Schaltlicht, Ladedruck
 - [ ] D Garage-Vorschau
 - [ ] E Tests, Bilder, Bericht, Version 0.8g

@@ -705,7 +705,9 @@ export const CONFIG = {
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },
-      tacho: { stil: 'audan' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
+      // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
+      // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
+      tacho: { stil: 'audan', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
       ton: { turboMal: 1, knallMal: 1, motor: {} }, // M8c: Ton wie 0.8b; M8d: Motorklang = Referenz (audio.motor)
     },
     // Lanza Delto (Id delto, M8c): wendig, griffig, kurzer Radstand. Leichter und kürzer als der Audan, direkter in der
@@ -731,7 +733,9 @@ export const CONFIG = {
                                  // (sonst wäre der Testfahrer schneller als mit dem Audan)
         turbo: { an: true, aufbau: 0.4 }, // dezenter Turbo, baut etwas langsamer auf als beim Audan (0.35 s)
       },
-      tacho: { stil: 'delto' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
+      // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
+      // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
+      tacho: { stil: 'delto', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
       ton: {
         turboMal: 1, knallMal: 1,
         // M8d: Motorklang 4-Zylinder-Turbo, höher und giftiger als der Audan (nur die Abweichungen von audio.motor)
@@ -778,7 +782,9 @@ export const CONFIG = {
         gaenge: [48, 82, 118, 150, 168], // 4. und 5. Gang kürzer: Höchsttempo ca. 8 % tiefer
         turbo: { an: false },    // kein Turbo (auch kein Pfeifen und kein Blow-off im Ton, siehe ton)
       },
-      tacho: { stil: 'escorta' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
+      // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
+      // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
+      tacho: { stil: 'escorta', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
       ton: {
         turboMal: 0, knallMal: 0.5, // kein Turbo-Geräusch, halb so oft Pops (M8c)
         // M8d: Motorklang 4-Zylinder-Sauger, heiser und warm, ohne Pfeifen (nur die Abweichungen von audio.motor)
@@ -849,7 +855,9 @@ export const CONFIG = {
         drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [5800, 1.0], [6400, 0.9], [7000, 0.64], [8000, 0.3]],
         turbo: { an: false },    // Lader (Kompressor) statt Turbo: Schub sofort, kein Aufbau
       },
-      tacho: { stil: 'l073' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
+      // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
+      // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
+      tacho: { stil: 'l073', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
       ton: {
         turboMal: 0, knallMal: 1, // kein Turbo: kein Pfeifen, kein Blow-off; Pops wie der Audan
         // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): mechanisch, rauh (nur die Abweichungen vom Audan).
@@ -913,7 +921,8 @@ export const CONFIG = {
         turbo: { an: true, aufbau: 0.3 }, // dezenter Turbo, spricht schnell an (Audan 0.35 s)
       },
       // M8f: Tacho-Skala; M8g: Tacho je Auto (Stil aus hud.tachoStile, Skala im Auto-Stil; "klassisch" = Skala bei TACHO = KLASSISCH)
-      tacho: { stil: 'imprexa', drehzahlMax: 9, drehzahlRotAb: 8, klassisch: { drehzahlMax: 9, drehzahlRotAb: 8 } },
+      // (Begrenzer 8200/min -> bis 9000; rot bleibt ab 8000 wie in M8f; Tempo bis 200 km/h, 130 mph)
+      tacho: { stil: 'imprexa', drehzahlMax: 9, drehzahlRotAb: 8, tempoMax: 200, tempoMaxMph: 130, klassisch: { drehzahlMax: 9, drehzahlRotAb: 8 } },
       ton: {
         turboMal: 1, knallMal: 1,
         // M8e: Motorklang Boxer: tief, blubbernd, dezenter Turbo (nur die Abweichungen vom Audan)
@@ -1377,11 +1386,36 @@ export const CONFIG = {
         // oder 'led' (7-Segment-Ziffer aus Pixeln); R ist immer rot
         gang: { form: 'kasten', farbeRahmen: null, farbeZiffer: '#ffd23c', zifferSchatten: true },
       },
-      audan: {},                 // Audan Quarto (Werte folgen in Teil B; leer = wie klassisch)
-      delto: {},                 // Lanza Delto
-      escorta: {},               // Fard Escorta
-      l073: {},                  // Lanza 073
-      imprexa: {},               // Subora Imprexa
+      // Audan Quarto: der "Original"-Look, Blatt wie klassisch (anders ist nur die Skala im Profil: rot ab 6500)
+      audan: {},
+      // Lanza Delto (Werk weiss/blau/rot): tiefschwarzes Blatt mit blauem Randring, weisse Ziffern, breites rotes Band,
+      // weisse Nadel mit roter Spitze
+      delto: {
+        farbeBlatt: 'rgba(4, 6, 10, 0.88)', farbeRand: '#4a86f0', muster: 'innenring', farbeMuster: '#1f4fb4', musterBreite: 1,
+        farbeStriche: '#f4f4ee', farbeZahlen: '#f4f4ee', farbeRot: '#e8352a', rotBreite: 3,
+        farbeNadel: '#f4f4ee', farbeNadelSpitze: '#ff3b2e', farbeNabe: '#c8ccd2', farbeDigital: '#f4f4ee',
+      },
+      // Fard Escorta (Werk weiss/blau, Vintage): cremeweisses Blatt, schwarze Striche und Ziffern, dunkelblauer Rand,
+      // schwarze Nadel ohne Schatten, mattes Rot; das digitale Tempo in einem dunklen Fenster (wie ein Kilometerzähler)
+      escorta: {
+        farbeBlatt: 'rgba(236, 228, 202, 0.95)', farbeRand: '#1e3474', muster: 'innenring', farbeMuster: '#1e3474', musterBreite: 1,
+        farbeStriche: '#16181c', farbeZahlen: '#16181c', zahlenSchatten: false, farbeRot: '#b4503f',
+        farbeNadel: '#16181c', nadelSchatten: false, farbeNabe: '#6a7078', farbeDigital: '#f4f4ee', digitalFenster: '#23262c',
+      },
+      // Lanza 073 (Werk weiss mit grün/gelb, LED-Look): dunkles Blatt, Segmentband mit Lücken am Rand, Striche als Punkte,
+      // grüne Ziffern, lange gelbe Nadel
+      l073: {
+        farbeBlatt: 'rgba(8, 14, 12, 0.88)', farbeRand: '#56685c', strichForm: 'punkt', muster: 'segmentband', farbeMuster: '#173d22', musterBreite: 3,
+        farbeStriche: '#6cf05a', farbeZahlen: '#6cf05a', farbeRot: '#d8352a', rotBreite: 3,
+        farbeNadel: '#ffd23c', nadelLaenge: 2, farbeNabe: '#ffd23c', farbeDigital: '#6cf05a', farbeBeschriftung: '#4cc050',
+      },
+      // Subora Imprexa (Werk blau mit gelb): blaues Blatt, heller blauer Ring unter den Strichen, gelber Randring,
+      // gelbe Ziffern und gelbe Nadel
+      imprexa: {
+        farbeBlatt: 'rgba(15, 33, 80, 0.92)', farbeRand: '#f5d020', muster: 'innenring', farbeMuster: '#1d46a8', musterBreite: 6,
+        farbeStriche: '#f4f4ee', farbeZahlen: '#f5d020', farbeRot: '#ff5a3c',
+        farbeNadel: '#f5d020', farbeNabe: '#f5d020', farbeDigital: '#f5d020', farbeKasten: '#1d46a8',
+      },
     },
   },
 
