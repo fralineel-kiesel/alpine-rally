@@ -83,6 +83,9 @@ export const TEXTE = {
   'bestzeiten.zeit': { de: 'ZEIT', en: 'TIME' },
   'bestzeiten.datum': { de: 'DATUM', en: 'DATE' },
   'bestzeiten.auto': { de: 'AUTO', en: 'CAR' }, // M8c: Kurzname des Autos (gemeinsame Liste für alle Autos)
+  'bestzeiten.gesamt': { de: 'GESAMT TOP 3', en: 'OVERALL TOP 3' }, // M8h: die schnellsten 3 aller Autos
+  'bestzeiten.top10': { de: 'TOP 10', en: 'TOP 10' },                // M8h: die Liste des gewählten Autos
+  'bestzeiten.leerAuto': { de: 'NOCH KEINE ZEITEN MIT DIESEM AUTO', en: 'NO TIMES WITH THIS CAR YET' },
 
   // --- Einstellungen ---
   'einst.titel': { de: 'EINSTELLUNGEN', en: 'SETTINGS' },
@@ -231,7 +234,7 @@ export const TEXTE = {
   'frage.text': { de: 'DIE FAHRT WIRD ABGEBROCHEN.', en: 'THE CURRENT RUN WILL BE LOST.' },
   'frage.ja': { de: 'JA', en: 'YES' },
   'frage.nein': { de: 'NEIN', en: 'NO' },
-  'frage.loeschen': { de: 'ALLE BESTZEITEN WERDEN GELÖSCHT.', en: 'ALL BEST TIMES WILL BE DELETED.' },
+  'frage.loeschen': { de: 'ALLE BESTZEITEN ALLER AUTOS WERDEN GELÖSCHT.', en: 'ALL BEST TIMES OF ALL CARS WILL BE DELETED.' }, // (M8h: aller Autos)
 
   // --- Zielbildschirm (M5b) ---
   'ziel.titel': { de: 'ZIEL!', en: 'FINISH!' },

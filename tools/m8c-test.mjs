@@ -391,7 +391,7 @@ if (teil('f')) {
 
 // ---------------------------------------------------------------- (g) Bestzeiten
 if (teil('g')) {
-  console.log('(g) Bestzeiten: gemeinsame Top 10 mit Kurznamen');
+  console.log('(g) Bestzeiten: Lauf mit jedem Auto eingetragen, Kurznamen (seit M8h: je Auto und Gesamt-Top-3)');
   const s = await starteSpiel({ breite: 320, hoehe: 180, auto: '' });
   const p = s.page;
   await p.goto(`${s.url}/index.html?menue=aus`);
@@ -401,7 +401,7 @@ if (teil('g')) {
     { zeit: 201.22, cps: [40, 110, 160], datum: '2026-09-02T10:00:00.000Z', auto: 'rt4', aufpralle: 0, resets: 0, hoechstTempo: 40 },
     { zeit: 202.33, cps: [40, 110, 160], datum: '2026-09-03T10:00:00.000Z', auto: 'prototyp', aufpralle: 1, resets: 0, hoechstTempo: 41 },
   ];
-  await p.evaluate((a) => { localStorage.clear(); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: a })); }, alt);
+  await p.evaluate((a) => { localStorage.clear(); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: a })); }, alt); // (M8h: wird übernommen)
   const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
   const laeufe = {};
   for (const id of ['delto', 'escorta', 'rt4']) {
@@ -420,22 +420,27 @@ if (teil('g')) {
   const liste = await p.evaluate(async () => {
     const A = window.__alpineRally; A.anhalten = false;
     const { ladeBestzeiten } = await import('/js/bestzeiten.js');
-    const roh = JSON.parse(localStorage.getItem('alpineRally.bestzeiten')).passstrasse;
+    // M8h: neuer Speicher (eine Liste je Auto, Einträge ohne gültige Id im Behälter _ohne)
+    const roh = Object.values(JSON.parse(localStorage.getItem('alpineRally.bestzeiten2')).passstrasse).flat();
     A.menue.zeige(A.seiten.bestzeiten, true);
     A.ablauf.wechsle('menue'); A.menue.zeige(A.seiten.bestzeiten, true);
     await new Promise((r) => setTimeout(r, 600));
     const zeilen = A.menue.seite.eintraege().filter((e) => e.autoKurz).map((e) => `${e.inhalt()} ${e.autoKurz()}`);
-    return { zeilen, schluessel: [...new Set(roh.flatMap((e) => Object.keys(e)))].sort(), best: ladeBestzeiten('passstrasse').map((e) => e.auto), rollen: A.menue.rollen };
+    const je = Object.fromEntries(['rt4', 'prototyp'].map((a) => [a, ladeBestzeiten('passstrasse', a).map((e) => e.zeit)]));
+    return { zeilen, je, schluessel: [...new Set(roh.flatMap((e) => Object.keys(e)))].sort(), best: ladeBestzeiten('passstrasse').map((e) => e.auto), rollen: A.menue.rollen };
   });
   await p.screenshot({ path: path.join(WURZEL, 'screenshots/m8c/70-bestzeiten-320x180.png') });
   melde(Object.values(laeufe).every((l) => l.ziel) && laeufe.delto.auto === 'delto' && laeufe.escorta.auto === 'escorta' && laeufe.rt4.auto === 'rt4',
     `Lauf mit jedem Auto eingetragen: ${Object.entries(laeufe).map(([k, l]) => `${k} ${l.zeit.toFixed(2)} s -> Auto "${l.auto}", Platz ${l.platz}`).join('; ')}`);
   const kurz = liste.zeilen.map((z) => z.split(' ').pop());
-  melde(kurz.includes('DELTO') && kurz.includes('ESCORTA') && kurz.filter((k) => k === 'QUARTO').length === 3 && kurz.includes('PROTO') && liste.zeilen.length === 6,
-    `gemeinsame Liste mit Kurznamen: ${liste.zeilen.join(' | ')}`);
+  // M8h: die Seite zeigt oben die Gesamt-Top-3 mit Kurznamen, die alten Zeiten liegen in den Listen je Auto
+  melde(kurz.includes('DELTO') && kurz.includes('ESCORTA') && kurz.includes('QUARTO') && liste.zeilen.length === 3
+    && liste.je.rt4.length === 2 && liste.je.rt4[1] === 201.22 && liste.je.prototyp.join() === '200.11,202.33',
+    `Gesamt-Top-3 mit Kurznamen: ${liste.zeilen.join(' | ')}; Audan-Liste ${liste.je.rt4.join(', ')} (mit der alten Zeit), ohne Auto/PROTO ${liste.je.prototyp.join(', ')}`);
   melde(liste.rollen && liste.rollen.breite <= 316, `Liste passt bei 320x180 (Tafel ${liste.rollen && liste.rollen.breite} Pixel breit; Bild screenshots/m8c/70-bestzeiten-320x180.png)`);
-  melde(Math.abs(laeufe.escorta.refZeit - laeufe.escorta.bestVorher) < 0.02 && Math.abs(laeufe.escorta.bestVorher - Math.min(laeufe.delto.zeit, 200.11)) < 0.02 && laeufe.escorta.quelle === 'best',
-    `Live-Vergleich gegen die gemeinsame Bestzeit: vor dem Escorta-Lauf Referenz im Ziel ${laeufe.escorta.refZeit.toFixed(2)} s = Bestzeit aller Autos (${laeufe.escorta.bestVorher.toFixed(2)} s, vom Delto)`);
+  // M8h: Live-Vergleich gegen die Bestzeit des gefahrenen Autos (bis 0.8g: gemeinsame Bestzeit aller Autos)
+  melde(Number.isNaN(laeufe.escorta.refZeit) && Math.abs(laeufe.escorta.bestVorher - Math.min(laeufe.delto.zeit, 200.11)) < 0.02 && Math.abs(laeufe.rt4.refZeit - 201.22) < 0.02 && laeufe.rt4.quelle === 'best',
+    `Live-Vergleich je Auto (M8h): vor dem Escorta-Lauf keine Referenz (Escorta ohne Zeit, gesamtbeste ${laeufe.escorta.bestVorher.toFixed(2)} s vom Delto zählt nicht), vor dem Audan-Lauf die alte Audan-Zeit (${laeufe.rt4.refZeit.toFixed(2)} s)`);
   melde(JSON.stringify(liste.schluessel) === JSON.stringify(['aufpralle', 'auto', 'cps', 'datum', 'hoechstTempo', 'resets', 'spur', 'zeit']),
     `Format unverändert (Felder der Einträge: ${liste.schluessel.join(', ')})`);
   melde(s.fehler.length === 0, `keine Konsolenfehler (${s.fehler.length})`);

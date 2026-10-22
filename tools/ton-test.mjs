@@ -618,7 +618,7 @@ console.log('(e) Signale');
     };
     let tCp = null;
     const ref = { keine: null, schneller: 1, langsamer: -1, gleich: 0 }[art];
-    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.letzterLauf');
+    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.bestzeiten2'); localStorage.removeItem('alpineRally.letzterLauf');
     tCp = fahre();
     const vor = { ...w.zaehler };
     const t2 = fahre();
@@ -663,7 +663,7 @@ console.log('(e) Signale');
     A.anhalten = false;
     return { linie: ander, schirm, platz: A.lauf.ergebnis.platz, neu: A.lauf.ergebnis.neueBest };
   }, zeit);
-  await A(p, () => localStorage.removeItem('alpineRally.bestzeiten'));
+  await A(p, () => { localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.bestzeiten2'); }); // (M8h: beide Schlüssel)
   const f1 = await insZiel(150);
   const f2 = await insZiel(160);
   const f3 = await insZiel(140);
@@ -990,7 +990,7 @@ console.log('(j) HUD: kleinere Minimap, farbige Checkpoint-Punkte');
     const fahreCp = (n) => { f.fahreBis(A, 'flott', { bisS: A.checkpoints[n].s + 3 }); return A.rennen.zwischenzeiten[n]; };
     const erg = {};
     // Referenz-Zeiten messen (ohne Referenz)
-    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.letzterLauf');
+    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.bestzeiten2'); localStorage.removeItem('alpineRally.letzterLauf');
     A.start({ countdown: false }); A.vergleich.setzeReferenz(null, 'best');
     const t0 = fahreCp(0); const t1 = fahreCp(1); const t2 = fahreCp(2);
     await bild(); erg.ohneRef = [farbeBei(0), farbeBei(1), farbeBei(2)];

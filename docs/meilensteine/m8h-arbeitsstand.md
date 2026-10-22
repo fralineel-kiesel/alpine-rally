@@ -11,9 +11,11 @@ Vergleichsstand 0.8g: `git worktree add /tmp/alt08g ed0e695`.
       `gesamtPlatz/gesamtBisher/gesamtRekord`, Titel GESAMTREKORD! > NEUE BESTZEIT! > ZIEL!, Zeile "PLATZ p VON n ·
       GESAMT PLATZ 3" (eine Zeile, Tafel höchstens 163 wie 0.8g), lange Fanfare auch beim Rekord, BESTZEIT AUTO / CAR BEST.
       (h)(i)(j) ok; Delto mittel 2:41.60 unverändert.
-- [ ] C Bestzeiten-Seite
+- [x] C Bestzeiten-Seite: Kopf GESAMT TOP 3 (Etappe rechts), 3 Zeilen mit Kurznamen, AUTO < NAME > (Links/Rechts, Maus,
+      Gamepad), TOP 10 des Autos; Zeit-Zeilen 8 Pixel, Listen aufgefüllt -> Tafel immer 172 hoch, kein Rollen (Menü ist
+      immer 320x180). Ohne gültige Id: "--". Rückfrage "ALLE BESTZEITEN ALLER AUTOS …". (k)(l)(m) ok.
+      Alte Tests angepasst (rennablauf, overlay, m8c g, m8e e, ton-test, menue-test): neuer Schlüssel, Seite, GESAMTREKORD.
 - [ ] D Tests, Bilder, Bericht, Version
 
 Werte: Speicher voll belegt (5 Autos x 10 + 10 ohne Auto, mit Spur) ca. 146 KB Text (ca. 293 KB im Browser).
-Offen: alte Tests, die den Speicher direkt setzen (rennablauf, overlay, m8c, m8e, ton-test), anpassen (neuer Schlüssel).
 Menü ist immer im 320x180-Raster (auch bei 480x270/640x360): Tafel höchstens 172 Pixel hoch.

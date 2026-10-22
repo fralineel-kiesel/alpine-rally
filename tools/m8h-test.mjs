@@ -12,6 +12,15 @@
 //   (h) Referenz je Auto (Audan-Bestzeit trägt nicht in den Delto-Vergleich; Auto ohne Zeit = keine Referenz; Garage lädt nach)
 //   (i) Zielbildschirm: Titel, Zeilen, Farben für alle Fälle, Fanfare, Layout in drei Auflösungen, de/en; Einstellungstext
 //   (j) Live-Vergleich mit Auto-Referenz über echte Testfahrer-Läufe: Anzeige stimmt, Zeit unverändert
+//   Teil C – Bestzeiten-Seite:
+//   (k) Seite mit Testdaten: Gesamt sortiert mit Kurznamen, Auswahl wechselt (Tastatur, Maus, Gamepad simuliert),
+//       Top 10 je Auto, leere Listen, Markierung (Auto + Datum), Auto beim Öffnen
+//   (l) Layout de/en in drei Auflösungen: nichts gerollt, nichts abgeschnitten, nichts überlappt (Pixelprüfung)
+//   (m) BESTZEITEN LÖSCHEN (Einstellungen) leert beide Schlüssel, auch nach dem Neuladen
+//   Teil D – Unveränderlich gegen 0.8g (mit --alt <ordner 0.8g>, git worktree add <ordner> ed0e695):
+//   (n) Tacho AUTO-STIL und KLASSISCH direkt gemalt pixelgleich; Quelltext von Fahren, Ton, Autos, Tacho unverändert;
+//       über m8g-test --nur a,h,i --alt: Tacho im Spiel, Fahrmessung, Aussehen der Autos, Testfahrer, Ton, Abkürzungen,
+//       Strecke, Bildzeit, Ladezeit; mit --lang dazu alle bisherigen Tests (einmal, dauert Stunden)
 // Die Übernahme ist mit erfundenen Altdaten geprüft, nicht mit echten Browser-Daten von Lino.
 
 import fs from 'node:fs';
@@ -22,6 +31,9 @@ import { starteSpiel, WURZEL } from './spiel-browser.mjs';
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 const NUR = arg('--nur') ? arg('--nur').split(',') : null;
 const teil = (k) => !NUR || NUR.includes(k);
+const ALT = arg('--alt') ? path.resolve(arg('--alt')) : null;
+import crypto from 'node:crypto';
+const hash = (x) => crypto.createHash('sha1').update(x).digest('hex').slice(0, 12);
 let fehler = 0;
 const melde = (ok, text) => { console.log(`${ok ? '  ok  ' : 'FEHLER'} ${text}`); if (!ok) fehler++; };
 const info = (text) => console.log(`       ${text}`);
@@ -495,10 +507,299 @@ if (teil('j')) {
   await s.schliessen();
 }
 
+// --- Teil C: Hilfen für die Bestzeiten-Seite ---
+const TESTDATEN = [
+  [152.41, 'rt4'], [158.12, 'rt4'], [163.95, 'rt4'],
+  [150.87, 'delto'], [156.25, 'delto'],
+  ...[149.62, 151.06, 153.77, 160.4, 166.8, 158.9, 162.25, 169.5, 172.33, 175.1, 177.0, 180.5].map((z) => [z, 'l073']),
+  [148.0, 'prototyp'],
+];
+const fuellen = (p, daten) => p.evaluate(async (daten) => {
+  const B = await import('/js/bestzeiten.js');
+  B.loescheBestzeiten();
+  for (const [z, a] of daten) B.speichereBestzeit('passstrasse', { zeit: z, cps: [z * 0.2, z * 0.55, z * 0.9], auto: a });
+}, daten);
+// Zustand der offenen Bestzeiten-Seite: Gesamt-Zeilen, gewähltes Auto, Zeilen der Auto-Liste, Hinweistexte
+const seitenStand = (p) => p.evaluate(async () => {
+  const A = window.__alpineRally, TX = await import('/js/texte.js');
+  const l = A.menue.seite.eintraege();
+  const wahl = l.find((e) => e.typ === 'auswahl');
+  return {
+    id: A.menue.seite.id,
+    gesamt: l.filter((e) => e.autoKurz).map((e) => `${e.inhalt().split(' ').slice(0, 2).join(' ')} ${e.autoKurz()}${e.neu ? ' (neu)' : ''}`),
+    auto: wahl ? TX.t(wahl.optionen()[wahl.lesen()].text) : null,
+    liste: l.filter((e) => 'neu' in e && !e.autoKurz).map((e) => `${e.inhalt().split(' ').slice(0, 2).join(' ')}${e.neu ? ' (neu)' : ''}`),
+    texte: l.filter((e) => e.inhalt && !('neu' in e) && !e.kopf).map((e) => e.inhalt()),
+    zeiger: A.menue.wahl, auswahlNr: l.indexOf(wahl), hoehe: A.menue.rollen && A.menue.rollen.hoehe,
+  };
+});
+const warteBild = (p) => p.evaluate(() => new Promise((r) => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(r)), 350)));
+async function bestzeitenAuf(p) {
+  await p.evaluate(() => {
+    const A = window.__alpineRally;
+    if (A.ablauf.zustand !== 'menue') A.zumHauptmenue();
+    A.menue.zeige(A.seiten.haupt, true);
+  });
+  // über das Hauptmenü wie im Spiel: Pfeile bis BESTZEITEN, Enter
+  const nr = await p.evaluate(() => window.__alpineRally.menue.seite.eintraege.findIndex((e) => e.text === 'menue.bestzeiten'));
+  for (let i = 0; i < 20 && (await p.evaluate(() => window.__alpineRally.menue.wahl)) !== nr; i++) await p.keyboard.press('ArrowDown');
+  await p.keyboard.press('Enter');
+  await warteBild(p);
+}
+
+// =====================================================================
+if (teil('k')) {
+  console.log('(k) Bestzeiten-Seite: Gesamt-Top-3, Top 10 je Auto, Umschalten, Markierung');
+  const s = await spielMitMenue('rt4', { gamepad: true });
+  const p = s.page;
+  await fuellen(p, TESTDATEN);
+  await bestzeitenAuf(p);
+  const st0 = await seitenStand(p);
+  melde(st0.id === 'bestzeiten' && st0.gesamt.join() === '1. 02:28.00 PROTO,2. 02:29.62 073,3. 02:30.87 DELTO',
+    `Gesamt-Top-3 sortiert mit Kurznamen (auch ohne Auto: PROTO): ${st0.gesamt.join(' | ')}`);
+  melde(st0.auto === 'AUDAN QUARTO' && st0.zeiger === st0.auswahlNr && st0.liste.join() === '1. 02:32.41,2. 02:38.12,3. 02:43.95',
+    `beim Öffnen: Auto der Garage (${st0.auto}), Zeiger auf AUTO, seine Top 10: ${st0.liste.join(' | ')}`);
+  // Tastatur: rechts, rechts (Lanza 073 hat 12 Zeiten: Top 10), links
+  await p.keyboard.press('ArrowRight'); await warteBild(p);
+  const st1 = await seitenStand(p);
+  await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowRight'); await warteBild(p);
+  const st2 = await seitenStand(p);
+  melde(st1.auto === 'LANZA DELTO' && st1.liste.join() === '1. 02:30.87,2. 02:36.25', `Tastatur rechts: ${st1.auto} (${st1.liste.join(' | ')})`);
+  const lanza = TESTDATEN.filter(([, a]) => a === 'l073').map(([z]) => z).sort((a, b) => a - b).slice(0, 10);
+  melde(st2.auto === 'LANZA 073' && st2.liste.length === 10 && st2.liste[0] === '1. 02:29.62' && st2.liste[9].startsWith('10. 02:55.10') && lanza.length === 10,
+    `${st2.auto}: 12 Zeiten gefahren, Top 10 gezeigt (${st2.liste[0]} … ${st2.liste[9]})`);
+  for (let i = 0; i < 4; i++) await p.keyboard.press('ArrowLeft');
+  await warteBild(p);
+  const st3 = await seitenStand(p);
+  melde(st3.auto === 'SUBORA IMPREXA', `links über den Anfang: ${st3.auto} (rundum, fünf Autos)`);
+  // Maus: Klick rechts vom Wert (Pfeil >) = nächstes Auto, Klick links davon = voriges (wie in den Einstellungen)
+  const tr = await p.evaluate(() => { const A = window.__alpineRally, l = A.menue.seite.eintraege(); const nr = l.findIndex((e) => e.typ === 'auswahl'); const h = A.menue.treffer.find((x) => x.nr === nr); return { ...h, skala: document.getElementById('hud').getBoundingClientRect().width / 320, links: document.getElementById('hud').getBoundingClientRect().left, oben: document.getElementById('hud').getBoundingClientRect().top }; });
+  const klick = async (x) => { const px = tr.links + x * tr.skala, py = tr.oben + (tr.y + tr.h / 2) * tr.skala; await p.mouse.move(px, py); await warteBild(p); await p.mouse.down(); await p.mouse.up(); await warteBild(p); };
+  await klick(tr.x + tr.b - 10);
+  const st4 = await seitenStand(p);
+  await klick(tr.x + 40);
+  const st5 = await seitenStand(p);
+  melde(st4.auto === 'AUDAN QUARTO' && st5.auto === 'SUBORA IMPREXA', `Maus: Klick auf ">" -> ${st4.auto}, Klick links -> ${st5.auto}`);
+  // Gamepad (simuliert): Steuerkreuz rechts (Knopf 15), links (14)
+  // (gedrückt halten für zwei Bilder: im Test-Browser dauert ein Bild oft länger als 0.2 s)
+  const knopf = async (k) => { await p.evaluate((k) => { window.__knopf = k; }, k); await bilderAbwarten(p, 2); await p.evaluate(() => { window.__knopf = -1; }); await bilderAbwarten(p, 2); };
+  await knopf(15);
+  const st6 = await seitenStand(p);
+  await knopf(15);
+  const st7 = await seitenStand(p);
+  await knopf(14);
+  const st8 = await seitenStand(p);
+  melde(st6.auto === 'AUDAN QUARTO' && st7.auto === 'LANZA DELTO' && st8.auto === 'AUDAN QUARTO', `Gamepad: rechts ${st6.auto}, rechts ${st7.auto}, links ${st8.auto}`);
+  // leere Liste: Fard Escorta hat keine Zeiten
+  await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowRight'); await warteBild(p);
+  const st9 = await seitenStand(p);
+  melde(st9.auto === 'FARD ESCORTA' && st9.liste.length === 0 && st9.texte.includes('NOCH KEINE ZEITEN MIT DIESEM AUTO') && st9.gesamt.length === 3,
+    `Auto ohne Zeiten: "${st9.texte.join(' / ')}", Gesamt bleibt`);
+  const hoehen = [st0, st1, st2, st3, st4, st5, st6, st7, st8, st9].map((x) => x.hoehe);
+  melde(hoehen.every((h) => h === hoehen[0]), `Tafel bleibt beim Umschalten gleich hoch (${[...new Set(hoehen)].join(', ')} Pixel): AUTO und ZURÜCK springen nicht`);
+  // Zeiger: runter = ZURÜCK, Enter verlässt die Seite
+  await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await warteBild(p);
+  const zurueck = await p.evaluate(() => window.__alpineRally.menue.seite.id);
+  melde(zurueck === 'haupt', `runter + Enter = ZURÜCK (Seite danach: ${zurueck})`);
+  // Markierung: Lauf mit dem Audan (Gesamtplatz 3, Audan Platz 1), danach in der Garage ein anderes Auto gewählt
+  await p.evaluate(() => { window.__T.insZiel(149.9, [30, 82, 135]); window.__T.bisZielschirm(); window.__alpineRally.zumHauptmenue(); window.__alpineRally.autoWechseln('delto'); });
+  await bestzeitenAuf(p);
+  const m1 = await seitenStand(p);
+  await p.keyboard.press('ArrowRight'); await warteBild(p);
+  const m2 = await seitenStand(p);
+  melde(m1.auto === 'AUDAN QUARTO' && m1.gesamt[2] === '3. 02:29.90 QUARTO (neu)' && m1.liste[0] === '1. 02:29.90 (neu)' && m1.liste.filter((z) => z.includes('neu')).length === 1,
+    `nach dem Lauf: Seite öffnet beim gefahrenen Auto (${m1.auto}, nicht beim Delto der Garage), neue Zeile markiert in Gesamt (${m1.gesamt[2]}) und Auto-Liste (${m1.liste[0]})`);
+  melde(m2.auto === 'LANZA DELTO' && !m2.liste.some((z) => z.includes('neu')) && m2.gesamt[2].includes('(neu)'), 'anderes Auto: dort nichts markiert, Gesamt bleibt markiert');
+  // leer: alles gelöscht
+  await fuellen(p, []);
+  await bestzeitenAuf(p);
+  const st10 = await seitenStand(p);
+  melde(st10.gesamt.length === 0 && st10.texte.includes('NOCH KEINE ZEITEN') && st10.texte.includes('NOCH KEINE ZEITEN MIT DIESEM AUTO'), `ganz leer: "${st10.texte.join(' / ')}"`);
+  // englisch
+  await fuellen(p, TESTDATEN);
+  const en = await p.evaluate(async () => {
+    const TX = await import('/js/texte.js'); TX.setzeSprache('en');
+    const l = window.__alpineRally.menue.seite.eintraege();
+    const r = l.filter((e) => e.inhalt).map((e) => e.inhalt());
+    window.__alpineRally.autoWechseln('escorta');
+    const leer = window.__alpineRally.menue.seite.eintraege().filter((e) => e.inhalt).map((e) => e.inhalt());
+    TX.setzeSprache('de');
+    return { r, leer };
+  });
+  melde(en.r[0] === 'OVERALL TOP 3 MOUNTAIN PASS' && en.r.includes('TOP 10'), `englisch: "${en.r[0]}", "TOP 10"`);
+  melde(s.fehler.length === 0, `keine Fehler in der Konsole ${s.fehler.join(' | ')}`);
+  await s.schliessen();
+}
+
+// =====================================================================
+if (teil('l')) {
+  console.log('(l) Layout der Bestzeiten-Seite: de/en, drei Auflösungen, Pixelprüfung');
+  const s = await spielMitMenue('l073');
+  const p = s.page;
+  // Pixelprüfung im HUD-Bild (320x180, dort zeichnet das Menü): Rand der Tafel durchgehend, nichts Helles am Rand,
+  // je Zeit-Zeile die Lücken zwischen den Spalten leer und die Trennzeile darüber leer, ZURÜCK sichtbar
+  const pruefe = () => p.evaluate(async () => {
+    const A = window.__alpineRally, P = await import('/js/pixel.js'), TX = await import('/js/texte.js'), BZ = await import('/js/bestzeiten.js');
+    const M = A.CONFIG.menue, m = A.menue.rollen;
+    const c = document.getElementById('hud'), d = c.getContext('2d').getImageData(0, 0, 320, 180).data;
+    const px = (x, y) => { const i = (y * 320 + x) * 4; return [d[i], d[i + 1], d[i + 2], d[i + 3]]; };
+    const hell = (x, y) => { const [r, g, b, a] = px(x, y); return a > 200 && Math.max(r, g, b) > 140; };
+    const rand = (x, y) => { const [r, g, b, a] = px(x, y); return a > 200 && Math.abs(r - 0xe6) < 30 && Math.abs(g - 0xe2) < 30 && Math.abs(b - 0xd3) < 30; };
+    const x0 = Math.round((320 - m.breite) / 2), y0 = m.y0, B = m.breite, H = m.hoehe;
+    let randFehlt = 0, randGesamt = 0;
+    for (let x = x0 + 3; x < x0 + B - 3; x++) { randGesamt += 2; if (!rand(x, y0)) randFehlt++; if (!rand(x, y0 + H - 1)) randFehlt++; }
+    for (let y = y0 + 3; y < y0 + H - 3; y++) { randGesamt += 2; if (!rand(x0, y)) randFehlt++; if (!rand(x0 + B - 1, y)) randFehlt++; }
+    let amRand = 0; // helle Pixel direkt innen am Rand (2 Pixel)
+    const text = (x, y) => hell(x, y) && !rand(x, y); // (die abgeschrägten Ecken haben Randfarbe)
+    for (let x = x0 + 1; x < x0 + B - 1; x++) for (const y of [y0 + 1, y0 + 2, y0 + H - 2, y0 + H - 3]) if (text(x, y)) amRand++;
+    for (let y = y0 + 1; y < y0 + H - 1; y++) for (const x of [x0 + 1, x0 + 2, x0 + B - 2, x0 + B - 3]) if (text(x, y)) amRand++;
+    // Zeit-Zeilen: Spalten wie in menueseiten.js (Platz rechtsbündig | Zeit | Auto | Datum, Lücke 12)
+    const tb = (x) => P.textBreite(x), L = 12;
+    const sp = { a: Math.max(tb(TX.t('bestzeiten.platz')), tb('10.')), b: Math.max(tb(TX.t('bestzeiten.zeit')), tb('00:00.00')),
+      c: Math.max(tb(TX.t('bestzeiten.datum')), tb(BZ.formatDatum('2026-12-31T12:00:00Z', TX.aktuelleSprache()))),
+      d: Math.max(tb(TX.t('bestzeiten.auto')), tb('PROTO'), ...Object.values((await import('/js/autos.js')).AUTO_MODELLE).map((mo) => tb(mo.kurz))) };
+    const breiteZ = sp.a + sp.b + sp.c + sp.d + 3 * L;
+    const xi = x0 + 1 + M.innen, xr = x0 + B - 1 - M.innen, xt = xi + Math.round((xr - xi - breiteZ) / 2);
+    const luecken = [[xt + sp.a, xt + sp.a + L - 1], [xt + sp.a + L + sp.b, xt + sp.a + 2 * L + sp.b - 1], [xt + sp.a + 2 * L + sp.b + sp.d, xt + sp.a + 3 * L + sp.b + sp.d - 1]];
+    const l = A.menue.seite.eintraege();
+    let y = y0 + 18, zeilen = 0, ueberlapp = 0, leerZeile = 0, zurueckSicht = false;
+    for (const e of l) {
+      const h = e.hoehe || (e.typ === 'gruppe' ? 10 : M.zeile);
+      if ('neu' in e) {
+        zeilen++;
+        for (const [a, b] of luecken) for (let x = a; x <= b; x++) for (let yy = y; yy < y + h; yy++) if (hell(x, yy)) ueberlapp++;
+        for (let x = xi; x < xr; x++) if (hell(x, y)) ueberlapp++; // Trennzeile oben (Text beginnt bei y + 1)
+        let n = 0; for (let x = xi; x < xr; x++) for (let yy = y + 1; yy < y + h; yy++) if (hell(x, yy)) n++;
+        if (n < 20) leerZeile++;
+      }
+      if (e.typ === 'zurueck') { let n = 0; for (let x = xi; x < xr; x++) for (let yy = y; yy < y + h; yy++) if (hell(x, yy)) n++; zurueckSicht = n > 20 && y + h <= y0 + H - 2; }
+      y += h;
+    }
+    return { m: { hoehe: m.hoehe, breite: m.breite, max: m.max, y0: m.y0, gesamt: m.gesamt, sichtH: m.sichtH }, randFehlt, randGesamt, amRand, zeilen, ueberlapp, leerZeile, zurueckSicht };
+  });
+  await fuellen(p, TESTDATEN);
+  // ein markierter Lauf (orange hinterlegt) mit dem Lanza 073
+  await p.evaluate(() => { window.__T.insZiel(150.12, [30, 82, 135]); window.__T.bisZielschirm(); });
+  const ergebnisse = [];
+  for (const [fall, daten] of [['voll', null], ['leer', []]]) {
+    if (daten) await fuellen(p, daten);
+    for (const sp of ['de', 'en']) {
+      for (const aufl of [0, 1, 2]) {
+        await p.evaluate(async ([sp, aufl]) => { (await import('/js/texte.js')).setzeSprache(sp); (await import('/js/einstellungen.js')).setze('aufloesung', aufl); }, [sp, aufl]);
+        await bestzeitenAuf(p);
+        await p.waitForTimeout(300);
+        ergebnisse.push({ fall, sp, aufl, ...(await pruefe()) });
+      }
+    }
+  }
+  await p.evaluate(async () => { (await import('/js/texte.js')).setzeSprache('de'); (await import('/js/einstellungen.js')).setze('aufloesung', 0); });
+  const ok = (r) => r.m.max === 0 && r.m.hoehe <= 172 && r.m.breite <= 316 && r.m.y0 >= 0 && r.randFehlt === 0 && r.amRand === 0 && r.ueberlapp === 0 && r.leerZeile === 0 && r.zurueckSicht;
+  for (const r of ergebnisse) {
+    melde(ok(r), `${r.fall} ${r.sp} ${['320x180', '480x270', '640x360'][r.aufl]}: Tafel ${r.m.breite}x${r.m.hoehe} (Einträge ${r.m.gesamt} von ${r.m.sichtH} Pixeln, gerollt ${r.m.max}), Rand ${r.randGesamt - r.randFehlt}/${r.randGesamt}, hell am Rand ${r.amRand}, ${r.zeilen} Zeit-Zeilen, Überlappung ${r.ueberlapp}, ZURÜCK ${r.zurueckSicht ? 'sichtbar' : 'FEHLT'}`);
+  }
+  melde(ergebnisse.filter((r) => r.fall === 'voll').every((r) => r.zeilen === 13), 'voll: 3 + 10 Zeit-Zeilen ohne Rollen');
+  melde(s.fehler.length === 0, `keine Fehler in der Konsole ${s.fehler.join(' | ')}`);
+  await s.schliessen();
+}
+
+// =====================================================================
+if (teil('m')) {
+  console.log('(m) BESTZEITEN LÖSCHEN leert alles (beide Schlüssel)');
+  const s = await spielMitMenue('rt4');
+  const p = s.page;
+  // alte Zeiten (bis 0.8g) im Browser, beim ersten Lesen übernommen; dazu eine neue Zeit
+  await p.evaluate(([alt]) => { localStorage.removeItem('alpineRally.bestzeiten2'); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify(alt)); }, [ALTDATEN]);
+  await fuellen(p, []); // (löscht auch den alten Schlüssel – darum danach nochmals setzen)
+  await p.evaluate(([alt]) => { localStorage.setItem('alpineRally.bestzeiten', JSON.stringify(alt)); }, [ALTDATEN]);
+  const vor = await p.evaluate(async () => { const B = await import('/js/bestzeiten.js'); B.speichereBestzeit('passstrasse', { zeit: 140, cps: [], auto: 'delto' }); return { alt: !!localStorage.getItem('alpineRally.bestzeiten'), neu: !!localStorage.getItem('alpineRally.bestzeiten2'), n: B.ladeBestzeiten('passstrasse').length }; });
+  // EINSTELLUNGEN -> BESTZEITEN LÖSCHEN -> SICHER? -> JA (mit der Tastatur)
+  const frage = await p.evaluate(() => {
+    const A = window.__alpineRally;
+    A.ablauf.wechsle('menue'); A.menue.zeige(A.seiten.haupt, true); A.menue.oeffne(A.seiten.einstellungen, true);
+    return A.menue.seite.eintraege.findIndex((e) => e.text === 'einst.bestzeitenLoeschen');
+  });
+  for (let i = 0; i < 40 && (await p.evaluate(() => window.__alpineRally.menue.wahl)) !== frage; i++) await p.keyboard.press('ArrowDown');
+  await p.keyboard.press('Enter'); await warteBild(p);
+  const text = await p.evaluate(() => window.__alpineRally.menue.seite.eintraege[0].inhalt());
+  await p.keyboard.press('ArrowUp'); await p.keyboard.press('Enter'); await warteBild(p);
+  const nach = await p.evaluate(async () => { const B = await import('/js/bestzeiten.js'); return { alt: localStorage.getItem('alpineRally.bestzeiten'), neu: localStorage.getItem('alpineRally.bestzeiten2'), n: B.ladeBestzeiten('passstrasse').length, seite: window.__alpineRally.menue.seite.id }; });
+  await p.reload();
+  await p.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  const neuGeladen = await p.evaluate(async () => { const B = await import('/js/bestzeiten.js'); return { n: B.ladeBestzeiten('passstrasse').length, rt4: B.ladeBestzeiten('passstrasse', 'rt4').length, alt: localStorage.getItem('alpineRally.bestzeiten'), neu: localStorage.getItem('alpineRally.bestzeiten2') }; });
+  melde(vor.alt && vor.neu && vor.n === 10, 'vorher: alter und neuer Schlüssel da, Zeiten sichtbar');
+  melde(text === 'ALLE BESTZEITEN ALLER AUTOS WERDEN GELÖSCHT.', `Rückfrage: "${text}"`);
+  melde(nach.alt === null && nach.neu === null && nach.n === 0 && nach.seite === 'einstellungen', 'JA: beide Schlüssel gelöscht, keine Zeiten mehr');
+  melde(neuGeladen.n === 0 && neuGeladen.rt4 === 0 && neuGeladen.alt === null && neuGeladen.neu === null, 'nach dem Neuladen: bleibt leer (die alten Zeiten tauchen nicht wieder auf)');
+  melde(s.fehler.length === 0, `keine Fehler in der Konsole ${s.fehler.join(' | ')}`);
+  await s.schliessen();
+}
+
+// =====================================================================
+if (teil('n')) {
+  console.log('(n) Unveränderlich gegen 0.8g');
+  if (!ALT) info('nur mit --alt <ordner 0.8g> (git worktree add <ordner> ed0e695)');
+  else {
+    // Tacho direkt aus js/tacho.js gemalt (wie m8g-test), beide Stile, alle Profile, km/h und mph, fünf Zustände
+    const ZUSTAENDE = [[0, 1000, 'N'], [95, 5200, '3'], [189, 6820, '5'], [20, 2200, 'R'], [230, 9400, '4']];
+    const tachoDirekt = async (wurzel, modus) => {
+      const s = await starteSpiel({ wurzel, breite: 640, hoehe: 360 });
+      await s.page.goto(`${s.url}/index.html?menue=aus&auto=rt4`);
+      await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+      const r = await s.page.evaluate(async ([zustaende, modus]) => {
+        const T = await import('/js/tacho.js'), P = await import('/js/pixel.js');
+        const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+        const ctx = c.getContext('2d');
+        const FARBEN = { weiss: '#f4f4ee', gelb: '#ffd23c', rot: '#ff4a3a' };
+        const text = (tx, x, y, g = 1, f = 'weiss', a = 'links', sch) => P.pixelText(ctx, tx, x, y, g, FARBEN[f] || f, a, sch);
+        const tachos = T.baueTachos(ctx, text);
+        tachos.setzeModus(modus);
+        const out = {};
+        for (const id of ['prototyp', 'rt4', 'delto', 'escorta', 'l073', 'imprexa']) for (const e of ['kmh', 'mph']) {
+          tachos.setzeEinheit(e); tachos.setzeSkala(id);
+          zustaende.forEach(([kmh, rpm, gang], i) => {
+            for (let n = 0; n < 80; n++) { ctx.clearRect(0, 0, 320, 180); tachos.zeichne(1, kmh, rpm, gang); }
+            out[`${id}-${e}-${i}`] = Array.from(ctx.getImageData(205, 110, 115, 70).data).join(',');
+          });
+        }
+        return out;
+      }, [ZUSTAENDE, modus]);
+      await s.schliessen();
+      return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, hash(v)]));
+    };
+    for (const modus of ['auto', 'klassisch']) {
+      const [a, b] = [await tachoDirekt(ALT, modus), await tachoDirekt(WURZEL, modus)];
+      const anders = Object.keys(a).filter((k) => a[k] !== b[k]);
+      melde(anders.length === 0, `Tacho ${modus === 'auto' ? 'AUTO-STIL' : 'KLASSISCH'} direkt gemalt: ${Object.keys(a).length} Fälle pixelgleich wie 0.8g${anders.length ? `; anders: ${anders.slice(0, 6).join(', ')}` : ''}`);
+    }
+    // Quelltext: Fahren, Ton, Autos, Tacho, Strecke, HUD unverändert gegen 0.8g
+    const dateien = ['js/audio.js', 'js/umgebung.js', 'js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js', 'js/physics.js', 'js/getriebe.js', 'js/fahrprofil.js',
+      'js/autos.js', 'js/car.js', 'js/track.js', 'js/netz.js', 'js/tacho.js', 'js/hud.js', 'js/vergleich.js', 'js/garage.js', 'js/pacenotes-tempo.js', 'js/abkuerzungen.js', 'tools/schneiden-zeiten.json'];
+    const geaendert = dateien.filter((d) => spawnSync('git', ['diff', '--quiet', 'ed0e695', '--', d], { cwd: WURZEL }).status !== 0);
+    melde(geaendert.length === 0, `${dateien.length} Dateien (Ton, Physik, Getriebe, Fahrprofil, Autos, Strecke, Tacho, HUD, Live-Vergleich, Garage, Pace-Notes-Tabelle, Abkürzungen) unverändert seit 0.8g${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
+    // Config: nur Version und der neue Schlüssel
+    const diff = spawnSync('git', ['diff', '-U0', 'ed0e695', '--', 'js/config.js'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter((z) => /^[+-] /.test(z) || /^[+-]\s/.test(z)).filter((z) => !/^(\+\+\+|---)/.test(z));
+    melde(diff.every((z) => /VERSION|bestzeitenName/.test(z)), `js/config.js: nur Version und Speicher-Schlüssel geändert (${diff.length} Zeilen)`);
+    // der Rest über m8g-test (Tacho im Spiel, Fahrmessung, Aussehen, Testfahrer, Ton, Abkürzungen, Strecke, Bildzeit, Ladezeit)
+    const args = ['--nur', 'a,h,i', '--alt', ALT, ...(process.argv.includes('--lang') ? ['--lang'] : [])];
+    const geaenderteDateien = () => new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+    const vorher = geaenderteDateien();
+    const r = werkzeug('m8g-test.mjs', args);
+    fs.mkdirSync('/tmp/m8h', { recursive: true });
+    fs.writeFileSync('/tmp/m8h/m8g-test.log', r.text);
+    const zeilen = r.text.split('\n').filter((z) => /^\s*(ok|FEHLER)\s/.test(z));
+    for (const z of zeilen) melde(/^\s*ok/.test(z), `m8g-test: ${z.replace(/^\s*(ok|FEHLER)\s+/, '').replace(/0\.8f/g, '0.8g (--alt)').replace(/Bildzeit im Spiel 0\.8g/, 'Bildzeit im Spiel 0.8h')}`);
+    melde(zeilen.length > 0, `m8g-test ${args.join(' ')} ausgeführt (${zeilen.length} Prüfungen, Ausgabe /tmp/m8h/m8g-test.log)`);
+    // alte Tests schreiben Messdateien ins Repo (Spektrogramme, JSON): nur diese zurücksetzen (eigene Änderungen bleiben)
+    const neuGeaendert = [...geaenderteDateien()].filter((d) => !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+    if (neuGeaendert.length) spawnSync('git', ['checkout', '--', ...neuGeaendert], { cwd: WURZEL });
+    info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neuGeaendert.length}`);
+  }
+}
+
 // =====================================================================
 if (teil('g')) {
   console.log('(g) alte Tests, die bestzeiten.js benutzen');
-  for (const [t, a] of [['rennablauf-test.mjs', []], ['overlay-test.mjs', []], ['m8c-test.mjs', ['--nur', 'j']], ['m8b-test.mjs', []], ['m8e-test.mjs', ['--nur', 'h']]]) {
+  for (const [t, a] of [['rennablauf-test.mjs', []], ['overlay-test.mjs', []], ['m8c-test.mjs', ['--nur', 'g']], ['m8b-test.mjs', ['--nur', 'b']], ['m8e-test.mjs', ['--nur', 'e']]]) {
     const r = werkzeug(t, a);
     const fehlerZeilen = r.text.split('\n').filter((z) => /^\s*FEHLER|Error|Fehler im Spiel/.test(z));
     fs.mkdirSync('/tmp/m8h', { recursive: true });
