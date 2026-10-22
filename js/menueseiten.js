@@ -238,6 +238,12 @@ export function baueSeiten(api) {
         optionen: () => [{ wert: 'kmh', text: 'einheit.kmh' }, { wert: 'mph', text: 'einheit.mph' }],
         lesen: () => einstellungen.einheit, setzen: (w) => setze('einheit', w),
       },
+      // M8g: TACHO = AUTO-STIL (jedes Auto sein eigener Tacho) oder KLASSISCH (der Tacho bis 0.8f für alle), sofort
+      {
+        typ: 'auswahl', text: 'einst.tacho', hinweis: 'einst.tachoHinweis',
+        optionen: () => [{ wert: 'auto', text: 'wert.tachoAuto' }, { wert: 'klassisch', text: 'wert.tachoKlassisch' }],
+        lesen: () => einstellungen.tacho, setzen: (w) => setze('tacho', w),
+      },
       { typ: 'umschalter', text: 'einst.fps', lesen: () => einstellungen.fps, setzen: (b) => setze('fps', b) },
       // M6: Minimap und Live-Vergleich (sofort wirksam)
       { typ: 'gruppe', text: 'einst.anzeige' },

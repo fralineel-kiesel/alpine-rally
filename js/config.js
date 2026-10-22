@@ -705,6 +705,7 @@ export const CONFIG = {
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },
+      tacho: { stil: 'audan' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
       ton: { turboMal: 1, knallMal: 1, motor: {} }, // M8c: Ton wie 0.8b; M8d: Motorklang = Referenz (audio.motor)
     },
     // Lanza Delto (Id delto, M8c): wendig, griffig, kurzer Radstand. Leichter und kürzer als der Audan, direkter in der
@@ -730,6 +731,7 @@ export const CONFIG = {
                                  // (sonst wäre der Testfahrer schneller als mit dem Audan)
         turbo: { an: true, aufbau: 0.4 }, // dezenter Turbo, baut etwas langsamer auf als beim Audan (0.35 s)
       },
+      tacho: { stil: 'delto' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
       ton: {
         turboMal: 1, knallMal: 1,
         // M8d: Motorklang 4-Zylinder-Turbo, höher und giftiger als der Audan (nur die Abweichungen von audio.motor)
@@ -776,6 +778,7 @@ export const CONFIG = {
         gaenge: [48, 82, 118, 150, 168], // 4. und 5. Gang kürzer: Höchsttempo ca. 8 % tiefer
         turbo: { an: false },    // kein Turbo (auch kein Pfeifen und kein Blow-off im Ton, siehe ton)
       },
+      tacho: { stil: 'escorta' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
       ton: {
         turboMal: 0, knallMal: 0.5, // kein Turbo-Geräusch, halb so oft Pops (M8c)
         // M8d: Motorklang 4-Zylinder-Sauger, heiser und warm, ohne Pfeifen (nur die Abweichungen von audio.motor)
@@ -846,6 +849,7 @@ export const CONFIG = {
         drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [5800, 1.0], [6400, 0.9], [7000, 0.64], [8000, 0.3]],
         turbo: { an: false },    // Lader (Kompressor) statt Turbo: Schub sofort, kein Aufbau
       },
+      tacho: { stil: 'l073' }, // M8g: Tacho je Auto (Stil aus hud.tachoStile; Skala fehlt = hud.tacho, auch bei TACHO = KLASSISCH)
       ton: {
         turboMal: 0, knallMal: 1, // kein Turbo: kein Pfeifen, kein Blow-off; Pops wie der Audan
         // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): mechanisch, rauh (nur die Abweichungen vom Audan).
@@ -908,8 +912,8 @@ export const CONFIG = {
         drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [6000, 1.0], [7000, 0.93], [8000, 0.78], [8800, 0.5]],
         turbo: { an: true, aufbau: 0.3 }, // dezenter Turbo, spricht schnell an (Audan 0.35 s)
       },
-      // M8f: Tacho-Skala (nur Zahlen; fehlt der Block, gilt hud.tacho): Drehzahl bis 9000, rot ab 8000
-      tacho: { drehzahlMax: 9, drehzahlRotAb: 8 },
+      // M8f: Tacho-Skala; M8g: Tacho je Auto (Stil aus hud.tachoStile, Skala im Auto-Stil; "klassisch" = Skala bei TACHO = KLASSISCH)
+      tacho: { stil: 'imprexa', drehzahlMax: 9, drehzahlRotAb: 8, klassisch: { drehzahlMax: 9, drehzahlRotAb: 8 } },
       ton: {
         turboMal: 1, knallMal: 1,
         // M8e: Motorklang Boxer: tief, blubbernd, dezenter Turbo (nur die Abweichungen vom Audan)
@@ -1353,6 +1357,32 @@ export const CONFIG = {
       farbeNabe: '#9aa0a6',    // Knopf in der Mitte
       farbeKasten: 'rgba(0, 0, 0, 0.55)', // Kästchen hinter der Gangzahl
     },
+    // M8g: Tacho je Auto. Ein Stil legt nur fest, was vom Stil "klassisch" abweicht. "klassisch" selbst nimmt alle
+    // Farben und Masse aus hud.tacho (oben, unverändert seit 0.8f) und nennt hier nur die Form. Welches Auto welchen
+    // Stil hat und welche Skala, steht im Fahrprofil (Block "tacho"). Einstellung TACHO = KLASSISCH: alle Autos klassisch.
+    tachoStile: {
+      klassisch: {
+        strichForm: 'linie',     // Skalenstriche: 'linie' (Strich nach innen) oder 'punkt' (LED-Punkte)
+        muster: 'glatt',         // Zifferblatt: 'glatt', 'innenring' (Ring in farbeMuster unter den Strichen) oder 'segmentband'
+        farbeMuster: null,       // Farbe von Innenring oder Segmentband (null = keins)
+        rotBreite: 2,            // rotes Band (Drehzahl) so viele Pixel breit, innen am Rand
+        nadelLaenge: 4,          // Nadelspitze so viele Pixel vor dem Rand (4 = kurz wie bisher, 2 = lang)
+        nadelSchatten: true,     // Nadel mit dunklem Schatten
+        farbeNadelSpitze: null,  // die letzten Pixel der Nadel in dieser Farbe (null = ganze Nadel in farbeNadel)
+        zahlenSchatten: true,    // Skalenzahlen mit dunklem Schatten (auf hellem Blatt: false)
+        farbeBeschriftung: null, // X1000 und KM/H (null = farbeStriche)
+        farbeDigital: '#ffd23c', // digitales Tempo unten im Tempo-Blatt
+        digitalFenster: null,    // Farbe eines Fensters hinter dem digitalen Tempo (null = keins)
+        // Gang-Anzeige unter der Nabe: form 'kasten' (gefüllt), 'rahmen' (gefüllt mit Rahmen), 'ohne' (nur die Ziffer)
+        // oder 'led' (7-Segment-Ziffer aus Pixeln); R ist immer rot
+        gang: { form: 'kasten', farbeRahmen: null, farbeZiffer: '#ffd23c', zifferSchatten: true },
+      },
+      audan: {},                 // Audan Quarto (Werte folgen in Teil B; leer = wie klassisch)
+      delto: {},                 // Lanza Delto
+      escorta: {},               // Fard Escorta
+      l073: {},                  // Lanza 073
+      imprexa: {},               // Subora Imprexa
+    },
   },
 
   // --- Pace-Notes: Ansagen des Beifahrers oben im Bild (Meilenstein 4) ----------
@@ -1508,6 +1538,7 @@ export const CONFIG = {
       vergleich: true,         // Live-Vergleich unter der Zeit an/aus
       vergleichMit: 'best',    // 'best' = Platz 1 der Bestzeiten, 'letzter' = der letzte fertige Lauf
       // Garage (M8c)
+      tacho: 'auto',           // M8g: Tacho 'auto' (jedes Auto sein eigener) oder 'klassisch' (der Tacho bis 0.8f für alle)
       auto: 'rt4',             // gewähltes Auto (Id aus js/autos.js; unbekannt = Audan Quarto)
       lacke: {},               // gewählte Lackierung je Auto, z. B. { rt4: 'gletscher' } (fehlt = die erste des Autos)
     },

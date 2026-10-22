@@ -26,6 +26,7 @@ function uebernimm(d) {
   if (typeof d.vollbild === 'boolean') einstellungen.vollbild = d.vollbild;
   if (ganz(d.aufloesung, M.aufloesungen.length)) einstellungen.aufloesung = d.aufloesung;
   if (d.einheit === 'kmh' || d.einheit === 'mph') einstellungen.einheit = d.einheit;
+  if (d.tacho === 'auto' || d.tacho === 'klassisch') einstellungen.tacho = d.tacho; // M8g (fehlt = auto)
   if (typeof d.fps === 'boolean') einstellungen.fps = d.fps;
   if (ganz(d.lenkStufe, M.lenkStufen.length)) einstellungen.lenkStufe = d.lenkStufe;
   if (ganz(d.totzoneStufe, M.totzonen.length)) einstellungen.totzoneStufe = d.totzoneStufe;

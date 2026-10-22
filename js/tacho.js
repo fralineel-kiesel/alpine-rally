@@ -4,6 +4,10 @@
 // ohne Kantenglättung. Masse und Farben: config.js "hud.tacho".
 // M8f: Skala je Fahrprofil (Block "tacho" im Profil: drehzahlMax, drehzahlRotAb, tempoMax; fehlt er, gilt hud.tacho).
 // Beim Autowechsel werden die Zifferblätter neu gemalt (je Skala nur einmal, danach aus dem Vorrat).
+// M8g: Tacho je Auto. Der Profil-Block "tacho" nennt den Stil (hud.tachoStile) und die Skala im Auto-Stil; der
+// Unterblock "klassisch" die Skala im klassischen Tacho (fehlt er, gilt hud.tacho). Einstellung TACHO: 'auto' = Stil
+// und Skala des Autos, 'klassisch' = genau der Tacho von 0.8f (Stil "klassisch" = Werte aus hud.tacho).
+// Zifferblätter werden einmal je (Stil, Skala, Einheit) gemalt und liegen danach im Vorrat (kein Garbage pro Bild).
 
 import { CONFIG } from './config.js';
 import { t as tx } from './texte.js';
@@ -79,9 +83,42 @@ function winkel(f) {
 const GRAD = Math.PI / 180;
 const punkt = (cx, cy, w, d) => [cx + Math.cos(w * GRAD) * d, cy - Math.sin(w * GRAD) * d];
 
-// Ein Zifferblatt vorab malen. Ergebnis: Canvas, Mitte liegt bei (r + 2, r + 2)
-function maleBlatt(r, skala) {
+// M8g: Stil auflösen: hud.tacho (Farben, Nadel), darüber hud.tachoStile.klassisch (Form) und der Stil selbst.
+// Unbekannter Stil = klassisch. Je Stil nur einmal gerechnet (gemerkt; der Vorrat ist so gross wie die Stil-Tabelle).
+const STILE = new Map();
+export function tachoStil(id) {
+  const tabelle = CONFIG.hud.tachoStile || {};
+  const name = Object.prototype.hasOwnProperty.call(tabelle, id) ? id : 'klassisch';
+  let s = STILE.get(name);
+  if (!s) {
+    const k = tabelle.klassisch || {}, eigen = tabelle[name] || {};
+    s = { ...CONFIG.hud.tacho, ...k, ...eigen, id: name };
+    // Unterblöcke (z. B. gang) einzeln zusammenlegen: fehlt ein Wert, gilt der klassische
+    for (const [n, w] of Object.entries(k)) if (w && typeof w === 'object' && !Array.isArray(w)) s[n] = { ...w, ...(eigen[n] || {}) };
+    STILE.set(name, s);
+  }
+  return s;
+}
+// (für das Fahr-Labor oder Tests nach einer Änderung an config.js: Stile neu rechnen)
+export function stileVergessen() { STILE.clear(); }
+
+// M8g: Stil und Skala eines Fahrprofils für die Einstellung TACHO ('auto' oder 'klassisch').
+// Ergebnis in ziel (wird überschrieben, kein neues Objekt): { stil, drehzahlMax, drehzahlRotAb, tempoMax, tempoMaxMph }
+export function tachoFuer(profilId, modus, ziel = {}) {
   const t = CONFIG.hud.tacho;
+  const p = (CONFIG.fahrprofile && CONFIG.fahrprofile[profilId] && CONFIG.fahrprofile[profilId].tacho) || null;
+  const q = !p ? {} : modus === 'klassisch' ? p.klassisch || {} : p;
+  ziel.stil = modus === 'klassisch' || !p ? 'klassisch' : p.stil || 'klassisch';
+  ziel.drehzahlMax = q.drehzahlMax ?? t.drehzahlMax;
+  ziel.drehzahlRotAb = q.drehzahlRotAb ?? t.drehzahlRotAb;
+  ziel.tempoMax = q.tempoMax ?? t.tempoMax;
+  ziel.tempoMaxMph = q.tempoMaxMph ?? t.tempoMaxMph;
+  return ziel;
+}
+
+// Ein Zifferblatt vorab malen. Ergebnis: Canvas, Mitte liegt bei (r + 2, r + 2)
+// M8g: t = Stil (tachoStil), klassisch = hud.tacho wie bis 0.8f
+function maleBlatt(r, skala, t = tachoStil('klassisch')) {
   const groesse = 2 * r + 5, m = r + 2;
   const c = document.createElement('canvas');
   c.width = groesse; c.height = groesse;
@@ -127,6 +164,15 @@ function maleBlatt(r, skala) {
   return { bild: c, m };
 }
 
+// M8g: Vorrat der gemalten Zifferblätter für alle Tachos (HUD und Garage), Schlüssel: Art, Stil, Skala, Einheit.
+// Höchstens ein Blatt je Stil und Skala, also nie mehr als die Stil-Tabelle mal drei (Drehzahl, km/h, mph).
+const VORRAT = new Map();
+function ausVorrat(schluessel, male) {
+  let b = VORRAT.get(schluessel);
+  if (!b) { b = male(); VORRAT.set(schluessel, b); }
+  return b;
+}
+
 // Tachos bauen. text: 5x7-Schrift aus hud.js (text(t, x, y, groesse, farbe, ausrichtung))
 export function baueTachos(ctx, text) {
   const t = CONFIG.hud.tacho;
@@ -134,60 +180,60 @@ export function baueTachos(ctx, text) {
   const rT = t.tempoRadius, rD = t.drehzahlRadius;
   // Mittelpunkte: Tempo ganz rechts, Drehzahl links daneben, unten bündig
   // Tempo-Zifferblatt je Einheit (seit M5a auch mph), wird erst bei Bedarf gemalt
-  // M8f: Skala des gewählten Autos (Standard: hud.tacho)
-  const skala = { drehzahlMax: t.drehzahlMax, drehzahlRotAb: t.drehzahlRotAb, tempoMax: t.tempoMax };
-  const blaetter = {};
-  const tempoBlatt = (einheit) => {
-    const k = einheit === 'mph' ? 'mph' : `kmh-${skala.tempoMax}`;
-    return blaetter[k] || (blaetter[k] = einheit === 'mph'
-      ? maleBlatt(rT, { max: t.tempoMaxMph, lang: t.tempoStrichLangMph, kurz: t.tempoStrichKurzMph, zahlen: t.tempoZahlenMph, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.mph'), 18] })
-      : maleBlatt(rT, { max: skala.tempoMax, lang: t.tempoStrichLang, kurz: t.tempoStrichKurz, zahlen: t.tempoZahlen, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.kmh'), 18] }));
-  };
-  const drehBlatt = () => {
-    const k = `dreh-${skala.drehzahlMax}-${skala.drehzahlRotAb}`;
-    return blaetter[k] || (blaetter[k] = maleBlatt(rD, { max: skala.drehzahlMax * 1000, lang: 1000, kurz: 500, zahlen: 1000, teiler: 1000, zahlAbstand: 9, rotAb: skala.drehzahlRotAb * 1000, beschriftung: [tx('tacho.drehzahl'), 14] }));
-  };
+  // M8f: Skala des gewählten Autos (Standard: hud.tacho); M8g: dazu der Stil (Einstellung TACHO)
+  const skala = tachoFuer(null, 'klassisch'), neu = tachoFuer(null, 'klassisch');
+  let stil = tachoStil(skala.stil);
+  const tempoBlatt = (einheit) => (einheit === 'mph'
+    ? ausVorrat(`tempo|${stil.id}|mph|${skala.tempoMaxMph}`, () => maleBlatt(rT, { max: skala.tempoMaxMph, lang: t.tempoStrichLangMph, kurz: t.tempoStrichKurzMph, zahlen: t.tempoZahlenMph, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.mph'), 18] }, stil))
+    : ausVorrat(`tempo|${stil.id}|kmh|${skala.tempoMax}`, () => maleBlatt(rT, { max: skala.tempoMax, lang: t.tempoStrichLang, kurz: t.tempoStrichKurz, zahlen: t.tempoZahlen, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.kmh'), 18] }, stil)));
+  const drehBlatt = () => ausVorrat(`dreh|${stil.id}|${skala.drehzahlMax}|${skala.drehzahlRotAb}`,
+    () => maleBlatt(rD, { max: skala.drehzahlMax * 1000, lang: 1000, kurz: 500, zahlen: 1000, teiler: 1000, zahlAbstand: 9, rotAb: skala.drehzahlRotAb * 1000, beschriftung: [tx('tacho.drehzahl'), 14] }, stil));
   const tempo = { cx: B - t.randRechts - rT - 2, cy: H - t.randUnten - rT - 2, r: rT, ...tempoBlatt('kmh') };
-  let einheit = 'kmh', faktor = 1, skalaMax = t.tempoMax, profilVor = null;
+  let einheit = 'kmh', faktor = 1, skalaMax = skala.tempoMax, profilVor = null, modus = 'auto', modusVor = null;
   const dreh = { cx: B - t.randRechts - 2 * rT - 5 - t.abstand - rD - 2, cy: H - t.randUnten - rD - 2, r: rD, ...drehBlatt() };
   const anzeige = { kmh: 0, drehzahl: 0 };
 
   function nadel(d, f) {
     const w = winkel(Math.max(0, Math.min(1.02, f)));
     const [x1, y1] = punkt(d.cx, d.cy, w, d.r - 4);
-    ctx.fillStyle = t.farbeSchatten;
-    linie(ctx, d.cx + 1, d.cy + 1, x1 + 1, y1 + 1, t.nadelBreite);
-    ctx.fillStyle = t.farbeNadel;
-    linie(ctx, d.cx, d.cy, x1, y1, t.nadelBreite);
+    ctx.fillStyle = stil.farbeSchatten;
+    linie(ctx, d.cx + 1, d.cy + 1, x1 + 1, y1 + 1, stil.nadelBreite);
+    ctx.fillStyle = stil.farbeNadel;
+    linie(ctx, d.cx, d.cy, x1, y1, stil.nadelBreite);
     // Nabe
-    ctx.fillStyle = t.farbeSchatten;
+    ctx.fillStyle = stil.farbeSchatten;
     ctx.fillRect(d.cx - 1, d.cy - 1, 3, 3);
-    ctx.fillStyle = t.farbeNabe;
+    ctx.fillStyle = stil.farbeNabe;
     ctx.fillRect(d.cx - 1, d.cy - 1, 2, 2);
   }
 
   return {
     // M8f: Skala für dieses Fahrprofil (Id); jedes Bild aufrufbar, tut nur beim Wechsel etwas
+    // M8g: dazu der Stil des Autos (oder klassisch, je nach Einstellung TACHO)
     setzeSkala(profilId) {
-      if (profilId === profilVor) return;
-      profilVor = profilId;
-      const p = (CONFIG.fahrprofile && CONFIG.fahrprofile[profilId] && CONFIG.fahrprofile[profilId].tacho) || {};
-      const neu = { drehzahlMax: p.drehzahlMax ?? t.drehzahlMax, drehzahlRotAb: p.drehzahlRotAb ?? t.drehzahlRotAb, tempoMax: p.tempoMax ?? t.tempoMax };
-      if (neu.drehzahlMax === skala.drehzahlMax && neu.drehzahlRotAb === skala.drehzahlRotAb && neu.tempoMax === skala.tempoMax) return;
-      const kmhAlt = einheit === 'kmh' ? skala.tempoMax : null;
+      if (profilId === profilVor && modus === modusVor) return;
+      profilVor = profilId; modusVor = modus;
+      tachoFuer(profilId, modus, neu);
+      if (neu.stil === skala.stil && neu.drehzahlMax === skala.drehzahlMax && neu.drehzahlRotAb === skala.drehzahlRotAb &&
+        neu.tempoMax === skala.tempoMax && neu.tempoMaxMph === skala.tempoMaxMph) return;
       Object.assign(skala, neu);
+      stil = tachoStil(skala.stil);
       Object.assign(dreh, drehBlatt());
-      if (kmhAlt !== null && kmhAlt !== skala.tempoMax) { Object.assign(tempo, tempoBlatt('kmh')); skalaMax = skala.tempoMax; }
+      Object.assign(tempo, tempoBlatt(einheit));
+      skalaMax = einheit === 'mph' ? skala.tempoMaxMph : skala.tempoMax;
     },
-    skala: () => ({ ...skala }), // (für Tests: Skala und Anzahl gemalter Zifferblätter im Vorrat)
-    vorrat: () => Object.keys(blaetter).length,
+    // M8g: Einstellung TACHO ('auto' oder 'klassisch'); wirkt beim nächsten setzeSkala (jedes Bild)
+    setzeModus(m) { modus = m === 'klassisch' ? 'klassisch' : 'auto'; },
+    get modus() { return modus; },
+    skala: () => ({ ...skala }), // (für Tests: Skala, Stil und Anzahl gemalter Zifferblätter im Vorrat)
+    vorrat: () => VORRAT.size,
     // Einheit des Tempo-Tachos: 'kmh' oder 'mph' (M5a)
     setzeEinheit(e) {
       if (e === einheit) return;
       einheit = e;
       Object.assign(tempo, tempoBlatt(e));
       faktor = e === 'mph' ? 1 / 1.609344 : 1;
-      skalaMax = e === 'mph' ? t.tempoMaxMph : skala.tempoMax;
+      skalaMax = e === 'mph' ? skala.tempoMaxMph : skala.tempoMax;
       anzeige.kmh *= e === 'mph' ? faktor : 1.609344;
     },
     // dt: Sekunden seit dem letzten Bild, kmh, drehzahl (U/min), gang: 'R', 'N', '1'..'5'
@@ -205,7 +251,7 @@ export function baueTachos(ctx, text) {
       const zahl = String(Math.min(999, Math.round(kmh)));
       text(zahl, tempo.cx + 9 - zahl.length * 6, tempo.cy + 10, 1, 'gelb');
       // Gangzahl im Kästchen
-      ctx.fillStyle = t.farbeKasten;
+      ctx.fillStyle = stil.farbeKasten;
       ctx.fillRect(dreh.cx - 4, dreh.cy + 3, 9, 10);
       text(gang, dreh.cx - 2, dreh.cy + 5, 1, gang === 'R' ? 'rot' : 'gelb');
 
