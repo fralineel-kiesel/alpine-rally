@@ -35,11 +35,13 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   const PN = CONFIG.pacenotes;
 
   // Text zeichnen (Pixelschrift aus js/pixel.js, mit Schatten)
-  const text = (tx, x, y, groesse = 1, farbe = 'weiss', ausrichtung = 'links') =>
-    pixelText(ctx, tx, x, y, groesse, FARBEN[farbe] || farbe, ausrichtung);
+  // (M8g: schatten = null ohne Schatten, fehlt = dunkler Schatten wie bisher)
+  const text = (tx, x, y, groesse = 1, farbe = 'weiss', ausrichtung = 'links', schatten) =>
+    pixelText(ctx, tx, x, y, groesse, FARBEN[farbe] || farbe, ausrichtung, schatten);
 
   const tachos = baueTachos(ctx, text);
   tachos.setzeEinheit(einstellungen.einheit);
+  tachos.setzeModus(einstellungen.tacho); // M8g: Einstellung TACHO (auto / klassisch)
 
   // Feste Texte mit Tastennamen (Hilfe vor dem Start): nur bei Änderung neu bauen
   // (der Hinweis "R = Neustart" im Ziel ist seit M5b weg: dafür gibt es den Zielbildschirm)
@@ -66,6 +68,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   beiAenderung((name, wert) => {
     if (name === 'tasten') festeTexte();
     if (name === 'einheit') tachos.setzeEinheit(wert);
+    if (name === 'tacho') tachos.setzeModus(wert); // M8g: sofort, auch im Rennen und in der Pause
   });
 
   // Rechteck mit pixelig abgeschrägten Ecken (seit M5a in js/pixel.js, auch für die Menüs)
@@ -269,9 +272,9 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
         if (minimap && einstellungen.minimap && z.zustand !== 'ziel') {
           minimap.zeichne(ctx, z.autoX, z.autoZ, z.richtung, z.maxS, z.zwischenzeiten, z.cpNaechster, z.meldung ? z.meldung.verpasstCp : -1);
         }
-        // Tachos unten rechts (Drehzahl mit Gang, Tempo); M8f: Skala des gewählten Autos
+        // Tachos unten rechts (Drehzahl mit Gang, Tempo); M8f: Skala des gewählten Autos; M8g: Stil je Auto
         tachos.setzeSkala(aktivesProfil());
-        tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang);
+        tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang, z); // (M8g: z.ladedruck, z.gas, z.schaltet für Schaltlicht und Lader)
 
         if (z.zustand === 'bereit' && z.hilfe) {
           for (let i = 0; i < 4; i++) text(feste.hilfe[i], 5, H - 43 + i * 9);

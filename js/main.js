@@ -34,7 +34,7 @@ import { baueNetz } from './netz.js';
 import { bauePflanzen, baueDeko, spriteGruppe } from './sprites.js';
 import { baueAuto } from './car.js';
 import { baueGarage } from './garage.js';
-import { autoZuordnung, gibtAuto, STANDARD_AUTO } from './autos.js';
+import { autoZuordnung, gibtAuto, STANDARD_AUTO, AUTO_MODELLE } from './autos.js';
 import { baueFederung } from './federung.js';
 import { Fahrphysik } from './physics.js';
 import { Getriebe } from './getriebe.js';
@@ -42,6 +42,8 @@ import { baueAufheulen } from './tonfahrt.js';
 import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL, tonWerte } from './fahrprofil.js';
 import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
 import { baueHud, formatZeit } from './hud.js';
+import { baueTachos } from './tacho.js';
+import { pixelText } from './pixel.js';
 import { baueKollision } from './kollision.js';
 import { baueCheckpointTore } from './checkpoints.js';
 import { baueStrassenrand } from './strassenrand.js';
@@ -1005,6 +1007,29 @@ function vorschauFreigeben() {
   for (const v of vorschauModelle.values()) v.dispose();
   vorschauModelle.clear();
 }
+// M8g: Tacho-Vorschau in der Garage: eigener Tacho-Satz (nur der Drehzahlmesser) auf der HUD-Leinwand, über dem Menü.
+// Zeigt das markierte Auto im Stil der Einstellung TACHO; Nadel auf Leerlauf, Gang N, beim Aufheulen (nur das gewählte
+// Auto heult auf) folgt sie dessen Drehzahl, das Schaltlicht blitzt kurz mit (garage.tacho.lichtAb der Spitze = an).
+const TEXT_FARBEN = { weiss: '#f4f4ee', gelb: '#ffd23c', rot: '#ff4a3a' };
+const garageTacho = baueTachos(hudCtx, (tx, x, y, g = 1, f = 'weiss', a = 'links', sch) => pixelText(hudCtx, tx, x, y, g, TEXT_FARBEN[f] || f, a, sch));
+const garageWerte = { ladedruck: 0, gas: 0, schaltet: false, lichtDrehzahl: 0 };
+function garageTachoZeichnen(dt, vId, lage, alpha) {
+  const m = AUTO_MODELLE[vId], profil = m ? m.fahrprofil : aktivesProfil();
+  const T = CONFIG.garage.tacho, A = CONFIG.garage.aufheulen, leer = CONFIG.getriebe.leerlauf;
+  const heult = !!aufheulen && vId === autoWahl.modell;
+  const rpm = heult ? aufheulen.zustand.drehzahl : leer;
+  const p = CONFIG.fahrprofile[profil], S = p && p.tacho && p.tacho.schaltlicht;
+  const spitze = leer + A.spitze * (CONFIG.audio.motor.hoechstDrehzahl - leer);
+  garageWerte.lichtDrehzahl = S ? leer + (rpm - leer) / (T.lichtAb * (spitze - leer)) * (S.an - leer) : 0;
+  garageWerte.ladedruck = heult ? aufheulen.zustand.ladedruck : 0;
+  garageWerte.gas = heult ? aufheulen.zustand.gas : 0;
+  garageTacho.setzeModus(einstellungen.tacho);
+  garageTacho.setzeSkala(profil);
+  garageTacho.setzeLage(lage.cx, lage.cy);
+  hudCtx.globalAlpha = alpha;
+  garageTacho.zeichneVorschau(dt, rpm, 'N', garageWerte);
+  hudCtx.globalAlpha = 1;
+}
 // Taste H (M6): ganzes HUD aus/an, nicht gespeichert (jeder Start der Seite mit HUD); hinweis = Sekunden "HUD AUS/AN"
 const hudSchalter = { an: true, hinweis: 0 };
 function hudUmschalten() {
@@ -1101,9 +1126,10 @@ function schleife(jetzt) {
   szeneInfo.calls = renderer.info.render.calls; szeneInfo.dreiecke = renderer.info.render.triangles; // M8c: nur die Szene
   // M8c: Garage – das drehende Modell in den Vorschau-Rahmen (nur solange die Seite AUTO zu sehen ist)
   const gRahmen = garageSichtbar();
+  const vId = gRahmen ? seiten.garage.vorschauId() : null; // (M8g: einmal je Bild, auch für die Tacho-Vorschau)
   if (gRahmen) {
     const f = renderer.domElement.width / B;
-    garage.zeichne(dt, vorschauAuto(seiten.garage.vorschauId()), Math.round(gRahmen.x * f), Math.round((H - gRahmen.y - gRahmen.h) * f), Math.round(gRahmen.b * f), Math.round(gRahmen.h * f));
+    garage.zeichne(dt, vorschauAuto(vId), Math.round(gRahmen.x * f), Math.round((H - gRahmen.y - gRahmen.h) * f), Math.round(gRahmen.b * f), Math.round(gRahmen.h * f));
   } else if (vorschauModelle.size) vorschauFreigeben();
 
   // HUD (im Rennen und eingefroren in der Pause), darüber Abdunkeln und Menü
@@ -1118,6 +1144,7 @@ function schleife(jetzt) {
       zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
       dt: dtWelt, kmh: physik.tempo * 3.6, debug: debugAn, fps, countdown: rueck.rest,
       gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
+      ladedruck: getriebe.ladedruck, gas: tonEingabe.gas, turboAn: !!CONFIG.getriebe.turbo.an, // M8g: Ladedruck-/Lader-Anzeige
       meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
       untergrund, zielSchirm: ablauf.zustand === 'ziel',
       hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
@@ -1153,6 +1180,8 @@ function schleife(jetzt) {
     hudCtx.fillRect(gRahmen.x, gRahmen.y, gRahmen.b, gRahmen.h);
     hudCtx.globalAlpha = 1;
     hudCtx.globalCompositeOperation = 'source-over';
+    // M8g: Tacho-Vorschau (über dem Menü, so weit eingeblendet wie die Seite)
+    if (seiten.garage.tacho) garageTachoZeichnen(dt, vId, seiten.garage.tacho, Math.min(1, sicht * menue.einblendung));
   }
   tonBild(dt);
   if (fahrlabor) fahrlabor.aktualisiere(dt); // M8a
@@ -1248,6 +1277,7 @@ window.__alpineRally = {
   get blenden() { return { sicht, dunkel }; },
   get autoModell() { return auto; }, federung, dreck, dreckSchritt, lichtEin, autoZeichnen, // M8a (M8c: Modell wechselt)
   autoWechseln, get autoWahl() { return autoWahl; }, masseSetzen, garage, szeneInfo, staubAuto, // M8c
+  garageTacho, garageWerte, // M8g (Tests): Tacho-Vorschau der Garage
   vorschauModelle, // M8d (Tests): gerade gebaute Vorschau-Modelle der Garage
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },

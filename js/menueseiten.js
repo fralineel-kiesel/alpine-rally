@@ -63,7 +63,7 @@ export function baueSeiten(api) {
   // ESCORTA zu LACK.)
   const GA = CONFIG.garage;
   const lackVon = (name) => CONFIG.autoOptik.lackierungen[name] || {};
-  const garage = { rahmen: null }; // Vorschau-Rahmen (Pixel im 320x180-Raster), gesetzt beim Zeichnen
+  const garage = { rahmen: null, tacho: null }; // Vorschau-Rahmen und Tacho-Mitte (M8g; Pixel im 320x180-Raster), gesetzt beim Zeichnen
   const WERTE = [['beschleunigung', 'garage.beschleunigung'], ['tempo', 'garage.tempo'], ['grip', 'garage.grip'], ['drift', 'garage.drift']];
   const modellJetzt = () => (api.autoModell ? api.autoModell().modell : AUTO_MODELLE[AUTOS[auswahl.auto].id]); // bestätigt
   // M8d: Auto der Vorschau = das markierte (Zeiger auf einer Auto-Zeile), sonst das bestätigte
@@ -76,8 +76,13 @@ export function baueSeiten(api) {
   garage.vorschauId = () => vorschauModell().id; // (main.js: welches Modell dreht sich in der Vorschau)
   function garageRechts(c, x, y, b, h, tafel) {
     // Vorschau: dunkle Tafel mit hellem Rand (die 3D-Szene kommt darüber, nur während die Seite offen ist)
-    const px = x + 2, py = y, pb = (b - M.innen - 4) & ~1, ph = GA.vorschauHoehe;
+    // M8g: rechts daneben der Tacho des markierten Autos (main.js zeichnet ihn jedes Bild an garage.tacho = Mitte)
+    const T = GA.tacho, rechts = !!(T && T.an && T.lage === 'rechts');
+    const px = x + 2, py = y, pb = (b - M.innen - 4 - (rechts ? T.breite : 0)) & ~1, ph = GA.vorschauHoehe;
     garage.rahmen = { x: px, y: py, b: pb, h: ph };
+    garage.tacho = !(T && T.an) ? null : rechts
+      ? { cx: px + pb + 2 + Math.floor(T.breite / 2), cy: py + Math.round(ph / 2) + 4 }
+      : { cx: px + pb - 25, cy: py + ph - 25 };
     c.fillStyle = M.farbeRand; c.globalAlpha = 0.5; c.fillRect(px - 1, py - 1, pb + 2, ph + 2); c.globalAlpha = 1;
     c.fillStyle = GA.hintergrund; c.fillRect(px, py, pb, ph);
     // Werte-Balken: 1 bis 10 Kästchen (des markierten Autos)
@@ -237,6 +242,12 @@ export function baueSeiten(api) {
         typ: 'auswahl', text: 'einst.einheiten',
         optionen: () => [{ wert: 'kmh', text: 'einheit.kmh' }, { wert: 'mph', text: 'einheit.mph' }],
         lesen: () => einstellungen.einheit, setzen: (w) => setze('einheit', w),
+      },
+      // M8g: TACHO = AUTO-STIL (jedes Auto sein eigener Tacho) oder KLASSISCH (der Tacho bis 0.8f für alle), sofort
+      {
+        typ: 'auswahl', text: 'einst.tacho', hinweis: 'einst.tachoHinweis',
+        optionen: () => [{ wert: 'auto', text: 'wert.tachoAuto' }, { wert: 'klassisch', text: 'wert.tachoKlassisch' }],
+        lesen: () => einstellungen.tacho, setzen: (w) => setze('tacho', w),
       },
       { typ: 'umschalter', text: 'einst.fps', lesen: () => einstellungen.fps, setzen: (b) => setze('fps', b) },
       // M6: Minimap und Live-Vergleich (sofort wirksam)

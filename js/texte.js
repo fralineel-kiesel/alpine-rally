@@ -93,6 +93,8 @@ export const TEXTE = {
   'einst.paceNotes': { de: 'PACE-NOTES', en: 'PACE NOTES' },
   'einst.paceNotesHinweis': { de: 'GLEICH WIE TASTE {taste}', en: 'SAME AS KEY {taste}' },
   'einst.einheiten': { de: 'EINHEITEN', en: 'UNITS' },
+  'einst.tacho': { de: 'TACHO', en: 'GAUGES' }, // M8g
+  'einst.tachoHinweis': { de: 'AUTO-STIL = JEDES AUTO HAT SEINEN TACHO', en: 'CAR STYLE = EVERY CAR HAS ITS OWN GAUGES' },
   'einst.fps': { de: 'FPS-ANZEIGE (F3)', en: 'FPS DISPLAY (F3)' },
   'einst.steuerung': { de: 'STEUERUNG', en: 'CONTROLS' },
   'einst.tasten': { de: 'TASTEN BELEGEN', en: 'KEY BINDINGS' },
@@ -111,6 +113,8 @@ export const TEXTE = {
   'wert.aus': { de: 'AUS', en: 'OFF' },
   'sprache.de': { de: 'DEUTSCH', en: 'DEUTSCH' },
   'sprache.en': { de: 'ENGLISH', en: 'ENGLISH' },
+  'wert.tachoAuto': { de: 'AUTO-STIL', en: 'CAR STYLE' }, // M8g: Einstellung TACHO
+  'wert.tachoKlassisch': { de: 'KLASSISCH', en: 'CLASSIC' },
   'einheit.kmh': { de: 'KM/H', en: 'KM/H' },
   'einheit.mph': { de: 'MPH', en: 'MPH' },
   // M6: Gruppe ANZEIGE
@@ -245,6 +249,8 @@ export const TEXTE = {
   // --- HUD (im Rennen) ---
   'hud.zeit': { de: 'ZEIT', en: 'TIME' },
   'tacho.drehzahl': { de: 'X1000', en: 'X1000' },
+  'tacho.boost': { de: 'BOOST', en: 'BOOST' }, // M8g: Ladedruck-Anzeige (Turbo), kleine Schrift (nur A B D E H I K L M N O P R S T U W X Z)
+  'tacho.lader': { de: 'LADER', en: 'BLOWER' }, // M8g: Lader-Anzeige (Kompressor, Lanza 073)
   'hud.cp': { de: 'CP {n}  {zeit}', en: 'CP {n}  {zeit}' },
   'hud.cpVerpasst': { de: 'CHECKPOINT VERPASST', en: 'CHECKPOINT MISSED' },
   'hud.ansagenAn': { de: 'ANSAGEN AN', en: 'PACE NOTES ON' },
