@@ -249,6 +249,8 @@ export const TEXTE = {
   // --- HUD (im Rennen) ---
   'hud.zeit': { de: 'ZEIT', en: 'TIME' },
   'tacho.drehzahl': { de: 'X1000', en: 'X1000' },
+  'tacho.boost': { de: 'BOOST', en: 'BOOST' }, // M8g: Ladedruck-Anzeige (Turbo), kleine Schrift (nur A B D E H I K L M N O P R S T U W X Z)
+  'tacho.lader': { de: 'LADER', en: 'BLOWER' }, // M8g: Lader-Anzeige (Kompressor, Lanza 073)
   'hud.cp': { de: 'CP {n}  {zeit}', en: 'CP {n}  {zeit}' },
   'hud.cpVerpasst': { de: 'CHECKPOINT VERPASST', en: 'CHECKPOINT MISSED' },
   'hud.ansagenAn': { de: 'ANSAGEN AN', en: 'PACE NOTES ON' },

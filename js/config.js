@@ -707,7 +707,8 @@ export const CONFIG = {
       },
       // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
       // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
-      tacho: { stil: 'audan', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
+      // Schaltlicht (nur Anzeige): an ab 95 % der Vollgas-Schaltdrehzahl (6900 -> 6550), blinkt ab 250 unter dem Begrenzer
+      tacho: { stil: 'audan', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130, schaltlicht: { an: 6550, blinken: 6600 }, lader: 'turbo' },
       ton: { turboMal: 1, knallMal: 1, motor: {} }, // M8c: Ton wie 0.8b; M8d: Motorklang = Referenz (audio.motor)
     },
     // Lanza Delto (Id delto, M8c): wendig, griffig, kurzer Radstand. Leichter und kürzer als der Audan, direkter in der
@@ -735,7 +736,8 @@ export const CONFIG = {
       },
       // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
       // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
-      tacho: { stil: 'delto', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
+      // Schaltlicht: drei Punkte füllen sich ab 5950 (blau, blau), rot ab 6550 (95 % von 6900), alle blinken ab 6600
+      tacho: { stil: 'delto', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130, schaltlicht: { fuellenAb: 5950, an: 6550, blinken: 6600 }, lader: 'turbo' },
       ton: {
         turboMal: 1, knallMal: 1,
         // M8d: Motorklang 4-Zylinder-Turbo, höher und giftiger als der Audan (nur die Abweichungen von audio.motor)
@@ -784,7 +786,8 @@ export const CONFIG = {
       },
       // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
       // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
-      tacho: { stil: 'escorta', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
+      // Schaltlicht: an ab 6550 (95 % von 6900), blinkt ab 6600; Sauger: keine Ladedruck-Anzeige
+      tacho: { stil: 'escorta', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130, schaltlicht: { an: 6550, blinken: 6600 } },
       ton: {
         turboMal: 0, knallMal: 0.5, // kein Turbo-Geräusch, halb so oft Pops (M8c)
         // M8d: Motorklang 4-Zylinder-Sauger, heiser und warm, ohne Pfeifen (nur die Abweichungen von audio.motor)
@@ -857,7 +860,8 @@ export const CONFIG = {
       },
       // M8g: Tacho je Auto (Stil aus hud.tachoStile). Skala nach Messung: Begrenzer 6850/min -> bis 8000 (mind. 8 % darüber),
       // rot ab 6500 (500 unter dem Begrenzer, auf 500 gerundet); Tempo bis 200 km/h, 130 mph. TACHO = KLASSISCH: hud.tacho (8, rot ab 7)
-      tacho: { stil: 'l073', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130 },
+      // Schaltlicht: fünf LEDs füllen sich ab 5250, die rote ab 6250 (95 % von 6600), alle blinken ab 6600; Lader-Anzeige
+      tacho: { stil: 'l073', drehzahlMax: 8, drehzahlRotAb: 6.5, tempoMax: 200, tempoMaxMph: 130, schaltlicht: { fuellenAb: 5250, an: 6250, blinken: 6600 }, lader: 'kompressor' },
       ton: {
         turboMal: 0, knallMal: 1, // kein Turbo: kein Pfeifen, kein Blow-off; Pops wie der Audan
         // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): mechanisch, rauh (nur die Abweichungen vom Audan).
@@ -922,7 +926,8 @@ export const CONFIG = {
       },
       // M8f: Tacho-Skala; M8g: Tacho je Auto (Stil aus hud.tachoStile, Skala im Auto-Stil; "klassisch" = Skala bei TACHO = KLASSISCH)
       // (Begrenzer 8200/min -> bis 9000; rot bleibt ab 8000 wie in M8f; Tempo bis 200 km/h, 130 mph)
-      tacho: { stil: 'imprexa', drehzahlMax: 9, drehzahlRotAb: 8, tempoMax: 200, tempoMaxMph: 130, klassisch: { drehzahlMax: 9, drehzahlRotAb: 8 } },
+      // Schaltlicht: gelb ab 7400 (95 % von 7800), rot blinkend ab 7950 (250 unter dem Begrenzer 8200)
+      tacho: { stil: 'imprexa', drehzahlMax: 9, drehzahlRotAb: 8, tempoMax: 200, tempoMaxMph: 130, schaltlicht: { an: 7400, blinken: 7950 }, lader: 'turbo', klassisch: { drehzahlMax: 9, drehzahlRotAb: 8 } },
       ton: {
         turboMal: 1, knallMal: 1,
         // M8e: Motorklang Boxer: tief, blubbernd, dezenter Turbo (nur die Abweichungen vom Audan)
@@ -1384,16 +1389,31 @@ export const CONFIG = {
         digitalFenster: null,    // Farbe eines Fensters hinter dem digitalen Tempo (null = keins)
         // Gang-Anzeige unter der Nabe: form 'kasten' (gefüllt), 'rahmen' (gefüllt mit Rahmen), 'ohne' (nur die Ziffer)
         // oder 'led' (7-Segment-Ziffer aus Pixeln); R ist immer rot
-        gang: { form: 'kasten', farbeRahmen: null, farbeZiffer: '#ffd23c', zifferSchatten: true },
+        gang: { form: 'kasten', farbeRahmen: null, farbeZiffer: '#ffd23c', zifferSchatten: true, farbeAus: null },
+        // M8g, nur im Auto-Stil: Schaltlicht oben im Drehzahlmesser (Schwellen je Auto im Fahrprofil, Block tacho.schaltlicht).
+        // form: 'lampe' (runde Lampe, groesse 5 oder 3), 'reihe' (Punkte/LEDs nebeneinander, füllen sich mit der Drehzahl);
+        // y = oberste Pixelreihe relativ zur Nabe; farbeAn (Lampe) oder farben (Reihe, je Punkt); farbeBlinken = Farbe beim
+        // Blinken (null = farbeAn); hz = Blinken pro Sekunde. null = kein Schaltlicht.
+        schaltlicht: null,
+        // Ladedruck (Turbo) bzw. Lader (Kompressor) als Leiste auf einer kleinen Tafel über dem Drehzahlmesser:
+        // farbe = Füllung, farbeLeer = leerer Teil, segmente = Anzahl Segmente (0 = durchgehender Balken)
+        ladeAnzeige: null,
+        ladeFolgen: 10,          // so schnell folgt die Ladedruck-Leiste dem Wert (wie die Nadeln: höher = direkter)
       },
       // Audan Quarto: der "Original"-Look, Blatt wie klassisch (anders ist nur die Skala im Profil: rot ab 6500)
-      audan: {},
+      audan: {
+        schaltlicht: { form: 'lampe', groesse: 5, y: -9, farbeAn: '#ff3b2e', farbeAus: '#4a1712', hz: 7 },
+        ladeAnzeige: { farbe: '#ffd23c', farbeLeer: '#2a3038', segmente: 0 },
+      },
       // Lanza Delto (Werk weiss/blau/rot): tiefschwarzes Blatt mit blauem Randring, weisse Ziffern, breites rotes Band,
       // weisse Nadel mit roter Spitze
       delto: {
         farbeBlatt: 'rgba(4, 6, 10, 0.88)', farbeRand: '#4a86f0', muster: 'innenring', farbeMuster: '#1f4fb4', musterBreite: 1,
         farbeStriche: '#f4f4ee', farbeZahlen: '#f4f4ee', farbeRot: '#e8352a', rotBreite: 3,
         farbeNadel: '#f4f4ee', farbeNadelSpitze: '#ff3b2e', farbeNabe: '#c8ccd2', farbeDigital: '#f4f4ee',
+        gang: { form: 'rahmen', farbeRahmen: '#4a86f0', farbeZiffer: '#f4f4ee' },
+        schaltlicht: { form: 'reihe', y: -8, farben: ['#4a86f0', '#4a86f0', '#ff3b2e'], farbeAus: '#1a2433', hz: 7 },
+        ladeAnzeige: { farbe: '#4a86f0', farbeLeer: '#1a2433', segmente: 0 },
       },
       // Fard Escorta (Werk weiss/blau, Vintage): cremeweisses Blatt, schwarze Striche und Ziffern, dunkelblauer Rand,
       // schwarze Nadel ohne Schatten, mattes Rot; das digitale Tempo in einem dunklen Fenster (wie ein Kilometerzähler)
@@ -1401,6 +1421,8 @@ export const CONFIG = {
         farbeBlatt: 'rgba(236, 228, 202, 0.95)', farbeRand: '#1e3474', muster: 'innenring', farbeMuster: '#1e3474', musterBreite: 1,
         farbeStriche: '#16181c', farbeZahlen: '#16181c', zahlenSchatten: false, farbeRot: '#b4503f',
         farbeNadel: '#16181c', nadelSchatten: false, farbeNabe: '#6a7078', farbeDigital: '#f4f4ee', digitalFenster: '#23262c',
+        gang: { form: 'ohne', farbeZiffer: '#16181c', zifferSchatten: false },
+        schaltlicht: { form: 'lampe', groesse: 3, y: -8, farbeAn: '#e0302a', farbeAus: '#c9b9a4', hz: 7 },
       },
       // Lanza 073 (Werk weiss mit grün/gelb, LED-Look): dunkles Blatt, Segmentband mit Lücken am Rand, Striche als Punkte,
       // grüne Ziffern, lange gelbe Nadel
@@ -1408,6 +1430,9 @@ export const CONFIG = {
         farbeBlatt: 'rgba(8, 14, 12, 0.88)', farbeRand: '#56685c', strichForm: 'punkt', muster: 'segmentband', farbeMuster: '#173d22', musterBreite: 3,
         farbeStriche: '#6cf05a', farbeZahlen: '#6cf05a', farbeRot: '#d8352a', rotBreite: 3,
         farbeNadel: '#ffd23c', nadelLaenge: 2, farbeNabe: '#ffd23c', farbeDigital: '#6cf05a', farbeBeschriftung: '#4cc050',
+        gang: { form: 'led', farbeZiffer: '#6cf05a', farbeAus: '#0f2717' }, // farbeAus = dunkle, nicht leuchtende Segmente
+        schaltlicht: { form: 'reihe', y: -7, farben: ['#6cf05a', '#6cf05a', '#ffd23c', '#ffd23c', '#ff3b2e'], farbeAus: '#173d22', hz: 7 },
+        ladeAnzeige: { farbe: '#6cf05a', farbeLeer: '#173d22', segmente: 5 },
       },
       // Subora Imprexa (Werk blau mit gelb): blaues Blatt, heller blauer Ring unter den Strichen, gelber Randring,
       // gelbe Ziffern und gelbe Nadel
@@ -1415,6 +1440,9 @@ export const CONFIG = {
         farbeBlatt: 'rgba(15, 33, 80, 0.92)', farbeRand: '#f5d020', muster: 'innenring', farbeMuster: '#1d46a8', musterBreite: 6,
         farbeStriche: '#f4f4ee', farbeZahlen: '#f5d020', farbeRot: '#ff5a3c',
         farbeNadel: '#f5d020', farbeNabe: '#f5d020', farbeDigital: '#f5d020', farbeKasten: '#1d46a8',
+        gang: { farbeZiffer: '#f5d020' },
+        schaltlicht: { form: 'lampe', groesse: 5, y: -9, farbeAn: '#f5d020', farbeBlinken: '#ff3b2e', farbeAus: '#2a3a6a', hz: 7 },
+        ladeAnzeige: { farbe: '#f5d020', farbeLeer: '#1d46a8', segmente: 0 },
       },
     },
   },

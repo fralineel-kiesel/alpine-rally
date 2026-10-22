@@ -1,6 +1,6 @@
 // Meilenstein 8g: Bilder nach screenshots/m8g/   node tools/m8g-bilder.mjs [--nur tacho,klassisch,rennen,garage,einstellung]
-//   tacho:       je Auto Tempo + Drehzahl im Auto-Stil, 4-fach (Zustand: 3. Gang, 5200/min, 95 km/h, halber Ladedruck)
-//   klassisch:   dasselbe mit TACHO = KLASSISCH (zum Vergleich)
+//   tacho:       je Auto Tempo + Drehzahl im Auto-Stil, 4-fach (Zustand: 4. Gang, Schaltlicht an, Ladedruck 70 %)
+//   klassisch:   TACHO = KLASSISCH (3. Gang, 5200/min, 95 km/h), zum Vergleich
 //   rennen:      HUD im Rennen (480x270) mit Schaltlicht an
 //   garage:      Garage mit Tacho-Vorschau (de, 480x270)
 //   einstellung: EINSTELLUNGEN mit TACHO (de, 480x270)
@@ -8,6 +8,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
@@ -26,7 +27,7 @@ async function tachoBild(s, id, modus, zustand, faktor = 4, hintergrund = '#6f8f
     const c = document.createElement('canvas'); c.width = 320; c.height = 180;
     const ctx = c.getContext('2d');
     const FARBEN = { weiss: '#f4f4ee', gelb: '#ffd23c', rot: '#ff4a3a' };
-    const text = (tx, x, y, g = 1, f = 'weiss', a = 'links') => P.pixelText(ctx, tx, x, y, g, FARBEN[f] || f, a);
+    const text = (tx, x, y, g = 1, f = 'weiss', a = 'links', sch) => P.pixelText(ctx, tx, x, y, g, FARBEN[f] || f, a, sch);
     const tachos = T.baueTachos(ctx, text);
     tachos.setzeModus(modus);
     tachos.setzeSkala(id);
@@ -45,6 +46,9 @@ const s = await starteSpiel({ breite: 640, hoehe: 360 });
 await s.page.goto(`${s.url}/index.html?menue=aus&auto=rt4`);
 await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
 const FAHRT = { kmh: 95, drehzahl: 5200, gang: '3', ladedruck: 0.5, gas: 1, schaltet: false };
-if (teil('tacho')) for (const [i, id] of ALLE.entries()) speichere(`1${i}-tacho-${NAMEN[id]}-4fach.png`, await tachoBild(s, id, 'auto', FAHRT));
+// Schaltlicht an (Mitte zwischen "an" und "blinken" des Autos), 4. Gang, Ladedruck 70 %
+const { CONFIG } = await import(pathToFileURL(path.join(WURZEL, 'js/config.js')).href);
+const LICHT = (id) => { const S = CONFIG.fahrprofile[id].tacho.schaltlicht; return { kmh: 132, drehzahl: Math.round((S.an + S.blinken) / 2), gang: '4', ladedruck: 0.7, gas: 1, schaltet: false }; };
+if (teil('tacho')) for (const [i, id] of ALLE.entries()) speichere(`1${i}-tacho-${NAMEN[id]}-4fach.png`, await tachoBild(s, id, 'auto', LICHT(id)));
 if (teil('klassisch')) for (const [i, id] of ALLE.entries()) speichere(`2${i}-tacho-${NAMEN[id]}-klassisch-4fach.png`, await tachoBild(s, id, 'klassisch', FAHRT));
 await s.schliessen();

@@ -10,7 +10,7 @@
 // Zifferblätter werden einmal je (Stil, Skala, Einheit) gemalt und liegen danach im Vorrat (kein Garbage pro Bild).
 
 import { CONFIG } from './config.js';
-import { t as tx } from './texte.js';
+import { t as tx, beiSprachwechsel } from './texte.js';
 
 // Winzige Schrift, 3x5 Pixel ('#' = Pixel an), für Skalenzahlen und Beschriftung
 export const MINI = {
@@ -39,6 +39,10 @@ export const MINI = {
   'U': ['#.#', '#.#', '#.#', '#.#', '###'],
   'X': ['#.#', '#.#', '.#.', '#.#', '#.#'],
   'Z': ['###', '..#', '.#.', '#..', '###'],
+  'D': ['##.', '#.#', '#.#', '#.#', '##.'], // D, O, R, W seit M8g (BOOST, LADER, BLOWER)
+  'O': ['.#.', '#.#', '#.#', '#.#', '.#.'],
+  'R': ['##.', '#.#', '##.', '#.#', '#.#'],
+  'W': ['#.#', '#.#', '###', '###', '#.#'],
   '/': ['..#', '..#', '.#.', '#..', '#..'],
   ' ': ['...', '...', '...', '...', '...'],
 };
@@ -113,6 +117,9 @@ export function tachoFuer(profilId, modus, ziel = {}) {
   ziel.drehzahlRotAb = q.drehzahlRotAb ?? t.drehzahlRotAb;
   ziel.tempoMax = q.tempoMax ?? t.tempoMax;
   ziel.tempoMaxMph = q.tempoMaxMph ?? t.tempoMaxMph;
+  // M8g: Schaltlicht-Schwellen und Art des Laders ('turbo', 'kompressor'), nur im Auto-Stil
+  ziel.schaltlicht = modus === 'klassisch' || !p ? null : p.schaltlicht || null;
+  ziel.lader = modus === 'klassisch' || !p ? null : p.lader || null;
   return ziel;
 }
 
@@ -252,6 +259,18 @@ function ausVorrat(schluessel, male) {
 // Digitalanzeige (Tempo) und Gang-Kästchen (Drehzahl)
 const FREI_TEMPO = [[-2, -2, 2, 2], [-10, 9, 9, 17]];
 const FREI_DREH = [[-2, -2, 2, 2], [-5, 2, 5, 13]];
+// M8g: Feld des Schaltlichts eines Stils (relativ zur Nabe) oder null
+export function lichtFeld(stil) {
+  const L = stil.schaltlicht;
+  if (!L) return null;
+  if (L.form === 'reihe') { const b = L.farben.length * 3 - 1, x0 = -Math.floor(b / 2); return [x0, L.y, x0 + b - 1, L.y + 1]; }
+  const h = Math.floor(L.groesse / 2);
+  return [-h, L.y, h, L.y + L.groesse - 1];
+}
+// M8g: 7-Segment-Ziffer (LED) im Gang-Kästchen: Segmente a bis g als Rechtecke [x, y, b, h] relativ zur Nabe
+const SEGMENTE = { a: [-1, 5, 3, 1], b: [2, 6, 1, 2], c: [2, 9, 1, 2], d: [-1, 11, 3, 1], e: [-2, 9, 1, 2], f: [-2, 6, 1, 2], g: [-1, 8, 3, 1] };
+const LED = { 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', N: 'ceg', R: 'eg' };
+const FARBE_R = '#ff4a3a'; // Rückwärtsgang immer rot (wie hud.js 'rot')
 
 // Tachos bauen. text: 5x7-Schrift aus hud.js (text(t, x, y, groesse, farbe, ausrichtung))
 export function baueTachos(ctx, text) {
@@ -266,13 +285,95 @@ export function baueTachos(ctx, text) {
   const tempoBlatt = (einheit) => (einheit === 'mph'
     ? ausVorrat(`tempo|${stil.id}|mph|${skala.tempoMaxMph}`, () => maleBlatt(rT, { max: skala.tempoMaxMph, lang: t.tempoStrichLangMph, kurz: t.tempoStrichKurzMph, zahlen: t.tempoZahlenMph, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.mph'), 18], frei: FREI_TEMPO }, stil))
     : ausVorrat(`tempo|${stil.id}|kmh|${skala.tempoMax}`, () => maleBlatt(rT, { max: skala.tempoMax, lang: t.tempoStrichLang, kurz: t.tempoStrichKurz, zahlen: t.tempoZahlen, teiler: 1, zahlAbstand: 11, beschriftung: [tx('einheit.kmh'), 18], frei: FREI_TEMPO }, stil)));
+  const freiDreh = () => (lichtFeld(stil) ? [...FREI_DREH, lichtFeld(stil)] : FREI_DREH);
   const drehBlatt = () => ausVorrat(`dreh|${stil.id}|${skala.drehzahlMax}|${skala.drehzahlRotAb}`,
-    () => maleBlatt(rD, { max: skala.drehzahlMax * 1000, lang: 1000, kurz: 500, zahlen: 1000, teiler: 1000, zahlAbstand: 9, rotAb: skala.drehzahlRotAb * 1000, beschriftung: [tx('tacho.drehzahl'), 14], frei: FREI_DREH }, stil));
+    () => maleBlatt(rD, { max: skala.drehzahlMax * 1000, lang: 1000, kurz: 500, zahlen: 1000, teiler: 1000, zahlAbstand: 9, rotAb: skala.drehzahlRotAb * 1000, beschriftung: [tx('tacho.drehzahl'), 14], frei: freiDreh() }, stil));
   const tempo = { cx: B - t.randRechts - rT - 2, cy: H - t.randUnten - rT - 2, r: rT, ...tempoBlatt('kmh') };
   let einheit = 'kmh', faktor = 1, skalaMax = skala.tempoMax, profilVor = null, modus = 'auto', modusVor = null;
   const dreh = { cx: B - t.randRechts - 2 * rT - 5 - t.abstand - rD - 2, cy: H - t.randUnten - rD - 2, r: rD, ...drehBlatt() };
-  const anzeige = { kmh: 0, drehzahl: 0 };
+  const anzeige = { kmh: 0, drehzahl: 0, lade: 0, uhr: 0 };
+  // M8g: Tafel der Ladedruck-/Lader-Anzeige über dem Drehzahlmesser (Lage relativ zur Nabe; Bild aus dem Vorrat)
+  const LADE = { x: -23, y: -(rD + 11), b: 47, h: 9 };
+  let ladeTafel = null;
+  beiSprachwechsel(() => { ladeTafel = null; });
+  function ladeTafelBild() {
+    const text = tx(skala.lader === 'kompressor' ? 'tacho.lader' : 'tacho.boost');
+    return ausVorrat(`lade|${stil.id}|${text}`, () => {
+      const c = document.createElement('canvas'); c.width = LADE.b; c.height = LADE.h;
+      const k = c.getContext('2d');
+      // Tafel mit abgeschrägten Ecken in den Farben des Stils
+      k.fillStyle = stil.farbeRand; k.fillRect(1, 0, LADE.b - 2, LADE.h); k.fillRect(0, 1, LADE.b, LADE.h - 2);
+      k.fillStyle = stil.farbeBlatt; k.fillRect(1, 1, LADE.b - 2, LADE.h - 2);
+      miniText(k, text, 3, 2, stil.farbeBeschriftung || stil.farbeStriche, stil.zahlenSchatten ? stil.farbeSchatten : null);
+      return { bild: c, balkenX: 3 + miniBreite(text) + 3, balkenB: LADE.b - 4 - (3 + miniBreite(text) + 3) };
+    });
+  }
 
+  // M8g: Gang-Anzeige im Auto-Stil: Kästchen, Kästchen mit Rahmen, nur Ziffer oder 7-Segment-LED; R immer rot
+  function zeichneGang(gang) {
+    const G = stil.gang, cx = dreh.cx, cy = dreh.cy, farbe = gang === 'R' ? FARBE_R : G.farbeZiffer;
+    if (G.form !== 'ohne') { ctx.fillStyle = stil.farbeKasten; ctx.fillRect(cx - 4, cy + 3, 9, 10); }
+    if (G.form === 'rahmen') {
+      ctx.fillStyle = G.farbeRahmen;
+      ctx.fillRect(cx - 5, cy + 2, 11, 1); ctx.fillRect(cx - 5, cy + 13, 11, 1);
+      ctx.fillRect(cx - 5, cy + 3, 1, 10); ctx.fillRect(cx + 5, cy + 3, 1, 10);
+    }
+    if (G.form === 'led') {
+      const an = LED[gang] || '';
+      for (const s in SEGMENTE) {
+        const [x, y, b, h] = SEGMENTE[s];
+        ctx.fillStyle = an.includes(s) ? farbe : G.farbeAus;
+        ctx.fillRect(cx + x, cy + y, b, h);
+      }
+      return;
+    }
+    text(gang, cx - 2, cy + 5, 1, farbe, 'links', G.zifferSchatten ? undefined : null);
+  }
+  // M8g: Schaltlicht (nur Anzeige): an ab skala.schaltlicht.an, blinkt ab .blinken; aus in N, R und in der Schaltpause.
+  // Reihe: Punkt i leuchtet ab fuellenAb + (an - fuellenAb) * i / (Anzahl - 1), der letzte also ab "an".
+  function zeichneSchaltlicht(gang, extra) {
+    const L = stil.schaltlicht, S = skala.schaltlicht;
+    const garage = extra && extra.lichtDrehzahl != null;
+    const rpm = garage ? extra.lichtDrehzahl : anzeige.drehzahl;
+    const aus = !garage && (gang === 'N' || gang === 'R' || !!(extra && extra.schaltet));
+    const blinkt = !aus && rpm >= S.blinken, hell = !blinkt || Math.floor(anzeige.uhr * L.hz * 2) % 2 === 0;
+    const cx = dreh.cx, y0 = dreh.cy + L.y;
+    if (L.form === 'reihe') {
+      const n = L.farben.length, x0 = cx - Math.floor((n * 3 - 1) / 2);
+      for (let i = 0; i < n; i++) {
+        const ab = n === 1 ? S.an : S.fuellenAb + (S.an - S.fuellenAb) * i / (n - 1);
+        ctx.fillStyle = !aus && rpm >= ab && hell ? L.farben[i] : L.farbeAus;
+        ctx.fillRect(x0 + i * 3, y0, 2, 2);
+      }
+      return;
+    }
+    const an = !aus && rpm >= S.an && hell, g = L.groesse, x0 = cx - Math.floor(g / 2);
+    ctx.fillStyle = an ? (blinkt && L.farbeBlinken ? L.farbeBlinken : L.farbeAn) : L.farbeAus;
+    if (g >= 5) {
+      ctx.fillRect(x0 + 1, y0, g - 2, 1); ctx.fillRect(x0, y0 + 1, g, g - 2); ctx.fillRect(x0 + 1, y0 + g - 1, g - 2, 1);
+    } else ctx.fillRect(x0, y0, g, g);
+  }
+  // M8g: Ladedruck (Turbo: echter Ladedruck) oder Lader (Kompressor: Drehzahl mal Gas) als Leiste auf der Tafel über
+  // dem Drehzahlmesser, weich nachgeführt
+  function zeichneLader(dt, extra) {
+    const A = stil.ladeAnzeige;
+    const ziel = !extra ? 0 : skala.lader === 'kompressor'
+      ? Math.min(1, Math.max(0, anzeige.drehzahl / (skala.drehzahlMax * 1000))) * (extra.gas || 0)
+      : Math.min(1, Math.max(0, extra.ladedruck || 0));
+    anzeige.lade += (ziel - anzeige.lade) * (1 - Math.exp(-stil.ladeFolgen * dt));
+    if (!ladeTafel) ladeTafel = ladeTafelBild();
+    const x = dreh.cx + LADE.x, y = dreh.cy + LADE.y;
+    ctx.drawImage(ladeTafel.bild, x, y);
+    const bx = x + ladeTafel.balkenX, bb = ladeTafel.balkenB;
+    if (A.segmente > 0) {
+      const schritt = Math.floor((bb + 1) / A.segmente), an = Math.round(anzeige.lade * A.segmente);
+      for (let i = 0; i < A.segmente; i++) { ctx.fillStyle = i < an ? A.farbe : A.farbeLeer; ctx.fillRect(bx + i * schritt, y + 2, schritt - 1, 5); }
+    } else {
+      const w = Math.round(anzeige.lade * bb);
+      ctx.fillStyle = A.farbeLeer; ctx.fillRect(bx, y + 2, bb, 5);
+      ctx.fillStyle = A.farbe; ctx.fillRect(bx, y + 2, w, 5);
+    }
+  }
   // M8g: Nadel je Stil (Breite, Länge, Schatten, andersfarbige Spitze)
   function nadel(d, f) {
     const w = winkel(Math.max(0, Math.min(1.02, f)));
@@ -303,11 +404,12 @@ export function baueTachos(ctx, text) {
       profilVor = profilId; modusVor = modus;
       tachoFuer(profilId, modus, neu);
       if (neu.stil === skala.stil && neu.drehzahlMax === skala.drehzahlMax && neu.drehzahlRotAb === skala.drehzahlRotAb &&
-        neu.tempoMax === skala.tempoMax && neu.tempoMaxMph === skala.tempoMaxMph) return;
+        neu.tempoMax === skala.tempoMax && neu.tempoMaxMph === skala.tempoMaxMph && neu.schaltlicht === skala.schaltlicht && neu.lader === skala.lader) return;
       Object.assign(skala, neu);
       stil = tachoStil(skala.stil);
       Object.assign(dreh, drehBlatt());
       Object.assign(tempo, tempoBlatt(einheit));
+      ladeTafel = null; anzeige.lade = 0;
       skalaMax = einheit === 'mph' ? skala.tempoMaxMph : skala.tempoMax;
     },
     // M8g: Einstellung TACHO ('auto' oder 'klassisch'); wirkt beim nächsten setzeSkala (jedes Bild)
@@ -328,7 +430,9 @@ export function baueTachos(ctx, text) {
       anzeige.kmh *= e === 'mph' ? faktor : 1.609344;
     },
     // dt: Sekunden seit dem letzten Bild, kmh, drehzahl (U/min), gang: 'R', 'N', '1'..'5'
-    zeichne(dt, kmh, drehzahl, gang) {
+    // extra (M8g, nur Auto-Stil): { ladedruck (0..1), gas (0..1), schaltet, lichtDrehzahl (Garage: Drehzahl fürs Schaltlicht,
+    // dann gilt die Regel "aus in N" nicht) } – liest nur, ändert nichts
+    zeichne(dt, kmh, drehzahl, gang, extra = null) {
       kmh *= faktor; // (bei mph: Meilen pro Stunde)
       // Nadeln gedämpft nachführen; im Stand ganz ruhig
       anzeige.kmh += (kmh - anzeige.kmh) * (1 - Math.exp(-t.tempoNadelFolgen * dt));
@@ -342,10 +446,17 @@ export function baueTachos(ctx, text) {
       const zahl = String(Math.min(999, Math.round(kmh)));
       if (stil.digitalFenster) { ctx.fillStyle = stil.digitalFenster; ctx.fillRect(tempo.cx - 10, tempo.cy + 9, 20, 9); }
       text(zahl, tempo.cx + 9 - zahl.length * 6, tempo.cy + 10, 1, stil.farbeDigital);
-      // Gangzahl im Kästchen
-      ctx.fillStyle = stil.farbeKasten;
-      ctx.fillRect(dreh.cx - 4, dreh.cy + 3, 9, 10);
-      text(gang, dreh.cx - 2, dreh.cy + 5, 1, gang === 'R' ? 'rot' : 'gelb');
+      // Gangzahl im Kästchen (klassisch wie bis 0.8f; M8g: Form und Farben je Stil)
+      if (stil.id === 'klassisch') {
+        ctx.fillStyle = stil.farbeKasten;
+        ctx.fillRect(dreh.cx - 4, dreh.cy + 3, 9, 10);
+        text(gang, dreh.cx - 2, dreh.cy + 5, 1, gang === 'R' ? 'rot' : 'gelb');
+      } else {
+        zeichneGang(gang);
+        anzeige.uhr += dt;
+        if (skala.schaltlicht && stil.schaltlicht) zeichneSchaltlicht(gang, extra);
+        if (skala.lader && stil.ladeAnzeige) zeichneLader(dt, extra);
+      }
 
       nadel(tempo, anzeige.kmh / skalaMax);
       nadel(dreh, anzeige.drehzahl / (skala.drehzahlMax * 1000));

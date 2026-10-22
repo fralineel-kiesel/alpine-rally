@@ -12,7 +12,10 @@ Vergleichsstand 0.8f: `git worktree add <scratchpad>/alt-08f 3ed7aae` → `node 
       (schwarz, blauer Ring, weisse Nadel mit roter Spitze), escorta (creme, schwarz, Digitalfenster), l073 (LED: Segmentband,
       Punkte, grün, gelbe Nadel), imprexa (blau, Innenring, gelb); audan = klassisch + Skala. Ziffern: zahlenLage() ohne
       Berührung; beim Tempo fällt die 200 weg (über der Digitalanzeige), Escorta (ohne Schatten) zeigt alle. Test (b) ok.
-- [ ] C Gang-Anzeige, Schaltlicht, Ladedruck
+- [x] C Gang je Stil (Audan Kasten, Delto blauer Rahmen, Escorta nur schwarze Ziffer, Lanza 7-Segment-LED grün, Subora
+      blauer Kasten gelb); Schaltlicht oben im Drehzahlmesser (Schwellen im Profil: an = 95 % von hochVollgas auf 50
+      gerundet, blinken = Begrenzer − 250, 7 Hz); BOOST/LADER-Tafel 47x9 direkt über dem Drehzahlmesser (Gruppe +4 px,
+      nicht breiter); main.js reicht ladedruck, gas, turboAn; Tests (c), (d), (e) ok, Speicher pro Bild nicht höher.
 - [ ] D Garage-Vorschau
 - [ ] E Tests, Bilder, Bericht, Version 0.8g
 

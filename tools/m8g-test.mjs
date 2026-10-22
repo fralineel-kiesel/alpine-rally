@@ -3,6 +3,9 @@
 //       Zuständen und im Spiel (HUD-Ausschnitt) in drei Auflösungen
 //   (b) Skalen nach Messung: Regel (Begrenzer + 8 %, rot 500 darunter), Nadelstand bei Höchsttempo und Begrenzer,
 //       Skalenzahlen ohne Überlappung (Pixelprüfung: jede Zahl vollständig, keine zwei Zahlen berühren sich), Kontraste
+//   (c) Schaltlicht je Auto: Schwellen nach Regel, aus darunter, an, Blinken (Hz), aus in N, R und in der Schaltpause, 5. Gang
+//   (d) Ladedruck-/Lader-Anzeige folgt dem Wert (Turbo: Ladedruck, Lanza 073: Drehzahl mal Gas), weich; Escorta ohne
+//   (e) Gang-Anzeige: 1 bis 5, N, R in allen Stilen sichtbar, verschieden, nichts ausserhalb des Kastens; R rot
 // --alt <ordner 0.8f>: der alte Stand zum Vergleich (git worktree add <ordner> <commit von 0.8f>); ohne --alt gelten
 //   die Prüfsummen aus tools/m8g-referenz-08f.json (mit --referenz-schreiben neu schreiben)
 // Ich sehe die Bilder, aber ich fahre nicht: ob ein Tacho im Fahren gut lesbar ist, beurteile ich nur an Bildern und Zahlen.
@@ -40,7 +43,7 @@ async function tachoDirekt(wurzel, modus) {
     const c = document.createElement('canvas'); c.width = 320; c.height = 180;
     const ctx = c.getContext('2d');
     const FARBEN = { weiss: '#f4f4ee', gelb: '#ffd23c', rot: '#ff4a3a' };
-    const text = (tx, x, y, g = 1, f = 'weiss', a = 'links') => P.pixelText(ctx, tx, x, y, g, FARBEN[f] || f, a);
+    const text = (tx, x, y, g = 1, f = 'weiss', a = 'links', sch) => P.pixelText(ctx, tx, x, y, g, FARBEN[f] || f, a, sch);
     const tachos = T.baueTachos(ctx, text);
     if (tachos.setzeModus) tachos.setzeModus(modus);
     const out = {};
@@ -204,6 +207,216 @@ if (teil('b')) {
       melde(x.fehler.length === 0 && x.paare.length === 0 && !x.weg.includes('jede zweite'),
         `${k} ${art === 'dreh' ? 'Drehzahl' : 'Tempo'}: Zahlen ${x.zahlen}${x.weg.length ? ` (weggelassen: ${x.weg.join(', ')})` : ''}; alle Pixel jeder Zahl da${x.fehler.length ? ` NEIN: ${x.fehler.join(', ')}` : ''}, sich berührende Zahlen: ${x.paare.length ? x.paare.join(', ') : 'keine'}`);
     }
+  }
+}
+
+// ---------------------------------------------------------------- Hilfe: Tacho im Test-Browser direkt malen
+// fn(window-Umgebung) läuft im Browser mit { T (tacho.js), C (CONFIG), neu(id, modus) -> { tachos, ctx, dreh, stil, male } }
+async function imTacho(fn, arg, args = []) {
+  const s = await starteSpiel({ breite: 640, hoehe: 360, args });
+  await s.page.goto(`${s.url}/index.html?menue=aus&auto=rt4`);
+  await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  await s.page.evaluate(async () => {
+    const T = await import('/js/tacho.js'), P = await import('/js/pixel.js'), C = window.__alpineRally.CONFIG;
+    window.__m8g = {
+      T, C,
+      neu(id, modus = 'auto') {
+        const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+        const ctx = c.getContext('2d');
+        const FARBEN = { weiss: '#f4f4ee', gelb: '#ffd23c', rot: '#ff4a3a' };
+        const text = (tx, x, y, g = 1, f = 'weiss', a = 'links', sch) => P.pixelText(ctx, tx, x, y, g, FARBEN[f] || f, a, sch);
+        const tachos = T.baueTachos(ctx, text);
+        tachos.setzeModus(modus); tachos.setzeSkala(id);
+        const dreh = tachos.blaetter().dreh, stil = T.tachoStil(tachos.skala().stil);
+        // n Bilder mit dt malen (dt = 1: Nadeln ganz nachgeführt)
+        const male = (n, dt, kmh, rpm, gang, extra) => { for (let i = 0; i < n; i++) { ctx.clearRect(0, 0, 320, 180); tachos.zeichne(dt, kmh, rpm, gang, extra); } };
+        const pixel = (x, y) => Array.from(ctx.getImageData(x, y, 1, 1).data);
+        return { tachos, ctx, dreh, stil, male, pixel };
+      },
+      gleich: (a, f) => { const h = f.match(/[0-9a-f]{2}/gi).map((x) => parseInt(x, 16)); return a[3] > 200 && Math.abs(a[0] - h[0]) < 3 && Math.abs(a[1] - h[1]) < 3 && Math.abs(a[2] - h[2]) < 3; },
+    };
+  });
+  const r = await s.page.evaluate(fn, arg);
+  const fehlerKonsole = s.fehler.length;
+  await s.schliessen();
+  return { ...r, fehlerKonsole };
+}
+
+// ---------------------------------------------------------------- (c) Schaltlicht
+if (teil('c')) {
+  console.log('(c) Schaltlicht je Auto (nur Anzeige)');
+  const { CONFIG } = await lade(WURZEL, 'js/config.js');
+  const FP = await lade(WURZEL, 'js/fahrprofil.js');
+  const zeilen = ['| Auto | Bauform | Schalten Vollgas | an ab (95 %) | Reihe füllt ab | Begrenzer | blinkt ab (−250) | gemessen: Blinken |', '|---|---|---|---|---|---|---|---|'];
+  const regel = {};
+  for (const id of ALLE) {
+    FP.waehleFahrprofil(id);
+    const S = CONFIG.fahrprofile[id].tacho.schaltlicht, hoch = CONFIG.getriebe.hochVollgas, begr = CONFIG.audio.motor.begrenzerAb;
+    regel[id] = { an: Math.round(hoch * 0.95 / 50) * 50, blinken: begr - 250, hoch, begr };
+    melde(S.an === regel[id].an && S.blinken === regel[id].blinken, `${NAMEN[id]}: Schwellen in config.js an ${S.an} (95 % von ${hoch} = ${regel[id].an}), blinken ${S.blinken} (${begr} − 250 = ${regel[id].blinken})${S.fuellenAb ? `, Reihe füllt ab ${S.fuellenAb}` : ''}`);
+  }
+  FP.waehleFahrprofil('prototyp');
+  const r = await imTacho(async (ids) => {
+    const { neu, gleich, T } = window.__m8g, out = {};
+    for (const id of ids) {
+      const x = neu(id), L = x.stil.schaltlicht, S = window.__m8g.C.fahrprofile[id].tacho.schaltlicht;
+      const [fx0, fy0] = T.lichtFeld(x.stil), cx = x.dreh.cx, cy = x.dreh.cy;
+      // Zustand lesen: Lampe an (Farbe an/blinken) bzw. Anzahl leuchtender Punkte der Reihe
+      const lies = () => {
+        if (L.form === 'reihe') return L.farben.reduce((n, f, i) => n + (gleich(x.pixel(cx + fx0 + i * 3, cy + fy0), f) ? 1 : 0), 0);
+        const p = x.pixel(cx, cy + L.y + Math.floor(L.groesse / 2));
+        return gleich(p, L.farbeAn) ? 1 : L.farbeBlinken && gleich(p, L.farbeBlinken) ? 2 : 0;
+      };
+      const voll = L.form === 'reihe' ? L.farben.length : 1;
+      const fall = (rpm, gang, schaltet) => { x.male(30, 1, 120, rpm, gang, { schaltet, ladedruck: 0, gas: 1 }); return lies(); };
+      // Blinken: 2 s mit 60 Bildern pro Sekunde, Wechsel zählen
+      const blinken = (rpm, gang) => {
+        x.male(30, 1, 150, rpm, gang, { schaltet: false });
+        let wechsel = 0, vor = lies(), farben = new Set([vor]);
+        for (let i = 0; i < 120; i++) { x.male(1, 1 / 60, 150, rpm, gang, { schaltet: false }); const z = lies(); if (z !== vor) wechsel++; vor = z; farben.add(z); }
+        return { hz: wechsel / 2 / 2, zustaende: [...farben] };
+      };
+      out[id] = {
+        form: L.form, voll,
+        unter: fall(S.an - 150, '3', false),
+        anMitte: fall(Math.round((S.an + S.blinken) / 2), '3', false),
+        ersteLed: L.form === 'reihe' ? fall(S.fuellenAb + 20, '3', false) : null,
+        blink: blinken(S.blinken + 120, '3'),
+        blink5: blinken(S.blinken + 120, '5'),
+        n: fall(7000, 'N', false), rw: fall(7000, 'R', false), schalt: fall(S.blinken + 120, '3', true),
+      };
+    }
+    return out;
+  }, ALLE);
+  for (const id of ALLE) {
+    const x = r[id], ok = (v) => (x.form === 'reihe' ? v === x.voll : v >= 1);
+    const unterOk = x.form === 'reihe' ? x.unter < x.voll : x.unter === 0;
+    melde(unterOk && ok(x.anMitte) && (x.ersteLed === null || x.ersteLed >= 1) && x.n === 0 && x.rw === 0 && x.schalt === 0,
+      `${NAMEN[id]} (${x.form}): unter der Schwelle ${x.form === 'reihe' ? `${x.unter} von ${x.voll} Punkten` : x.unter ? 'AN' : 'aus'}, dazwischen ${x.form === 'reihe' ? `${x.anMitte} von ${x.voll}` : x.anMitte ? 'an' : 'AUS'}${x.ersteLed !== null ? `, erster Punkt ab "füllt ab" ${x.ersteLed ? 'an' : 'AUS'}` : ''}; in N ${x.n ? 'AN' : 'aus'}, R ${x.rw ? 'AN' : 'aus'}, Schaltpause ${x.schalt ? 'AN' : 'aus'}`);
+    melde(x.blink.hz >= 6 && x.blink.hz <= 8 && x.blink5.hz >= 6 && x.blink5.hz <= 8 && (id !== 'imprexa' || x.blink.zustaende.includes(2)),
+      `${NAMEN[id]}: blinkt am Begrenzer mit ${x.blink.hz.toFixed(1)} Hz (Ziel 6 bis 8), im 5. Gang ${x.blink5.hz.toFixed(1)} Hz${id === 'imprexa' ? `, Farbe beim Blinken ${x.blink.zustaende.includes(2) ? 'rot' : 'NICHT rot'}` : ''}`);
+    const S = CONFIG.fahrprofile[id].tacho.schaltlicht;
+    zeilen.push(`| ${NAMEN[id]} | ${x.form === 'reihe' ? `Reihe aus ${x.voll}` : 'Lampe'} | ${regel[id].hoch} | ${S.an} | ${S.fuellenAb ?? '–'} | ${regel[id].begr} | ${S.blinken} | ${x.blink.hz.toFixed(1)} Hz |`);
+  }
+  melde(r.fehlerKonsole === 0, 'Konsole ohne Fehler');
+  fs.writeFileSync(path.join(ORDNER, 'schaltlicht.md'), `${zeilen.join('\n')}\n`);
+  info('Tabelle: screenshots/m8g/schaltlicht.md');
+}
+
+// ---------------------------------------------------------------- (d) Ladedruck- / Lader-Anzeige
+if (teil('d')) {
+  console.log('(d) Ladedruck-/Lader-Anzeige');
+  const r = await imTacho(async (ids) => {
+    const { neu, gleich } = window.__m8g, out = {};
+    for (const id of ids) {
+      const x = neu(id), A = x.stil.ladeAnzeige, cx = x.dreh.cx, cy = x.dreh.cy;
+      // Tafel über dem Drehzahlmesser: x -23..23, y -(r+11) .. -(r+3)
+      const y0 = cy - (x.dreh.r + 11), xa = cx - 23;
+      const tafelPixel = () => { const d = x.ctx.getImageData(xa, y0, 47, 9).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n; };
+      // Füllung: Anteil der Balken-Pixel (mittlere Zeile) in der Füllfarbe
+      const fuellung = () => {
+        if (!A) return null;
+        const d = x.ctx.getImageData(xa, y0 + 4, 47, 1).data;
+        let voll = 0, leer = 0;
+        for (let i = 1; i < 46; i++) { const p = Array.from(d.slice(i * 4, i * 4 + 4)); if (gleich(p, A.farbe)) voll++; else if (gleich(p, A.farbeLeer)) leer++; } // (ohne den Rand der Tafel)
+        return voll / Math.max(1, voll + leer);
+      };
+      const art = window.__m8g.C.fahrprofile[id].tacho.lader || null;
+      const o = { art, segmente: A ? A.segmente : 0 };
+      x.male(40, 1, 100, 4000, '3', { ladedruck: 0, gas: 0 }); o.null = fuellung(); o.tafel = tafelPixel();
+      if (art === 'turbo') {
+        x.male(40, 1, 100, 5000, '3', { ladedruck: 0.5, gas: 1 }); o.halb = fuellung();
+        x.male(40, 1, 100, 6000, '3', { ladedruck: 1, gas: 1 }); o.voll = fuellung();
+        x.male(40, 1, 100, 4000, '3', { ladedruck: 0, gas: 0 });
+        x.male(6, 1 / 60, 100, 6000, '3', { ladedruck: 1, gas: 1 }); o.nach01 = fuellung(); // nach 0.1 s
+      } else if (art === 'kompressor') {
+        x.male(40, 1, 100, 6000, '3', { ladedruck: 0, gas: 1 }); o.voll = fuellung(); // 6000 von 8000 mal Gas 1
+        x.male(40, 1, 100, 6000, '3', { ladedruck: 0, gas: 0 }); o.gasWeg = fuellung();
+        x.male(40, 1, 100, 3000, '3', { ladedruck: 0, gas: 1 }); o.halb = fuellung(); // 3000 von 8000
+      }
+      out[id] = o;
+    }
+    return out;
+  }, ALLE);
+  for (const id of ALLE) {
+    const x = r[id];
+    if (x.art === 'turbo') {
+      melde(x.null < 0.06 && Math.abs(x.halb - 0.5) <= 0.06 && x.voll > 0.94 && x.nach01 > 0.3 && x.nach01 < 0.85,
+        `${NAMEN[id]} (Turbo, BOOST): Ladedruck 0 → ${(x.null * 100).toFixed(0)} %, 0.5 → ${(x.halb * 100).toFixed(0)} %, 1 → ${(x.voll * 100).toFixed(0)} % gefüllt; weich: 0.1 s nach dem Sprung auf 1 erst ${(x.nach01 * 100).toFixed(0)} %`);
+    } else if (x.art === 'kompressor') {
+      melde(Math.abs(x.voll - 0.8) <= 0.21 && x.gasWeg < 0.05 && Math.abs(x.halb - 0.4) <= 0.21 && x.segmente > 0,
+        `${NAMEN[id]} (Kompressor, LADER, ${x.segmente} Segmente): 6000/min mit Gas ${(x.voll * 100).toFixed(0)} % (Soll 75 %), ohne Gas ${(x.gasWeg * 100).toFixed(0)} %, 3000/min mit Gas ${(x.halb * 100).toFixed(0)} % (Soll 37.5 %)`);
+    } else melde(x.tafel === 0, `${NAMEN[id]} (Sauger): keine Ladedruck-Anzeige (${x.tafel} Pixel über dem Drehzahlmesser)`);
+  }
+  // Speicher pro Bild: Auto-Stil (Schaltlicht blinkt, Lader-Leiste) gegen klassisch, je 4 Läufe, das Minimum
+  const sp = await imTacho(async (ids) => {
+    const { neu } = window.__m8g, out = {};
+    const miss = (fn) => { for (let k = 0; k < 2000; k++) fn(k); window.gc(); const h0 = performance.memory.usedJSHeapSize; for (let k = 0; k < 8000; k++) fn(k); return (performance.memory.usedJSHeapSize - h0) / 8000; };
+    for (const id of ids) {
+      const a = neu(id, 'auto'), k = neu(id, 'klassisch'), e = { ladedruck: 0.5, gas: 1, schaltet: false };
+      const bild = (x) => (n) => { e.ladedruck = (n % 100) / 100; x.tachos.zeichne(1 / 60, 120 + (n % 50), 6000 + (n % 900), '3', e); };
+      let mitStil = Infinity, ohne = Infinity;
+      for (let r = 0; r < 4; r++) { ohne = Math.min(ohne, miss(bild(k))); mitStil = Math.min(mitStil, miss(bild(a))); }
+      out[id] = { mitStil, ohne };
+    }
+    return out;
+  }, ['delto', 'l073'], ['--js-flags=--expose-gc', '--enable-precise-memory-info']);
+  for (const id of ['delto', 'l073']) {
+    const h = sp[id];
+    melde(h.mitStil <= h.ohne + 16, `${NAMEN[id]}: Speicher pro Bild (Tacho zeichnen, Heap des Test-Browsers): Auto-Stil ${h.mitStil.toFixed(1)} Byte, klassisch ${h.ohne.toFixed(1)} Byte (ein neues Objekt wären 16 und mehr)`);
+  }
+  // Datenweg im Spiel: Delto fährt 4 s Vollgas, das HUD zeigt den echten Ladedruck
+  const s = await starteSpiel({ breite: 640, hoehe: 360 });
+  await s.page.goto(`${s.url}/index.html?menue=aus&auto=delto`);
+  await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  const w = await s.page.evaluate(async () => {
+    const A = window.__alpineRally;
+    A.start({ countdown: false }); A.anhalten = true; A.setzeAuf(600);
+    const e = { gas: 1, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false };
+    for (let k = 0; k < 240; k++) A.rennSchritt(A.SCHRITT, e);
+    await new Promise((r) => setTimeout(r, 1200));
+    const T = A.hud.tachos.blaetter().dreh, A2 = A.CONFIG.hud.tachoStile.delto.ladeAnzeige;
+    const d = document.getElementById('hud').getContext('2d').getImageData(T.cx - 22, T.cy - (T.r + 11) + 4, 45, 1).data;
+    const h = A2.farbe.match(/[0-9a-f]{2}/gi).map((x) => parseInt(x, 16));
+    let voll = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - h[0]) < 3 && Math.abs(d[i + 1] - h[1]) < 3 && Math.abs(d[i + 2] - h[2]) < 3) voll++;
+    return { ladedruck: A.getriebe.ladedruck, voll, kmh: A.physik.tempo * 3.6 };
+  });
+  await s.schliessen();
+  melde(w.ladedruck > 0.5 && w.voll >= 8, `im Spiel (Delto, 4 s Vollgas, ${w.kmh.toFixed(0)} km/h): Ladedruck ${w.ladedruck.toFixed(2)}, BOOST-Leiste ${w.voll} Pixel gefüllt (main.js reicht ladedruck, gas, schaltet an das HUD)`);
+}
+
+// ---------------------------------------------------------------- (e) Gang-Anzeige
+if (teil('e')) {
+  console.log('(e) Gang-Anzeige: 1 bis 5, N, R in allen Stilen');
+  const r = await imTacho(async (ids) => {
+    const { neu } = window.__m8g, out = {};
+    for (const [id, modus] of ids) {
+      const x = neu(id, modus), cx = x.dreh.cx, cy = x.dreh.cy;
+      const bild = (g) => { x.male(20, 1, 0, 1000, g, null); return x.ctx.getImageData(cx - 12, cy - 4, 25, 22).data; };
+      const leer = bild(' ');
+      const o = {};
+      for (const g of ['1', '2', '3', '4', '5', 'N', 'R']) {
+        const d = bild(g);
+        let n = 0, aussen = 0, rot = 0; const muster = [];
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] === leer[i] && d[i + 1] === leer[i + 1] && d[i + 2] === leer[i + 2] && d[i + 3] === leer[i + 3]) continue;
+          const px = (i / 4) % 25 - 12, py = Math.floor(i / 4 / 25) - 4;
+          n++; muster.push(`${px},${py}`);
+          if (px < -5 || px > 5 || py < 2 || py > 13) aussen++;
+          if (d[i] > 200 && d[i + 1] < 110 && d[i + 2] < 110) rot++;
+        }
+        o[g] = { n, aussen, rot, muster: muster.join(';') };
+      }
+      out[`${id}-${modus}`] = { stil: x.stil.id, form: x.stil.gang.form, gaenge: o };
+    }
+    return out;
+  }, [...ALLE.map((id) => [id, 'auto']), ['rt4', 'klassisch']]);
+  for (const [k, v] of Object.entries(r)) {
+    if (k === 'fehlerKonsole') continue;
+    const g = v.gaenge, alle = Object.keys(g);
+    const verschieden = new Set(alle.map((x) => g[x].muster)).size === alle.length;
+    melde(alle.every((x) => g[x].n > 0 && g[x].aussen === 0) && verschieden && g.R.rot > 0,
+      `${v.stil} (${v.form}): ${alle.map((x) => `${x} ${g[x].n}`).join(', ')} Pixel; ausserhalb des Kastens ${alle.reduce((a, x) => a + g[x].aussen, 0)}; alle verschieden ${verschieden ? 'ja' : 'NEIN'}; R rot ${g.R.rot > 0 ? 'ja' : 'NEIN'}`);
   }
 }
 
