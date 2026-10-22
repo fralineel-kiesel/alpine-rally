@@ -565,7 +565,11 @@ console.log('(i) BESTZEITEN-Seite und Löschen, (k) altes Format');
   // neuer Lauf dazwischen: verglichen mit der alten Bestzeit, danach hervorgehoben
   await taste(p, 'Escape');
   const r = await A(p, () => { const e = window.__T.insZiel(168, [34.5, 96, 149]); window.__T.bisZielschirm(); window.__alpineRally.anhalten = false; return JSON.parse(JSON.stringify(e)); });
-  pruefe(r.platz === 2 && r.bisher.zeit === 165.5 && r.bisher.aufpralle === null && !r.neueBest, '(k) neuer Lauf wird neben alten Einträgen eingetragen und verglichen', `Platz ${r.platz}`);
+  // (M8h: alte Zeiten ohne Auto-Id zählen nur in der Gesamtwertung. Mit dem Prototyp (Standard dieses Tests) liegt der Lauf
+  //  im selben Behälter wie sie; mit --auto rt4/delto/... ist es die erste Zeit dieses Autos, Gesamtplatz 2)
+  pruefe(r.auto === 'prototyp' ? r.platz === 2 && r.bisher.zeit === 165.5 && r.bisher.aufpralle === null && !r.neueBest
+    : r.platz === 1 && r.bisher === null && r.gesamtPlatz === 2 && r.gesamtBisher.zeit === 165.5 && !r.neueBest && !r.gesamtRekord,
+  '(k) neuer Lauf wird neben alten Einträgen eingetragen und verglichen', `Auto ${r.auto}, Platz ${r.platz}, Gesamtplatz ${r.gesamtPlatz}`);
   await bilderAbwarten(p, 4);
   await zu(p, await nrVon(p, 'ziel.hauptmenue')); await taste(p, 'Enter'); await bilderAbwarten(p, 2);
   await zu(p, 3); await taste(p, 'Enter');

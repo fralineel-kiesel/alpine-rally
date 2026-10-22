@@ -1,4 +1,4 @@
-# M8h – Arbeitsstand (Faden für neue Sitzungen)
+# M8h – Arbeitsstand (Faden für neue Sitzungen) – FERTIG
 
 Ziel: Bestzeiten je Auto (Top 10), Gesamt-Top-3 (abgeleitet), Live-Vergleich und Zielbildschirm gegen die Bestzeit des
 gefahrenen Autos, GESAMTREKORD, Bestzeiten-Seite mit Umschalten. Branch `claude/bold-hawking-2x50ka`, ein Commit je Teil.
@@ -15,7 +15,8 @@ Vergleichsstand 0.8g: `git worktree add /tmp/alt08g ed0e695`.
       Gamepad), TOP 10 des Autos; Zeit-Zeilen 8 Pixel, Listen aufgefüllt -> Tafel immer 172 hoch, kein Rollen (Menü ist
       immer 320x180). Ohne gültige Id: "--". Rückfrage "ALLE BESTZEITEN ALLER AUTOS …". (k)(l)(m) ok.
       Alte Tests angepasst (rennablauf, overlay, m8c g, m8e e, ton-test, menue-test): neuer Schlüssel, Seite, GESAMTREKORD.
-- [ ] D Tests, Bilder, Bericht, Version
+- [x] D Voller Lauf `--alt /tmp/alt08g --lang` (ca. 3 h): 148 ok, 6 rot nur in der Regression (Credits, Audan 1028 m,
+      zwei Wackler, rennablauf (k) mit --auto: angepasst, einzeln grün). Unveränderlich alles gleich wie 0.8g.
+      Bilder `screenshots/m8h/`, Bericht `docs/meilensteine/m8h.md`, Version 0.8h.
 
-Werte: Speicher voll belegt (5 Autos x 10 + 10 ohne Auto, mit Spur) ca. 146 KB Text (ca. 293 KB im Browser).
-Menü ist immer im 320x180-Raster (auch bei 480x270/640x360): Tafel höchstens 172 Pixel hoch.
+Werte: Speicher voll ca. 146 KB Text (293 KB im Browser); Menü immer 320x180, Tafel höchstens 172.

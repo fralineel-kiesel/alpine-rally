@@ -2,12 +2,12 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 8g fertig** (Version 0.8g) – **jedes Auto hat seinen eigenen Tacho**: Skala nach Begrenzer und
-Höchsttempo, eigener Look (Delto schwarz-blau, Escorta cremeweiss, Lanza 073 LED-grün, Subora blau-gelb, Audan wie bisher),
-Gang-Anzeige im Auto-Stil, **Schaltlicht** und **Ladedruck-Anzeige** (BOOST / LADER), **Tacho-Vorschau in der Garage**,
-Einstellung **TACHO = AUTO-STIL / KLASSISCH** (klassisch = genau der Tacho von 0.8f). Nur Anzeige: Fahren und Ton gleich.
-Ich habe die Tachos an Bildern beurteilt, nicht im Fahren. **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m8g.md`.**
-Davor: 8f (Lanza 073 überarbeitet, Subora blau-gelb, Kontext-Diät). Nächster Schritt: **M8h Bestzeiten je Auto + Top 3**.
+Aktuell: **Meilenstein 8h fertig** (Version 0.8h) – **Bestzeiten je Auto**: Top 10 für jedes Auto, oben eine **Gesamt-Top-3**
+über alle Autos; Live-Vergleich und Zielbildschirm vergleichen mit der **Bestzeit des gefahrenen Autos**, die schnellste
+Zeit überhaupt heisst **GESAMTREKORD!**. Deine alten Zeiten werden beim ersten Start nach Auto übernommen; der alte
+Speicher bleibt unberührt (Rückweg). Getestet mit erfundenen Altdaten, nicht mit deinen.
+**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m8h.md`.** Davor: 8g (Tachos je Auto).
+Nächster Schritt: **Touch-Steuerung für Handy** (noch kein Prompt).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -49,7 +49,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/autolabor.js` – Auto-Labor (M8a): Hilfsseite zum Ansehen des Autos ohne Fahren (auto-lab…
 - `js/autos.js` – Modelldaten der Autos (seit M8a). js/car.js baut daraus das 3D-Modell (baueA…
 - `js/baumfolge.js` – Feste Zufallsfolge der Bäume und Steine (seit Meilenstein 3a) – bitte ni…
-- `js/bestzeiten.js` – Bestzeiten (Seite im Hauptmenü seit M5a, gefüllt seit M5b beim Erreiche…
+- `js/bestzeiten.js` – Bestzeiten (seit M5b; seit M8h Top 10 je Auto unter `alpineRally.bestzeiten2`, Gesamt-Top-3 abgeleitet, Übernahme der alten Liste; letzter Lauf).
 - `js/car.js` – Das Auto als 3D-Modell (seit M8a): baueAuto(modell, lackierung) baut es aus de…
 - `js/checkpoints.js` – Checkpoints: Tore quer über die Strasse (zwei Pfosten und ein Banner).
 - `js/config.js` – alle Stellschrauben an einem Ort (gross: nur bereichsweise lesen)
@@ -125,6 +125,8 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - `node tools/ton-messung.mjs m8e-l073 --profil l073 --bilder screenshots/m8e` – Ton-Messung eines Autos mit Spektrogrammen.
 - `node tools/auto-messung.mjs` – Fahrmessung aller Profile, Messtabellen M8e.
 - `node tools/m8f-test.mjs --alt <ordner 0.8e>` – alle Prüfungen von M8f (a) bis (g); einzeln `--nur b,d`; Regression mit `--lang`.
+- `node tools/m8h-test.mjs --alt <ordner 0.8g>` – alle Prüfungen von M8h (a) bis (n); einzeln `--nur c,k`; Regression mit `--lang`.
+  `node tools/m8h-bilder.mjs` – Bilder nach `screenshots/m8h/` (einzeln `--nur bestzeiten,klein,ziel,einstellung,leer`).
 - `node tools/m8g-test.mjs --alt <ordner 0.8f>` – alle Prüfungen von M8g (a) bis (i); einzeln `--nur a,f`; Regression mit `--lang`.
   (a) = Tacho KLASSISCH pixelgleich zu 0.8f (ohne `--alt` gegen `tools/m8g-referenz-08f.json`).
 - `node tools/m8g-bilder.mjs` – Bilder nach `screenshots/m8g/` (einzeln `--nur tacho,klassisch,layout,garage,rennen,einstellung`);
@@ -162,7 +164,9 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
-- **Bestzeiten je Auto getrennt** (eine Liste je Auto oder ein Filter): kommt als **M8h** (Bestzeiten je Auto + Gesamt-Top-3).
+- **Bestzeit des markierten Autos in der Garage anzeigen** (M8h-Idee, z. B. eine Zeile unter den Werte-Balken).
+- **Geisterauto aus der Fahrspur der Bestzeit** (die Spur je Auto liegt seit M6 im Speicher).
+- **„Letzter Lauf“ je Auto** (heute je Etappe, egal mit welchem Auto).
 - **Motorgeräusch von innen und von aussen** (je nach Kamera; im Spiel gibt es nur die Kamera hinter dem Auto).
 - **Getriebeheulen beim Mittelmotor** (Lanza: das Getriebe sitzt hinter dem Fahrer, ein leises Zahnrad-Heulen unter Last).
 - **Schaltvorgang animiert** (z. B. kurzes Nicken der Karosserie beim Schalten oder ein Schalthebel im HUD).
@@ -185,6 +189,17 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
 
+- **M8h** (0.8h) – Bericht mit Speicherformat, Migration, Tests, Test-Anleitung und Bildern: `docs/meilensteine/m8h.md`.
+  - **Speicher:** neuer Schlüssel `alpineRally.bestzeiten2`, je Etappe und Auto Top 10; Zeiten ohne gültiges Auto (alt,
+    PROTO) zählen nur in der Gesamtwertung (Anzeige „--“ / „PROTO“). Gesamt-Top-3 wird abgeleitet. Voll ca. 290 KB.
+  - **Übernahme:** beim ersten Lesen werden die alten Zeiten nach Auto kopiert; der alte Schlüssel bleibt, wie er ist
+    (BESTZEITEN LÖSCHEN löscht beide).
+  - **Rennen:** Live-Vergleich (BESTZEIT AUTO) gegen das eigene Auto, ohne eigene Zeit keiner; Zielbildschirm
+    GESAMTREKORD! / NEUE BESTZEIT! / ZIEL!, Zeile „GESAMT PLATZ 2/3“ (mit „PLATZ p VON n“ in einer Zeile).
+  - **Bestzeiten-Seite:** GESAMT TOP 3 oben, AUTO < NAME > (Links/Rechts, Maus, Gamepad), TOP 10 des Autos; passt in
+    allen Pixelgrössen ohne Rollen (Menü ist immer 320x180; Zeilen 8 statt 9 Pixel).
+  - **Unsicher:** Übernahme nur an erfundenen Daten getestet; alte Zeiten ohne Auto stehen in keiner Auto-Liste.
+  - Testen: `node tools/m8h-test.mjs --alt <ordner 0.8g>`; Fahren, Ton, Autos, Tachos unverändert (gemessen).
 - **M8g** (0.8g) – Bericht mit Skalen- und Schaltlicht-Tabelle, Tests, Test-Anleitung und Bildern: `docs/meilensteine/m8g.md`.
   - **Tacho je Auto:** Skala nach Messung (bis 8000, rot ab 6500; Subora 9000 / 8000), Tempo 200 km/h / 130 mph; Looks:
     Audan wie bisher, Delto schwarz mit blauem Ring, Escorta cremeweiss/schwarz, Lanza 073 LED-grün, Subora blau-gelb.
