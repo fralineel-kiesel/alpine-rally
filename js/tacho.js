@@ -301,9 +301,12 @@ export function baueTachos(ctx, text) {
     return ausVorrat(`lade|${stil.id}|${text}`, () => {
       const c = document.createElement('canvas'); c.width = LADE.b; c.height = LADE.h;
       const k = c.getContext('2d');
-      // Tafel mit abgeschrägten Ecken in den Farben des Stils
-      k.fillStyle = stil.farbeRand; k.fillRect(1, 0, LADE.b - 2, LADE.h); k.fillRect(0, 1, LADE.b, LADE.h - 2);
+      // Tafel mit abgeschrägten Ecken in den Farben des Stils: innen das Blatt (halbtransparent wie das Zifferblatt),
+      // aussen ein 1 Pixel breiter Rand (nicht übereinander malen, sonst mischt sich das Blatt mit dem Rand)
       k.fillStyle = stil.farbeBlatt; k.fillRect(1, 1, LADE.b - 2, LADE.h - 2);
+      k.fillStyle = stil.farbeRand;
+      k.fillRect(1, 0, LADE.b - 2, 1); k.fillRect(1, LADE.h - 1, LADE.b - 2, 1);
+      k.fillRect(0, 1, 1, LADE.h - 2); k.fillRect(LADE.b - 1, 1, 1, LADE.h - 2);
       miniText(k, text, 3, 2, stil.farbeBeschriftung || stil.farbeStriche, stil.zahlenSchatten ? stil.farbeSchatten : null);
       return { bild: c, balkenX: 3 + miniBreite(text) + 3, balkenB: LADE.b - 4 - (3 + miniBreite(text) + 3) };
     });

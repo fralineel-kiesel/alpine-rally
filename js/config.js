@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8f';
+export const VERSION = '0.8g';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1379,6 +1379,7 @@ export const CONFIG = {
         strichForm: 'linie',     // Skalenstriche: 'linie' (Strich nach innen) oder 'punkt' (LED-Punkte)
         muster: 'glatt',         // Zifferblatt: 'glatt', 'innenring' (Ring in farbeMuster unter den Strichen) oder 'segmentband'
         farbeMuster: null,       // Farbe von Innenring oder Segmentband (null = keins)
+        musterBreite: 0,         // so viele Pixel breit ist Innenring (ab dem Rand nach innen) bzw. Segmentband (unter den Strichen)
         rotBreite: 2,            // rotes Band (Drehzahl) so viele Pixel breit, innen am Rand
         nadelLaenge: 4,          // Nadelspitze so viele Pixel vor dem Rand (4 = kurz wie bisher, 2 = lang)
         nadelSchatten: true,     // Nadel mit dunklem Schatten
@@ -1392,8 +1393,9 @@ export const CONFIG = {
         gang: { form: 'kasten', farbeRahmen: null, farbeZiffer: '#ffd23c', zifferSchatten: true, farbeAus: null },
         // M8g, nur im Auto-Stil: Schaltlicht oben im Drehzahlmesser (Schwellen je Auto im Fahrprofil, Block tacho.schaltlicht).
         // form: 'lampe' (runde Lampe, groesse 5 oder 3), 'reihe' (Punkte/LEDs nebeneinander, füllen sich mit der Drehzahl);
-        // y = oberste Pixelreihe relativ zur Nabe; farbeAn (Lampe) oder farben (Reihe, je Punkt); farbeBlinken = Farbe beim
-        // Blinken (null = farbeAn); hz = Blinken pro Sekunde. null = kein Schaltlicht.
+        // y = oberste Pixelreihe relativ zur Nabe; farbeAn (Lampe) oder farben (Reihe, je Punkt); farbeAus = Lampe/Punkt aus
+        // (dunkel, damit man sie auch aus sieht); farbeBlinken = Farbe beim Blinken (null = farbeAn); hz = Blinken pro
+        // Sekunde. null = kein Schaltlicht.
         schaltlicht: null,
         // Ladedruck (Turbo) bzw. Lader (Kompressor) als Leiste auf einer kleinen Tafel über dem Drehzahlmesser:
         // farbe = Füllung, farbeLeer = leerer Teil, segmente = Anzahl Segmente (0 = durchgehender Balken)
@@ -1430,7 +1432,7 @@ export const CONFIG = {
         farbeBlatt: 'rgba(8, 14, 12, 0.88)', farbeRand: '#56685c', strichForm: 'punkt', muster: 'segmentband', farbeMuster: '#173d22', musterBreite: 3,
         farbeStriche: '#6cf05a', farbeZahlen: '#6cf05a', farbeRot: '#d8352a', rotBreite: 3,
         farbeNadel: '#ffd23c', nadelLaenge: 2, farbeNabe: '#ffd23c', farbeDigital: '#6cf05a', farbeBeschriftung: '#4cc050',
-        gang: { form: 'led', farbeZiffer: '#6cf05a', farbeAus: '#0f2717' }, // farbeAus = dunkle, nicht leuchtende Segmente
+        gang: { form: 'led', farbeZiffer: '#6cf05a', farbeAus: '#0b1a10' }, // farbeAus = dunkle, nicht leuchtende Segmente
         schaltlicht: { form: 'reihe', y: -7, farben: ['#6cf05a', '#6cf05a', '#ffd23c', '#ffd23c', '#ff3b2e'], farbeAus: '#173d22', hz: 7 },
         ladeAnzeige: { farbe: '#6cf05a', farbeLeer: '#173d22', segmente: 5 },
       },

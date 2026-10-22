@@ -4,21 +4,22 @@
 //   (b) Skalen nach Messung: Regel (Begrenzer + 8 %, rot 500 darunter), Nadelstand bei Höchsttempo und Begrenzer,
 //       Skalenzahlen ohne Überlappung (Pixelprüfung: jede Zahl vollständig, keine zwei Zahlen berühren sich), Kontraste
 //   (c) Schaltlicht je Auto: Schwellen nach Regel, aus darunter, an, Blinken (Hz), aus in N, R und in der Schaltpause, 5. Gang
-//   (d) Ladedruck-/Lader-Anzeige folgt dem Wert (Turbo: Ladedruck, Lanza 073: Drehzahl mal Gas), weich; Escorta ohne
+//   (d) Ladedruck-/Lader-Anzeige folgt dem Wert (Turbo: Ladedruck, Lanza 073: Drehzahl mal Gas), weich; Escorta ohne;
+//       Speicher pro Bild; Datenweg im Spiel; Platz im HUD (Tacho-Gruppe höchstens 8 Pixel höher, nicht breiter, berührt nichts)
 //   (e) Gang-Anzeige: 1 bis 5, N, R in allen Stilen sichtbar, verschieden, nichts ausserhalb des Kastens; R rot
 //   (f) Garage: Tacho-Vorschau in drei Auflösungen, de und en (nichts überlappt, nichts abgeschnitten), 20 Wechsel ohne
 //       Leck, Vorschau folgt dem Aufheulen, Schaltlicht blitzt mit, KLASSISCH zeigt den klassischen Tacho
 //   (g) Einstellung TACHO: wird gemerkt, wirkt sofort (Rennen und Pause), Menütexte de/en passen
 //   (h) Unveränderlich gegen 0.8f: Fahrmessung und Motorwerte aller Profile, Ton je Auto (Messung, im Rechenrauschen),
 //       Testfahrer (Prototyp und fünf Autos, drei Stile), Abkürzungen 127/2/342/84, Strecke, Aussehen der Autos
-//       (Textur, Geometrie, Räder), Garage-Werte; dazu Platz im HUD (Tacho-Gruppe höchstens 8 Pixel höher, nicht breiter,
-//       berührt nichts)
+//       (Textur, Geometrie, Räder), Garage-Werte
 //   (i) Regression (alle bisherigen Tests, nur mit --lang), Bildzeit (gegen den Audan und gegen 0.8f), Ladezeit (mit --alt)
 // --alt <ordner 0.8f>: der alte Stand zum Vergleich (git worktree add <ordner> <commit von 0.8f>); ohne --alt gelten
 //   die Prüfsummen aus tools/m8g-referenz-08f.json (mit --referenz-schreiben neu schreiben)
 // Ich sehe die Bilder, aber ich fahre nicht: ob ein Tacho im Fahren gut lesbar ist, beurteile ich nur an Bildern und Zahlen.
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
@@ -392,6 +393,35 @@ if (teil('d')) {
   });
   await s.schliessen();
   melde(w.ladedruck > 0.5 && w.voll >= 8, `im Spiel (Delto, 4 s Vollgas, ${w.kmh.toFixed(0)} km/h): Ladedruck ${w.ladedruck.toFixed(2)}, BOOST-Leiste ${w.voll} Pixel gefüllt (main.js reicht ladedruck, gas, schaltet an das HUD)`);
+  // Platz im HUD: Tacho-Gruppe (alles ab x 200 unten rechts) klassisch gegen Auto-Stil; berührt nichts
+  {
+    const s = await starteSpiel({ breite: 640, hoehe: 360 });
+    await s.page.goto(`${s.url}/index.html?menue=aus&auto=delto`);
+    await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+    const platz = await s.page.evaluate(async () => {
+      const A = window.__alpineRally, E = await import('/js/einstellungen.js');
+      const warte = (n) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      const kasten = (bx, by, bb, bh) => {
+        const d = document.getElementById('hud').getContext('2d').getImageData(bx, by, bb, bh).data;
+        let x0 = 999, y0 = 999, x1 = -1, y1 = -1;
+        for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { const x = bx + (i / 4) % bb, y = by + Math.floor(i / 4 / bb); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        return { x0, y0, x1, y1 };
+      };
+      A.rennen.hilfe = true; // Hilfezeilen vor dem Start (links unten) sichtbar
+      E.setze('tacho', 'klassisch'); await warte(4); const k = kasten(200, 90, 120, 90);
+      E.setze('tacho', 'auto'); await warte(4); const a = kasten(200, 90, 120, 90);
+      const hilfe = kasten(0, 120, 200, 60);
+      const m = A.hud.minimap, L = A.hud.lage;
+      return { k, a, rechtecke: { minimap: { x0: m.x, y0: m.y, x1: m.x + m.breite - 1, y1: m.y + m.hoehe - 1 }, zeit: { x0: L.zeit.x, y0: L.zeit.y, x1: L.zeit.x + L.zeit.b - 1, y1: L.zeit.y + L.zeit.h - 1 },
+        notes: { x0: L.notes.x, y0: L.notes.y, x1: L.notes.x + L.notes.b - 1, y1: L.notes.y + L.notes.h - 1 }, hilfe } };
+    });
+    await s.schliessen();
+    // (mit einem Pixel Abstand: aneinanderstossen zählt als berühren)
+    const ueber = (a, b) => a.x0 <= b.x1 + 1 && b.x0 <= a.x1 + 1 && a.y0 <= b.y1 + 1 && b.y0 <= a.y1 + 1;
+    const beruehrt = Object.entries(platz.rechtecke).filter(([, r]) => r.x1 >= 0 && ueber(platz.a, r)).map(([n]) => n);
+    melde(platz.k.y0 - platz.a.y0 <= 8 && platz.a.x0 >= platz.k.x0 && platz.a.x1 <= platz.k.x1 && beruehrt.length === 0 && platz.rechtecke.hilfe.x1 > 0,
+      `Platz im HUD (Delto, Auto-Stil): Tacho-Gruppe x ${platz.a.x0}–${platz.a.x1}, y ${platz.a.y0}–${platz.a.y1} (klassisch x ${platz.k.x0}–${platz.k.x1}, y ${platz.k.y0}–${platz.k.y1}): ${platz.k.y0 - platz.a.y0} Pixel höher (höchstens 8), ${platz.a.x0 >= platz.k.x0 && platz.a.x1 <= platz.k.x1 ? 'nicht breiter' : 'BREITER'}; berührt ${beruehrt.length ? beruehrt.join(', ') : 'nichts'} (Minimap, Zeit-Tafel, Pace-Notes; Hilfezeilen x ${platz.rechtecke.hilfe.x0}–${platz.rechtecke.hilfe.x1}, y ${platz.rechtecke.hilfe.y0}–${platz.rechtecke.hilfe.y1})`);
+  }
 }
 
 // ---------------------------------------------------------------- (e) Gang-Anzeige
@@ -731,35 +761,12 @@ if (teil('h')) {
   const ab = werkzeug('abkuerzungen.mjs', ['--pruefen']);
   const n = [...ab.text.matchAll(/übrig in Kurve [^:]+: (\d+) Linien/g)].map((x) => +x[1]);
   melde(n.join(' / ') === '127 / 2 / 342 / 84', `Abkürzungen: ${n.join(' / ')} (Soll 127 / 2 / 342 / 84)`);
-  // Strecke und Platz im HUD
+  // Strecke
   const s = await starteSpiel({ breite: 640, hoehe: 360 });
-  await s.page.goto(`${s.url}/index.html?menue=aus&auto=delto`);
+  await s.page.goto(`${s.url}/index.html?menue=aus`);
   await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
-  const platz = await s.page.evaluate(async () => {
-    const A = window.__alpineRally, E = await import('/js/einstellungen.js'), P = await import('/js/pixel.js');
-    const warte = (n) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    // Tacho-Gruppe: alle Pixel rechts unten (x ab 150, y ab 90) – dort liegt sonst nichts
-    const kasten = (bx = 150, by = 90, bb = 170, bh = 90) => {
-      const d = document.getElementById('hud').getContext('2d').getImageData(bx, by, bb, bh).data;
-      let x0 = 999, y0 = 999, x1 = -1, y1 = -1;
-      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { const x = bx + (i / 4) % bb, y = by + Math.floor(i / 4 / bb); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-      return { x0, y0, x1, y1 };
-    };
-    E.setze('tacho', 'klassisch'); await warte(4); const k = kasten();
-    E.setze('tacho', 'auto'); await warte(4); const a = kasten();
-    const hilfe = kasten(0, 120, 205, 60); // Hilfezeilen vor dem Start (links unten)
-    const m = A.hud.minimap, L = A.hud.lage;
-    const rechtecke = { minimap: { x0: m.x, y0: m.y, x1: m.x + m.breite - 1, y1: m.y + m.hoehe - 1 }, zeit: { x0: L.zeit.x, y0: L.zeit.y, x1: L.zeit.x + L.zeit.b - 1, y1: L.zeit.y + L.zeit.h - 1 },
-      notes: { x0: L.notes.x, y0: L.notes.y, x1: L.notes.x + L.notes.b - 1, y1: L.notes.y + L.notes.h - 1 } };
-    rechtecke.hilfe = hilfe;
-    return { k, a, rechtecke, laenge: A.strecke.laenge, hilfeDa: hilfe.x1 > 0 };
-  });
-  // (mit einem Pixel Abstand: aneinanderstossen zählt als berühren)
-  const ueber = (a, b) => a.x0 <= b.x1 + 1 && b.x0 <= a.x1 + 1 && a.y0 <= b.y1 + 1 && b.y0 <= a.y1 + 1;
-  const beruehrt = Object.entries(platz.rechtecke).filter(([, r]) => r.x1 >= 0 && ueber(platz.a, r)).map(([n]) => n);
+  const platz = { laenge: await s.page.evaluate(() => window.__alpineRally.strecke.laenge) };
   await s.schliessen();
-  melde(platz.k.y0 - platz.a.y0 <= 8 && platz.a.x0 >= platz.k.x0 && platz.a.x1 <= platz.k.x1 && beruehrt.length === 0,
-    `Platz im HUD (Delto, Auto-Stil): Tacho-Gruppe x ${platz.a.x0}–${platz.a.x1}, y ${platz.a.y0}–${platz.a.y1} (klassisch x ${platz.k.x0}–${platz.k.x1}, y ${platz.k.y0}–${platz.k.y1}): ${platz.k.y0 - platz.a.y0} Pixel höher (höchstens 8), nicht breiter; berührt ${beruehrt.length ? beruehrt.join(', ') : `nichts (Minimap, Zeit-Tafel, Pace-Notes, Hilfezeilen ${platz.hilfeDa ? `bis x ${platz.rechtecke.hilfe.x1}` : 'NICHT GEFUNDEN'})`}`);
   melde(Math.abs(platz.laenge - 3667.587) <= 0.5, `Strecke ${platz.laenge.toFixed(3)} m (3667.587 ±0.5)`);
 }
 
@@ -773,7 +780,8 @@ if (teil('i')) {
       ['auto-test.mjs', []], ['m8b-test.mjs', []], ['m8c-test.mjs', ['--nur', 'a,b,c,d,e,f,g,h,i,j,k']], ['m8d-test.mjs', []], ['m8e-test.mjs', ['--nur', 'a,b,c,e,f,g,i']],
       ['m8f-test.mjs', ['--nur', 'a,b,c,d,f']]]) {
       const t0 = Date.now(), r = werkzeug(t, a);
-      fs.writeFileSync(path.join(ORDNER, `regression-${t.replace('.mjs', '')}.log`), r.text);
+      fs.mkdirSync(path.join(os.tmpdir(), 'm8g-regression'), { recursive: true });
+      fs.writeFileSync(path.join(os.tmpdir(), 'm8g-regression', `${t.replace('.mjs', '')}.log`), r.text); // (ganze Ausgabe, nicht im Repo)
       melde(r.code === 0, `${t}${a.length ? ` ${a.join(' ')}` : ''}: ${r.code === 0 ? 'bestanden' : `NICHT bestanden: ${r.text.split('\n').filter((z) => /^\s*FEHLER/.test(z)).slice(0, 3).map((z) => z.trim().slice(0, 160)).join(' | ')}`} (${((Date.now() - t0) / 60000).toFixed(1)} min)`);
     }
   } else info('alle bisherigen Tests: nur mit --lang');

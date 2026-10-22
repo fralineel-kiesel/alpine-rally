@@ -601,7 +601,8 @@ if (teil('j')) {
   // Texte de und en passen (Pixelbreiten)
   const { textBreite } = await import(pathToFileURL(path.join(WURZEL, 'tools/node-three.mjs')).href).then(() => lade('js/pixel.js'));
   const T = await lade('js/texte.js'), { CONFIG } = await lade('js/config.js'), { AUTO_MODELLE } = await lade('js/autos.js');
-  const GA = CONFIG.garage, rechts = auf.rahmen.b, zuBreit = [];
+  // (M8g: rechts neben der 3D-Vorschau steht der Tacho; die Werte-Balken liegen darunter und haben die ganze rechte Spalte)
+  const GA = CONFIG.garage, rechts = auf.rahmen.b + (GA.tacho && GA.tacho.an && GA.tacho.lage === 'rechts' ? GA.tacho.breite : 0), zuBreit = [];
   for (const sprache of ['de', 'en']) {
     T.setzeSprache(sprache);
     const lb = Math.max(...['garage.beschleunigung', 'garage.tempo', 'garage.grip', 'garage.drift'].map((k) => textBreite(T.t(k))));

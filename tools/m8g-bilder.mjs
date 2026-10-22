@@ -1,9 +1,9 @@
-// Meilenstein 8g: Bilder nach screenshots/m8g/   node tools/m8g-bilder.mjs [--nur tacho,klassisch,rennen,garage,einstellung]
+// Meilenstein 8g: Bilder nach screenshots/m8g/   node tools/m8g-bilder.mjs [--nur tacho,klassisch,layout,garage,rennen,einstellung]
 //   tacho:       je Auto Tempo + Drehzahl im Auto-Stil, 4-fach (Zustand: 4. Gang, Schaltlicht an, Ladedruck 70 %)
 //   klassisch:   TACHO = KLASSISCH (3. Gang, 5200/min, 95 km/h), zum Vergleich
-//   rennen:      HUD im Rennen (480x270) mit Schaltlicht an
 //   layout:      die zwei Layouts der Tacho-Vorschau in der Garage (rechts neben dem Auto / Ecke über dem Auto)
-//   garage:      Garage mit Tacho-Vorschau (de, 480x270)
+//   garage:      Garage mit Tacho-Vorschau (de, 480x270), Zeiger auf Delto und auf Lanza 073
+//   rennen:      HUD im Rennen (480x270), Lanza 073 mit Vollgas und Schaltlicht an
 //   einstellung: EINSTELLUNGEN mit TACHO (de, 480x270)
 // Die Bilder sind für Lino und für mich; ob ein Tacho im Fahren gut lesbar ist, zeigen sie nur bedingt.
 
@@ -75,3 +75,58 @@ if (teil('layout')) {
   await garageBild('30-garage-layout-rechts-480x270.png', { lage: 'rechts' });
   await garageBild('31-garage-layout-ecke-480x270.png', { lage: 'ecke' });
 }
+if (teil('garage')) {
+  await garageBild('40-garage-tacho-480x270.png', { runter: 1 });
+  await garageBild('41-garage-lanza073-480x270.png', { runter: 3 });
+}
+
+// HUD im Rennen (480x270): Lanza 073 mit Vollgas (Startgerade ab 60 m), angehalten im 2. Gang, wenn das Schaltlicht steht (zwischen "an" und
+// "blinken", nicht in der Schaltpause)
+if (teil('rennen')) {
+  const g = await starteSpiel({ breite: 960, hoehe: 540, auto: '' });
+  const p = g.page;
+  await p.addInitScript(() => { try { localStorage.setItem('alpineRally.einstellungen', JSON.stringify({ sprache: 'de', aufloesung: 1 })); } catch { /* egal */ } });
+  await p.goto(`${g.url}/index.html?menue=aus&auto=l073`);
+  await p.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  const z = await p.evaluate(async () => {
+    const A = window.__alpineRally, S = A.CONFIG.fahrprofile.l073.tacho.schaltlicht;
+    A.start({ countdown: false }); A.anhalten = true; A.setzeAuf(60);
+    const e = { gas: 1, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false };
+    let k = 0;
+    for (; k < 4000; k++) {
+      A.rennSchritt(A.SCHRITT, e);
+      const G = A.getriebe;
+      if (G.gang >= 2 && !G.schaltet && G.drehzahl > S.an + 60 && G.drehzahl < S.blinken - 60) break;
+    }
+    const nachSchleife = { k, gang: A.getriebe.anzeige, drehzahl: Math.round(A.getriebe.drehzahl), zustand: A.rennen.zustand };
+    A.kameraSofort();
+    await new Promise((r) => setTimeout(r, 2500));
+    return { nachSchleife, gang: A.getriebe.anzeige, drehzahl: Math.round(A.getriebe.drehzahl), kmh: Math.round(A.physik.tempo * 3.6), lader: A.hud.tachos.anzeige.lade.toFixed(2) };
+  });
+  console.log('Zustand', JSON.stringify(z));
+  await p.screenshot({ path: path.join(ORDNER, '50-rennen-lanza073-schaltlicht-480x270.png') }); console.log('screenshots/m8g/50-rennen-lanza073-schaltlicht-480x270.png');
+  if (g.fehler.length) console.log('Fehler:', g.fehler.slice(0, 3).join(' | '));
+  await g.schliessen();
+}
+
+// EINSTELLUNGEN mit dem Zeiger auf TACHO (de, 480x270)
+if (teil('einstellung')) {
+  const g = await starteSpiel({ breite: 960, hoehe: 540, auto: '' });
+  const p = g.page;
+  await p.addInitScript(() => { try { localStorage.setItem('alpineRally.einstellungen', JSON.stringify({ sprache: 'de', aufloesung: 1 })); } catch { /* egal */ } });
+  await p.goto(`${g.url}/index.html`);
+  await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+  await p.keyboard.press('Enter'); await p.waitForTimeout(200);
+  await p.evaluate(() => { const A = window.__alpineRally; A.menue.oeffne(A.seiten.einstellungen); });
+  // Zeiger mit der Tastatur bis TACHO
+  for (let i = 0; i < 12; i++) {
+    const t = await p.evaluate(() => { const A = window.__alpineRally, o = A.menue.stapel[A.menue.stapel.length - 1]; const e = A.seiten.einstellungen.eintraege[o.wahl]; return e && e.text; });
+    if (t === 'einst.tacho') break;
+    await p.keyboard.press('ArrowDown'); await p.waitForTimeout(120);
+  }
+  await p.waitForFunction(() => window.__alpineRally.menue.einblendung >= 1, null, { timeout: 30000 });
+  await p.waitForTimeout(800);
+  await p.screenshot({ path: path.join(ORDNER, '60-einstellung-tacho-480x270.png') }); console.log('screenshots/m8g/60-einstellung-tacho-480x270.png');
+  await g.schliessen();
+}
+

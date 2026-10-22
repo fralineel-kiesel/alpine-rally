@@ -1,29 +1,19 @@
-# M8g – Arbeitsstand (Faden für neue Sitzungen)
+# M8g – Arbeitsstand (Faden für neue Sitzungen) – FERTIG
 
-Ziel: Tacho je Auto (Skala, Look, Gang-Anzeige, Schaltlicht, Ladedruck), Garage-Vorschau, Einstellung TACHO (auto/klassisch).
-Branch `claude/zen-planck-g7q7wd`, ein Commit je Teil. Bericht später: `docs/meilensteine/m8g.md`.
-Vergleichsstand 0.8f: `git worktree add <scratchpad>/alt-08f 3ed7aae` → `node tools/m8g-test.mjs --alt <ordner>`.
+Ziel: Tacho je Auto (Skala, Look, Gang, Schaltlicht, Ladedruck), Garage-Vorschau, Einstellung TACHO (auto/klassisch).
+Branch `claude/zen-planck-g7q7wd`, ein Commit je Teil. Bericht: `docs/meilensteine/m8g.md`.
+Vergleichsstand 0.8f: `git worktree add <ordner> 3ed7aae` → `node tools/m8g-test.mjs --alt <ordner>`.
 
-- [x] A Stil-Tabelle `hud.tachoStile` (klassisch = Form-Werte, Farben aus hud.tacho; fünf Auto-Stile noch leer = klassisch),
-      Profil-Block `tacho: { stil, …, klassisch: {…} }` (Subora 9/8 in beiden), `tacho.js`: tachoStil(), tachoFuer(),
-      Vorrat je (Stil, Skala, Einheit) für alle Tachos, setzeModus(); Einstellung `tacho` (Standard auto), Menü TACHO
-      neben EINHEITEN, Texte de/en. Prüfung (a): 60 direkt gemalte Fälle + 30 HUD-Ausschnitte pixelgleich zu 0.8f.
-- [x] B Skalen nach Regel (Begrenzer 6850 -> 8000, rot 6500; Subora 9000/8000), Tempo 200 km/h / 130 mph; Stile delto
-      (schwarz, blauer Ring, weisse Nadel mit roter Spitze), escorta (creme, schwarz, Digitalfenster), l073 (LED: Segmentband,
-      Punkte, grün, gelbe Nadel), imprexa (blau, Innenring, gelb); audan = klassisch + Skala. Ziffern: zahlenLage() ohne
-      Berührung; beim Tempo fällt die 200 weg (über der Digitalanzeige), Escorta (ohne Schatten) zeigt alle. Test (b) ok.
-- [x] C Gang je Stil (Audan Kasten, Delto blauer Rahmen, Escorta nur schwarze Ziffer, Lanza 7-Segment-LED grün, Subora
-      blauer Kasten gelb); Schaltlicht oben im Drehzahlmesser (Schwellen im Profil: an = 95 % von hochVollgas auf 50
-      gerundet, blinken = Begrenzer − 250, 7 Hz); BOOST/LADER-Tafel 47x9 direkt über dem Drehzahlmesser (Gruppe +4 px,
-      nicht breiter); main.js reicht ladedruck, gas, turboAn; Tests (c), (d), (e) ok, Speicher pro Bild nicht höher.
-- [x] D Garage: Drehzahlmesser des markierten Autos rechts neben dem 3D-Auto (Vorschau 182 -> 130 breit), BOOST-Tafel
-      darüber; zwei Layouts verglichen (30-/31-garage-layout-*.png: „rechts“ gewählt, „ecke“ verdeckt die Drehscheibe);
-      Nadel folgt dem Aufheulen (Spitze 4658 bei Motor 4669), Schaltlicht blitzt mit (lichtAb 0.9 der Spitze); KLASSISCH
-      zeigt den klassischen Tacho; 20 Wechsel ohne Leck. Test (f), (g) ok. Test-Browser: Garage nur 3–5 Bilder/s (0.8f gleich).
-- [ ] E Tests, Bilder, Bericht, Version 0.8g
+- [x] A `hud.tachoStile` (klassisch = Farben aus hud.tacho), Profil-Block `tacho` mit Unterblock `klassisch`, Vorrat je
+      (Stil, Skala, Einheit), Einstellung TACHO; klassisch pixelgleich zu 0.8f (60 + 30 Fälle).
+- [x] B Skalen nach Regel (bis 8000, rot 6500; Subora 9000/8000; 200 km/h, 130 mph), fünf Looks, Ziffern ohne Berührung
+      (beim Tempo fällt die 200 weg, ausser Escorta).
+- [x] C Gang je Stil (Lanza 7-Segment), Schaltlicht (95 % / Begrenzer − 250, 7 Hz), BOOST/LADER-Tafel über dem Drehzahlmesser.
+- [x] D Garage: Drehzahlmesser rechts neben dem 3D-Auto (Layout „rechts“ gewählt), folgt dem Aufheulen.
+- [x] E Tests, Bilder, Bericht, Version 0.8g. Voller Lauf `--alt --lang` (ca. 4 h): (a)–(h) ok; Regression nur bekannte
+      Fehler (Credits, Audan 1028 m) und ein Wackler (ton-umgebung, einzeln ok); m8c (j) an die Garage angepasst.
+      Review-Workflow: 2 leichte Befunde behoben (Tafel-Farben, Kommentare), danach a/d/f, m8c j, ton-umgebung einzeln ok.
 
-Messwerte (Teil B, aus tools/fahrmessung.js): Höchsttempo km/h Audan 189.8, Delto 177.9, Escorta 172.4, Lanza 182.6,
-Subora 185.6. Begrenzer (audio.motor.begrenzerAb) 6850, Subora 8200. Drehzahl bei Höchsttempo im 5. Gang: Delto 7502,
-Escorta 7184 (über dem Begrenzer, das Getriebe begrenzt nicht; nur der Ton).
-
-Offene Fragen: –
+Messwerte: Höchsttempo Audan 189.8, Delto 177.9, Escorta 172.4, Lanza 182.6, Subora 185.6 km/h; Begrenzer 6850 (Subora 8200).
+Offen für M8g.1: Linos Rückmeldung zu Looks, Schaltlicht-Schwellen (blinkt fast immer vor dem Schalten), BOOST-Tafel.
+Achtung: alte Tests schreiben Spektrogramme/JSON in screenshots/m7*–m8f und tools/ – danach `git checkout --` (nicht committen).

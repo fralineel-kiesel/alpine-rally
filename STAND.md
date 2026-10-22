@@ -2,12 +2,12 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 8f fertig** (Version 0.8f) – **Lanza 073 überarbeitet**: Heck als Gruppe-B-Keil statt Pritsche,
-fangbar statt „Seife“ (kein Dreher mehr im Tastatur-Slalom), Motor tiefer, Lader deutlich lauter, längere Gänge.
-**Subora Imprexa** jetzt **blau mit gelber Schrift** (der alte rote Lack heisst ROT), dreht bis ca. 7800/min, eigener
-Tacho bis 9000/min. Dazu die Kontext-Diät: alte STAND.md im Archiv. Ton nicht gehört, Fahrgefühl nicht gespürt: alles
-gemessen, nicht erlebt. **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m8f.md`.**
-Davor: 8e (Lanza 073 und Subora Imprexa, Garage für fünf Autos, Aufheulen, Flamme).
+Aktuell: **Meilenstein 8g fertig** (Version 0.8g) – **jedes Auto hat seinen eigenen Tacho**: Skala nach Begrenzer und
+Höchsttempo, eigener Look (Delto schwarz-blau, Escorta cremeweiss, Lanza 073 LED-grün, Subora blau-gelb, Audan wie bisher),
+Gang-Anzeige im Auto-Stil, **Schaltlicht** und **Ladedruck-Anzeige** (BOOST / LADER), **Tacho-Vorschau in der Garage**,
+Einstellung **TACHO = AUTO-STIL / KLASSISCH** (klassisch = genau der Tacho von 0.8f). Nur Anzeige: Fahren und Ton gleich.
+Ich habe die Tachos an Bildern beurteilt, nicht im Fahren. **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m8g.md`.**
+Davor: 8f (Lanza 073 überarbeitet, Subora blau-gelb, Kontext-Diät). Nächster Schritt: **M8h Bestzeiten je Auto + Top 3**.
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -125,6 +125,10 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - `node tools/ton-messung.mjs m8e-l073 --profil l073 --bilder screenshots/m8e` – Ton-Messung eines Autos mit Spektrogrammen.
 - `node tools/auto-messung.mjs` – Fahrmessung aller Profile, Messtabellen M8e.
 - `node tools/m8f-test.mjs --alt <ordner 0.8e>` – alle Prüfungen von M8f (a) bis (g); einzeln `--nur b,d`; Regression mit `--lang`.
+- `node tools/m8g-test.mjs --alt <ordner 0.8f>` – alle Prüfungen von M8g (a) bis (i); einzeln `--nur a,f`; Regression mit `--lang`.
+  (a) = Tacho KLASSISCH pixelgleich zu 0.8f (ohne `--alt` gegen `tools/m8g-referenz-08f.json`).
+- `node tools/m8g-bilder.mjs` – Bilder nach `screenshots/m8g/` (einzeln `--nur tacho,klassisch,layout,garage,rennen,einstellung`);
+  `node tools/m8g-karte.mjs <auto>` – Tacho-Ausschnitt als Text-Pixelkarte (billiger als ein Bild).
 - `node tools/m8f-bilder.mjs --alt <ordner 0.8e>` – Bilder nach `screenshots/m8f/` (vorher/nachher braucht den alten Stand).
 - `tools/m8f-ziele.js` – Zieltabellen und Kontrolltests K1–K4 (Tastatur-Rampe wie im Spiel), `tools/m8f-form.js` – Seitenprofil eines Autos.
 - `node tools/abkuerzungen.mjs --pruefen` und `node tools/testfahrer.mjs` – Referenzwerte oben.
@@ -140,7 +144,10 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
   statt 0.8 s) und K4 (Wiesenweg mit Vollgas, 12 m statt 4 m) nicht erreicht – auch Delto/Escorta/Prototyp erreichen sie nicht.
   Der **flotte Testfahrer** ist an der Rechtskurve bei 2760 m sehr empfindlich: 4. Gang 150 statt 149 oder `gripHinten` 1.05
   lassen ihn aufprallen. Details: `docs/meilensteine/m8f.md`.
-- **M8f, Subora-Tacho:** die Skala bis 9 macht die Ziffern 4 und 5 eng (eigene Tachos je Auto: M8g).
+- **M8g, Tacho:** beim Tempo fehlt im Auto-Stil die „200“ (kein Platz über der Digitalanzeige; nur der Escorta zeigt sie);
+  das Schaltlicht von Audan, Delto, Escorta blinkt fast immer vor dem Schalten (an 6550, blinkt 6600, nach Regel), Delto und
+  Escorta blinken bei Höchsttempo dauernd (drehen dort über den Begrenzer); in der Garage nur der Drehzahlmesser, das 3D-Auto
+  ist schmaler (130 statt 182 Pixel). Lesbarkeit nur an Bildern beurteilt. Details: `docs/meilensteine/m8g.md`.
 - `menue-test` scheitert an den Credits (kennt nur SHAI-RON; seit Linos Liste „SHAI-RON, BENJAMIN“) – schon in 0.8e.
 - Ladezeit 0.8f gegen 0.8e: +32 bis +82 ms in drei Läufen (Grenze +30, Streuung ±100) – Ursache nicht gefunden.
 - Im Auftrag hatten Audan, Delto und Escorta „zwei Rohre“ – ihre Modelle haben **ein** Rohr und sollten unverändert bleiben;
@@ -155,8 +162,7 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
-- **Bestzeiten je Auto getrennt** (eine Liste je Auto oder ein Filter): mit gemeinsamer Liste kann das schnellste Auto
-  (Lanza 073) die Liste füllen. Lino hat „gemeinsam“ gewählt, darum nur hier notiert.
+- **Bestzeiten je Auto getrennt** (eine Liste je Auto oder ein Filter): kommt als **M8h** (Bestzeiten je Auto + Gesamt-Top-3).
 - **Motorgeräusch von innen und von aussen** (je nach Kamera; im Spiel gibt es nur die Kamera hinter dem Auto).
 - **Getriebeheulen beim Mittelmotor** (Lanza: das Getriebe sitzt hinter dem Fahrer, ein leises Zahnrad-Heulen unter Last).
 - **Schaltvorgang animiert** (z. B. kurzes Nicken der Karosserie beim Schalten oder ein Schalthebel im HUD).
@@ -165,6 +171,9 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - **Felgenfarbe je Lackierung** (z. B. goldene Felgen für den blauen Subora): braucht einen Slot im Baukasten (M8f nicht umgebaut).
 - **Tastatur-Lenkung je Auto** oder ein „Gegenlenk-Tipp“ (bei der Tastatur pendeln alle Autos, wenn man die Gegentaste hält).
 - **Testfahrer robuster machen** (spätes Bremsen vor der Rechtskurve bei 2760 m), damit kleine Fahrwerks-Änderungen nicht kippen.
+- **Digitaltempo als 7-Segment-LED** beim Lanza 073 (wie die Gang-Anzeige), und beim Escorta eine Kilometerzähler-Walze.
+- **Tempo-Blatt auch in der Garage** (braucht eine breitere Tafel oder ein zweites Layout).
+- **Öldruck / Wassertemperatur** als kleine Zusatzanzeigen je Auto (nur Optik), falls die Tachos „echter“ wirken sollen.
 
 - (Ältere Ideen: in `docs/archiv/STAND-bis-m8e.md`, je Meilenstein unter „Ideen/Vorschläge“, über `INDEX.md` finden.)
 
@@ -176,6 +185,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
 
+- **M8g** (0.8g) – Bericht mit Skalen- und Schaltlicht-Tabelle, Tests, Test-Anleitung und Bildern: `docs/meilensteine/m8g.md`.
+  - **Tacho je Auto:** Skala nach Messung (bis 8000, rot ab 6500; Subora 9000 / 8000), Tempo 200 km/h / 130 mph; Looks:
+    Audan wie bisher, Delto schwarz mit blauem Ring, Escorta cremeweiss/schwarz, Lanza 073 LED-grün, Subora blau-gelb.
+  - **Gang-Anzeige** je Stil (Lanza: 7-Segment-LED), **Schaltlicht** (an ab 95 % der Schaltdrehzahl, blinkt 7 Hz ab 250 unter
+    dem Begrenzer, aus in N/R/Schaltpause), **BOOST / LADER**-Leiste über dem Drehzahlmesser (Escorta ohne).
+  - **Garage:** Drehzahlmesser des markierten Autos neben dem 3D-Auto, folgt dem Aufheulen.
+  - **EINSTELLUNGEN → TACHO** = AUTO-STIL / KLASSISCH; klassisch pixelgleich zu 0.8f (90 Fälle geprüft).
+  - **Nicht erreicht / unsicher:** Tempo ohne „200“ im Auto-Stil, Schaltlicht blinkt fast immer, Lesbarkeit nur an Bildern.
+  - Testen: `node tools/m8g-test.mjs --alt <ordner 0.8f>`; Fahren und Ton unverändert (gemessen).
 - **M8f** (0.8f) – Bericht mit Messtabellen, Test-Anleitung und Bildern: `docs/meilensteine/m8f.md`.
   - **Lanza 073:** Heck als Gruppe-B-Keil (Deckel fällt 9°, Finnen vom Dach, Kotflügel-Kamm, Flügel auf Stützen); fangbar
     (Heck beim Bremsen in der Kurve +5.7° statt +10°, gefangen nach 0.68 s statt 1.28 s, Tastatur-Slalom ohne Dreher);
