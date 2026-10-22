@@ -6,6 +6,14 @@
 //   (c) Schaltlicht je Auto: Schwellen nach Regel, aus darunter, an, Blinken (Hz), aus in N, R und in der Schaltpause, 5. Gang
 //   (d) Ladedruck-/Lader-Anzeige folgt dem Wert (Turbo: Ladedruck, Lanza 073: Drehzahl mal Gas), weich; Escorta ohne
 //   (e) Gang-Anzeige: 1 bis 5, N, R in allen Stilen sichtbar, verschieden, nichts ausserhalb des Kastens; R rot
+//   (f) Garage: Tacho-Vorschau in drei Auflösungen, de und en (nichts überlappt, nichts abgeschnitten), 20 Wechsel ohne
+//       Leck, Vorschau folgt dem Aufheulen, Schaltlicht blitzt mit, KLASSISCH zeigt den klassischen Tacho
+//   (g) Einstellung TACHO: wird gemerkt, wirkt sofort (Rennen und Pause), Menütexte de/en passen
+//   (h) Unveränderlich gegen 0.8f: Fahrmessung und Motorwerte aller Profile, Ton je Auto (Messung, im Rechenrauschen),
+//       Testfahrer (Prototyp und fünf Autos, drei Stile), Abkürzungen 127/2/342/84, Strecke, Aussehen der Autos
+//       (Textur, Geometrie, Räder), Garage-Werte; dazu Platz im HUD (Tacho-Gruppe höchstens 8 Pixel höher, nicht breiter,
+//       berührt nichts)
+//   (i) Regression (alle bisherigen Tests, nur mit --lang), Bildzeit (gegen den Audan und gegen 0.8f), Ladezeit (mit --alt)
 // --alt <ordner 0.8f>: der alte Stand zum Vergleich (git worktree add <ordner> <commit von 0.8f>); ohne --alt gelten
 //   die Prüfsummen aus tools/m8g-referenz-08f.json (mit --referenz-schreiben neu schreiben)
 // Ich sehe die Bilder, aber ich fahre nicht: ob ein Tacho im Fahren gut lesbar ist, beurteile ich nur an Bildern und Zahlen.
@@ -15,6 +23,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
 import { pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 const NUR = arg('--nur') ? arg('--nur').split(',') : null;
@@ -418,6 +427,389 @@ if (teil('e')) {
     melde(alle.every((x) => g[x].n > 0 && g[x].aussen === 0) && verschieden && g.R.rot > 0,
       `${v.stil} (${v.form}): ${alle.map((x) => `${x} ${g[x].n}`).join(', ')} Pixel; ausserhalb des Kastens ${alle.reduce((a, x) => a + g[x].aussen, 0)}; alle verschieden ${verschieden ? 'ja' : 'NEIN'}; R rot ${g.R.rot > 0 ? 'ja' : 'NEIN'}`);
   }
+}
+
+// ---------------------------------------------------------------- Hilfe: Spiel mit Menü, gemerkte Einstellungen
+async function spielMitMenue({ aufl = 1, sprache = 'de', tacho = 'auto', args = [] } = {}) {
+  const s = await starteSpiel({ breite: [640, 960, 1280][aufl], hoehe: [360, 540, 720][aufl], auto: '', args });
+  await s.page.addInitScript(([sprache, aufl, tacho]) => {
+    try { if (!sessionStorage.getItem('m8g')) { localStorage.setItem('alpineRally.einstellungen', JSON.stringify({ sprache, aufloesung: aufl, tacho, auto: 'rt4' })); sessionStorage.setItem('m8g', '1'); } } catch { /* egal */ }
+  }, [sprache, aufl, tacho]);
+  await s.page.goto(`${s.url}/index.html`);
+  await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+  return s;
+}
+// Garage öffnen (Titel -> Hauptmenü -> AUTO), runter = Zeiger so viele Autos tiefer (vom gewählten Audan aus)
+async function garageOeffnen(p, runter = 0) {
+  for (const k of ['Enter', 'ArrowDown', 'Enter']) { await p.keyboard.press(k); await p.waitForTimeout(150); }
+  for (let i = 0; i < runter; i++) { await p.keyboard.press('ArrowDown'); await p.waitForTimeout(120); }
+  await p.waitForFunction(() => window.__alpineRally.menue.einblendung >= 1, null, { timeout: 30000 });
+  await p.waitForTimeout(800);
+}
+
+// ---------------------------------------------------------------- (f) Garage
+if (teil('f')) {
+  console.log('(f) Garage: Tacho-Vorschau');
+  for (const aufl of [0, 1, 2]) {
+    for (const sprache of ['de', 'en']) {
+      const s = await spielMitMenue({ aufl, sprache });
+      await garageOeffnen(s.page, 1);
+      // (der Test-Browser malt in der Garage nur 3 bis 5 Bilder pro Sekunde: warten, bis die Nadel im Leerlauf steht)
+      await s.page.waitForFunction(() => Math.abs(window.__alpineRally.garageTacho.anzeige.drehzahl - 1000) < 1, null, { timeout: 30000 }).catch(() => {});
+      const r = await s.page.evaluate(() => {
+        const A = window.__alpineRally, g = A.seiten.garage, M = A.menue.rollen, T = g.tacho, R = g.rahmen;
+        const innen = A.CONFIG.menue.innen;
+        // Tacho-Feld: Lader-Tafel oben (Mitte − 33) bis Unterkante des Rings (Mitte + 24), Breite ±24
+        const feld = { x0: T.cx - 24, x1: T.cx + 24, y0: T.cy - 33, y1: T.cy + 24 };
+        const tafel = { x0: (320 - M.breite) / 2 + innen, x1: (320 + M.breite) / 2 - innen - 1, y0: M.y0, y1: M.y0 + M.hoehe - 1 };
+        const vorschau = { x0: R.x - 1, x1: R.x + R.b, y0: R.y - 1, y1: R.y + R.h };
+        const ueber = (a, b) => a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1;
+        // Werte-Balken beginnen 5 Pixel unter der Vorschau
+        const balken = { x0: R.x, x1: tafel.x1, y0: R.y + R.h + 5, y1: R.y + R.h + 5 + 4 * 9 };
+        // gezeichnete Pixel des Tachos auf der HUD-Leinwand
+        const d = document.getElementById('hud').getContext('2d').getImageData(feld.x0, feld.y0, 49, 58).data;
+        let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 200) n++;
+        return { feld, tafel, vorschau, innen: feld.x0 >= tafel.x0 && feld.x1 <= tafel.x1 && feld.y0 >= tafel.y0 && feld.y1 <= tafel.y1,
+          ueberVorschau: ueber(feld, vorschau), ueberBalken: ueber(feld, balken), pixel: n, vorschauB: R.b, vorschauH: R.h,
+          stil: A.garageTacho.skala().stil, nadel: A.garageTacho.anzeige.drehzahl };
+      });
+      melde(r.innen && !r.ueberVorschau && !r.ueberBalken && r.pixel > 900 && r.stil === 'delto' && Math.abs(r.nadel - 1000) < 1 && s.fehler.length === 0,
+        `${['320x180', '480x270', '640x360'][aufl]} ${sprache}: Tacho (Delto-Stil ${r.stil}) bei x ${r.feld.x0}–${r.feld.x1}, y ${r.feld.y0}–${r.feld.y1} in der Tafel ${r.innen ? 'ja' : 'NEIN'}, über der 3D-Vorschau (${r.vorschauB}x${r.vorschauH}) ${r.ueberVorschau ? 'JA' : 'nein'}, über den Werte-Balken ${r.ueberBalken ? 'JA' : 'nein'}, ${r.pixel} Pixel gezeichnet, Nadel ${r.nadel.toFixed(0)}/min (Leerlauf)`);
+      if (aufl === 1 && sprache === 'de') {
+        await s.page.screenshot({ path: path.join(ORDNER, '40-garage-tacho-480x270.png') });
+        info('Bild: screenshots/m8g/40-garage-tacho-480x270.png');
+      }
+      await s.schliessen();
+    }
+  }
+  // 20 Wechsel (runter und rauf): Vorrat der Zifferblätter wächst nicht, Speicher, Zeit für ein neues Zifferblatt
+  {
+    const s = await spielMitMenue({ aufl: 0 });
+    const p = s.page;
+    await garageOeffnen(p, 0);
+    const cdp = await p.context().newCDPSession(p);
+    const heap = async () => { for (let i = 0; i < 3; i++) await cdp.send('HeapProfiler.collectGarbage'); return (await cdp.send('Runtime.getHeapUsage')).usedSize; };
+    // (je Wechsel warten, bis ein Bild mit dem neu markierten Auto gemalt ist: der Test-Browser ist langsam)
+    const bilder = (n) => p.evaluate((n) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+    const runde = async () => { for (let k = 0; k < 20; k++) { await p.keyboard.press(k % 8 < 4 ? 'ArrowDown' : 'ArrowUp'); await bilder(2); } await bilder(3); };
+    await runde();
+    const v0 = await p.evaluate(() => window.__alpineRally.garageTacho.vorrat()), h0 = await heap();
+    await runde(); await runde();
+    const v1 = await p.evaluate(() => window.__alpineRally.garageTacho.vorrat()), h1 = await heap();
+    // Zeit: ein Zifferblatt neu malen (kalt) und aus dem Vorrat holen (warm)
+    const ms = await p.evaluate(async () => {
+      const T = await import('/js/tacho.js'), c = document.createElement('canvas'); c.width = 320; c.height = 180;
+      const t = T.baueTachos(c.getContext('2d'), () => {});
+      t.setzeModus('auto');
+      t.setzeEinheit('mph'); // (mph-Blätter sind noch nicht gemalt: kalt)
+      let t0 = performance.now(); t.setzeSkala('l073'); const kalt = performance.now() - t0;
+      t0 = performance.now(); for (let i = 0; i < 20; i++) { t.setzeSkala(i % 2 ? 'delto' : 'l073'); } const warm = (performance.now() - t0) / 20;
+      return { kalt, warm };
+    });
+    melde(v1 === v0 && h1 - h0 < 300000 && s.fehler.length === 0,
+      `20 Wechsel in der Garage (dreimal): Zifferblätter im Vorrat ${v0} -> ${v1} (kein Leck), Speicher ${((h1 - h0) / 1024).toFixed(0)} KB (Grenze 300 KB), Konsole ohne Fehler`);
+    melde(ms.kalt < 25 && ms.warm < 2, `Autowechsel: ein Satz Zifferblätter neu malen ${ms.kalt.toFixed(1)} ms (einmal je Auto und Einheit), aus dem Vorrat ${ms.warm.toFixed(2)} ms (ruckelfrei)`);
+    await s.schliessen();
+  }
+  // Aufheulen: Nadel folgt, Schaltlicht blitzt mit; danach wieder Leerlauf
+  {
+    const s = await spielMitMenue({ aufl: 0, args: ['--autoplay-policy=no-user-gesture-required'] });
+    const p = s.page;
+    await p.keyboard.press('Enter');
+    await p.waitForFunction(() => window.__alpineRally.ton.werk && window.__alpineRally.ton.werk.aufbau.fertig, null, { timeout: 60000 });
+    await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
+    await p.waitForFunction(() => window.__alpineRally.menue.einblendung >= 1, null, { timeout: 30000 });
+    await p.waitForFunction(() => Math.abs(window.__alpineRally.garageTacho.anzeige.drehzahl - 1000) < 1, null, { timeout: 30000 }).catch(() => {});
+    const r = await p.evaluate(async () => {
+      const A = window.__alpineRally, G = A.garageTacho, T = A.seiten.garage.tacho, L = A.CONFIG.hud.tachoStile.audan.schaltlicht;
+      const lampe = () => { const d = document.getElementById('hud').getContext('2d').getImageData(T.cx, T.cy + L.y + 2, 1, 1).data; return d[0] > 200 && d[1] < 110; };
+      const vorher = G.anzeige.drehzahl;
+      A.menue.taste('Space');
+      const proben = [];
+      const t0 = performance.now();
+      // (bis das Aufheulen vorbei ist und die Nadel wieder steht; der Test-Browser malt nur wenige Bilder pro Sekunde)
+      while (performance.now() - t0 < 30000 && (proben.length < 5 || A.aufheulen || Math.abs(G.anzeige.drehzahl - 1000) > 20)) {
+        await new Promise((r) => requestAnimationFrame(r));
+        proben.push({ t: performance.now() - t0, heult: !!A.aufheulen, motor: A.aufheulen ? A.aufheulen.zustand.drehzahl : 1000, nadel: G.anzeige.drehzahl, licht: lampe() });
+      }
+      return { vorher, proben, gestartet: proben.some((x) => x.heult) };
+    });
+    const max = Math.max(...r.proben.map((x) => x.nadel)), maxMotor = Math.max(...r.proben.map((x) => x.motor));
+    const licht = r.proben.filter((x) => x.licht).length, ende = r.proben[r.proben.length - 1];
+    // folgt: in den Bildern, in denen der Motor über 3000/min dreht, steht die Nadel meist über 2500 (bei 3 bis 5 Bildern pro
+    // Sekunde im Test-Browser hinkt sie ein Bild nach)
+    const hoch = r.proben.filter((x) => x.motor > 3000), folgt = hoch.length > 0 && hoch.filter((x) => x.nadel > 2500).length >= 0.6 * hoch.length;
+    if (r.gestartet) {
+      melde(Math.abs(r.vorher - 1000) < 1 && max > 4000 && max >= maxMotor * 0.9 && folgt && licht > 0 && Math.abs(ende.nadel - 1000) < 150,
+        `Aufheulen (Audan): Nadel vorher ${r.vorher.toFixed(0)}/min, Spitze ${max.toFixed(0)}/min (Motor ${maxMotor.toFixed(0)}), folgt ${folgt ? 'ja' : 'NEIN'}, Schaltlicht an in ${licht} von ${r.proben.length} Bildern, am Ende ${ende.nadel.toFixed(0)}/min`);
+    } else melde(false, 'Aufheulen startete im Test-Browser nicht (Ton gesperrt?)');
+    await s.schliessen();
+  }
+  // KLASSISCH: die Vorschau zeigt den klassischen Tacho (ohne Schaltlicht und Lader)
+  {
+    const s = await spielMitMenue({ aufl: 1, tacho: 'klassisch' });
+    await garageOeffnen(s.page, 1);
+    const r = await s.page.evaluate(() => { const A = window.__alpineRally, T = A.seiten.garage.tacho; const d = document.getElementById('hud').getContext('2d').getImageData(T.cx - 23, T.cy - 33, 47, 9).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 200) n++; return { stil: A.garageTacho.skala().stil, tafel: n }; });
+    melde(r.stil === 'klassisch', `TACHO = KLASSISCH: Vorschau im Stil ${r.stil}, ohne BOOST-Tafel (${r.tafel} helle Pixel im Feld der Tafel: Menü-Hintergrund)`);
+    await s.schliessen();
+  }
+}
+
+// ---------------------------------------------------------------- (g) Einstellung TACHO
+if (teil('g')) {
+  console.log('(g) Einstellung TACHO');
+  const s = await spielMitMenue({ aufl: 0 });
+  const p = s.page;
+  const r = await p.evaluate(async () => {
+    const A = window.__alpineRally, E = await import('/js/einstellungen.js'), P = await import('/js/pixel.js'), X = await import('/js/texte.js');
+    const out = { standard: A.einstellungen.tacho };
+    const breite = {};
+    for (const sp of ['de', 'en']) {
+      X.setzeSprache(sp);
+      breite[sp] = ['einst.tacho', 'einst.tachoHinweis', 'wert.tachoAuto', 'wert.tachoKlassisch'].map((k) => [X.t(k), P.textBreite(X.t(k))]);
+    }
+    X.setzeSprache('de');
+    out.breite = breite;
+    // im Rennen und in der Pause: Wechsel wirkt im nächsten Bild
+    A.start({ countdown: false });
+    const bild = () => document.getElementById('hud').getContext('2d').getImageData(205, 110, 115, 70).data.join(',');
+    const warte = (n) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    await warte(10);
+    const auto = bild(); E.setze('tacho', 'klassisch'); await warte(2);
+    const klassisch = bild();
+    out.rennen = { anders: auto !== klassisch, modus: A.hud.tachos.modus, stil: A.hud.tachos.skala().stil };
+    A.pausieren(); await warte(10);
+    const p1 = bild(); E.setze('tacho', 'auto'); await warte(2);
+    out.pause = { anders: p1 !== bild(), stil: A.hud.tachos.skala().stil };
+    E.setze('tacho', 'klassisch');
+    out.gespeichert = JSON.parse(localStorage.getItem('alpineRally.einstellungen')).tacho;
+    return out;
+  });
+  await p.reload();
+  await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+  const nachLaden = await p.evaluate(() => ({ wert: window.__alpineRally.einstellungen.tacho, modus: window.__alpineRally.hud.tachos.modus }));
+  await s.schliessen();
+  melde(r.standard === 'auto', `Standard beim ersten Start: ${r.standard}`);
+  melde(r.rennen.anders && r.rennen.stil === 'klassisch' && r.pause.anders && r.pause.stil === 'audan', `wirkt sofort: im Rennen ${r.rennen.anders ? 'anders' : 'GLEICH'} (Stil ${r.rennen.stil}), in der Pause ${r.pause.anders ? 'anders' : 'GLEICH'} (Stil ${r.pause.stil})`);
+  melde(r.gespeichert === 'klassisch' && nachLaden.wert === 'klassisch' && nachLaden.modus === 'klassisch', `gemerkt im Browser: ${r.gespeichert}, nach neuem Laden ${nachLaden.wert} (HUD ${nachLaden.modus})`);
+  for (const sp of ['de', 'en']) {
+    const b = r.breite[sp];
+    melde(b.every(([, w]) => w > 0 && w <= 300), `Menütexte ${sp}: ${b.map(([x, w]) => `${x} (${w} px)`).join(', ')} (höchstens 300 px)`);
+  }
+}
+
+// ---------------------------------------------------------------- Hilfen für (h) und (i)
+const werkzeug = (name, argumente = [], timeout = 6 * 3600000, wurzel = WURZEL) => {
+  const r = spawnSync(process.execPath, [path.join(wurzel, 'tools', name), ...argumente], { encoding: 'utf8', timeout, maxBuffer: 64 * 1024 * 1024, cwd: wurzel });
+  return { code: r.status, text: `${r.stdout || ''}${r.stderr || ''}` };
+};
+const fmtZeit = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+// Fahrmessungen (ohne Browser) einer Version: alle Profile und die Motorwerte je Profil
+async function physikVon(wurzel = WURZEL) {
+  const { CONFIG } = await lade(wurzel, 'js/config.js');
+  const { Fahrphysik } = await lade(wurzel, 'js/physics.js');
+  const { Getriebe } = await lade(wurzel, 'js/getriebe.js');
+  const FP = await lade(wurzel, 'js/fahrprofil.js');
+  const { baueMessung, alleMessungen } = await lade(WURZEL, 'tools/fahrmessung.js');
+  const m = baueMessung({ CONFIG, Fahrphysik, Getriebe });
+  const out = {}, motor = {};
+  for (const id of Object.keys(CONFIG.fahrprofile)) { FP.waehleFahrprofil(id); out[id] = alleMessungen(m); }
+  for (const id of Object.keys(CONFIG.fahrprofile)) { FP.waehleMotorTon(id); motor[id] = JSON.parse(JSON.stringify(CONFIG.audio.motor)); }
+  FP.waehleFahrprofil('prototyp');
+  return { physik: out, motor };
+}
+// Lack-Textur (alle Lackierungen, drei Bildbreiten), Geometrie und Radpositionen als Prüfsummen (im Auto-Labor)
+async function abdruck(ids, wurzel = WURZEL) {
+  const s = await starteSpiel({ wurzel, breite: 640, hoehe: 360 });
+  await s.page.goto(`${s.url}/auto-labor.html`);
+  await s.page.waitForFunction(() => window.__autoLabor, null, { timeout: 60000 });
+  const r = await s.page.evaluate((ids) => {
+    const L = window.__autoLabor, out = {};
+    for (const id of ids) {
+      L.modellWaehlen(id);
+      for (const b of [320, 480, 640]) {
+        L.auto.detail(b);
+        for (const lack of L.auto.modell.lackierungen) { L.auto.lackierung(lack); out[`${id}-textur-${lack}-${b}`] = L.auto.leinwand.toDataURL(); }
+      }
+      for (const m of L.auto.teilMeshes) {
+        const g = m.geometry, a = [];
+        for (const n of ['position', 'normal', 'uv', 'color']) if (g.attributes[n]) a.push(Array.from(g.attributes[n].array, (x) => x.toFixed(6)).join(','));
+        out[`${id}-geo-${m.name}`] = a.join('|');
+      }
+      out[`${id}-raeder`] = L.auto.raeder.map((x) => [x.lenk.position.x, x.lenk.position.y, x.lenk.position.z].map((v) => v.toFixed(5)).join(',')).join(';');
+    }
+    return out;
+  }, ids);
+  await s.schliessen();
+  return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, hash(v)]));
+}
+// Testfahrer drei Stile je Profil im Spiel (einer Version)
+async function testfahrer(ids, wurzel = WURZEL) {
+  const s = await starteSpiel({ wurzel, breite: 640, hoehe: 360 });
+  const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+  const TF = {};
+  for (const id of ids) {
+    await s.page.goto(`${s.url}/index.html?menue=aus&auto=${id}`);
+    await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+    await s.page.evaluate((code) => { window.__alpineRally.anhalten = true; window.__fahrerUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); }, fahrerCode);
+    TF[id] = {};
+    for (const stil of ['vorsichtig', 'mittel', 'flott']) {
+      TF[id][stil] = await s.page.evaluate(async (stil) => {
+        const A = window.__alpineRally, f = await import(window.__fahrerUrl);
+        const r = f.fahreEtappe(A, stil);
+        return { zeit: r.zeit, ziel: r.ziel, cps: r.cps, aufpralle: A.stat.aufpralle, kontakte: r.aufpralle.length, wo: r.aufpralle.join(', '), haenger: r.haenger };
+      }, stil);
+    }
+  }
+  await s.schliessen();
+  return TF;
+}
+// Ton-Messung eines Profils (tools/ton-messung.mjs) gegen die gespeicherte Messung von 0.8f (tools/ton-messung-m8f-<id>.json)
+function tonVergleich(id) {
+  const name = `m8g-${id}`;
+  const r = werkzeug('ton-messung.mjs', id === 'prototyp' ? [name, '--bilder', 'screenshots/m8g/ton'] : [name, '--profil', id, '--bilder', 'screenshots/m8g/ton']);
+  if (r.code !== 0) return { fehler: r.text.split('\n').slice(-3).join(' ') };
+  const a = JSON.parse(fs.readFileSync(path.join(WURZEL, `tools/ton-messung-m8f-${id}.json`), 'utf8'));
+  const b = JSON.parse(fs.readFileSync(path.join(WURZEL, `tools/${`ton-messung-${name}`}.json`), 'utf8'));
+  const anders = [];
+  let rauschen = 0, gleich = 0;
+  const vergleiche = (x, y, p) => {
+    if (p === '.version') return;
+    if (typeof x === 'number') {
+      if (x === y) { gleich++; return; }
+      if (typeof y === 'number' && Math.abs(x - y) <= Math.max(1e-3, Math.abs(x) * 1e-5)) { rauschen++; return; }
+      anders.push(`${p}: ${x} -> ${y}`); return;
+    }
+    if (x && typeof x === 'object') for (const k of Object.keys(x)) vergleiche(x[k], y ? y[k] : undefined, `${p}.${k}`);
+    else if (x !== y) anders.push(`${p}: ${x} -> ${y}`);
+  };
+  vergleiche(a, b, '');
+  fs.rmSync(path.join(WURZEL, `tools/ton-messung-${name}.json`), { force: true }); // (nur zum Vergleich, nicht ins Repo)
+  return { gleich, rauschen, anders };
+}
+
+// ---------------------------------------------------------------- (h) Unveränderlich
+if (teil('h')) {
+  console.log('(h) Unveränderlich gegen 0.8f');
+  const ALT_ORDNER = ALT;
+  if (!ALT_ORDNER) info('Fahrmessung, Aussehen und Testfahrer vergleichen: nur mit --alt <ordner 0.8f>');
+  const IDS = ['prototyp', ...ALLE];
+  if (ALT_ORDNER) {
+    const [a, b] = [await physikVon(ALT_ORDNER), await physikVon(WURZEL)];
+    for (const id of IDS) {
+      melde(JSON.stringify(a.physik[id]) === JSON.stringify(b.physik[id]) && JSON.stringify(a.motor[id]) === JSON.stringify(b.motor[id]),
+        `${NAMEN[id]}: alle ${Object.keys(a.physik[id]).length} Fahrmessungen und die Motorwerte (audio.motor mit Profil) bit-genau wie 0.8f`);
+    }
+    const [x, y] = [await abdruck(ALLE, ALT_ORDNER), await abdruck(ALLE, WURZEL)];
+    const anders = Object.keys(x).filter((k) => x[k] !== y[k]);
+    melde(anders.length === 0 && Object.keys(x).length === Object.keys(y).length, `Aussehen der fünf Autos (Lack-Texturen 320/480/640, Geometrie, Räder): ${Object.keys(x).length} Prüfsummen wie 0.8f${anders.length ? `; anders: ${anders.slice(0, 6).join(', ')}` : ''}`);
+    const { AUTO_MODELLE: MA } = await lade(ALT_ORDNER, 'js/autos.js'), { AUTO_MODELLE: MN } = await lade(WURZEL, 'js/autos.js');
+    melde(ALLE.every((id) => JSON.stringify(MA[id].werte) === JSON.stringify(MN[id].werte)), `Garage-Werte-Balken: ${ALLE.map((id) => `${id} ${Object.values(MN[id].werte).join('/')}`).join(', ')} (wie 0.8f)`);
+    // Testfahrer: neu gegen 0.8f (gespeichert in tools/m8f-testfahrer.json; der Escorta dort nicht, er fährt in 0.8f neu)
+    const neu = await testfahrer(IDS);
+    const alt = JSON.parse(fs.readFileSync(path.join(WURZEL, 'tools/m8f-testfahrer.json'), 'utf8'));
+    Object.assign(alt, await testfahrer(IDS.filter((id) => !alt[id]), ALT_ORDNER));
+    for (const id of IDS) {
+      const gleich = ['vorsichtig', 'mittel', 'flott'].every((st) => JSON.stringify(alt[id][st]) === JSON.stringify(neu[id][st]));
+      melde(gleich, `Testfahrer ${NAMEN[id]}: ${['vorsichtig', 'mittel', 'flott'].map((st) => `${fmtZeit(neu[id][st].zeit)}${neu[id][st].kontakte ? ` (${neu[id][st].kontakte} Kontakte)` : ''}`).join(' / ')} – Zeiten, Zwischenzeiten, Aufpralle ${gleich ? 'gleich wie 0.8f' : 'ANDERS als 0.8f'}`);
+    }
+    melde(['2:59.33', '2:42.35', '2:31.92'].join() === ['vorsichtig', 'mittel', 'flott'].map((st) => fmtZeit(neu.prototyp[st].zeit)).join(), `Testfahrer Prototyp ${['vorsichtig', 'mittel', 'flott'].map((st) => fmtZeit(neu.prototyp[st].zeit)).join(' / ')} (Soll 2:59.33 / 2:42.35 / 2:31.92)`);
+  }
+  // Ton je Auto: Messung gegen 0.8f
+  for (const id of IDS) {
+    const t = tonVergleich(id);
+    melde(!t.fehler && t.anders.length === 0, `${NAMEN[id]}: Ton wie 0.8f ${t.fehler ? `(Messung fehlgeschlagen: ${t.fehler})` : `(${t.gleich} Zahlen gleich, ${t.rauschen} nur in der 5. bis 7. Stelle anders = Rechenrauschen des Test-Browsers, ${t.anders.length} anders${t.anders.length ? `: ${t.anders.slice(0, 3).join('; ')}` : ''})`}`);
+  }
+  fs.rmSync(path.join(WURZEL, 'screenshots/m8g/ton'), { recursive: true, force: true }); // (Spektrogramme nur für die Messung)
+  // Ton-Quelltext: keine Datei des Tons geändert
+  const tonDateien = ['js/audio.js', 'js/umgebung.js', 'js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js', 'js/physics.js', 'js/getriebe.js', 'js/fahrprofil.js', 'js/autos.js', 'js/car.js', 'js/track.js', 'js/netz.js'];
+  const geaendert = tonDateien.filter((d) => spawnSync('git', ['diff', '--quiet', '3ed7aae', '--', d], { cwd: WURZEL }).status !== 0);
+  melde(geaendert.length === 0, `Ton, Physik, Getriebe, Fahrprofil-Mechanik, Autos und Strecke: ${tonDateien.length} Dateien unverändert seit 0.8f${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
+  for (const d of ['js/pacenotes-tempo.js', 'js/abkuerzungen.js', 'tools/schneiden-zeiten.json']) {
+    melde(spawnSync('git', ['diff', '--quiet', '3ed7aae', '--', d], { cwd: WURZEL }).status === 0, `${d} nicht neu geschrieben (gleich wie 0.8f)`);
+  }
+  const ab = werkzeug('abkuerzungen.mjs', ['--pruefen']);
+  const n = [...ab.text.matchAll(/übrig in Kurve [^:]+: (\d+) Linien/g)].map((x) => +x[1]);
+  melde(n.join(' / ') === '127 / 2 / 342 / 84', `Abkürzungen: ${n.join(' / ')} (Soll 127 / 2 / 342 / 84)`);
+  // Strecke und Platz im HUD
+  const s = await starteSpiel({ breite: 640, hoehe: 360 });
+  await s.page.goto(`${s.url}/index.html?menue=aus&auto=delto`);
+  await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+  const platz = await s.page.evaluate(async () => {
+    const A = window.__alpineRally, E = await import('/js/einstellungen.js'), P = await import('/js/pixel.js');
+    const warte = (n) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    // Tacho-Gruppe: alle Pixel rechts unten (x ab 150, y ab 90) – dort liegt sonst nichts
+    const kasten = (bx = 150, by = 90, bb = 170, bh = 90) => {
+      const d = document.getElementById('hud').getContext('2d').getImageData(bx, by, bb, bh).data;
+      let x0 = 999, y0 = 999, x1 = -1, y1 = -1;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { const x = bx + (i / 4) % bb, y = by + Math.floor(i / 4 / bb); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      return { x0, y0, x1, y1 };
+    };
+    E.setze('tacho', 'klassisch'); await warte(4); const k = kasten();
+    E.setze('tacho', 'auto'); await warte(4); const a = kasten();
+    const hilfe = kasten(0, 120, 205, 60); // Hilfezeilen vor dem Start (links unten)
+    const m = A.hud.minimap, L = A.hud.lage;
+    const rechtecke = { minimap: { x0: m.x, y0: m.y, x1: m.x + m.breite - 1, y1: m.y + m.hoehe - 1 }, zeit: { x0: L.zeit.x, y0: L.zeit.y, x1: L.zeit.x + L.zeit.b - 1, y1: L.zeit.y + L.zeit.h - 1 },
+      notes: { x0: L.notes.x, y0: L.notes.y, x1: L.notes.x + L.notes.b - 1, y1: L.notes.y + L.notes.h - 1 } };
+    rechtecke.hilfe = hilfe;
+    return { k, a, rechtecke, laenge: A.strecke.laenge, hilfeDa: hilfe.x1 > 0 };
+  });
+  // (mit einem Pixel Abstand: aneinanderstossen zählt als berühren)
+  const ueber = (a, b) => a.x0 <= b.x1 + 1 && b.x0 <= a.x1 + 1 && a.y0 <= b.y1 + 1 && b.y0 <= a.y1 + 1;
+  const beruehrt = Object.entries(platz.rechtecke).filter(([, r]) => r.x1 >= 0 && ueber(platz.a, r)).map(([n]) => n);
+  await s.schliessen();
+  melde(platz.k.y0 - platz.a.y0 <= 8 && platz.a.x0 >= platz.k.x0 && platz.a.x1 <= platz.k.x1 && beruehrt.length === 0,
+    `Platz im HUD (Delto, Auto-Stil): Tacho-Gruppe x ${platz.a.x0}–${platz.a.x1}, y ${platz.a.y0}–${platz.a.y1} (klassisch x ${platz.k.x0}–${platz.k.x1}, y ${platz.k.y0}–${platz.k.y1}): ${platz.k.y0 - platz.a.y0} Pixel höher (höchstens 8), nicht breiter; berührt ${beruehrt.length ? beruehrt.join(', ') : `nichts (Minimap, Zeit-Tafel, Pace-Notes, Hilfezeilen ${platz.hilfeDa ? `bis x ${platz.rechtecke.hilfe.x1}` : 'NICHT GEFUNDEN'})`}`);
+  melde(Math.abs(platz.laenge - 3667.587) <= 0.5, `Strecke ${platz.laenge.toFixed(3)} m (3667.587 ±0.5)`);
+}
+
+// ---------------------------------------------------------------- (i) Regression, Bildzeit, Ladezeit
+if (teil('i')) {
+  console.log('(i) Regression, Bildzeit, Ladezeit');
+  if (process.argv.includes('--lang')) {
+    // m8f-test ohne (e) (Tacho gegen 0.8e: der Auto-Stil ändert ihn absichtlich; klassisch prüft hier (a)) und ohne (g) (eigene Regression)
+    for (const [t, a] of [['getriebe-test.mjs', []], ['lenk-test.mjs', []], ['handbremse-test.mjs', []], ['belag-test.mjs', []], ['rueckwaerts-test.mjs', []],
+      ['aufprall-test.mjs', []], ['pacenotes-test.mjs', []], ['menue-test.mjs', []], ['rennablauf-test.mjs', []], ['overlay-test.mjs', []], ['ton-test.mjs', []], ['ton-umgebung-test.mjs', []],
+      ['auto-test.mjs', []], ['m8b-test.mjs', []], ['m8c-test.mjs', ['--nur', 'a,b,c,d,e,f,g,h,i,j,k']], ['m8d-test.mjs', []], ['m8e-test.mjs', ['--nur', 'a,b,c,e,f,g,i']],
+      ['m8f-test.mjs', ['--nur', 'a,b,c,d,f']]]) {
+      const t0 = Date.now(), r = werkzeug(t, a);
+      fs.writeFileSync(path.join(ORDNER, `regression-${t.replace('.mjs', '')}.log`), r.text);
+      melde(r.code === 0, `${t}${a.length ? ` ${a.join(' ')}` : ''}: ${r.code === 0 ? 'bestanden' : `NICHT bestanden: ${r.text.split('\n').filter((z) => /^\s*FEHLER/.test(z)).slice(0, 3).map((z) => z.trim().slice(0, 160)).join(' | ')}`} (${((Date.now() - t0) / 60000).toFixed(1)} min)`);
+    }
+  } else info('alle bisherigen Tests: nur mit --lang');
+  // Bildzeit im Rennen je Auto (kopflos, Software-Grafik), neu und (mit --alt) 0.8f
+  const bildzeit = async (wurzel) => {
+    const s = await starteSpiel({ wurzel, breite: 640, hoehe: 360 });
+    const bz = {};
+    for (const id of ALLE) {
+      await s.page.goto(`${s.url}/index.html?menue=aus&auto=${id}`);
+      await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+      bz[id] = await s.page.evaluate(async () => {
+        const A = window.__alpineRally;
+        A.setzeAuf(60); A.kameraSofort();
+        const t0 = performance.now(); let n = 0;
+        await new Promise((r) => { const f = () => { n++; if (performance.now() - t0 < 3000) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
+        const o = A.autoModell.objekt, sichtbar = A.szene.children.map((x) => x.visible);
+        A.szene.children.forEach((x) => { x.visible = x === o; }); A.renderer.render(A.szene, A.kamera);
+        const calls = A.renderer.info.render.calls;
+        A.szene.children.forEach((x, i) => { x.visible = sichtbar[i]; });
+        return { ms: (performance.now() - t0) / n, calls };
+      });
+    }
+    await s.schliessen();
+    return bz;
+  };
+  const bz = await bildzeit(WURZEL), basis = bz.rt4.ms;
+  melde(Object.values(bz).every((x) => x.calls <= 12 && x.ms < basis * 1.2), `Bildzeit im Spiel 0.8g: ${Object.entries(bz).map(([id, x]) => `${id} ${x.ms.toFixed(0)} ms / ${x.calls} Calls`).join(', ')} (Audan als Bezug, höchstens +20 %)`);
+  if (ALT) {
+    const ba = await bildzeit(ALT);
+    const sa = ALLE.reduce((a, id) => a + ba[id].ms, 0), sn = ALLE.reduce((a, id) => a + bz[id].ms, 0);
+    melde(sn <= sa * 1.2, `Bildzeit gegen 0.8f (Summe der fünf Autos): 0.8f ${sa.toFixed(0)} ms, 0.8g ${sn.toFixed(0)} ms (${((sn / sa - 1) * 100).toFixed(1)} %, höchstens +20 %; Streuung im Test-Browser gross)`);
+    const r = werkzeug('ladezeit.mjs', [ALT, '9']);
+    const med = (n) => +((new RegExp(`${n} .*Median (\\d+)`).exec(r.text) || [])[1]);
+    const a = med('alt'), b = med('neu');
+    melde(b - a <= 30, `Ladezeit (Median aus 9): 0.8f ${a} ms, 0.8g ${b} ms (${b - a >= 0 ? '+' : ''}${b - a} ms, höchstens +30; Streuung im Test-Browser ca. ±100 ms)`);
+  } else info('Ladezeit und Bildzeit gegen 0.8f: nur mit --alt <ordner 0.8f>');
 }
 
 console.log(`\n${fehler === 0 ? 'Alle Prüfungen bestanden.' : `${fehler} Prüfung(en) NICHT bestanden.`}${kompromisse ? ` (${kompromisse} Kompromiss(e), siehe docs/meilensteine/m8g.md)` : ''}`);

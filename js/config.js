@@ -1679,6 +1679,14 @@ export const CONFIG = {
     tafelHoehe: 172,           // Höhe der Tafel (mindestens; höchstens 172 = Bildhöhe minus Rand; M8e: Platz für die Hinweiszeile kommt von vorschauHoehe)
     spalte: 120,               // links: Liste der Autos und LACK (so breit), rechts: Vorschau und Werte
     vorschauHoehe: 76,         // Höhe der Vorschau (Breite: der Rest der Tafel rechts; M8e: 80 -> 76 für die Hinweiszeile)
+    // M8g: Tacho-Vorschau: der Drehzahlmesser des markierten Autos (mit Gang, Schaltlicht und Ladedruck), so wie man ihn im
+    // Rennen sieht (Einstellung TACHO); folgt dem Aufheulen
+    tacho: {
+      an: true,                // false = keine Tacho-Vorschau (Garage wie bis 0.8f)
+      lage: 'rechts',          // 'rechts' = rechts neben dem 3D-Auto (das wird schmaler) oder 'ecke' = unten rechts über dem 3D-Auto
+      breite: 52,              // so viele Pixel bekommt der Tacho rechts (nur bei 'rechts')
+      lichtAb: 0.9,            // Schaltlicht beim Aufheulen: ganz an ab diesem Anteil der Aufheul-Spitze (blitzt kurz mit)
+    },
     hintergrund: '#121a24',    // ruhige dunkle Tafel hinter dem Auto
     drehDauer: 8,              // Sekunden für eine Umdrehung der Drehscheibe
     startWinkel: 215,          // so steht das Auto beim ersten Öffnen (Grad; 180 = Front zur Kamera)

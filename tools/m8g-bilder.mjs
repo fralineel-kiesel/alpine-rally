@@ -2,6 +2,7 @@
 //   tacho:       je Auto Tempo + Drehzahl im Auto-Stil, 4-fach (Zustand: 4. Gang, Schaltlicht an, Ladedruck 70 %)
 //   klassisch:   TACHO = KLASSISCH (3. Gang, 5200/min, 95 km/h), zum Vergleich
 //   rennen:      HUD im Rennen (480x270) mit Schaltlicht an
+//   layout:      die zwei Layouts der Tacho-Vorschau in der Garage (rechts neben dem Auto / Ecke über dem Auto)
 //   garage:      Garage mit Tacho-Vorschau (de, 480x270)
 //   einstellung: EINSTELLUNGEN mit TACHO (de, 480x270)
 // Die Bilder sind für Lino und für mich; ob ein Tacho im Fahren gut lesbar ist, zeigen sie nur bedingt.
@@ -52,3 +53,25 @@ const LICHT = (id) => { const S = CONFIG.fahrprofile[id].tacho.schaltlicht; retu
 if (teil('tacho')) for (const [i, id] of ALLE.entries()) speichere(`1${i}-tacho-${NAMEN[id]}-4fach.png`, await tachoBild(s, id, 'auto', LICHT(id)));
 if (teil('klassisch')) for (const [i, id] of ALLE.entries()) speichere(`2${i}-tacho-${NAMEN[id]}-klassisch-4fach.png`, await tachoBild(s, id, 'klassisch', FAHRT));
 await s.schliessen();
+
+// Garage (de, 480x270): öffnen, Zeiger auf ein Auto (Anzahl Pfeil runter vom Audan aus), optional Layout und Aufheulen
+async function garageBild(datei, { runter = 1, lage = null, sprache = 'de', aufl = 1, heulen = false, tacho = 'auto' } = {}) {
+  const g = await starteSpiel({ breite: [640, 960, 1280][aufl], hoehe: [360, 540, 720][aufl], auto: '' });
+  const p = g.page;
+  await p.addInitScript(([sprache, aufl, tacho]) => { try { localStorage.setItem('alpineRally.einstellungen', JSON.stringify({ sprache, aufloesung: aufl, tacho })); } catch { /* egal */ } }, [sprache, aufl, tacho]);
+  await p.goto(`${g.url}/index.html`);
+  await p.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 120000 });
+  for (const k of ['Enter', 'ArrowDown', 'Enter']) { await p.keyboard.press(k); await p.waitForTimeout(150); }
+  if (lage) await p.evaluate((l) => { window.__alpineRally.CONFIG.garage.tacho.lage = l; window.__alpineRally.menue.neuZeichnen(); }, lage);
+  for (let i = 0; i < runter; i++) { await p.keyboard.press('ArrowDown'); await p.waitForTimeout(150); }
+  if (heulen) { await p.keyboard.press('Space'); await p.waitForTimeout(150); }
+  await p.waitForFunction(() => window.__alpineRally.menue.einblendung >= 1, null, { timeout: 30000 });
+  await p.waitForTimeout(heulen ? 520 : 1500);
+  await p.screenshot({ path: path.join(ORDNER, datei) }); console.log(`screenshots/m8g/${datei}`);
+  if (g.fehler.length) console.log('Fehler:', g.fehler.slice(0, 3).join(' | '));
+  await g.schliessen();
+}
+if (teil('layout')) {
+  await garageBild('30-garage-layout-rechts-480x270.png', { lage: 'rechts' });
+  await garageBild('31-garage-layout-ecke-480x270.png', { lage: 'ecke' });
+}

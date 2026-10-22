@@ -16,7 +16,10 @@ Vergleichsstand 0.8f: `git worktree add <scratchpad>/alt-08f 3ed7aae` → `node 
       blauer Kasten gelb); Schaltlicht oben im Drehzahlmesser (Schwellen im Profil: an = 95 % von hochVollgas auf 50
       gerundet, blinken = Begrenzer − 250, 7 Hz); BOOST/LADER-Tafel 47x9 direkt über dem Drehzahlmesser (Gruppe +4 px,
       nicht breiter); main.js reicht ladedruck, gas, turboAn; Tests (c), (d), (e) ok, Speicher pro Bild nicht höher.
-- [ ] D Garage-Vorschau
+- [x] D Garage: Drehzahlmesser des markierten Autos rechts neben dem 3D-Auto (Vorschau 182 -> 130 breit), BOOST-Tafel
+      darüber; zwei Layouts verglichen (30-/31-garage-layout-*.png: „rechts“ gewählt, „ecke“ verdeckt die Drehscheibe);
+      Nadel folgt dem Aufheulen (Spitze 4658 bei Motor 4669), Schaltlicht blitzt mit (lichtAb 0.9 der Spitze); KLASSISCH
+      zeigt den klassischen Tacho; 20 Wechsel ohne Leck. Test (f), (g) ok. Test-Browser: Garage nur 3–5 Bilder/s (0.8f gleich).
 - [ ] E Tests, Bilder, Bericht, Version 0.8g
 
 Messwerte (Teil B, aus tools/fahrmessung.js): Höchsttempo km/h Audan 189.8, Delto 177.9, Escorta 172.4, Lanza 182.6,

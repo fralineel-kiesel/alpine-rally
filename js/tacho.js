@@ -396,6 +396,20 @@ export function baueTachos(ctx, text) {
     ctx.fillRect(d.cx - 1, d.cy - 1, 2, 2);
   }
 
+  // Gangzahl im Kästchen (klassisch wie bis 0.8f; M8g: Form und Farben je Stil), Schaltlicht und Lader
+  function drehTeil(dt, gang, extra) {
+    if (stil.id === 'klassisch') {
+      ctx.fillStyle = stil.farbeKasten;
+      ctx.fillRect(dreh.cx - 4, dreh.cy + 3, 9, 10);
+      text(gang, dreh.cx - 2, dreh.cy + 5, 1, gang === 'R' ? 'rot' : 'gelb');
+      return;
+    }
+    zeichneGang(gang);
+    anzeige.uhr += dt;
+    if (skala.schaltlicht && stil.schaltlicht) zeichneSchaltlicht(gang, extra);
+    if (skala.lader && stil.ladeAnzeige) zeichneLader(dt, extra);
+  }
+
   return {
     // M8f: Skala für dieses Fahrprofil (Id); jedes Bild aufrufbar, tut nur beim Wechsel etwas
     // M8g: dazu der Stil des Autos (oder klassisch, je nach Einstellung TACHO)
@@ -420,6 +434,7 @@ export function baueTachos(ctx, text) {
     // M8g (Tests): gesetzte Skalenzahlen und weggelassene Zahlen beider Zifferblätter
     zahlen: () => ({ dreh: dreh.zahlen, tempo: tempo.zahlen, wegDreh: dreh.weggelassen, wegTempo: tempo.weggelassen, stil: stil.id }),
     blaetter: () => ({ dreh, tempo }), // (Tests: Zifferblätter mit Bild und Mitte)
+    get anzeige() { return anzeige; }, // (Tests: Nadelstände, Ladedruck-Leiste)
     // Einheit des Tempo-Tachos: 'kmh' oder 'mph' (M5a)
     setzeEinheit(e) {
       if (e === einheit) return;
@@ -446,20 +461,19 @@ export function baueTachos(ctx, text) {
       const zahl = String(Math.min(999, Math.round(kmh)));
       if (stil.digitalFenster) { ctx.fillStyle = stil.digitalFenster; ctx.fillRect(tempo.cx - 10, tempo.cy + 9, 20, 9); }
       text(zahl, tempo.cx + 9 - zahl.length * 6, tempo.cy + 10, 1, stil.farbeDigital);
-      // Gangzahl im Kästchen (klassisch wie bis 0.8f; M8g: Form und Farben je Stil)
-      if (stil.id === 'klassisch') {
-        ctx.fillStyle = stil.farbeKasten;
-        ctx.fillRect(dreh.cx - 4, dreh.cy + 3, 9, 10);
-        text(gang, dreh.cx - 2, dreh.cy + 5, 1, gang === 'R' ? 'rot' : 'gelb');
-      } else {
-        zeichneGang(gang);
-        anzeige.uhr += dt;
-        if (skala.schaltlicht && stil.schaltlicht) zeichneSchaltlicht(gang, extra);
-        if (skala.lader && stil.ladeAnzeige) zeichneLader(dt, extra);
-      }
+      drehTeil(dt, gang, extra);
 
       nadel(tempo, anzeige.kmh / skalaMax);
       nadel(dreh, anzeige.drehzahl / (skala.drehzahlMax * 1000));
     },
+    // M8g: Garage-Vorschau: nur der Drehzahlmesser (mit Gang, Schaltlicht und Lader), Mitte bei setzeLage
+    setzeLage(cx, cy) { dreh.cx = cx; dreh.cy = cy; },
+    zeichneVorschau(dt, drehzahl, gang, extra = null) {
+      anzeige.drehzahl += (drehzahl - anzeige.drehzahl) * (1 - Math.exp(-t.drehzahlNadelFolgen * dt));
+      ctx.drawImage(dreh.bild, dreh.cx - dreh.m, dreh.cy - dreh.m);
+      drehTeil(dt, gang, extra);
+      nadel(dreh, anzeige.drehzahl / (skala.drehzahlMax * 1000));
+    },
   };
+
 }
