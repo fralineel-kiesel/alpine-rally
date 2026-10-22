@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.8e';
+export const VERSION = '0.8f';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -804,6 +804,8 @@ export const CONFIG = {
     // Motor sitzt über den Antriebsrädern (bessere Traktion als der Escorta), das Auto dreht sehr willig ein, das Heck
     // kommt schnell (beim Bremsen in der Kurve, mit Gas, beim Lupfen) und will mit feinem Gas geführt werden. Der Lader
     // schiebt sofort, ohne Turbo-Verzögerung. Messwerte und Kompromisse: STAND.md, Meilenstein 8e.
+    // M8f (Lino: „wie Seife auf Glatteis“): fangbarer – das Heck kommt weiter zuerst, ist aber schneller wieder
+    // gefangen, kein Dreher im Tastatur-Slalom mehr. Bericht: docs/meilensteine/m8f.md.
     l073: {
       auto: {
         radstand: 2.42,          // kurz (Audan 2.52)
@@ -813,17 +815,19 @@ export const CONFIG = {
                                  // Achtung, scharf: 0.53 lässt das Heck unter Vollgas in der Kurve deutlich mehr kommen
         lastVorneAnteil: 0.49,   // leicht hecklastig (Prototyp 0.5)
         gripVorne: 1.113,        // breite Reifen, leichte Front: vorne mehr Haftung (Prototyp 1.0) ...
-        gripHinten: 1.0,         // ... hinten weniger als der Prototyp (1.12): das Heck kommt schnell.
-                                 // Achtung, scharf: 0.97 = Heck unter Vollgas in der Kurve +3.5° statt +2.5°
-        gewichtstransfer: 0.8,   // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt deutlich (+10°). Mehr (1.2)
-                                 // liess den Testfahrer beim Bremsen mit 130 km/h quer kommen
-        stabilitaet: 4.5,        // das Heck ist schwerer einzufangen als beim Escorta (eingefangen nach ca. 1.3 s)
-        gasImDrift: 0.15,        // Gas im Drift lockert das Heck (Prototyp 0.12)
-        antriebHinten: 1.2,      // Hinterradantrieb: Schub braucht hinten Haftung auf (Vollgas in der Kurve +2.5°).
-                                 // Gemessen: unter 1.05 deutlich weniger (1.0 = +1.8°), von 1.05 bis 2.4 fast gleich
-                                 // (kein Kippen). Aber: es wirkt auch beim Tempo-Halten in der Kurve, das Heck beim
-                                 // Bremsen in der Kurve springt (1.15 = +7.3°, 1.25 = +13°). Kleine Schritte!
-        heckJeBelag: { schotter: 1.36, wiesenweg: 1.4 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
+        gripHinten: 1.0,         // ... hinten weniger als der Prototyp (1.12): das Heck kommt schnell. M8f: 1.05 wäre
+                                 // ruhiger, aber dann schiebt der flotte Testfahrer an der Wiesenweg-Einfahrt (2794 m) in
+                                 // die Absperrung (das Auto lenkt weniger ein); darum bleibt 1.0, stabilitaet fängt
+        gewichtstransfer: 0.75,  // Gewichtsverlagerung: Bremsen in der Kurve = Heck kommt (+6.1°, M8e 0.8 = +10°).
+                                 // Weniger (0.5) lässt das Heck unter Vollgas in der Kurve mehr kommen (+9°)
+        stabilitaet: 6.8,        // M8f: das Heck ist schnell wieder gefangen (0.78 s; M8e 4.5 = 1.28 s und Dreher im
+                                 // Tastatur-Slalom). Mehr (7) macht die Lenkung träger (Lenkwinkel nur noch -9 %)
+        gasImDrift: 0.1,         // Gas im Drift lockert das Heck etwas weniger als beim Prototyp (0.12; M8e 0.15)
+        antriebHinten: 1.2,      // Hinterradantrieb: Schub braucht hinten Haftung auf (Vollgas in der Kurve +1.6°).
+                                 // Gemessen: unter 1.05 deutlich weniger, von 1.05 bis 2.4 fast gleich (kein Kippen).
+                                 // M8e sprang das Heck beim Bremsen in der Kurve (1.15 = +7.3°, 1.25 = +13°); seit M8f
+                                 // (stabilitaet 6.8) glatt: 1.05 bis 1.35 = +6.2° bis +6.0°
+        heckJeBelag: { schotter: 1.34, wiesenweg: 1.4 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
                                  // losem Boden aus (sonst Kreis Schotter -5 %); unter Gas bleibt das Heck locker
       },
       getriebe: {
@@ -831,28 +835,41 @@ export const CONFIG = {
                                  // die Antriebsräder (besser als der Escorta 0.95 / 0.9); Bankett und Gras weniger, damit
                                  // es dort trotz viel Schub keinen Vorteil gibt (Abkürzungen)
         zugkraftFaktor: 1.15,    // leicht und kräftig: das schnellste Auto aus dem Stand (0-100 km/h -10 %)
-        gaenge: [46, 78, 108, 136, 164], // kurze Gänge: Höchsttempo ca. 4 % tiefer
+        // M8f (Lino: „dreht zu hoch“): Gänge länger (M8e [46, 78, 108, 136, 164] lief bei Höchsttempo mit 7700/min am
+        // Begrenzer). Bei gleichem Tempo jetzt höchstens 4.7 % mehr Drehzahl als der Audan (4. und 5. Gang müssen dafür
+        // +10 % und +15 % länger sein: bei 140 km/h Konstantfahrt zählt nur die Übersetzung). Achtung: der flotte
+        // Testfahrer prallt mit 4. Gang 150 oder 3. Gang 116/118 bei 2760 m (spätes Bremsen vor der Rechtskurve) an
+        gaenge: [48, 82, 117, 149, 188],
+        hochVollgas: 6600,       // früher hochschalten (Audan 6900): oben lässt der Kompressor-Motor nach (siehe unten)
+        // Kompressor-Motor: kräftig unten und in der Mitte, ab 5800/min weniger Zug (Prototyp: voll bis 6000, 7000 = 0.85).
+        // Begrenzt das Höchsttempo (2.9 % unter dem Prototyp bei 6800/min, nicht mehr am Begrenzer) trotz der langen Gänge
+        drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [5800, 1.0], [6400, 0.9], [7000, 0.64], [8000, 0.3]],
         turbo: { an: false },    // Lader (Kompressor) statt Turbo: Schub sofort, kein Aufbau
       },
       ton: {
         turboMal: 0, knallMal: 1, // kein Turbo: kein Pfeifen, kein Blow-off; Pops wie der Audan
-        // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): hell, mechanisch, drehfreudig (nur die Abweichungen vom Audan)
+        // M8e: Motorklang 4-Zylinder mit Lader (Kompressor): mechanisch, rauh (nur die Abweichungen vom Audan).
+        // M8f (Lino: „tönt viel zu hoch“): tiefer, mehr Körper, weniger hell; der Lader deutlich lauter
         motor: {
           zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 % (Audan 2.5)
-          hoechstTon: 580,       // dreht am höchsten: bei 7000/min +20 % (Delto 540, Audan 480)
+          hoechstTon: 440,       // M8f: tiefer als der Audan (480; M8e 580 = das höchste Auto)
           tonKurve: 1.5,         // ruhige Mitte, oben steil
           pegel: 0.37,           // so laut wie der Audan (0.36)
-          saege: 0.42,           // weniger runder Körper (Audan 0.5) ...
-          puls: 0.5,             // ... mehr Kanten (Audan 0.45): heller, weniger Tiefes
-          unter: 0.06,           // wenig Tiefes (Audan 0.16)
+          saege: 0.5,            // M8f: runder Körper wie der Audan (M8e 0.42) ...
+          puls: 0.45,            // ... und Kanten wie der Audan (M8e 0.5)
+          unter: 0.25,           // M8f: mehr Tiefes (Audan 0.16, M8e 0.06)
           amTiefe: 0.5,          // unruhiger Leerlauf (Delto 0.28, Audan 0.4) ...
           amTiefeLeerlauf: 0.55, // ... auch ganz ohne Gas
           rauh: 0.4,             // mechanisch, der Motor sitzt hinter dem Fahrer (Audan 0.3)
-          bissHz: 3000,          // Biss höher (Audan 2200) ...
-          filterGas: 5200,       // ... und unter Gas heller (Audan 4500): der hellste der fünf
+          bissHz: 2300,          // M8f: Biss fast wie der Audan (2200; M8e 3000) ...
+          filterGas: 3800,       // ... und unter Gas dunkler (Audan 4500; M8e 5200 = der hellste der fünf)
           klackPegel: 0.42,      // Getriebe-Klack lauter (+40 %, das Getriebe sitzt hinter dem Fahrer)
           pop: { mitte: 2000 },  // Pops trockener (Audan 2400)
-          lader: { an: true, pegel: 0.075 }, // Lader-Heulen ca. 11 dB unter dem Motor (übrige Werte: audio.motor.lader)
+          schaltKnallPegel: 1.1, // M8f: Schaltknall etwas leiser (Audan 1.25): mit den neuen Schaltpunkten trifft er auf
+                                 // Vollgas mit dem lauten Lader, sonst Spitze 1.36 statt höchstens wie der Audan (1.32)
+          // M8f: Lader deutlich lauter (+7 dB; M8e 0.075), tiefer (faktor 9.5: bei 7000/min ca. 2.2 kHz statt 3.3 kHz,
+          // hörbar, aber nicht schrill) und noch stärker am Gas (ohne Gas nur 15 %: im Leerlauf und Schub so leise wie M8e)
+          lader: { an: true, pegel: 0.17, faktor: 9.5, gasAnteil: 0.85 },
         },
       },
     },
@@ -868,23 +885,41 @@ export const CONFIG = {
                                  // Testfahrer bei 694 m (lange Linkskurve, 140 km/h) an die Leitplanke schieben
         gripVorne: 1.05,         // tiefer Schwerpunkt: die Front hält etwas mehr (Prototyp 1.0)
         gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve nur leicht (+3.0°) ...
-        stabilitaet: 6.5,        // ... und ist sofort wieder gefangen (0.33 s; Prototyp 5)
+        stabilitaet: 6.8,        // ... und ist sofort wieder gefangen (0.33 s; Prototyp 5)
         vorneJeBelag: { schotter: 1.05, wiesenweg: 1.05 }, // Allrad zieht die Front auf losem Boden in die Kurve ...
         heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit
       },
       getriebe: {
-        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9 }, // Traktion auf losem Boden; Bankett weniger (Abkürzungen)
-        zugkraftFaktor: 1.0,     // Schub wie der Prototyp (der Turbo gibt voll 4 % mehr)
-        gaenge: [48, 82, 118, 148, 180], // 4. und 5. Gang etwas kürzer: Höchsttempo ca. 2 % tiefer (sonst wäre der
-                                 // Testfahrer flott mehr als 0.7 % schneller als mit dem Prototyp)
+        // Traktion auf losem Boden; Bankett und Gras weniger (Abkürzungen; M8f Gras 0.99: mit mehr Schub wäre der Subora
+        // auf der Wiese sonst 0.08 % schneller als der Prototyp)
+        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9, gras: 0.99 },
+        zugkraftFaktor: 1.03,    // Schub 3 % mehr als der Prototyp (M8e 1.0; gleicht die längeren Gänge aus, der Turbo gibt
+                                 // voll noch 4 % dazu)
+        // M8f (Lino: „soll höher drehen“, der Boxer dreht hoch): Schaltpunkte höher, Gänge auf 8000/min bezogen,
+        // im 5. Gang bei Höchsttempo ca. 7800/min (M8e: 6900er Schaltpunkte, 7160/min bei Höchsttempo)
+        nennDrehzahl: 8000,      // "gaenge" gilt bei 8000/min (Prototyp 7000)
+        gaenge: [48, 82, 118, 150, 190],
+        hochVollgas: 7800,       // hochschalten mit Vollgas (Prototyp 6900) ...
+        hochWenigGas: 5200,      // ... mit wenig Gas (Prototyp 4500)
+        runterVollgas: 3000,     // runterschalten mit Vollgas unter (Prototyp 2600)
+        kickdownUnter: 4800,     // Kickdown passend zur höheren Drehzahl (Prototyp 4200) ...
+        kickdownMax: 7400,       // ... wenn die Drehzahl im tieferen Gang unter 7400 bleibt (Prototyp 6500)
+        // Drehmoment: bis 8000/min noch Zug (sonst klebt er am Begrenzer), darüber fällt es ab
+        drehmoment: [[0, 0.45], [1000, 0.5], [2000, 0.55], [3000, 0.78], [4000, 1.0], [6000, 1.0], [7000, 0.93], [8000, 0.78], [8800, 0.5]],
         turbo: { an: true, aufbau: 0.3 }, // dezenter Turbo, spricht schnell an (Audan 0.35 s)
       },
+      // M8f: Tacho-Skala (nur Zahlen; fehlt der Block, gilt hud.tacho): Drehzahl bis 9000, rot ab 8000
+      tacho: { drehzahlMax: 9, drehzahlRotAb: 8 },
       ton: {
         turboMal: 1, knallMal: 1,
         // M8e: Motorklang Boxer: tief, blubbernd, dezenter Turbo (nur die Abweichungen vom Audan)
         motor: {
           zuendFaktor: 2.0,      // 4 Zylinder: Grundton im Leerlauf -20 %
-          hoechstTon: 450,       // dreht tiefer: bei 7000/min -6 % (Audan 480)
+          // M8f: dreht höher – Ton bis 8300/min (Audan 7200), der Grundton steigt weiter: bei 7000/min wie M8e (-6 % zum
+          // Audan), bei 8000/min ca. 515 Hz. Der Boxer bleibt dumpf (Filter wie M8e)
+          hoechstDrehzahl: 8300,
+          begrenzerAb: 8200,     // Begrenzer erst ab 8200/min (Audan 6850; geschaltet wird bei 7800)
+          hoechstTon: 540,       // Grundton bei 8300/min (M8e 450 bei 7200/min)
           tonKurve: 1.2,
           pegel: 0.4,            // so laut wie der Audan (0.36; dumpfer = leiser, darum etwas lauter gestellt)
           schubPegel: 0.6,       // bei Teillast lauter (Audan 0.42): der Boxer blubbert mit halbem Gas kräftig
@@ -900,6 +935,8 @@ export const CONFIG = {
           turboTonMax: 4160,
           turboPegel: 0.023,     // ... und leiser (-35 %)
           blowOffPegel: 0.08,    // dezentes Zischen (Audan 0.16)
+          schaltKnallPegel: 1.1, // M8f: Schaltknall etwas leiser (Audan 1.25): bei 7800/min geschaltet wäre die Spitze
+                                 // sonst 1.35 statt höchstens wie der Audan (1.32)
           pop: { mitte: 1800 },  // viele kleine, tiefe Pops ...
           knallChance: 0.4,
           popAnzahl: [2, 5],
@@ -2192,8 +2229,17 @@ export const CONFIG = {
         sponsorFeld: null, sponsorFeldSchrift: '#2a4a66',
       },
       // --- Subora Imprexa (M8e) ---
-      // Werk: Dunkelrot mit silbernem Streifen
+      // M8f (Linos Wunsch): Werk = sattes Rallye-Blau mit gelber Schrift, gelben Nummern und gelben Streifen (nur die
+      // Farbgebung der Rallye-Zeit; Namen und Sponsoren bleiben erfunden, keine Logos, kein Originaldekor). Heckflügel blau
+      // mit gelbem Akzent. (Die Felgen sind für alle Autos gleich, es gibt keinen Felgen-Slot je Lackierung.)
       imprexaWerk: {
+        lack: '#1d46a8', unten: '#0f2150', streifen0: '#f5d020', streifen1: '#0f2150', akzent: '#f5d020', fluegel: '#1d46a8',
+        lappen: '#0f2150', nummerFeld: '#0f2150', nummerRand: '#f5d020', nummerSchrift: '#f5d020',
+        sponsor0: '#f5d020', sponsor1: '#f5d020', sponsorHell: '#f5d020', banner: '#0f2150', bannerSchrift: '#f5d020',
+        sponsorFeld: '#0f2150', sponsorFeldSchrift: '#f5d020',
+      },
+      // Rot (bis M8e der Werk-Lack): Dunkelrot mit silbernem Streifen
+      imprexaRot: {
         lack: '#86141e', unten: '#2a2c30', streifen0: '#b9bdc3', streifen1: '#1c1c1e', akzent: '#b9bdc3', fluegel: '#86141e',
         lappen: '#1c1c1e', nummerFeld: '#f4f4ee', nummerRand: '#1c1c1e', nummerSchrift: '#86141e',
         sponsor0: '#b9bdc3', sponsor1: '#f4f4ee', sponsorHell: '#b9bdc3', banner: '#b9bdc3', bannerSchrift: '#86141e',

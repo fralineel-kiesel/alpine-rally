@@ -68,6 +68,7 @@ export const TEXTE = {
   'lack.imprexaWerk': { de: 'WERK', en: 'WORKS' },
   'lack.imprexaPolar': { de: 'POLAR', en: 'POLAR' },
   'lack.imprexaDunkel': { de: 'DUNKEL', en: 'DARK' },
+  'lack.imprexaRot': { de: 'ROT', en: 'RED' }, // M8f
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },
   'etappe.pass.name': { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
   'etappe.daten1': { de: '{km} KM · {cps} CHECKPOINTS', en: '{km} KM · {cps} CHECKPOINTS' },

@@ -662,7 +662,9 @@ if (teil('k')) {
     }
     return out;
   });
-  melde(al.length >= 3 && al.every((x) => x.split('/').length === 3), `Auto-Labor: ${al.join('; ')}`);
+  // (M8f: die drei Autos aus M8c haben genau drei Lackierungen; neuere mindestens drei – der Subora hat seit M8f vier)
+  const alt3 = al.filter((x) => /^(rt4|delto|escorta):/.test(x));
+  melde(al.length >= 3 && alt3.length === 3 && alt3.every((x) => x.split('/').length === 3) && al.every((x) => x.split('/').length >= 3), `Auto-Labor: ${al.join('; ')}`);
   melde(s.fehler.length === 0, `keine Konsolenfehler (${s.fehler.length})`);
   await s.schliessen();
 }

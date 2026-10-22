@@ -16,6 +16,7 @@ import { t, beiSprachwechsel } from './texte.js';
 import { einstellungen, beiAenderung } from './einstellungen.js';
 import { tastenName } from './input.js';
 import { baueMinimap } from './minimap.js';
+import { aktivesProfil } from './fahrprofil.js';
 
 export function formatZeit(sek) {
   const ms = Math.floor(sek * 100);
@@ -236,6 +237,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
 
   return {
     get minimap() { return minimap; },
+    tachos, // M8f: für Tests (Skala je Auto)
     // für Tests und Bilder: Minimap mit den aktuellen Werten aus config.js neu bauen (z. B. anderer Zoom)
     minimapNeuBauen() { if (strecke) minimap = baueMinimap(strecke, checkpoints); return minimap; },
     // Wo liegen die Tafeln? (für Tests: Überlappung prüfen)
@@ -267,7 +269,8 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
         if (minimap && einstellungen.minimap && z.zustand !== 'ziel') {
           minimap.zeichne(ctx, z.autoX, z.autoZ, z.richtung, z.maxS, z.zwischenzeiten, z.cpNaechster, z.meldung ? z.meldung.verpasstCp : -1);
         }
-        // Tachos unten rechts (Drehzahl mit Gang, Tempo)
+        // Tachos unten rechts (Drehzahl mit Gang, Tempo); M8f: Skala des gewählten Autos
+        tachos.setzeSkala(aktivesProfil());
         tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang);
 
         if (z.zustand === 'bereit' && z.hilfe) {
