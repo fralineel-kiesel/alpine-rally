@@ -71,7 +71,13 @@ async function lade(opt = {}) {
       zielZeilen() {
         return A.seiten.ziel.eintraege().map((e) => ({ typ: e.typ, text: e.inhalt ? e.inhalt() : e.text, farbe: e.farbe || null }));
       },
-      speicher() { try { return JSON.parse(localStorage.getItem('alpineRally.bestzeiten') || 'null'); } catch { return 'blockiert'; } },
+      // M8h: Bestzeiten liegen je Auto unter "alpineRally.bestzeiten2"; hier wie früher als eine Liste je Etappe (alle Autos)
+      speicher() {
+        try {
+          const d = JSON.parse(localStorage.getItem('alpineRally.bestzeiten2') || 'null');
+          return d && Object.fromEntries(Object.entries(d).map(([k, je]) => [k, Object.values(je).flat()]));
+        } catch { return 'blockiert'; }
+      },
     };
   }, fahrerCode);
   return spiel;
@@ -264,7 +270,7 @@ console.log('(d) Speichern, (e) Vergleich');
   // (d) direkt mit bestzeiten.js
   const d = await A(p, async () => {
     const B = await import('/js/bestzeiten.js');
-    localStorage.removeItem('alpineRally.bestzeiten');
+    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.bestzeiten2'); // (M8h: beide Schlüssel)
     const cps = (z) => [z * 0.2, z * 0.5, z * 0.9];
     const plaetze = [];
     for (const z of [170, 160, 180, 165, 175, 150, 185, 155, 190, 162]) plaetze.push(B.speichereBestzeit('passstrasse', { zeit: z, cps: cps(z), auto: 'rt4', aufpralle: 1, resets: 2, hoechstTempo: 40 }).platz);
@@ -276,7 +282,7 @@ console.log('(d) Speichern, (e) Vergleich');
     // gleiche Zeit wie Platz 3: kommt dahinter (die ältere steht vorn)
     const gleich = B.speichereBestzeit('passstrasse', { zeit: 158.004, cps: cps(158), auto: 'rt4', aufpralle: 0, resets: 0, hoechstTempo: 41 });
     const liste = B.ladeBestzeiten('passstrasse');
-    const roh = JSON.parse(localStorage.getItem('alpineRally.bestzeiten')).passstrasse;
+    const roh = JSON.parse(localStorage.getItem('alpineRally.bestzeiten2')).passstrasse.rt4; // (M8h: Liste des Autos)
     return { plaetze, voll, elf, nachElf, langsam, nachLangsam, gleich, liste, rohAnzahl: roh.length, ersterRoh: roh[0] };
   });
   const sortiert = (l) => l.every((z, i) => i === 0 || l[i - 1] <= z);
@@ -291,7 +297,7 @@ console.log('(d) Speichern, (e) Vergleich');
   // (d)+(e) über echte Zielfahrten: neue Bestzeit nur bei echter Verbesserung, Vergleich mit der Bestzeit vor dem Lauf
   const e = await A(p, () => {
     const A = window.__alpineRally, T = window.__T;
-    localStorage.removeItem('alpineRally.bestzeiten');
+    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.bestzeiten2');
     const lauf = (zeit, cps) => { const erg = T.insZiel(zeit, cps); return { erg: JSON.parse(JSON.stringify(erg)), zeilen: T.zielZeilen(), titel: A.seiten.ziel.titel() }; };
     return {
       erst: lauf(160.5, [33.2, 92.1, 141.0]),

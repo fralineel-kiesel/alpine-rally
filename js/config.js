@@ -1572,7 +1572,8 @@ export const CONFIG = {
   menue: {
     an: true,                  // false = Spiel startet direkt ohne Titel und Menü (wie ?menue=aus in der Adresse)
     speicherName: 'alpineRally.einstellungen', // unter diesem Namen merkt sich der Browser die Einstellungen
-    bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten (Top 10 je Etappe, seit M5b gefüllt; seit M6 mit Fahrspur)
+    bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten bis 0.8g (eine Liste je Etappe; seit M8h nur gelesen, für die Übernahme)
+    bestzeitenNameV2: 'alpineRally.bestzeiten2', // Bestzeiten seit M8h: Top 10 je Etappe und Auto (mit Fahrspur)
     letzterLaufName: 'alpineRally.letzterLauf', // der letzte fertige Lauf je Etappe (M6, für den Live-Vergleich)
     // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
     standard: {
