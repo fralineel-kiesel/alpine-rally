@@ -7,8 +7,13 @@ Branch `claude/busy-turing-9e4fou`, ein Commit je Teil. Vergleichsstand 0.8h: `g
 - [x] A Erkennung (`js/touch.js`: AUTO/AN/AUS, grober Zeiger, maxTouchPoints, erste Berührung), Layout (`js/touchlayout.js`,
       reine Rechnung), Knopfbilder (`js/touchbild.js`), CSS nur unter `html.touch`, Viewport `viewport-fit=cover`,
       Einstellung TOUCH-STEUERUNG, VOLLBILD ohne API = Hinweis HOME-BILDSCHIRM. Werte in `CONFIG.touch`.
-- [ ] B Eingabe (Mehrfinger, D-Pad, Menü, Titel per touchend), Tests (a) bis (h)
-- [ ] C Pixel-Look fertig, Hilfezeilen, Steuerungs-Seite TOUCH, Tests (i) bis (l)
+- [x] B Eingabe: Pointer je Finger mit eigener Trefferrechnung (Gleiten), D-Pad 8 Richtungen + Totzone, Aktionen über
+      `touchEingabe` (input.js, gleicher Lenk-Aufbau wie die Pfeiltasten), Menü-Wiederholung nach der Uhr (nicht Spielzeit),
+      Titel beim touchend, alle Finger lösen bei Abbruch/Blur/Drehen/Zustands- und Seitenwechsel. Tests (a)-(h) grün.
+      Test-Browser: im Menü teils nur 3 Bilder/s, Loslassen kommt bis 1.1 s zu spät -> Tests blenden die 3D-Szene aus
+      und werten kurze Tipps nur bei rechtzeitigem Loslassen (bis 4 Versuche).
+- [x] C (Code schon im Commit von A) Hilfezeilen Touch, Steuerungs-Seite mit TOUCH (Menü-Flag `rollenWahl`: rollen und
+      wählen gemischt), Hinweise Garage/Pace-Notes, Beschriftung aus texte.js. Tests (i)-(l) grün, Desktop pixelgleich.
 - [ ] D Manifest, Icons, Meta-Zeilen, Tests (m) (n)
 - [ ] E Bericht, Bilder, Version 0.9a, volle Regression einmal
 
