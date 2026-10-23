@@ -31,7 +31,7 @@ async function ladePlaywright() {
   throw new Error('Playwright nicht gefunden (npm i -g playwright)');
 }
 
-const TYPEN = { '.html': 'text/html', '.json': 'application/json', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
+const TYPEN = { '.html': 'text/html', '.json': 'application/json', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 
 // Startet Server + Browser. wurzel: Projektordner (Standard: dieser).
 // Ergebnis: { page, ladeSpiel(), schliessen() }

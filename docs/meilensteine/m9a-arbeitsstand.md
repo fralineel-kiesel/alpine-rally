@@ -14,7 +14,8 @@ Branch `claude/busy-turing-9e4fou`, ein Commit je Teil. Vergleichsstand 0.8h: `g
       und werten kurze Tipps nur bei rechtzeitigem Loslassen (bis 4 Versuche).
 - [x] C (Code schon im Commit von A) Hilfezeilen Touch, Steuerungs-Seite mit TOUCH (Menü-Flag `rollenWahl`: rollen und
       wählen gemischt), Hinweise Garage/Pace-Notes, Beschriftung aus texte.js. Tests (i)-(l) grün, Desktop pixelgleich.
-- [ ] D Manifest, Icons, Meta-Zeilen, Tests (m) (n)
+- [x] D `manifest.webmanifest` (relativ, fullscreen > standalone), Icons aus `tools/icons-bauen.mjs` (eigenes Pixel-Motiv),
+      Meta-Zeilen in index.html, kein Service Worker. (m) (n) grün, Ladezeit +28 ms; iPhone-VOLLBILD nur nachgestellt.
 - [ ] E Bericht, Bilder, Version 0.9a, volle Regression einmal
 
 Werte (Richtwerte, config.js): Rand 24, D-Pad 146, A/B 72, L/R 80x40, klein 36, Treffer ≥ 44, Querformat Faktor 0.9,

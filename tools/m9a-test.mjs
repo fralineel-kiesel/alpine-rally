@@ -778,6 +778,30 @@ if (teil('n')) {
     melde(s.fehler.length === 0 && fehlend.length === 0 && mf && mf.ok, `${name}: geladen in ${ms} ms, Manifest abrufbar, ${s.fehler.length} Konsolenfehler, ${fehlend.length} fehlende Dateien${fehlend.length ? ` (${fehlend.join(', ')})` : ''}`);
     await s.schliessen();
   }
+  // iPhone nachgestellt: keine Vollbild-API; einmal im Browser, einmal als Web-App vom Home-Bildschirm (navigator.standalone)
+  for (const webApp of [false, true]) {
+    const s = await starteSpiel({ breite: 402, hoehe: 874, geraet: HANDY });
+    await s.page.addInitScript((w) => {
+      Object.defineProperty(Document.prototype, 'fullscreenEnabled', { configurable: true, get: () => false });
+      Element.prototype.requestFullscreen = undefined;
+      if (w) Object.defineProperty(Navigator.prototype, 'standalone', { configurable: true, get: () => true });
+    }, webApp);
+    await s.page.goto(`${s.url}/index.html?ton=aus`);
+    await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.touch, null, { timeout: 120000 });
+    const r = await s.page.evaluate(async () => {
+      const A = window.__alpineRally, T = await import('/js/texte.js'), TO = await import('/js/touch.js');
+      A.zumMenue(); A.menue.oeffne(A.seiten.einstellungen, true);
+      const e = A.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.vollbild');
+      const vor = A.einstellungen.vollbild;
+      while (A.menue.seite.eintraege[A.menue.wahl] !== e && A.menue.wahl < 30) A.menue.runter();
+      A.menue.bestaetigen();
+      const L = A.touch.layoutJetzt;
+      return { typ: e.typ, hinweis: T.t(e.hinweis), wert: e.wert(), vor, nach: A.einstellungen.vollbild, webApp: TO.webAppModus(), an: A.touch.an, format: L.format, bild: L.bild };
+    });
+    melde(r.typ === 'aktion' && r.hinweis === (webApp ? 'VOM HOME-BILDSCHIRM: SCHON OHNE LEISTEN' : 'ZUM HOME-BILDSCHIRM HINZUFÜGEN FÜR VOLLBILD') && r.vor === r.nach && r.webApp === webApp && r.an,
+      `${webApp ? 'Web-App vom Home-Bildschirm' : 'iPhone-Browser'} (ohne Vollbild-API, nachgestellt): VOLLBILD = "${r.wert}", Hinweis "${r.hinweis}", schaltet nichts; Layout ${r.format} ${r.bild.b.toFixed(0)}x${r.bild.h.toFixed(0)}`);
+    await s.schliessen();
+  }
   if (ALT) {
     const r = werkzeug('ladezeit.mjs', [ALT, '9']);
     fs.writeFileSync(path.join(LOG, 'ladezeit.log'), r.text);
