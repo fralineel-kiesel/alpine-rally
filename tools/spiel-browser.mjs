@@ -31,13 +31,14 @@ async function ladePlaywright() {
   throw new Error('Playwright nicht gefunden (npm i -g playwright)');
 }
 
-const TYPEN = { '.html': 'text/html', '.json': 'application/json', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
+const TYPEN = { '.html': 'text/html', '.json': 'application/json', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 
 // Startet Server + Browser. wurzel: Projektordner (Standard: dieser).
 // Ergebnis: { page, ladeSpiel(), schliessen() }
 // args (M7a): weitere Schalter für Chromium (z. B. --autoplay-policy=no-user-gesture-required für den Ton-Test)
 // auto (M8a): Fahrprofil für index.html (Standard: --auto oder "prototyp"; '' = keins anhängen, dann gilt der Standard des Spiels)
-export async function starteSpiel({ wurzel = WURZEL, breite = 640, hoehe = 360, args = [], auto = AUTO } = {}) {
+// geraet (M9a): weitere Einstellungen der Seite, z. B. { hasTouch: true, isMobile: true, deviceScaleFactor: 3 } fürs Handy
+export async function starteSpiel({ wurzel = WURZEL, breite = 640, hoehe = 360, args = [], auto = AUTO, geraet = {} } = {}) {
   const server = http.createServer((req, res) => {
     const datei = path.join(wurzel, decodeURIComponent(new URL(req.url, 'http://x').pathname));
     if (!datei.startsWith(wurzel) || !fs.existsSync(datei) || fs.statSync(datei).isDirectory()) { res.writeHead(404); res.end(); return; }
@@ -49,7 +50,7 @@ export async function starteSpiel({ wurzel = WURZEL, breite = 640, hoehe = 360, 
   const pw = await ladePlaywright();
   const { chromium } = pw.chromium ? pw : pw.default;
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', ...args] });
-  const page = await browser.newPage({ viewport: { width: breite, height: hoehe } });
+  const page = await browser.newPage({ viewport: { width: breite, height: hoehe }, ...geraet });
   const goto = page.goto.bind(page);
   page.goto = (adresse, ...rest) => goto(mitAuto(adresse, auto), ...rest); // M8a: Fahrprofil in jede Spiel-Adresse
   const fehler = [];

@@ -41,6 +41,7 @@ import { Getriebe } from './getriebe.js';
 import { baueAufheulen } from './tonfahrt.js';
 import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL, tonWerte } from './fahrprofil.js';
 import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
+import { baueTouch, beiTouchWechsel } from './touch.js'; // M9a: Touch-Knöpfe fürs Handy
 import { baueHud, formatZeit } from './hud.js';
 import { baueTachos } from './tacho.js';
 import { pixelText } from './pixel.js';
@@ -106,7 +107,9 @@ function aufloesungSetzen() {
 }
 aufloesungSetzen();
 
+let touch = null; // M9a: Touch-Steuerung (js/touch.js), gebaut nach dem Menü
 function anpassen() {
+  if (touch && touch.an) { touch.layout(); return; } // M9a: im Touch-Modus legt js/touchlayout.js Bild und Knöpfe fest
   // (M8a: mit Fahr-Labor rückt das Bild um die Breite des Panels nach links)
   const breite = window.innerWidth - (fahrlabor ? fahrlabor.breite : 0);
   let s = Math.min(breite / B, window.innerHeight / H);
@@ -894,7 +897,14 @@ const seiten = baueSeiten({
   neuStarten, ergebnis: () => lauf.ergebnis, markiert: () => lauf.markiert,
   autoWechseln: (id, lack) => autoWechseln(id, lack), autoWahl: () => autoWahl, autoModell: () => auto, // M8c: Garage
   aufheulen: () => aufheulenStarten(), // M8e: Motor kurz aufheulen (true = läuft, statt des Bestätigungstons)
+  vollbildGeht: () => !!(document.fullscreenEnabled && document.documentElement.requestFullscreen), // M9a (iPhone: nein)
 });
+// M9a: Touch-Knöpfe (nur auf Touch-Geräten oder mit TOUCH = AN). Ton: auf dem iPhone zählt erst das Loslassen
+// eines Fingers als Geste, darum dort noch einmal fortsetzen (js/audio.js weckt beim Aufsetzen)
+touch = baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpassen });
+anpassen(); // (jetzt mit Touch-Layout, falls an)
+beiTouchWechsel(() => menue.neuZeichnen()); // (Titel: TIPPEN / TASTE DRÜCKEN)
+window.addEventListener('touchend', () => ton.fortsetzen(), true);
 
 // --- Aufheulen in der Garage (M8e): nach dem Bestätigen eines Autos dreht sein Motor kurz hoch (js/tonfahrt.js) ---
 // Nur im Menü auf der Seite AUTO; Verlassen der Garage beendet es (der Ton blendet den Motor weich aus). Ein neues
@@ -970,6 +980,7 @@ beiAenderung((name, wert) => {
   if (name === 'lautstaerke') ton.lautstaerke(wert); // M7a: sofort, weich
   if (name === 'signale') ton.signalLautstaerke(wert); // M7a.1: Regler SIGNALTÖNE, sofort
   if (name === 'musik') ton.musikLautstaerke(wert); // M7b: Regler MUSIK, sofort
+  if (name === 'touch') touch.aktualisiere(); // M9a: Knöpfe sofort ein/aus
   menue.neuZeichnen();
 });
 document.addEventListener('fullscreenchange', () => {
@@ -983,6 +994,7 @@ setzeAbfangen((code, wiederholt) => (ablauf.def && ablauf.def.menue ? menue.tast
 function mausAnMenue(ev, art) {
   if (!ablauf.def || !ablauf.def.menue) return;
   if (fahrlabor && ev.target && fahrlabor.panel.contains(ev.target)) return; // M8a: Klicks im Fahr-Labor gehören dem Panel
+  if (touch.mausIgnorieren(ev)) return; // M9a: vom Browser nachgemachte Klicks nach einer Berührung, Maus auf einem Touch-Knopf
   if (art !== 'bewegen' && ev.button !== 0) return;
   const r = hudLeinwand.getBoundingClientRect();
   menue.maus((ev.clientX - r.left) / r.width * B, (ev.clientY - r.top) / r.height * H, art);
@@ -1058,6 +1070,7 @@ function schleife(jetzt) {
   if (fpsZeit >= 0.5) { fps = fpsZaehler / fpsZeit; fpsZaehler = 0; fpsZeit = 0; }
 
   aktualisierePad();
+  touch.schritt(); // M9a: D-Pad-Wiederholung im Menü, Seitenwechsel lösen die Finger
   const zustandVorher = ablauf.zustand;
   if (ablauf.def.menue) menue.gamepad(dt, pad);
 
@@ -1290,4 +1303,5 @@ window.__alpineRally = {
   vorschauModelle, // M8d (Tests): gerade gebaute Vorschau-Modelle der Garage
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
+  touch, // M9a (Tests): Touch-Steuerung
 };

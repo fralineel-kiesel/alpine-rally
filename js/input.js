@@ -3,6 +3,7 @@
 // handbremse, und einmalige Tasten-Ereignisse (reset, debug, notes = Pace-Notes an/aus, pause, hud = HUD aus/an seit M6).
 // Seit M5a: Tasten frei belegbar (einstellungen.tasten), Lenkempfindlichkeit und Totzone einstellbar,
 // Gamepad-Start = Pause (zurück auf die Strasse: Y / Dreieck). Das Menü kann Tasten abfangen.
+// Seit M9a: dritte Quelle Touch (js/touch.js schreibt in touchEingabe), wird wie die Tastatur eingemischt.
 
 import { CONFIG } from './config.js';
 import { einstellungen, AKTIONEN, beiAenderung } from './einstellungen.js';
@@ -34,9 +35,19 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => gedrueckt.delete(e.code));
 window.addEventListener('blur', () => gedrueckt.clear());
 
+// Touch-Knöpfe (M9a): js/touch.js setzt die gehaltenen Werte und die einmaligen Ereignisse (immer dasselbe Objekt)
+export const touchEingabe = {
+  gas: false, bremse: false, links: false, rechts: false, handbremse: false, // gehalten
+  reset: false, pause: false, hud: false, notes: false,                       // einmalig (bis zum nächsten Abfragen)
+};
+function touchEreignisseLeeren() {
+  touchEingabe.reset = false; touchEingabe.pause = false; touchEingabe.hud = false; touchEingabe.notes = false;
+}
+
 // Beim Wechsel ins Rennen: alte Tastendrücke vergessen
 export function eingabeLeeren() {
   einmal.clear();
+  touchEreignisseLeeren();
   tastaturLenkung = 0;
 }
 
@@ -88,11 +99,13 @@ export function leseEingabe(dt) {
   const taste = (a) => gedrueckt.has(T[a][0]) || (T[a][1] !== null && gedrueckt.has(T[a][1]));
   const neu = (a) => einmal.has(T[a][0]) || (T[a][1] !== null && einmal.has(T[a][1]));
 
-  // Tastatur
-  let gas = taste('gas') ? 1 : 0;
-  let bremse = taste('bremse') ? 1 : 0;
-  const ziel = (taste('rechts') ? 1 : 0) - (taste('links') ? 1 : 0);
+  // Tastatur (M9a: Touch-Knöpfe zählen wie Tasten, A und D-Pad hoch zusammen sind einfach Gas)
+  const tz = touchEingabe;
+  let gas = taste('gas') || tz.gas ? 1 : 0;
+  let bremse = taste('bremse') || tz.bremse ? 1 : 0;
+  const ziel = (taste('rechts') || tz.rechts ? 1 : 0) - (taste('links') || tz.links ? 1 : 0);
   // Tastatur-Lenkung baut sich weich auf (sonst zu ruckartig); Lenkempfindlichkeit = wie schnell
+  // (M9a: das D-Pad lenkt über genau denselben weichen Aufbau)
   if (ziel !== 0) {
     if (Math.sign(ziel) !== Math.sign(tastaturLenkung) && tastaturLenkung !== 0) {
       tastaturLenkung += ziel * s.tastaturRueckTempo * dt;
@@ -105,13 +118,14 @@ export function leseEingabe(dt) {
     tastaturLenkung = Math.abs(tastaturLenkung) <= r ? 0 : tastaturLenkung - Math.sign(tastaturLenkung) * r;
   }
   let lenkung = tastaturLenkung;
-  let handbremse = taste('handbremse');
-  let reset = neu('zurueck');
+  let handbremse = taste('handbremse') || tz.handbremse;
+  let reset = neu('zurueck') || tz.reset;
   const debug = einmal.has('F3');
-  const notes = neu('notes'); // Pace-Notes an/aus (M4)
-  const hud = neu('hud'); // ganzes HUD aus/an (M6, nur Tastatur)
-  let pause = einmal.has('Escape');
+  const notes = neu('notes') || tz.notes; // Pace-Notes an/aus (M4)
+  const hud = neu('hud') || tz.hud; // ganzes HUD aus/an (M6: Tastatur, M9a: SELECT)
+  let pause = einmal.has('Escape') || tz.pause;
   einmal.clear();
+  touchEreignisseLeeren();
 
   // Gamepad (Standard-Belegung, Xbox/PlayStation; Knöpfe in config.js, menue.gamepad)
   if (pad.da) {

@@ -2,12 +2,12 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 8h fertig** (Version 0.8h) – **Bestzeiten je Auto**: Top 10 für jedes Auto, oben eine **Gesamt-Top-3**
-über alle Autos; Live-Vergleich und Zielbildschirm vergleichen mit der **Bestzeit des gefahrenen Autos**, die schnellste
-Zeit überhaupt heisst **GESAMTREKORD!**. Deine alten Zeiten werden beim ersten Start nach Auto übernommen; der alte
-Speicher bleibt unberührt (Rückweg). Getestet mit erfundenen Altdaten, nicht mit deinen.
-**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m8h.md`.** Davor: 8g (Tachos je Auto).
-Nächster Schritt: **Touch-Steuerung für Handy** (noch kein Prompt).
+Aktuell: **Meilenstein 9a fertig** (Version 0.9a) – **Touch-Steuerung fürs Handy**: D-Pad, A, B, L, R, START, SELECT,
+NOTES im Pixel-Look, Hochformat (Bild oben in voller Breite, Steuerfläche unten) und Querformat (Bild in der Mitte,
+Knöpfe links und rechts), Menü mit D-Pad und Antippen, Web-App-Modus („Zum Home-Bildschirm“). Am Computer ohne Touch
+ist alles wie 0.8h (pixelgleich geprüft). **Nur in Chromium mit Touch-Emulation getestet, kein echtes Handy.**
+**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m9a.md`** (iPhone mit Safari und Firefox). Davor: 8h (Bestzeiten je Auto).
+Nächster Schritt: Feinschliff nach deinem Handy-Test (M9a.1), danach **Strecke als Daten** (noch kein Prompt).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -31,6 +31,9 @@ Im Menü: Pfeile oder WASD (bzw. Steuerkreuz/linker Stick) zum Wählen, **Enter/
 Bestätigen, **Esc/Rücktaste** (B / Kreis) für zurück. Die Maus geht auch (zeigen = wählen, klicken = bestätigen,
 Regler ziehen). **Garage (seit M8d):** zeigen/Pfeile = Auto nur ansehen, **Leertaste/Enter** (A / Kreuz, Klick) = Auto wählen. Tastatur, Gamepad und Maus gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
 Alle Tasten ausser Esc, Enter und F3 kann man unter EINSTELLUNGEN → TASTEN BELEGEN ändern.
+**Handy (seit M9a):** D-Pad = lenken (↑ Gas, ↓ Bremse, Schrägen gehen), A = Gas, B = Bremse, L = Handbremse, R = zurück
+auf die Strasse, START = Pause, SELECT = HUD, NOTES = Pace-Notes; im Menü D-Pad, A = OK, B = zurück, oder antippen.
+EINSTELLUNGEN → TOUCH-STEUERUNG = AUTO / AN / AUS.
 
 Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start ist das HUD wieder an.
 
@@ -92,6 +95,9 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/texte.js` – Alle sichtbaren Texte des Spiels (seit M5a), Deutsch (Schweizer Schreibweise…
 - `js/tonfahrt.js` – Feste kurze Fahrt für den Motor-Vergleich (Meilenstein 8d): Ton-Labor (Kn…
 - `js/tonlabor.js` – Ton-Labor (M7a): Hilfsseite zum Anhören aller Töne, ohne zu fahren (ton-l…
+- `js/touch.js` – Touch-Steuerung (M9a): Erkennung AUTO/AN/AUS, Knöpfe auf der Seite, Mehrfinger, Menü mit D-Pad und Antippen.
+- `js/touchbild.js` – Aussehen der Touch-Knöpfe im Pixel-Look (M9a), jeder Zustand einmal gemalt.
+- `js/touchlayout.js` – Lage von Bild und Touch-Knöpfen im Hoch- und Querformat (M9a), reine Rechnung.
 - `js/track.js` – Streckenverlauf der Etappe "Passstrasse" (Meilenstein 1).
 - `js/umgebung.js` – Umgebungsklänge (M7b): Kuhglocken, Publikum (Gemurmel, Jubel, Klatschen),…
 - `js/util.js` – Kleine Hilfsfunktionen: Zufall mit festem Startwert, Rauschen, Mathe.
@@ -119,6 +125,10 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - **Limits:** Draw Calls pro Auto ≤ 12, Dreiecke pro Auto ≤ 1800, kein Garbage pro Bild, Ladezeit gleich, Ton ändert nie das Spiel.
 
 ## Werkzeuge und Tests
+
+- `node tools/m9a-test.mjs --alt <ordner 0.8h>` – alle Prüfungen von M9a (a) bis (n) und (u); einzeln `--nur a,d`; Regression
+  mit `--lang`. Touch nur in Chromium emuliert. `node tools/m9a-bilder.mjs` – Bilder nach `screenshots/m9a/`.
+  `node tools/icons-bauen.mjs` – Icons für den Web-App-Modus neu malen (`icons/`).
 
 - `node tools/m8e-test.mjs` – alle Prüfungen (a) bis (j); einzelne Teile mit `--nur d,g`. Dauert lange (Testfahrer, Ton).
 - `node tools/m8e-bilder.mjs` – alle Bilder nach `screenshots/m8e/` (einzeln: `--nur garage,flamme`).
@@ -161,8 +171,17 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
   1e-4); der Flammen-Test prüft darum „Ereignisse identisch, Samples im Rechenrauschen“.
 - Die Flamme beim Aufheulen in der Garage sieht man nur, wenn das Heck gerade zur Kamera zeigt (die Vorschau dreht sich).
 - Kein echtes Gamepad und kein Touch getestet (nur simuliert).
+- **M9a, Touch:** nur Chromium-Emulation; Safari/Firefox, Stumm-Schalter, Notch (Safe-Area geschätzt), Rand-Wischen und
+  Fingergefühl ungeprüft. Im Querformat mit Safe-Area wird das Bild kleiner (491x276 auf 874x402). HUD im Hochformat klein.
+  Test-Browser: im Menü teils nur 3 Bilder/s, Menü-Tests blenden darum die 3D-Szene aus. Details: `docs/meilensteine/m9a.md`.
+- Touchscreen-Laptop: mit TOUCH-STEUERUNG = AUTO erscheinen dort die Knöpfe (dann AUS wählen).
 
 ## Ideen/Vorschläge (nicht umgesetzt)
+
+- **Touch (M9a-Ideen):** Knopfgrösse und Lage einstellbar (KLEIN/NORMAL/GROSS), Vibration beim Aufprall (Android),
+  Bildschirm wach halten (Wake Lock), Gas automatisch als Hilfe, Neigungssteuerung, Tasten-Layout für Linkshänder,
+  Standard-Auflösung auf dem Handy, Touch-Belegung umstellbar, grösseres HUD im Hochformat (Zeit, Tachos),
+  Ton trotz Stumm-Schalter (`navigator.audioSession`, nur wenn Lino das will).
 
 - **Bestzeit des markierten Autos in der Garage anzeigen** (M8h-Idee, z. B. eine Zeile unter den Werte-Balken).
 - **Geisterauto aus der Fahrspur der Bestzeit** (die Spur je Auto liegt seit M6 im Speicher).
@@ -188,6 +207,17 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Während der Arbeit: `docs/meilensteine/<name>-arbeitsstand.md` (10 bis 20 Zeilen: erledigt, Werte, offene Fragen) nach jedem Teil nachführen.
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
+
+- **M9a** (0.9a) – Bericht mit Layout-Tabelle, Belegung, Tests, Unsicherheiten, Test-Anleitung und Bildern: `docs/meilensteine/m9a.md`.
+  - **Knöpfe:** D-Pad, A/B (diagonal), L/R, START/SELECT/NOTES im Pixel-Look, orange wenn gedrückt, einmal gemalt.
+  - **Layout:** Hochformat Bild in voller Breite über der dunklen Steuerfläche; Querformat Bild in der Mitte, Knöpfe
+    links/rechts, kleine Knöpfe unter dem Bild oder seitlich; Rand ≥ 24 und Safe-Area, Treffer ≥ 44, Werte in `CONFIG.touch`.
+  - **Eingabe:** Mehrfinger (Pointer je Finger, Gleiten wechselt den Knopf), Lenken wie die Pfeiltasten, Menü mit D-Pad
+    (Wiederholung) und Antippen, Titel per Tippen (Ton beim Loslassen), nichts hängt (Abbruch, Drehen, Pause, Fokus).
+  - **Einstellung TOUCH-STEUERUNG** AUTO/AN/AUS; VOLLBILD ohne Vollbild-API = Hinweis HOME-BILDSCHIRM.
+  - **Web-App:** Manifest, eigene Pixel-Icons, Meta-Zeilen, kein Service Worker.
+  - **Unsicher:** nur Chromium emuliert (kein iPhone, kein Safari/Firefox), Safe-Area geschätzt, Ton auf iOS ungeprüft.
+  - Testen: `node tools/m9a-test.mjs --alt <ordner 0.8h>`; Desktop, Fahren, Ton, Autos, Tachos, Bestzeiten unverändert (gemessen).
 
 - **M8h** (0.8h) – Bericht mit Speicherformat, Migration, Tests, Test-Anleitung und Bildern: `docs/meilensteine/m8h.md`.
   - **Speicher:** neuer Schlüssel `alpineRally.bestzeiten2`, je Etappe und Auto Top 10; Zeiten ohne gültiges Auto (alt,

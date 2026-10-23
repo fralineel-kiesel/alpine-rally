@@ -904,7 +904,7 @@ console.log('[M6 g] Taste H: HUD aus/an');
     const t = JSON.parse(JSON.stringify(E.einstellungen.tasten));
     const seite = window.__alpineRally.seiten.tasten.eintraege.some((e) => e.typ === 'taste' && e.aktion === 'hud');
     E.tastenStandard();
-    const steuerung = window.__alpineRally.seiten.steuerung.eintraege.map((e) => (e.inhalt ? e.inhalt() : '')).filter((x) => /HUD/.test(x));
+    const steuerung = window.__alpineRally.seiten.steuerung.eintraege.map((e) => (e.inhalt ? e.inhalt() : '')).filter((x) => /HUD/.test(x) && !/^SELECT \|/.test(x)); // (M9a: ohne die Zeile SELECT im Abschnitt TOUCH)
     return { r, t, seite, steuerung, std: E.einstellungen.tasten.hud.slice() };
   });
   pruefe(t2.r.art === 'getauscht' && t2.r.mit === 'notes' && t2.t.hud[0] === 'KeyN' && t2.t.notes[0] === 'KeyJ', 'Doppelbelegung (N): getauscht, Pace-Notes bekommt J');
