@@ -1070,7 +1070,7 @@ function schleife(jetzt) {
   if (fpsZeit >= 0.5) { fps = fpsZaehler / fpsZeit; fpsZaehler = 0; fpsZeit = 0; }
 
   aktualisierePad();
-  touch.schritt(dt); // M9a: D-Pad-Wiederholung im Menü, Seitenwechsel lösen die Finger
+  touch.schritt(); // M9a: D-Pad-Wiederholung im Menü, Seitenwechsel lösen die Finger
   const zustandVorher = ablauf.zustand;
   if (ablauf.def.menue) menue.gamepad(dt, pad);
 

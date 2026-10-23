@@ -48,11 +48,15 @@ const HANDY = { hasTouch: true, isMobile: true, deviceScaleFactor: 1 };
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Spiel im Handy-Browser laden. adresse: Teil hinter index.html (z. B. '?menue=aus'); speicher: localStorage vorher
-async function handy(breite, hoehe, { adresse = '', speicher = null, geraet = HANDY, wurzel = WURZEL } = {}) {
+// leicht: 3D-Szene ausblenden (nur Test): Software-Grafik schafft im Menü sonst teils nur 3 Bilder pro Sekunde, und
+// Finger-Ereignisse kämen bis zu 0.5 s verspätet an (dann greift z. B. die Menü-Wiederholung schon beim Tippen)
+async function handy(breite, hoehe, { adresse = '', speicher = null, geraet = HANDY, wurzel = WURZEL, leicht = false } = {}) {
   const s = await starteSpiel({ wurzel, breite, hoehe, geraet });
+  await s.page.addInitScript(() => { window.__bilder = 0; const f = () => { window.__bilder++; requestAnimationFrame(f); }; requestAnimationFrame(f); });
   if (speicher) await s.page.addInitScript((sp) => { if (!sessionStorage.getItem('m9a')) { localStorage.clear(); for (const [k, v] of Object.entries(sp)) localStorage.setItem(k, v); sessionStorage.setItem('m9a', '1'); } }, speicher);
   await s.page.goto(`${s.url}/index.html${adresse}`);
   await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.touch, null, { timeout: 120000 });
+  if (leicht) await s.page.evaluate(() => { window.__alpineRally.szene.visible = false; });
   const cdp = await s.page.context().newCDPSession(s.page);
   const aktiv = new Map(); // id -> { x, y }
   const sende = (type) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: [...aktiv].map(([id, p]) => ({ x: p.x, y: p.y, id })) });
@@ -74,14 +78,21 @@ async function handy(breite, hoehe, { adresse = '', speicher = null, geraet = HA
   };
   // Punkt im 320x180-Raster des Bilds -> CSS-Pixel
   const bildPunkt = (x, y) => ev(([x, y]) => { const r = document.getElementById('hud').getBoundingClientRect(); return { x: r.left + x / 320 * r.width, y: r.top + y / 180 * r.height }; }, [x, y]);
-  const bild = () => warte(80); // ein paar Bilder laufen lassen
-  return { s, page: s.page, cdp, f, ev, lay, mitte, dpadPunkt, bildPunkt, bild, async zu() { await s.schliessen(); } };
+  // zwei Bilder der Spielschleife abwarten (die Bildrate im Test-Browser schwankt stark)
+  const bilder = () => s.page.evaluate(() => window.__bilder);
+  const bild = async () => { const n = await bilder(); for (let i = 0; i < 500 && (await bilder()) < n + 2; i++) await warte(10); };
+  // Trefferfläche eines Eintrags der gerade gezeigten Seite (wartet, bis die Seite gezeichnet ist)
+  const treffer = async (text) => { await s.page.waitForFunction((tx) => { const m = window.__alpineRally.menue; const l = typeof m.seite.eintraege === 'function' ? m.seite.eintraege() : m.seite.eintraege; const nr = l.findIndex((e) => e.text === tx); return m.treffer.some((t) => t.nr === nr); }, text); return s.page.evaluate((tx) => { const m = window.__alpineRally.menue; const l = typeof m.seite.eintraege === 'function' ? m.seite.eintraege() : m.seite.eintraege; const nr = l.findIndex((e) => e.text === tx); return m.treffer.find((t) => t.nr === nr); }, text); };
+  // warten, bis die Seite flüssig läuft (5 Bilder hintereinander mit weniger als 150 ms Abstand): sonst kommt im
+  // langsamen Test-Browser das Loslassen eines Fingers so spät an, dass die Menü-Wiederholung schon greift
+  const ruhig = async () => { for (let i = 0; i < 100; i++) { const n = await bilder(); await warte(300); if ((await bilder()) - n >= 6) return; } };
+  return { s, page: s.page, cdp, f, ev, lay, mitte, dpadPunkt, bildPunkt, bild, treffer, ruhig, async zu() { await s.schliessen(); } };
 }
 
 // ===================================================================== Teil B: Eingabe
 // Rennen ohne Menü (wie die alten Tests), Handy hoch; Hilfen im Browser
 async function rennenHandy(W = 402, H = 874, adresse = '?menue=aus') {
-  const h = await handy(W, H, { adresse });
+  const h = await handy(W, H, { adresse, leicht: true });
   await h.ev(() => { window.__alpineRally.anhalten = true; });
   await h.bild();
   return h;
@@ -151,7 +162,7 @@ if (teil('a')) {
   const z = await handy(402, 874);
   await z.ev(async () => {
     const A = window.__alpineRally;
-    A.anhalten = true; A.start({ countdown: false });
+    A.anhalten = true; A.start(); // (mit Countdown: NEU STARTEN fährt wieder mit Countdown)
     A.rennen.zustand = 'ziel'; A.rennen.endZeit = 160; A.ablauf.wechsle('ziel');
   });
   await z.bild();
@@ -235,34 +246,66 @@ if (teil('c')) {
 
 if (teil('d')) {
   console.log('(d) Menü mit Touch');
-  const h = await handy(402, 874);
-  await h.bild();
-  const t0 = await h.ev(() => window.__alpineRally.ablauf.zustand);
-  await h.f.auf(1, await h.bildPunkt(160, 90)); await h.bild();
-  const t1 = await h.ev(() => window.__alpineRally.ablauf.zustand);
-  await h.f.ab(1); await h.bild();
-  const t2 = await h.ev(() => ({ z: window.__alpineRally.ablauf.zustand, ton: window.__alpineRally.ton.zustand }));
+  const h0 = await handy(402, 874);
+  await h0.bild();
+  const t0 = await h0.ev(() => window.__alpineRally.ablauf.zustand);
+  await h0.f.auf(1, await h0.bildPunkt(160, 90)); await h0.bild();
+  const t1 = await h0.ev(() => window.__alpineRally.ablauf.zustand);
+  await h0.f.ab(1); await h0.bild();
+  const t2 = await h0.ev(() => ({ z: window.__alpineRally.ablauf.zustand, ton: window.__alpineRally.ton.zustand }));
   melde(t0 === 'titel' && t1 === 'titel' && t2.z === 'menue', `Titel: beim Aufsetzen noch ${t1}, beim Loslassen (touchend) ${t2.z}; Ton-Kontext ${t2.ton}`);
+  await h0.zu();
+  // weiter ohne Ton: das Klangwerk baut nach dem Entsperren seine Puffer und hält dabei im Test-Browser die Bilder an
+  const h = await handy(402, 874, { adresse: '?ton=aus', leicht: true });
+  await h.f.tippe(await h.bildPunkt(160, 90)); await h.bild();
   const M = () => h.ev(() => ({ seite: window.__alpineRally.menue.seite.id, wahl: window.__alpineRally.menue.wahl, tiefe: window.__alpineRally.menue.stapel.length }));
+  // Spur im Browser: wann kam das Aufsetzen/Loslassen an, wann ging eine Taste ans Menü
+  await h.ev(() => {
+    const A = window.__alpineRally; window.__tr = [];
+    const alt = A.menue.taste; A.menue.taste = (...a) => { window.__tr.push({ art: 'taste', w: !!a[1], t: performance.now() }); return alt(...a); };
+    for (const t of ['pointerdown', 'pointerup']) window.addEventListener(t, () => window.__tr.push({ art: t, t: performance.now() }), true);
+    const f = () => { window.__tr.push({ art: 'bild', t: performance.now() }); requestAnimationFrame(f); }; requestAnimationFrame(f); // (Bilder mitschreiben)
+  });
+  // erwartete Schritte für die Zeit, die der Finger aus Sicht der Seite lag (wie eine gehaltene Taste: 0.4 s, dann alle 0.12 s)
+  const tippen = async (grad, ms = 60) => {
+    await h.ruhig();
+    await h.ev(() => { window.__tr.length = 0; });
+    await h.f.auf(1, await h.dpadPunkt(grad)); await warte(ms); await h.f.ab(1); await h.bild();
+    const tr = await h.ev(() => window.__tr);
+    const tasten = tr.filter((x) => x.art === 'taste'), auf = tr.find((x) => x.art === 'pointerdown'), ab = tr.find((x) => x.art === 'pointerup');
+    const dauer = ab && tasten.length ? ab.t - tasten[0].t : 0;
+    const soll = dauer < 400 ? 1 : 2 + Math.floor((dauer - 400) / 120);
+    return { n: tasten.length, soll, dauer, verspaetet: auf && ab ? ab.t - auf.t - ms : 0, tr };
+  };
+  // ein kurzer Tipp = genau ein Schritt; zählt nur, wenn das Loslassen rechtzeitig ankam (der Test-Browser blockiert die
+  // Seite manchmal über 1 s), höchstens 4 Versuche je Richtung
+  const kurz = async (grad, zurueck) => {
+    let letzter = null;
+    for (let v = 1; v <= 4; v++) {
+      const vor = await M(); const k = await tippen(grad); const nach = await M();
+      letzter = { ...k, vor: vor.wahl, nach: nach.wahl, versuch: v };
+      if (k.verspaetet < 250) return letzter;
+      await h.ev((w) => { const A = window.__alpineRally; A.menue.zeige(A.seiten.haupt, true); for (let i = 0; i < w; i++) A.menue.runter(); }, zurueck);
+    }
+    return letzter;
+  };
   const m0 = await M();
-  await h.f.tippe(await h.dpadPunkt(180)); await h.bild();
-  const m1 = await M();
-  await h.f.tippe(await h.dpadPunkt(0)); await h.bild();
-  const m2 = await M();
-  melde(m1.wahl === m0.wahl + 1 && m2.wahl === m0.wahl, `D-Pad ↓ / ↑ im Hauptmenü: Wahl ${m0.wahl} -> ${m1.wahl} -> ${m2.wahl}`);
-  // gehalten: Wiederholung (0.4 s, dann alle 0.12 s)
-  await h.f.auf(1, await h.dpadPunkt(180)); await warte(1000);
-  const m3 = await M(); await h.f.ab(1); await h.bild();
-  const schritte = (m3.wahl - m0.wahl + 7 * 10) % 7;
-  melde(schritte >= 4, `D-Pad ↓ 1 s gehalten: wiederholt (${schritte} Schritte in 7 Einträgen, Soll ca. 1 + 5)`);
+  const k1 = await kurz(180, m0.wahl); const k2 = await kurz(0, m0.wahl + 1);
+  melde(k1.n === 1 && k2.n === 1 && k1.nach === k1.vor + 1 && k2.nach === k2.vor - 1 && k1.verspaetet < 250 && k2.verspaetet < 250,
+    `D-Pad ↓ / ↑ kurz getippt im Hauptmenü: Wahl ${k1.vor} -> ${k1.nach}, ${k2.vor} -> ${k2.nach} (${k1.n} und ${k2.n} Schritt; Versuch ${k1.versuch} / ${k2.versuch})`);
+  // gehalten: Wiederholung
+  const k3 = await tippen(180, 1000); const m3 = await M();
+  melde(k3.n >= 5 && Math.abs(k3.n - k3.soll) <= 1, `D-Pad ↓ 1 s gehalten: ${k3.n} Schritte (aus Sicht der Seite ${(k3.dauer / 1000).toFixed(2)} s gehalten, Soll ${k3.soll})`);
+  for (const [n, t] of [['kurz ↓', k1], ['kurz ↑', k2], ['1 s', k3]]) if (t.verspaetet > 150 || t.versuch > 1) info(`(${n}: Loslassen kam ${t.verspaetet.toFixed(0)} ms verspätet an${t.versuch > 1 ? `, Versuch ${t.versuch}` : ''} – langsamer Test-Browser)`);
   // Einstellungen: A öffnet, D-Pad zum Regler LAUTSTÄRKE, → gehalten erhöht in mehreren Schritten, B zurück
   await h.ev(() => { const A = window.__alpineRally; A.menue.zeige(A.seiten.haupt, true); });
-  await h.bild();
-  for (let i = 0; i < 4; i++) { await h.f.tippe(await h.dpadPunkt(180)); await h.bild(); }
+  await h.ruhig();
+  for (let i = 0; i < 4; i++) { await h.f.tippe(await h.dpadPunkt(180)); await h.ruhig(); }
   await h.f.tippe(await h.mitte('a')); await h.bild();
   const e0 = await M();
-  const ziel = await h.ev(() => window.__alpineRally.menue.seite.eintraege.findIndex((e) => e.text === 'einst.lautstaerke'));
-  for (let n = 0; n < 40 && (await M()).wahl !== ziel; n++) { await h.f.tippe(await h.dpadPunkt(180)); await h.bild(); }
+  const ziel = await h.ev(() => { const s = window.__alpineRally.menue.seite; return (typeof s.eintraege === 'function' ? s.eintraege() : s.eintraege).findIndex((e) => e.text === 'einst.lautstaerke'); });
+  await h.ruhig();
+  for (let n = 0; n < 40 && (await M()).wahl !== ziel; n++) { await h.f.tippe(await h.dpadPunkt((await M()).wahl < ziel ? 180 : 0)); await h.ruhig(); }
   const laut0 = await h.ev(() => window.__alpineRally.einstellungen.lautstaerke);
   await h.f.auf(1, await h.dpadPunkt(270)); await warte(900); await h.f.ab(1); await h.bild();
   const laut1 = await h.ev(() => window.__alpineRally.einstellungen.lautstaerke);
@@ -274,7 +317,7 @@ if (teil('d')) {
   melde(e1.seite === 'haupt', `B = zurück: ${e0.seite} -> ${e1.seite}`);
   // Garage: D-Pad markiert (Vorschau), A bestätigt das Auto
   await h.ev(() => { const A = window.__alpineRally; A.menue.zeige(A.seiten.haupt, true); A.menue.oeffne(A.seiten.auto, true); });
-  await h.bild();
+  await h.ruhig();
   const g0 = await h.ev(() => ({ wahl: window.__alpineRally.menue.wahl, auto: window.__alpineRally.autoWahl.auto }));
   await h.f.tippe(await h.dpadPunkt(180)); await h.bild();
   const g1 = await h.ev(() => ({ wahl: window.__alpineRally.menue.wahl, auto: window.__alpineRally.autoWahl.auto, vorschau: window.__alpineRally.seiten.garage.vorschauId(), hinweis: window.__alpineRally.menue.seite.hinweis() }));
@@ -284,10 +327,10 @@ if (teil('d')) {
   await h.ev(() => window.__alpineRally.autoWechseln('rt4'));
   // Bestzeiten: D-Pad ← → wechselt das Auto
   await h.ev(() => { const A = window.__alpineRally; A.menue.zeige(A.seiten.haupt, true); A.menue.oeffne(A.seiten.bestzeiten, true); });
-  await h.bild();
+  await h.ruhig();
   const autoBz = () => h.ev(() => { const s = window.__alpineRally.menue.seite; const l = typeof s.eintraege === 'function' ? s.eintraege() : s.eintraege; const e = l.find((x) => x.typ === 'auswahl'); return e ? e.lesen() : null; });
   const b0 = await autoBz();
-  await h.f.tippe(await h.dpadPunkt(90)); await h.bild();
+  await h.f.tippe(await h.dpadPunkt(90)); await h.ruhig();
   const b1 = await autoBz();
   await h.f.tippe(await h.dpadPunkt(270)); await h.bild();
   const b2 = await autoBz();
@@ -295,7 +338,7 @@ if (teil('d')) {
   // Eintrag direkt antippen (Hauptmenü: ETAPPE)
   await h.ev(() => { const A = window.__alpineRally; A.menue.zeige(A.seiten.haupt, true); });
   await h.bild();
-  const hit = await h.ev(() => { const A = window.__alpineRally; const l = A.seiten.haupt.eintraege; const nr = l.findIndex((e) => e.text === 'menue.etappe'); return A.menue.treffer.find((t) => t.nr === nr); });
+  const hit = await h.treffer('menue.etappe');
   await h.f.tippe(await h.bildPunkt(hit.x + hit.b / 2, hit.y + hit.h / 2)); await h.bild();
   const d1 = await M();
   melde(d1.seite === 'etappe', `ETAPPE direkt angetippt: Seite ${d1.seite}`);
@@ -313,7 +356,7 @@ if (teil('d')) {
 
 if (teil('e')) {
   console.log('(e) keine Doppelauslösung');
-  const h = await handy(402, 874);
+  const h = await handy(402, 874, { leicht: true });
   await h.ev(() => {
     window.__m9a = { maus: 0, wechsel: [] };
     for (const t of ['mousedown', 'mouseup', 'click']) window.addEventListener(t, () => window.__m9a.maus++, true);
@@ -323,7 +366,7 @@ if (teil('e')) {
   const r1 = await h.ev(() => ({ ...window.__m9a, z: window.__alpineRally.ablauf.zustand, tiefe: window.__alpineRally.menue.stapel.length }));
   melde(r1.wechsel.join() === 'menue' && r1.maus === 0, `Titel antippen: Wechsel ${r1.wechsel.join(',')} (genau einmal), ${r1.maus} Mausereignisse`);
   // Eintrag antippen öffnet genau eine Seite
-  const hit = await h.ev(() => { const A = window.__alpineRally; const nr = A.seiten.haupt.eintraege.findIndex((e) => e.text === 'menue.steuerung'); return A.menue.treffer.find((t) => t.nr === nr); });
+  const hit = await h.treffer('menue.steuerung');
   await h.f.tippe(await h.bildPunkt(hit.x + hit.b / 2, hit.y + hit.h / 2)); await h.bild(); await warte(400);
   const r2 = await h.ev(() => ({ tiefe: window.__alpineRally.menue.stapel.length, seite: window.__alpineRally.menue.seite.id, maus: window.__m9a.maus }));
   melde(r2.tiefe === r1.tiefe + 1 && r2.seite === 'steuerung' && r2.maus === 0, `STEUERUNG antippen: ${r2.tiefe - r1.tiefe} Seite geöffnet (${r2.seite}), ${r2.maus} Mausereignisse`);
@@ -527,6 +570,103 @@ if (teil('i')) {
   info(`Tabelle der Fenstergrössen: ${path.join(LOG, 'layout.json')}`);
 }
 
+// ===================================================================== (j) Texte, (k) Hilfezeilen und Steuerungs-Seite
+if (teil('j')) {
+  console.log('(j) Texte de/en in der Pixelschrift');
+  const h = await handy(402, 874, { leicht: true });
+  const r = await h.ev(async () => {
+    const T = await import('/js/texte.js'), P = await import('/js/pixel.js');
+    const neu = Object.keys(T.TEXTE).filter((k) => /touch|Touch|tippen|vollbildHome|vollbildWebApp|homeBildschirm|webApp|^wert\.auto$/.test(k));
+    const zeichen = new Set(P.SCHRIFT_ZEICHEN);
+    const fehlt = [];
+    let breitest = 0;
+    for (const k of neu) for (const sp of ['de', 'en']) {
+      const tx = String(T.TEXTE[k][sp] || '').toUpperCase();
+      if (!T.TEXTE[k][sp]) fehlt.push(`${k}.${sp} leer`);
+      for (const z of tx) if (!zeichen.has(z)) fehlt.push(`${k}.${sp}: "${z}"`);
+      breitest = Math.max(breitest, P.textBreite(tx));
+    }
+    return { n: neu.length, fehlt, breitest };
+  });
+  melde(r.fehlt.length === 0 && r.n >= 25, `${r.n} neue Texte, de und en: alle Zeichen in der Pixelschrift${r.fehlt.length ? ` – fehlt: ${r.fehlt.slice(0, 6).join(', ')}` : ''}`);
+  melde(r.breitest <= 300, `längster neuer Text ${r.breitest} Pixel (Tafel 312, innen ca. 298)`);
+  await h.zu();
+}
+
+if (teil('k')) {
+  console.log('(k) Hilfezeilen vor dem Start und Steuerungs-Seite');
+  for (const sprache of ['de', 'en']) {
+    const h = await handy(402, 874, { adresse: '?menue=aus', leicht: true });
+    const r = await h.ev(async (sp) => {
+      const A = window.__alpineRally, T = await import('/js/texte.js'), E = await import('/js/einstellungen.js');
+      E.setze('sprache', sp); T.setzeSprache(sp);
+      A.anhalten = true;
+      const c = document.getElementById('hud');
+      const warte = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const lese = () => c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      A.rennen.hilfe = true; await warte(); await warte(); const mit = lese();
+      A.rennen.hilfe = false; await warte(); await warte(); const ohne = lese();
+      // Hilfe-Pixel = was sich ändert; sie dürfen keine sonst gemalten Pixel treffen, und alles liegt im Bild
+      let n = 0, treffer = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+      for (let i = 0; i < mit.length; i += 4) {
+        if (mit[i] === ohne[i] && mit[i + 1] === ohne[i + 1] && mit[i + 2] === ohne[i + 2] && mit[i + 3] === ohne[i + 3]) continue;
+        n++; const p = i / 4, x = p % c.width, y = Math.floor(p / c.width);
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+        if (ohne[i + 3] > 0) treffer++;
+      }
+      const zeilen = [T.t('hud.touchFahren'), T.t('hud.touchHandbremse'), T.t('hud.touchPause'), T.t('hud.touchNotes')];
+      return { n, treffer, box: [x0, y0, x1, y1], zeilen, touch: A.touch.an };
+    }, sprache);
+    melde(r.touch && r.n > 200 && r.treffer === 0 && r.box[2] < 320 && r.box[3] < 180, `Hilfezeilen Touch (${sprache}): "${r.zeilen.join(' / ')}" – ${r.n} Pixel in ${r.box.join(',')}, berühren nichts anderes im HUD (${r.treffer} Treffer)`);
+    await h.zu();
+  }
+  // Steuerungs-Seite: Touch-Modus (TOUCH oben) und Desktop (TOUCH nach SYMBOLE), de und en; alles erreichbar
+  for (const [name, geraet] of [['Touch', HANDY], ['Desktop', {}]]) for (const sprache of ['de', 'en']) {
+    const h = await handy(640, 360, { geraet, adresse: '?ton=aus', leicht: true });
+    const r = await h.ev(async (sp) => {
+      const A = window.__alpineRally, T = await import('/js/texte.js'), E = await import('/js/einstellungen.js');
+      E.setze('sprache', sp); T.setzeSprache(sp);
+      const warte = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      A.menue.zeige(A.seiten.haupt, true); A.menue.oeffne(A.seiten.steuerung, true); await warte();
+      const l = A.seiten.steuerung.eintraege();
+      const m0 = { ...A.menue.rollen };
+      const innen = m0.breite - 2 * 7;
+      const zuBreit = l.filter((e) => e.typ === 'info' && (typeof e.breite === 'function' ? e.breite() : e.breite) > innen).map((e) => (e.inhalt ? e.inhalt() : '?'));
+      const ersteGruppe = l.find((e) => e.typ === 'gruppe');
+      // Zeilen-Lagen, dann alles mit ↓ durchgehen: jede Zeile muss einmal ganz zu sehen sein
+      let y = 0; const lage = l.map((e) => { const h = e.hoehe || (e.typ === 'gruppe' ? 10 : 11); const r = [y, y + h]; y += h; return r; });
+      const gesehen = new Set(), gewaehlt = new Set();
+      const merke = () => { const ro = A.menue.rollen; lage.forEach(([a, b], i) => { if (a >= ro.scroll && b <= ro.scroll + ro.sichtH) gesehen.add(i); }); gewaehlt.add(A.menue.wahl); };
+      merke();
+      for (let i = 0; i < 40; i++) { A.menue.taste('ArrowDown', false); await warte(); merke(); }
+      const unten = A.menue.rollen.scroll;
+      for (let i = 0; i < 40; i++) { A.menue.taste('ArrowUp', false); await warte(); merke(); }
+      const namen = l.map((e) => e.text || (e.typ === 'zurueck' ? 'zurueck' : ''));
+      return {
+        start: m0.scroll, max: m0.max, zuBreit, ersteGruppe: ersteGruppe && ersteGruppe.text, unten,
+        ungesehen: l.map((_, i) => i).filter((i) => !gesehen.has(i) && (l[i].hoehe || 11) > 6).length, // (leere Abstände zählen nicht)
+        symbole: gewaehlt.has(namen.indexOf('steuerung.symbole')), zurueck: gewaehlt.has(namen.indexOf('zurueck')), touch: A.touch.an,
+        oben: namen.indexOf('steuerung.touch') < namen.indexOf('steuerung.symbole'),
+      };
+    }, sprache);
+    const ok = r.zuBreit.length === 0 && r.start === 0 && r.ungesehen === 0 && r.symbole && r.zurueck && r.unten === r.max && r.oben === (name === 'Touch');
+    melde(ok, `Steuerungs-Seite ${name} (${sprache}): TOUCH ${r.oben ? 'oben' : 'nach SYMBOLE'}, rollt 0..${r.max}, alle Zeilen einmal ganz zu sehen (${r.ungesehen} nicht), SYMBOLE und ZURÜCK wählbar${r.zuBreit.length ? `; zu breit: ${r.zuBreit.join(' | ')}` : ''}`);
+    await h.zu();
+  }
+  // Garage-Hinweis und Pace-Notes-Hinweis im Touch-Modus
+  const h = await handy(640, 360, { adresse: '?ton=aus', leicht: true });
+  await h.f.tippe(await h.bildPunkt(160, 90)); await h.bild();
+  const r = await h.ev(async () => {
+    const A = window.__alpineRally, T = await import('/js/texte.js');
+    A.menue.oeffne(A.seiten.auto, true);
+    const garage = A.menue.seite.hinweis();
+    const pn = A.seiten.einstellungen.eintraege.find((e) => e.text === 'einst.paceNotes').hinweis();
+    return { garage, pn, soll: [T.t('garage.hinweisTouch'), T.t('einst.paceNotesHinweisTouch')] };
+  });
+  melde(r.garage === r.soll[0] && r.pn === r.soll[1], `Hinweise im Touch-Modus: Garage "${r.garage}", Pace-Notes "${r.pn}"`);
+  await h.zu();
+}
+
 // ===================================================================== (l) Desktop unverändert gegen 0.8h
 async function desktopAbdruck(wurzel) {
   const erg = { buehne: {}, seiten: {}, hud: null, ganz: null };
@@ -589,6 +729,91 @@ if (teil('l')) {
     }
     melde(a.hud === b.hud, 'HUD vor dem Start (Hilfezeilen, Zeit, Tacho, Minimap) pixelgleich wie 0.8h');
     melde(a.ganz === b.ganz, `ganzes Bild vor dem Start (3D und HUD, Bildschirmfoto 640x360) gleich wie 0.8h (${a.ganz} / ${b.ganz})`);
+  }
+}
+
+// ===================================================================== (m) (n) Web-App
+if (teil('m')) {
+  console.log('(m) Manifest, Icons, Meta-Zeilen');
+  let m = null;
+  try { m = JSON.parse(fs.readFileSync(path.join(WURZEL, 'manifest.webmanifest'), 'utf8')); } catch (e) { melde(false, `manifest.webmanifest ist kein gültiges JSON: ${e.message}`); }
+  if (m) {
+    melde(m.name === 'ALPINE RALLY' && m.short_name && m.start_url === './' && m.scope === './' && m.display === 'fullscreen' && m.orientation === 'any' && m.background_color && m.theme_color,
+      `Manifest: name ${m.name}, short_name ${m.short_name}, start_url ${m.start_url}, scope ${m.scope}, display ${m.display} (${(m.display_override || []).join(' > ')}), orientation ${m.orientation}`);
+    const relativ = [m.start_url, m.scope, ...m.icons.map((i) => i.src)].every((p) => !/^\/|^https?:/.test(p));
+    melde(relativ, 'alle Pfade relativ (geht unter /alpine-rally/ auf GitHub Pages)');
+    // PNG-Kopf: Breite und Höhe ab Byte 16
+    const png = (d) => { const b = fs.readFileSync(path.join(WURZEL, d)); return b.slice(1, 4).toString() === 'PNG' ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null; };
+    for (const i of m.icons) {
+      const g = fs.existsSync(path.join(WURZEL, i.src)) ? png(i.src) : null;
+      melde(g && `${g[0]}x${g[1]}` === i.sizes, `${i.src}: ${g ? `${g[0]}x${g[1]}` : 'fehlt'} (Soll ${i.sizes}, ${i.purpose})`);
+    }
+    melde(m.icons.some((i) => i.purpose === 'maskable') && ['192x192', '512x512'].every((g) => m.icons.some((i) => i.sizes === g)), 'Icons 192, 512 und ein maskable');
+  }
+  const html = fs.readFileSync(path.join(WURZEL, 'index.html'), 'utf8');
+  const apple = /<link rel="apple-touch-icon" href="([^"]+)"/.exec(html);
+  const ag = apple && fs.existsSync(path.join(WURZEL, apple[1])) ? (() => { const b = fs.readFileSync(path.join(WURZEL, apple[1])); return `${b.readUInt32BE(16)}x${b.readUInt32BE(20)}`; })() : null;
+  melde(ag === '180x180', `apple-touch-icon ${apple ? apple[1] : 'fehlt'}: ${ag}`);
+  const meta = ['<link rel="manifest" href="manifest.webmanifest">', 'name="apple-mobile-web-app-capable" content="yes"', 'name="mobile-web-app-capable" content="yes"',
+    'name="apple-mobile-web-app-status-bar-style" content="black-translucent"', 'name="apple-mobile-web-app-title"', 'name="theme-color"', 'viewport-fit=cover'];
+  const fehlt = meta.filter((z) => !html.includes(z));
+  melde(fehlt.length === 0, `index.html: ${meta.length} Meta-/Link-Zeilen da${fehlt.length ? `; fehlt: ${fehlt.join(', ')}` : ''}`);
+  const sw = ['js', '.'].flatMap((d) => fs.readdirSync(path.join(WURZEL, d)).filter((f) => /\.(js|html)$/.test(f)).map((f) => path.join(WURZEL, d, f)))
+    .filter((f) => /serviceWorker\s*\.\s*register/.test(fs.readFileSync(f, 'utf8')));
+  melde(sw.length === 0, `kein Service Worker (${sw.length} Dateien registrieren einen)`);
+}
+
+if (teil('n')) {
+  console.log('(n) Spiel lädt mit Manifest');
+  for (const [name, geraet, W, H] of [['Desktop', {}, 640, 360], ['Handy', HANDY, 402, 874]]) {
+    const s = await starteSpiel({ breite: W, hoehe: H, geraet });
+    const fehlend = [];
+    s.page.on('response', (r) => { if (r.status() >= 400) fehlend.push(`${r.status()} ${r.url()}`); });
+    const t0 = Date.now();
+    await s.page.goto(`${s.url}/index.html`);
+    await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+    const ms = Date.now() - t0;
+    await warte(1500);
+    const mf = await s.page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); if (!l) return null; const r = await fetch(l.href); return { ok: r.ok, typ: r.headers.get('content-type') }; });
+    melde(s.fehler.length === 0 && fehlend.length === 0 && mf && mf.ok, `${name}: geladen in ${ms} ms, Manifest abrufbar, ${s.fehler.length} Konsolenfehler, ${fehlend.length} fehlende Dateien${fehlend.length ? ` (${fehlend.join(', ')})` : ''}`);
+    await s.schliessen();
+  }
+  if (ALT) {
+    const r = werkzeug('ladezeit.mjs', [ALT, '9']);
+    fs.writeFileSync(path.join(LOG, 'ladezeit.log'), r.text);
+    const med = (n) => +((new RegExp(`${n} .*Median (\\d+)`).exec(r.text) || [])[1]);
+    const a = med('alt'), b = med('neu');
+    melde(b - a <= 30, `Ladezeit (Median aus 9): 0.8h ${a} ms, 0.9a ${b} ms (${b - a >= 0 ? '+' : ''}${b - a} ms, höchstens +30; Streuung im Test-Browser ca. ±100 ms)`);
+  } else info('Ladezeit gegen 0.8h: nur mit --alt <ordner 0.8h>');
+}
+
+// ===================================================================== (u) Unveränderlich gegen 0.8h
+if (teil('u')) {
+  console.log('(u) Unveränderlich gegen 0.8h');
+  if (!ALT) info('nur mit --alt <ordner 0.8h> (git worktree add <ordner> b796508)');
+  else {
+    // Quelltext von Fahren, Ton, Autos, Tacho, Strecke, Garage unverändert seit 0.8h
+    const dateien = ['js/audio.js', 'js/umgebung.js', 'js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js', 'js/physics.js', 'js/getriebe.js', 'js/fahrprofil.js',
+      'js/autos.js', 'js/car.js', 'js/track.js', 'js/netz.js', 'js/tacho.js', 'js/vergleich.js', 'js/garage.js', 'js/bestzeiten.js', 'js/pacenotes-tempo.js', 'js/abkuerzungen.js', 'tools/schneiden-zeiten.json'];
+    const geaendert = dateien.filter((d) => spawnSync('git', ['diff', '--quiet', 'b796508', '--', d], { cwd: WURZEL }).status !== 0);
+    melde(geaendert.length === 0, `${dateien.length} Dateien (Ton, Physik, Getriebe, Fahrprofil, Autos, Strecke, Tacho, Live-Vergleich, Garage, Bestzeiten, Pace-Notes-Tabelle, Abkürzungen) unverändert seit 0.8h${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
+    // config.js: nur Version, Standardwert touch und der neue Block touch
+    const diff = spawnSync('git', ['diff', '-U0', 'b796508', '--', 'js/config.js'], { cwd: WURZEL, encoding: 'utf8' }).stdout;
+    const zeilen = diff.split('\n').filter((z) => /^[+-]/.test(z) && !/^(\+\+\+|---)/.test(z));
+    const entfernt = zeilen.filter((z) => z.startsWith('-'));
+    melde(entfernt.every((z) => /VERSION/.test(z)), `js/config.js: nur hinzugefügt (Block touch, Standard touch: 'auto') und die Version geändert (${zeilen.length} Zeilen, ${entfernt.length} entfernt)`);
+    // der Rest über m8g-test (Tacho, Fahrmessung, Aussehen, Testfahrer, Ton, Abkürzungen, Strecke, Bildzeit, Ladezeit)
+    const args = ['--nur', 'a,h,i', '--alt', ALT, ...(process.argv.includes('--lang') ? ['--lang'] : [])];
+    const geaenderteDateien = () => new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+    const vorher = geaenderteDateien();
+    const r = werkzeug('m8g-test.mjs', args);
+    fs.writeFileSync(path.join(LOG, 'm8g-test.log'), r.text);
+    const z = r.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
+    for (const x of z) melde(/^\s*ok/.test(x), `m8g-test: ${x.replace(/^\s*(ok|FEHLER)\s+/, '').replace(/0\.8f/g, '0.8h (--alt)').replace(/Bildzeit im Spiel 0\.8g/, 'Bildzeit im Spiel 0.9a')}`);
+    melde(z.length > 0, `m8g-test ${args.join(' ')} ausgeführt (${z.length} Prüfungen, Ausgabe ${LOG}/m8g-test.log)`);
+    const neuGeaendert = [...geaenderteDateien()].filter((d) => !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+    if (neuGeaendert.length) spawnSync('git', ['checkout', '--', ...neuGeaendert], { cwd: WURZEL });
+    info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neuGeaendert.length}`);
   }
 }
 

@@ -42,7 +42,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
   const titelBeruehrungen = new Set(); // Berührungen, die auf dem Titelbildschirm begonnen haben
   const halten = { dpad: 0, r4: 0, a: false, b: false, l: false, r: false, select: false, start: false, notes: false };
   const gezeigt = { dpad: 0, a: 0, b: 0, l: 0, r: 0, select: 0, start: 0, notes: 0 }; // angezeigter Zustand je Knopf
-  const menuePad = { richtung: 0, zeit: 0 };
+  const menuePad = { richtung: 0, zeit: 0 }; // zeit: nächste Wiederholung (Sekunden, Uhr des Browsers)
   let letzteSeite = null;
   const zaehler = { ausgeloest: 0, geloest: 0 }; // (für Tests)
 
@@ -301,15 +301,16 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
   ablauf.beiWechsel((neu, alt) => { if (!(alt === 'countdown' && neu === 'rennen')) alleLos(); });
 
   // --- Jedes Bild (aus der Spielschleife): Seitenwechsel im Menü, D-Pad-Wiederholung im Menü ------------
-  function schritt(dt) {
+  // (Wiederholung nach der Uhr, nicht nach der Spielzeit: auch bei wenigen Bildern pro Sekunde gleich schnell)
+  function schritt() {
     if (!modus.an) return;
     const s = menue.seite;
     if (s !== letzteSeite) { letzteSeite = s; if (zeiger.size) alleLos(); }
     if (!imMenue()) { menuePad.richtung = 0; return; }
-    const r = halten.r4, p = menuePad;
+    const r = halten.r4, p = menuePad, jetzt = performance.now() / 1000;
     let los = false, wiederholt = false;
-    if (r !== p.richtung) { p.richtung = r; p.zeit = T.wiederholenNach; los = r !== 0; }
-    else if (r) { p.zeit -= dt; if (p.zeit <= 0) { p.zeit = T.wiederholenAlle; los = true; wiederholt = true; } }
+    if (r !== p.richtung) { p.richtung = r; p.zeit = jetzt + T.wiederholenNach; los = r !== 0; }
+    else if (r && jetzt >= p.zeit) { p.zeit = jetzt + T.wiederholenAlle; los = true; wiederholt = true; }
     if (!los) return;
     menue.taste(r === 1 ? 'ArrowUp' : r === 5 ? 'ArrowDown' : r === 7 ? 'ArrowLeft' : 'ArrowRight', wiederholt, 'touch');
   }
