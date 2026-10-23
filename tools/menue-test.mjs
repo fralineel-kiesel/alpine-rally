@@ -376,7 +376,7 @@ console.log('(i) Demo-Fahrt und Starten');
   });
   pruefe(d.maxS > d.ziel && d.neu < 30 && d.steh < 3, 'Demo fährt die ganze Etappe und beginnt danach von vorn', `${d.zeit.toFixed(1)} s bis hinter das Ziel, ${d.steh.toFixed(1)} s stehend`);
   pruefe((await rennStand()) === vorher, 'auch danach nichts im Rennstand');
-  const best = await A(p, () => { try { return localStorage.getItem('alpineRally.bestzeiten'); } catch { return 'x'; } });
+  const best = await A(p, () => { try { return localStorage.getItem('alpineRally.bestzeiten2') || localStorage.getItem('alpineRally.bestzeiten'); } catch { return 'x'; } }); // (M8h: neuer Schlüssel)
   pruefe(best === null, 'keine Bestzeit gespeichert');
   // Hauptmenü -> Starten: Auto steht an der Startposition (seit M5b mit der Schnauze an der Startlinie), Zeit 0
   await bilderAbwarten(p, 10);

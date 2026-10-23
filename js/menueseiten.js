@@ -8,7 +8,7 @@ import { t, setzeSprache, aktuelleSprache } from './texte.js';
 import { einstellungen, setze, AKTIONEN, tastenStandard } from './einstellungen.js';
 import { tastenVon, tastenName, knopfName } from './input.js';
 import { zeichneKachel, kachelBreite } from './pacenotesbild.js';
-import { ladeBestzeiten, loescheBestzeiten, formatDatum, hundertstel } from './bestzeiten.js';
+import { ladeBestzeiten, ladeGesamtTop, loescheBestzeiten, formatDatum, hundertstel, BESTZEITEN_ANZAHL, GESAMT_ANZAHL } from './bestzeiten.js';
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
 import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
@@ -139,11 +139,14 @@ export function baueSeiten(api) {
     ],
   };
 
-  // --- Bestzeiten (seit M5b gefüllt): Top 10 der gewählten Etappe als Tabelle Platz | Zeit | Auto | Datum ---
-  // M8c: eine gemeinsame Liste für alle Autos, je Zeile der Kurzname des Autos (alte Einträge ohne Id: QUARTO)
-  // Der gerade eingetragene Lauf ist orange hervorgehoben (nur bis zum nächsten Start, api.markiert()).
+  // --- Bestzeiten (seit M5b gefüllt). M8h: eine Seite mit oben der GESAMT TOP 3 (alle Autos, je Zeile der Kurzname)
+  // und darunter den TOP 10 eines Autos; Links/Rechts (Tastatur, Gamepad, Klick auf die Pfeile) wechselt das Auto.
+  // Der gerade eingetragene Lauf ist orange hervorgehoben (nur bis zum nächsten Start, api.markiert(), Schlüssel Auto + Datum).
+  // Platz: Das Menü ist in jeder Pixelgrösse 320x180, die Tafel höchstens 172 hoch. Damit 3 + 10 Zeilen ohne Rollen passen,
+  // sind die Zeit-Zeilen 8 Pixel hoch (bis 0.8g 9) und die Etappe steht rechts in der Kopfzeile der Gesamtwertung.
   // Wie die Etappenliste: je Etappe eine eigene Liste (weitere Etappen brauchen keinen Umbau).
   const LUECKE = 12;
+  const ZEIT_ZEILE = 8; // Höhe einer Zeit-Zeile (Pixelschrift 7 hoch, 1 Pixel Abstand)
   const spaltenZeiten = () => ({
     a: Math.max(textBreite(t('bestzeiten.platz')), textBreite('10.')),
     b: Math.max(textBreite(t('bestzeiten.zeit')), textBreite('00:00.00')),
@@ -151,40 +154,73 @@ export function baueSeiten(api) {
     d: Math.max(textBreite(t('bestzeiten.auto')), textBreite('PROTO'), ...Object.values(AUTO_MODELLE).map((m) => textBreite(m.kurz))),
   });
   const breiteZeiten = () => { const s = spaltenZeiten(); return s.a + s.b + s.d + s.c + 3 * LUECKE; };
-  const kopfZeiten = {
-    typ: 'info', hoehe: 10, breite: breiteZeiten,
+  // Kopfzeile einer Liste: links die Überschrift (hellblau), rechts optional ein Zusatz (grau, z. B. die Etappe)
+  const kopfZeiten = (links, rechts = null) => ({
+    typ: 'info', hoehe: 10, breite: () => Math.max(breiteZeiten(), textBreite(t(links)) + (rechts ? LUECKE + textBreite(rechts()) : 0)),
+    inhalt: () => (rechts ? `${t(links)} ${rechts()}` : t(links)), kopf: true, // (für Tests)
     zeichne(c, x, y, b) {
-      const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
-      pixelText(c, t('bestzeiten.platz'), x0 + s.a, y + 1, 1, M.farbeGruppe, 'rechts');
-      pixelText(c, t('bestzeiten.zeit'), x0 + s.a + LUECKE, y + 1, 1, M.farbeGruppe);
-      pixelText(c, t('bestzeiten.auto'), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, M.farbeGruppe);
-      pixelText(c, t('bestzeiten.datum'), x0 + s.a + LUECKE + s.b + LUECKE + s.d + LUECKE, y + 1, 1, M.farbeGruppe);
+      const bz = Math.max(breiteZeiten(), textBreite(t(links)) + (rechts ? LUECKE + textBreite(rechts()) : 0));
+      const x0 = x + Math.round((b - bz) / 2);
+      pixelText(c, t(links), x0, y + 1, 1, M.farbeGruppe);
+      if (rechts) pixelText(c, rechts(), x0 + bz, y + 1, 1, M.farbeHinweis, 'rechts');
     },
-  };
-  const zeitZeile = (z, platz, neu) => ({
-    typ: 'info', hoehe: 9, breite: breiteZeiten, neu, // (neu: für Tests)
+  });
+  // Kurzname des Autos in der Gesamtwertung (PROTO = Vergleichsprofil; ohne gültige Id, z. B. Zeiten von vor M8a: --)
+  const autoName = (id) => (id != null && kurzName(id)) || '--';
+  // Eine Zeit: Platz | Zeit | Auto (nur in der Gesamtwertung) | Datum
+  const zeitZeile = (z, platz, neu, mitAuto) => ({
+    typ: 'info', hoehe: ZEIT_ZEILE, breite: breiteZeiten, neu, // (neu: für Tests)
     inhalt: () => `${platz}. ${formatZeit(z.zeit)} ${formatDatum(z.datum, aktuelleSprache())}`,
-    autoKurz: () => kurzName(z.auto), // M8c (für Tests): Kurzname des Autos in dieser Zeile
+    autoKurz: mitAuto ? () => autoName(z.auto) : null, // M8c (für Tests): Kurzname des Autos in dieser Zeile
     zeichne(c, x, y, b) {
       const s = spaltenZeiten(), x0 = x + Math.round((b - breiteZeiten()) / 2);
       const farbe = neu ? RA.farbeNeu : M.farbeText;
-      if (neu) { c.fillStyle = M.farbeAuswahlGrund; c.fillRect(x - 4, y, b + 8, 9); }
+      if (neu) { c.fillStyle = M.farbeAuswahlGrund; c.fillRect(x - 4, y, b + 8, ZEIT_ZEILE); }
       pixelText(c, `${platz}.`, x0 + s.a, y + 1, 1, neu ? farbe : M.farbeWert, 'rechts');
       pixelText(c, formatZeit(z.zeit), x0 + s.a + LUECKE, y + 1, 1, farbe);
-      pixelText(c, kurzName(z.auto), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, neu ? farbe : M.farbeGruppe);
+      if (mitAuto) pixelText(c, autoName(z.auto), x0 + s.a + LUECKE + s.b + LUECKE, y + 1, 1, neu ? farbe : M.farbeGruppe);
       pixelText(c, formatDatum(z.datum, aktuelleSprache()), x0 + s.a + LUECKE + s.b + LUECKE + s.d + LUECKE, y + 1, 1, neu ? farbe : M.farbeHinweis);
     },
   });
+  let bestAuto = 0; // Nummer in AUTOS: wessen Top 10 die Seite zeigt
+  const autoWahlZeile = {
+    typ: 'auswahl', text: 'bestzeiten.auto',
+    optionen: () => AUTOS.map((a, i) => ({ wert: i, text: a.name })),
+    lesen: () => bestAuto, setzen: (w) => { bestAuto = w; },
+  };
   const bestzeitenSeite = {
     id: 'bestzeiten', titel: 'bestzeiten.titel',
+    // beim Öffnen (menue.oeffne liest start einmal): Auto = das eben gefahrene (markierter Lauf), sonst das der Garage.
+    // null = der Zeiger steht auf dem ersten wählbaren Eintrag (AUTO)
+    get start() {
+      const mark = api.markiert ? api.markiert() : null;
+      const i = mark ? AUTOS.findIndex((a) => a.id === mark.auto) : -1;
+      bestAuto = i >= 0 ? i : auswahl.auto;
+      return null;
+    },
     eintraege: () => {
       const etappe = ETAPPEN[auswahl.etappe];
-      const liste = ladeBestzeiten(etappe.id);
+      const auto = AUTOS[bestAuto] || AUTOS[0];
       const mark = api.markiert ? api.markiert() : null;
-      const zeilen = liste.length
-        ? [kopfZeiten, ...liste.map((z, i) => zeitZeile(z, i + 1, !!mark && mark.etappe === etappe.id && mark.datum === z.datum))]
-        : [leer(4), textZeile('bestzeiten.leer', M.farbeHinweis, true), leer(4)];
-      return [textZeile(() => t(etappe.name), M.farbeGruppe, true), ...zeilen, leer(3), ZURUECK];
+      const neu = (z) => !!mark && mark.etappe === etappe.id && mark.datum === z.datum && mark.auto === z.auto;
+      const gesamt = ladeGesamtTop(etappe.id);
+      const liste = ladeBestzeiten(etappe.id, auto.id);
+      // Kürzere Listen werden mit Leerraum auf 3 bzw. 10 Zeilen aufgefüllt: die Tafel bleibt gleich hoch, AUTO und
+      // ZURÜCK springen beim Umschalten nicht (sonst trifft ein zweiter Mausklick daneben)
+      const block = (zeilen, leerText, n) => {
+        const l = zeilen.length ? zeilen : [textZeile(leerText, M.farbeHinweis, true)];
+        const rest = n * ZEIT_ZEILE - l.reduce((h, e) => h + e.hoehe, 0);
+        return rest > 0 ? [...l, leer(rest)] : l;
+      };
+      return [
+        kopfZeiten('bestzeiten.gesamt', () => t(etappe.name)),
+        ...block(gesamt.map((z, i) => zeitZeile(z, i + 1, neu(z), true)), 'bestzeiten.leer', GESAMT_ANZAHL),
+        leer(2),
+        autoWahlZeile,
+        kopfZeiten('bestzeiten.top10'),
+        ...block(liste.map((z, i) => zeitZeile(z, i + 1, neu(z), false)), 'bestzeiten.leerAuto', BESTZEITEN_ANZAHL),
+        leer(2), ZURUECK,
+      ];
     },
   };
 
@@ -498,12 +534,32 @@ export function baueSeiten(api) {
       });
     },
   });
+  // Zeile über der grossen Zeit (M8h): "PLATZ p VON n" (Liste des Autos) und/oder "GESAMT PLATZ 2" (nur 2 und 3, der
+  // Rekord steht im Titel); beide in einer Zeile, damit die Seite nicht höher wird als bis 0.8g
+  const platzZeile = (e) => {
+    const teile = [];
+    if (!e.neueBest && e.platz > 0 && e.bisher) teile.push({ text: () => t('ziel.platz', { p: e.platz, n: e.anzahl }), farbe: M.farbeGruppe });
+    if (!e.gesamtRekord && (e.gesamtPlatz === 2 || e.gesamtPlatz === 3)) teile.push({ text: () => t('ziel.gesamtPlatz', { p: e.gesamtPlatz }), farbe: M.farbeTitel });
+    if (!teile.length) return [];
+    const LUECKE_P = 14;
+    const breite = () => teile.reduce((b, x) => b + textBreite(x.text()), 0) + (teile.length - 1) * LUECKE_P;
+    return [{
+      typ: 'info', hoehe: 10, breite, inhalt: () => teile.map((x) => x.text()).join(' · '), farbe: teile[teile.length - 1].farbe,
+      farben: teile.map((x) => x.farbe), // (für Tests)
+      zeichne(c, x, y, b) {
+        let xl = x + Math.round((b - breite()) / 2);
+        for (const tl of teile) { pixelText(c, tl.text(), xl, y + 1, 1, tl.farbe); xl += textBreite(tl.text()) + LUECKE_P; }
+      },
+    }];
+  };
+  // Titel: Gesamtrekord (M8h) vor neuer Bestzeit des Autos vor ZIEL!; beide blinken (gelb / grün)
+  const feiern = () => { const e = erg(); return !!(e && (e.gesamtRekord || e.neueBest)); };
   const zielSeite = {
     id: 'ziel',
-    titel: () => t(erg() && erg().neueBest ? 'ziel.neueBestzeit' : 'ziel.titel'),
-    // neue Bestzeit: Titel blinkt (gelb / grün); sonst wird die Seite nicht neu gezeichnet
-    get blinkt() { const e = erg(); return !!(e && e.neueBest); },
-    titelFarbe: (blinkAn) => (erg() && erg().neueBest && !blinkAn ? RA.farbeSchneller : M.farbeTitel),
+    titel: () => { const e = erg(); return t(e && e.gesamtRekord ? 'ziel.gesamtRekord' : e && e.neueBest ? 'ziel.neueBestzeit' : 'ziel.titel'); },
+    // neue Bestzeit oder Gesamtrekord: Titel blinkt (gelb / grün); sonst wird die Seite nicht neu gezeichnet
+    get blinkt() { return feiern(); },
+    titelFarbe: (blinkAn) => (feiern() && !blinkAn ? RA.farbeSchneller : M.farbeTitel),
     zurueck: () => false, // Esc / B tun hier nichts (keine Pause im Zielbildschirm, auch kein Ton)
     kurztaste: (code) => { const T = einstellungen.tasten.zurueck; if (code === T[0] || code === T[1]) api.neuStarten(); },
     eintraege: () => {
@@ -513,10 +569,9 @@ export function baueSeiten(api) {
         { typ: 'aktion', text: 'ziel.hauptmenue', aktion: () => api.zumHauptmenue() },
       ];
       if (!e) return knoepfe;
-      const platz = !e.neueBest && e.platz > 0 && e.bisher
-        ? [textZeile(() => t('ziel.platz', { p: e.platz, n: e.anzahl }), M.farbeGruppe, true)] : [];
+      // (vergleichZeile und Zwischenzeiten vergleichen mit e.bisher = Bestzeit dieses Autos vor dem Lauf, M8h)
       return [
-        ...platz,
+        ...platzZeile(e),
         grosseZeit(e.zeit),
         vergleichZeile(e),
         leer(4),

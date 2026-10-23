@@ -493,12 +493,13 @@ if (teil('e')) {
       // Bestzeiten: eine Liste mit allen Kurznamen (alte Einträge ohne Auto, PROTO, alle fünf)
       const B = await import('/js/bestzeiten.js');
       const liste = ['rt4', 'delto', 'escorta', 'l073', 'imprexa', 'prototyp', null].map((auto, i) => ({ zeit: 150 + i * 1.37, datum: '2026-10-21T10:00:00Z', auto }));
+      localStorage.removeItem(A.CONFIG.menue.bestzeitenNameV2); // (M8h: alte Daten = nur der alte Schlüssel, werden übernommen)
       localStorage.setItem(A.CONFIG.menue.bestzeitenName, JSON.stringify({ passstrasse: liste }));
       const best = [];
       for (const sprache of ['de', 'en']) {
         T.setzeSprache(sprache);
         A.menue.oeffne(A.seiten.bestzeiten); await warte(); await warte();
-        const z = A.menue.seite.eintraege().filter((e) => e.autoKurz);
+        const z = A.menue.seite.eintraege().filter((e) => e.autoKurz); // (M8h: Kurznamen stehen in der Gesamt-Top-3)
         best.push({ sprache, kurz: z.map((e) => e.autoKurz()), breite: A.menue.rollen.breite, inhalt: A.menue.rollen.inhalt, gesamt: A.menue.rollen.gesamt, sichtH: A.menue.rollen.sichtH });
         A.menue.schliesse();
       }
@@ -511,7 +512,7 @@ if (teil('e')) {
         `Garage ${x.sprache} Auflösung ${x.aufl}: Einträge ${x.gesamt} von ${x.sichtH} Pixeln (ohne Rollen), Tafel ${x.hoehe} Pixel hoch (höchstens 176), Daten ${x.daten} / Hinweis ${x.hinweis} Pixel breit (Platz ${r.tafel - 2 * r.innen}), Namen ${x.namen} (Spalte ${r.spalte})`);
     }
     for (const b of r.best) {
-      melde(b.kurz.join() === 'QUARTO,DELTO,ESCORTA,073,IMPREXA,PROTO,QUARTO' && b.inhalt <= b.breite && b.gesamt <= b.sichtH,
+      melde(b.kurz.join() === 'QUARTO,DELTO,ESCORTA' && b.inhalt <= b.breite && b.gesamt <= b.sichtH, // (M8h: Gesamt-Top-3; alle Kurznamen prüft m8h-test)
         `Bestzeiten ${b.sprache}: Kurznamen ${b.kurz.join(', ')}; Tabelle ${b.inhalt} Pixel breit (Tafel ${b.breite}), ohne Rollen`);
     }
     melde(s.fehler.length === 0, `Layout: Konsole ohne Fehler (${s.fehler.length})`);

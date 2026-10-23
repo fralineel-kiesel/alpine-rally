@@ -541,7 +541,7 @@ console.log('[6.1 g] Meldung mit Tafel, Zwischenzeit grün / rot / gelb');
   await A(p, async () => { (await import('/js/einstellungen.js')).setze('vergleichMit', 'best'); });
   // 6. alte Bestzeit ohne Fahrspur (wie aus M5b): Zwischenzeiten eines Laufs
   const zz = await A(p, async () => { const r = await window.__T.fahre('flott'); const r2 = await window.__T.fahre('flott', { gas: 0.9 }); return { schnell: r, langsam: r2 }; });
-  const alteBest = (e) => A(p, (e) => { localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: [{ zeit: e.zeit, cps: e.cps, datum: '2026-10-16T12:00:00.000Z' }] })); }, e);
+  const alteBest = (e) => A(p, (e) => { localStorage.removeItem('alpineRally.bestzeiten2'); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: [{ zeit: e.zeit, cps: e.cps, datum: '2026-10-16T12:00:00.000Z' }] })); }, e);
   await alteBest(zz.langsam);
   const m6 = await lauf({ bisS: CP1 });
   const art6 = await A(p, () => window.__alpineRally.vergleich.ref.art);
@@ -586,7 +586,7 @@ let flott = null; // Ergebnis der ersten Fahrt (für Teil e)
     const A = window.__alpineRally, V = A.vergleich, S = A.strecke;
     const schritte = []; // [maxS, zeit] nach jedem Schritt mit laufender Zeit
     const fahrt = await window.__T.fahre('flott', { ganz: true, mit: () => schritte.push([V.spur.maxS, A.rennen.zeit, A.rennen.zustand]) });
-    const best = JSON.parse(localStorage.getItem('alpineRally.bestzeiten')).passstrasse[0];
+    const best = (await import('/js/bestzeiten.js')).ladeBestzeiten('passstrasse')[0]; // (M8h: neuer Speicher)
     const letzter = JSON.parse(localStorage.getItem('alpineRally.letzterLauf')).passstrasse;
     // echte Zeit beim Erreichen jeder Stelle: Schritt, in dem maxS sie zum ersten Mal erreicht (und eingepasst)
     const D = V.abstand, abw = [], abwSchritt = [];
@@ -617,11 +617,11 @@ let flott = null; // Ergebnis der ersten Fahrt (für Teil e)
   const kb = await A(p, async () => {
     const B = await import('/js/bestzeiten.js');
     const best = B.ladeBestzeiten('passstrasse')[0];
-    const sicher = localStorage.getItem('alpineRally.bestzeiten');
+    const sicher = localStorage.getItem('alpineRally.bestzeiten2'); // (M8h: neuer Schlüssel, eine Liste je Auto)
     for (let i = 1; i < 10; i++) B.speichereBestzeit('passstrasse', { ...best, zeit: best.zeit + i * 1.37, spur: best.spur.map((v) => Math.round(v * (1 + i * 0.009) * 100) / 100) });
-    const roh = localStorage.getItem('alpineRally.bestzeiten');
-    const n = JSON.parse(roh).passstrasse.length;
-    localStorage.setItem('alpineRally.bestzeiten', sicher);
+    const roh = localStorage.getItem('alpineRally.bestzeiten2');
+    const n = Object.values(JSON.parse(roh).passstrasse).flat().length;
+    localStorage.setItem('alpineRally.bestzeiten2', sicher);
     return { zeichen: roh.length, n };
   });
   pruefe(kb.n === 10 && kb.zeichen < 200000, `Speicherbedarf: Bestzeiten-Liste mit 10 Spuren = ${(kb.zeichen / 1024).toFixed(1)} KB Text (Browser speichert 2 Byte je Zeichen: ca. ${(kb.zeichen * 2 / 1024).toFixed(0)} KB)`);
@@ -746,7 +746,7 @@ console.log('[M6 e] Keine Referenz, alte Bestzeiten ohne Spur, Bestzeit / Letzte
   pruefe(e2.n === 0 && e2.updates === 0, '"Letzter Lauf" gewählt, aber noch keiner: nichts angezeigt');
   // andere Etappe (gibt es noch nicht): Bestzeit einer anderen Etappe zählt nicht
   const e3 = await A(p, async () => {
-    localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ andere: [{ zeit: 150, cps: [30, 90, 130], datum: null }] }));
+    localStorage.removeItem('alpineRally.bestzeiten2'); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ andere: [{ zeit: 150, cps: [30, 90, 130], datum: null }] }));
     window.__alpineRally.start({ countdown: false });
     return window.__alpineRally.vergleich.ref.n;
   });
@@ -754,7 +754,7 @@ console.log('[M6 e] Keine Referenz, alte Bestzeiten ohne Spur, Bestzeit / Letzte
   // alte Bestzeit ohne Spur (wie aus M5b): Zeit und Zwischenzeiten der flotten Fahrt
   const e4 = await A(p, async (fl) => {
     const A = window.__alpineRally;
-    localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: [{ zeit: fl.zeit, cps: fl.cps, datum: '2026-10-16T12:00:00.000Z' }] }));
+    localStorage.removeItem('alpineRally.bestzeiten2'); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: [{ zeit: fl.zeit, cps: fl.cps, datum: '2026-10-16T12:00:00.000Z' }] }));
     const cpS = A.checkpoints.map((c) => c.s);
     const amCp = [];
     let naechster = 0;
@@ -778,7 +778,7 @@ console.log('[M6 e] Keine Referenz, alte Bestzeiten ohne Spur, Bestzeit / Letzte
   // Bestzeit (Platz 1) gegen letzten Lauf: Einstellung wählt die Referenz
   const e5 = await A(p, async () => {
     const A = window.__alpineRally, E = await import('/js/einstellungen.js');
-    localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: [{ zeit: 160, cps: [30, 90, 140], datum: null }, { zeit: 150, cps: [28, 85, 132], datum: null }] }));
+    localStorage.removeItem('alpineRally.bestzeiten2'); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: [{ zeit: 160, cps: [30, 90, 140], datum: null }, { zeit: 150, cps: [28, 85, 132], datum: null }] }));
     localStorage.setItem('alpineRally.letzterLauf', JSON.stringify({ passstrasse: { zeit: 175, cps: [33, 99, 152], spur: null, datum: null } }));
     const ende = () => A.vergleich.referenzBei(A.strecke.zielS + 10);
     E.setze('vergleichMit', 'best');

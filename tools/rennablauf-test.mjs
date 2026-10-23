@@ -71,7 +71,13 @@ async function lade(opt = {}) {
       zielZeilen() {
         return A.seiten.ziel.eintraege().map((e) => ({ typ: e.typ, text: e.inhalt ? e.inhalt() : e.text, farbe: e.farbe || null }));
       },
-      speicher() { try { return JSON.parse(localStorage.getItem('alpineRally.bestzeiten') || 'null'); } catch { return 'blockiert'; } },
+      // M8h: Bestzeiten liegen je Auto unter "alpineRally.bestzeiten2"; hier wie früher als eine Liste je Etappe (alle Autos)
+      speicher() {
+        try {
+          const d = JSON.parse(localStorage.getItem('alpineRally.bestzeiten2') || 'null');
+          return d && Object.fromEntries(Object.entries(d).map(([k, je]) => [k, Object.values(je).flat()]));
+        } catch { return 'blockiert'; }
+      },
     };
   }, fahrerCode);
   return spiel;
@@ -264,7 +270,7 @@ console.log('(d) Speichern, (e) Vergleich');
   // (d) direkt mit bestzeiten.js
   const d = await A(p, async () => {
     const B = await import('/js/bestzeiten.js');
-    localStorage.removeItem('alpineRally.bestzeiten');
+    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.bestzeiten2'); // (M8h: beide Schlüssel)
     const cps = (z) => [z * 0.2, z * 0.5, z * 0.9];
     const plaetze = [];
     for (const z of [170, 160, 180, 165, 175, 150, 185, 155, 190, 162]) plaetze.push(B.speichereBestzeit('passstrasse', { zeit: z, cps: cps(z), auto: 'rt4', aufpralle: 1, resets: 2, hoechstTempo: 40 }).platz);
@@ -276,7 +282,7 @@ console.log('(d) Speichern, (e) Vergleich');
     // gleiche Zeit wie Platz 3: kommt dahinter (die ältere steht vorn)
     const gleich = B.speichereBestzeit('passstrasse', { zeit: 158.004, cps: cps(158), auto: 'rt4', aufpralle: 0, resets: 0, hoechstTempo: 41 });
     const liste = B.ladeBestzeiten('passstrasse');
-    const roh = JSON.parse(localStorage.getItem('alpineRally.bestzeiten')).passstrasse;
+    const roh = JSON.parse(localStorage.getItem('alpineRally.bestzeiten2')).passstrasse.rt4; // (M8h: Liste des Autos)
     return { plaetze, voll, elf, nachElf, langsam, nachLangsam, gleich, liste, rohAnzahl: roh.length, ersterRoh: roh[0] };
   });
   const sortiert = (l) => l.every((z, i) => i === 0 || l[i - 1] <= z);
@@ -291,7 +297,7 @@ console.log('(d) Speichern, (e) Vergleich');
   // (d)+(e) über echte Zielfahrten: neue Bestzeit nur bei echter Verbesserung, Vergleich mit der Bestzeit vor dem Lauf
   const e = await A(p, () => {
     const A = window.__alpineRally, T = window.__T;
-    localStorage.removeItem('alpineRally.bestzeiten');
+    localStorage.removeItem('alpineRally.bestzeiten'); localStorage.removeItem('alpineRally.bestzeiten2');
     const lauf = (zeit, cps) => { const erg = T.insZiel(zeit, cps); return { erg: JSON.parse(JSON.stringify(erg)), zeilen: T.zielZeilen(), titel: A.seiten.ziel.titel() }; };
     return {
       erst: lauf(160.5, [33.2, 92.1, 141.0]),
@@ -310,15 +316,17 @@ console.log('(d) Speichern, (e) Vergleich');
   const dl = diff(e.langsamer);
   pruefe(dl && dl.text === '+1.23' && dl.farbe === e.C.farbeLangsamer && !e.langsamer.erg.neueBest && e.langsamer.titel === 'ZIEL!',
     '(e) langsamer: rot "+1.23", keine neue Bestzeit', dl && dl.text);
-  pruefe(e.langsamer.zeilen.some((z) => z.text === 'PLATZ 2 VON 2'), '(d) Platzangabe "PLATZ 2 VON 2"');
+  // (M8h: in derselben Zeile steht "· GESAMT PLATZ 2", hier gibt es nur ein Auto)
+  pruefe(e.langsamer.zeilen.some((z) => String(z.text).startsWith('PLATZ 2 VON 2')), '(d) Platzangabe "PLATZ 2 VON 2"');
   const cl = cpZ(e.langsamer);
   pruefe(cl[0].text.endsWith('-0.20') && cl[0].farbe === e.C.farbeSchneller && cl[1].text.endsWith('+1.23') && cl[1].farbe === e.C.farbeLangsamer
     && cl[2].text.endsWith(' 0.00') && cl[2].farbe === e.C.farbeGleich, '(e) Zwischenzeit-Unterschiede mit Farbe (-0.20 grün, +1.23 rot, 0.00)', cl.map((z) => z.text).join(' | '));
   const dg = diff(e.gleich);
   pruefe(dg && dg.text === '0.00' && !e.gleich.erg.neueBest && e.gleich.erg.platz === 2, '(d) gleich schnell: keine neue Bestzeit, hinter der älteren Zeit', `${dg && dg.text}, Platz ${e.gleich.erg.platz}`);
   const ds = diff(e.schneller);
-  pruefe(ds && ds.text === '-0.80' && ds.farbe === e.C.farbeSchneller && e.schneller.erg.neueBest && e.schneller.titel === 'NEUE BESTZEIT!' && e.schneller.erg.platz === 1
-    && !e.schneller.zeilen.some((z) => /^PLATZ/.test(z.text)), '(d)(e) schneller: grün "-0.80", NEUE BESTZEIT!, Platz 1 (statt Platzangabe)', ds && ds.text);
+  // (M8h: die schnellste Zeit überhaupt heisst GESAMTREKORD!, das geht NEUE BESTZEIT! vor; hier gibt es nur ein Auto)
+  pruefe(ds && ds.text === '-0.80' && ds.farbe === e.C.farbeSchneller && e.schneller.erg.neueBest && e.schneller.titel === 'GESAMTREKORD!' && e.schneller.erg.platz === 1
+    && !e.schneller.zeilen.some((z) => /^PLATZ/.test(z.text)), '(d)(e) schneller: grün "-0.80", GESAMTREKORD! (neue Bestzeit), Platz 1 (statt Platzangabe)', ds && ds.text);
   pruefe(e.schneller.erg.bisher.zeit === 160.5, '(e) verglichen wird mit der Bestzeit VOR diesem Lauf', `bisher ${e.schneller.erg.bisher.zeit}`);
   // blinkender Titel nur bei neuer Bestzeit
   const blink = await A(p, () => { const z = window.__alpineRally.seiten.ziel; return [z.blinkt, z.titelFarbe(true), z.titelFarbe(false)]; });
@@ -364,8 +372,9 @@ console.log('(f) ohne Browser-Speicher');
   await zu(p, 3); await taste(p, 'Enter'); await zu(p, 2); await taste(p, 'Enter'); // Hauptmenü (JA)
   await bilderAbwarten(p, 3);
   await zu(p, 3); await taste(p, 'Enter');
-  const z = await A(p, () => { const se = window.__alpineRally.menue.seite; return se.eintraege().filter((e) => e.inhalt).map((e) => e.inhalt()); });
-  pruefe((await seite(p)) === 'bestzeiten' && z.length === 3, 'BESTZEITEN-Seite ohne Speicher: zeigt die Zeiten dieser Sitzung', z.slice(1).join(' | '));
+  // (M8h: Zeit-Zeilen der Gesamt-Top-3)
+  const z = await A(p, () => { const se = window.__alpineRally.menue.seite; return se.eintraege().filter((e) => e.autoKurz).map((e) => e.inhalt()); });
+  pruefe((await seite(p)) === 'bestzeiten' && z.length === 2, 'BESTZEITEN-Seite ohne Speicher: zeigt die Zeiten dieser Sitzung', z.join(' | '));
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));
   await spiel.schliessen();
 }
@@ -548,32 +557,37 @@ console.log('(i) BESTZEITEN-Seite und Löschen, (k) altes Format');
   await A(p, (alt) => localStorage.setItem('alpineRally.bestzeiten', JSON.stringify(alt)), alt);
   await taste(p, 'Enter');
   await zu(p, 3); await taste(p, 'Enter');
-  const zeilen = () => A(p, () => window.__alpineRally.menue.seite.eintraege().filter((e) => e.inhalt).map((e) => ({ t: e.inhalt(), neu: !!e.neu })));
+  // (M8h: Zeit-Zeilen der Gesamt-Top-3; Zeiten ohne Auto-Id stehen nur dort, nicht in den Listen je Auto)
+  const zeilen = () => A(p, () => window.__alpineRally.menue.seite.eintraege().filter((e) => e.autoKurz).map((e) => ({ t: e.inhalt(), neu: !!e.neu })));
   const z1 = await zeilen();
-  pruefe((await seite(p)) === 'bestzeiten' && z1.length === 3 && z1[1].t === '1. 02:45.50 02.10.26' && z1[2].t === '2. 02:50.25 01.10.26',
-    '(k) alte Bestzeiten werden gelesen und sortiert angezeigt (Platz, Zeit, Datum)', z1.slice(1).map((z) => z.t).join(' | '));
+  pruefe((await seite(p)) === 'bestzeiten' && z1.length === 2 && z1[0].t === '1. 02:45.50 02.10.26' && z1[1].t === '2. 02:50.25 01.10.26',
+    '(k) alte Bestzeiten werden gelesen und sortiert angezeigt (Platz, Zeit, Datum)', z1.map((z) => z.t).join(' | '));
   // neuer Lauf dazwischen: verglichen mit der alten Bestzeit, danach hervorgehoben
   await taste(p, 'Escape');
   const r = await A(p, () => { const e = window.__T.insZiel(168, [34.5, 96, 149]); window.__T.bisZielschirm(); window.__alpineRally.anhalten = false; return JSON.parse(JSON.stringify(e)); });
-  pruefe(r.platz === 2 && r.bisher.zeit === 165.5 && r.bisher.aufpralle === null && !r.neueBest, '(k) neuer Lauf wird neben alten Einträgen eingetragen und verglichen', `Platz ${r.platz}`);
+  // (M8h: alte Zeiten ohne Auto-Id zählen nur in der Gesamtwertung. Mit dem Prototyp (Standard dieses Tests) liegt der Lauf
+  //  im selben Behälter wie sie; mit --auto rt4/delto/... ist es die erste Zeit dieses Autos, Gesamtplatz 2)
+  pruefe(r.auto === 'prototyp' ? r.platz === 2 && r.bisher.zeit === 165.5 && r.bisher.aufpralle === null && !r.neueBest
+    : r.platz === 1 && r.bisher === null && r.gesamtPlatz === 2 && r.gesamtBisher.zeit === 165.5 && !r.neueBest && !r.gesamtRekord,
+  '(k) neuer Lauf wird neben alten Einträgen eingetragen und verglichen', `Auto ${r.auto}, Platz ${r.platz}, Gesamtplatz ${r.gesamtPlatz}`);
   await bilderAbwarten(p, 4);
   await zu(p, await nrVon(p, 'ziel.hauptmenue')); await taste(p, 'Enter'); await bilderAbwarten(p, 2);
   await zu(p, 3); await taste(p, 'Enter');
   const z2 = await zeilen();
   const en = await A(p, async () => {
     const T = await import('/js/texte.js'); T.setzeSprache('en');
-    const z = window.__alpineRally.menue.seite.eintraege().filter((e) => e.inhalt).map((e) => e.inhalt());
+    const z = window.__alpineRally.menue.seite.eintraege().filter((e) => e.autoKurz).map((e) => e.inhalt());
     T.setzeSprache('de');
     return z;
   });
-  pruefe(z2.length === 4 && z2[2].neu && !z2[1].neu && !z2[3].neu && z2[2].t.startsWith('2. 02:48.00'), '(i) BESTZEITEN zeigt die Zeilen, der neue Lauf ist hervorgehoben', z2.slice(1).map((z) => `${z.t}${z.neu ? ' (neu)' : ''}`).join(' | '));
-  pruefe(/^1\. 02:45\.50 2026-10-02$/.test(en[1]), '(i) Datum auf Englisch 2026-10-02', en[1]);
+  pruefe(z2.length === 3 && z2[1].neu && !z2[0].neu && !z2[2].neu && z2[1].t.startsWith('2. 02:48.00'), '(i) BESTZEITEN zeigt die Zeilen, der neue Lauf ist hervorgehoben', z2.map((z) => `${z.t}${z.neu ? ' (neu)' : ''}`).join(' | '));
+  pruefe(/^1\. 02:45\.50 2026-10-02$/.test(en[0]), '(i) Datum auf Englisch 2026-10-02', en[0]);
   // nach einem neuen Start ist nichts mehr hervorgehoben
   await taste(p, 'Escape'); await zu(p, 0); await taste(p, 'Enter'); await bilderAbwarten(p, 2);
   await taste(p, 'Escape'); await bilderAbwarten(p, 2); await zu(p, 3); await taste(p, 'Enter'); await zu(p, 2); await taste(p, 'Enter'); await bilderAbwarten(p, 2);
   await zu(p, 3); await taste(p, 'Enter');
   const z3 = await zeilen();
-  pruefe(z3.length === 4 && !z3.some((z) => z.neu), '(i) nach dem nächsten Start ist nichts mehr hervorgehoben');
+  pruefe(z3.length === 3 && !z3.some((z) => z.neu), '(i) nach dem nächsten Start ist nichts mehr hervorgehoben');
   await taste(p, 'Escape');
   // Löschen: Einstellungen -> DATEN -> BESTZEITEN LÖSCHEN -> SICHER? (NEIN vorgewählt)
   await zu(p, 4); await taste(p, 'Enter');
@@ -586,7 +600,7 @@ console.log('(i) BESTZEITEN-Seite und Löschen, (k) altes Format');
   await zu(p, 2); await taste(p, 'Enter'); // JA
   await bilderAbwarten(p, 3);
   const nachJa = { s: await seite(p), sp: await A(p, () => window.__T.speicher()) };
-  pruefe(gruppe && frage.s === 'frage' && frage.w === 3 && frage.text === 'ALLE BESTZEITEN WERDEN GELÖSCHT.', '(i) Einstellungen: Gruppe DATEN, Rückfrage SICHER? mit NEIN vorgewählt', frage.text);
+  pruefe(gruppe && frage.s === 'frage' && frage.w === 3 && frage.text === 'ALLE BESTZEITEN ALLER AUTOS WERDEN GELÖSCHT.', '(i) Einstellungen: Gruppe DATEN, Rückfrage SICHER? mit NEIN vorgewählt', frage.text);
   pruefe(nachNein.s === 'einstellungen' && nachNein.n === 3, '(i) NEIN löscht nichts');
   pruefe(nachJa.s === 'einstellungen' && nachJa.sp === null, '(i) JA löscht alle Bestzeiten (alle Etappen)');
   await taste(p, 'Escape'); await zu(p, 3); await taste(p, 'Enter');

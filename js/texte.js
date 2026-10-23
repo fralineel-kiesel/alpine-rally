@@ -83,6 +83,9 @@ export const TEXTE = {
   'bestzeiten.zeit': { de: 'ZEIT', en: 'TIME' },
   'bestzeiten.datum': { de: 'DATUM', en: 'DATE' },
   'bestzeiten.auto': { de: 'AUTO', en: 'CAR' }, // M8c: Kurzname des Autos (gemeinsame Liste für alle Autos)
+  'bestzeiten.gesamt': { de: 'GESAMT TOP 3', en: 'OVERALL TOP 3' }, // M8h: die schnellsten 3 aller Autos
+  'bestzeiten.top10': { de: 'TOP 10', en: 'TOP 10' },                // M8h: die Liste des gewählten Autos
+  'bestzeiten.leerAuto': { de: 'NOCH KEINE ZEITEN MIT DIESEM AUTO', en: 'NO TIMES WITH THIS CAR YET' },
 
   // --- Einstellungen ---
   'einst.titel': { de: 'EINSTELLUNGEN', en: 'SETTINGS' },
@@ -123,7 +126,7 @@ export const TEXTE = {
   'einst.vergleich': { de: 'LIVE-VERGLEICH', en: 'LIVE DELTA' },
   'einst.vergleichHinweis': { de: 'GRÜN = SCHNELLER, ROT = LANGSAMER', en: 'GREEN = FASTER, RED = SLOWER' },
   'einst.vergleichMit': { de: 'VERGLEICH MIT', en: 'COMPARE WITH' },
-  'wert.bestzeit': { de: 'BESTZEIT', en: 'BEST TIME' },
+  'wert.bestzeit': { de: 'BESTZEIT AUTO', en: 'CAR BEST' }, // M8h: Bestzeit des gefahrenen Autos
   'wert.letzterLauf': { de: 'LETZTER LAUF', en: 'LAST RUN' },
   // M5b: Gruppe DATEN
   'einst.daten': { de: 'DATEN', en: 'DATA' },
@@ -231,11 +234,13 @@ export const TEXTE = {
   'frage.text': { de: 'DIE FAHRT WIRD ABGEBROCHEN.', en: 'THE CURRENT RUN WILL BE LOST.' },
   'frage.ja': { de: 'JA', en: 'YES' },
   'frage.nein': { de: 'NEIN', en: 'NO' },
-  'frage.loeschen': { de: 'ALLE BESTZEITEN WERDEN GELÖSCHT.', en: 'ALL BEST TIMES WILL BE DELETED.' },
+  'frage.loeschen': { de: 'ALLE BESTZEITEN ALLER AUTOS WERDEN GELÖSCHT.', en: 'ALL BEST TIMES OF ALL CARS WILL BE DELETED.' }, // (M8h: aller Autos)
 
   // --- Zielbildschirm (M5b) ---
   'ziel.titel': { de: 'ZIEL!', en: 'FINISH!' },
   'ziel.neueBestzeit': { de: 'NEUE BESTZEIT!', en: 'NEW BEST TIME!' },
+  'ziel.gesamtRekord': { de: 'GESAMTREKORD!', en: 'OVERALL RECORD!' }, // M8h: schnellste Zeit aller Autos
+  'ziel.gesamtPlatz': { de: 'GESAMT PLATZ {p}', en: 'OVERALL RANK {p}' }, // M8h: Platz 2 oder 3 der Gesamtwertung
   'ziel.platz': { de: 'PLATZ {p} VON {n}', en: 'RANK {p} OF {n}' },
   'ziel.ersteZeit': { de: 'ERSTE ZEIT', en: 'FIRST TIME' },
   'ziel.cp': { de: 'CP {n}', en: 'CP {n}' },
