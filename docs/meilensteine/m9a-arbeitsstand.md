@@ -1,4 +1,4 @@
-# M9a – Arbeitsstand (Faden für neue Sitzungen)
+# M9a – Arbeitsstand (Faden für neue Sitzungen) – FERTIG
 
 Ziel: Touch-Steuerung fürs Handy (Hoch- und Querformat), D-Pad/A/B/L/R/START/SELECT/NOTES im Pixel-Look, Menü mit
 D-Pad und Antippen, Web-App-Modus. Fahren, Ton, Physik, Autos, Tachos, Bestzeiten unverändert. Desktop ohne Touch wie 0.8h.
@@ -16,7 +16,10 @@ Branch `claude/busy-turing-9e4fou`, ein Commit je Teil. Vergleichsstand 0.8h: `g
       wählen gemischt), Hinweise Garage/Pace-Notes, Beschriftung aus texte.js. Tests (i)-(l) grün, Desktop pixelgleich.
 - [x] D `manifest.webmanifest` (relativ, fullscreen > standalone), Icons aus `tools/icons-bauen.mjs` (eigenes Pixel-Motiv),
       Meta-Zeilen in index.html, kein Service Worker. (m) (n) grün, Ladezeit +28 ms; iPhone-VOLLBILD nur nachgestellt.
-- [ ] E Bericht, Bilder, Version 0.9a, volle Regression einmal
+- [x] E Voller Lauf `--alt /tmp/alt08h --lang` (ca. 4 h): 158 ok, 7 rot – bekannt (Credits seit 0.8e, Kurve 1028 m seit
+      0.8g, Garagen-Speicher-Wackler auch in 0.8h), (l) Messung zu früh (korrigiert, allein grün), overlay-test echter
+      M9a-Fehler (steuerung.eintraege wieder Liste, alte Prüfung um die SELECT-Zeile ergänzt, einzeln grün). Bilder
+      `screenshots/m9a/`, Bericht `docs/meilensteine/m9a.md`, Version 0.9a, STAND/KONZEPT nachgeführt.
 
 Werte (Richtwerte, config.js): Rand 24, D-Pad 146, A/B 72, L/R 80x40, klein 36, Treffer ≥ 44, Querformat Faktor 0.9,
 Seitenzone ≥ 130 und ≤ 22 % der Breite; kleine Knöpfe im Querformat unter dem Bild, wenn das Bild dadurch nicht kleiner wird.

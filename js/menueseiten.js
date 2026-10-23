@@ -455,7 +455,7 @@ export function baueSeiten(api) {
   const steuerungTouch = [...touchAbschnitt, leer(4), symboleKnopf, leer(6), ...tastaturAbschnitt, leer(4), ZURUECK];
   const steuerungSeite = {
     id: 'steuerung', titel: 'steuerung.titel', rollenWahl: true,
-    eintraege: () => (touchAn() ? steuerungTouch : steuerungDesktop),
+    get eintraege() { return touchAn() ? steuerungTouch : steuerungDesktop; }, // (eine Liste, wie bis 0.8h)
   };
 
   // --- Credits ---

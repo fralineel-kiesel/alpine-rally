@@ -628,7 +628,7 @@ if (teil('k')) {
       E.setze('sprache', sp); T.setzeSprache(sp);
       const warte = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       A.menue.zeige(A.seiten.haupt, true); A.menue.oeffne(A.seiten.steuerung, true); await warte();
-      const l = A.seiten.steuerung.eintraege();
+      const l = A.seiten.steuerung.eintraege;
       const m0 = { ...A.menue.rollen };
       const innen = m0.breite - 2 * 7;
       const zuBreit = l.filter((e) => e.typ === 'info' && (typeof e.breite === 'function' ? e.breite() : e.breite) > innen).map((e) => (e.inhalt ? e.inhalt() : '?'));
@@ -673,10 +673,16 @@ async function desktopAbdruck(wurzel) {
   const s = await starteSpiel({ wurzel, breite: 640, hoehe: 360 });
   // Lage der Bühne bei verschiedenen Fenstergrössen
   for (const [W, H] of [[640, 360], [1280, 720], [1000, 700], [800, 900], [1920, 1080], [500, 1000], [1366, 768]]) {
+    if (erg.geladen) await s.page.evaluate(() => { window.__resize = 0; window.addEventListener('resize', () => { window.__resize++; }); });
     await s.page.setViewportSize({ width: W, height: H });
+    // (im langsamen Test-Browser kommt das resize-Ereignis teils erst nach Hunderten Millisekunden: darauf warten)
+    if (erg.geladen) await s.page.waitForFunction(() => window.__resize > 0, null, { timeout: 30000 }).catch(() => {});
     if (!erg.geladen) { await s.page.goto(`${s.url}/index.html`); await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 }); erg.geladen = true; }
-    await warte(150);
-    erg.buehne[`${W}x${H}`] = await s.page.evaluate(() => { const b = document.getElementById('buehne').getBoundingClientRect(); return `${b.left},${b.top},${b.width},${b.height}`; });
+    // warten, bis die Seite die neue Grösse übernommen hat und die Lage zweimal hintereinander gleich ist
+    const lage = () => s.page.evaluate(() => { const b = document.getElementById('buehne').getBoundingClientRect(); return `${b.left},${b.top},${b.width},${b.height},${window.innerWidth}`; });
+    let vorher = '';
+    for (let i = 0; i < 50; i++) { await warte(200); const l = await lage(); if (l === vorher && l.endsWith(`,${W}`)) break; vorher = l; }
+    erg.buehne[`${W}x${H}`] = vorher;
   }
   await s.page.setViewportSize({ width: 640, height: 360 });
   // Menüseiten direkt auf eine eigene Leinwand gemalt (jede Seite 25 Mal über 1.5 s: Blinken ergibt eine Menge von Bildern)
@@ -687,6 +693,7 @@ async function desktopAbdruck(wurzel) {
     const c = document.createElement('canvas'); c.width = 320; c.height = 180;
     const x = c.getContext('2d');
     const out = {};
+    let bilder = [];
     for (const n of ['titel', 'haupt', 'auto', 'etappe', 'bestzeiten', 'symbole', 'credits', 'pause', 'frage', 'tasten']) {
       A.menue.zeige(A.seiten[n], true);
       const set = new Set();
@@ -694,10 +701,10 @@ async function desktopAbdruck(wurzel) {
         await new Promise((r) => setTimeout(r, 60));
         x.clearRect(0, 0, 320, 180); A.menue.zeichne(x, 0, 1);
         const d = x.getImageData(0, 0, 320, 180).data;
-        let h = 7; for (let i = 0; i < d.length; i++) h = (h * 31 + d[i] * (i % 7 + 1)) % 1000000007;
-        set.add(h);
+        let h = 7, deckend = 0; for (let i = 0; i < d.length; i++) { h = (h * 31 + d[i] * (i % 7 + 1)) % 1000000007; if (i % 4 === 3 && d[i]) deckend++; }
+        if (!set.has(h)) { set.add(h); bilder.push({ h, deckend, d: Array.from(d).join(',') }); }
       }
-      out[n] = [...set].sort();
+      out[n] = bilder.sort((a, b) => a.deckend - b.deckend); bilder = [];
     }
     A.menue.zeige(A.seiten.titel, true);
     return out;
@@ -723,9 +730,19 @@ if (teil('l')) {
     const [a, b] = [await desktopAbdruck(ALT), await desktopAbdruck(WURZEL)];
     const lage = Object.keys(a.buehne).filter((k) => a.buehne[k] !== b.buehne[k]);
     melde(lage.length === 0, `Lage und Grösse der Bühne in ${Object.keys(a.buehne).length} Fenstergrössen wie 0.8h${lage.length ? `; anders: ${lage.join(', ')}` : ''}`);
+    // Titel und Credits zeigen die Versionsnummer (0.8H -> 0.9A): dort darf nur diese eine Textzeile anders sein
+    const VERSION_SEITEN = ['titel', 'credits'];
     for (const n of Object.keys(a.seiten)) {
-      const gleich = JSON.stringify(a.seiten[n]) === JSON.stringify(b.seiten[n]);
-      melde(gleich, `Menüseite ${n}: pixelgleich wie 0.8h (${b.seiten[n].length} Bild${b.seiten[n].length > 1 ? 'er (Blinken)' : ''})`);
+      const A = a.seiten[n], Bn = b.seiten[n];
+      const gleich = A.length === Bn.length && A.every((x, i) => x.h === Bn[i].h);
+      if (gleich || !VERSION_SEITEN.includes(n)) { melde(gleich, `Menüseite ${n}: pixelgleich wie 0.8h (${Bn.length} Bild${Bn.length > 1 ? 'er (Blinken)' : ''})`); continue; }
+      let box = null;
+      const ok = A.length === Bn.length && A.every((x, i) => {
+        const p = x.d.split(',').map(Number), q = Bn[i].d.split(',').map(Number);
+        for (let k = 0; k < p.length; k++) if (p[k] !== q[k]) { const px = (k >> 2) % 320, py = Math.floor((k >> 2) / 320); box = box ? [Math.min(box[0], px), Math.min(box[1], py), Math.max(box[2], px), Math.max(box[3], py)] : [px, py, px, py]; }
+        return true;
+      }) && box && box[3] - box[1] <= 8;
+      melde(ok, `Menüseite ${n}: wie 0.8h bis auf die Versionszeile (anders nur in x ${box ? box[0] : '-'}..${box ? box[2] : '-'}, y ${box ? box[1] : '-'}..${box ? box[3] : '-'}, ${Bn.length} Bild${Bn.length > 1 ? 'er' : ''})`);
     }
     melde(a.hud === b.hud, 'HUD vor dem Start (Hilfezeilen, Zeit, Tacho, Minimap) pixelgleich wie 0.8h');
     melde(a.ganz === b.ganz, `ganzes Bild vor dem Start (3D und HUD, Bildschirmfoto 640x360) gleich wie 0.8h (${a.ganz} / ${b.ganz})`);
