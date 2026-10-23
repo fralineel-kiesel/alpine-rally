@@ -16,6 +16,8 @@
 //               zeichne?(ctx, uhr, blinkAn) + taste?() + blinkt für ganz eigene Seiten (Titelbildschirm) }
 // rollen (M5a.1): Textseite (z. B. Credits) mit kaum wählbaren Einträgen: hoch/runter (und Mausrad) rollen die Seite,
 //               statt die Auswahl zu wechseln (die Auswahl bleibt auf ZURÜCK). Passt sie ganz, ist alles wie sonst.
+// rollenWahl (M9a): lange Seite mit Tabellen und wenigen Knöpfen (Steuerung): hoch/runter wählen den nächsten Knopf,
+//               wenn er ganz zu sehen ist, sonst rollen sie die Seite dorthin (so ist jede Zeile erreichbar).
 // M5b: titelFarbe?(blinkAn) = eigene Farbe der Titelzeile (z. B. blinkend, mit blinkt: true),
 //      kurztaste?(code) = Taste, die sonst nichts tut, auf dieser Seite auswerten (z. B. R = Neu starten); true = erledigt
 // M8c (Garage): breite = feste Tafelbreite, spalte = Einträge nur in einer linken Spalte dieser Breite, minHoehe = Tafel
@@ -56,7 +58,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
   let druckNr = -1;           // Maus gedrückt auf Eintrag Nr.
   let treffer = [];           // Trefferflächen der sichtbaren Einträge (für Maus und später Touch)
   const padZustand = { richtung: 0, zeit: 0 };
-  let letzteEingabe = 'tastatur'; // M8e: zuletzt benutzt ('tastatur' oder 'gamepad'), für die Hinweiszeile der Garage
+  let letzteEingabe = 'tastatur'; // M8e: zuletzt benutzt ('tastatur', 'gamepad', seit M9a 'touch'), für die Hinweiszeile der Garage
   const eingabe = (art) => { if (art !== letzteEingabe) { letzteEingabe = art; schmutzig = true; } };
   beiSprachwechsel(() => { schmutzig = true; });
 
@@ -105,6 +107,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     const o = oben();
     if (!o || nr === o.wahl) return;
     o.wahl = nr;
+    o.zeigeWahl = true; // (M9a, rollenWahl: die neue Auswahl beim Zeichnen sichtbar machen)
     schmutzig = true;
     klang('tick');
     const e = liste(o.seite)[nr];
@@ -121,6 +124,16 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     }
     const l = liste(o.seite);
     if (!l.length) return;
+    // M9a: rollen und wählen gemischt (der nächste Knopf in Richtung r wird gewählt, sobald er ganz zu sehen ist)
+    if (o.seite.rollenWahl && o.maxScroll > 0 && o.masse) {
+      let j = -1, y = 0, von = 0, bis = 0;
+      for (let i = o.wahl + r; i >= 0 && i < l.length; i += r) if (waehlbar(l[i])) { j = i; break; }
+      for (let i = 0; i < l.length && j >= 0; i++) { if (i === j) { von = y; bis = y + zeilenHoehe(l[i]); } y += zeilenHoehe(l[i]); }
+      const ganz = j >= 0 && von >= o.scroll && bis <= o.scroll + o.masse.sichtH;
+      const kann = r > 0 ? o.scroll < o.maxScroll : o.scroll > 0;
+      if (kann && !ganz) { o.scroll = Math.max(0, Math.min(o.maxScroll, o.scroll + r * M.rollenSchritt)); schmutzig = true; return; }
+      if (j >= 0) { waehle(j); return; }
+    }
     let i = o.wahl;
     for (let n = 0; n < l.length; n++) {
       i = (i + r + l.length) % l.length;
@@ -177,9 +190,9 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     if (farbe === M.farbeWarnung) klang('fehler'); // "SCHON BELEGT", "RESERVIERT" ...
   }
 
-  // Tastatur. Ergebnis true = Taste erledigt
-  function taste(code, wiederholt) {
-    eingabe('tastatur');
+  // Tastatur. Ergebnis true = Taste erledigt (M9a: die Touch-Knöpfe rufen das auch, mit art 'touch')
+  function taste(code, wiederholt, art = 'tastatur') {
+    eingabe(art);
     const o = oben();
     if (!o) return false;
     if (warten) {
@@ -353,7 +366,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     o.masse = { gesamt, sichtH, breite, inhalt, y0, hoehe }; // für Tests (Seite passt? rollt?)
     // Rollen: der gewählte Eintrag (mit seiner Überschrift) bleibt sichtbar
     // (Textseiten rollen selbst, siehe schritt(); sie beginnen oben)
-    if (s.rollen) o.scroll = Math.max(0, Math.min(o.maxScroll, o.scroll));
+    if (s.rollen || (s.rollenWahl && !o.zeigeWahl)) o.scroll = Math.max(0, Math.min(o.maxScroll, o.scroll));
     else if (gesamt > sichtH && o.wahl >= 0) {
       let y = 0, yWahl = 0;
       for (let i = 0; i < l.length; i++) { if (i === o.wahl) yWahl = y; y += zeilenHoehe(l[i]); }
@@ -364,6 +377,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
       if (bis > o.scroll + sichtH) o.scroll = bis - sichtH;
       o.scroll = Math.max(0, Math.min(gesamt - sichtH, o.scroll));
     } else o.scroll = 0;
+    o.zeigeWahl = false;
 
     // Schriftzug über der Tafel (Hauptmenü)
     if (s.logo) pixelText(c, t('titel.name'), B / 2, 8, 2, M.farbeTitel, 'mitte');
@@ -482,7 +496,8 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     get seite() { const o = oben(); return o ? o.seite : null; },
     get wahl() { const o = oben(); return o ? o.wahl : -1; },
     get wartet() { return !!warten; },
-    get letzteEingabe() { return letzteEingabe; }, // M8e: 'tastatur' oder 'gamepad'
+    get letzteEingabe() { return letzteEingabe; }, // M8e: 'tastatur' oder 'gamepad' (M9a: oder 'touch')
+    merkeEingabe: eingabe, // M9a: Touch meldet sich auch beim blossen Antippen
     // für Tests (M5a.1): wie weit ist die Seite gerollt, wie weit kann sie rollen, Masse der Tafel (Pixel)
     get rollen() { const o = oben(); return o ? { scroll: o.scroll, max: o.maxScroll, ...o.masse } : null; },
     get stapel() { return stapel; },

@@ -13,6 +13,7 @@ export const TEXTE = {
   // --- Titelbildschirm ---
   'titel.name': { de: 'ALPINE RALLY', en: 'ALPINE RALLY' },
   'titel.taste': { de: 'TASTE DRÜCKEN', en: 'PRESS ANY KEY' },
+  'titel.tippen': { de: 'TIPPEN', en: 'TAP TO START' }, // M9a: im Touch-Modus
 
   // --- Hauptmenü ---
   'menue.haupt': { de: 'HAUPTMENÜ', en: 'MAIN MENU' },
@@ -52,6 +53,7 @@ export const TEXTE = {
   'garage.drift': { de: 'DRIFT', en: 'DRIFT' },
   'garage.hinweis': { de: 'LEERTASTE ODER ENTER = WÄHLEN', en: 'SPACE OR ENTER = SELECT' }, // M8e: Hinweiszeile unten
   'garage.hinweisPad': { de: 'A = WÄHLEN', en: 'A = SELECT' },
+  'garage.hinweisTouch': { de: 'A ODER ANTIPPEN = WÄHLEN', en: 'A OR TAP = SELECT' }, // M9a
   // Lackierungen (Namen wie in js/config.js, autoOptik.lackierungen)
   'lack.werk': { de: 'WERK', en: 'WORKS' },
   'lack.gletscher': { de: 'GLETSCHER', en: 'GLACIER' },
@@ -95,6 +97,15 @@ export const TEXTE = {
   'einst.aufloesungHinweis': { de: 'SCHÄRFER = WENIGER RETRO UND MEHR LAST', en: 'SHARPER = LESS RETRO AND MORE LOAD' },
   'einst.paceNotes': { de: 'PACE-NOTES', en: 'PACE NOTES' },
   'einst.paceNotesHinweis': { de: 'GLEICH WIE TASTE {taste}', en: 'SAME AS KEY {taste}' },
+  'einst.paceNotesHinweisTouch': { de: 'GLEICH WIE KNOPF NOTES', en: 'SAME AS NOTES BUTTON' }, // M9a
+  // M9a: Vollbild ohne Vollbild im Browser (iPhone), Touch-Knöpfe
+  'einst.vollbildHome': { de: 'ZUM HOME-BILDSCHIRM HINZUFÜGEN FÜR VOLLBILD', en: 'ADD TO HOME SCREEN FOR FULLSCREEN' },
+  'einst.vollbildWebApp': { de: 'VOM HOME-BILDSCHIRM: SCHON OHNE LEISTEN', en: 'FROM HOME SCREEN: ALREADY WITHOUT BARS' },
+  'wert.homeBildschirm': { de: 'HOME-BILDSCHIRM', en: 'HOME SCREEN' },
+  'wert.webApp': { de: 'WEB-APP', en: 'WEB APP' },
+  'einst.touch': { de: 'TOUCH-STEUERUNG', en: 'TOUCH CONTROLS' },
+  'einst.touchHinweis': { de: 'AUTO = KNÖPFE NUR AUF TOUCH-GERÄTEN', en: 'AUTO = BUTTONS ONLY ON TOUCH DEVICES' },
+  'wert.auto': { de: 'AUTO', en: 'AUTO' },
   'einst.einheiten': { de: 'EINHEITEN', en: 'UNITS' },
   'einst.tacho': { de: 'TACHO', en: 'GAUGES' }, // M8g
   'einst.tachoHinweis': { de: 'AUTO-STIL = JEDES AUTO HAT SEINEN TACHO', en: 'CAR STYLE = EVERY CAR HAS ITS OWN GAUGES' },
@@ -193,6 +204,18 @@ export const TEXTE = {
   'steuerung.tastatur': { de: 'TASTATUR', en: 'KEYBOARD' },
   'steuerung.gamepad': { de: 'GAMEPAD', en: 'GAMEPAD' },
   'steuerung.symbole': { de: 'PACE-NOTES-SYMBOLE', en: 'PACE NOTE SYMBOLS' },
+  // M9a: Abschnitt TOUCH (Knöpfe auf dem Handy)
+  'steuerung.touch': { de: 'TOUCH', en: 'TOUCH' },
+  'steuerung.touchMenue': { de: 'MENÜ: D-PAD WÄHLT, A = OK, B = ZURÜCK', en: 'MENU: D-PAD SELECTS, A = OK, B = BACK' },
+  'steuerung.touchTippen': { de: 'MENÜPUNKTE KANN MAN AUCH ANTIPPEN', en: 'YOU CAN ALSO TAP MENU ITEMS' },
+  'touch.dpadLenken': { de: 'D-PAD ← →', en: 'D-PAD ← →' },
+  'touch.dpadGas': { de: 'D-PAD ↑ / A', en: 'D-PAD ↑ / A' },
+  'touch.dpadBremse': { de: 'D-PAD ↓ / B', en: 'D-PAD ↓ / B' },
+  'touch.l': { de: 'L', en: 'L' },
+  'touch.r': { de: 'R', en: 'R' },
+  'touch.start': { de: 'START', en: 'START' },
+  'touch.select': { de: 'SELECT', en: 'SELECT' },
+  'touch.notes': { de: 'NOTES', en: 'NOTES' },
   'symbole.titel': { de: 'PACE-NOTES-SYMBOLE', en: 'PACE NOTE SYMBOLS' },
   'symbole.farben': { de: 'ROT = STUFE 1-2, GELB = 3-4, GRÜN = 5-6', en: 'RED = GRADE 1-2, YELLOW = 3-4, GREEN = 5-6' },
   'legende.kurve56': { de: 'SANFTE KURVE, STUFE 5-6 (6 = VOLLGAS)', en: 'EASY CURVE, GRADE 5-6 (6 = FLAT OUT)' },
@@ -270,6 +293,11 @@ export const TEXTE = {
   'hud.hilfeHandbremse': { de: '{taste}: HANDBREMSE', en: '{taste}: HANDBRAKE' },
   'hud.hilfeZurueck': { de: '{taste}: AUF STRASSE  F3: DEBUG', en: '{taste}: BACK ON ROAD  F3: DEBUG' },
   'hud.hilfeNotes': { de: '{taste}: ANSAGEN  ESC: PAUSE', en: '{taste}: PACE NOTES  ESC: PAUSE' },
+  // M9a: dieselben Hilfezeilen im Touch-Modus (Knöpfe statt Tasten)
+  'hud.touchFahren': { de: 'D-PAD: LENKEN  A: GAS  B: BREMSE', en: 'D-PAD: STEER  A: GAS  B: BRAKE' },
+  'hud.touchHandbremse': { de: 'L: HANDBREMSE  R: AUF STRASSE', en: 'L: HANDBRAKE  R: BACK ON ROAD' },
+  'hud.touchPause': { de: 'START: PAUSE  SELECT: HUD', en: 'START: PAUSE  SELECT: HUD' },
+  'hud.touchNotes': { de: 'NOTES: ANSAGEN', en: 'NOTES: PACE NOTES' },
 
   // --- Debug-Anzeige (F3) ---
   'debug.fps': { de: 'FPS {n}', en: 'FPS {n}' },

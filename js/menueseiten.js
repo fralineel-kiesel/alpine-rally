@@ -12,10 +12,12 @@ import { ladeBestzeiten, ladeGesamtTop, loescheBestzeiten, formatDatum, hunderts
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
 import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
+import { touchAn, webAppModus } from './touch.js'; // M9a
 
 // api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b),
 //        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf),
-//        M8c: autoWechseln(id, lack), autoWahl() ({ auto, modell, profil }), autoModell() (das gebaute Modell, js/car.js) }
+//        M8c: autoWechseln(id, lack), autoWahl() ({ auto, modell, profil }), autoModell() (das gebaute Modell, js/car.js),
+//        M9a: vollbildGeht() (kann der Browser Vollbild? iPhone-Safari nicht) }
 export function baueSeiten(api) {
   const M = CONFIG.menue;
   const RA = CONFIG.rennablauf;
@@ -38,7 +40,7 @@ export function baueSeiten(api) {
     id: 'titel', blinkt: true,
     zeichne(c, uhr, blinkAn) {
       pixelText(c, t('titel.name'), 160, 58, 3, M.farbeTitel, 'mitte', '#101418');
-      if (blinkAn) pixelText(c, t('titel.taste'), 160, 112, 1, M.farbeText, 'mitte');
+      if (blinkAn) pixelText(c, t(touchAn() ? 'titel.tippen' : 'titel.taste'), 160, 112, 1, M.farbeText, 'mitte'); // M9a: TIPPEN
       pixelText(c, t('credits.version', { v: VERSION }), 316, 170, 1, M.farbeHinweis, 'rechts');
     },
     taste: () => api.zumMenue(),
@@ -129,7 +131,8 @@ export function baueSeiten(api) {
     ],
     zeichneRechts: garageRechts,
     // M8e: Hinweiszeile unten (wie wählt man?), mit der Taste der zuletzt benutzten Eingabe (Gamepad: A)
-    hinweis: () => t(menue.letzteEingabe === 'gamepad' ? 'garage.hinweisPad' : 'garage.hinweis'),
+    // (M9a: nach Touch "A ODER ANTIPPEN")
+    hinweis: () => t(menue.letzteEingabe === 'gamepad' ? 'garage.hinweisPad' : menue.letzteEingabe === 'touch' ? 'garage.hinweisTouch' : 'garage.hinweis'),
   };
   const etappeSeite = {
     id: 'etappe', titel: 'etappe.titel',
@@ -260,18 +263,30 @@ export function baueSeiten(api) {
       ZURUECK,
     ],
   };
+  // VOLLBILD (M9a): ohne Vollbild im Browser (iPhone-Safari) kein wirkungsloser Schalter, sondern ein Hinweis
+  const vollbildGeht = () => (api.vollbildGeht ? api.vollbildGeht() : true);
+  const vollbildHinweis = () => (webAppModus() ? 'einst.vollbildWebApp' : 'einst.vollbildHome');
+  const vollbildEintrag = {
+    get typ() { return vollbildGeht() ? 'umschalter' : 'aktion'; },
+    text: 'einst.vollbild',
+    get hinweis() { return vollbildGeht() ? undefined : vollbildHinweis(); },
+    lesen: () => einstellungen.vollbild, setzen: (b) => { setze('vollbild', b); api.vollbild(b, true); },
+    wert: () => t(webAppModus() ? 'wert.webApp' : 'wert.homeBildschirm'),
+    aktion: () => { menue.zeigeMeldung(t(vollbildHinweis()), M.farbeTitel); return 'ohneTon'; }, // schaltet nichts
+  };
   const einstellungenSeite = {
     id: 'einstellungen', titel: 'einst.titel',
     eintraege: [
       { typ: 'gruppe', text: 'einst.grafik' },
-      { typ: 'umschalter', text: 'einst.vollbild', lesen: () => einstellungen.vollbild, setzen: (b) => { setze('vollbild', b); api.vollbild(b, true); } },
+      vollbildEintrag,
       {
         typ: 'auswahl', text: 'einst.aufloesung', hinweis: 'einst.aufloesungHinweis',
         optionen: () => R.map((r, i) => ({ wert: i, text: () => `${r[0]}X${r[1]}` })),
         lesen: () => einstellungen.aufloesung, setzen: (w) => setze('aufloesung', w),
       },
       {
-        typ: 'umschalter', text: 'einst.paceNotes', hinweis: () => t('einst.paceNotesHinweis', { taste: tastenName(einstellungen.tasten.notes[0]) }),
+        typ: 'umschalter', text: 'einst.paceNotes',
+        hinweis: () => (touchAn() ? t('einst.paceNotesHinweisTouch') : t('einst.paceNotesHinweis', { taste: tastenName(einstellungen.tasten.notes[0]) })),
         lesen: () => api.paceNotes.anzeige.an, setzen: (b) => { if (b !== api.paceNotes.anzeige.an) api.paceNotes.umschalten(); },
       },
       {
@@ -304,6 +319,12 @@ export function baueSeiten(api) {
       {
         typ: 'regler', text: 'einst.totzone', hinweis: 'einst.mitteHinweis', min: 0, max: M.totzonen.length - 1, schritt: 1,
         lesen: () => einstellungen.totzoneStufe, setzen: (w) => setze('totzoneStufe', w), anzeige: (w) => prozent(M.totzonen[w]),
+      },
+      // M9a: Touch-Knöpfe AUTO (nur auf Touch-Geräten) / AN (immer, auch am Computer) / AUS
+      {
+        typ: 'auswahl', text: 'einst.touch', hinweis: 'einst.touchHinweis',
+        optionen: () => [{ wert: 'auto', text: 'wert.auto' }, { wert: 'an', text: 'wert.an' }, { wert: 'aus', text: 'wert.aus' }],
+        lesen: () => einstellungen.touch, setzen: (w) => setze('touch', w),
       },
       { typ: 'gruppe', text: 'einst.ton' },
       {
@@ -410,13 +431,31 @@ export function baueSeiten(api) {
       leer(3), ZURUECK,
     ],
   };
+  // M9a: Abschnitt TOUCH (Knopf | Aktion, dazu zwei Zeilen fürs Menü); im Touch-Modus oben, sonst nach SYMBOLE
+  const TOUCH_ZEILEN = [
+    ['touch.dpadLenken', 'aktion.lenken'], ['touch.dpadGas', 'aktion.gas'], ['touch.dpadBremse', 'aktion.bremse'],
+    ['touch.l', 'aktion.handbremse'], ['touch.r', 'aktion.zurueck'], ['touch.start', 'aktion.pause'],
+    ['touch.select', 'aktion.hud'], ['touch.notes', 'aktion.notes'],
+  ];
+  const touchSpalte = () => Math.max(...TOUCH_ZEILEN.map((z) => textBreite(t(z[0]))));
+  const touchZeile = ([knopf, aktion]) => ({
+    typ: 'info', hoehe: 9, breite: () => touchSpalte() + 8 + textBreite(t(aktion)), inhalt: () => `${t(knopf)} | ${t(aktion)}`,
+    zeichne(c, x, y) {
+      pixelText(c, t(knopf), x, y + 1, 1, M.farbeWert);
+      pixelText(c, t(aktion), x + touchSpalte() + 8, y + 1, 1, M.farbeText);
+    },
+  });
+  const touchAbschnitt = [
+    { typ: 'gruppe', text: 'steuerung.touch' }, ...TOUCH_ZEILEN.map(touchZeile), leer(2),
+    textZeile('steuerung.touchMenue', M.farbeHinweis), textZeile('steuerung.touchTippen', M.farbeHinweis),
+  ];
+  const tastaturAbschnitt = [steuerZeile(-1), ...steuerZeilen().map((_, n) => steuerZeile(n))];
+  const symboleKnopf = { typ: 'aktion', text: 'steuerung.symbole', aktion: () => menue.oeffne(legendeSeite) };
+  const steuerungDesktop = [...tastaturAbschnitt, leer(4), symboleKnopf, leer(6), ...touchAbschnitt, leer(4), ZURUECK];
+  const steuerungTouch = [...touchAbschnitt, leer(4), symboleKnopf, leer(6), ...tastaturAbschnitt, leer(4), ZURUECK];
   const steuerungSeite = {
-    id: 'steuerung', titel: 'steuerung.titel',
-    eintraege: [
-      steuerZeile(-1), ...steuerZeilen().map((_, n) => steuerZeile(n)), leer(4),
-      { typ: 'aktion', text: 'steuerung.symbole', aktion: () => menue.oeffne(legendeSeite) },
-      ZURUECK,
-    ],
+    id: 'steuerung', titel: 'steuerung.titel', rollenWahl: true,
+    eintraege: () => (touchAn() ? steuerungTouch : steuerungDesktop),
   };
 
   // --- Credits ---

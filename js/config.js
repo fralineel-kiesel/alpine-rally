@@ -1606,6 +1606,7 @@ export const CONFIG = {
       tacho: 'auto',           // M8g: Tacho 'auto' (jedes Auto sein eigener) oder 'klassisch' (der Tacho bis 0.8f für alle)
       auto: 'rt4',             // gewähltes Auto (Id aus js/autos.js; unbekannt = Audan Quarto)
       lacke: {},               // gewählte Lackierung je Auto, z. B. { rt4: 'gletscher' } (fehlt = die erste des Autos)
+      touch: 'auto',           // M9a: Touch-Knöpfe 'auto' (nur auf Touch-Geräten), 'an' (immer, auch am Computer mit der Maus), 'aus'
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1673,6 +1674,48 @@ export const CONFIG = {
         { name: 'berge, Auto klein', pos: [18, 10, -26], blick: [-6, 7, 30], dauer: 9 },
       ],
     },
+  },
+
+  // --- Touch-Steuerung fürs Handy (Meilenstein 9a, js/touch.js und js/touchbild.js) ------------
+  // Masse in CSS-Pixeln (wie im Browser gemessen, nicht Pixel des Spielbilds). Alles Richtwerte zum Nachstellen.
+  touch: {
+    rand: 24,                  // so weit bleiben alle Knöpfe mindestens vom linken/rechten Fensterrand weg (Safari: Zurück-Wischen)
+    randOben: 8,               // Abstand der Knöpfe oben/unten zum Rand (dazu kommt der Safe-Area-Rand des Handys)
+    minTreffer: 44,            // jede Trefferfläche ist mindestens so gross (44 x 44, Empfehlung von Apple)
+    dpad: 146,                 // D-Pad: Durchmesser
+    ab: 72,                    // A und B: Durchmesser
+    abVersatz: [76, 40],       // B liegt so weit links und tiefer als A (diagonal versetzt)
+    schulter: [80, 40],        // L und R: Breite, Höhe
+    klein: 36,                 // START, SELECT, NOTES: Durchmesser (Trefferfläche trotzdem mindestens minTreffer)
+    schriftGroesse: 2,         // Beschriftung unter den kleinen Knöpfen: so viele CSS-Pixel je Pixel der Pixelschrift
+    luecke: 12,                // Abstand zwischen den Reihen (Schulterknöpfe, D-Pad, kleine Knöpfe)
+    hoch: {
+      steuerAnteil: 0.46,      // Hochformat: Steuerfläche unten ist mindestens so hoch (Anteil der Fensterhöhe) ...
+      kleinLuecke: 20,         // ... die drei kleinen Knöpfe liegen nebeneinander mit dieser Lücke
+    },
+    quer: {
+      seitenZone: 130,         // Querformat: Zone links und rechts vom Bild mindestens so breit
+      zoneMaxAnteil: 0.22,     // ... und höchstens dieser Anteil der Fensterbreite (sonst werden die Knöpfe kleiner)
+      faktor: 0.9,             // Knöpfe im Querformat so viel kleiner als im Hochformat (mehr Platz fürs Bild)
+      kleinAb: 330,            // Fenster niedriger als das: Knöpfe verhältnismässig kleiner
+      bildLuecke: 8,           // Abstand der Knöpfe zum Bild
+    },
+    dpadTotzone: 0.2,          // D-Pad: in der Mitte (Anteil des Radius) zählt keine Richtung
+    dpadDiagonal: 40,          // D-Pad: so viel Grad breit ist der Bereich für eine Schräge (↖ ↗ ↘ ↙), der Rest gerade
+    dpadMinDurchmesser: 96,    // kleiner wird das D-Pad nie
+    wiederholenNach: 0.4,      // Menü: gehaltene D-Pad-Richtung wiederholt nach ... Sekunden ...
+    wiederholenAlle: 0.12,     // ... und dann alle ... Sekunden (wie das Gamepad)
+    mausSperre: 1000,          // nach einer Berührung so viele Millisekunden keine (vom Browser nachgemachten) Mausklicks
+    // Aussehen (Pixel-Look wie das HUD): halbtransparent dunkelblau, heller Rand, orange wenn gedrückt
+    farbeGrund: 'rgba(18, 24, 32, 0.70)',
+    farbeRand: 'rgba(230, 226, 211, 0.85)',
+    farbeZeichen: '#e6e2d3',   // Buchstaben, Pfeile
+    farbeGedrueckt: '#ff9a2e', // gedrückt: orange
+    farbeZeichenGedrueckt: '#101418',
+    farbeSchrift: '#aab4be',   // Beschriftung unter START/SELECT/NOTES
+    farbeFlaeche: '#0d1219',   // Hochformat: dunkle Steuerfläche unter dem Bild
+    farbeFlaecheRand: 'rgba(230, 226, 211, 0.18)', // ... mit feiner heller Linie oben
+    deckkraft: 0.9,            // alle Knöpfe zusammen (1 = deckend)
   },
 
   // --- Garage (Meilenstein 8c): Menüseite AUTO mit drehendem 3D-Modell (js/garage.js) ----------

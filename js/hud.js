@@ -17,6 +17,7 @@ import { einstellungen, beiAenderung } from './einstellungen.js';
 import { tastenName } from './input.js';
 import { baueMinimap } from './minimap.js';
 import { aktivesProfil } from './fahrprofil.js';
+import { touchAn, beiTouchWechsel } from './touch.js'; // M9a: Hilfezeilen mit Knopfnamen
 
 export function formatZeit(sek) {
   const ms = Math.floor(sek * 100);
@@ -54,7 +55,8 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
     const T = einstellungen.tasten;
     const fahren = ['gas', 'bremse', 'links', 'rechts'].map((a) => tastenName(T[a][0])).join('');
     const fahren2 = ['gas', 'bremse', 'links', 'rechts'].every((a) => T[a][1]) ? `/${['gas', 'bremse', 'links', 'rechts'].map((a) => tastenName(T[a][1])).join('')}` : '';
-    feste.hilfe = [
+    // M9a: im Touch-Modus mit den Namen der Knöpfe statt der Tasten
+    feste.hilfe = touchAn() ? [t('hud.touchFahren'), t('hud.touchHandbremse'), t('hud.touchPause'), t('hud.touchNotes')] : [
       t('hud.hilfeFahren', { tasten: fahren + fahren2 }),
       t('hud.hilfeHandbremse', { taste: tastenName(T.handbremse[0]) }),
       t('hud.hilfeZurueck', { taste: tastenName(T.zurueck[0]) }),
@@ -65,6 +67,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   }
   festeTexte();
   beiSprachwechsel(festeTexte);
+  beiTouchWechsel(festeTexte);
   beiAenderung((name, wert) => {
     if (name === 'tasten') festeTexte();
     if (name === 'einheit') tachos.setzeEinheit(wert);
