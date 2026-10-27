@@ -1685,13 +1685,15 @@ export const CONFIG = {
     dpad: 146,                 // D-Pad: Durchmesser
     ab: 72,                    // A und B: Durchmesser
     abVersatz: [76, 40],       // B liegt so weit links und tiefer als A (diagonal versetzt)
-    schulter: [80, 40],        // L und R: Breite, Höhe
-    klein: 36,                 // START, SELECT, NOTES: Durchmesser (Trefferfläche trotzdem mindestens minTreffer)
-    schriftGroesse: 2,         // Beschriftung unter den kleinen Knöpfen: so viele CSS-Pixel je Pixel der Pixelschrift
+    schulter: [80, 40],        // L (oben links, zurück auf die Strasse): Breite, Höhe
+    schulterR: [80, 44],       // M9a.1: R (Handbremse) direkt über A/B, in Daumenreichweite: Breite, Höhe
+    klein: 26,                 // START, SELECT, NOTES: Höhe der flachen Pille mit Beschriftung innen (M9a.1: 26 statt runde 36)
+    kleinTreffer: 36,          // ... ihre Trefferfläche im Querformat mindestens so gross (nur diese drei dürfen unter minTreffer)
     luecke: 12,                // Abstand zwischen den Reihen (Schulterknöpfe, D-Pad, kleine Knöpfe)
     hoch: {
       steuerAnteil: 0.46,      // Hochformat: Steuerfläche unten ist mindestens so hoch (Anteil der Fensterhöhe) ...
-      kleinLuecke: 20,         // ... die drei kleinen Knöpfe liegen nebeneinander mit dieser Lücke
+      kleinLuecke: 20,         // ... die drei kleinen Knöpfe liegen nebeneinander mit dieser Lücke ...
+      kleinTreffer: 44,        // ... und ihre Trefferfläche ist hier (genug Platz) so gross wie bei allen Knöpfen
     },
     quer: {
       seitenZone: 130,         // Querformat: Zone links und rechts vom Bild mindestens so breit

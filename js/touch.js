@@ -6,7 +6,8 @@
 //   anderen Knopf (oder im D-Pad in eine andere Richtung), wechselt die Auslösung. Alle Ereignisse kommen am Fenster
 //   an und werden mit der eigenen Trefferrechnung zugeordnet (so geht das Gleiten trotz Pointer-Capture).
 // - Rennen: die Knöpfe lösen Aktionen aus (input.js, touchEingabe), nicht Tastencodes. Menü: D-Pad = Pfeiltasten (gehalten
-//   mit Wiederholung), A = Enter, B = Esc, START = wie Gamepad-Start, R = Kurztaste der Seite; Antippen des Bilds = Maus.
+//   mit Wiederholung), A = Enter, B = Esc, START = wie Gamepad-Start, L = Kurztaste der Seite (M9a.1, vorher R; R tut im
+//   Menü nichts); Antippen des Bilds = Maus. Rennen (M9a.1): R = Handbremse, L = zurück auf die Strasse.
 // - Nie hängende Knöpfe: Abbruch, Fokusverlust, Tab-Wechsel, Drehen, Zustands- und Seitenwechsel lösen alle Finger.
 //   Ein gelöster Finger zählt erst wieder, wenn er losgelassen und neu aufgesetzt wird.
 
@@ -15,7 +16,7 @@ import { einstellungen } from './einstellungen.js';
 import { touchEingabe } from './input.js';
 import { berechneLayout, KLEINE, beschriftung } from './touchlayout.js';
 import { beiSprachwechsel } from './texte.js';
-import { malAlle, malBeschriftung } from './touchbild.js';
+import { malAlle, malKlein } from './touchbild.js';
 
 // Für Seiten und HUD: ist der Touch-Modus an? (ohne baueTouch immer aus)
 const modus = { an: false };
@@ -48,11 +49,11 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
 
   // --- Seite: Ebene mit Steuerfläche und Knöpfen, nur im Touch-Modus aufgebaut -----------------
   let ebene = null, flaeche = null, probe = null;
-  const leinwand = {}, schrift = {};
+  const leinwand = {};
   let bilder = null;
   function aufbauen() {
     if (ebene) return;
-    bilder = malAlle();
+    bilder = malAlle(beschriftung);
     ebene = document.createElement('div');
     ebene.id = 'touch';
     flaeche = document.createElement('div');
@@ -69,15 +70,14 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
       ebene.appendChild(c);
       leinwand[n] = c;
     }
-    for (const n of KLEINE) {
-      const c = malBeschriftung(beschriftung(n));
-      c.className = 'touch-schrift';
-      ebene.appendChild(c);
-      schrift[n] = c;
-    }
-    // andere Sprache: Beschriftungen neu malen, Lage neu rechnen
+    // andere Sprache: kleine Knöpfe (Beschriftung in der Pille) neu malen, Lage neu rechnen
     beiSprachwechsel(() => {
-      for (const n of KLEINE) { const c = malBeschriftung(beschriftung(n)); ebene.replaceChild(c, schrift[n]); c.className = 'touch-schrift'; schrift[n] = c; }
+      for (const n of KLEINE) {
+        bilder[n] = malKlein(beschriftung(n));
+        leinwand[n].width = bilder[n][0].width; leinwand[n].height = bilder[n][0].height;
+        gezeigt[n] = -1;
+      }
+      zeigen();
       if (modus.an) anpassen();
     });
     // Safe-Area-Ränder (Notch, Home-Balken) misst ein unsichtbares Kästchen mit env(safe-area-inset-*)
@@ -105,7 +105,6 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     setze(buehne, lay.bild);
     if (lay.flaeche) { flaeche.style.display = 'block'; setze(flaeche, lay.flaeche); } else flaeche.style.display = 'none';
     for (const n of NAMEN) setze(leinwand[n], lay.el[n].v);
-    for (const n of KLEINE) setze(schrift[n], lay.el[n].s);
     if (alt && alt.format !== lay.format) alleLos(); // gedreht: kein Finger bleibt hängen
   }
 
@@ -175,7 +174,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     touchEingabe.bremse = rennen && (halten.b || (r >= 4 && r <= 6));
     touchEingabe.links = r >= 6 && r <= 8;
     touchEingabe.rechts = r >= 2 && r <= 4;
-    touchEingabe.handbremse = rennen && halten.l;
+    touchEingabe.handbremse = rennen && halten.r; // M9a.1: Handbremse auf R (vorher L)
     zeigen();
   }
   function zeigen() {
@@ -189,7 +188,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
       x.drawImage(bilder[n][s], 0, 0);
     }
   }
-  // Ein Knopf wurde neu gedrückt (A, B, L, R, START, SELECT, NOTES; das D-Pad wirkt über halten)
+  // Ein Knopf wurde neu gedrückt (A, B, L, R, START, SELECT, NOTES; das D-Pad und R wirken über halten)
   function druecken(n) {
     zaehler.ausgeloest++;
     if (ablauf.zustand === 'titel') return; // Titel: erst beim Loslassen (Ton braucht eine echte Geste)
@@ -198,10 +197,10 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
       if (n === 'a') menue.taste('Enter', false, 'touch');
       else if (n === 'b') menue.taste('Escape', false, 'touch');
       else if (n === 'start') { if (s && s.startKnopf) s.startKnopf(); }
-      else if (n === 'r') { const k = einstellungen.tasten.zurueck; if (s && s.kurztaste) s.kurztaste(k[0] || k[1]); }
+      else if (n === 'l') { const k = einstellungen.tasten.zurueck; if (s && s.kurztaste) s.kurztaste(k[0] || k[1]); } // M9a.1: L statt R
       return;
     }
-    if (n === 'r') touchEingabe.reset = true;
+    if (n === 'l') touchEingabe.reset = true; // M9a.1: zurück auf die Strasse auf L (vorher R)
     else if (n === 'start') touchEingabe.pause = true;
     else if (n === 'select') touchEingabe.hud = true;
     else if (n === 'notes') touchEingabe.notes = true;

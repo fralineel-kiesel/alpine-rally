@@ -4,33 +4,37 @@
 //   { format: 'hoch' | 'quer', k (Grösse der Knöpfe, 1 = wie in config.js), bild: { x, y, b, h } (16:9),
 //     flaeche: { x, y, b, h } (Hochformat: dunkle Steuerfläche unten, sonst null),
 //     el: { dpad, a, b, l, r, select, start, notes } }
-// Jedes Element: { x, y, b, h } = Trefferfläche (nie kleiner als minTreffer), v = sichtbarer Knopf darin,
-// bei den kleinen Knöpfen zusätzlich s = Beschriftung darunter.
-// Hochformat: Bild in voller Breite, mittig im Raum über der Steuerfläche; Steuerfläche unten mit L/R in den oberen Ecken,
-//   D-Pad links, A/B rechts (B tiefer und weiter links), SELECT START NOTES unten in der Mitte.
-// Querformat: Bild in der Mitte, so gross wie es die Seitenzonen erlauben; links L, D-Pad, SELECT; rechts R, A/B,
-//   NOTES und START (oder alle drei in einer Reihe unter dem Bild, wenn dort Platz ist).
+// Jedes Element: { x, y, b, h } = Trefferfläche (nie kleiner als minTreffer; START/SELECT/NOTES im Querformat nie kleiner
+// als kleinTreffer), v = sichtbarer Knopf darin.
+// Hochformat: Bild in voller Breite, mittig im Raum über der Steuerfläche; Steuerfläche unten mit L in der oberen Ecke
+//   links, D-Pad links, A/B rechts (B tiefer und weiter links) mit R direkt über A, SELECT START NOTES unten in der Mitte.
+// Querformat: Bild in der Mitte, so gross wie es die Seitenzonen erlauben; links L oben, D-Pad, SELECT; rechts A/B mit
+//   R direkt darüber (M9a.1: in Daumenreichweite statt oben in der Ecke), NOTES und START (oder alle drei in einer
+//   Reihe unter dem Bild, wenn dort Platz ist).
 
 import { CONFIG } from './config.js';
-import { textBreite } from './pixel.js';
 import { t } from './texte.js';
+import { PIXEL, pilleBreite } from './touchbild.js';
 
 export const KLEINE = ['select', 'start', 'notes'];
-export const beschriftung = (n) => t(`touch.${n}`); // Beschriftung unter START, SELECT, NOTES (js/texte.js)
+export const beschriftung = (n) => t(`touch.${n}`); // Beschriftung von START, SELECT, NOTES (js/texte.js)
 
-// Grössen aller Knöpfe bei Massstab k
-function groessen(k) {
+// Grössen aller Knöpfe bei Massstab k; kleinTreffer = Mindestgrösse der Trefferfläche von START/SELECT/NOTES
+function groessen(k, kleinTreffer) {
   const T = CONFIG.touch;
   const m = T.minTreffer;
   const d = Math.max(T.dpadMinDurchmesser, T.dpad * k);
   const a = Math.max(m, T.ab * k);
   const dx = Math.max(T.abVersatz[0] * k, a + 2), dy = T.abVersatz[1] * k;
   const sb = Math.max(m, T.schulter[0] * k), sh = T.schulter[1] * k;
-  const kv = T.klein * k, kt = Math.max(m, kv);
-  const sg = T.schriftGroesse;
-  const kb = (n) => Math.max(kt, textBreite(beschriftung(n)) * sg); // Breite eines kleinen Knopfs mit Beschriftung
+  // R (Handbremse, M9a.1): im Querformat nicht um den Faktor kleiner, erst wenn das Fenster es verlangt
+  const kr = Math.min(1, k / T.quer.faktor);
+  const rb = Math.max(m, T.schulterR[0] * kr), rh = T.schulterR[1] * kr;
+  // kleine Knöpfe (M9a.1): Pille kv hoch, Breite nach der Beschriftung; Trefferfläche mindestens kleinTreffer
+  const kv = T.klein * k, kt = Math.max(kleinTreffer, kv);
+  const kb = (n) => Math.max(kt, pilleBreite(beschriftung(n)) * kv / PIXEL.klein); // Breite der Trefferfläche
   return {
-    d, a, dx, dy, sb, sh, sht: Math.max(m, sh), kv, kt, kb, kh: kt + 2 + 7 * sg, // kh: Höhe mit Beschriftung
+    d, a, dx, dy, sb, sh, sht: Math.max(m, sh), rb, rh, rht: Math.max(m, rh), kv, kt, kb, kh: kt, // kh: Höhe der Reihe
     abB: dx + a, abH: dy + a, // Feld von A und B zusammen
   };
 }
@@ -38,17 +42,9 @@ function groessen(k) {
 const rechteck = (x, y, b, h) => ({ x, y, b, h });
 const mitte = (r, b, h) => rechteck(r.x + (r.b - b) / 2, r.y + (r.h - h) / 2, b, h);
 
-// Ein Element an seiner Trefferfläche; v = sichtbarer Teil (zentriert), bei kleinen Knöpfen oben in der Fläche
+// Ein Element an seiner Trefferfläche; v = sichtbarer Teil (zentriert)
 function element(x, y, b, h, vb, vh) { const r = rechteck(x, y, b, h); r.v = mitte(r, vb, vh); return r; }
-function klein(n, x, y, g) {
-  const r = rechteck(x, y, g.kb(n), g.kh);
-  const oben = rechteck(x, y, r.b, g.kt);
-  r.v = mitte(oben, g.kv, g.kv);
-  const sg = CONFIG.touch.schriftGroesse;
-  const sb = textBreite(beschriftung(n)) * sg;
-  r.s = rechteck(x + (r.b - sb) / 2, y + g.kt + 2, sb, 7 * sg);
-  return r;
-}
+function klein(n, x, y, g) { return element(x, y, g.kb(n), g.kt, pilleBreite(beschriftung(n)) * g.kv / PIXEL.klein, g.kv); }
 // D-Pad (Mitte cx, cy) und A/B (A mit der rechten Kante bei xr, beide zusammen senkrecht um cy)
 function dpadBei(cx, cy, g) { return element(cx - g.d / 2, cy - g.d / 2, g.d, g.d, g.d, g.d); }
 function abBei(xr, cy, g) {
@@ -58,12 +54,18 @@ function abBei(xr, cy, g) {
     b: element(xr - g.a - g.dx, ay + g.dy, g.a, g.a, g.a, g.a),
   };
 }
+// R (M9a.1) direkt über A, rechtsbündig mit A (dem rechten Daumen zugewandt), nie über yMin
+function rUeber(a, xr, yMin, g) {
+  const y = Math.max(yMin, a.y - CONFIG.touch.luecke - g.rht);
+  return element(xr - g.rb, y, g.rb, g.rht, g.rb, g.rh);
+}
 
 export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
   const T = CONFIG.touch;
   const mL = Math.max(T.rand, safe.l), mR = Math.max(T.rand, safe.r);
   const ro = T.randOben, lu = T.luecke;
-  const spalteH = (g) => ro + g.sht + lu + Math.max(g.d, g.abH) + lu + g.kh + ro; // Schulter, D-Pad/AB, kleine Knöpfe
+  // Spalten: links L, D-Pad, kleine Knöpfe; rechts R, A/B, kleine Knöpfe (beide um dieselbe Mitte)
+  const spalteH = (g) => ro + Math.max(g.sht + lu + g.d, 2 * (g.rht + lu) + g.abH) + lu + g.kh + ro;
   const el = {};
   if (H > W) {
     // --- Hochformat ---
@@ -72,64 +74,76 @@ export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
     const reiheB = (g) => KLEINE.reduce((s, n) => s + g.kb(n), 0) + 2 * T.hoch.kleinLuecke;
     let k = 1;
     const platz = H - safe.o - bh - 4; // so hoch darf die Steuerfläche höchstens sein (das Bild bleibt ganz)
-    for (let g = groessen(k); k > 0.4 && (breiteNoetig(g) > W - mL - mR || reiheB(g) > W - mL - mR || spalteH(g) + safe.u > platz); g = groessen(k)) k -= 0.02;
-    const g = groessen(k);
+    const kt = T.hoch.kleinTreffer;
+    for (let g = groessen(k, kt); k > 0.4 && (breiteNoetig(g) > W - mL - mR || reiheB(g) > W - mL - mR || spalteH(g) + safe.u > platz); g = groessen(k, kt)) k -= 0.02;
+    const g = groessen(k, kt);
     const P = Math.min(platz, Math.max(spalteH(g) + safe.u, T.hoch.steuerAnteil * H));
     const yP = H - P;
     const flaeche = rechteck(0, yP, W, P);
     const bild = rechteck(safe.l, safe.o + (yP - safe.o - bh) / 2, bb, bh);
     el.l = element(mL, yP + ro, g.sb, g.sht, g.sb, g.sh);
-    el.r = element(W - mR - g.sb, yP + ro, g.sb, g.sht, g.sb, g.sh);
     const yK = H - safe.u - ro - g.kh; // Reihe der kleinen Knöpfe
     let x = (W - reiheB(g)) / 2;
     for (const n of KLEINE) { el[n] = klein(n, x, yK, g); x += g.kb(n) + T.hoch.kleinLuecke; }
     const cy = (yP + ro + g.sht + yK) / 2;
     el.dpad = dpadBei(mL + g.d / 2, cy, g);
     Object.assign(el, abBei(W - mR, cy, g));
+    el.r = rUeber(el.a, W - mR, yP + ro, g);
     return { format: 'hoch', k, bild, flaeche, el };
   }
   // --- Querformat ---
-  // Zuerst: kleine Knöpfe in einer Reihe unter dem Bild (wenn darunter Platz ist), sonst unten in den Seitenzonen
-  // (links SELECT, rechts NOTES und START). Die Knöpfe werden kleiner, bis die Spalten in die Höhe passen und die
-  // Zone nicht breiter als zoneMaxAnteil wird (nie kleiner als dpadMinDurchmesser und minTreffer).
+  // Kleine Knöpfe in einer Reihe unter dem Bild (wenn darunter Platz ist), sonst in den Seitenzonen (links SELECT unter
+  // dem D-Pad; rechts NOTES oben in der Ecke und START unten, M9a.1). Die Knöpfe werden kleiner, bis beide Spalten in
+  // die Höhe passen und die Zone nicht breiter als zoneMaxAnteil wird (nie kleiner als dpadMinDurchmesser und minTreffer).
   const Q = T.quer;
   const Hv = H - safe.o - safe.u;
+  const oben = safe.o + ro, unterkante = H - safe.u - ro;
   const reiheB = (g) => KLEINE.reduce((s, n) => s + g.kb(n), 0) + 2 * T.hoch.kleinLuecke;
-  const unten = (g) => g.kb('notes') + 12 + g.kb('start'); // rechts unten: NOTES und START nebeneinander
-  const zoneKnoepfe = (g) => Math.max(mL + Math.max(g.d, g.sb), mR + Math.max(g.abB, g.sb)) + Q.bildLuecke;
-  const zoneKlein = (g) => Math.max(mL + g.kb('select'), mR + unten(g)) + Q.bildLuecke;
-  const spalteOhne = (g) => ro + g.sht + lu + Math.max(g.d, g.abH) + ro;
   const k0 = Q.faktor * Math.min(1, H / Q.kleinAb);
+  // Knöpfe bei Massstab k; passt = beide Spalten haben in der Höhe Platz und die Zonen sind nicht zu breit
+  const bau = (k, seitlich) => {
+    const g = groessen(k, T.kleinTreffer);
+    const e = {};
+    const yK = unterkante - g.kh; // seitlich: Reihe der kleinen Knöpfe unten in den Zonen
+    const boden = seitlich ? yK - lu : unterkante; // so tief dürfen D-Pad und A/B reichen
+    const cy = (oben + g.sht + lu + boden) / 2; // Mitte der Spalten (zwischen L und dem Boden)
+    // links: L oben, D-Pad (und SELECT); rechts: A/B mit R direkt darüber (und NOTES oben, START unten)
+    e.l = element(mL, oben, g.sb, g.sht, g.sb, g.sh);
+    e.dpad = dpadBei(mL + g.d / 2, cy, g);
+    Object.assign(e, abBei(W - mR, cy, g));
+    if (seitlich) {
+      e.select = klein('select', mL + (g.d - g.kb('select')) / 2, yK, g);
+      e.start = klein('start', W - mR - g.kb('start'), yK, g);
+      e.notes = klein('notes', W - mR - g.kb('notes'), oben, g);
+    }
+    const rOben = seitlich ? e.notes.y + e.notes.h + lu : oben;
+    e.r = rUeber(e.a, W - mR, rOben, g);
+    const eps = 0.01;
+    const ZL = mL + Math.max(g.d, g.sb, seitlich ? e.select.b : 0) + Q.bildLuecke;
+    const ZR = mR + Math.max(g.abB, g.rb, seitlich ? Math.max(e.start.b, e.notes.b) : 0) + Q.bildLuecke;
+    const hoehe = e.dpad.y >= e.l.y + e.l.h + lu - eps && e.dpad.y + e.dpad.h <= boden + eps
+      && e.r.y + e.r.h + lu <= e.a.y + eps && e.b.y + e.b.h <= boden + eps;
+    const breite = Math.max(ZL, ZR) <= Q.zoneMaxAnteil * W || g.d <= T.dpadMinDurchmesser;
+    return { k, g, e, ZL, ZR, passt: hoehe && breite };
+  };
   const versuch = (seitlich) => {
-    let k = k0;
-    const hoch = seitlich ? spalteH : spalteOhne;
-    for (let g = groessen(k); k > 0.4 && (hoch(g) > Hv || (zoneKnoepfe(g) > Q.zoneMaxAnteil * W && g.d > T.dpadMinDurchmesser)); g = groessen(k)) k -= 0.02;
-    const g = groessen(k);
-    const Z = Math.max(Q.seitenZone, zoneKnoepfe(g), seitlich ? zoneKlein(g) : 0);
-    const bb = Math.min(W - 2 * Z, (seitlich ? Hv : Hv - lu - g.kh - ro) * 16 / 9);
-    return { k, g, Z, bb, bh: bb * 9 / 16 };
+    let v = bau(k0, seitlich);
+    for (let k = k0; k > 0.4 && !v.passt; ) { k -= 0.02; v = bau(k, seitlich); }
+    const Z = Math.max(Q.seitenZone, v.ZL, v.ZR);
+    v.bb = Math.min(W - 2 * Z, (seitlich ? Hv : Hv - lu - v.g.kh - ro) * 16 / 9);
+    v.bh = v.bb * 9 / 16;
+    return v;
   };
   // beide Varianten rechnen, die mit dem grösseren Bild gewinnt (bei gleich grossem Bild: unter dem Bild)
   const u = versuch(false), sv = versuch(true);
   const seitlich = sv.bh > u.bh + 0.5 || reiheB(u.g) > u.bb;
-  const v = seitlich ? sv : u;
-  const { k, g, bb, bh } = v;
+  const { k, g, bb, bh, e } = seitlich ? sv : u;
   const blockH = seitlich ? bh : bh + lu + g.kh;
   const bild = rechteck((W - bb) / 2, safe.o + (Hv - blockH) / 2, bb, bh);
-  const oben = safe.o + ro, yK = seitlich ? H - safe.u - ro - g.kh : bild.y + bh + lu;
-  const cy = seitlich ? (oben + g.sht + yK) / 2 : (oben + g.sht + H - safe.u - ro) / 2;
-  // links: L oben, D-Pad; rechts: R oben, A/B
-  el.l = element(mL, oben, g.sb, g.sht, g.sb, g.sh);
-  el.dpad = dpadBei(mL + g.d / 2, cy, g);
-  el.r = element(W - mR - g.sb, oben, g.sb, g.sht, g.sb, g.sh);
-  Object.assign(el, abBei(W - mR, cy, g));
-  if (seitlich) {
-    el.select = klein('select', mL + (g.d - g.kb('select')) / 2, yK, g);
-    el.start = klein('start', W - mR - g.kb('start'), yK, g);
-    el.notes = klein('notes', el.start.x - 12 - g.kb('notes'), yK, g);
-  } else {
+  Object.assign(el, e);
+  if (!seitlich) {
     let x = (W - reiheB(g)) / 2;
-    for (const n of KLEINE) { el[n] = klein(n, x, yK, g); x += g.kb(n) + T.hoch.kleinLuecke; }
+    for (const n of KLEINE) { el[n] = klein(n, x, bild.y + bh + lu, g); x += g.kb(n) + T.hoch.kleinLuecke; }
   }
   return { format: 'quer', k, bild, flaeche: null, el, klein: seitlich ? 'seitlich' : 'unten' };
 }

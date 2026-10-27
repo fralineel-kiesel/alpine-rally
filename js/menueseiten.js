@@ -434,7 +434,7 @@ export function baueSeiten(api) {
   // M9a: Abschnitt TOUCH (Knopf | Aktion, dazu zwei Zeilen fürs Menü); im Touch-Modus oben, sonst nach SYMBOLE
   const TOUCH_ZEILEN = [
     ['touch.dpadLenken', 'aktion.lenken'], ['touch.dpadGas', 'aktion.gas'], ['touch.dpadBremse', 'aktion.bremse'],
-    ['touch.l', 'aktion.handbremse'], ['touch.r', 'aktion.zurueck'], ['touch.start', 'aktion.pause'],
+    ['touch.r', 'aktion.handbremse'], ['touch.l', 'aktion.zurueck'], ['touch.start', 'aktion.pause'], // M9a.1: R/L getauscht
     ['touch.select', 'aktion.hud'], ['touch.notes', 'aktion.notes'],
   ];
   const touchSpalte = () => Math.max(...TOUCH_ZEILEN.map((z) => textBreite(t(z[0]))));

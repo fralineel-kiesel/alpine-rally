@@ -7,7 +7,10 @@ import { CONFIG } from './config.js';
 import { pixelText, textBreite } from './pixel.js';
 
 // Grösse der kleinen Leinwände (Pixel); die CSS-Grösse kommt aus js/touchlayout.js
-export const PIXEL = { dpad: 48, ab: 24, schulter: [26, 13], klein: 12 };
+// (schulterR: R ist seit M9a.1 etwas höher als L; klein: START/SELECT/NOTES als flache Pille, Breite nach der Beschriftung)
+export const PIXEL = { dpad: 48, ab: 24, schulter: [26, 13], schulterR: [26, 14], klein: 13 };
+const PILLE_INNEN = 5; // Abstand der Beschriftung zum Rand der Pille (Pixel)
+export const pilleBreite = (text) => textBreite(text) + 2 * PILLE_INNEN;
 
 function neueLeinwand(b, h) {
   const c = document.createElement('canvas');
@@ -71,8 +74,8 @@ function malRund(buchstabe, gedrueckt) {
   return c;
 }
 // L / R: Schulterknopf (Tafel mit abgeschrägten Ecken)
-function malSchulter(buchstabe, gedrueckt) {
-  const T = CONFIG.touch, [b, h] = PIXEL.schulter;
+function malSchulter(buchstabe, gedrueckt, [b, h]) {
+  const T = CONFIG.touch;
   const { c, x } = neueLeinwand(b, h);
   // wie zeichneTafel, aber jedes Pixel nur einmal (halbtransparente Farben)
   const e = 3;
@@ -84,32 +87,36 @@ function malSchulter(buchstabe, gedrueckt) {
       punkt(x, px, py, rand ? T.farbeRand : gedrueckt ? T.farbeGedrueckt : T.farbeGrund);
     }
   }
-  pixelText(x, buchstabe, b / 2, 3, 1, gedrueckt ? T.farbeZeichenGedrueckt : T.farbeZeichen, 'mitte', null);
+  pixelText(x, buchstabe, b / 2, Math.round((h - 7) / 2), 1, gedrueckt ? T.farbeZeichenGedrueckt : T.farbeZeichen, 'mitte', null);
   return c;
 }
-// START / SELECT / NOTES: kleiner runder Knopf (ohne Zeichen, die Beschriftung steht darunter)
-function malKlein(gedrueckt) {
-  const T = CONFIG.touch, n = PIXEL.klein;
-  const { c, x } = neueLeinwand(n, n);
-  kreis(x, n, gedrueckt ? T.farbeGedrueckt : T.farbeGrund, T.farbeRand);
+// START / SELECT / NOTES (M9a.1): flache Pille mit der Beschriftung innen (runde Enden, jedes Pixel nur einmal)
+function malPille(text, gedrueckt) {
+  const T = CONFIG.touch, h = PIXEL.klein, b = pilleBreite(text);
+  const { c, x } = neueLeinwand(b, h);
+  const m = (h - 1) / 2, r = h / 2 - 0.25;
+  for (let py = 0; py < h; py++) for (let px = 0; px < b; px++) {
+    const d = Math.hypot(px - Math.max(m, Math.min(b - 1 - m, px)), py - m); // Abstand zur Mittellinie
+    if (d > r) continue;
+    punkt(x, px, py, d > r - 1.1 ? T.farbeRand : gedrueckt ? T.farbeGedrueckt : T.farbeGrund);
+  }
+  pixelText(x, text, b / 2, Math.round((h - 7) / 2), 1, gedrueckt ? T.farbeZeichenGedrueckt : T.farbeSchrift, 'mitte', null);
   return c;
 }
-export function malBeschriftung(text) {
-  const { c, x } = neueLeinwand(textBreite(text), 7);
-  pixelText(x, text, 0, 0, 1, CONFIG.touch.farbeSchrift, 'links', null);
-  return c;
-}
+// Bilder eines kleinen Knopfs mit dieser Beschriftung: [normal, gedrückt] (neu bei Sprachwechsel)
+export const malKlein = (text) => [malPille(text, false), malPille(text, true)];
 
-// Alle Bilder einmal malen: { name: [Bild je Zustand] } (D-Pad: 9 Richtungen, sonst [normal, gedrückt])
-export function malAlle() {
+// Alle Bilder einmal malen: { name: [Bild je Zustand] } (D-Pad: 9 Richtungen, sonst [normal, gedrückt]);
+// beschriftung(n) = Text der kleinen Knöpfe
+export function malAlle(beschriftung) {
   return {
     dpad: Array.from({ length: 9 }, (_, r) => malDpad(r)),
     a: [malRund('A', false), malRund('A', true)],
     b: [malRund('B', false), malRund('B', true)],
-    l: [malSchulter('L', false), malSchulter('L', true)],
-    r: [malSchulter('R', false), malSchulter('R', true)],
-    select: [malKlein(false), malKlein(true)],
-    start: [malKlein(false), malKlein(true)],
-    notes: [malKlein(false), malKlein(true)],
+    l: [malSchulter('L', false, PIXEL.schulter), malSchulter('L', true, PIXEL.schulter)],
+    r: [malSchulter('R', false, PIXEL.schulterR), malSchulter('R', true, PIXEL.schulterR)],
+    select: malKlein(beschriftung('select')),
+    start: malKlein(beschriftung('start')),
+    notes: malKlein(beschriftung('notes')),
   };
 }

@@ -295,7 +295,7 @@ export const TEXTE = {
   'hud.hilfeNotes': { de: '{taste}: ANSAGEN  ESC: PAUSE', en: '{taste}: PACE NOTES  ESC: PAUSE' },
   // M9a: dieselben Hilfezeilen im Touch-Modus (Knöpfe statt Tasten)
   'hud.touchFahren': { de: 'D-PAD: LENKEN  A: GAS  B: BREMSE', en: 'D-PAD: STEER  A: GAS  B: BRAKE' },
-  'hud.touchHandbremse': { de: 'L: HANDBREMSE  R: AUF STRASSE', en: 'L: HANDBRAKE  R: BACK ON ROAD' },
+  'hud.touchHandbremse': { de: 'R: HANDBREMSE  L: AUF STRASSE', en: 'R: HANDBRAKE  L: BACK ON ROAD' }, // M9a.1: R/L getauscht
   'hud.touchPause': { de: 'START: PAUSE  SELECT: HUD', en: 'START: PAUSE  SELECT: HUD' },
   'hud.touchNotes': { de: 'NOTES: ANSAGEN', en: 'NOTES: PACE NOTES' },
 

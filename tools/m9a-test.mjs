@@ -1,10 +1,11 @@
 // Meilenstein 9a prüfen:  node tools/m9a-test.mjs [--nur a,b,c,...] [--alt <ordner 0.8h>] [--lang]
+// (M9a.1: Erwartungen nachgezogen – R = Handbremse, L = zurück auf die Strasse, kleine Knöpfe quer ≥ 36, Zonen beim Fahren)
 // Alles läuft in Chromium (Playwright) mit Touch-Emulation (hasTouch, isMobile); Mehrfinger über CDP
 // Input.dispatchTouchEvent mit mehreren Kontaktpunkten. Kein echtes Handy, kein Safari, kein Firefox.
 //   Teil B – Eingabe:
 //   (a) jede Knopf-Aktion der Tabelle (Rennen, vor dem Start, Zielbildschirm)
 //   (b) D-Pad: 8 Richtungen, Totzone, Gleiten von ← auf ↖ auf ↑; Lenkung genau wie die Pfeiltasten (gleicher Verlauf)
-//   (c) Mehrfinger: D-Pad ← + A = Lenkung links und Gas, dazu L; einzeln loslassen
+//   (c) Mehrfinger: D-Pad ← + A = Lenkung links und Gas, dazu R (M9a.1, vorher L); einzeln loslassen
 //   (d) Menü: Titel antippen, D-Pad wählen, gehalten = Wiederholen (Regler), A/B/START/R, Garage markieren/bestätigen,
 //       Bestzeiten-Seite Auto wechseln, Eintrag direkt antippen
 //   (e) keine Doppelauslösung durch nachgemachte Mausereignisse
@@ -108,7 +109,7 @@ if (teil('a')) {
   const h = await rennenHandy();
   // gehaltene Aktionen (über die echte Abfrage leseEingabe, wie im Spiel)
   await testZustand(h);
-  const proben = [['a', 'gas', 1], ['b', 'bremse', 1], ['l', 'handbremse', true]];
+  const proben = [['a', 'gas', 1], ['b', 'bremse', 1], ['r', 'handbremse', true]];
   for (const [k, aktion, soll] of proben) {
     await h.f.auf(1, await h.mitte(k)); await h.bild();
     const e = await lies(h);
@@ -144,13 +145,13 @@ if (teil('a')) {
   await h.f.tippe(await h.mitte('select')); await h.f.tippe(await h.mitte('notes')); await h.bild(); // (wieder wie vorher)
   // R vor dem Start (Auto steht, Rennen 'bereit'): sofort auf die Strasse; im laufenden Rennen mit Wartezeit
   const r1 = await h.ev(() => { const A = window.__alpineRally; A.physik.x += 6; return { z: A.rennen.zustand, x: A.physik.x }; });
-  await h.f.tippe(await h.mitte('r')); await h.bild();
+  await h.f.tippe(await h.mitte('l')); await h.bild();
   const r2 = await h.ev(() => { const A = window.__alpineRally; return { x: A.physik.x, rest: A.rueck.rest }; });
-  melde(Math.abs(r2.x - r1.x) > 1 && !(r2.rest > 0), `R vor dem Start (Rennen ${r1.z}): sofort zurück auf die Strasse (x ${r1.x.toFixed(1)} -> ${r2.x.toFixed(1)})`);
+  melde(Math.abs(r2.x - r1.x) > 1 && !(r2.rest > 0), `L vor dem Start (Rennen ${r1.z}): sofort zurück auf die Strasse (x ${r1.x.toFixed(1)} -> ${r2.x.toFixed(1)})`);
   await h.ev(() => { const A = window.__alpineRally; A.rennen.zustand = 'laeuft'; });
-  await h.f.tippe(await h.mitte('r')); await h.bild();
+  await h.f.tippe(await h.mitte('l')); await h.bild();
   const r3 = await h.ev(() => window.__alpineRally.rueck.rest);
-  melde(r3 > 0, `R im laufenden Rennen: Wartezeit läuft (${r3.toFixed(2)} s, wie Taste R)`);
+  melde(r3 > 0, `L im laufenden Rennen: Wartezeit läuft (${r3.toFixed(2)} s, wie Taste R)`);
   await h.f.tippe(await h.mitte('start')); await h.bild();
   const p = await h.ev(() => window.__alpineRally.ablauf.zustand);
   melde(p === 'pause', `START im Rennen: ${p} (wie Esc)`);
@@ -167,9 +168,9 @@ if (teil('a')) {
   });
   await z.bild();
   const vorZ = await z.ev(() => window.__alpineRally.ablauf.zustand);
-  await z.f.tippe(await z.mitte('r')); await z.bild();
+  await z.f.tippe(await z.mitte('l')); await z.bild();
   const nachZ = await z.ev(() => window.__alpineRally.ablauf.zustand);
-  melde(vorZ === 'ziel' && nachZ === 'countdown', `R auf dem Zielbildschirm: ${vorZ} -> ${nachZ} (NEU STARTEN)`);
+  melde(vorZ === 'ziel' && nachZ === 'countdown', `L auf dem Zielbildschirm: ${vorZ} -> ${nachZ} (NEU STARTEN)`);
   await z.zu();
 }
 
@@ -226,20 +227,20 @@ if (teil('c')) {
   await h.bild();
   let e; for (let i = 0; i < 20; i++) e = await lies(h);
   melde(e.lenkung < -0.5 && e.gas === 1 && !e.handbremse, `D-Pad ← + A gleichzeitig: Lenkung ${e.lenkung.toFixed(2)}, Gas ${e.gas}`);
-  await h.f.auf(3, await h.mitte('l')); await h.bild();
+  await h.f.auf(3, await h.mitte('r')); await h.bild();
   e = await lies(h);
-  melde(e.lenkung < -0.5 && e.gas === 1 && e.handbremse, `dazu L (dritter Finger): Handbremse ${e.handbremse}, Lenkung und Gas bleiben`);
+  melde(e.lenkung < -0.5 && e.gas === 1 && e.handbremse, `dazu R (dritter Finger): Handbremse ${e.handbremse}, Lenkung und Gas bleiben`);
   await h.f.ab(2); await h.bild(); e = await lies(h);
   melde(e.gas === 0 && e.handbremse && e.lenkung < -0.5, `A losgelassen: Gas ${e.gas}, Handbremse und Lenkung bleiben`);
   await h.f.ab(3); await h.bild(); e = await lies(h);
-  melde(!e.handbremse && e.lenkung < -0.5, `L losgelassen: Handbremse ${e.handbremse}, Lenkung bleibt`);
+  melde(!e.handbremse && e.lenkung < -0.5, `R losgelassen: Handbremse ${e.handbremse}, Lenkung bleibt`);
   await h.f.ab(1); await h.bild();
   for (let i = 0; i < 40; i++) e = await lies(h);
   melde(e.lenkung === 0 && (await h.ev(() => window.__alpineRally.touch.zeigerAnzahl)) === 0, `D-Pad losgelassen: Lenkung zurück auf ${e.lenkung}, keine Finger mehr`);
   // vier Finger: D-Pad ↗ (lenken + Gas), B, L, R gleichzeitig
-  await h.f.auf(1, await h.dpadPunkt(45)); await h.f.auf(2, await h.mitte('b')); await h.f.auf(3, await h.mitte('l')); await h.bild();
+  await h.f.auf(1, await h.dpadPunkt(45)); await h.f.auf(2, await h.mitte('b')); await h.f.auf(3, await h.mitte('r')); await h.bild();
   const hv = await halten(h); e = await lies(h);
-  melde(hv.dpad === 2 && hv.b && hv.l && e.gas === 1 && e.bremse === 1 && e.handbremse, `drei Finger (↗, B, L): Gas ${e.gas}, Bremse ${e.bremse}, Handbremse ${e.handbremse}`);
+  melde(hv.dpad === 2 && hv.b && hv.r && e.gas === 1 && e.bremse === 1 && e.handbremse, `drei Finger (↗, B, R): Gas ${e.gas}, Bremse ${e.bremse}, Handbremse ${e.handbremse}`);
   await h.f.ab(1); await h.f.ab(2); await h.f.ab(3); await h.bild();
   await h.zu();
 }
@@ -482,7 +483,8 @@ function pruefeLayout(L, W, H, safe) {
   const sicht = { x: Math.max(T.rand, safe.l), y: safe.o, b: W - Math.max(T.rand, safe.l) - Math.max(T.rand, safe.r), h: H - safe.o - safe.u };
   for (let i = 0; i < ELEMENTE.length; i++) {
     const e = L.el[ELEMENTE[i]];
-    if (e.b < T.treffer - 0.01 || e.h < T.treffer - 0.01) probleme.push(`${ELEMENTE[i]} Treffer ${e.b.toFixed(0)}x${e.h.toFixed(0)}`);
+    const min = ['select', 'start', 'notes'].includes(ELEMENTE[i]) && L.format === 'quer' ? 36 : T.treffer; // (M9a.1: kleine Knöpfe quer ≥ 36)
+    if (e.b < min - 0.01 || e.h < min - 0.01) probleme.push(`${ELEMENTE[i]} Treffer ${e.b.toFixed(0)}x${e.h.toFixed(0)}`);
     if (!innen(e.v, e)) probleme.push(`${ELEMENTE[i]} sichtbar ausserhalb der Trefferfläche`);
     if (e.s && !innen(e.s, e)) probleme.push(`${ELEMENTE[i]} Beschriftung ausserhalb`);
     if (!innen(e, sicht)) probleme.push(`${ELEMENTE[i]} ausserhalb des sicheren Bereichs (${r2(e)})`);
