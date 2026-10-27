@@ -703,5 +703,74 @@ if (teil('d')) {
   }
 }
 
+// ===================================================================== (r) Texte
+if (teil('r')) {
+  console.log('(r) neue Texte de/en in der Pixelschrift');
+  const h = await handy(402, 874, { leicht: true });
+  const r = await h.ev(async () => {
+    const T = await import('/js/texte.js'), P = await import('/js/pixel.js');
+    const neu = ['hud.touchHandbremse', 'einst.autoGas', 'einst.autoGasHinweis', 'einst.haptik', 'einst.haptikHinweis', 'wert.knoepfe', 'wert.voll',
+      'einst.haptikTesten', 'einst.haptikTestenHinweis', 'haptik.vibrate', 'haptik.schalter', 'haptik.keiner', 'haptik.aus', 'touch.auto'];
+    const zeichen = new Set(P.SCHRIFT_ZEICHEN), fehlt = []; let breitest = 0;
+    for (const k of neu) for (const sp of ['de', 'en']) {
+      const tx = T.TEXTE[k] && T.TEXTE[k][sp];
+      if (!tx) { fehlt.push(`${k}.${sp} leer`); continue; }
+      if (tx !== tx.toUpperCase()) fehlt.push(`${k}.${sp} nicht gross`);
+      for (const z of tx) if (!zeichen.has(z)) fehlt.push(`${k}.${sp}: "${z}"`);
+      breitest = Math.max(breitest, P.textBreite(tx));
+    }
+    return { n: neu.length, fehlt, breitest, auto: T.TEXTE['touch.auto'] };
+  });
+  melde(r.fehlt.length === 0 && r.breitest <= 298 && /^[AUTO]+$/.test(r.auto.de + r.auto.en), `${r.n} neue/geänderte Texte de + en: Grossbuchstaben, alle Zeichen in der Pixelschrift, längster ${r.breitest} Pixel, "AUTO" nur aus Zeichen der Mini-Schrift${r.fehlt.length ? ` – ${r.fehlt.slice(0, 6).join(', ')}` : ''}`);
+  await h.zu();
+}
+
+// ===================================================================== (u) Unveränderlich gegen 0.9a, (v) Tests von M9a
+if (teil('u')) {
+  console.log('(u) Unveränderlich gegen 0.9a');
+  if (!ALT) info('nur mit --alt <ordner 0.9a> (git worktree add <ordner> 12de5b8)');
+  else {
+    const dateien = ['js/audio.js', 'js/umgebung.js', 'js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js', 'js/physics.js', 'js/getriebe.js', 'js/fahrprofil.js',
+      'js/autos.js', 'js/car.js', 'js/track.js', 'js/netz.js', 'js/tacho.js', 'js/vergleich.js', 'js/garage.js', 'js/bestzeiten.js', 'js/hud.js', 'js/menue.js',
+      'js/pacenotes-tempo.js', 'js/abkuerzungen.js', 'tools/schneiden-zeiten.json', 'index.html', 'css/style.css', 'manifest.webmanifest'];
+    const geaendert = dateien.filter((d) => spawnSync('git', ['diff', '--quiet', '12de5b8', '--', d], { cwd: WURZEL }).status !== 0);
+    melde(geaendert.length === 0, `${dateien.length} Dateien (Ton, Physik, Getriebe, Autos, Strecke, Tacho, HUD, Menü-Baustein, Bestzeiten, Seite, Manifest …) unverändert seit 0.9a${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
+    // config.js: entfernt/geändert nur Version und Zeilen im Block touch
+    const diff = spawnSync('git', ['diff', '-U0', '12de5b8', '--', 'js/config.js'], { cwd: WURZEL, encoding: 'utf8' }).stdout;
+    const entfernt = diff.split('\n').filter((z) => z.startsWith('-') && !z.startsWith('---'));
+    const fremd = entfernt.filter((z) => !/VERSION|schulter|klein|schriftGroesse|dpadDiagonal|farbeSchrift|bildLuecke|^-\s+\},?$/.test(z));
+    melde(fremd.length === 0, `js/config.js: ausser Version nur der Block touch geändert (${entfernt.length} Zeilen ersetzt), neu: haptik, touchAutoGas, haptik-Standard${fremd.length ? `; fremd: ${fremd.slice(0, 3).join(' | ')}` : ''}`);
+    const args = ['--nur', 'a,h,i', '--alt', ALT, ...(process.argv.includes('--lang') ? ['--lang'] : [])];
+    const geaenderteDateien = () => new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+    const vorher = geaenderteDateien();
+    const r = werkzeug('m8g-test.mjs', args);
+    fs.writeFileSync(path.join(LOG, 'm8g-test.log'), r.text);
+    const z = r.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
+    for (const x of z) melde(/^\s*ok/.test(x), `m8g-test: ${x.replace(/^\s*(ok|FEHLER)\s+/, '').replace(/0\.8f/g, '0.9a (--alt)').replace(/Bildzeit im Spiel 0\.8g/, 'Bildzeit im Spiel 0.9a.1')}`);
+    melde(z.length > 0, `m8g-test ${args.join(' ')} ausgeführt (${z.length} Prüfungen, Ausgabe ${LOG}/m8g-test.log)`);
+    if (process.argv.includes('--lang')) {
+      const m = werkzeug('m8h-test.mjs', []);
+      fs.writeFileSync(path.join(LOG, 'm8h-test.log'), m.text);
+      const zm = m.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
+      melde(m.code === 0, `m8h-test (ohne --alt): ${zm.filter((x) => /^\s*ok/.test(x)).length} ok, ${zm.filter((x) => /FEHLER/.test(x)).length} rot${m.code ? ` – ${zm.filter((x) => /FEHLER/.test(x)).slice(0, 3).map((x) => x.trim().slice(0, 140)).join(' | ')}` : ''}`);
+    }
+    const lz = werkzeug('ladezeit.mjs', [ALT, '9']);
+    fs.writeFileSync(path.join(LOG, 'ladezeit.log'), lz.text);
+    const med = (n) => +((new RegExp(`${n} .*Median (\\d+)`).exec(lz.text) || [])[1]);
+    melde(med('neu') - med('alt') <= 30, `Ladezeit (Median aus 9): 0.9a ${med('alt')} ms, 0.9a.1 ${med('neu')} ms (${med('neu') - med('alt') >= 0 ? '+' : ''}${med('neu') - med('alt')} ms, höchstens +30; Streuung ca. ±100)`);
+    const neuGeaendert = [...geaenderteDateien()].filter((d) => !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+    if (neuGeaendert.length) spawnSync('git', ['checkout', '--', ...neuGeaendert], { cwd: WURZEL });
+    info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neuGeaendert.length}`);
+  }
+}
+if (teil('v')) {
+  console.log('(v) Tests von M9a (Touch-Teile, ohne den Vergleich gegen 0.8h)');
+  const r = werkzeug('m9a-test.mjs', ['--nur', 'a,b,c,d,e,f,g,h,i,j,k,m,n']);
+  fs.writeFileSync(path.join(LOG, 'm9a-test.log'), r.text);
+  const z = r.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
+  const rot = z.filter((x) => /FEHLER/.test(x));
+  melde(r.code === 0 && z.length > 50, `m9a-test --nur a-k,m,n: ${z.length - rot.length} ok, ${rot.length} rot${rot.length ? ` – ${rot.slice(0, 3).map((x) => x.trim().slice(0, 160)).join(' | ')}` : ''}`);
+}
+
 console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');
 process.exit(fehler ? 1 : 0);

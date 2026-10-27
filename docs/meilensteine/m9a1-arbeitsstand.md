@@ -21,6 +21,7 @@ Test: `node tools/m9a1-test.mjs --alt <ordner 0.9a> [--nur a,b] [--lang]`.
       Meldung des Wegs). vibrate: Knopf 10, Gang 12, Checkpoint 15-30-15, Ziel, Aufprall 20..60 nach Wucht/14 wie im Ton;
       sonst iPhone: einmal angelegter versteckter <input switch> + label.click(). Knopf-Tick im pointerdown. Rate-Limit
       40 / 120 ms. Hooks in main.js nur bei Zustand 'rennen'. (m)-(p) grün – nur Chromium mit Zähler, iPhone ungeprüft.
-- [ ] E Tests, Bilder, Bericht, Version 0.9a.1
+- [x] E Version 0.9a.1, Tests (r) Texte, (u) Unveränderlich + m8g/m8h/Ladezeit, (v) m9a-Tests; Bilder `screenshots/m9a1/`
+      (5), Bericht `docs/meilensteine/m9a1.md`, STAND/KONZEPT nachgeführt. Voller Lauf `--lang` einmal (Ergebnis im Bericht).
 
 Offen: quer liegt rechts vom Kreuz kaum Platz (Zone nur 4 px breiter als das Kreuz) – Gewinn vor allem senkrecht.

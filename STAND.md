@@ -2,12 +2,12 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 9a fertig** (Version 0.9a) – **Touch-Steuerung fürs Handy**: D-Pad, A, B, L, R, START, SELECT,
-NOTES im Pixel-Look, Hochformat (Bild oben in voller Breite, Steuerfläche unten) und Querformat (Bild in der Mitte,
-Knöpfe links und rechts), Menü mit D-Pad und Antippen, Web-App-Modus („Zum Home-Bildschirm“). Am Computer ohne Touch
-ist alles wie 0.8h (pixelgleich geprüft). **Nur in Chromium mit Touch-Emulation getestet, kein echtes Handy.**
-**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m9a.md`** (iPhone mit Safari und Firefox). Davor: 8h (Bestzeiten je Auto).
-Nächster Schritt: Feinschliff nach deinem Handy-Test (M9a.1), danach **Strecke als Daten** (noch kein Prompt).
+Aktuell: **Meilenstein 9a.1 fertig** (Version 0.9a.1) – **Touch-Feinschliff**: R = Handbremse direkt über A/B,
+L = zurück auf die Strasse, SELECT/START/NOTES als kleine Pillen, D-Pad im Querformat grösser mit grossen unsichtbaren
+Lenk-Zonen, neue Einstellungen **AUTO-GAS** und **HAPTIK** (mit HAPTIK TESTEN). Am Computer ohne Touch alles wie 0.9a.
+**Nur in Chromium mit Touch-Emulation getestet, Haptik nur gezählt – kein echtes Handy.**
+**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m9a1.md`.** Davor: 9a (Touch-Steuerung).
+Nächster Schritt: **Strecke als Daten** (noch kein Prompt).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -31,9 +31,10 @@ Im Menü: Pfeile oder WASD (bzw. Steuerkreuz/linker Stick) zum Wählen, **Enter/
 Bestätigen, **Esc/Rücktaste** (B / Kreis) für zurück. Die Maus geht auch (zeigen = wählen, klicken = bestätigen,
 Regler ziehen). **Garage (seit M8d):** zeigen/Pfeile = Auto nur ansehen, **Leertaste/Enter** (A / Kreuz, Klick) = Auto wählen. Tastatur, Gamepad und Maus gehen gleichzeitig, nichts einzustellen. Geschaltet wird automatisch.
 Alle Tasten ausser Esc, Enter und F3 kann man unter EINSTELLUNGEN → TASTEN BELEGEN ändern.
-**Handy (seit M9a):** D-Pad = lenken (↑ Gas, ↓ Bremse, Schrägen gehen), A = Gas, B = Bremse, L = Handbremse, R = zurück
-auf die Strasse, START = Pause, SELECT = HUD, NOTES = Pace-Notes; im Menü D-Pad, A = OK, B = zurück, oder antippen.
-EINSTELLUNGEN → TOUCH-STEUERUNG = AUTO / AN / AUS.
+**Handy (seit M9a, Belegung seit M9a.1):** D-Pad = lenken (↑ Gas, ↓ Bremse, Schrägen gehen), A = Gas, B = Bremse,
+**R = Handbremse**, **L = zurück auf die Strasse**, START = Pause, SELECT = HUD, NOTES = Pace-Notes; im Menü D-Pad, A = OK,
+B = zurück, L = wie Taste R (Zielbildschirm: NEU STARTEN), oder antippen. EINSTELLUNGEN → TOUCH-STEUERUNG = AUTO / AN / AUS,
+AUTO-GAS = AN / AUS, HAPTIK = AUS / NUR KNÖPFE / VOLL (die letzten zwei nur im Touch-Modus).
 
 Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start ist das HUD wieder an.
 
@@ -59,6 +60,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/demofahrt.js` – Demo-Fahrt hinter Titel und Hauptmenü (seit M5a).
 - `js/einstellungen.js` – Einstellungen (seit M5a): Werte, Standardwerte aus config.js (Block…
 - `js/fahrlabor.js` – Fahr-Labor (Meilenstein 8a): Seitenpanel zum Nachstellen des Fahrgefühls…
+- `js/haptik.js` – Haptik (M9a.1): Vibration (Android) bzw. Tick über einen versteckten iOS-Schalter, nur im Touch-Modus.
 - `js/fahrprofil.js` – Fahrprofile (Meilenstein 8a): Das heutige Fahrverhalten steht in config…
 - `js/federung.js` – Federung der Karosserie (Meilenstein 8a): Feder und Dämpfer (zweiter Ordn…
 - `js/garage.js` – Garage (Meilenstein 8c): drehendes 3D-Modell auf der Menüseite AUTO.
@@ -126,6 +128,8 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Werkzeuge und Tests
 
+- `node tools/m9a1-test.mjs --alt <ordner 0.9a>` – alle Prüfungen von M9a.1 (a) bis (v); einzeln `--nur e,f`; Regression
+  mit `--lang` (0.9a: `git worktree add <ordner> 12de5b8`). `node tools/m9a1-bilder.mjs` – Bilder nach `screenshots/m9a1/`.
 - `node tools/m9a-test.mjs --alt <ordner 0.8h>` – alle Prüfungen von M9a (a) bis (n) und (u); einzeln `--nur a,d`; Regression
   mit `--lang`. Touch nur in Chromium emuliert. `node tools/m9a-bilder.mjs` – Bilder nach `screenshots/m9a/`.
   `node tools/icons-bauen.mjs` – Icons für den Web-App-Modus neu malen (`icons/`).
@@ -175,8 +179,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
   Fingergefühl ungeprüft. Im Querformat mit Safe-Area wird das Bild kleiner (491x276 auf 874x402). HUD im Hochformat klein.
   Test-Browser: im Menü teils nur 3 Bilder/s, Menü-Tests blenden darum die 3D-Szene aus. Details: `docs/meilensteine/m9a.md`.
 - Touchscreen-Laptop: mit TOUCH-STEUERUNG = AUTO erscheinen dort die Knöpfe (dann AUS wählen).
+- **M9a.1:** iOS-Haptik (Schalter-Trick) ungeprüft, vor allem bei Spielereignissen; Querformat-Bild wegen des grösseren
+  D-Pads ca. 8–9 % kleiner (874x402: 501x282); quer liegt rechts vom Kreuz kaum Platz für die Lenk-Zone (nur senkrecht
+  grosszügig); kleines iPhone quer mit Safe-Area sehr knapp (A/B 44, R 53x29). Details: `docs/meilensteine/m9a1.md`.
 
 ## Ideen/Vorschläge (nicht umgesetzt)
+
+- **Touch (M9a.1-Ideen):** eigener Handbremsen-Knopf neben A/B, Knopfgrösse einstellbar, Drift-Hilfe über B (z. B. B kurz
+  antippen = Lastwechsel), analoge Lenkung nach Daumenposition im D-Pad (weiter aussen = stärker), Wake Lock
+  (Bildschirm bleibt an), Lenk-Zone und Winkel einstellbar.
 
 - **Touch (M9a-Ideen):** Knopfgrösse und Lage einstellbar (KLEIN/NORMAL/GROSS), Vibration beim Aufprall (Android),
   Bildschirm wach halten (Wake Lock), Gas automatisch als Hilfe, Neigungssteuerung, Tasten-Layout für Linkshänder,
@@ -207,6 +218,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Während der Arbeit: `docs/meilensteine/<name>-arbeitsstand.md` (10 bis 20 Zeilen: erledigt, Werte, offene Fragen) nach jedem Teil nachführen.
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
+
+- **M9a.1** (0.9a.1) – Bericht mit Zahlen, Fenstergrössen, Tests, Unsicherheiten, Test-Anleitung und Bildern: `docs/meilensteine/m9a1.md`.
+  - **Belegung:** R = Handbremse (über A, 80x44), L = zurück auf die Strasse; im Menü L = bisheriges R, R tut nichts.
+  - **Kleine Knöpfe** als Pillen (26 hoch, Treffer quer 36), quer 29 % weniger Fläche; seitlich NOTES oben rechts.
+  - **D-Pad quer** 176 (statt 131), Bild mittig zwischen den Zonen; **Lenk-Zonen beim Fahren** ←/→ ±50°, ↑/↓ ±15°,
+    35 % über/unter dem Kreuz; im Menü klassisch.
+  - **AUTO-GAS** (Standard aus): Gas von allein im Rennen, B bremst, R lässt Gas an; A zeigt AUTO.
+  - **HAPTIK** (Standard voll): Android `vibrate`, iPhone Schalter-Trick, Knopf-Ticks im Pointer-Down, Rate-Limit 40/120 ms.
+  - **Unsicher:** iPhone-Haptik und Fingergefühl nur von dir prüfbar; Desktop pixelgleich zu 0.9a (gemessen).
 
 - **M9a** (0.9a) – Bericht mit Layout-Tabelle, Belegung, Tests, Unsicherheiten, Test-Anleitung und Bildern: `docs/meilensteine/m9a.md`.
   - **Knöpfe:** D-Pad, A/B (diagonal), L/R, START/SELECT/NOTES im Pixel-Look, orange wenn gedrückt, einmal gemalt.
