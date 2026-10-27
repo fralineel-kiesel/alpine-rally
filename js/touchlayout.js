@@ -4,6 +4,7 @@
 //   { format: 'hoch' | 'quer', k (Grösse der Knöpfe, 1 = wie in config.js), bild: { x, y, b, h } (16:9),
 //     flaeche: { x, y, b, h } (Hochformat: dunkle Steuerfläche unten, sonst null),
 //     el: { dpad, a, b, l, r, select, start, notes } }
+//   el.dpad.zone (M9a.1) = unsichtbare Trefferzone des D-Pads beim Fahren (grösser als das Kreuz, siehe touch.fahrZone)
 // Jedes Element: { x, y, b, h } = Trefferfläche (nie kleiner als minTreffer; START/SELECT/NOTES im Querformat nie kleiner
 // als kleinTreffer), v = sichtbarer Knopf darin.
 // Hochformat: Bild in voller Breite, mittig im Raum über der Steuerfläche; Steuerfläche unten mit L in der oberen Ecke
@@ -54,6 +55,13 @@ function abBei(xr, cy, g) {
     b: element(xr - g.a - g.dx, ay + g.dy, g.a, g.a, g.a, g.a),
   };
 }
+// Trefferzone des D-Pads beim Fahren (M9a.1): waagrecht von x0 bis x1, senkrecht fahrZone.hoehe der D-Pad-Grösse über
+// und unter das Kreuz (zwischen yMin und yMax). Liegt ein anderer Knopf darin (L, SELECT), gewinnt der Knopf (touch.js).
+function fahrZone(el, x0, x1, yMin, yMax) {
+  const Z = CONFIG.touch.fahrZone, d = el.dpad;
+  const y0 = Math.max(yMin, d.y - Z.hoehe * d.h), y1 = Math.min(yMax, d.y + d.h + Z.hoehe * d.h);
+  return rechteck(x0, y0, x1 - x0, y1 - y0);
+}
 // R (M9a.1) direkt über A, rechtsbündig mit A (dem rechten Daumen zugewandt), nie über yMin
 function rUeber(a, xr, yMin, g) {
   const y = Math.max(yMin, a.y - CONFIG.touch.luecke - g.rht);
@@ -89,6 +97,7 @@ export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
     el.dpad = dpadBei(mL + g.d / 2, cy, g);
     Object.assign(el, abBei(W - mR, cy, g));
     el.r = rUeber(el.a, W - mR, yP + ro, g);
+    el.dpad.zone = fahrZone(el, mL, (el.dpad.x + el.dpad.b + el.b.x) / 2, yP, H - safe.u);
     return { format: 'hoch', k, bild, flaeche, el };
   }
   // --- Querformat ---
@@ -100,12 +109,14 @@ export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
   const oben = safe.o + ro, unterkante = H - safe.u - ro;
   const reiheB = (g) => KLEINE.reduce((s, n) => s + g.kb(n), 0) + 2 * T.hoch.kleinLuecke;
   const k0 = Q.faktor * Math.min(1, H / Q.kleinAb);
-  // Knöpfe bei Massstab k; passt = beide Spalten haben in der Höhe Platz und die Zonen sind nicht zu breit
+  // Knöpfe bei Massstab k; passt = beide Spalten haben in der Höhe Platz und die Zone rechts ist nicht zu breit
   const bau = (k, seitlich) => {
     const g = groessen(k, T.kleinTreffer);
     const e = {};
     const yK = unterkante - g.kh; // seitlich: Reihe der kleinen Knöpfe unten in den Zonen
     const boden = seitlich ? yK - lu : unterkante; // so tief dürfen D-Pad und A/B reichen
+    // M9a.1: D-Pad quer mit eigener Grösse (nicht mal k), begrenzt durch Fensterhöhe, Zone links und Platz in der Spalte
+    g.d = Math.max(T.dpadMinDurchmesser, Math.min(Q.dpad, Q.dpadHoehe * Hv, Q.dpadZoneMax * W - mL - Q.bildLuecke, boden - oben - g.sht - lu));
     const cy = (oben + g.sht + lu + boden) / 2; // Mitte der Spalten (zwischen L und dem Boden)
     // links: L oben, D-Pad (und SELECT); rechts: A/B mit R direkt darüber (und NOTES oben, START unten)
     e.l = element(mL, oben, g.sb, g.sht, g.sb, g.sh);
@@ -123,27 +134,31 @@ export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
     const ZR = mR + Math.max(g.abB, g.rb, seitlich ? Math.max(e.start.b, e.notes.b) : 0) + Q.bildLuecke;
     const hoehe = e.dpad.y >= e.l.y + e.l.h + lu - eps && e.dpad.y + e.dpad.h <= boden + eps
       && e.r.y + e.r.h + lu <= e.a.y + eps && e.b.y + e.b.h <= boden + eps;
-    const breite = Math.max(ZL, ZR) <= Q.zoneMaxAnteil * W || g.d <= T.dpadMinDurchmesser;
+    const breite = ZR <= Q.zoneMaxAnteil * W || g.a <= T.minTreffer; // (links begrenzt dpadZoneMax das D-Pad)
     return { k, g, e, ZL, ZR, passt: hoehe && breite };
   };
   const versuch = (seitlich) => {
     let v = bau(k0, seitlich);
     for (let k = k0; k > 0.4 && !v.passt; ) { k -= 0.02; v = bau(k, seitlich); }
-    const Z = Math.max(Q.seitenZone, v.ZL, v.ZR);
-    v.bb = Math.min(W - 2 * Z, (seitlich ? Hv : Hv - lu - v.g.kh - ro) * 16 / 9);
+    v.ZL = Math.max(Q.seitenZone, v.ZL); v.ZR = Math.max(Q.seitenZone, v.ZR);
+    const frei = Q.bildMittig ? W - 2 * Math.max(v.ZL, v.ZR) : W - v.ZL - v.ZR;
+    v.bb = Math.min(frei, (seitlich ? Hv : Hv - lu - v.g.kh - ro) * 16 / 9);
     v.bh = v.bb * 9 / 16;
     return v;
   };
   // beide Varianten rechnen, die mit dem grösseren Bild gewinnt (bei gleich grossem Bild: unter dem Bild)
   const u = versuch(false), sv = versuch(true);
   const seitlich = sv.bh > u.bh + 0.5 || reiheB(u.g) > u.bb;
-  const { k, g, bb, bh, e } = seitlich ? sv : u;
+  const { k, g, bb, bh, e, ZL, ZR } = seitlich ? sv : u;
   const blockH = seitlich ? bh : bh + lu + g.kh;
-  const bild = rechteck((W - bb) / 2, safe.o + (Hv - blockH) / 2, bb, bh);
+  // Bild mittig im Fenster oder (bildMittig: false) mittig zwischen den beiden Zonen
+  const bx = Q.bildMittig ? (W - bb) / 2 : ZL + (W - ZL - ZR - bb) / 2;
+  const bild = rechteck(bx, safe.o + (Hv - blockH) / 2, bb, bh);
   Object.assign(el, e);
   if (!seitlich) {
-    let x = (W - reiheB(g)) / 2;
+    let x = bild.x + (bb - reiheB(g)) / 2;
     for (const n of KLEINE) { el[n] = klein(n, x, bild.y + bh + lu, g); x += g.kb(n) + T.hoch.kleinLuecke; }
   }
+  el.dpad.zone = fahrZone(el, mL, bild.x - T.fahrZone.bildAbstand, safe.o, H - safe.u);
   return { format: 'quer', k, bild, flaeche: null, el, klein: seitlich ? 'seitlich' : 'unten' };
 }

@@ -178,17 +178,18 @@ if (teil('b')) {
   console.log('(b) D-Pad: Richtungen, Totzone, Gleiten, Lenkung wie die Pfeiltasten');
   const h = await rennenHandy();
   await testZustand(h);
-  const soll = [[0, 1], [45, 2], [90, 3], [135, 4], [180, 5], [225, 6], [270, 7], [315, 8], [20, 1], [70, 3], [30, 2]];
+  // (M9a.1: beim Fahren asymmetrisch – ↑/↓ je ±15°, Schrägen 15..40° von der Senkrechten, ←/→ ±50° um die Waagerechte)
+  const soll = [[0, 1], [25, 2], [90, 3], [155, 4], [180, 5], [205, 6], [270, 7], [335, 8], [10, 1], [45, 3], [30, 2]];
   const ist = [];
   for (const [grad, r] of soll) { await h.f.auf(1, await h.dpadPunkt(grad, 0.75)); await h.bild(); ist.push([(await halten(h)).dpad, r]); await h.f.ab(1); }
-  melde(ist.every(([a, b]) => a === b), `8 Richtungen (und Grenzen 20°/70°/30°): ${ist.map(([a]) => a).join(' ')} (Soll ${soll.map(([, r]) => r).join(' ')})`);
+  melde(ist.every(([a, b]) => a === b), `8 Richtungen (und Grenzen 10°/45°/30°): ${ist.map(([a]) => a).join(' ')} (Soll ${soll.map(([, r]) => r).join(' ')})`);
   await h.f.auf(1, await h.dpadPunkt(90, 0.1)); await h.bild();
   const tz = await halten(h); const tze = await tein(h); await h.f.ab(1);
   melde(tz.dpad === 0 && !tze.rechts && !tze.gas, `Totzone in der Mitte: keine Richtung (${tz.dpad})`);
   // Gleiten: ← -> ↖ -> ↑ mit demselben Finger
   const folge = [];
   await h.f.auf(1, await h.dpadPunkt(270)); await h.bild(); folge.push({ ...(await halten(h)), e: await tein(h) });
-  await h.f.zu(1, await h.dpadPunkt(315)); await h.bild(); folge.push({ ...(await halten(h)), e: await tein(h) });
+  await h.f.zu(1, await h.dpadPunkt(335)); await h.bild(); folge.push({ ...(await halten(h)), e: await tein(h) });
   await h.f.zu(1, await h.dpadPunkt(0)); await h.bild(); folge.push({ ...(await halten(h)), e: await tein(h) });
   await h.f.ab(1); await h.bild(); folge.push({ ...(await halten(h)), e: await tein(h) });
   const ok = folge[0].dpad === 7 && folge[0].e.links && !folge[0].e.gas && folge[1].dpad === 8 && folge[1].e.links && folge[1].e.gas
@@ -238,7 +239,7 @@ if (teil('c')) {
   for (let i = 0; i < 40; i++) e = await lies(h);
   melde(e.lenkung === 0 && (await h.ev(() => window.__alpineRally.touch.zeigerAnzahl)) === 0, `D-Pad losgelassen: Lenkung zurück auf ${e.lenkung}, keine Finger mehr`);
   // vier Finger: D-Pad ↗ (lenken + Gas), B, L, R gleichzeitig
-  await h.f.auf(1, await h.dpadPunkt(45)); await h.f.auf(2, await h.mitte('b')); await h.f.auf(3, await h.mitte('r')); await h.bild();
+  await h.f.auf(1, await h.dpadPunkt(25)); await h.f.auf(2, await h.mitte('b')); await h.f.auf(3, await h.mitte('r')); await h.bild();
   const hv = await halten(h); e = await lies(h);
   melde(hv.dpad === 2 && hv.b && hv.r && e.gas === 1 && e.bremse === 1 && e.handbremse, `drei Finger (↗, B, R): Gas ${e.gas}, Bremse ${e.bremse}, Handbremse ${e.handbremse}`);
   await h.f.ab(1); await h.f.ab(2); await h.f.ab(3); await h.bild();

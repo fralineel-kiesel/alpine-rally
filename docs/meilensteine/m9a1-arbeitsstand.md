@@ -9,9 +9,13 @@ Test: `node tools/m9a1-test.mjs --alt <ordner 0.9a> [--nur a,b] [--lang]`.
       (`schulterR` 80x44, Hoch- und Querformat), kleine Knöpfe als Pillen 26 hoch mit Beschriftung innen (Treffer quer
       ≥ 36, hoch 44), quer seitlich: NOTES oben rechts (frei geworden), START unten rechts. Texte de/en.
       Tests (a) (b) grün; (c) Layout siehe unten; alte m9a-Tests auf R/L nachgezogen.
-- [ ] B D-Pad quer grösser, Zonen beim Fahren asymmetrisch (Menü klassisch)
+- [x] B D-Pad quer eigene Grösse (`quer.dpad` 176, ≤ 44 % der Höhe, Zone links ≤ 27 %): 874x402 176 statt 131,
+      874x330 145, mit Safe-Area 166. Bild dafür kleiner (874x402: 501x282 statt 544x306), mittig zwischen den Zonen
+      (`bildMittig: false`). Fahr-Zone (`fahrZone`): ←/→ ±50°, ↑/↓ ±15° bis 1.15 Radien, 35 % über/unter dem Kreuz,
+      waagrecht bis 4 px vors Bild (quer) bzw. Mitte D-Pad–B (hoch); Knöpfe in der Zone haben Vorrang. Menü klassisch.
+      Tests (e)-(h) grün, m9a (b) auf die neuen Sektoren nachgezogen.
 - [ ] C AUTO-GAS
 - [ ] D HAPTIK (js/haptik.js schon vorgeschrieben, noch nicht eingebunden)
 - [ ] E Tests, Bilder, Bericht, Version 0.9a.1
 
-Offen: Querformat-Bild wird mit grösserem D-Pad kleiner (Zone links) – Plan: Bild zwischen den Zonen statt exakt mittig.
+Offen: quer liegt rechts vom Kreuz kaum Platz (Zone nur 4 px breiter als das Kreuz) – Gewinn vor allem senkrecht.

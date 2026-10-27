@@ -1701,9 +1701,24 @@ export const CONFIG = {
       faktor: 0.9,             // Knöpfe im Querformat so viel kleiner als im Hochformat (mehr Platz fürs Bild)
       kleinAb: 330,            // Fenster niedriger als das: Knöpfe verhältnismässig kleiner
       bildLuecke: 8,           // Abstand der Knöpfe zum Bild
+      // M9a.1: D-Pad im Querformat eigene Grösse (nicht mal faktor): so gross wie möglich, aber höchstens ...
+      dpad: 176,               // ... so viele Pixel Durchmesser ...
+      dpadHoehe: 0.44,         // ... dieser Anteil der Fensterhöhe (bei 874x330 also kleiner) ...
+      dpadZoneMax: 0.27,       // ... und die Zone links (Rand + D-Pad + Lücke) höchstens dieser Anteil der Breite
+      bildMittig: false,       // false = Bild mittig zwischen den Zonen (links wegen des D-Pads breiter), true = genau in der Mitte
     },
     dpadTotzone: 0.2,          // D-Pad: in der Mitte (Anteil des Radius) zählt keine Richtung
-    dpadDiagonal: 40,          // D-Pad: so viel Grad breit ist der Bereich für eine Schräge (↖ ↗ ↘ ↙), der Rest gerade
+    dpadDiagonal: 40,          // D-Pad im Menü (und bis M9a beim Fahren): so viel Grad breit ist eine Schräge (↖ ↗ ↘ ↙)
+    // M9a.1: Trefferzonen des D-Pads beim Fahren (Countdown, Rennen; im Menü bleibt es klassisch mit vier gleichen Richtungen).
+    // Unsichtbar: die Zone reicht über das sichtbare Kreuz hinaus, damit der Daumen beim Lenken nicht danebenliegt.
+    fahrZone: {
+      seiteWinkel: 50,         // ← / →: so viele Grad über und unter der Waagerechten (breit) ...
+      hochWinkel: 15,          // ↑ / ↓: so viele Grad links und rechts der Senkrechten (schmal); dazwischen die Schrägen
+      hochReichweite: 1.15,    // ↑ / ↓ und Schrägen nur bis zu diesem Vielfachen des Radius; weiter weg zählt nur ← / →
+      hoehe: 0.35,             // die Zone reicht so viel der D-Pad-Grösse über und unter das Kreuz ...
+      bildAbstand: 4,          // ... und waagrecht vom Rand (24) bis so nah ans Bild (Querformat) bzw. im Hochformat bis
+                               //     zur Mitte zwischen D-Pad und B
+    },
     dpadMinDurchmesser: 96,    // kleiner wird das D-Pad nie
     wiederholenNach: 0.4,      // Menü: gehaltene D-Pad-Richtung wiederholt nach ... Sekunden ...
     wiederholenAlle: 0.12,     // ... und dann alle ... Sekunden (wie das Gamepad)

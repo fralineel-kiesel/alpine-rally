@@ -38,7 +38,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
   let lay = null;          // aktuelles Layout (js/touchlayout.js)
   let safeTest = null;     // nur Tests: Safe-Area-Ränder vorgeben { o, r, u, l }
   let letzterTouch = -1e9; // Zeit der letzten Berührung (danach keine nachgemachten Mausklicks)
-  const zeiger = new Map(); // pointerId -> { el, richtung (8), r4 (Menü), tot, maus }
+  const zeiger = new Map(); // pointerId -> { el, richtung (8), r4 (Menü), tot, maus, fahren (Zonen beim Fahren) }
   let bildZeiger = null;   // Finger, der im Menü auf dem Bild tippt/zieht (wie die Maus)
   const titelBeruehrungen = new Set(); // Berührungen, die auf dem Titelbildschirm begonnen haben
   const halten = { dpad: 0, r4: 0, a: false, b: false, l: false, r: false, select: false, start: false, notes: false };
@@ -131,26 +131,43 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
 
   // --- Treffer und Zustand --------------------------------------------------------------------
   const drin = (r, x, y, rand = 0) => x >= r.x - rand && x < r.x + r.b + rand && y >= r.y - rand && y < r.y + r.h + rand;
-  function trefferBei(x, y, vorher) {
+  // fahren (M9a.1): beim Fahren zählt für das D-Pad auch seine grosse unsichtbare Zone (lay.el.dpad.zone)
+  function trefferBei(x, y, vorher, fahren = false) {
     if (!lay) return null;
     for (const n of NAMEN) if (drin(lay.el[n], x, y)) return n;
-    // ein Finger auf dem D-Pad darf etwas über den Rand rutschen (Daumen), ohne dass die Lenkung abbricht
+    if (fahren) return drin(lay.el.dpad.zone, x, y) ? 'dpad' : null; // (wer die Zone ganz verlässt, lässt los)
+    // Menü: ein Finger auf dem D-Pad darf etwas über den Rand rutschen (Daumen), ohne dass die Wahl abbricht
     if (vorher === 'dpad' && drin(lay.el.dpad, x, y, lay.el.dpad.b * 0.2)) return 'dpad';
     return null;
   }
-  // Richtung im D-Pad: 8 Richtungen (1 = hoch, im Uhrzeigersinn) fürs Fahren, 4 (1 hoch, 3 rechts, 5 runter, 7 links) fürs Menü
+  const fahrenJetzt = () => !(ablauf.def && ablauf.def.menue); // Countdown, Rennen (nicht Menü, Pause, Ziel)
+  // Richtung beim Fahren (M9a.1, asymmetrisch): ← / → breit (seiteWinkel um die Waagerechte) und bis an den Rand der
+  // Zone; ↑ / ↓ schmal (hochWinkel um die Senkrechte) und nur bis hochReichweite; dazwischen die Schrägen.
+  // Weiter weg als hochReichweite zählt von einer Schräge nur die Seite, von ↑ / ↓ nichts. dx, dy in Radien.
+  function fahrRichtung(dx, dy, abstand) {
+    const Z = T.fahrZone;
+    const steil = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI; // 0 = waagrecht, 90 = senkrecht
+    const seite = dx > 0 ? 3 : 7;
+    if (steil <= Z.seiteWinkel) return seite;
+    const weit = abstand > Z.hochReichweite;
+    if (steil >= 90 - Z.hochWinkel) return weit ? 0 : dy < 0 ? 1 : 5;
+    if (weit) return seite;
+    return dy < 0 ? (dx > 0 ? 2 : 8) : (dx > 0 ? 4 : 6);
+  }
+  // Richtung im D-Pad: 8 Richtungen (1 = hoch, im Uhrzeigersinn) fürs Fahren, 4 (1 hoch, 3 rechts, 5 runter, 7 links) fürs
+  // Menü (klassisch: vier gleich breite Richtungen, Schrägen je dpadDiagonal Grad)
   function dpadRichtung(z, x, y) {
     const d = lay.el.dpad.v, r = d.b / 2;
     const dx = x - (d.x + r), dy = y - (d.y + r);
-    if (Math.hypot(dx, dy) < T.dpadTotzone * r) { z.richtung = 0; z.r4 = 0; return; }
+    const abstand = Math.hypot(dx, dy) / r;
+    if (abstand < T.dpadTotzone) { z.richtung = 0; z.r4 = 0; return; }
     const w = ((Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360; // 0 = hoch, 90 = rechts
-    // Schrägen: je dpadDiagonal Grad um 45, 135, 225, 315
+    z.r4 = 1 + 2 * (Math.round(w / 90) % 4);
+    if (z.fahren) { z.richtung = fahrRichtung(dx, dy, abstand); return; }
     const halb = T.dpadDiagonal / 2;
     let r8 = 0;
     for (let i = 0; i < 4; i++) if (Math.abs(w - (45 + 90 * i)) <= halb) r8 = 2 + 2 * i;
-    if (!r8) r8 = 1 + 2 * (Math.round(w / 90) % 4);
-    z.richtung = r8;
-    z.r4 = 1 + 2 * (Math.round(w / 90) % 4);
+    z.richtung = r8 || z.r4;
   }
   function aufElement(z, n, x, y) {
     z.el = n;
@@ -227,9 +244,10 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     }
     if (!modus.an) return;
     if (!istTouch(e) && e.button !== 0) return;
-    const n = trefferBei(e.clientX, e.clientY, null);
+    const fahren = fahrenJetzt();
+    const n = trefferBei(e.clientX, e.clientY, null, fahren);
     if (!n && !istTouch(e)) return; // Maus neben den Knöpfen: wie bisher (main.js)
-    const z = { el: null, richtung: 0, r4: 0, tot: false, maus: !istTouch(e) };
+    const z = { el: null, richtung: 0, r4: 0, tot: false, maus: !istTouch(e), fahren };
     zeiger.set(e.pointerId, z);
     if (n) aufElement(z, n, e.clientX, e.clientY);
     else if (imMenue() && bildZeiger === null) {
@@ -246,7 +264,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     if (!z || z.tot) return;
     if (istTouch(e)) letzterTouch = performance.now();
     if (bildZeiger === e.pointerId) { const [x, y] = aufBild(e.clientX, e.clientY); menue.maus(x, y, 'bewegen'); return; }
-    const n = trefferBei(e.clientX, e.clientY, z.el);
+    const n = trefferBei(e.clientX, e.clientY, z.el, z.fahren);
     const alt = z.el, altR = z.richtung, altR4 = z.r4;
     aufElement(z, n, e.clientX, e.clientY);
     if (z.el !== alt || z.richtung !== altR || z.r4 !== altR4) ableiten();
@@ -330,5 +348,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     get layoutJetzt() { return lay; }, halten, zaehler, get zeigerAnzahl() { return zeiger.size; }, gezeigt, eingabe: touchEingabe,
     get geraet() { return geraet; }, get erstKontakt() { return erstKontakt; },
     setzeSafeTest(s) { safeTest = s; if (modus.an) anpassen(); },
+    // was ein Finger an diesem Punkt auslösen würde (Knopf, Richtung beim Fahren / im Menü), für Tests und Bilder
+    probe(x, y, fahren) { const z = { fahren }; const n = trefferBei(x, y, null, fahren); if (n) aufElement(z, n, x, y); return { el: n, richtung: n ? z.richtung : 0, r4: n ? z.r4 : 0 }; },
   };
 }

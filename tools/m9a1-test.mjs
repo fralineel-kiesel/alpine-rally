@@ -290,6 +290,137 @@ if (teil('c')) {
   info(`Tabelle der Fenstergrössen: ${path.join(LOG, 'layout.json')}`);
 }
 
+// ===================================================================== Teil B: D-Pad
+if (teil('e')) {
+  console.log('(e) Grösse des D-Pads (quer grösser, hoch unverändert) und Fahr-Zone');
+  const alt = ALT ? await layouts(ALT) : null;
+  const tab = [];
+  for (const [i, { name, W, H, safe, L }] of layoutNeu.entries()) {
+    const p = pruefeLayout(L, W, H, safe);
+    const d = L.el.dpad, z = d.zone, a = alt && alt[i].L;
+    const schneiden = (q, b) => q.x < b.x + b.b - 0.01 && b.x < q.x + q.b - 0.01 && q.y < b.y + b.h - 0.01 && b.y < q.y + q.h - 0.01;
+    const innen = (q, b) => q.x >= b.x - 0.01 && q.y >= b.y - 0.01 && q.x + q.b <= b.x + b.b + 0.01 && q.y + q.h <= b.y + b.h + 0.01;
+    if (!innen(d, z)) p.probleme.push('Zone enthält das D-Pad nicht');
+    if (schneiden(z, L.bild)) p.probleme.push('Zone überlappt das Bild');
+    // (andere Knöpfe dürfen in der Zone liegen, sie haben Vorrang: siehe (f))
+    const inZone = ELEMENTE.filter((n) => n !== 'dpad' && schneiden(z, L.el[n]));
+    if (inZone.some((n) => !['l', 'select', 'start', 'notes'].includes(n))) p.probleme.push(`Zone überlappt ${inZone.join(', ')}`);
+    if (Math.min(d.y - z.y, z.y + z.h - d.y - d.h) < 0.35 * d.v.b - 0.5 && z.y > Math.max(L.flaeche ? L.flaeche.y : 0, safe.o) + 0.5 && z.y + z.h < H - safe.u - 0.5) p.probleme.push('Zone weniger als 35 % über/unter dem Kreuz');
+    if (z.x < Math.max(24, safe.l) - 0.01) p.probleme.push('Zone am Rand');
+    const oben = d.y - z.y, unten = z.y + z.h - d.y - d.h; // so weit reicht die Zone über / unter das Kreuz
+    const grenze = L.format === 'quer' ? 'quer' : 'hoch';
+    let ok = p.probleme.length === 0;
+    if (a) ok = ok && (grenze === 'quer' ? d.v.b > a.el.dpad.v.b + 0.5 : Math.abs(d.v.b - a.el.dpad.v.b) < 0.01);
+    tab.push({ name, W, H, dpad: Math.round(d.v.b), alt: a ? Math.round(a.el.dpad.v.b) : null, zone: `${z.b.toFixed(0)}x${z.h.toFixed(0)}`, ueber: Math.round(oben), unter: Math.round(unten), bild: `${L.bild.b.toFixed(0)}x${L.bild.h.toFixed(0)}`, bildAlt: a ? `${a.bild.b.toFixed(0)}x${a.bild.h.toFixed(0)}` : null, bildX: `${L.bild.x.toFixed(0)}/${(W - L.bild.x - L.bild.b).toFixed(0)}` });
+    melde(ok, `${name}: D-Pad ${Math.round(d.v.b)}${a ? ` (0.9a ${Math.round(a.el.dpad.v.b)})` : ''}, Zone ${z.b.toFixed(0)}x${z.h.toFixed(0)} (über/unter dem Kreuz ${oben.toFixed(0)}/${unten.toFixed(0)} = ${(oben / d.v.b * 100).toFixed(0)}/${(unten / d.v.b * 100).toFixed(0)} %), Bild ${L.bild.b.toFixed(0)}x${L.bild.h.toFixed(0)}${a ? ` (0.9a ${a.bild.b.toFixed(0)}x${a.bild.h.toFixed(0)})` : ''}${p.probleme.length ? ` – ${p.probleme.slice(0, 4).join('; ')}` : ''}`);
+  }
+  fs.writeFileSync(path.join(LOG, 'dpad.json'), JSON.stringify(tab, null, 1));
+}
+
+// Punkt relativ zum D-Pad: dx, dy in Radien (+x rechts, +y unten)
+const rel = (L, dx, dy) => { const v = L.el.dpad.v, r = v.b / 2; return { x: v.x + r + dx * r, y: v.y + r + dy * r }; };
+const winkel = (L, grad, anteil) => { const w = grad * Math.PI / 180; return rel(L, Math.sin(w) * anteil, -Math.cos(w) * anteil); };
+const probe = (h, p, fahren) => h.ev(([p, f]) => window.__alpineRally.touch.probe(p.x, p.y, f), [p, fahren]);
+if (teil('f')) {
+  console.log('(f) Trefferzonen beim Fahren');
+  for (const [W, H] of [[874, 402], [402, 874], [874, 330]]) {
+    const h = await rennenHandy(W, H);
+    const L = await h.lay();
+    const z = L.el.dpad.zone, v = L.el.dpad.v, r = v.b / 2, cy = v.y + r;
+    const rechtsAussen = (z.x + z.b - 3 - (v.x + r)) / r; // fast am Ende der Zone (Querformat: fast am Bild)
+    const faelle = [
+      ['weit rechts neben dem Kreuz, auf der Höhe der Mitte', rel(L, rechtsAussen, 0), 3],
+      ['weit rechts, 35 % der Kreuzhöhe über dem Kreuz', { x: v.x + r + rechtsAussen * r, y: Math.max(z.y + 1, v.y - 0.35 * v.b + 2) }, 3],
+      ['weit rechts, 35 % unter dem Kreuz', { x: v.x + r + rechtsAussen * r, y: Math.min(z.y + z.h - 1, v.y + v.b + 0.35 * v.b - 2) }, 3],
+      ['links aussen am Rand, über dem Kreuz', { x: z.x + 1, y: Math.max(z.y + 1, v.y - 0.3 * v.b) }, 7],
+      ['links am Kreuz', winkel(L, 270, 0.9), 7],
+      ['knapp neben der Senkrechten (10° von ↑)', winkel(L, 10, 0.7), 1],
+      ['knapp neben der Senkrechten (350° von ↑)', winkel(L, 350, 0.7), 1],
+      ['10° neben ↓', winkel(L, 170, 0.7), 5],
+      ['↗ (25° von ↑)', winkel(L, 25, 0.7), 2], ['↘ (155°)', winkel(L, 155, 0.7), 4], ['↙ (205°)', winkel(L, 205, 0.7), 6], ['↖ (335°)', winkel(L, 335, 0.7), 8],
+      ['45° (früher Schräge, jetzt → )', winkel(L, 45, 0.7), 3], ['60° von ↑ = 30° über der Waagerechten', winkel(L, 60, 0.9), 3],
+      ['↑ weit über dem Kreuz (1.3 Radien)', winkel(L, 0, 1.3), 0], ['↗ weit weg (1.4 Radien) = nur →', winkel(L, 25, 1.4), 3],
+      ['tote Mitte (0.1 Radien)', winkel(L, 90, 0.1), 0],
+    ];
+    const fehl = [];
+    for (const [name, p, soll] of faelle) {
+      const ist = await probe(h, p, true);
+      if (ist.el !== 'dpad' && soll !== 0 || ist.richtung !== soll) fehl.push(`${name}: ${ist.el} ${ist.richtung} (Soll ${soll})`);
+    }
+    // andere Knöpfe in oder neben der Zone haben Vorrang (L oben links)
+    const lMitte = { x: L.el.l.x + L.el.l.b / 2, y: L.el.l.y + L.el.l.h / 2 };
+    const lp = await probe(h, lMitte, true);
+    if (lp.el !== 'l') fehl.push(`auf L: ${lp.el}`);
+    // ausserhalb der Zone: nichts
+    const aus = await probe(h, { x: z.x + z.b + 6, y: cy }, true);
+    if (aus.el) fehl.push(`rechts ausserhalb der Zone: ${aus.el}`);
+    melde(fehl.length === 0, `${W}x${H}: ${faelle.length + 1} Punkte (Zone ${z.b.toFixed(0)}x${z.h.toFixed(0)}, weit rechts = ${(rechtsAussen).toFixed(2)} Radien)${fehl.length ? ` – ${fehl.join('; ')}` : ''}`);
+    // Gleiten mit echtem Finger: ← über die Mitte nach →, zurück ←, dann ↖, dann ganz aus der Zone (ins Bild)
+    await testZustand(h);
+    const folge = [];
+    const merk = async () => { await h.bild(); const t = await tein(h), hv = await halten(h); folge.push(`${hv.dpad}${t.links ? 'L' : ''}${t.rechts ? 'R' : ''}${t.gas ? 'G' : ''}`); };
+    await h.f.auf(1, winkel(L, 270, 0.8)); await merk();
+    await h.f.zu(1, winkel(L, 270, 0.05)); await merk();
+    await h.f.zu(1, rel(L, rechtsAussen, 0.2)); await merk();
+    await h.f.zu(1, winkel(L, 270, 0.8)); await merk();
+    await h.f.zu(1, winkel(L, 335, 0.7)); await merk();
+    await h.f.zu(1, { x: L.bild.x + L.bild.b / 2, y: L.bild.y + L.bild.h / 2 }); await merk();
+    await h.f.ab(1); await merk();
+    const soll = ['7L', '0', '3R', '7L', '8LG', '0', '0'];
+    melde(folge.join() === soll.join(), `${W}x${H} Gleiten ← Mitte → ← ↖ ins Bild, loslassen: ${folge.join(' -> ')} (Soll ${soll.join(' -> ')})`);
+    await h.zu();
+  }
+}
+
+if (teil('g')) {
+  console.log('(g) im Menü klassisch');
+  const h = await handy(874, 402, { adresse: '?ton=aus', leicht: true });
+  await h.ev(() => { const A = window.__alpineRally; A.zumMenue(); A.menue.zeige(A.seiten.haupt, true); });
+  await h.bild();
+  const L = await h.lay();
+  const soll = [[30, 1], [44, 1], [46, 3], [60, 3], [120, 3], [134, 3], [136, 5], [170, 5], [200, 5], [240, 7], [300, 7], [320, 1], [350, 1]];
+  const ist = [];
+  for (const [g, r] of soll) ist.push([(await probe(h, winkel(L, g, 0.7), false)).r4, r]);
+  const v = L.el.dpad.v;
+  const weit = await probe(h, { x: v.x + v.b + 20, y: v.y + v.b / 2 }, false);
+  melde(ist.every(([a, b]) => a === b) && weit.el === null, `Menü: Richtungen bei ${soll.map(([g]) => `${g}°`).join(' ')} = ${ist.map(([a]) => a).join(' ')} (je 90° breit), neben dem Kreuz: ${weit.el}`);
+  // echter Finger: D-Pad ↓ (bei 150°, beim Fahren wäre das eine Schräge) wählt den nächsten Eintrag; neben dem Kreuz nichts
+  await h.ruhig();
+  const w0 = await h.ev(() => window.__alpineRally.menue.wahl);
+  await h.f.tippe(winkel(L, 150, 0.7)); await h.bild();
+  const w1 = await h.ev(() => window.__alpineRally.menue.wahl);
+  await h.ruhig();
+  await h.f.tippe({ x: v.x + v.b + 20, y: v.y + v.b / 2 }); await h.bild();
+  const w2 = await h.ev(() => window.__alpineRally.menue.wahl);
+  melde(w1 === w0 + 1 && w2 === w1, `Menü mit dem Finger: 150° = ↓ (Wahl ${w0} -> ${w1}), neben dem Kreuz (in der Fahr-Zone) nichts (${w2})`);
+  await h.zu();
+}
+
+if (teil('h')) {
+  console.log('(h) Lenken wie die Pfeiltasten (weicher Aufbau tastaturLenkung)');
+  const h = await rennenHandy(874, 402);
+  await testZustand(h);
+  const L = await h.lay();
+  const z = L.el.dpad.zone, v = L.el.dpad.v;
+  const punkte = { links: winkel(L, 270, 0.7), rechtsWeit: { x: z.x + z.b - 3, y: v.y + v.b / 2 + v.b * 0.3 } };
+  const verlauf = async (art, taste, p) => {
+    const out = [];
+    if (art === 'touch') { await h.f.auf(1, p); await h.bild(); } else await h.page.keyboard.down(taste);
+    for (let i = 0; i < 30; i++) out.push((await lies(h)).lenkung);
+    if (art === 'touch') { await h.f.ab(1); await h.bild(); } else await h.page.keyboard.up(taste);
+    for (let i = 0; i < 30; i++) out.push((await lies(h)).lenkung);
+    return out;
+  };
+  for (const stufe of [2, 0, 4]) {
+    await h.ev((w) => import('/js/einstellungen.js').then((E) => E.setze('lenkStufe', w)), stufe);
+    const [t1, k1] = [await verlauf('touch', null, punkte.links), await verlauf('taste', 'ArrowLeft')];
+    const [t2, k2] = [await verlauf('touch', null, punkte.rechtsWeit), await verlauf('taste', 'ArrowRight')];
+    melde(JSON.stringify(t1) === JSON.stringify(k1) && JSON.stringify(t2) === JSON.stringify(k2), `Stufe ${stufe}: D-Pad ← gleich Pfeiltaste ←, Finger weit rechts in der Zone gleich Pfeiltaste → (60 Bilder, nach 10 Bildern ${t2[9].toFixed(3)})`);
+  }
+  await h.ev(() => import('/js/einstellungen.js').then((E) => E.setze('lenkStufe', 2)));
+  await h.zu();
+}
+
 // ===================================================================== (d) Desktop unverändert gegen 0.9a
 async function desktopAbdruck(wurzel) {
   const erg = { buehne: {}, seiten: {}, hud: null, ganz: null };
