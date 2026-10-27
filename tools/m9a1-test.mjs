@@ -421,6 +421,85 @@ if (teil('h')) {
   await h.zu();
 }
 
+// ===================================================================== Teil C: AUTO-GAS
+// Rennen mit Countdown starten (Physik angehalten), Countdown von Hand beenden (wie bei GO: rennen 'laeuft', Zustand 'rennen')
+const startMitCountdown = (h) => h.ev(() => { const A = window.__alpineRally; A.anhalten = true; A.start(); });
+const go = (h) => h.ev(() => { const A = window.__alpineRally; A.rennen.zustand = 'laeuft'; A.rennen.zeit = 0; A.ablauf.wechsle('rennen'); });
+const autoGas = (h, an) => h.ev((b) => import('/js/einstellungen.js').then((E) => E.setze('touchAutoGas', b)), an);
+const gasJetzt = async (h) => { await h.bild(); const e = await lies(h); return e; };
+if (teil('i')) {
+  console.log('(i) AUTO-GAS aus: wie bisher');
+  const h = await handy(402, 874, { adresse: '?ton=aus', leicht: true });
+  const std = await h.ev(() => window.__alpineRally.einstellungen.touchAutoGas);
+  await startMitCountdown(h); await go(h);
+  const ohne = await gasJetzt(h);
+  await h.f.auf(1, await h.mitte('a')); const mitA = await gasJetzt(h); await h.f.ab(1);
+  await h.f.auf(1, await h.mitte('b')); const mitB = await gasJetzt(h); await h.f.ab(1);
+  const a = await h.ev(() => window.__alpineRally.touch.gezeigt.a);
+  melde(std === false && ohne.gas === 0 && mitA.gas === 1 && mitB.gas === 0 && mitB.bremse === 1 && a < 2, `Standard AUS (${std}): ohne Finger Gas ${ohne.gas}, A ${mitA.gas}, B Gas ${mitB.gas} / Bremse ${mitB.bremse}, A ohne "AUTO" (Bild ${a})`);
+  await h.zu();
+}
+if (teil('j')) {
+  console.log('(j) AUTO-GAS an');
+  const h = await handy(402, 874, { adresse: '?ton=aus', leicht: true });
+  await autoGas(h, true);
+  await startMitCountdown(h);
+  const imCountdown = await gasJetzt(h);
+  const z0 = await h.ev(() => window.__alpineRally.ablauf.zustand);
+  await go(h);
+  const ohne = await gasJetzt(h);
+  const bildA = await h.ev(() => window.__alpineRally.touch.gezeigt.a);
+  await h.f.auf(1, await h.mitte('b')); const mitB = await gasJetzt(h); await h.f.ab(1);
+  await h.f.auf(1, await h.mitte('r')); const mitR = await gasJetzt(h);
+  await h.f.auf(2, await h.dpadPunkt(270)); const mitRLinks = await gasJetzt(h); await h.f.ab(2); await h.f.ab(1);
+  await h.f.auf(1, await h.mitte('a')); const mitA = await gasJetzt(h); await h.f.ab(1);
+  await h.f.auf(1, await h.dpadPunkt(180)); const mitUnten = await gasJetzt(h); await h.f.ab(1);
+  const nachher = await gasJetzt(h);
+  melde(z0 === 'countdown' && imCountdown.gas === 0, `Countdown: Gas ${imCountdown.gas}`);
+  melde(ohne.gas === 1 && ohne.bremse === 0, `nach GO ohne Finger: Gas ${ohne.gas}`);
+  melde(mitB.gas === 0 && mitB.bremse === 1, `B gedrückt: Gas ${mitB.gas}, Bremse ${mitB.bremse} (bremst / rückwärts wie bisher)`);
+  melde(mitR.gas === 1 && mitR.handbremse && mitRLinks.gas === 1 && mitRLinks.handbremse && mitRLinks.lenkung < 0, `R (Handbremse): Gas bleibt ${mitR.gas}; R + ←: Gas ${mitRLinks.gas}, Lenkung ${mitRLinks.lenkung.toFixed(2)} (driften)`);
+  melde(mitA.gas === 1 && mitUnten.gas === 0 && mitUnten.bremse === 1 && nachher.gas === 1, `A ändert nichts (Gas ${mitA.gas}); D-Pad ↓ bremst ohne Gas (${mitUnten.gas}/${mitUnten.bremse}); danach wieder Gas ${nachher.gas}`);
+  melde(bildA === 2, `A zeigt "AUTO" im Rennen (Bild ${bildA})`);
+  // Pause, Ziel, Menü: kein Gas (Pause: die Spielschleife fragt nicht ab, autoGas ist aus)
+  await h.ev(() => window.__alpineRally.pausieren()); await h.bild();
+  const pause = await h.ev(() => ({ auto: window.__alpineRally.touch.eingabe.autoGas, a: window.__alpineRally.touch.gezeigt.a }));
+  const pauseE = await lies(h);
+  await h.ev(() => window.__alpineRally.weiter()); await h.bild();
+  await h.ev(() => { const A = window.__alpineRally; A.rennen.zustand = 'ziel'; A.rennen.endZeit = 160; }); const ziel = await gasJetzt(h);
+  await h.ev(() => { const A = window.__alpineRally; A.ablauf.wechsle('ziel'); }); await h.bild();
+  const zielSchirm = await h.ev(() => window.__alpineRally.touch.eingabe.autoGas);
+  await h.ev(() => { const A = window.__alpineRally; A.zumMenue(); }); await h.bild();
+  const menue = await h.ev(() => ({ auto: window.__alpineRally.touch.eingabe.autoGas, a: window.__alpineRally.touch.gezeigt.a, z: window.__alpineRally.ablauf.zustand }));
+  melde(!pause.auto && pauseE.gas === 0 && pause.a < 2 && ziel.gas === 0 && !zielSchirm && !menue.auto && menue.a < 2,
+    `Pause: Gas ${pauseE.gas} (A ohne AUTO), Ziel überfahren: Gas ${ziel.gas}, Zielbildschirm aus, ${menue.z}: aus (A ohne AUTO)`);
+  // Tastatur mischt weiter ein: Pfeil runter mit AUTO-GAS = Bremse (Touch-Gas bleibt, wie zwei Quellen bisher)
+  await startMitCountdown(h); await go(h);
+  await h.page.keyboard.down('ArrowDown'); const taste = await gasJetzt(h); await h.page.keyboard.up('ArrowDown');
+  melde(taste.bremse === 1, `Tastatur ↓ während AUTO-GAS: Bremse ${taste.bremse}, Gas ${taste.gas} (Quellen mischen wie bisher)`);
+  await h.zu();
+}
+if (teil('k')) {
+  console.log('(k) AUTO-GAS bleibt nach Neuladen, Eintrag nur im Touch-Modus');
+  const h = await handy(402, 874, { adresse: '?ton=aus', leicht: true });
+  await autoGas(h, true);
+  await h.page.reload();
+  await h.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.touch, null, { timeout: 120000 });
+  const r = await h.ev(() => { const A = window.__alpineRally; const l = A.seiten.einstellungen.eintraege; const e = l.find((x) => x.text === 'einst.autoGas'); return { wert: A.einstellungen.touchAutoGas, da: !!e, lesen: e && e.lesen(), nach: l[l.indexOf(e) - 1] && l[l.indexOf(e) - 1].text, speicher: JSON.parse(localStorage.getItem('alpineRally.einstellungen')).touchAutoGas }; });
+  melde(r.wert === true && r.speicher === true && r.da && r.lesen === true && r.nach === 'einst.touch', `nach Neuladen: AUTO-GAS ${r.wert ? 'AN' : 'AUS'} (gespeichert ${r.speicher}), Eintrag nach ${r.nach}`);
+  // Unsinn im Speicher = AUS
+  await h.ev(() => { const d = JSON.parse(localStorage.getItem('alpineRally.einstellungen')); d.touchAutoGas = 'ja'; localStorage.setItem('alpineRally.einstellungen', JSON.stringify(d)); });
+  await h.page.reload();
+  await h.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.touch, null, { timeout: 120000 });
+  const u = await h.ev(() => window.__alpineRally.einstellungen.touchAutoGas);
+  melde(u === false, `gespeicherter Unsinn ("ja"): AUTO-GAS ${u}`);
+  await h.zu();
+  const d = await handy(640, 360, { geraet: {}, adresse: '?ton=aus', leicht: true });
+  const dd = await d.ev(() => ({ an: window.__alpineRally.touch.an, da: window.__alpineRally.seiten.einstellungen.eintraege.some((x) => x.text === 'einst.autoGas') }));
+  melde(!dd.an && !dd.da, `Desktop ohne Touch: kein Eintrag AUTO-GAS (${dd.da})`);
+  await d.zu();
+}
+
 // ===================================================================== (d) Desktop unverändert gegen 0.9a
 async function desktopAbdruck(wurzel) {
   const erg = { buehne: {}, seiten: {}, hud: null, ganz: null };

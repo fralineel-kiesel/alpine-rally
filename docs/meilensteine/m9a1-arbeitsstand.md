@@ -14,7 +14,9 @@ Test: `node tools/m9a1-test.mjs --alt <ordner 0.9a> [--nur a,b] [--lang]`.
       (`bildMittig: false`). Fahr-Zone (`fahrZone`): ←/→ ±50°, ↑/↓ ±15° bis 1.15 Radien, 35 % über/unter dem Kreuz,
       waagrecht bis 4 px vors Bild (quer) bzw. Mitte D-Pad–B (hoch); Knöpfe in der Zone haben Vorrang. Menü klassisch.
       Tests (e)-(h) grün, m9a (b) auf die neuen Sektoren nachgezogen.
-- [ ] C AUTO-GAS
+- [x] C AUTO-GAS (`touchAutoGas`, Standard aus, geprüft beim Laden): touch.js setzt `touchEingabe.autoGas` je Bild nur
+      bei Zustand 'rennen' und rennen 'laeuft'; input.js: Gas, solange Touch nicht bremst (B oder D-Pad ↓). A zeigt
+      klein "AUTO" (grün). Eintrag nach TOUCH-STEUERUNG, nur im Touch-Modus (Desktop-Seite unverändert). (i)-(k) grün.
 - [ ] D HAPTIK (js/haptik.js schon vorgeschrieben, noch nicht eingebunden)
 - [ ] E Tests, Bilder, Bericht, Version 0.9a.1
 

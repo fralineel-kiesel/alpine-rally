@@ -105,6 +105,9 @@ export const TEXTE = {
   'wert.webApp': { de: 'WEB-APP', en: 'WEB APP' },
   'einst.touch': { de: 'TOUCH-STEUERUNG', en: 'TOUCH CONTROLS' },
   'einst.touchHinweis': { de: 'AUTO = KNÖPFE NUR AUF TOUCH-GERÄTEN', en: 'AUTO = BUTTONS ONLY ON TOUCH DEVICES' },
+  // M9a.1: nur im Touch-Modus
+  'einst.autoGas': { de: 'AUTO-GAS', en: 'AUTO THROTTLE' },
+  'einst.autoGasHinweis': { de: 'GAS LÄUFT VON ALLEIN, B BREMST', en: 'GAS IS AUTOMATIC, B BRAKES' },
   'wert.auto': { de: 'AUTO', en: 'AUTO' },
   'einst.einheiten': { de: 'EINHEITEN', en: 'UNITS' },
   'einst.tacho': { de: 'TACHO', en: 'GAUGES' }, // M8g
@@ -216,6 +219,7 @@ export const TEXTE = {
   'touch.start': { de: 'START', en: 'START' },
   'touch.select': { de: 'SELECT', en: 'SELECT' },
   'touch.notes': { de: 'NOTES', en: 'NOTES' },
+  'touch.auto': { de: 'AUTO', en: 'AUTO' }, // M9a.1: klein im Knopf A bei AUTO-GAS (Mini-Schrift: nur A U T O)
   'symbole.titel': { de: 'PACE-NOTES-SYMBOLE', en: 'PACE NOTE SYMBOLS' },
   'symbole.farben': { de: 'ROT = STUFE 1-2, GELB = 3-4, GRÜN = 5-6', en: 'RED = GRADE 1-2, YELLOW = 3-4, GREEN = 5-6' },
   'legende.kurve56': { de: 'SANFTE KURVE, STUFE 5-6 (6 = VOLLGAS)', en: 'EASY CURVE, GRADE 5-6 (6 = FLAT OUT)' },

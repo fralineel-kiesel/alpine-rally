@@ -4,6 +4,7 @@
 // Seit M5a: Tasten frei belegbar (einstellungen.tasten), Lenkempfindlichkeit und Totzone einstellbar,
 // Gamepad-Start = Pause (zurück auf die Strasse: Y / Dreieck). Das Menü kann Tasten abfangen.
 // Seit M9a: dritte Quelle Touch (js/touch.js schreibt in touchEingabe), wird wie die Tastatur eingemischt.
+// Seit M9a.1: AUTO-GAS der Touch-Quelle (touchEingabe.autoGas, setzt js/touch.js nur im laufenden Rennen).
 
 import { CONFIG } from './config.js';
 import { einstellungen, AKTIONEN, beiAenderung } from './einstellungen.js';
@@ -38,6 +39,7 @@ window.addEventListener('blur', () => gedrueckt.clear());
 // Touch-Knöpfe (M9a): js/touch.js setzt die gehaltenen Werte und die einmaligen Ereignisse (immer dasselbe Objekt)
 export const touchEingabe = {
   gas: false, bremse: false, links: false, rechts: false, handbremse: false, // gehalten
+  autoGas: false, // M9a.1: AUTO-GAS wirkt gerade (Einstellung an, Touch an, Rennen läuft): Gas, solange Touch nicht bremst
   reset: false, pause: false, hud: false, notes: false,                       // einmalig (bis zum nächsten Abfragen)
 };
 function touchEreignisseLeeren() {
@@ -101,7 +103,7 @@ export function leseEingabe(dt) {
 
   // Tastatur (M9a: Touch-Knöpfe zählen wie Tasten, A und D-Pad hoch zusammen sind einfach Gas)
   const tz = touchEingabe;
-  let gas = taste('gas') || tz.gas ? 1 : 0;
+  let gas = taste('gas') || tz.gas || (tz.autoGas && !tz.bremse) ? 1 : 0;
   let bremse = taste('bremse') || tz.bremse ? 1 : 0;
   const ziel = (taste('rechts') || tz.rechts ? 1 : 0) - (taste('links') || tz.links ? 1 : 0);
   // Tastatur-Lenkung baut sich weich auf (sonst zu ruckartig); Lenkempfindlichkeit = wie schnell

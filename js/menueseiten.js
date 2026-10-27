@@ -274,9 +274,11 @@ export function baueSeiten(api) {
     wert: () => t(webAppModus() ? 'wert.webApp' : 'wert.homeBildschirm'),
     aktion: () => { menue.zeigeMeldung(t(vollbildHinweis()), M.farbeTitel); return 'ohneTon'; }, // schaltet nichts
   };
-  const einstellungenSeite = {
-    id: 'einstellungen', titel: 'einst.titel',
-    eintraege: [
+  // M9a.1: AUTO-GAS (und HAPTIK) nur im Touch-Modus, direkt nach TOUCH-STEUERUNG (am Desktop alles wie bisher)
+  const nurTouch = [
+    { typ: 'umschalter', text: 'einst.autoGas', hinweis: 'einst.autoGasHinweis', lesen: () => einstellungen.touchAutoGas, setzen: (b) => setze('touchAutoGas', b) },
+  ];
+  const einstellungenListe = [
       { typ: 'gruppe', text: 'einst.grafik' },
       vollbildEintrag,
       {
@@ -326,6 +328,7 @@ export function baueSeiten(api) {
         optionen: () => [{ wert: 'auto', text: 'wert.auto' }, { wert: 'an', text: 'wert.an' }, { wert: 'aus', text: 'wert.aus' }],
         lesen: () => einstellungen.touch, setzen: (w) => setze('touch', w),
       },
+      ...nurTouch,
       { typ: 'gruppe', text: 'einst.ton' },
       {
         typ: 'regler', text: 'einst.lautstaerke', hinweis: 'einst.lautHinweis', min: 0, max: 100, schritt: M.lautSchritt,
@@ -351,7 +354,11 @@ export function baueSeiten(api) {
       { typ: 'gruppe', text: 'einst.daten' },
       { typ: 'aktion', text: 'einst.bestzeitenLoeschen', hinweis: 'einst.loeschenHinweis', aktion: () => menue.oeffne(loeschFrage) },
       ZURUECK,
-    ],
+  ];
+  const einstellungenDesktop = einstellungenListe.filter((e) => !nurTouch.includes(e));
+  const einstellungenSeite = {
+    id: 'einstellungen', titel: 'einst.titel',
+    get eintraege() { return touchAn() ? einstellungenListe : einstellungenDesktop; }, // (eine Liste, wie bis 0.9a)
   };
 
   // --- Steuerung: aktuelle Belegung (aus den Einstellungen) und Symbol-Legende ---

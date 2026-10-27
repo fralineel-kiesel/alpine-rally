@@ -12,7 +12,7 @@
 //   Ein gelöster Finger zählt erst wieder, wenn er losgelassen und neu aufgesetzt wird.
 
 import { CONFIG } from './config.js';
-import { einstellungen } from './einstellungen.js';
+import { einstellungen, beiAenderung } from './einstellungen.js';
 import { touchEingabe } from './input.js';
 import { berechneLayout, KLEINE, beschriftung } from './touchlayout.js';
 import { beiSprachwechsel } from './texte.js';
@@ -30,8 +30,9 @@ export const webAppModus = () => navigator.standalone === true
 const NAMEN = ['dpad', 'a', 'b', 'l', 'r', ...KLEINE];
 const B = CONFIG.bild.breite, H = CONFIG.bild.hoehe;
 
-// api: { buehne, hudLeinwand, ablauf, menue, zumMenue(), anpassen() (Layout neu, wie beim Ändern der Fenstergrösse) }
-export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpassen }) {
+// api: { buehne, hudLeinwand, ablauf, menue, zumMenue(), anpassen() (Layout neu, wie beim Ändern der Fenstergrösse),
+//        rennenLaeuft() (M9a.1: Rennen zwischen GO und Ziel, für AUTO-GAS) }
+export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpassen, rennenLaeuft = () => false }) {
   const T = CONFIG.touch;
   const geraet = (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0;
   let erstKontakt = false; // AUTO: erste echte Berührung schaltet die Knöpfe sofort ein
@@ -194,10 +195,12 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     touchEingabe.handbremse = rennen && halten.r; // M9a.1: Handbremse auf R (vorher L)
     zeigen();
   }
+  // M9a.1: A zeigt beim Fahren "AUTO", wenn AUTO-GAS an ist (Bild 2 und 3)
+  const autoGasZeigen = () => einstellungen.touchAutoGas && fahrenJetzt();
   function zeigen() {
     if (!bilder) return;
     for (const n of NAMEN) {
-      const s = n === 'dpad' ? (ablauf.def && ablauf.def.menue ? halten.r4 : halten.dpad) : halten[n] ? 1 : 0;
+      const s = n === 'dpad' ? (ablauf.def && ablauf.def.menue ? halten.r4 : halten.dpad) : (halten[n] ? 1 : 0) + (n === 'a' && autoGasZeigen() ? 2 : 0);
       if (s === gezeigt[n]) continue;
       gezeigt[n] = s;
       const x = leinwand[n].getContext('2d');
@@ -320,6 +323,8 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
   // --- Jedes Bild (aus der Spielschleife): Seitenwechsel im Menü, D-Pad-Wiederholung im Menü ------------
   // (Wiederholung nach der Uhr, nicht nach der Spielzeit: auch bei wenigen Bildern pro Sekunde gleich schnell)
   function schritt() {
+    // M9a.1: AUTO-GAS nur mit Touch, nur im laufenden Rennen nach dem Countdown (nicht Menü, Pause, Countdown, Ziel)
+    touchEingabe.autoGas = modus.an && einstellungen.touchAutoGas && ablauf.zustand === 'rennen' && rennenLaeuft();
     if (!modus.an) return;
     const s = menue.seite;
     if (s !== letzteSeite) { letzteSeite = s; if (zeiger.size) alleLos(); }
@@ -341,6 +346,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     return !!trefferBei(ev.clientX, ev.clientY, null);
   }
 
+  beiAenderung((name) => { if (name === 'touchAutoGas') zeigen(); });
   aktualisiere();
   return {
     get an() { return modus.an; }, layout, aktualisiere, schritt, mausIgnorieren, alleLos,

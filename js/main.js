@@ -901,7 +901,7 @@ const seiten = baueSeiten({
 });
 // M9a: Touch-Knöpfe (nur auf Touch-Geräten oder mit TOUCH = AN). Ton: auf dem iPhone zählt erst das Loslassen
 // eines Fingers als Geste, darum dort noch einmal fortsetzen (js/audio.js weckt beim Aufsetzen)
-touch = baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpassen });
+touch = baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpassen, rennenLaeuft: () => rennen.zustand === 'laeuft' });
 anpassen(); // (jetzt mit Touch-Layout, falls an)
 beiTouchWechsel(() => menue.neuZeichnen()); // (Titel: TIPPEN / TASTE DRÜCKEN)
 window.addEventListener('touchend', () => ton.fortsetzen(), true);

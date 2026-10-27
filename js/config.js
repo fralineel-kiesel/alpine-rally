@@ -1607,6 +1607,7 @@ export const CONFIG = {
       auto: 'rt4',             // gewähltes Auto (Id aus js/autos.js; unbekannt = Audan Quarto)
       lacke: {},               // gewählte Lackierung je Auto, z. B. { rt4: 'gletscher' } (fehlt = die erste des Autos)
       touch: 'auto',           // M9a: Touch-Knöpfe 'auto' (nur auf Touch-Geräten), 'an' (immer, auch am Computer mit der Maus), 'aus'
+      touchAutoGas: false,     // M9a.1: AUTO-GAS (nur Touch, nur im laufenden Rennen): Gas von allein, solange B nicht gedrückt ist
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1729,7 +1730,8 @@ export const CONFIG = {
     farbeZeichen: '#e6e2d3',   // Buchstaben, Pfeile
     farbeGedrueckt: '#ff9a2e', // gedrückt: orange
     farbeZeichenGedrueckt: '#101418',
-    farbeSchrift: '#aab4be',   // Beschriftung unter START/SELECT/NOTES
+    farbeSchrift: '#aab4be',   // Beschriftung von START/SELECT/NOTES
+    farbeAutoGas: '#7bd88f',   // M9a.1: "AUTO" klein im Knopf A, wenn AUTO-GAS an ist (grün)
     farbeFlaeche: '#0d1219',   // Hochformat: dunkle Steuerfläche unter dem Bild
     farbeFlaecheRand: 'rgba(230, 226, 211, 0.18)', // ... mit feiner heller Linie oben
     deckkraft: 0.9,            // alle Knöpfe zusammen (1 = deckend)

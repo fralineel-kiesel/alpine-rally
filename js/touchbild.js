@@ -5,6 +5,7 @@
 
 import { CONFIG } from './config.js';
 import { pixelText, textBreite } from './pixel.js';
+import { miniText, miniBreite } from './tacho.js'; // M9a.1: Mini-Schrift für "AUTO" im Knopf A
 
 // Grösse der kleinen Leinwände (Pixel); die CSS-Grösse kommt aus js/touchlayout.js
 // (schulterR: R ist seit M9a.1 etwas höher als L; klein: START/SELECT/NOTES als flache Pille, Breite nach der Beschriftung)
@@ -65,12 +66,15 @@ function malDpad(richtung) {
   return c;
 }
 
-// A / B: rund mit Buchstaben (Pixelschrift doppelt gross)
-function malRund(buchstabe, gedrueckt) {
+// A / B: rund mit Buchstaben (Pixelschrift doppelt gross); hinweis (M9a.1, AUTO-GAS): Buchstabe klein, darunter "AUTO"
+function malRund(buchstabe, gedrueckt, hinweis = '') {
   const T = CONFIG.touch, n = PIXEL.ab;
   const { c, x } = neueLeinwand(n, n);
   kreis(x, n, gedrueckt ? T.farbeGedrueckt : T.farbeGrund, T.farbeRand);
-  pixelText(x, buchstabe, n / 2, (n - 14) / 2, 2, gedrueckt ? T.farbeZeichenGedrueckt : T.farbeZeichen, 'mitte', null);
+  const farbe = gedrueckt ? T.farbeZeichenGedrueckt : T.farbeZeichen;
+  if (!hinweis) { pixelText(x, buchstabe, n / 2, (n - 14) / 2, 2, farbe, 'mitte', null); return c; }
+  pixelText(x, buchstabe, n / 2, 4, 1, farbe, 'mitte', null);
+  miniText(x, hinweis, Math.floor((n - miniBreite(hinweis)) / 2), 13, gedrueckt ? farbe : T.farbeAutoGas, null);
   return c;
 }
 // L / R: Schulterknopf (Tafel mit abgeschrägten Ecken)
@@ -107,11 +111,11 @@ function malPille(text, gedrueckt) {
 export const malKlein = (text) => [malPille(text, false), malPille(text, true)];
 
 // Alle Bilder einmal malen: { name: [Bild je Zustand] } (D-Pad: 9 Richtungen, sonst [normal, gedrückt]);
-// beschriftung(n) = Text der kleinen Knöpfe
+// beschriftung(n) = Text der kleinen Knöpfe; A hat dazu [2] und [3] = normal und gedrückt mit AUTO-GAS (beschriftung('auto'))
 export function malAlle(beschriftung) {
   return {
     dpad: Array.from({ length: 9 }, (_, r) => malDpad(r)),
-    a: [malRund('A', false), malRund('A', true)],
+    a: [malRund('A', false), malRund('A', true), malRund('A', false, beschriftung('auto')), malRund('A', true, beschriftung('auto'))],
     b: [malRund('B', false), malRund('B', true)],
     l: [malSchulter('L', false, PIXEL.schulter), malSchulter('L', true, PIXEL.schulter)],
     r: [malSchulter('R', false, PIXEL.schulterR), malSchulter('R', true, PIXEL.schulterR)],
