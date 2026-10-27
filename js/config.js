@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.9a';
+export const VERSION = '0.9a.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1607,6 +1607,8 @@ export const CONFIG = {
       auto: 'rt4',             // gewähltes Auto (Id aus js/autos.js; unbekannt = Audan Quarto)
       lacke: {},               // gewählte Lackierung je Auto, z. B. { rt4: 'gletscher' } (fehlt = die erste des Autos)
       touch: 'auto',           // M9a: Touch-Knöpfe 'auto' (nur auf Touch-Geräten), 'an' (immer, auch am Computer mit der Maus), 'aus'
+      touchAutoGas: false,     // M9a.1: AUTO-GAS (nur Touch, nur im laufenden Rennen): Gas von allein, solange B nicht gedrückt ist
+      haptik: 'voll',          // M9a.1: HAPTIK (nur Touch) 'aus', 'knoepfe' (Tick bei Knopfdruck) oder 'voll' (dazu Spielereignisse)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1685,13 +1687,15 @@ export const CONFIG = {
     dpad: 146,                 // D-Pad: Durchmesser
     ab: 72,                    // A und B: Durchmesser
     abVersatz: [76, 40],       // B liegt so weit links und tiefer als A (diagonal versetzt)
-    schulter: [80, 40],        // L und R: Breite, Höhe
-    klein: 36,                 // START, SELECT, NOTES: Durchmesser (Trefferfläche trotzdem mindestens minTreffer)
-    schriftGroesse: 2,         // Beschriftung unter den kleinen Knöpfen: so viele CSS-Pixel je Pixel der Pixelschrift
+    schulter: [80, 40],        // L (oben links, zurück auf die Strasse): Breite, Höhe
+    schulterR: [80, 44],       // M9a.1: R (Handbremse) direkt über A/B, in Daumenreichweite: Breite, Höhe
+    klein: 26,                 // START, SELECT, NOTES: Höhe der flachen Pille mit Beschriftung innen (M9a.1: 26 statt runde 36)
+    kleinTreffer: 36,          // ... ihre Trefferfläche im Querformat mindestens so gross (nur diese drei dürfen unter minTreffer)
     luecke: 12,                // Abstand zwischen den Reihen (Schulterknöpfe, D-Pad, kleine Knöpfe)
     hoch: {
       steuerAnteil: 0.46,      // Hochformat: Steuerfläche unten ist mindestens so hoch (Anteil der Fensterhöhe) ...
-      kleinLuecke: 20,         // ... die drei kleinen Knöpfe liegen nebeneinander mit dieser Lücke
+      kleinLuecke: 20,         // ... die drei kleinen Knöpfe liegen nebeneinander mit dieser Lücke ...
+      kleinTreffer: 44,        // ... und ihre Trefferfläche ist hier (genug Platz) so gross wie bei allen Knöpfen
     },
     quer: {
       seitenZone: 130,         // Querformat: Zone links und rechts vom Bild mindestens so breit
@@ -1699,9 +1703,24 @@ export const CONFIG = {
       faktor: 0.9,             // Knöpfe im Querformat so viel kleiner als im Hochformat (mehr Platz fürs Bild)
       kleinAb: 330,            // Fenster niedriger als das: Knöpfe verhältnismässig kleiner
       bildLuecke: 8,           // Abstand der Knöpfe zum Bild
+      // M9a.1: D-Pad im Querformat eigene Grösse (nicht mal faktor): so gross wie möglich, aber höchstens ...
+      dpad: 176,               // ... so viele Pixel Durchmesser ...
+      dpadHoehe: 0.44,         // ... dieser Anteil der Fensterhöhe (bei 874x330 also kleiner) ...
+      dpadZoneMax: 0.27,       // ... und die Zone links (Rand + D-Pad + Lücke) höchstens dieser Anteil der Breite
+      bildMittig: false,       // false = Bild mittig zwischen den Zonen (links wegen des D-Pads breiter), true = genau in der Mitte
     },
     dpadTotzone: 0.2,          // D-Pad: in der Mitte (Anteil des Radius) zählt keine Richtung
-    dpadDiagonal: 40,          // D-Pad: so viel Grad breit ist der Bereich für eine Schräge (↖ ↗ ↘ ↙), der Rest gerade
+    dpadDiagonal: 40,          // D-Pad im Menü (und bis M9a beim Fahren): so viel Grad breit ist eine Schräge (↖ ↗ ↘ ↙)
+    // M9a.1: Trefferzonen des D-Pads beim Fahren (Countdown, Rennen; im Menü bleibt es klassisch mit vier gleichen Richtungen).
+    // Unsichtbar: die Zone reicht über das sichtbare Kreuz hinaus, damit der Daumen beim Lenken nicht danebenliegt.
+    fahrZone: {
+      seiteWinkel: 50,         // ← / →: so viele Grad über und unter der Waagerechten (breit) ...
+      hochWinkel: 15,          // ↑ / ↓: so viele Grad links und rechts der Senkrechten (schmal); dazwischen die Schrägen
+      hochReichweite: 1.15,    // ↑ / ↓ und Schrägen nur bis zu diesem Vielfachen des Radius; weiter weg zählt nur ← / →
+      hoehe: 0.35,             // die Zone reicht so viel der D-Pad-Grösse über und unter das Kreuz ...
+      bildAbstand: 4,          // ... und waagrecht vom Rand (24) bis so nah ans Bild (Querformat) bzw. im Hochformat bis
+                               //     zur Mitte zwischen D-Pad und B
+    },
     dpadMinDurchmesser: 96,    // kleiner wird das D-Pad nie
     wiederholenNach: 0.4,      // Menü: gehaltene D-Pad-Richtung wiederholt nach ... Sekunden ...
     wiederholenAlle: 0.12,     // ... und dann alle ... Sekunden (wie das Gamepad)
@@ -1712,10 +1731,24 @@ export const CONFIG = {
     farbeZeichen: '#e6e2d3',   // Buchstaben, Pfeile
     farbeGedrueckt: '#ff9a2e', // gedrückt: orange
     farbeZeichenGedrueckt: '#101418',
-    farbeSchrift: '#aab4be',   // Beschriftung unter START/SELECT/NOTES
+    farbeSchrift: '#aab4be',   // Beschriftung von START/SELECT/NOTES
+    farbeAutoGas: '#7bd88f',   // M9a.1: "AUTO" klein im Knopf A, wenn AUTO-GAS an ist (grün)
     farbeFlaeche: '#0d1219',   // Hochformat: dunkle Steuerfläche unter dem Bild
     farbeFlaecheRand: 'rgba(230, 226, 211, 0.18)', // ... mit feiner heller Linie oben
     deckkraft: 0.9,            // alle Knöpfe zusammen (1 = deckend)
+  },
+
+  // --- Haptik (Meilenstein 9a.1, js/haptik.js): Vibration (Android) bzw. kurzer Tick (iPhone), nur im Touch-Modus ----
+  // Zahlen = Millisekunden vibrieren, Listen = an, aus, an, ... (nur Android; das iPhone kennt nur einen gleichen Tick)
+  haptik: {
+    knopf: 10,                 // Knopfdruck (auch im Menü)
+    gang: 12,                  // Gangwechsel
+    checkpoint: [15, 30, 15],  // Checkpoint: zwei kurze
+    ziel: [20, 40, 20, 40, 40],// Ziellinie: drei kurze
+    aufprallLeicht: 20,        // Aufprall: leicht (Wucht audio.aufprall.ab) ...
+    aufprallHart: 60,          // ... bis hart (Wucht audio.aufprall.voll), dazwischen nach der Stärke wie im Ton
+    knopfAbstand: 40,          // Knopf-Ticks höchstens alle ... ms
+    spielAbstand: 120,         // Spielereignisse höchstens alle ... ms (kein Dauerbrummen an der Leitplanke)
   },
 
   // --- Garage (Meilenstein 8c): Menüseite AUTO mit drehendem 3D-Modell (js/garage.js) ----------

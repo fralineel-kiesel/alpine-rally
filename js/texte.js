@@ -105,6 +105,19 @@ export const TEXTE = {
   'wert.webApp': { de: 'WEB-APP', en: 'WEB APP' },
   'einst.touch': { de: 'TOUCH-STEUERUNG', en: 'TOUCH CONTROLS' },
   'einst.touchHinweis': { de: 'AUTO = KNÖPFE NUR AUF TOUCH-GERÄTEN', en: 'AUTO = BUTTONS ONLY ON TOUCH DEVICES' },
+  // M9a.1: nur im Touch-Modus
+  'einst.autoGas': { de: 'AUTO-GAS', en: 'AUTO THROTTLE' },
+  'einst.autoGasHinweis': { de: 'GAS LÄUFT VON ALLEIN, B BREMST', en: 'GAS IS AUTOMATIC, B BRAKES' },
+  'einst.haptik': { de: 'HAPTIK', en: 'HAPTICS' },
+  'einst.haptikHinweis': { de: 'AUF DEM IPHONE NUR EIN KURZER TICK', en: 'ON IPHONE ONLY A SHORT TICK' },
+  'wert.knoepfe': { de: 'NUR KNÖPFE', en: 'BUTTONS ONLY' },
+  'wert.voll': { de: 'VOLL', en: 'FULL' },
+  'einst.haptikTesten': { de: 'HAPTIK TESTEN', en: 'TEST HAPTICS' },
+  'einst.haptikTestenHinweis': { de: 'AUSWÄHLEN = EIN TICK', en: 'SELECT = ONE TICK' },
+  'haptik.vibrate': { de: 'VIBRATION GESENDET', en: 'VIBRATION SENT' },
+  'haptik.schalter': { de: 'TICK GESENDET (IPHONE)', en: 'TICK SENT (IPHONE)' },
+  'haptik.keiner': { de: 'DIESES GERÄT KANN ES NICHT', en: 'NOT SUPPORTED HERE' },
+  'haptik.aus': { de: 'HAPTIK IST AUS', en: 'HAPTICS ARE OFF' },
   'wert.auto': { de: 'AUTO', en: 'AUTO' },
   'einst.einheiten': { de: 'EINHEITEN', en: 'UNITS' },
   'einst.tacho': { de: 'TACHO', en: 'GAUGES' }, // M8g
@@ -216,6 +229,7 @@ export const TEXTE = {
   'touch.start': { de: 'START', en: 'START' },
   'touch.select': { de: 'SELECT', en: 'SELECT' },
   'touch.notes': { de: 'NOTES', en: 'NOTES' },
+  'touch.auto': { de: 'AUTO', en: 'AUTO' }, // M9a.1: klein im Knopf A bei AUTO-GAS (Mini-Schrift: nur A U T O)
   'symbole.titel': { de: 'PACE-NOTES-SYMBOLE', en: 'PACE NOTE SYMBOLS' },
   'symbole.farben': { de: 'ROT = STUFE 1-2, GELB = 3-4, GRÜN = 5-6', en: 'RED = GRADE 1-2, YELLOW = 3-4, GREEN = 5-6' },
   'legende.kurve56': { de: 'SANFTE KURVE, STUFE 5-6 (6 = VOLLGAS)', en: 'EASY CURVE, GRADE 5-6 (6 = FLAT OUT)' },
@@ -295,7 +309,7 @@ export const TEXTE = {
   'hud.hilfeNotes': { de: '{taste}: ANSAGEN  ESC: PAUSE', en: '{taste}: PACE NOTES  ESC: PAUSE' },
   // M9a: dieselben Hilfezeilen im Touch-Modus (Knöpfe statt Tasten)
   'hud.touchFahren': { de: 'D-PAD: LENKEN  A: GAS  B: BREMSE', en: 'D-PAD: STEER  A: GAS  B: BRAKE' },
-  'hud.touchHandbremse': { de: 'L: HANDBREMSE  R: AUF STRASSE', en: 'L: HANDBRAKE  R: BACK ON ROAD' },
+  'hud.touchHandbremse': { de: 'R: HANDBREMSE  L: AUF STRASSE', en: 'R: HANDBRAKE  L: BACK ON ROAD' }, // M9a.1: R/L getauscht
   'hud.touchPause': { de: 'START: PAUSE  SELECT: HUD', en: 'START: PAUSE  SELECT: HUD' },
   'hud.touchNotes': { de: 'NOTES: ANSAGEN', en: 'NOTES: PACE NOTES' },
 

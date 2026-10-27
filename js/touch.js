@@ -6,16 +6,18 @@
 //   anderen Knopf (oder im D-Pad in eine andere Richtung), wechselt die Auslösung. Alle Ereignisse kommen am Fenster
 //   an und werden mit der eigenen Trefferrechnung zugeordnet (so geht das Gleiten trotz Pointer-Capture).
 // - Rennen: die Knöpfe lösen Aktionen aus (input.js, touchEingabe), nicht Tastencodes. Menü: D-Pad = Pfeiltasten (gehalten
-//   mit Wiederholung), A = Enter, B = Esc, START = wie Gamepad-Start, R = Kurztaste der Seite; Antippen des Bilds = Maus.
+//   mit Wiederholung), A = Enter, B = Esc, START = wie Gamepad-Start, L = Kurztaste der Seite (M9a.1, vorher R; R tut im
+//   Menü nichts); Antippen des Bilds = Maus. Rennen (M9a.1): R = Handbremse, L = zurück auf die Strasse.
 // - Nie hängende Knöpfe: Abbruch, Fokusverlust, Tab-Wechsel, Drehen, Zustands- und Seitenwechsel lösen alle Finger.
 //   Ein gelöster Finger zählt erst wieder, wenn er losgelassen und neu aufgesetzt wird.
 
 import { CONFIG } from './config.js';
-import { einstellungen } from './einstellungen.js';
+import { einstellungen, beiAenderung } from './einstellungen.js';
 import { touchEingabe } from './input.js';
 import { berechneLayout, KLEINE, beschriftung } from './touchlayout.js';
 import { beiSprachwechsel } from './texte.js';
-import { malAlle, malBeschriftung } from './touchbild.js';
+import { malAlle, malKlein } from './touchbild.js';
+import { setzeHaptikAktiv, knopfTick } from './haptik.js'; // M9a.1
 
 // Für Seiten und HUD: ist der Touch-Modus an? (ohne baueTouch immer aus)
 const modus = { an: false };
@@ -29,15 +31,16 @@ export const webAppModus = () => navigator.standalone === true
 const NAMEN = ['dpad', 'a', 'b', 'l', 'r', ...KLEINE];
 const B = CONFIG.bild.breite, H = CONFIG.bild.hoehe;
 
-// api: { buehne, hudLeinwand, ablauf, menue, zumMenue(), anpassen() (Layout neu, wie beim Ändern der Fenstergrösse) }
-export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpassen }) {
+// api: { buehne, hudLeinwand, ablauf, menue, zumMenue(), anpassen() (Layout neu, wie beim Ändern der Fenstergrösse),
+//        rennenLaeuft() (M9a.1: Rennen zwischen GO und Ziel, für AUTO-GAS) }
+export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpassen, rennenLaeuft = () => false }) {
   const T = CONFIG.touch;
   const geraet = (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0;
   let erstKontakt = false; // AUTO: erste echte Berührung schaltet die Knöpfe sofort ein
   let lay = null;          // aktuelles Layout (js/touchlayout.js)
   let safeTest = null;     // nur Tests: Safe-Area-Ränder vorgeben { o, r, u, l }
   let letzterTouch = -1e9; // Zeit der letzten Berührung (danach keine nachgemachten Mausklicks)
-  const zeiger = new Map(); // pointerId -> { el, richtung (8), r4 (Menü), tot, maus }
+  const zeiger = new Map(); // pointerId -> { el, richtung (8), r4 (Menü), tot, maus, fahren (Zonen beim Fahren) }
   let bildZeiger = null;   // Finger, der im Menü auf dem Bild tippt/zieht (wie die Maus)
   const titelBeruehrungen = new Set(); // Berührungen, die auf dem Titelbildschirm begonnen haben
   const halten = { dpad: 0, r4: 0, a: false, b: false, l: false, r: false, select: false, start: false, notes: false };
@@ -48,11 +51,11 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
 
   // --- Seite: Ebene mit Steuerfläche und Knöpfen, nur im Touch-Modus aufgebaut -----------------
   let ebene = null, flaeche = null, probe = null;
-  const leinwand = {}, schrift = {};
+  const leinwand = {};
   let bilder = null;
   function aufbauen() {
     if (ebene) return;
-    bilder = malAlle();
+    bilder = malAlle(beschriftung);
     ebene = document.createElement('div');
     ebene.id = 'touch';
     flaeche = document.createElement('div');
@@ -69,15 +72,14 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
       ebene.appendChild(c);
       leinwand[n] = c;
     }
-    for (const n of KLEINE) {
-      const c = malBeschriftung(beschriftung(n));
-      c.className = 'touch-schrift';
-      ebene.appendChild(c);
-      schrift[n] = c;
-    }
-    // andere Sprache: Beschriftungen neu malen, Lage neu rechnen
+    // andere Sprache: kleine Knöpfe (Beschriftung in der Pille) neu malen, Lage neu rechnen
     beiSprachwechsel(() => {
-      for (const n of KLEINE) { const c = malBeschriftung(beschriftung(n)); ebene.replaceChild(c, schrift[n]); c.className = 'touch-schrift'; schrift[n] = c; }
+      for (const n of KLEINE) {
+        bilder[n] = malKlein(beschriftung(n));
+        leinwand[n].width = bilder[n][0].width; leinwand[n].height = bilder[n][0].height;
+        gezeigt[n] = -1;
+      }
+      zeigen();
       if (modus.an) anpassen();
     });
     // Safe-Area-Ränder (Notch, Home-Balken) misst ein unsichtbares Kästchen mit env(safe-area-inset-*)
@@ -105,7 +107,6 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     setze(buehne, lay.bild);
     if (lay.flaeche) { flaeche.style.display = 'block'; setze(flaeche, lay.flaeche); } else flaeche.style.display = 'none';
     for (const n of NAMEN) setze(leinwand[n], lay.el[n].v);
-    for (const n of KLEINE) setze(schrift[n], lay.el[n].s);
     if (alt && alt.format !== lay.format) alleLos(); // gedreht: kein Finger bleibt hängen
   }
 
@@ -132,26 +133,43 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
 
   // --- Treffer und Zustand --------------------------------------------------------------------
   const drin = (r, x, y, rand = 0) => x >= r.x - rand && x < r.x + r.b + rand && y >= r.y - rand && y < r.y + r.h + rand;
-  function trefferBei(x, y, vorher) {
+  // fahren (M9a.1): beim Fahren zählt für das D-Pad auch seine grosse unsichtbare Zone (lay.el.dpad.zone)
+  function trefferBei(x, y, vorher, fahren = false) {
     if (!lay) return null;
     for (const n of NAMEN) if (drin(lay.el[n], x, y)) return n;
-    // ein Finger auf dem D-Pad darf etwas über den Rand rutschen (Daumen), ohne dass die Lenkung abbricht
+    if (fahren) return drin(lay.el.dpad.zone, x, y) ? 'dpad' : null; // (wer die Zone ganz verlässt, lässt los)
+    // Menü: ein Finger auf dem D-Pad darf etwas über den Rand rutschen (Daumen), ohne dass die Wahl abbricht
     if (vorher === 'dpad' && drin(lay.el.dpad, x, y, lay.el.dpad.b * 0.2)) return 'dpad';
     return null;
   }
-  // Richtung im D-Pad: 8 Richtungen (1 = hoch, im Uhrzeigersinn) fürs Fahren, 4 (1 hoch, 3 rechts, 5 runter, 7 links) fürs Menü
+  const fahrenJetzt = () => !(ablauf.def && ablauf.def.menue); // Countdown, Rennen (nicht Menü, Pause, Ziel)
+  // Richtung beim Fahren (M9a.1, asymmetrisch): ← / → breit (seiteWinkel um die Waagerechte) und bis an den Rand der
+  // Zone; ↑ / ↓ schmal (hochWinkel um die Senkrechte) und nur bis hochReichweite; dazwischen die Schrägen.
+  // Weiter weg als hochReichweite zählt von einer Schräge nur die Seite, von ↑ / ↓ nichts. dx, dy in Radien.
+  function fahrRichtung(dx, dy, abstand) {
+    const Z = T.fahrZone;
+    const steil = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI; // 0 = waagrecht, 90 = senkrecht
+    const seite = dx > 0 ? 3 : 7;
+    if (steil <= Z.seiteWinkel) return seite;
+    const weit = abstand > Z.hochReichweite;
+    if (steil >= 90 - Z.hochWinkel) return weit ? 0 : dy < 0 ? 1 : 5;
+    if (weit) return seite;
+    return dy < 0 ? (dx > 0 ? 2 : 8) : (dx > 0 ? 4 : 6);
+  }
+  // Richtung im D-Pad: 8 Richtungen (1 = hoch, im Uhrzeigersinn) fürs Fahren, 4 (1 hoch, 3 rechts, 5 runter, 7 links) fürs
+  // Menü (klassisch: vier gleich breite Richtungen, Schrägen je dpadDiagonal Grad)
   function dpadRichtung(z, x, y) {
     const d = lay.el.dpad.v, r = d.b / 2;
     const dx = x - (d.x + r), dy = y - (d.y + r);
-    if (Math.hypot(dx, dy) < T.dpadTotzone * r) { z.richtung = 0; z.r4 = 0; return; }
+    const abstand = Math.hypot(dx, dy) / r;
+    if (abstand < T.dpadTotzone) { z.richtung = 0; z.r4 = 0; return; }
     const w = ((Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360; // 0 = hoch, 90 = rechts
-    // Schrägen: je dpadDiagonal Grad um 45, 135, 225, 315
+    z.r4 = 1 + 2 * (Math.round(w / 90) % 4);
+    if (z.fahren) { z.richtung = fahrRichtung(dx, dy, abstand); return; }
     const halb = T.dpadDiagonal / 2;
     let r8 = 0;
     for (let i = 0; i < 4; i++) if (Math.abs(w - (45 + 90 * i)) <= halb) r8 = 2 + 2 * i;
-    if (!r8) r8 = 1 + 2 * (Math.round(w / 90) % 4);
-    z.richtung = r8;
-    z.r4 = 1 + 2 * (Math.round(w / 90) % 4);
+    z.richtung = r8 || z.r4;
   }
   function aufElement(z, n, x, y) {
     z.el = n;
@@ -175,13 +193,15 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     touchEingabe.bremse = rennen && (halten.b || (r >= 4 && r <= 6));
     touchEingabe.links = r >= 6 && r <= 8;
     touchEingabe.rechts = r >= 2 && r <= 4;
-    touchEingabe.handbremse = rennen && halten.l;
+    touchEingabe.handbremse = rennen && halten.r; // M9a.1: Handbremse auf R (vorher L)
     zeigen();
   }
+  // M9a.1: A zeigt beim Fahren "AUTO", wenn AUTO-GAS an ist (Bild 2 und 3)
+  const autoGasZeigen = () => einstellungen.touchAutoGas && fahrenJetzt();
   function zeigen() {
     if (!bilder) return;
     for (const n of NAMEN) {
-      const s = n === 'dpad' ? (ablauf.def && ablauf.def.menue ? halten.r4 : halten.dpad) : halten[n] ? 1 : 0;
+      const s = n === 'dpad' ? (ablauf.def && ablauf.def.menue ? halten.r4 : halten.dpad) : (halten[n] ? 1 : 0) + (n === 'a' && autoGasZeigen() ? 2 : 0);
       if (s === gezeigt[n]) continue;
       gezeigt[n] = s;
       const x = leinwand[n].getContext('2d');
@@ -189,7 +209,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
       x.drawImage(bilder[n][s], 0, 0);
     }
   }
-  // Ein Knopf wurde neu gedrückt (A, B, L, R, START, SELECT, NOTES; das D-Pad wirkt über halten)
+  // Ein Knopf wurde neu gedrückt (A, B, L, R, START, SELECT, NOTES; das D-Pad und R wirken über halten)
   function druecken(n) {
     zaehler.ausgeloest++;
     if (ablauf.zustand === 'titel') return; // Titel: erst beim Loslassen (Ton braucht eine echte Geste)
@@ -198,10 +218,10 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
       if (n === 'a') menue.taste('Enter', false, 'touch');
       else if (n === 'b') menue.taste('Escape', false, 'touch');
       else if (n === 'start') { if (s && s.startKnopf) s.startKnopf(); }
-      else if (n === 'r') { const k = einstellungen.tasten.zurueck; if (s && s.kurztaste) s.kurztaste(k[0] || k[1]); }
+      else if (n === 'l') { const k = einstellungen.tasten.zurueck; if (s && s.kurztaste) s.kurztaste(k[0] || k[1]); } // M9a.1: L statt R
       return;
     }
-    if (n === 'r') touchEingabe.reset = true;
+    if (n === 'l') touchEingabe.reset = true; // M9a.1: zurück auf die Strasse auf L (vorher R)
     else if (n === 'start') touchEingabe.pause = true;
     else if (n === 'select') touchEingabe.hud = true;
     else if (n === 'notes') touchEingabe.notes = true;
@@ -228,11 +248,12 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     }
     if (!modus.an) return;
     if (!istTouch(e) && e.button !== 0) return;
-    const n = trefferBei(e.clientX, e.clientY, null);
+    const fahren = fahrenJetzt();
+    const n = trefferBei(e.clientX, e.clientY, null, fahren);
     if (!n && !istTouch(e)) return; // Maus neben den Knöpfen: wie bisher (main.js)
-    const z = { el: null, richtung: 0, r4: 0, tot: false, maus: !istTouch(e) };
+    const z = { el: null, richtung: 0, r4: 0, tot: false, maus: !istTouch(e), fahren };
     zeiger.set(e.pointerId, z);
-    if (n) aufElement(z, n, e.clientX, e.clientY);
+    if (n) { aufElement(z, n, e.clientX, e.clientY); if (istTouch(e)) knopfTick(); } // M9a.1: Tick im Touch-Ereignis selbst
     else if (imMenue() && bildZeiger === null) {
       // im Menü: Antippen des Bilds wie die Maus (im Rennen zählt das Bild nicht)
       bildZeiger = e.pointerId;
@@ -247,7 +268,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     if (!z || z.tot) return;
     if (istTouch(e)) letzterTouch = performance.now();
     if (bildZeiger === e.pointerId) { const [x, y] = aufBild(e.clientX, e.clientY); menue.maus(x, y, 'bewegen'); return; }
-    const n = trefferBei(e.clientX, e.clientY, z.el);
+    const n = trefferBei(e.clientX, e.clientY, z.el, z.fahren);
     const alt = z.el, altR = z.richtung, altR4 = z.r4;
     aufElement(z, n, e.clientX, e.clientY);
     if (z.el !== alt || z.richtung !== altR || z.r4 !== altR4) ableiten();
@@ -303,6 +324,8 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
   // --- Jedes Bild (aus der Spielschleife): Seitenwechsel im Menü, D-Pad-Wiederholung im Menü ------------
   // (Wiederholung nach der Uhr, nicht nach der Spielzeit: auch bei wenigen Bildern pro Sekunde gleich schnell)
   function schritt() {
+    // M9a.1: AUTO-GAS nur mit Touch, nur im laufenden Rennen nach dem Countdown (nicht Menü, Pause, Countdown, Ziel)
+    touchEingabe.autoGas = modus.an && einstellungen.touchAutoGas && ablauf.zustand === 'rennen' && rennenLaeuft();
     if (!modus.an) return;
     const s = menue.seite;
     if (s !== letzteSeite) { letzteSeite = s; if (zeiger.size) alleLos(); }
@@ -324,6 +347,8 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     return !!trefferBei(ev.clientX, ev.clientY, null);
   }
 
+  beiAenderung((name) => { if (name === 'touchAutoGas') zeigen(); });
+  setzeHaptikAktiv(() => modus.an); // M9a.1: Haptik nur im Touch-Modus
   aktualisiere();
   return {
     get an() { return modus.an; }, layout, aktualisiere, schritt, mausIgnorieren, alleLos,
@@ -331,5 +356,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     get layoutJetzt() { return lay; }, halten, zaehler, get zeigerAnzahl() { return zeiger.size; }, gezeigt, eingabe: touchEingabe,
     get geraet() { return geraet; }, get erstKontakt() { return erstKontakt; },
     setzeSafeTest(s) { safeTest = s; if (modus.an) anpassen(); },
+    // was ein Finger an diesem Punkt auslösen würde (Knopf, Richtung beim Fahren / im Menü), für Tests und Bilder
+    probe(x, y, fahren) { const z = { fahren }; const n = trefferBei(x, y, null, fahren); if (n) aufElement(z, n, x, y); return { el: n, richtung: n ? z.richtung : 0, r4: n ? z.r4 : 0 }; },
   };
 }

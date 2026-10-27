@@ -13,6 +13,7 @@ import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
 import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
 import { touchAn, webAppModus } from './touch.js'; // M9a
+import { testTick } from './haptik.js'; // M9a.1
 
 // api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b),
 //        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf),
@@ -274,9 +275,18 @@ export function baueSeiten(api) {
     wert: () => t(webAppModus() ? 'wert.webApp' : 'wert.homeBildschirm'),
     aktion: () => { menue.zeigeMeldung(t(vollbildHinweis()), M.farbeTitel); return 'ohneTon'; }, // schaltet nichts
   };
-  const einstellungenSeite = {
-    id: 'einstellungen', titel: 'einst.titel',
-    eintraege: [
+  // M9a.1: AUTO-GAS (und HAPTIK) nur im Touch-Modus, direkt nach TOUCH-STEUERUNG (am Desktop alles wie bisher)
+  const nurTouch = [
+    { typ: 'umschalter', text: 'einst.autoGas', hinweis: 'einst.autoGasHinweis', lesen: () => einstellungen.touchAutoGas, setzen: (b) => setze('touchAutoGas', b) },
+    {
+      typ: 'auswahl', text: 'einst.haptik', hinweis: 'einst.haptikHinweis',
+      optionen: () => [{ wert: 'aus', text: 'wert.aus' }, { wert: 'knoepfe', text: 'wert.knoepfe' }, { wert: 'voll', text: 'wert.voll' }],
+      lesen: () => einstellungen.haptik, setzen: (w) => setze('haptik', w),
+    },
+    // ein Tick zum Ausprobieren (läuft im Touch-Ereignis: A oder Antippen); die Meldung sagt, welcher Weg es war
+    { typ: 'aktion', text: 'einst.haptikTesten', hinweis: 'einst.haptikTestenHinweis', aktion: () => { menue.zeigeMeldung(t(`haptik.${testTick()}`), M.farbeTitel); } },
+  ];
+  const einstellungenListe = [
       { typ: 'gruppe', text: 'einst.grafik' },
       vollbildEintrag,
       {
@@ -326,6 +336,7 @@ export function baueSeiten(api) {
         optionen: () => [{ wert: 'auto', text: 'wert.auto' }, { wert: 'an', text: 'wert.an' }, { wert: 'aus', text: 'wert.aus' }],
         lesen: () => einstellungen.touch, setzen: (w) => setze('touch', w),
       },
+      ...nurTouch,
       { typ: 'gruppe', text: 'einst.ton' },
       {
         typ: 'regler', text: 'einst.lautstaerke', hinweis: 'einst.lautHinweis', min: 0, max: 100, schritt: M.lautSchritt,
@@ -351,7 +362,11 @@ export function baueSeiten(api) {
       { typ: 'gruppe', text: 'einst.daten' },
       { typ: 'aktion', text: 'einst.bestzeitenLoeschen', hinweis: 'einst.loeschenHinweis', aktion: () => menue.oeffne(loeschFrage) },
       ZURUECK,
-    ],
+  ];
+  const einstellungenDesktop = einstellungenListe.filter((e) => !nurTouch.includes(e));
+  const einstellungenSeite = {
+    id: 'einstellungen', titel: 'einst.titel',
+    get eintraege() { return touchAn() ? einstellungenListe : einstellungenDesktop; }, // (eine Liste, wie bis 0.9a)
   };
 
   // --- Steuerung: aktuelle Belegung (aus den Einstellungen) und Symbol-Legende ---
@@ -434,7 +449,7 @@ export function baueSeiten(api) {
   // M9a: Abschnitt TOUCH (Knopf | Aktion, dazu zwei Zeilen fürs Menü); im Touch-Modus oben, sonst nach SYMBOLE
   const TOUCH_ZEILEN = [
     ['touch.dpadLenken', 'aktion.lenken'], ['touch.dpadGas', 'aktion.gas'], ['touch.dpadBremse', 'aktion.bremse'],
-    ['touch.l', 'aktion.handbremse'], ['touch.r', 'aktion.zurueck'], ['touch.start', 'aktion.pause'],
+    ['touch.r', 'aktion.handbremse'], ['touch.l', 'aktion.zurueck'], ['touch.start', 'aktion.pause'], // M9a.1: R/L getauscht
     ['touch.select', 'aktion.hud'], ['touch.notes', 'aktion.notes'],
   ];
   const touchSpalte = () => Math.max(...TOUCH_ZEILEN.map((z) => textBreite(t(z[0]))));

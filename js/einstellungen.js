@@ -28,6 +28,8 @@ function uebernimm(d) {
   if (d.einheit === 'kmh' || d.einheit === 'mph') einstellungen.einheit = d.einheit;
   if (d.tacho === 'auto' || d.tacho === 'klassisch') einstellungen.tacho = d.tacho; // M8g (fehlt = auto)
   if (d.touch === 'auto' || d.touch === 'an' || d.touch === 'aus') einstellungen.touch = d.touch; // M9a (fehlt = auto)
+  if (typeof d.touchAutoGas === 'boolean') einstellungen.touchAutoGas = d.touchAutoGas; // M9a.1 (fehlt = aus)
+  if (d.haptik === 'aus' || d.haptik === 'knoepfe' || d.haptik === 'voll') einstellungen.haptik = d.haptik; // M9a.1 (fehlt = voll)
   if (typeof d.fps === 'boolean') einstellungen.fps = d.fps;
   if (ganz(d.lenkStufe, M.lenkStufen.length)) einstellungen.lenkStufe = d.lenkStufe;
   if (ganz(d.totzoneStufe, M.totzonen.length)) einstellungen.totzoneStufe = d.totzoneStufe;
