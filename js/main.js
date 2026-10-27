@@ -42,6 +42,7 @@ import { baueAufheulen } from './tonfahrt.js';
 import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL, tonWerte } from './fahrprofil.js';
 import { leseEingabe, aktualisierePad, pad, setzeAbfangen, eingabeLeeren, tastenName } from './input.js';
 import { baueTouch, beiTouchWechsel } from './touch.js'; // M9a: Touch-Knöpfe fürs Handy
+import { spielTick } from './haptik.js'; // M9a.1: Haptik bei Spielereignissen (nur Touch, Einstellung VOLL)
 import { baueHud, formatZeit } from './hud.js';
 import { baueTachos } from './tacho.js';
 import { pixelText } from './pixel.js';
@@ -515,6 +516,7 @@ function physikSchritt(dt, e, nurFahren = false) {
         // M7a: dieselbe Entscheidung für den Punkt unter der Zeit (bleibt den ganzen Lauf) und den Checkpoint-Ton
         rennen.cpVergleich[n] = u < 0 ? -1 : u > 0 ? 1 : 0;
         ton.checkpoint(rennen.cpVergleich[n]);
+        if (ablauf.zustand === 'rennen') spielTick('checkpoint'); // M9a.1 (nicht in der Demo-Fahrt)
       } else if (s > cpS + 5) {
         // schon hinter dem Tor, ohne durchgefahren zu sein
         zeigeMeldung(t('hud.cpVerpasst'), 'rot', n);
@@ -856,6 +858,7 @@ function zielErreicht() {
   };
   lauf.markiert = erg.platz > 0 ? { etappe: etappe.id, datum: erg.datum, auto: eintrag.auto } : null; // (M8h: mit Auto)
   ton.fanfare(false); // M7a: kurze Fanfare beim Überfahren der Ziellinie (neue Bestzeit: die lange zum Zielbildschirm)
+  if (ablauf.zustand === 'rennen') spielTick('ziel'); // M9a.1
 }
 // Pause aus dem Rennen oder dem Countdown (nicht im Zielbildschirm); Weiter geht dorthin zurück
 function pausieren() {
@@ -1227,7 +1230,15 @@ const tonZ = {
   ladedruck: 0, turboAn: false, // M8b: echter Ladedruck des Getriebes und ob das Fahrprofil einen Turbo hat
   turboMal: 1, knallMal: 1,     // M8c: Turbo-Pfeifen/Blow-off und Knall-Chance mal diesen Werten (Fahrprofil)
 };
+let hapSchaltet = false; // M9a.1: Gangwechsel für die Haptik (Beginn der Schaltpause)
 function tonBild(dt) {
+  // M9a.1: Haptik im Rennen (nur Touch, VOLL): Aufprall mit der Stärke wie im Ton, Gangwechsel; nichts am Ton geändert
+  if (ablauf.zustand === 'rennen') {
+    const AU = CONFIG.audio.aufprall;
+    if (tonInfo.wucht >= AU.ab) spielTick('aufprall', tonInfo.wucht / AU.voll);
+    if (getriebe.schaltet && !hapSchaltet) spielTick('gang');
+  }
+  hapSchaltet = getriebe.schaltet;
   tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm (nur Musik)
   tonZ.musikModus = MUSIK_MODUS[ablauf.zustand] || 'aus';
   tonZ.hx = kam.pos.x; tonZ.hz = kam.pos.z; tonZ.hyaw = kam.yaw; tonZ.s = rennen.letztesS;

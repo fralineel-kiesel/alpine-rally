@@ -17,7 +17,10 @@ Test: `node tools/m9a1-test.mjs --alt <ordner 0.9a> [--nur a,b] [--lang]`.
 - [x] C AUTO-GAS (`touchAutoGas`, Standard aus, geprüft beim Laden): touch.js setzt `touchEingabe.autoGas` je Bild nur
       bei Zustand 'rennen' und rennen 'laeuft'; input.js: Gas, solange Touch nicht bremst (B oder D-Pad ↓). A zeigt
       klein "AUTO" (grün). Eintrag nach TOUCH-STEUERUNG, nur im Touch-Modus (Desktop-Seite unverändert). (i)-(k) grün.
-- [ ] D HAPTIK (js/haptik.js schon vorgeschrieben, noch nicht eingebunden)
+- [x] D HAPTIK (`js/haptik.js`, Einstellung `haptik` aus/knoepfe/voll, Standard voll; HAPTIK TESTEN als Aktion mit
+      Meldung des Wegs). vibrate: Knopf 10, Gang 12, Checkpoint 15-30-15, Ziel, Aufprall 20..60 nach Wucht/14 wie im Ton;
+      sonst iPhone: einmal angelegter versteckter <input switch> + label.click(). Knopf-Tick im pointerdown. Rate-Limit
+      40 / 120 ms. Hooks in main.js nur bei Zustand 'rennen'. (m)-(p) grün – nur Chromium mit Zähler, iPhone ungeprüft.
 - [ ] E Tests, Bilder, Bericht, Version 0.9a.1
 
 Offen: quer liegt rechts vom Kreuz kaum Platz (Zone nur 4 px breiter als das Kreuz) – Gewinn vor allem senkrecht.

@@ -13,6 +13,7 @@ import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
 import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
 import { touchAn, webAppModus } from './touch.js'; // M9a
+import { testTick } from './haptik.js'; // M9a.1
 
 // api: { menue, zumMenue, starten, weiter, neustartEtappe, zumHauptmenue, zumTitel, paceNotes, vollbild(b),
 //        M5b: neuStarten, ergebnis() (Zielbildschirm), markiert() (gerade eingetragener Lauf),
@@ -277,6 +278,13 @@ export function baueSeiten(api) {
   // M9a.1: AUTO-GAS (und HAPTIK) nur im Touch-Modus, direkt nach TOUCH-STEUERUNG (am Desktop alles wie bisher)
   const nurTouch = [
     { typ: 'umschalter', text: 'einst.autoGas', hinweis: 'einst.autoGasHinweis', lesen: () => einstellungen.touchAutoGas, setzen: (b) => setze('touchAutoGas', b) },
+    {
+      typ: 'auswahl', text: 'einst.haptik', hinweis: 'einst.haptikHinweis',
+      optionen: () => [{ wert: 'aus', text: 'wert.aus' }, { wert: 'knoepfe', text: 'wert.knoepfe' }, { wert: 'voll', text: 'wert.voll' }],
+      lesen: () => einstellungen.haptik, setzen: (w) => setze('haptik', w),
+    },
+    // ein Tick zum Ausprobieren (läuft im Touch-Ereignis: A oder Antippen); die Meldung sagt, welcher Weg es war
+    { typ: 'aktion', text: 'einst.haptikTesten', hinweis: 'einst.haptikTestenHinweis', aktion: () => { menue.zeigeMeldung(t(`haptik.${testTick()}`), M.farbeTitel); } },
   ];
   const einstellungenListe = [
       { typ: 'gruppe', text: 'einst.grafik' },

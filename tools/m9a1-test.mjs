@@ -500,6 +500,130 @@ if (teil('k')) {
   await d.zu();
 }
 
+// ===================================================================== Teil D: Haptik
+// Zähler statt Vibration: navigator.vibrate wird vor dem Laden ersetzt (Chromium hat es, vibriert aber nicht)
+const VIB_ZAEHLER = () => { window.__vib = []; Navigator.prototype.vibrate = function (m) { window.__vib.push(JSON.stringify(m)); return true; }; };
+const OHNE_VIB = () => { delete Navigator.prototype.vibrate; };
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+const hz = (h) => h.ev(async () => { const H = await import('/js/haptik.js'); return { ...H.haptikZaehler, vib: window.__vib ? [...window.__vib] : null, weg: H.haptikWeg(), elemente: document.getElementsByTagName('*').length, labels: document.querySelectorAll('#haptik').length }; });
+const setzeHaptik = (h, w) => h.ev((w) => import('/js/einstellungen.js').then((E) => E.setze('haptik', w)), w);
+// im Rennen (Physik angehalten): drei Knöpfe nacheinander, dann Aufprall leicht (Wucht 2 von 14: 20 + 40 · 2/14 = 26 ms), hart, Gangwechsel, Checkpoint
+async function haptikRunde(h) {
+  await h.ev(() => { const A = window.__alpineRally; A.anhalten = true; A.start({ countdown: false }); A.rennen.zustand = 'laeuft'; window.__vib = []; });
+  await h.bild();
+  const v0 = (await hz(h)).vibrate;
+  for (const k of ['a', 'b', 'r']) { await h.f.tippe(await h.mitte(k)); await warte(80); }
+  await h.bild();
+  const nachKnoepfen = (await hz(h)).vib.slice();
+  await h.ev(() => { window.__alpineRally.tonInfo.wucht = 2; }); await h.bild(); await warte(150);
+  await h.ev(() => { window.__alpineRally.tonInfo.wucht = 20; }); await h.bild(); await warte(150);
+  await h.ev(() => { window.__alpineRally.getriebe.schaltet = true; }); await h.bild();
+  await h.ev(() => { window.__alpineRally.getriebe.schaltet = false; }); await h.bild(); await warte(150);
+  // Checkpoint über den echten Weg (physikSchritt fährt durchs erste Tor)
+  const cp = await h.ev(() => {
+    const A = window.__alpineRally, cpS = A.checkpoints[0].s;
+    A.setzeAuf(cpS - 2); A.rennen.zustand = 'laeuft'; A.rennen.naechsterCp = 0;
+    const e = { gas: 1, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false, pause: false, hud: false };
+    for (let i = 0; i < 1200 && A.rennen.naechsterCp === 0; i++) A.physikSchritt(A.SCHRITT, e);
+    return A.rennen.naechsterCp;
+  });
+  await h.bild();
+  const alle = (await hz(h)).vib;
+  return { nachKnoepfen, spiel: alle.slice(nachKnoepfen.length), cp, v0 };
+}
+if (teil('m')) {
+  console.log('(m) HAPTIK aus / nur Knöpfe / voll (Zähler an navigator.vibrate)');
+  for (const [w, sollKnopf, sollSpiel] of [['aus', [], []], ['knoepfe', ['10', '10', '10'], []], ['voll', ['10', '10', '10'], ['26', '60', '12', '[15,30,15]']]]) {
+    const h = await rennenHandy(402, 874, '?menue=aus&ton=aus', { vorher: VIB_ZAEHLER });
+    await setzeHaptik(h, w);
+    const r = await haptikRunde(h);
+    melde(JSON.stringify(r.nachKnoepfen) === JSON.stringify(sollKnopf) && JSON.stringify(r.spiel) === JSON.stringify(sollSpiel) && r.cp === 1,
+      `HAPTIK ${w}: Knöpfe A, B, R -> [${r.nachKnoepfen.join(', ')}], Aufprall leicht/hart, Gang, Checkpoint -> [${r.spiel.join(', ')}] (Soll [${sollKnopf.join(', ')}] / [${sollSpiel.join(', ')}])`);
+    await h.zu();
+  }
+  // Standard voll, Knopf im Menü (Down), Loslassen tickt nicht; HAPTIK TESTEN
+  const h = await handy(402, 874, { adresse: '?ton=aus', leicht: true, vorher: VIB_ZAEHLER });
+  const std = await h.ev(() => window.__alpineRally.einstellungen.haptik);
+  await h.ev(() => { const A = window.__alpineRally; A.zumMenue(); A.menue.zeige(A.seiten.haupt, true); window.__vib = []; });
+  await h.bild();
+  await h.f.auf(1, await h.dpadPunkt(180)); await h.bild(); const beimDruck = (await hz(h)).vib.length;
+  await warte(100); await h.f.ab(1); await h.bild(); const nachLos = (await hz(h)).vib.length;
+  const t = await h.ev(() => {
+    const A = window.__alpineRally; window.__meldung = [];
+    const alt = A.menue.zeigeMeldung; A.menue.zeigeMeldung = (tx, f) => { window.__meldung.push(tx); return alt(tx, f); };
+    A.menue.oeffne(A.seiten.einstellungen, true);
+    const l = A.seiten.einstellungen.eintraege;
+    const e = l.find((x) => x.text === 'einst.haptikTesten'), hp = l.find((x) => x.text === 'einst.haptik');
+    window.__vib = [];
+    e.aktion();
+    return { meldung: window.__meldung.slice(), vib: window.__vib.slice(), da: !!hp, optionen: hp.optionen().map((o) => o.wert), nach: l[l.indexOf(hp) - 1].text };
+  });
+  melde(std === 'voll' && beimDruck === 1 && nachLos === 1, `Standard ${std}; Menü: D-Pad gedrückt = ${beimDruck} Tick, beim Loslassen keiner (${nachLos})`);
+  melde(t.da && t.optionen.join() === 'aus,knoepfe,voll' && t.nach === 'einst.autoGas' && t.vib.length === 1 && t.meldung[0] === 'VIBRATION GESENDET', `EINSTELLUNGEN: HAPTIK (${t.optionen.join(' / ')}) nach AUTO-GAS; HAPTIK TESTEN -> ${t.vib.length} Aufruf, Meldung "${t.meldung[0]}"`);
+  await h.zu();
+}
+if (teil('n')) {
+  console.log('(n) Rate-Limit');
+  const h = await rennenHandy(402, 874, '?menue=aus&ton=aus', { vorher: VIB_ZAEHLER });
+  await h.ev(() => { const A = window.__alpineRally; A.anhalten = true; A.start({ countdown: false }); A.rennen.zustand = 'laeuft'; window.__vib = []; });
+  await h.bild();
+  // zwei Finger gleichzeitig (A und B innert weniger Millisekunden): ein Tick
+  const z0 = await hz(h);
+  await h.f.auf(1, await h.mitte('a')); await h.f.auf(2, await h.mitte('b')); await h.bild();
+  const z1 = await hz(h);
+  await h.f.ab(1); await h.f.ab(2); await warte(60);
+  await h.f.tippe(await h.mitte('a')); await h.bild();
+  const z2 = await hz(h);
+  melde(z1.vib.length === 1 && z1.unterdrueckt === z0.unterdrueckt + 1 && z2.vib.length === 2, `A und B gleichzeitig: ${z1.vib.length} Tick (1 unterdrückt), 60 ms später wieder einer (${z2.vib.length})`);
+  // Spielereignisse: Aufprall in drei Bildern hintereinander (Schleifen an der Leitplanke) + Gangwechsel gleich danach
+  await warte(200);
+  const vor = (await hz(h)).vib.length;
+  const r = await h.ev(async () => {
+    const A = window.__alpineRally; const b = () => new Promise((r) => requestAnimationFrame(r));
+    const t0 = performance.now();
+    for (let i = 0; i < 3; i++) { A.tonInfo.wucht = 10; await b(); }
+    A.getriebe.schaltet = true; await b(); A.getriebe.schaltet = false; await b();
+    return performance.now() - t0;
+  });
+  const nach = (await hz(h)).vib.length;
+  melde(nach - vor === 1 || (r > 120 && nach - vor <= Math.ceil(r / 120)), `Aufprall in 3 Bildern + Gangwechsel (${r.toFixed(0)} ms): ${nach - vor} Ausgabe(n) (höchstens 1 je 120 ms)`);
+  await h.zu();
+}
+if (teil('o')) {
+  console.log('(o) ohne navigator.vibrate: iPhone-Schalter, sonst nichts');
+  for (const [name, geraet, weg] of [['iPhone (nachgestellt)', { ...HANDY, userAgent: IPHONE_UA }, 'schalter'], ['anderes Gerät ohne Vibration', HANDY, 'keiner']]) {
+    const h = await rennenHandy(402, 874, '?menue=aus&ton=aus', { geraet, vorher: OHNE_VIB });
+    await h.ev(() => { const A = window.__alpineRally; A.anhalten = true; A.start({ countdown: false }); A.rennen.zustand = 'laeuft'; });
+    await h.bild();
+    const z0 = await hz(h);
+    await h.f.tippe(await h.mitte('a')); await warte(80); await h.bild();
+    const z1 = await hz(h);
+    for (const k of ['b', 'r', 'a']) { await h.f.tippe(await h.mitte(k)); await warte(80); }
+    await h.ev(() => { window.__alpineRally.tonInfo.wucht = 20; }); await h.bild();
+    const z2 = await hz(h);
+    const input = await h.ev(() => { const l = document.getElementById('haptik'); const i = l && l.querySelector('input'); return i ? { typ: i.type, switch: i.hasAttribute('switch'), display: l.style.display } : null; });
+    const fehler = h.s.fehler.length;
+    if (weg === 'schalter') melde(z0.weg === 'schalter' && z2.schalter === 5 && z2.vibrate === 0 && z2.elemente === z1.elemente && z2.labels === 1 && input && input.typ === 'checkbox' && input.switch && z1.elemente === z0.elemente + 2 && fehler === 0,
+      `${name}: Weg ${z0.weg}, 4 Knöpfe + Aufprall = ${z2.schalter} Klicks am Schalter (${z2.labels} Schalter im DOM), Elemente ${z0.elemente} -> ${z1.elemente} (einmal Label + Schalter) -> ${z2.elemente}, <input ${input && input.typ} switch=${input && input.switch}> ${input && input.display}, ${fehler} Fehler`);
+    else melde(z0.weg === 'keiner' && z2.schalter === 0 && z2.vibrate === 0 && z2.elemente === z0.elemente && fehler === 0, `${name}: Weg ${z0.weg}, nichts ausgegeben, keine neuen Elemente, ${fehler} Fehler`);
+    await h.zu();
+  }
+}
+if (teil('p')) {
+  console.log('(p) Desktop ohne Touch: keine Haptik');
+  const h = await rennenHandy(640, 360, '?menue=aus&ton=aus', { geraet: {}, vorher: VIB_ZAEHLER });
+  await h.ev(() => { const A = window.__alpineRally; A.anhalten = true; A.start({ countdown: false }); A.rennen.zustand = 'laeuft'; window.__vib = []; });
+  for (const k of ['ArrowUp', 'Space', 'ArrowLeft']) { await h.page.keyboard.down(k); await warte(50); await h.page.keyboard.up(k); }
+  await h.page.mouse.click(320, 180);
+  await h.ev(() => { window.__alpineRally.tonInfo.wucht = 20; }); await h.bild(); await warte(150);
+  await h.ev(() => { window.__alpineRally.getriebe.schaltet = true; }); await h.bild();
+  await h.ev(() => { window.__alpineRally.getriebe.schaltet = false; }); await h.bild();
+  const z = await hz(h);
+  const an = await h.ev(() => window.__alpineRally.touch.an);
+  melde(!an && z.vib.length === 0 && z.schalter === 0 && z.labels === 0, `Desktop (Touch ${an ? 'an' : 'aus'}): Tasten, Maus, Aufprall, Gangwechsel -> ${z.vib.length} Aufrufe von navigator.vibrate, ${z.schalter} Schalter`);
+  await h.zu();
+}
+
 // ===================================================================== (d) Desktop unverändert gegen 0.9a
 async function desktopAbdruck(wurzel) {
   const erg = { buehne: {}, seiten: {}, hud: null, ganz: null };

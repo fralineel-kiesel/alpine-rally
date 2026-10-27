@@ -1608,6 +1608,7 @@ export const CONFIG = {
       lacke: {},               // gewählte Lackierung je Auto, z. B. { rt4: 'gletscher' } (fehlt = die erste des Autos)
       touch: 'auto',           // M9a: Touch-Knöpfe 'auto' (nur auf Touch-Geräten), 'an' (immer, auch am Computer mit der Maus), 'aus'
       touchAutoGas: false,     // M9a.1: AUTO-GAS (nur Touch, nur im laufenden Rennen): Gas von allein, solange B nicht gedrückt ist
+      haptik: 'voll',          // M9a.1: HAPTIK (nur Touch) 'aus', 'knoepfe' (Tick bei Knopfdruck) oder 'voll' (dazu Spielereignisse)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1735,6 +1736,19 @@ export const CONFIG = {
     farbeFlaeche: '#0d1219',   // Hochformat: dunkle Steuerfläche unter dem Bild
     farbeFlaecheRand: 'rgba(230, 226, 211, 0.18)', // ... mit feiner heller Linie oben
     deckkraft: 0.9,            // alle Knöpfe zusammen (1 = deckend)
+  },
+
+  // --- Haptik (Meilenstein 9a.1, js/haptik.js): Vibration (Android) bzw. kurzer Tick (iPhone), nur im Touch-Modus ----
+  // Zahlen = Millisekunden vibrieren, Listen = an, aus, an, ... (nur Android; das iPhone kennt nur einen gleichen Tick)
+  haptik: {
+    knopf: 10,                 // Knopfdruck (auch im Menü)
+    gang: 12,                  // Gangwechsel
+    checkpoint: [15, 30, 15],  // Checkpoint: zwei kurze
+    ziel: [20, 40, 20, 40, 40],// Ziellinie: drei kurze
+    aufprallLeicht: 20,        // Aufprall: leicht (Wucht audio.aufprall.ab) ...
+    aufprallHart: 60,          // ... bis hart (Wucht audio.aufprall.voll), dazwischen nach der Stärke wie im Ton
+    knopfAbstand: 40,          // Knopf-Ticks höchstens alle ... ms
+    spielAbstand: 120,         // Spielereignisse höchstens alle ... ms (kein Dauerbrummen an der Leitplanke)
   },
 
   // --- Garage (Meilenstein 8c): Menüseite AUTO mit drehendem 3D-Modell (js/garage.js) ----------

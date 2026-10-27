@@ -108,6 +108,16 @@ export const TEXTE = {
   // M9a.1: nur im Touch-Modus
   'einst.autoGas': { de: 'AUTO-GAS', en: 'AUTO THROTTLE' },
   'einst.autoGasHinweis': { de: 'GAS LÄUFT VON ALLEIN, B BREMST', en: 'GAS IS AUTOMATIC, B BRAKES' },
+  'einst.haptik': { de: 'HAPTIK', en: 'HAPTICS' },
+  'einst.haptikHinweis': { de: 'AUF DEM IPHONE NUR EIN KURZER TICK', en: 'ON IPHONE ONLY A SHORT TICK' },
+  'wert.knoepfe': { de: 'NUR KNÖPFE', en: 'BUTTONS ONLY' },
+  'wert.voll': { de: 'VOLL', en: 'FULL' },
+  'einst.haptikTesten': { de: 'HAPTIK TESTEN', en: 'TEST HAPTICS' },
+  'einst.haptikTestenHinweis': { de: 'AUSWÄHLEN = EIN TICK', en: 'SELECT = ONE TICK' },
+  'haptik.vibrate': { de: 'VIBRATION GESENDET', en: 'VIBRATION SENT' },
+  'haptik.schalter': { de: 'TICK GESENDET (IPHONE)', en: 'TICK SENT (IPHONE)' },
+  'haptik.keiner': { de: 'DIESES GERÄT KANN ES NICHT', en: 'NOT SUPPORTED HERE' },
+  'haptik.aus': { de: 'HAPTIK IST AUS', en: 'HAPTICS ARE OFF' },
   'wert.auto': { de: 'AUTO', en: 'AUTO' },
   'einst.einheiten': { de: 'EINHEITEN', en: 'UNITS' },
   'einst.tacho': { de: 'TACHO', en: 'GAUGES' }, // M8g

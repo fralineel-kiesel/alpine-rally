@@ -17,6 +17,7 @@ import { touchEingabe } from './input.js';
 import { berechneLayout, KLEINE, beschriftung } from './touchlayout.js';
 import { beiSprachwechsel } from './texte.js';
 import { malAlle, malKlein } from './touchbild.js';
+import { setzeHaptikAktiv, knopfTick } from './haptik.js'; // M9a.1
 
 // Für Seiten und HUD: ist der Touch-Modus an? (ohne baueTouch immer aus)
 const modus = { an: false };
@@ -252,7 +253,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     if (!n && !istTouch(e)) return; // Maus neben den Knöpfen: wie bisher (main.js)
     const z = { el: null, richtung: 0, r4: 0, tot: false, maus: !istTouch(e), fahren };
     zeiger.set(e.pointerId, z);
-    if (n) aufElement(z, n, e.clientX, e.clientY);
+    if (n) { aufElement(z, n, e.clientX, e.clientY); if (istTouch(e)) knopfTick(); } // M9a.1: Tick im Touch-Ereignis selbst
     else if (imMenue() && bildZeiger === null) {
       // im Menü: Antippen des Bilds wie die Maus (im Rennen zählt das Bild nicht)
       bildZeiger = e.pointerId;
@@ -347,6 +348,7 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
   }
 
   beiAenderung((name) => { if (name === 'touchAutoGas') zeigen(); });
+  setzeHaptikAktiv(() => modus.an); // M9a.1: Haptik nur im Touch-Modus
   aktualisiere();
   return {
     get an() { return modus.an; }, layout, aktualisiere, schritt, mausIgnorieren, alleLos,
