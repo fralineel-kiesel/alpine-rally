@@ -310,6 +310,192 @@ if (teil('b')) {
 }
 
 
+// ===================================================================== Teil B: KNOPFGRÖSSE und LAYOUT
+const FAKTOR = { klein: 0.85, normal: 1, gross: 1.2 }; // (wie CONFIG.touch.knopfGroessen; geprüft in (e))
+const VARIANTEN = [];
+for (const knopfGroesse of ['klein', 'normal', 'gross']) for (const touchLayout of ['normal', 'gespiegelt']) VARIANTEN.push({ knopfGroesse, touchLayout });
+const vName = (v) => `${v.knopfGroesse.toUpperCase()}${v.touchLayout === 'gespiegelt' ? ' GESPIEGELT' : ''}`;
+// Prüfung der D-Pad-Zone (wie M9a.1 (e)), gespiegelt erst zurückgespiegelt
+function pruefeZone(L0, W, H, safe0, gespiegelt) {
+  const L = gespiegelt ? spiegelLayout(L0, W) : L0;
+  const safe = gespiegelt ? { ...safe0, l: safe0.r, r: safe0.l } : safe0;
+  const p = [];
+  const d = L.el.dpad, z = d.zone;
+  if (!innen(d, z)) p.push('Zone enthält das D-Pad nicht');
+  if (schneiden(z, L.bild)) p.push('Zone überlappt das Bild');
+  const inZone = ELEMENTE.filter((n) => n !== 'dpad' && schneiden(z, L.el[n]));
+  if (inZone.some((n) => !['l', 'select', 'start', 'notes'].includes(n))) p.push(`Zone überlappt ${inZone.join(', ')}`);
+  if (Math.min(d.y - z.y, z.y + z.h - d.y - d.h) < 0.35 * d.v.b - 0.5 && z.y > Math.max(L.flaeche ? L.flaeche.y : 0, safe.o) + 0.5 && z.y + z.h < H - safe.u - 0.5) p.push('Zone weniger als 35 % über/unter dem Kreuz');
+  if (z.x < Math.max(24, safe.l) - 0.01) p.push('Zone am Rand');
+  return p;
+}
+let layoutVarianten = null;
+if (teil('e') || teil('i')) layoutVarianten = await layouts(WURZEL, VARIANTEN);
+if (teil('e')) {
+  console.log('(e) KNOPFGRÖSSE x LAYOUT in allen Fenstergrössen (sofort umgestellt, ohne Neuladen)');
+  const cfg = await (async () => { const h = await handy(402, 874, { leicht: true }); const c = await h.ev(async () => (await import('/js/config.js')).CONFIG.touch.knopfGroessen); await h.zu(); return c; })();
+  melde(JSON.stringify(cfg) === JSON.stringify(FAKTOR), `Faktoren in config.js: ${JSON.stringify(cfg)}`);
+  const tab = [];
+  const normal = new Map(layoutVarianten.filter((x) => x.v.touchLayout === 'normal').map((x) => [`${x.name}|${x.v.knopfGroesse}`, x.L]));
+  for (const { name, W, H, safe, v, L, dom } of layoutVarianten) {
+    const gesp = v.touchLayout === 'gespiegelt', f = FAKTOR[v.knopfGroesse];
+    const p = pruefeLayout(L, W, H, safe, gesp, f);
+    p.probleme.push(...pruefeZone(L, W, H, safe, gesp));
+    if (!seiteWieRechnung(L, dom)) p.probleme.push('Seite liegt nicht wie berechnet (nicht sofort umgestellt?)');
+    if (dom.sw > W || dom.sh > H) p.probleme.push(`Seite grösser als das Fenster (${dom.sw}x${dom.sh})`);
+    // gespiegelt = genau das normale Layout, waagrecht gespiegelt (Safe-Area hier links/rechts gleich)
+    if (gesp) {
+      const n = normal.get(`${name}|${v.knopfGroesse}`), s = spiegelLayout(L, W);
+      const anders = [...ELEMENTE.filter((e) => !nah(s.el[e], n.el[e], 0.01) || !nah(s.el[e].v, n.el[e].v, 0.01)), ...(nah(s.bild, n.bild, 0.01) ? [] : ['bild']), ...(nah(s.el.dpad.zone, n.el.dpad.zone, 0.01) ? [] : ['zone'])];
+      if (anders.length) p.probleme.push(`nicht genau gespiegelt: ${anders.join(', ')}`);
+      if (!(L.el.dpad.x > L.bild.x && L.el.a.x < L.bild.x + L.bild.b && L.el.dpad.x > L.el.a.x)) p.probleme.push('D-Pad nicht rechts / A nicht links');
+    }
+    const kEff = L.format === 'hoch' ? L.k : L.k / 0.9 / Math.min(1, H / 330);
+    if (kEff > f + 1e-6) p.probleme.push(`Faktor ${kEff.toFixed(2)} grösser als ${f}`);
+    tab.push({ name, W, H, variante: vName(v), format: L.format, faktorWirklich: +kEff.toFixed(2), bild: `${L.bild.b.toFixed(0)}x${L.bild.h.toFixed(0)}`, dpad: Math.round(L.el.dpad.v.b), ab: Math.round(L.el.a.v.b), r: `${L.el.r.v.b.toFixed(0)}x${L.el.r.v.h.toFixed(0)}`, klein: `${L.el.select.v.b.toFixed(0)}x${L.el.select.v.h.toFixed(0)}`, kleinLage: L.klein || 'unten', zone: `${L.el.dpad.zone.b.toFixed(0)}x${L.el.dpad.zone.h.toFixed(0)}` });
+    melde(p.probleme.length === 0, `${name} ${vName(v)}: Bild ${tab.at(-1).bild}, D-Pad ${tab.at(-1).dpad}, A/B ${tab.at(-1).ab}, Faktor ${kEff.toFixed(2)}${p.probleme.length ? ` – ${p.probleme.slice(0, 4).join('; ')}` : ''}`);
+  }
+  fs.writeFileSync(path.join(LOG, 'varianten.json'), JSON.stringify(tab, null, 1));
+  info(`Tabelle: ${path.join(LOG, 'varianten.json')}`);
+}
+const setzeE = (h, v) => h.ev((v) => import('/js/einstellungen.js').then((E) => { for (const [k, w] of Object.entries(v)) E.setze(k, w); }), v);
+if (teil('f')) {
+  console.log('(f) GESPIEGELT: jede Aktion auf dem gespiegelten Knopf');
+  for (const [W, H] of [[874, 402], [402, 874]]) {
+    const h = await rennenHandy(W, H);
+    await setzeE(h, { touchLayout: 'gespiegelt' }); await h.bild();
+    const L = await h.lay();
+    await testZustand(h);
+    const fehl = [];
+    for (const [k, aktion, soll] of [['a', 'gas', 1], ['b', 'bremse', 1], ['r', 'handbremse', true]]) {
+      await h.f.auf(1, await h.mitte(k)); await h.bild();
+      const e = await lies(h); await h.f.ab(1); await h.bild(); const nach = await lies(h);
+      const sonst = ['gas', 'bremse', 'handbremse', 'reset'].filter((x) => x !== aktion && e[x]);
+      if (!(e[aktion] === soll && !nach[aktion] && !sonst.length)) fehl.push(`${k}: ${aktion} ${e[aktion]}${sonst.length ? ` + ${sonst}` : ''}`);
+    }
+    await h.f.auf(1, await h.mitte('l')); await h.bild(); const l1 = await lies(h); await h.f.ab(1); await h.bild();
+    if (!l1.reset || l1.handbremse) fehl.push('L nicht zurück auf die Strasse');
+    for (const [grad, feld] of [[0, 'gas'], [180, 'bremse']]) {
+      await h.f.auf(1, await h.dpadPunkt(grad)); await h.bild(); const e = await lies(h); await h.f.ab(1); await h.bild();
+      if (e[feld] !== 1) fehl.push(`D-Pad ${grad}°: ${feld} ${e[feld]}`);
+    }
+    // Mehrfinger: D-Pad → (lenken rechts) und A (Gas) gleichzeitig, dann ← und B
+    const multi = [];
+    for (const [grad, knopf, vz, feld] of [[90, 'a', 1, 'gas'], [270, 'b', -1, 'bremse']]) {
+      await h.f.auf(1, await h.dpadPunkt(grad, 0.8)); await h.f.auf(2, await h.mitte(knopf)); await h.bild();
+      let e; for (let i = 0; i < 20; i++) e = await lies(h);
+      await h.f.ab(1); await h.f.ab(2); await h.bild(); for (let i = 0; i < 40; i++) await lies(h);
+      multi.push(`${grad === 90 ? '→' : '←'}+${knopf.toUpperCase()}: Lenkung ${e.lenkung.toFixed(2)}, ${feld} ${e[feld]}`);
+      if (!(Math.sign(e.lenkung) === vz && e[feld] === 1)) fehl.push(multi.at(-1));
+    }
+    // einmalige Aktionen im Rennen: SELECT, NOTES, START
+    await h.ev(() => { window.__alpineRally.start({ countdown: false }); }); await h.bild();
+    const vor = await h.ev(() => { const A = window.__alpineRally; return { hud: A.hudSchalter.an, notes: A.paceNotes.anzeige.an }; });
+    await h.f.tippe(await h.mitte('select')); await h.f.tippe(await h.mitte('notes')); await h.bild();
+    const nach = await h.ev(() => { const A = window.__alpineRally; return { hud: A.hudSchalter.an, notes: A.paceNotes.anzeige.an }; });
+    if (nach.hud === vor.hud || nach.notes === vor.notes) fehl.push('SELECT/NOTES');
+    await h.f.tippe(await h.mitte('select')); await h.f.tippe(await h.mitte('notes'));
+    await h.f.tippe(await h.mitte('start')); await h.bild(); const p = await h.ev(() => window.__alpineRally.ablauf.zustand);
+    // Menü (Pause): A = OK (WEITER), Menü-Belegung gleich
+    await h.f.tippe(await h.mitte('a')); await h.bild(); const w = await h.ev(() => window.__alpineRally.ablauf.zustand);
+    if (p !== 'pause' || w !== 'rennen') fehl.push(`START ${p}, A im Pausenmenü ${w}`);
+    const seiten = `D-Pad bei x ${L.el.dpad.x.toFixed(0)} (rechts), A bei ${L.el.a.x.toFixed(0)}, R bei ${L.el.r.x.toFixed(0)},${L.el.r.y.toFixed(0)}, L bei ${L.el.l.x.toFixed(0)},${L.el.l.y.toFixed(0)}`;
+    melde(fehl.length === 0 && L.gespiegelt, `${W}x${H} gespiegelt: A, B, R, L, ↑, ↓, ${multi.join(', ')}, SELECT, NOTES, START, A im Menü; ${seiten}${fehl.length ? ` – ${fehl.join('; ')}` : ''}`);
+    await h.zu();
+  }
+  // Zielbildschirm gespiegelt: L = NEU STARTEN, R nichts
+  const z = await handy(874, 402, { adresse: '?ton=aus', leicht: true, speicher: { 'alpineRally.einstellungen': JSON.stringify({ touchLayout: 'gespiegelt' }) } });
+  await z.ev(() => { const A = window.__alpineRally; A.anhalten = true; A.start(); A.rennen.zustand = 'ziel'; A.rennen.endZeit = 160; A.ablauf.wechsle('ziel'); });
+  await z.bild();
+  await z.f.tippe(await z.mitte('r')); await z.bild(); const nR = await z.ev(() => window.__alpineRally.ablauf.zustand);
+  await z.f.tippe(await z.mitte('l')); await z.bild(); const nL = await z.ev(() => window.__alpineRally.ablauf.zustand);
+  melde(nR === 'ziel' && nL === 'countdown', `Zielbildschirm gespiegelt: R tut nichts (${nR}), L = NEU STARTEN (${nL})`);
+  await z.zu();
+}
+const relP = (L, dx, dy) => { const v = L.el.dpad.v, r = v.b / 2; return { x: v.x + r + dx * r, y: v.y + r + dy * r }; };
+const winkelP = (L, grad, anteil) => { const w = grad * Math.PI / 180; return relP(L, Math.sin(w) * anteil, -Math.cos(w) * anteil); };
+const probe = (h, p, fahren) => h.ev(([p, f]) => window.__alpineRally.touch.probe(p.x, p.y, f), [p, fahren]);
+if (teil('g')) {
+  console.log('(g) D-Pad-Zonen bei jeder Grösse und gespiegelt');
+  for (const [W, H] of [[874, 402], [402, 874]]) {
+    const h = await rennenHandy(W, H);
+    for (const v of VARIANTEN) {
+      await setzeE(h, v); await h.bild();
+      const L = await h.lay();
+      const z = L.el.dpad.zone, d = L.el.dpad.v, r = d.b / 2, cx = d.x + r;
+      // innen = Seite zum Bild (normal rechts, gespiegelt links); aussen = Fensterrand
+      const gesp = v.touchLayout === 'gespiegelt', sInnen = gesp ? 7 : 3, sAussen = gesp ? 3 : 7;
+      const innenX = gesp ? z.x + 3 : z.x + z.b - 3, aussenX = gesp ? z.x + z.b - 1 : z.x + 1;
+      const faelle = [
+        ['innen am Ende der Zone, Mitte', { x: innenX, y: d.y + r }, sInnen],
+        ['innen, 35 % über dem Kreuz', { x: innenX, y: Math.max(z.y + 1, d.y - 0.35 * d.b + 2) }, sInnen],
+        ['innen, 35 % unter dem Kreuz', { x: innenX, y: Math.min(z.y + z.h - 1, d.y + d.b + 0.35 * d.b - 2) }, sInnen],
+        ['aussen am Rand, über dem Kreuz', { x: aussenX, y: Math.max(z.y + 1, d.y - 0.3 * d.b) }, sAussen],
+        ['← am Kreuz', winkelP(L, 270, 0.9), 7], ['→ am Kreuz', winkelP(L, 90, 0.9), 3],
+        ['10° von ↑', winkelP(L, 10, 0.7), 1], ['350° von ↑', winkelP(L, 350, 0.7), 1], ['10° neben ↓', winkelP(L, 170, 0.7), 5],
+        ['↗ 25°', winkelP(L, 25, 0.7), 2], ['↘ 155°', winkelP(L, 155, 0.7), 4], ['↙ 205°', winkelP(L, 205, 0.7), 6], ['↖ 335°', winkelP(L, 335, 0.7), 8],
+        ['↑ zu weit (1.3 Radien)', winkelP(L, 0, 1.3), 0], ['tote Mitte', winkelP(L, 90, 0.1), 0],
+      ];
+      const fehl = [];
+      for (const [name, p, soll] of faelle) {
+        const ist = await probe(h, p, true);
+        if ((ist.el !== 'dpad' && soll !== 0) || ist.richtung !== soll) fehl.push(`${name}: ${ist.el} ${ist.richtung} (Soll ${soll})`);
+      }
+      const lp = await probe(h, { x: L.el.l.x + L.el.l.b / 2, y: L.el.l.y + L.el.l.h / 2 }, true);
+      if (lp.el !== 'l') fehl.push(`auf L: ${lp.el}`);
+      const aus = await probe(h, { x: gesp ? z.x - 6 : z.x + z.b + 6, y: d.y + r }, true);
+      if (aus.el === 'dpad') fehl.push('neben der Zone (zum Bild hin): noch D-Pad');
+      // Menü klassisch: 4 Richtungen je 90°
+      const m = [];
+      for (const [g, soll] of [[0, 1], [80, 3], [180, 5], [280, 7]]) { const ist = await probe(h, winkelP(L, g, 0.7), false); if (ist.r4 !== soll) m.push(`${g}°: ${ist.r4}`); }
+      if (m.length) fehl.push(`Menü ${m.join(', ')}`);
+      melde(fehl.length === 0, `${W}x${H} ${vName(v)}: ${faelle.length + 2} Punkte beim Fahren + 4 im Menü (D-Pad ${d.b.toFixed(0)}, Zone ${z.b.toFixed(0)}x${z.h.toFixed(0)}, ${gesp ? 'innen = links' : 'innen = rechts'})${fehl.length ? ` – ${fehl.join('; ')}` : ''}`);
+    }
+    await h.zu();
+  }
+}
+if (teil('h')) {
+  console.log('(h) KNOPFGRÖSSE und LAYOUT bleiben nach Neuladen; Unsinn = Standard');
+  const h = await handy(874, 402, { leicht: true });
+  await setzeE(h, { knopfGroesse: 'gross', touchLayout: 'gespiegelt' }); await h.bild();
+  const vor = await h.lay();
+  await h.page.reload(); await h.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.touch, null, { timeout: 120000 });
+  await h.bild();
+  const nach = await h.ev(() => ({ g: window.__alpineRally.einstellungen.knopfGroesse, l: window.__alpineRally.einstellungen.touchLayout }));
+  const L = await h.lay();
+  melde(nach.g === 'gross' && nach.l === 'gespiegelt' && nah(L.el.dpad, vor.el.dpad, 0.01) && nah(L.bild, vor.bild, 0.01), `nach Neuladen: KNOPFGRÖSSE ${nach.g}, LAYOUT ${nach.l}, Lage gleich`);
+  await h.zu();
+  const u = await handy(874, 402, { leicht: true, speicher: { 'alpineRally.einstellungen': JSON.stringify({ knopfGroesse: 'riesig', touchLayout: 7, haptik: 'voll' }) } });
+  const w = await u.ev(() => ({ g: window.__alpineRally.einstellungen.knopfGroesse, l: window.__alpineRally.einstellungen.touchLayout, hp: window.__alpineRally.einstellungen.haptik }));
+  melde(w.g === 'normal' && w.l === 'normal' && w.hp === 'voll', `gespeicherter Unsinn (riesig, 7): KNOPFGRÖSSE ${w.g}, LAYOUT ${w.l}; HAPTIK aus M9a.1 (voll) bleibt ${w.hp}`);
+  await u.zu();
+  // Einträge nur im Touch-Modus (Desktop: nicht da; TOUCH-STEUERUNG = AN: da)
+  const d = await handy(1280, 720, { leicht: true, geraet: {} });
+  const lst = () => d.ev(() => window.__alpineRally.seiten.einstellungen.eintraege.map((e) => e.text));
+  const l0 = await lst();
+  await setzeE(d, { touch: 'an' }); await d.bild();
+  const l1 = await lst();
+  const i = l1.indexOf('einst.touch');
+  melde(!l0.includes('einst.knopfGroesse') && !l0.includes('einst.touchLayout') && l1[i + 1] === 'einst.knopfGroesse' && l1[i + 2] === 'einst.touchLayout' && l1[i + 3] === 'einst.autoGas',
+    `Desktop: KNOPFGRÖSSE/LAYOUT ${l0.includes('einst.knopfGroesse') ? 'da' : 'verborgen'}; TOUCH-STEUERUNG = AN: ${l1.slice(i, i + 4).join(', ')}`);
+  await d.zu();
+}
+if (teil('i')) {
+  console.log('(i) Standardwerte (NORMAL, NORMAL) wie 0.9a.1, ausser R (Teil A)');
+  if (!ALT) info('nur mit --alt <ordner 0.9a.1>');
+  else {
+    const std = layoutVarianten.filter((x) => x.v.knopfGroesse === 'normal' && x.v.touchLayout === 'normal');
+    for (const [i, x] of std.entries()) {
+      const a = layoutAlt[i].L, ohne = layoutNeu[i].L;
+      const gleichOhne = ELEMENTE.every((n) => nah(x.L.el[n], ohne.el[n], 0.001) && nah(x.L.el[n].v, ohne.el[n].v, 0.001)) && nah(x.L.bild, ohne.bild, 0.001);
+      const anders = unterschiede(x.L, a);
+      // erlaubt: R; NOTES im Querformat seitlich (rutscht unter R); im Hochformat Steuerfläche niedriger, weil über A kein R mehr Platz braucht
+      const erklaert = anders.every((n) => n === 'r' || (n === 'notes' && x.L.klein === 'seitlich')) || (x.L.format === 'hoch' && anders.every((n) => n === 'r' || ELEMENTE.concat('bild').includes(n)) && ELEMENTE.filter((n) => n !== 'r').every((n) => Math.abs(x.L.el[n].x - a.el[n].x) < 0.01 && Math.abs(x.L.el[n].b - a.el[n].b) < 0.01));
+      melde(gleichOhne && erklaert, `${x.name}: anders als 0.9a.1: ${anders.join(', ') || '–'}${anders.length > 1 && x.L.format === 'hoch' ? ` (nur senkrecht verschoben: Bild ${(x.L.bild.y - a.bild.y).toFixed(1)}, D-Pad ${(x.L.el.dpad.y - a.el.dpad.y).toFixed(1)} px)` : ''}; nach Umschalten zurück auf NORMAL gleich wie frisch geladen: ${gleichOhne}`);
+    }
+  }
+}
+
 // ===================================================================== Haptik (c)
 // Zähler statt Vibration: navigator.vibrate wird vor dem Laden ersetzt (Chromium hat es, vibriert aber nicht)
 const VIB_ZAEHLER = () => { window.__vib = []; Navigator.prototype.vibrate = function (m) { window.__vib.push(JSON.stringify(m)); return true; }; };

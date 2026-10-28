@@ -5,6 +5,9 @@
 //     flaeche: { x, y, b, h } (Hochformat: dunkle Steuerfläche unten, sonst null),
 //     el: { dpad, a, b, l, r, select, start, notes } }
 //   el.dpad.zone (M9a.1) = unsichtbare Trefferzone des D-Pads beim Fahren (grösser als das Kreuz, siehe touch.fahrZone)
+// M9a.2: optionen { faktor (Einstellung KNOPFGRÖSSE, touch.knopfGroessen; 1 = NORMAL), gespiegelt (LAYOUT GESPIEGELT:
+//   alles waagrecht gespiegelt, D-Pad und L rechts, A/B und R links; nur die Lage, die Bilder der Knöpfe bleiben lesbar) }.
+//   Der Faktor wirkt auf alle Knöpfe zusammen; passt etwas nicht ins Fenster, wird er dort kleiner (wie bisher k).
 // Jedes Element: { x, y, b, h } = Trefferfläche (nie kleiner als minTreffer; START/SELECT/NOTES im Querformat nie kleiner
 // als kleinTreffer), v = sichtbarer Knopf darin.
 // Hochformat: Bild in voller Breite, mittig im Raum über der Steuerfläche; Steuerfläche unten mit L in der oberen Ecke
@@ -21,8 +24,9 @@ import { PIXEL, pilleBreite } from './touchbild.js';
 export const KLEINE = ['select', 'start', 'notes'];
 export const beschriftung = (n) => t(`touch.${n}`); // Beschriftung von START, SELECT, NOTES (js/texte.js)
 
-// Grössen aller Knöpfe bei Massstab k; kleinTreffer = Mindestgrösse der Trefferfläche von START/SELECT/NOTES
-function groessen(k, kleinTreffer) {
+// Grössen aller Knöpfe bei Massstab k; kleinTreffer = Mindestgrösse der Trefferfläche von START/SELECT/NOTES;
+// f = Faktor der Knopfgrösse (M9a.2, nur für R im Querformat nötig: k enthält f schon)
+function groessen(k, kleinTreffer, f = 1) {
   const T = CONFIG.touch;
   const m = T.minTreffer;
   const d = Math.max(T.dpadMinDurchmesser, T.dpad * k);
@@ -30,7 +34,7 @@ function groessen(k, kleinTreffer) {
   const dx = Math.max(T.abVersatz[0] * k, a + 2), dy = T.abVersatz[1] * k;
   const sb = Math.max(m, T.schulter[0] * k), sh = T.schulter[1] * k;
   // R (Handbremse, M9a.1): im Querformat nicht um den Faktor kleiner, erst wenn das Fenster es verlangt
-  const kr = Math.min(1, k / T.quer.faktor);
+  const kr = Math.min(f, k / T.quer.faktor);
   const rb = Math.max(m, T.schulterR[0] * kr), rh = T.schulterR[1] * kr;
   // kleine Knöpfe (M9a.1): Pille kv hoch, Breite nach der Beschriftung; Trefferfläche mindestens kleinTreffer
   const kv = T.klein * k, kt = Math.max(kleinTreffer, kv);
@@ -66,7 +70,24 @@ function fahrZone(el, x0, x1, yMin, yMax) {
 // R (Handbremse) oben in der rechten Ecke (M9a.2, wie in M9a), rechte Kante bei xr
 const rEcke = (xr, y, g) => element(xr - g.rb, y, g.rb, g.rht, g.rb, g.rh);
 
-export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
+// Layout waagrecht spiegeln (M9a.2, LAYOUT GESPIEGELT): jedes Rechteck an der Fenstermitte
+function spiegeln(r, W) {
+  if (!r) return r;
+  const s = rechteck(W - r.x - r.b, r.y, r.b, r.h);
+  if (r.v) s.v = spiegeln(r.v, W);
+  if (r.zone) s.zone = spiegeln(r.zone, W);
+  return s;
+}
+
+export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }, { faktor = 1, gespiegelt = false } = {}) {
+  if (gespiegelt) {
+    // normal rechnen mit vertauschten Safe-Area-Rändern, dann spiegeln
+    const L = berechneLayout(W, H, { ...safe, l: safe.r, r: safe.l }, { faktor });
+    const el = {};
+    for (const n of Object.keys(L.el)) el[n] = spiegeln(L.el[n], W);
+    return { ...L, bild: spiegeln(L.bild, W), flaeche: spiegeln(L.flaeche, W), el, gespiegelt: true };
+  }
+  const f = faktor;
   const T = CONFIG.touch;
   const mL = Math.max(T.rand, safe.l), mR = Math.max(T.rand, safe.r);
   const ro = T.randOben, lu = T.luecke;
@@ -78,11 +99,11 @@ export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
     const bb = W - safe.l - safe.r, bh = bb * 9 / 16;
     const breiteNoetig = (g) => g.d + 16 + g.abB;
     const reiheB = (g) => KLEINE.reduce((s, n) => s + g.kb(n), 0) + 2 * T.hoch.kleinLuecke;
-    let k = 1;
+    let k = f; // (M9a.2: mit der Knopfgrösse; zu gross für das Fenster: k wird kleiner)
     const platz = H - safe.o - bh - 4; // so hoch darf die Steuerfläche höchstens sein (das Bild bleibt ganz)
     const kt = T.hoch.kleinTreffer;
-    for (let g = groessen(k, kt); k > 0.4 && (breiteNoetig(g) > W - mL - mR || reiheB(g) > W - mL - mR || spalteH(g) + safe.u > platz); g = groessen(k, kt)) k -= 0.02;
-    const g = groessen(k, kt);
+    for (let g = groessen(k, kt, f); k > 0.4 && (breiteNoetig(g) > W - mL - mR || reiheB(g) > W - mL - mR || spalteH(g) + safe.u > platz); g = groessen(k, kt, f)) k -= 0.02;
+    const g = groessen(k, kt, f);
     const P = Math.min(platz, Math.max(spalteH(g) + safe.u, T.hoch.steuerAnteil * H));
     const yP = H - P;
     const flaeche = rechteck(0, yP, W, P);
@@ -106,15 +127,16 @@ export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
   const Hv = H - safe.o - safe.u;
   const oben = safe.o + ro, unterkante = H - safe.u - ro;
   const reiheB = (g) => KLEINE.reduce((s, n) => s + g.kb(n), 0) + 2 * T.hoch.kleinLuecke;
-  const k0 = Q.faktor * Math.min(1, H / Q.kleinAb);
+  const k0 = Q.faktor * Math.min(1, H / Q.kleinAb) * f; // (M9a.2: mal Knopfgrösse)
   // Knöpfe bei Massstab k; passt = beide Spalten haben in der Höhe Platz und die Zone rechts ist nicht zu breit
   const bau = (k, seitlich) => {
-    const g = groessen(k, T.kleinTreffer);
+    const g = groessen(k, T.kleinTreffer, f);
     const e = {};
     const yK = unterkante - g.kh; // seitlich: Reihe der kleinen Knöpfe unten in den Zonen
     const boden = seitlich ? yK - lu : unterkante; // so tief dürfen D-Pad und A/B reichen
     // M9a.1: D-Pad quer mit eigener Grösse (nicht mal k), begrenzt durch Fensterhöhe, Zone links und Platz in der Spalte
-    g.d = Math.max(T.dpadMinDurchmesser, Math.min(Q.dpad, Q.dpadHoehe * Hv, Q.dpadZoneMax * W - mL - Q.bildLuecke, boden - oben - g.sht - lu));
+    // (M9a.2: Grösse, Höhenanteil und Zone wachsen mit der Knopfgrösse f; Platz in der Spalte begrenzt)
+    g.d = Math.max(T.dpadMinDurchmesser, Math.min(Q.dpad * f, Q.dpadHoehe * f * Hv, Q.dpadZoneMax * f * W - mL - Q.bildLuecke, boden - oben - g.sht - lu));
     const cy = (oben + g.sht + lu + boden) / 2; // Mitte der Spalten (zwischen L und dem Boden)
     // links: L oben, D-Pad (und SELECT); rechts: R oben in der Ecke, A/B (und NOTES unter R, START unten)
     e.l = element(mL, oben, g.sb, g.sht, g.sb, g.sh);
@@ -132,13 +154,13 @@ export function berechneLayout(W, H, safe = { o: 0, r: 0, u: 0, l: 0 }) {
     const ZR = mR + Math.max(g.abB, g.rb, seitlich ? Math.max(e.start.b, e.notes.b) : 0) + Q.bildLuecke;
     const hoehe = e.dpad.y >= e.l.y + e.l.h + lu - eps && e.dpad.y + e.dpad.h <= boden + eps
       && ueberA.y + ueberA.h + lu <= e.a.y + eps && e.b.y + e.b.h <= boden + eps;
-    const breite = ZR <= Q.zoneMaxAnteil * W || g.a <= T.minTreffer; // (links begrenzt dpadZoneMax das D-Pad)
+    const breite = ZR <= Q.zoneMaxAnteil * f * W || g.a <= T.minTreffer; // (links begrenzt dpadZoneMax das D-Pad)
     return { k, g, e, ZL, ZR, passt: hoehe && breite };
   };
   const versuch = (seitlich) => {
     let v = bau(k0, seitlich);
     for (let k = k0; k > 0.4 && !v.passt; ) { k -= 0.02; v = bau(k, seitlich); }
-    v.ZL = Math.max(Q.seitenZone, v.ZL); v.ZR = Math.max(Q.seitenZone, v.ZR);
+    v.ZL = Math.max(Q.seitenZone * f, v.ZL); v.ZR = Math.max(Q.seitenZone * f, v.ZR);
     const frei = Q.bildMittig ? W - 2 * Math.max(v.ZL, v.ZR) : W - v.ZL - v.ZR;
     v.bb = Math.min(frei, (seitlich ? Hv : Hv - lu - v.g.kh - ro) * 16 / 9);
     v.bh = v.bb * 9 / 16;

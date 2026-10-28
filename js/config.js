@@ -1609,6 +1609,8 @@ export const CONFIG = {
       touch: 'auto',           // M9a: Touch-Knöpfe 'auto' (nur auf Touch-Geräten), 'an' (immer, auch am Computer mit der Maus), 'aus'
       touchAutoGas: false,     // M9a.1: AUTO-GAS (nur Touch, nur im laufenden Rennen): Gas von allein, solange B nicht gedrückt ist
       haptik: 'voll',          // M9a.1: HAPTIK (nur Touch) 'aus', 'knoepfe' (Tick bei Knopfdruck) oder 'voll' (dazu Spielereignisse)
+      knopfGroesse: 'normal',  // M9a.2: KNOPFGRÖSSE (nur Touch) 'klein', 'normal', 'gross' (Faktoren: touch.knopfGroessen)
+      touchLayout: 'normal',   // M9a.2: LAYOUT (nur Touch) 'normal' oder 'gespiegelt' (D-Pad rechts, A/B links: Linkshänder)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1692,6 +1694,10 @@ export const CONFIG = {
     klein: 26,                 // START, SELECT, NOTES: Höhe der flachen Pille mit Beschriftung innen (M9a.1: 26 statt runde 36)
     kleinTreffer: 36,          // ... ihre Trefferfläche im Querformat mindestens so gross (nur diese drei dürfen unter minTreffer)
     luecke: 12,                // Abstand zwischen den Reihen (Schulterknöpfe, D-Pad, kleine Knöpfe)
+    // M9a.2: Einstellung KNOPFGRÖSSE: alle Knöpfe zusammen mal diesen Faktor (D-Pad, A/B, L/R, kleine Knöpfe, D-Pad-Zone;
+    // im Querformat wachsen auch die Seitenzonen mit). Passt es im Fenster nicht, wird der Faktor dort kleiner.
+    // Trefferflächen bleiben mindestens minTreffer (kleine Knöpfe quer kleinTreffer), auch bei KLEIN.
+    knopfGroessen: { klein: 0.85, normal: 1, gross: 1.2 },
     hoch: {
       steuerAnteil: 0.46,      // Hochformat: Steuerfläche unten ist mindestens so hoch (Anteil der Fensterhöhe) ...
       kleinLuecke: 20,         // ... die drei kleinen Knöpfe liegen nebeneinander mit dieser Lücke ...

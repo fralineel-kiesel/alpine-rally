@@ -287,6 +287,17 @@ export function baueSeiten(api) {
     { typ: 'aktion', text: 'einst.haptikTesten', hinweis: 'einst.haptikTestenHinweis', aktion: () => { menue.zeigeMeldung(t(`haptik.${testTick()}`), M.farbeTitel); } },
   ];
   const nurTouch = [
+    // M9a.2: Knopfgrösse und Layout (wirken sofort, die Knöpfe sind hier zu sehen)
+    {
+      typ: 'auswahl', text: 'einst.knopfGroesse', hinweis: 'einst.knopfGroesseHinweis',
+      optionen: () => [{ wert: 'klein', text: 'wert.klein' }, { wert: 'normal', text: 'wert.normal' }, { wert: 'gross', text: 'wert.gross' }],
+      lesen: () => einstellungen.knopfGroesse, setzen: (w) => setze('knopfGroesse', w),
+    },
+    {
+      typ: 'auswahl', text: 'einst.touchLayout', hinweis: 'einst.touchLayoutHinweis',
+      optionen: () => [{ wert: 'normal', text: 'wert.normal' }, { wert: 'gespiegelt', text: 'wert.gespiegelt' }],
+      lesen: () => einstellungen.touchLayout, setzen: (w) => setze('touchLayout', w),
+    },
     { typ: 'umschalter', text: 'einst.autoGas', hinweis: 'einst.autoGasHinweis', lesen: () => einstellungen.touchAutoGas, setzen: (b) => setze('touchAutoGas', b) },
     ...(haptikMoeglich() ? haptikEintraege : []),
   ];

@@ -14,5 +14,13 @@ Test: `node tools/m9a2-test.mjs --alt <ordner 0.9a.1>` (0.9a.1 = `git worktree a
 - `tools/m9a1-test.mjs`: Erwartung R (Ecke) und Haptik (kein Schalter) nachgezogen.
 - Test (b): 22 Layouts ok.
 
+## Teil B (erledigt)
+- KNOPFGRÖSSE (`touch.knopfGroessen` klein 0.85 / normal 1 / gross 1.2) und LAYOUT (normal / gespiegelt), nur Touch,
+  nach TOUCH-STEUERUNG; wirken sofort (`anpassen()`), Prüfung beim Laden. Gespiegelt = normal gerechnet (Safe-Area
+  links/rechts getauscht) und gespiegelt; Bilder der Knöpfe nicht gespiegelt.
+- Quer GROSS: Bild kleiner (874x402: 439x247 statt 501x282; 640x360: 264x149); KLEIN grösser (874x402: 547x308).
+  Faktor wird in engen Fenstern begrenzt (z. B. 640x360 GROSS wirklich 1.02).
+- Tests (e)–(i): 131 ok (66 Varianten, Aktionen gespiegelt + Mehrfinger, Zonen, Neuladen, Standard = 0.9a.1).
+
 ## Offen
-- Teil B (KNOPFGRÖSSE, LAYOUT), Teil C (HUD-GRÖSSE), Teil D (Bilder, Bericht, Version).
+- Teil C (HUD-GRÖSSE, Entwurf: eigene Leinwand je Faktor), Teil D (Bilder, Bericht, Version).
