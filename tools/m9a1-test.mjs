@@ -485,7 +485,8 @@ if (teil('k')) {
   await h.page.reload();
   await h.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.touch, null, { timeout: 120000 });
   const r = await h.ev(() => { const A = window.__alpineRally; const l = A.seiten.einstellungen.eintraege; const e = l.find((x) => x.text === 'einst.autoGas'); return { wert: A.einstellungen.touchAutoGas, da: !!e, lesen: e && e.lesen(), nach: l[l.indexOf(e) - 1] && l[l.indexOf(e) - 1].text, speicher: JSON.parse(localStorage.getItem('alpineRally.einstellungen')).touchAutoGas }; });
-  melde(r.wert === true && r.speicher === true && r.da && r.lesen === true && r.nach === 'einst.touch', `nach Neuladen: AUTO-GAS ${r.wert ? 'AN' : 'AUS'} (gespeichert ${r.speicher}), Eintrag nach ${r.nach}`);
+  // (seit M9a.2 stehen KNOPFGRÖSSE und LAYOUT zwischen TOUCH-STEUERUNG und AUTO-GAS)
+  melde(r.wert === true && r.speicher === true && r.da && r.lesen === true && (r.nach === 'einst.touch' || r.nach === 'einst.touchLayout'), `nach Neuladen: AUTO-GAS ${r.wert ? 'AN' : 'AUS'} (gespeichert ${r.speicher}), Eintrag nach ${r.nach}`);
   // Unsinn im Speicher = AUS
   await h.ev(() => { const d = JSON.parse(localStorage.getItem('alpineRally.einstellungen')); d.touchAutoGas = 'ja'; localStorage.setItem('alpineRally.einstellungen', JSON.stringify(d)); });
   await h.page.reload();

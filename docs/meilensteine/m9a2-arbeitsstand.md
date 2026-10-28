@@ -29,5 +29,7 @@ Test: `node tools/m9a2-test.mjs --alt <ordner 0.9a.1>` (0.9a.1 = `git worktree a
 - Tests (j) MITTEL pixelgleich (5 Autos x 3 Pixelgrössen), (k) 90 Fälle ohne Pixel-Überlappung, Tacho GROSS 41 %,
   (l) Neuladen/Pause/Demo, Bildzeit hud.zeichne 0.47 ms wie 0.9a.1, (m) Texte. (d) Foto schwankt (Last), Pixel-Vergleich.
 
-## Offen
-- Teil D: Version, Bilder, voller Lauf `--lang`, Bericht fertig, PR.
+## Teil D (erledigt)
+- Version 0.9a.2, Bilder `screenshots/m9a2/` (6), Bericht `docs/meilensteine/m9a2.md`, STAND/KONZEPT nachgeführt.
+- Voller Lauf `--lang`: 290 ok, 12 rot (9 bekannte Altlasten, Foto 1 Bildpunkt 3D, overlay „darin“ und m9a1 (k)
+  nachgezogen, overlay-Hinweis = Bildrate des Test-Browsers, alt/neu gleich nachgemessen).

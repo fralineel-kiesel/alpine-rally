@@ -2,11 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 9a.1 fertig** (Version 0.9a.1) – **Touch-Feinschliff**: R = Handbremse direkt über A/B,
-L = zurück auf die Strasse, SELECT/START/NOTES als kleine Pillen, D-Pad im Querformat grösser mit grossen unsichtbaren
-Lenk-Zonen, neue Einstellungen **AUTO-GAS** und **HAPTIK** (mit HAPTIK TESTEN). Am Computer ohne Touch alles wie 0.9a.
+Aktuell: **Meilenstein 9a.2 fertig** (Version 0.9a.2) – **R wieder oben rechts in der Ecke**, **HAPTIK nur auf Android**
+(auf dem iPhone verborgen), neue Einstellungen **KNOPFGRÖSSE** (KLEIN/NORMAL/GROSS), **LAYOUT** (NORMAL/GESPIEGELT für
+Linkshänder) und **HUD-GRÖSSE** (KLEIN/MITTEL/GROSS, auch am Computer). Standardwerte = wie 0.9a.1 (ausser R).
 **Nur in Chromium mit Touch-Emulation getestet, Haptik nur gezählt – kein echtes Handy.**
-**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m9a1.md`.** Davor: 9a (Touch-Steuerung).
+**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m9a2.md`.** Davor: 9a.1 (Touch-Feinschliff), 9a (Touch-Steuerung).
 Nächster Schritt: **Strecke als Daten** (noch kein Prompt).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
@@ -34,7 +34,8 @@ Alle Tasten ausser Esc, Enter und F3 kann man unter EINSTELLUNGEN → TASTEN BEL
 **Handy (seit M9a, Belegung seit M9a.1):** D-Pad = lenken (↑ Gas, ↓ Bremse, Schrägen gehen), A = Gas, B = Bremse,
 **R = Handbremse**, **L = zurück auf die Strasse**, START = Pause, SELECT = HUD, NOTES = Pace-Notes; im Menü D-Pad, A = OK,
 B = zurück, L = wie Taste R (Zielbildschirm: NEU STARTEN), oder antippen. EINSTELLUNGEN → TOUCH-STEUERUNG = AUTO / AN / AUS,
-AUTO-GAS = AN / AUS, HAPTIK = AUS / NUR KNÖPFE / VOLL (die letzten zwei nur im Touch-Modus).
+AUTO-GAS = AN / AUS, KNOPFGRÖSSE, LAYOUT (GESPIEGELT: D-Pad rechts), HAPTIK = AUS / NUR KNÖPFE / VOLL (nur Touch;
+HAPTIK nur auf Geräten, die vibrieren können). **HUD-GRÖSSE** (unter ANZEIGE, alle Geräte) macht Zeit, Ansagen, Karte und Tacho kleiner/grösser.
 
 Alle Einstellungen (auch N) merkt sich der Browser. Nur H nicht: Bei jedem Start ist das HUD wieder an.
 
@@ -60,7 +61,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/demofahrt.js` – Demo-Fahrt hinter Titel und Hauptmenü (seit M5a).
 - `js/einstellungen.js` – Einstellungen (seit M5a): Werte, Standardwerte aus config.js (Block…
 - `js/fahrlabor.js` – Fahr-Labor (Meilenstein 8a): Seitenpanel zum Nachstellen des Fahrgefühls…
-- `js/haptik.js` – Haptik (M9a.1): Vibration (Android) bzw. Tick über einen versteckten iOS-Schalter, nur im Touch-Modus.
+- `js/haptik.js` – Haptik (M9a.1): Vibration nur mit `navigator.vibrate` (Android), nur im Touch-Modus (M9a.2: ohne iPhone-Trick).
 - `js/fahrprofil.js` – Fahrprofile (Meilenstein 8a): Das heutige Fahrverhalten steht in config…
 - `js/federung.js` – Federung der Karosserie (Meilenstein 8a): Feder und Dämpfer (zweiter Ordn…
 - `js/garage.js` – Garage (Meilenstein 8c): drehendes 3D-Modell auf der Menüseite AUTO.
@@ -128,6 +129,8 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Werkzeuge und Tests
 
+- `node tools/m9a2-test.mjs --alt <ordner 0.9a.1>` – alle Prüfungen von M9a.2 (a) bis (m), (u), (v); einzeln `--nur b,e`;
+  Regression mit `--lang` (0.9a.1: `git worktree add <ordner> 4a265b2`). `node tools/m9a2-bilder.mjs` – Bilder nach `screenshots/m9a2/`.
 - `node tools/m9a1-test.mjs --alt <ordner 0.9a>` – alle Prüfungen von M9a.1 (a) bis (v); einzeln `--nur e,f`; Regression
   mit `--lang` (0.9a: `git worktree add <ordner> 12de5b8`). `node tools/m9a1-bilder.mjs` – Bilder nach `screenshots/m9a1/`.
 - `node tools/m9a-test.mjs --alt <ordner 0.8h>` – alle Prüfungen von M9a (a) bis (n) und (u); einzeln `--nur a,d`; Regression
@@ -179,11 +182,16 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
   Fingergefühl ungeprüft. Im Querformat mit Safe-Area wird das Bild kleiner (491x276 auf 874x402). HUD im Hochformat klein.
   Test-Browser: im Menü teils nur 3 Bilder/s, Menü-Tests blenden darum die 3D-Szene aus. Details: `docs/meilensteine/m9a.md`.
 - Touchscreen-Laptop: mit TOUCH-STEUERUNG = AUTO erscheinen dort die Knöpfe (dann AUS wählen).
-- **M9a.1:** iOS-Haptik (Schalter-Trick) ungeprüft, vor allem bei Spielereignissen; Querformat-Bild wegen des grösseren
+- **M9a.2:** Querformat mit KNOPFGRÖSSE GROSS: Bild deutlich kleiner (874x402: 439x247, mit Safe-Area 373x210);
+  HUD GROSS: Tacho 41 % der Bildbreite (Ziel ein Drittel nicht erreichbar, schon MITTEL sind es 35 %). Details: `docs/meilensteine/m9a2.md`.
+- **M9a.1:** (iOS-Haptik seit M9a.2 entfernt) Querformat-Bild wegen des grösseren
   D-Pads ca. 8–9 % kleiner (874x402: 501x282); quer liegt rechts vom Kreuz kaum Platz für die Lenk-Zone (nur senkrecht
   grosszügig); kleines iPhone quer mit Safe-Area sehr knapp (A/B 44, R 53x29). Details: `docs/meilensteine/m9a1.md`.
 
 ## Ideen/Vorschläge (nicht umgesetzt)
+
+- **Touch (M9a.2-Ideen):** kurzer Klickton als Ersatz für die iPhone-Haptik, eigener Handbremsen-Knopf neben A/B,
+  analoge Lenkung nach Daumenposition im D-Pad, Knöpfe frei verschieben (ziehen), Wake Lock (Bildschirm bleibt an).
 
 - **Touch (M9a.1-Ideen):** eigener Handbremsen-Knopf neben A/B, Knopfgrösse einstellbar, Drift-Hilfe über B (z. B. B kurz
   antippen = Lastwechsel), analoge Lenkung nach Daumenposition im D-Pad (weiter aussen = stärker), Wake Lock
@@ -218,6 +226,13 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Während der Arbeit: `docs/meilensteine/<name>-arbeitsstand.md` (10 bis 20 Zeilen: erledigt, Werte, offene Fragen) nach jedem Teil nachführen.
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
+
+- **M9a.2** (0.9a.2) – Bericht mit Zahlen, Fenstergrössen, HUD-Massen, Tests, Unsicherheiten, Test-Anleitung: `docs/meilensteine/m9a2.md`.
+  - **R** wieder oben rechts in der Ecke (wie M9a), L oben links; quer mit Safari-Leisten NOTES unter R.
+  - **HAPTIK** nur mit `navigator.vibrate` (Android); iPhone-Schalter-Trick und seine Texte entfernt.
+  - **KNOPFGRÖSSE** 0.85 / 1 / 1.2 (in engen Fenstern begrenzt), **LAYOUT GESPIEGELT** (D-Pad rechts), beide sofort, nur Touch.
+  - **HUD-GRÖSSE** 0.8 / 1 / 1.43 (Tacho 1.25): eigene Leinwand je Faktor, sauberer Pixel-Look; MITTEL pixelgleich zu 0.9a.1.
+  - **Unsicher:** Fingergefühl KLEIN/GROSS, Spiegelung im Alltag, HUD GROSS auf dem Handy, Android-Haptik nur gezählt.
 
 - **M9a.1** (0.9a.1) – Bericht mit Zahlen, Fenstergrössen, Tests, Unsicherheiten, Test-Anleitung und Bildern: `docs/meilensteine/m9a1.md`.
   - **Belegung:** R = Handbremse (über A, 80x44), L = zurück auf die Strasse; im Menü L = bisheriges R, R tut nichts.

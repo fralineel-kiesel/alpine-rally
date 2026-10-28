@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.9a.1';
+export const VERSION = '0.9a.2';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
