@@ -154,6 +154,9 @@ export const TEXTE = {
   // M6: Gruppe ANZEIGE
   'einst.anzeige': { de: 'ANZEIGE', en: 'DISPLAY' },
   'einst.minimap': { de: 'MINIMAP', en: 'MINIMAP' },
+  'einst.hudGroesse': { de: 'HUD-GRÖSSE', en: 'HUD SIZE' }, // M9a.2
+  'einst.hudGroesseHinweis': { de: 'ZEIT, ANSAGEN, KARTE UND TACHO IM RENNEN', en: 'TIME, NOTES, MAP AND GAUGES IN RACES' },
+  'wert.mittel': { de: 'MITTEL', en: 'MEDIUM' },
   'einst.vergleich': { de: 'LIVE-VERGLEICH', en: 'LIVE DELTA' },
   'einst.vergleichHinweis': { de: 'GRÜN = SCHNELLER, ROT = LANGSAMER', en: 'GREEN = FASTER, RED = SLOWER' },
   'einst.vergleichMit': { de: 'VERGLEICH MIT', en: 'COMPARE WITH' },

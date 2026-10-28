@@ -496,6 +496,203 @@ if (teil('i')) {
   }
 }
 
+// ===================================================================== Teil C: HUD-GRÖSSE
+const AUTOS = arg('--autos') ? arg('--autos').split(',') : ['rt4', 'delto', 'escorta', 'l073', 'imprexa']; // (--autos rt4,l073: nur diese)
+const AUFL = [[0, '320x180'], [1, '480x270'], [2, '640x360']];
+// Rennen mit allen HUD-Teilen sichtbar und festen Werten (Physik angehalten): Zeit, Checkpoint-Punkte, Live-Vergleich
+// (Anzeige fest), Meldung, Pace-Notes (Stelle 300 m), R-Countdown, Minimap, Tacho (Tempo, Drehzahl, Gang, Ladedruck)
+const HUD_FEST = () => {
+  const A = window.__alpineRally;
+  A.anhalten = true;
+  A.start({ countdown: false });
+  A.rennen.zustand = 'laeuft'; A.ablauf.wechsle('rennen');
+  A.setzeAuf(300);
+  A.rennen.zeit = 61.23; A.rennen.zwischenzeiten[0] = 30.5;
+  A.rennen.meldung = { text: 'CHECKPOINT VERPASST', farbe: 'rot', bis: 1e9, verpasstCp: 1 }; A.rennen.uhr = 0; // (längste echte Meldung)
+  A.rueck.rest = 2.5;
+  const fest = { sichtbar: true, wert: 8, stufe: -1, uhr: 0, version: 1 };
+  A.vergleich.aktualisiere = () => fest;
+  A.physik.tempo = 33; A.getriebe.drehzahl = 6100; A.getriebe.anzeige = '3'; A.getriebe.ladedruck = 0.7;
+};
+// Pixel-Abdruck der HUD-Leinwand und aller Ebenen (zusammen gerechnet, Reihenfolge wie auf dem Schirm)
+const HUD_ABDRUCK = () => {
+  const els = [...document.querySelectorAll('#buehne canvas.hud-ebene'), document.getElementById('hud')].filter((c) => c.style.display !== 'none');
+  let h = 7, n = 0;
+  for (const c of els) { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; for (let i = 0; i < d.length; i++) { h = (h * 31 + d[i] * (i % 7 + 1)) % 1000000007; if (i % 4 === 3 && d[i]) n++; } }
+  return { h, n, ebenen: els.length };
+};
+async function hudSeite(wurzel, autoId, geraet = {}, W = 1280, H = 720, speicher = null) {
+  // (leicht: 3D-Szene aus, das HUD hängt nicht von ihr ab; sonst ist der Test-Browser sehr langsam)
+  const h = await handy(W, H, { wurzel, adresse: `?menue=aus&ton=aus&auto=${autoId}`, geraet, leicht: true, speicher });
+  await h.ev(HUD_FEST);
+  return h;
+}
+const warteBilder = async (h, n = 40) => { for (let i = 0; i < n; i++) await h.bild(); };
+if (teil('j')) {
+  console.log('(j) HUD-GRÖSSE MITTEL pixelgleich zu 0.9a.1 (Bild im Rennen, 5 Autos, 3 Pixelgrössen)');
+  if (!ALT) info('nur mit --alt <ordner 0.9a.1>');
+  else for (const id of AUTOS) {
+    const erg = [];
+    for (const w of [ALT, WURZEL]) {
+      const h = await hudSeite(w, id);
+      const r = [];
+      for (const [i] of AUFL) {
+        await h.ev((i) => import('/js/einstellungen.js').then((E) => E.setze('aufloesung', i)), i);
+        await h.ev(HUD_FEST); await warteBilder(h, 60);
+        r.push(await h.ev(HUD_ABDRUCK));
+      }
+      erg.push(r);
+      await h.zu();
+    }
+    const gleich = erg[0].every((a, k) => a.h === erg[1][k].h);
+    melde(gleich && erg[1].every((x) => x.ebenen === 1), `${id}: HUD in ${AUFL.map((a) => a[1]).join(', ')} gleich wie 0.9a.1 (${erg[1].map((x) => `${x.n} Pixel`).join(' / ')}; ${erg[1][0].ebenen} Leinwand)${gleich ? '' : ` – anders: ${erg[0].map((a, k) => a.h === erg[1][k].h ? '' : AUFL[k][1]).filter(Boolean).join(', ')}`}`);
+  }
+}
+// Lage jedes HUD-Teils in Pixeln des 320x180-Bilds (Teil allein gemalt, Bounding-Box der deckenden Pixel)
+const TEILE = ['zeit', 'meldung', 'notes', 'karte', 'tacho', 'haupt'];
+// Dazu je Teil eine Maske im 320x180-Raster (window.__masken[name]: welche Bildpunkte er deckend bemalt), für die
+// Prüfung auf Pixelebene: zwei Teile überlappen, wenn sie denselben Bildpunkt bemalen.
+const teilBoxen = (h, praefix = '') => h.ev(async ([teile, praefix]) => {
+  const A = window.__alpineRally, raf = () => new Promise((r) => requestAnimationFrame(r));
+  const out = {};
+  window.__masken = window.__masken || {};
+  for (const n of teile) {
+    A.hud.zeigeNur(n); await raf(); await raf(); await raf();
+    const L = A.hud.teilLeinwand(n), d = L.c.getContext('2d').getImageData(0, 0, L.b, L.h).data;
+    let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    for (let y = 0; y < L.h; y++) for (let x = 0; x < L.b; x++) if (d[(y * L.b + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const fx = 320 / L.b, fy = 180 / L.h;
+    out[n] = x1 < 0 ? null : { x: x0 * fx, y: y0 * fy, b: (x1 + 1 - x0) * fx, h: (y1 + 1 - y0) * fy, pixel: L.b };
+    // Maske: Mitte jedes Bildpunkts (320x180) auf die Leinwand des Teils abgebildet
+    const m = new Uint8Array(320 * 180);
+    for (let y = 0; y < 180; y++) for (let x = 0; x < 320; x++) {
+      const lx = Math.floor((x + 0.5) / fx), ly = Math.floor((y + 0.5) / fy);
+      if (d[(ly * L.b + lx) * 4 + 3]) m[y * 320 + x] = 1;
+    }
+    window.__masken[praefix + n] = m;
+  }
+  A.hud.zeigeNur(null);
+  return { boxen: out, ebenen: A.hud.ebenenAnzahl };
+}, [TEILE, praefix]);
+// Anzahl Bildpunkte, die zwei Teile beide bemalen
+const pixelUeberlapp = (h, a, b) => h.ev(([a, b]) => { const p = window.__masken[a], q = window.__masken[b]; let n = 0; for (let i = 0; i < p.length; i++) if (p[i] && q[i]) n++; return n; }, [a, b]);
+if (teil('k')) {
+  console.log('(k) KLEIN und GROSS: HUD-Teile überlappen nicht und liegen im Bild (5 Autos, 3 Pixelgrössen, Desktop / Touch hoch / quer)');
+  const tab = [];
+  for (const [modus, geraet, W, H] of [['Desktop', {}, 1280, 720], ['Touch hoch', HANDY, 402, 874], ['Touch quer', HANDY, 874, 402]]) {
+    for (const id of AUTOS) {
+      const h = await hudSeite(WURZEL, id, geraet, W, H);
+      // vor dem Start (Hilfezeilen) und im Rennen
+      for (const g of ['klein', 'mittel', 'gross']) for (const [i, aufl] of AUFL) {
+        await h.ev(([g, i]) => import('/js/einstellungen.js').then((E) => { E.setze('hudGroesse', g); E.setze('aufloesung', i); }), [g, i]);
+        await h.ev(HUD_FEST); await warteBilder(h, 30);
+        const { boxen, ebenen } = await teilBoxen(h);
+        // Hilfezeilen vor dem Start (nicht skaliert) gegen den Tacho
+        await h.ev(() => { const A = window.__alpineRally; A.rennen.zustand = 'bereit'; A.rennen.hilfe = true; });
+        const vor = await teilBoxen(h, 'vor.');
+        await h.ev(HUD_FEST);
+        const p = [];
+        const b = { ...boxen, hilfe: vor.boxen.haupt };
+        delete b.haupt; // (im Rennen ist auf der HUD-Leinwand selbst nichts ausser Teilen mit Faktor 1)
+        for (const [n, r] of Object.entries(b)) {
+          if (!r) { p.push(`${n} fehlt`); continue; }
+          if (r.x < -0.01 || r.y < -0.01 || r.x + r.b > 320.01 || r.y + r.h > 180.01) p.push(`${n} ausserhalb`);
+        }
+        const namen = Object.keys(b).filter((n) => b[n]);
+        // (die Hilfe steht nur vor dem Start: verglichen mit den Teilen, wie sie vor dem Start liegen, ohne Live-Vergleich)
+        const rechteck = [];
+        for (let x = 0; x < namen.length; x++) for (let y = x + 1; y < namen.length; y++) {
+          const [m, n] = [namen[x], namen[y]];
+          const hilfe = m === 'hilfe' || n === 'hilfe';
+          const [bm, bn] = hilfe ? [m === 'hilfe' ? b.hilfe : vor.boxen[m], n === 'hilfe' ? b.hilfe : vor.boxen[n]] : [b[m], b[n]];
+          if (!bm || !bn || !schneiden(bm, bn)) continue;
+          const px = await pixelUeberlapp(h, hilfe ? `vor.${m === 'hilfe' ? 'haupt' : m}` : m, hilfe ? `vor.${n === 'hilfe' ? 'haupt' : n}` : n);
+          if (px) p.push(`${m} überlappt ${n} (${px} Bildpunkte)`); else rechteck.push(`${m}/${n}`);
+        }
+        const tachoAnteil = b.tacho ? b.tacho.b / 320 : 0;
+        if (g !== 'mittel') tab.push({ modus, auto: id, groesse: g, aufl, ebenen, ...Object.fromEntries(Object.entries(b).map(([n, r]) => [n, r ? `${r.x.toFixed(0)},${r.y.toFixed(0)} ${r.b.toFixed(0)}x${r.h.toFixed(0)}` : '-'])), tachoAnteil: +tachoAnteil.toFixed(3) });
+        if (g === 'mittel' && ebenen !== 0) p.push(`MITTEL mit ${ebenen} Ebenen`);
+        if (p.length || aufl === '320x180') melde(p.length === 0, `${modus} ${id} ${g.toUpperCase()} ${aufl}: ${ebenen} Ebene(n)${rechteck.length ? ` (Rechtecke schneiden sich, Pixel nicht: ${rechteck.join(', ')})` : ''}, Tacho ${b.tacho ? `${b.tacho.b.toFixed(0)}x${b.tacho.h.toFixed(0)} (${(tachoAnteil * 100).toFixed(0)} % der Breite, links bei ${b.tacho.x.toFixed(0)})` : '-'}, Zeit ${b.zeit ? `${b.zeit.b.toFixed(0)}x${b.zeit.h.toFixed(0)}` : '-'}, Karte ${b.karte ? b.karte.b.toFixed(0) : '-'}${p.length ? ` – ${p.join('; ')}` : ''}`);
+      }
+      await h.zu();
+    }
+  }
+  fs.writeFileSync(path.join(LOG, 'hud-boxen.json'), JSON.stringify(tab, null, 1));
+  const breitest = tab.filter((x) => x.groesse === 'gross').reduce((m, x) => (x.tachoAnteil > m.tachoAnteil ? x : m), { tachoAnteil: 0 });
+  info(`breitester Tacho bei GROSS: ${breitest.auto} ${(breitest.tachoAnteil * 100).toFixed(1)} % der Bildbreite (${breitest.tacho}); Tabelle ${path.join(LOG, 'hud-boxen.json')}`);
+}
+if (teil('l')) {
+  console.log('(l) HUD-GRÖSSE bleibt nach Neuladen, wirkt in der Pause sofort, Demo-Fahrt im Menü ohne HUD-Reste');
+  const h = await hudSeite(WURZEL, 'l073');
+  await h.ev(() => import('/js/einstellungen.js').then((E) => E.setze('hudGroesse', 'gross'))); await warteBilder(h, 10);
+  const a1 = await h.ev(HUD_ABDRUCK);
+  await h.page.reload(); await h.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.touch, null, { timeout: 120000 });
+  await h.ev(HUD_FEST); await warteBilder(h, 30);
+  const nach = await h.ev(() => ({ g: window.__alpineRally.einstellungen.hudGroesse, e: window.__alpineRally.hud.ebenenAnzahl, dom: document.querySelectorAll('canvas.hud-ebene').length }));
+  melde(nach.g === 'gross' && nach.e === 2 && a1.ebenen === 3, `nach Neuladen: HUD-GRÖSSE ${nach.g}, ${nach.e} Ebenen (Zeit/Notes/Karte 1.43, Tacho 1.25)`);
+  // Pause: Einstellung über das Menü ändern, das HUD dahinter folgt sofort
+  await h.ev(() => { const A = window.__alpineRally; A.pausieren(); }); await warteBilder(h, 10);
+  const p0 = await h.ev(HUD_ABDRUCK);
+  const pz = await h.ev(async () => {
+    const A = window.__alpineRally; A.menue.oeffne(A.seiten.einstellungen, true);
+    const e = A.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.hudGroesse');
+    e.setzen('klein');
+    return { zustand: A.ablauf.zustand, g: A.einstellungen.hudGroesse };
+  });
+  await warteBilder(h, 10);
+  const p1 = await h.ev(HUD_ABDRUCK);
+  const ebK = await h.ev(() => ({ e: window.__alpineRally.hud.ebenenAnzahl, sichtbar: [...document.querySelectorAll('canvas.hud-ebene')].filter((c) => c.style.display !== 'none').map((c) => `${c.width}x${c.height}`) }));
+  melde(pz.zustand === 'pause' && pz.g === 'klein' && p1.h !== p0.h && ebK.e === 1 && ebK.sichtbar.join() === '400x225', `Pause: HUD-GRÖSSE auf KLEIN -> sofort neu (sichtbare Ebene ${ebK.sichtbar.join(', ')}), Zustand bleibt ${pz.zustand}`);
+  // Hauptmenü mit Demo-Fahrt: Ebenen leer
+  await h.ev(() => { const A = window.__alpineRally; A.zumMenue(); A.menue.zeige(A.seiten.haupt, true); }); await warteBilder(h, 20);
+  const leer = await h.ev(() => [...document.querySelectorAll('canvas.hud-ebene')].map((c) => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) n++; return n; }));
+  melde(leer.every((n) => n === 0), `Hauptmenü (Demo-Fahrt dahinter): Ebenen leer (${leer.join(', ')} deckende Pixel)`);
+  await h.zu();
+  // Unsinn im Speicher = MITTEL; Desktop zeigt den Eintrag
+  const u = await handy(1280, 720, { geraet: {}, leicht: true, speicher: { 'alpineRally.einstellungen': JSON.stringify({ hudGroesse: 'riesig' }) } });
+  const uw = await u.ev(() => ({ g: window.__alpineRally.einstellungen.hudGroesse, e: window.__alpineRally.hud.ebenenAnzahl, da: window.__alpineRally.seiten.einstellungen.eintraege.some((x) => x.text === 'einst.hudGroesse'), dom: document.querySelectorAll('canvas.hud-ebene').length }));
+  melde(uw.g === 'mittel' && uw.e === 0 && uw.dom === 0 && uw.da, `Unsinn im Speicher: HUD-GRÖSSE ${uw.g}, ${uw.dom} zusätzliche Leinwände; Eintrag am Desktop ${uw.da ? 'da' : 'fehlt'}`);
+  await u.zu();
+  // Bildzeit des HUD (hud.zeichne) MITTEL / KLEIN / GROSS gegen 0.9a.1
+  const zeit = async (w, g) => {
+    const s = await hudSeite(w, 'l073');
+    if (g) await s.ev((g) => import('/js/einstellungen.js').then((E) => E.setze('hudGroesse', g)), g);
+    await warteBilder(s, 20);
+    const ms = await s.ev(async () => {
+      const A = window.__alpineRally, alt = A.hud.zeichne.bind(A.hud); let summe = 0, n = 0;
+      A.hud.zeichne = (z) => { const t0 = performance.now(); alt(z); summe += performance.now() - t0; n++; };
+      await new Promise((r) => setTimeout(r, 4000));
+      A.hud.zeichne = alt;
+      return summe / Math.max(1, n);
+    });
+    await s.zu();
+    return ms;
+  };
+  const t = { alt: await zeit(ALT || WURZEL, null), mittel: await zeit(WURZEL, 'mittel'), klein: await zeit(WURZEL, 'klein'), gross: await zeit(WURZEL, 'gross') };
+  melde(t.mittel < t.alt * 1.3 + 0.05, `hud.zeichne je Bild: 0.9a.1 ${t.alt.toFixed(3)} ms, MITTEL ${t.mittel.toFixed(3)}, KLEIN ${t.klein.toFixed(3)}, GROSS ${t.gross.toFixed(3)} ms`);
+}
+if (teil('m')) {
+  console.log('(m) neue Texte de/en in der Pixelschrift');
+  const h = await handy(402, 874, { leicht: true });
+  const r = await h.ev(async () => {
+    const T = await import('/js/texte.js'), P = await import('/js/pixel.js');
+    const neu = ['einst.haptikHinweis', 'einst.knopfGroesse', 'einst.knopfGroesseHinweis', 'einst.touchLayout', 'einst.touchLayoutHinweis', 'wert.klein', 'wert.normal', 'wert.gross', 'wert.gespiegelt',
+      'einst.hudGroesse', 'einst.hudGroesseHinweis', 'wert.mittel'];
+    const zeichen = new Set(P.SCHRIFT_ZEICHEN), fehlt = []; let breitest = 0;
+    for (const k of neu) for (const sp of ['de', 'en']) {
+      const tx = T.TEXTE[k] && T.TEXTE[k][sp];
+      if (!tx) { fehlt.push(`${k}.${sp} leer`); continue; }
+      if (tx !== tx.toUpperCase()) fehlt.push(`${k}.${sp} nicht gross`);
+      for (const z of tx) if (!zeichen.has(z)) fehlt.push(`${k}.${sp}: "${z}"`);
+      breitest = Math.max(breitest, P.textBreite(tx));
+    }
+    const tot = ['haptik.schalter', 'haptik.keiner'].filter((k) => T.TEXTE[k]);
+    return { n: neu.length, fehlt, breitest, tot, iphone: Object.entries(T.TEXTE).filter(([k, v]) => /IPHONE/.test(v.de || '')).map(([k]) => k) };
+  });
+  melde(r.fehlt.length === 0 && r.breitest <= 298 && r.tot.length === 0 && r.iphone.length === 0, `${r.n} neue/geänderte Texte de + en: Grossbuchstaben, alle Zeichen in der Pixelschrift, längster ${r.breitest} Pixel; tote iPhone-Texte entfernt (${r.tot.length + r.iphone.length} übrig)${r.fehlt.length ? ` – ${r.fehlt.slice(0, 6).join(', ')}` : ''}`);
+  await h.zu();
+}
+
 // ===================================================================== Haptik (c)
 // Zähler statt Vibration: navigator.vibrate wird vor dem Laden ersetzt (Chromium hat es, vibriert aber nicht)
 const VIB_ZAEHLER = () => { window.__vib = []; Navigator.prototype.vibrate = function (m) { window.__vib.push(JSON.stringify(m)); return true; }; };
@@ -611,6 +808,10 @@ async function desktopAbdruck(wurzel) {
     const c = document.createElement('canvas'); c.width = 320; c.height = 180;
     const x = c.getContext('2d');
     const out = {};
+    // M9a.2: EINSTELLUNGEN hat neu die Zeile HUD-GRÖSSE (gilt auch am Desktop): ohne sie muss die Seite wie 0.9a.1 sein
+    const E = A.seiten.einstellungen, alt = Object.getOwnPropertyDescriptor(E, 'eintraege');
+    out.hudZeile = alt.get.call(E).map((e) => e.text).filter((x) => x === 'einst.hudGroesse' || x === 'einst.anzeige' || x === 'einst.minimap').join(',');
+    Object.defineProperty(E, 'eintraege', { configurable: true, get() { return alt.get.call(E).filter((e) => e.text !== 'einst.hudGroesse'); } });
     // (EINSTELLUNGEN dazu: am Desktop ohne Touch dürfen AUTO-GAS und HAPTIK nicht erscheinen)
     for (const n of ['titel', 'haupt', 'auto', 'etappe', 'bestzeiten', 'symbole', 'credits', 'pause', 'frage', 'tasten', 'einstellungen', 'steuerung']) {
       if (!A.seiten[n]) continue;
@@ -626,6 +827,7 @@ async function desktopAbdruck(wurzel) {
       out[n] = bilder.sort((a, b) => a.deckend - b.deckend);
     }
     A.menue.zeige(A.seiten.titel, true);
+    Object.defineProperty(E, 'eintraege', alt);
     return out;
   }, bestzeiten);
   await s.page.goto(`${s.url}/index.html?menue=aus`);
@@ -638,7 +840,17 @@ async function desktopAbdruck(wurzel) {
     return h;
   });
   erg.touch = await s.page.evaluate(() => ({ an: window.__alpineRally.touch.an, knoepfe: document.querySelectorAll('#touch canvas').length }));
-  erg.ganz = hash(await s.page.screenshot());
+  // M9a.2: Pixel des Bildschirmfotos vergleichen, nicht die PNG-Datei (deren Kodierung schwankt bei gleichen Pixeln)
+  const png = await s.page.screenshot();
+  fs.writeFileSync(path.join(LOG, `foto-${wurzel === WURZEL ? 'neu' : 'alt'}.png`), png); // (zum Nachprüfen)
+  erg.ganz = await s.page.evaluate(async (b64) => {
+    const bm = await createImageBitmap(await (await fetch(`data:image/png;base64,${b64}`)).blob());
+    const c = new OffscreenCanvas(bm.width, bm.height), x = c.getContext('2d');
+    x.drawImage(bm, 0, 0);
+    const d = x.getImageData(0, 0, bm.width, bm.height).data;
+    let h = 7; for (let i = 0; i < d.length; i++) h = (h * 31 + d[i] * (i % 7 + 1)) % 1000000007;
+    return `${bm.width}x${bm.height}:${h}`;
+  }, png.toString('base64'));
   await s.schliessen();
   return erg;
 }
@@ -650,6 +862,8 @@ if (teil('d')) {
     const lage = Object.keys(a.buehne).filter((k) => a.buehne[k] !== b.buehne[k]);
     melde(lage.length === 0, `Lage und Grösse der Bühne in ${Object.keys(a.buehne).length} Fenstergrössen wie 0.9a.1${lage.length ? `; anders: ${lage.join(', ')}` : ''}`);
     const VERSION_SEITEN = ['titel', 'credits']; // zeigen die Versionsnummer
+    melde(b.seiten.hudZeile === 'einst.anzeige,einst.hudGroesse,einst.minimap', `EINSTELLUNGEN am Desktop: neue Zeile HUD-GRÖSSE unter ANZEIGE (${b.seiten.hudZeile}); die Seite ohne sie wird verglichen`);
+    delete a.seiten.hudZeile; delete b.seiten.hudZeile;
     for (const n of Object.keys(a.seiten)) {
       const A = a.seiten[n], Bn = b.seiten[n];
       const gleich = A.length === Bn.length && A.every((x, i) => x.h === Bn[i].h);
@@ -663,12 +877,62 @@ if (teil('d')) {
       melde(ok, `Menüseite ${n}: wie 0.9a.1 bis auf die Versionszeile (anders nur in x ${box ? box[0] : '-'}..${box ? box[2] : '-'}, y ${box ? box[1] : '-'}..${box ? box[3] : '-'})`);
     }
     melde(a.hud === b.hud, 'HUD vor dem Start (Hilfezeilen, Zeit, Tacho, Minimap) pixelgleich wie 0.9a.1');
-    melde(a.ganz === b.ganz, `ganzes Bild vor dem Start (Bildschirmfoto 640x360) gleich wie 0.9a.1 (${a.ganz} / ${b.ganz})`);
+    melde(a.ganz === b.ganz, `ganzes Bild vor dem Start (Bildschirmfoto 640x360, Pixel verglichen) gleich wie 0.9a.1 (${a.ganz} / ${b.ganz})`);
     melde(!b.touch.an && b.touch.knoepfe === 0, `Desktop: Touch aus, ${b.touch.knoepfe} Knöpfe gebaut`);
   }
 }
 
-//@@ENDE@@
+// ===================================================================== (u) Unveränderlich gegen 0.9a.1, (v) Tests von M9a und M9a.1
+const BASIS = '4a265b2'; // 0.9a.1
+if (teil('u')) {
+  console.log('(u) Unveränderlich gegen 0.9a.1');
+  if (!ALT) info(`nur mit --alt <ordner 0.9a.1> (git worktree add <ordner> ${BASIS})`);
+  else {
+    const dateien = ['js/audio.js', 'js/umgebung.js', 'js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js', 'js/physics.js', 'js/getriebe.js', 'js/fahrprofil.js',
+      'js/autos.js', 'js/car.js', 'js/track.js', 'js/netz.js', 'js/tacho.js', 'js/minimap.js', 'js/pacenotes.js', 'js/pacenotesbild.js', 'js/vergleich.js', 'js/garage.js',
+      'js/bestzeiten.js', 'js/menue.js', 'js/input.js', 'js/touchbild.js', 'js/rennablauf.js', 'js/pacenotes-tempo.js', 'js/abkuerzungen.js', 'tools/schneiden-zeiten.json',
+      'index.html', 'css/style.css', 'manifest.webmanifest'];
+    const geaendert = dateien.filter((d) => spawnSync('git', ['diff', '--quiet', BASIS, '--', d], { cwd: WURZEL }).status !== 0);
+    melde(geaendert.length === 0, `${dateien.length} Dateien (Ton, Physik, Getriebe, Autos, Strecke, Tacho, Minimap, Pace-Notes, Menü-Baustein, Eingabe, Bestzeiten, Seite …) unverändert seit 0.9a.1${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
+    // config.js: geändert nur Version und Kommentare (schulterR, Haptik); alles andere nur neu dazu
+    const diff = spawnSync('git', ['diff', '-U0', BASIS, '--', 'js/config.js'], { cwd: WURZEL, encoding: 'utf8' }).stdout;
+    const entfernt = diff.split('\n').filter((z) => z.startsWith('-') && !z.startsWith('---'));
+    const fremd = entfernt.filter((z) => !/VERSION|schulterR: \[80, 44\]|Haptik \(Meilenstein 9a\.1|Zahlen = Millisekunden vibrieren/.test(z));
+    melde(fremd.length === 0, `js/config.js: ersetzt nur Version und 3 Kommentarzeilen (${entfernt.length} Zeilen), neu: knopfGroessen, hud.groesse, Standardwerte${fremd.length ? `; fremd: ${fremd.slice(0, 3).join(' | ')}` : ''}`);
+    const args = ['--nur', 'a,h,i', '--alt', ALT, ...(process.argv.includes('--lang') ? ['--lang'] : [])];
+    const geaenderteDateien = () => new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+    const vorher = geaenderteDateien();
+    const r = werkzeug('m8g-test.mjs', args);
+    fs.writeFileSync(path.join(LOG, 'm8g-test.log'), r.text);
+    const z = r.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
+    for (const x of z) melde(/^\s*ok/.test(x), `m8g-test: ${x.replace(/^\s*(ok|FEHLER)\s+/, '').replace(/0\.8f/g, '0.9a.1 (--alt)').replace(/Bildzeit im Spiel 0\.8g/, 'Bildzeit im Spiel 0.9a.2')}`);
+    melde(z.length > 0, `m8g-test ${args.join(' ')} ausgeführt (${z.length} Prüfungen, Ausgabe ${LOG}/m8g-test.log)`);
+    if (process.argv.includes('--lang')) {
+      const m = werkzeug('m8h-test.mjs', []);
+      fs.writeFileSync(path.join(LOG, 'm8h-test.log'), m.text);
+      const zm = m.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
+      melde(m.code === 0, `m8h-test (ohne --alt): ${zm.filter((x) => /^\s*ok/.test(x)).length} ok, ${zm.filter((x) => /FEHLER/.test(x)).length} rot${m.code ? ` – ${zm.filter((x) => /FEHLER/.test(x)).slice(0, 3).map((x) => x.trim().slice(0, 140)).join(' | ')}` : ''}`);
+    }
+    const lz = werkzeug('ladezeit.mjs', [ALT, '9']);
+    fs.writeFileSync(path.join(LOG, 'ladezeit.log'), lz.text);
+    const med = (n) => +((new RegExp(`${n} .*Median (\\d+)`).exec(lz.text) || [])[1]);
+    melde(med('neu') - med('alt') <= 30, `Ladezeit (Median aus 9): 0.9a.1 ${med('alt')} ms, 0.9a.2 ${med('neu')} ms (${med('neu') - med('alt') >= 0 ? '+' : ''}${med('neu') - med('alt')} ms, höchstens +30; Streuung ca. ±100)`);
+    const neuGeaendert = [...geaenderteDateien()].filter((d) => !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+    if (neuGeaendert.length) spawnSync('git', ['checkout', '--', ...neuGeaendert], { cwd: WURZEL });
+    info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neuGeaendert.length}`);
+  }
+}
+if (teil('v')) {
+  console.log('(v) Tests von M9a und M9a.1 (Touch-Teile, ohne Vergleich gegen ältere Stände)');
+  for (const [datei, nur] of [['m9a-test.mjs', 'a,b,c,d,e,f,g,h,i,j,k,m,n'], ['m9a1-test.mjs', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']]) {
+    const r = werkzeug(datei, ['--nur', nur]);
+    fs.writeFileSync(path.join(LOG, datei.replace('.mjs', '.log')), r.text);
+    const z = r.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
+    const rot = z.filter((x) => /FEHLER/.test(x));
+    melde(r.code === 0 && z.length > 20, `${datei} --nur ${nur}: ${z.length - rot.length} ok, ${rot.length} rot${rot.length ? ` – ${rot.slice(0, 3).map((x) => x.trim().slice(0, 160)).join(' | ')}` : ''}`);
+  }
+}
+
 
 console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');
 process.exit(fehler ? 1 : 0);

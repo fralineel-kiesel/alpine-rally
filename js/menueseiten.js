@@ -328,6 +328,12 @@ export function baueSeiten(api) {
       { typ: 'umschalter', text: 'einst.fps', lesen: () => einstellungen.fps, setzen: (b) => setze('fps', b) },
       // M6: Minimap und Live-Vergleich (sofort wirksam)
       { typ: 'gruppe', text: 'einst.anzeige' },
+      // M9a.2: HUD-GRÖSSE (alle Geräte, sofort, auch in der Pause)
+      {
+        typ: 'auswahl', text: 'einst.hudGroesse', hinweis: 'einst.hudGroesseHinweis',
+        optionen: () => [{ wert: 'klein', text: 'wert.klein' }, { wert: 'mittel', text: 'wert.mittel' }, { wert: 'gross', text: 'wert.gross' }],
+        lesen: () => einstellungen.hudGroesse, setzen: (w) => setze('hudGroesse', w),
+      },
       { typ: 'umschalter', text: 'einst.minimap', lesen: () => einstellungen.minimap, setzen: (b) => setze('minimap', b) },
       { typ: 'umschalter', text: 'einst.vergleich', hinweis: 'einst.vergleichHinweis', lesen: () => einstellungen.vergleich, setzen: (b) => setze('vergleich', b) },
       {

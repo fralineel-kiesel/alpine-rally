@@ -32,6 +32,7 @@ function uebernimm(d) {
   if (d.haptik === 'aus' || d.haptik === 'knoepfe' || d.haptik === 'voll') einstellungen.haptik = d.haptik; // M9a.1 (fehlt = voll)
   if (d.knopfGroesse === 'klein' || d.knopfGroesse === 'normal' || d.knopfGroesse === 'gross') einstellungen.knopfGroesse = d.knopfGroesse; // M9a.2
   if (d.touchLayout === 'normal' || d.touchLayout === 'gespiegelt') einstellungen.touchLayout = d.touchLayout; // M9a.2
+  if (d.hudGroesse === 'klein' || d.hudGroesse === 'mittel' || d.hudGroesse === 'gross') einstellungen.hudGroesse = d.hudGroesse; // M9a.2
   if (typeof d.fps === 'boolean') einstellungen.fps = d.fps;
   if (ganz(d.lenkStufe, M.lenkStufen.length)) einstellungen.lenkStufe = d.lenkStufe;
   if (ganz(d.totzoneStufe, M.totzonen.length)) einstellungen.totzoneStufe = d.totzoneStufe;

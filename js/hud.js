@@ -7,6 +7,8 @@
 // Meldungen (Zwischenzeit, "CHECKPOINT VERPASST", "ANSAGEN") auf einer eigenen Tafel im selben Stil.
 // Gezeichnet mit einer eigenen 5x7-Pixelschrift (keine externen Fonts, seit M5a in js/pixel.js).
 // Alle Texte kommen aus js/texte.js (Deutsch/Englisch).
+// Seit M9a.2: Einstellung HUD-GRÖSSE (KLEIN / MITTEL / GROSS) für Zeit-Tafel mit Vergleich und Meldung, Pace-Notes,
+// Minimap und Tacho (Faktoren je Teil: CONFIG.hud.groesse). Menüs, Countdown, "ZIEL!", Hilfezeilen bleiben gleich.
 
 import { CONFIG } from './config.js';
 import { baueTachos, miniText, miniBreite } from './tacho.js';
@@ -30,8 +32,9 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   const B = CONFIG.bild.breite, H = CONFIG.bild.hoehe;
   canvas.width = B;
   canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
+  const haupt = { c: canvas, ctx: canvas.getContext('2d'), b: B, h: H };
+  haupt.ctx.imageSmoothingEnabled = false;
+  let ctx = haupt.ctx; // M9a.2: Leinwand des HUD-Teils, der gerade gemalt wird (HUD-GRÖSSE, siehe unten)
   const FARBEN = { weiss: '#f4f4ee', gelb: '#ffd23c', rot: '#ff4a3a' };
   const PN = CONFIG.pacenotes;
 
@@ -40,9 +43,51 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   const text = (tx, x, y, groesse = 1, farbe = 'weiss', ausrichtung = 'links', schatten) =>
     pixelText(ctx, tx, x, y, groesse, FARBEN[farbe] || farbe, ausrichtung, schatten);
 
-  const tachos = baueTachos(ctx, text);
-  tachos.setzeEinheit(einstellungen.einheit);
-  tachos.setzeModus(einstellungen.tacho); // M8g: Einstellung TACHO (auto / klassisch)
+  // --- HUD-GRÖSSE (M9a.2) -------------------------------------------------------------------------
+  // Jeder Teil (zeit: Zeit-Tafel, Live-Vergleich, Meldung; notes: Pace-Notes mit R-Countdown; karte: Minimap; tacho)
+  // hat je Einstellung einen Faktor f. f = 1: der Teil malt auf die HUD-Leinwand wie bisher (MITTEL = genau wie 0.9a.1).
+  // Sonst malt er auf eine eigene Leinwand mit round(320 / f) x round(180 / f) Pixeln, die gleich gross unter dem HUD
+  // liegt: jeder seiner Pixel ist f-mal so gross, der Pixel-Look bleibt sauber (keine krumme Vergrösserung). Teile rechts
+  // bzw. unten werden um den Grössenunterschied verschoben (ganze Pixel). Gebaut nur beim Wechsel, nie pro Bild.
+  const ebenen = new Map(); // Faktor -> { c, ctx, b, h }
+  const teil = { zeit: haupt, notes: haupt, karte: haupt, tacho: haupt };
+  let aktiveEbenen = [], ebenenLeer = true;
+  function ebeneFuer(f) {
+    if (!(f > 0) || f === 1) return haupt;
+    let e = ebenen.get(f);
+    if (!e) {
+      const c = document.createElement('canvas');
+      c.width = Math.round(B / f); c.height = Math.round(H / f);
+      c.className = 'hud-ebene';
+      canvas.parentNode.insertBefore(c, canvas); // unter dem HUD: Countdown, Abdunkeln und Menüs liegen darüber
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      e = { c, ctx: x, b: c.width, h: c.height };
+      ebenen.set(f, e);
+    }
+    return e;
+  }
+  function teileSetzen() {
+    const G = CONFIG.hud.groesse[einstellungen.hudGroesse] || {};
+    for (const n of Object.keys(teil)) teil[n] = ebeneFuer(G[n]);
+    aktiveEbenen = [...ebenen.values()].filter((e) => Object.values(teil).includes(e));
+    for (const e of ebenen.values()) { e.ctx.clearRect(0, 0, e.b, e.h); e.c.style.display = aktiveEbenen.includes(e) ? '' : 'none'; }
+    ebenenLeer = true;
+  }
+  // Tachos auf der Leinwand ihres Teils (neu gebaut nur beim Wechsel der HUD-GRÖSSE)
+  function neueTachos() {
+    const n = baueTachos(teil.tacho.ctx, text);
+    n.setzeEinheit(einstellungen.einheit);
+    n.setzeModus(einstellungen.tacho); // M8g: Einstellung TACHO (auto / klassisch)
+    return n;
+  }
+  teileSetzen();
+  let tachos = neueTachos();
+  // Verschiebung eines Teils auf seiner Leinwand: rechts bündig (dx), unten bündig (dy), mittig (dx / 2)
+  const versatz = (e, rechts, unten) => e.ctx.setTransform(1, 0, 0, 1, rechts * (e.b - B), unten * (e.h - H));
+  const versatzMitte = (e) => e.ctx.setTransform(1, 0, 0, 1, Math.round((e.b - B) / 2), 0);
+  let nurTeil = null; // (nur Tests: nur diesen Teil malen, um seine Lage zu messen)
+  const zeig = (n) => !nurTeil || nurTeil === n;
 
   // Feste Texte mit Tastennamen (Hilfe vor dem Start): nur bei Änderung neu bauen
   // (der Hinweis "R = Neustart" im Ziel ist seit M5b weg: dafür gibt es den Zielbildschirm)
@@ -63,7 +108,18 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
       t('hud.hilfeNotes', { taste: tastenName(T.notes[0]) }),
     ];
     feste.zeit = t('hud.zeit');
+    hilfeLage();
     vglStand.etikett = null; hinweisStand.aus = null; meldungStand.meldung = null; // neu malen (Sprache oder Taste geändert)
+  }
+  // M9a.2: die Hilfezeilen vor dem Start (nicht skaliert, unten links) weichen dem grossen Tacho aus: reicht die längste
+  // Zeile bis an den Tacho (Touch-Texte bei HUD-GRÖSSE GROSS), stehen sie über ihm. Sonst wie bisher (H - 43).
+  let hilfeY = H - 43;
+  function hilfeLage() {
+    const e = teil.tacho, { dreh, tempo } = tachos.blaetter();
+    const links = (dreh.cx - dreh.m + e.b - B) * B / e.b;
+    const oben = (Math.min(tempo.cy - tempo.m, dreh.cy - CONFIG.hud.tacho.drehzahlRadius - 11) + e.h - H) * H / e.h;
+    const breit = 5 + Math.max(...feste.hilfe.map((z) => textBreite(z)));
+    hilfeY = breit + 2 > links ? Math.min(H - 43, Math.floor(oben) - 2 - 4 * 9) : H - 43;
   }
   festeTexte();
   beiSprachwechsel(festeTexte);
@@ -72,6 +128,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
     if (name === 'tasten') festeTexte();
     if (name === 'einheit') tachos.setzeEinheit(wert);
     if (name === 'tacho') tachos.setzeModus(wert); // M8g: sofort, auch im Rennen und in der Pause
+    if (name === 'hudGroesse') { teileSetzen(); tachos = neueTachos(); hilfeLage(); } // M9a.2: sofort, auch in der Pause
   });
 
   // Rechteck mit pixelig abgeschrägten Ecken (seit M5a in js/pixel.js, auch für die Menüs)
@@ -153,7 +210,7 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
   function zeichneMeldung(m, y) {
     if (m !== meldungStand.meldung) {
       meldungStand.meldung = m;
-      const b = Math.min(B - Z.links, Z.innen * 2 + textBreite(m.text) + 2); // Textbreite plus Rand
+      const b = Math.min(teil.zeit.b - Z.links, Z.innen * 2 + textBreite(m.text) + 2); // Textbreite plus Rand (M9a.2: Breite des Teils)
       meldungStand.breite = b;
       meldungCtx.clearRect(0, 0, B, Z.hoehe);
       zeichneTafel(meldungCtx, 0, 0, b, Z.hoehe, Z.ecke, CONFIG.hud.tacho.farbeBlatt, Z.farbeRand);
@@ -243,7 +300,14 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
 
   return {
     get minimap() { return minimap; },
-    tachos, // M8f: für Tests (Skala je Auto)
+    get tachos() { return tachos; }, // M8f: für Tests (Skala je Auto); M9a.2: neu bei anderer HUD-GRÖSSE
+    // M9a.2: HUD-Ebenen leeren (main.js, wenn kein HUD zu sehen ist: Menü, Demo-Fahrt)
+    leeren() { if (ebenenLeer) return; for (const e of aktiveEbenen) e.ctx.clearRect(0, 0, e.b, e.h); ebenenLeer = true; },
+    // (nur Tests) nur einen Teil malen ('zeit', 'meldung', 'notes', 'karte', 'tacho', 'haupt' = Hilfezeilen …) oder null = alle;
+    // Leinwand eines Teils mit Grösse
+    zeigeNur(n) { nurTeil = n; },
+    teilLeinwand(n) { const e = n === 'haupt' ? haupt : teil[n === 'meldung' ? 'zeit' : n]; return { c: e.c, b: e.b, h: e.h }; },
+    get ebenenAnzahl() { return aktiveEbenen.length; },
     // für Tests und Bilder: Minimap mit den aktuellen Werten aus config.js neu bauen (z. B. anderer Zoom)
     minimapNeuBauen() { if (strecke) minimap = baueMinimap(strecke, checkpoints); return minimap; },
     // Wo liegen die Tafeln? (für Tests: Überlappung prüfen)
@@ -257,10 +321,14 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
       };
     },
     zeichne(z) {
+      ctx = haupt.ctx;
       ctx.clearRect(0, 0, B, H);
+      for (let i = 0; i < aktiveEbenen.length; i++) aktiveEbenen[i].ctx.clearRect(0, 0, aktiveEbenen[i].b, aktiveEbenen[i].h); // (M9a.2: nur bei KLEIN / GROSS)
+      ebenenLeer = false;
       // M6: Taste H blendet alles aus ausser "ZIEL!", Countdown, Menüs (die malt main.js) und dem Hinweis
       if (!z.hudAus) {
-        // Zeit oben links auf der Tafel, darunter die Checkpoint-Punkte
+        // Zeit oben links auf der Tafel, darunter die Checkpoint-Punkte (M9a.2: auf der Leinwand des Teils "zeit")
+        ctx = teil.zeit.ctx;
         let unterTafel = zeitTafel(z);
         // M6: Live-Vergleich in einer eigenen Zeile unter den Punkten (nur Rennen und Pause, nur mit Referenz)
         lageVergleichY = -1;
@@ -268,24 +336,39 @@ export function baueHud(canvas, strecke = null, checkpoints = []) {
           lageVergleichY = unterTafel + V.unter;
           unterTafel = zeichneVergleich(z.vergleich, z.vergleichQuelle, lageVergleichY);
         }
-        // Pace-Notes oben Mitte, darunter ggf. der R-Countdown
-        const unterNotes = zeichnePaceNotes(z.notes, z.dt);
-        if (z.countdown > 0) zeichneCountdown(z.countdown, Math.max(unterNotes, PN.oben + pnH) + CONFIG.zurueck.oben);
+        if (!zeig('zeit')) ctx.clearRect(0, 0, B, H);
+        // Pace-Notes oben Mitte, darunter ggf. der R-Countdown (M9a.2: mittig auf der Leinwand des Teils)
+        ctx = teil.notes.ctx;
+        if (zeig('notes')) {
+          versatzMitte(teil.notes);
+          const unterNotes = zeichnePaceNotes(z.notes, z.dt);
+          if (z.countdown > 0) zeichneCountdown(z.countdown, Math.max(unterNotes, PN.oben + pnH) + CONFIG.zurueck.oben);
+          versatz(teil.notes, 0, 0);
+        }
         // M6: Minimap oben rechts (nicht nach dem Ziel: dort zählen die Zeiten)
-        if (minimap && einstellungen.minimap && z.zustand !== 'ziel') {
+        if (minimap && einstellungen.minimap && z.zustand !== 'ziel' && zeig('karte')) {
+          ctx = teil.karte.ctx;
+          versatz(teil.karte, 1, 0);
           minimap.zeichne(ctx, z.autoX, z.autoZ, z.richtung, z.maxS, z.zwischenzeiten, z.cpNaechster, z.meldung ? z.meldung.verpasstCp : -1);
+          versatz(teil.karte, 0, 0);
         }
         // Tachos unten rechts (Drehzahl mit Gang, Tempo); M8f: Skala des gewählten Autos; M8g: Stil je Auto
+        ctx = teil.tacho.ctx;
         tachos.setzeSkala(aktivesProfil());
-        tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang, z); // (M8g: z.ladedruck, z.gas, z.schaltet für Schaltlicht und Lader)
+        if (zeig('tacho')) {
+          versatz(teil.tacho, 1, 1);
+          tachos.zeichne(z.dt, z.kmh, z.drehzahl, z.gang, z); // (M8g: z.ladedruck, z.gas, z.schaltet für Schaltlicht und Lader)
+          versatz(teil.tacho, 0, 0);
+        }
+        ctx = haupt.ctx;
 
-        if (z.zustand === 'bereit' && z.hilfe) {
-          for (let i = 0; i < 4; i++) text(feste.hilfe[i], 5, H - 43 + i * 9);
+        if (z.zustand === 'bereit' && z.hilfe && zeig('haupt')) {
+          for (let i = 0; i < 4; i++) text(feste.hilfe[i], 5, hilfeY + i * 9); // (M9a.2: hilfeY, sonst H - 43)
         }
         // Meldung oben (Zwischenzeit oder "Checkpoint verpasst"), seit M6 unter dem Live-Vergleich, seit M6.1 mit Tafel
         lageMeldungY = unterTafel + CONFIG.hud.zeit.meldungUnter;
         lageMeldungSichtbar = !!(z.meldung && z.zustand !== 'ziel');
-        if (lageMeldungSichtbar) zeichneMeldung(z.meldung, lageMeldungY);
+        if (lageMeldungSichtbar && zeig('meldung')) { ctx = teil.zeit.ctx; zeichneMeldung(z.meldung, lageMeldungY); ctx = haupt.ctx; }
       }
       if (z.hudHinweis > 0) zeichneHinweis(!!z.hudAus, z.hudHinweis);
       // Grosses "ZIEL!" mit Endzeit, bis der Zielbildschirm kommt (M5b: z.zielSchirm)

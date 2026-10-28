@@ -1277,6 +1277,16 @@ export const CONFIG = {
   // --- Anzeigen (HUD) ----------------------------------------------------
   // Masse in Pixeln des 320x180-Bildes.
   hud: {
+    // M9a.2: Einstellung HUD-GRÖSSE: Faktor je HUD-Teil (zeit = Zeit-Tafel, Live-Vergleich und Meldung; notes = Pace-Notes
+    // mit R-Countdown; karte = Minimap; tacho = Tachos). MITTEL = 1 = wie bisher. Ein Teil mit Faktor f malt auf eine
+    // Leinwand von 320/f x 180/f Pixeln (ganze Pixel); sauber sind nur Faktoren, bei denen beides ganz aufgeht oder fast:
+    // 0.8 (400x225), 1.25 (256x144), 1.43 (224x126, statt 1.5 = 213.3x120). Nicht skaliert: Menüs, Countdown, "ZIEL!",
+    // Hilfezeilen vor dem Start, Hinweis HUD AUS/AN, Debug.
+    groesse: {
+      klein: { zeit: 0.8, notes: 0.8, karte: 0.8, tacho: 0.8 },
+      mittel: { zeit: 1, notes: 1, karte: 1, tacho: 1 },
+      gross: { zeit: 1.43, notes: 1.43, karte: 1.43, tacho: 1.25 }, // (Tacho kleiner: sonst über der Strasse und dem Auto)
+    },
     // Zeit oben links auf einer kleinen Tafel, darunter die Checkpoint-Punkte (seit M4.1 links, vorher Mitte)
     zeit: {
       links: 3,                // Abstand der Tafel vom linken Bildrand
@@ -1611,6 +1621,7 @@ export const CONFIG = {
       haptik: 'voll',          // M9a.1: HAPTIK (nur Touch) 'aus', 'knoepfe' (Tick bei Knopfdruck) oder 'voll' (dazu Spielereignisse)
       knopfGroesse: 'normal',  // M9a.2: KNOPFGRÖSSE (nur Touch) 'klein', 'normal', 'gross' (Faktoren: touch.knopfGroessen)
       touchLayout: 'normal',   // M9a.2: LAYOUT (nur Touch) 'normal' oder 'gespiegelt' (D-Pad rechts, A/B links: Linkshänder)
+      hudGroesse: 'mittel',    // M9a.2: HUD-GRÖSSE (alle Geräte) 'klein', 'mittel' (wie bisher), 'gross' (Faktoren: hud.groesse)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick

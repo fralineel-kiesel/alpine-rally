@@ -22,5 +22,12 @@ Test: `node tools/m9a2-test.mjs --alt <ordner 0.9a.1>` (0.9a.1 = `git worktree a
   Faktor wird in engen Fenstern begrenzt (z. B. 640x360 GROSS wirklich 1.02).
 - Tests (e)–(i): 131 ok (66 Varianten, Aktionen gespiegelt + Mehrfinger, Zonen, Neuladen, Standard = 0.9a.1).
 
+## Teil C (erledigt)
+- HUD-GRÖSSE (alle Geräte, unter ANZEIGE): `hud.groesse` klein 0.8 / mittel 1 / gross 1.43 (Tacho 1.25). Teil mit
+  Faktor ≠ 1 malt auf eigene Leinwand 320/f x 180/f unter dem HUD (400x225, 224x126, 256x144); MITTEL ohne Ebene.
+- Touch + GROSS: Hilfezeilen vor dem Start rücken über den Tacho (sonst 60 Bildpunkte Überlappung).
+- Tests (j) MITTEL pixelgleich (5 Autos x 3 Pixelgrössen), (k) 90 Fälle ohne Pixel-Überlappung, Tacho GROSS 41 %,
+  (l) Neuladen/Pause/Demo, Bildzeit hud.zeichne 0.47 ms wie 0.9a.1, (m) Texte. (d) Foto schwankt (Last), Pixel-Vergleich.
+
 ## Offen
-- Teil C (HUD-GRÖSSE, Entwurf: eigene Leinwand je Faktor), Teil D (Bilder, Bericht, Version).
+- Teil D: Version, Bilder, voller Lauf `--lang`, Bericht fertig, PR.
