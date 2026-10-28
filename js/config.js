@@ -1688,7 +1688,7 @@ export const CONFIG = {
     ab: 72,                    // A und B: Durchmesser
     abVersatz: [76, 40],       // B liegt so weit links und tiefer als A (diagonal versetzt)
     schulter: [80, 40],        // L (oben links, zurück auf die Strasse): Breite, Höhe
-    schulterR: [80, 44],       // M9a.1: R (Handbremse) direkt über A/B, in Daumenreichweite: Breite, Höhe
+    schulterR: [80, 44],       // R (Handbremse, M9a.2 wieder oben in der rechten Ecke wie in M9a): Breite, Höhe
     klein: 26,                 // START, SELECT, NOTES: Höhe der flachen Pille mit Beschriftung innen (M9a.1: 26 statt runde 36)
     kleinTreffer: 36,          // ... ihre Trefferfläche im Querformat mindestens so gross (nur diese drei dürfen unter minTreffer)
     luecke: 12,                // Abstand zwischen den Reihen (Schulterknöpfe, D-Pad, kleine Knöpfe)
@@ -1738,8 +1738,8 @@ export const CONFIG = {
     deckkraft: 0.9,            // alle Knöpfe zusammen (1 = deckend)
   },
 
-  // --- Haptik (Meilenstein 9a.1, js/haptik.js): Vibration (Android) bzw. kurzer Tick (iPhone), nur im Touch-Modus ----
-  // Zahlen = Millisekunden vibrieren, Listen = an, aus, an, ... (nur Android; das iPhone kennt nur einen gleichen Tick)
+  // --- Haptik (Meilenstein 9a.1, js/haptik.js): Vibration nur mit navigator.vibrate (Android, M9a.2: nicht iPhone), nur Touch ----
+  // Zahlen = Millisekunden vibrieren, Listen = an, aus, an, ...
   haptik: {
     knopf: 10,                 // Knopfdruck (auch im Menü)
     gang: 12,                  // Gangwechsel

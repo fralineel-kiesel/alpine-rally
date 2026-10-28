@@ -232,10 +232,9 @@ function pruefeLayout(L, W, H, safe) {
     const seiten = abstand(-1) <= 8.5 || abstand(1) <= 8.5 || Math.min(L.bild.x, W - L.bild.x - L.bild.b) <= 130.5;
     if (!hoehe && !seiten) probleme.push(`Querformat: Bild könnte grösser sein (Abstand links ${abstand(-1).toFixed(1)}, rechts ${abstand(1).toFixed(1)})`);
   }
-  // R über A/B: unten an A (Lücke ≤ 12.5), waagrecht über A, rechte Kante wie A
+  // M9a.2: R wieder oben in der rechten Ecke (gleiche Höhe wie L, rechte Kante wie A) statt direkt über A
   const R = L.el.r, A = L.el.a;
-  const rLuecke = A.y - (R.y + R.h);
-  if (!(rLuecke >= -0.01 && rLuecke <= 12.5 && Math.abs(R.x + R.b - (A.x + A.b)) < 0.5)) probleme.push(`R nicht direkt über A (Lücke ${rLuecke.toFixed(1)})`);
+  if (!(Math.abs(R.y - L.el.l.y) < 0.5 && Math.abs(R.x + R.b - (A.x + A.b)) < 0.5 && R.y + R.h <= A.y)) probleme.push(`R nicht oben in der Ecke (${R.y.toFixed(1)} statt ${L.el.l.y.toFixed(1)})`);
   const xs = ELEMENTE.map((n) => L.el[n]);
   const links = Math.min(...xs.map((e) => e.x)), rechts = W - Math.max(...xs.map((e) => e.x + e.b));
   if (links < Math.max(24, safe.l) - 0.01 || rechts < Math.max(24, safe.r) - 0.01) probleme.push(`Rand ${links.toFixed(0)} / ${rechts.toFixed(0)}`);
@@ -505,7 +504,7 @@ if (teil('k')) {
 const VIB_ZAEHLER = () => { window.__vib = []; Navigator.prototype.vibrate = function (m) { window.__vib.push(JSON.stringify(m)); return true; }; };
 const OHNE_VIB = () => { delete Navigator.prototype.vibrate; };
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
-const hz = (h) => h.ev(async () => { const H = await import('/js/haptik.js'); return { ...H.haptikZaehler, vib: window.__vib ? [...window.__vib] : null, weg: H.haptikWeg(), elemente: document.getElementsByTagName('*').length, labels: document.querySelectorAll('#haptik').length }; });
+const hz = (h) => h.ev(async () => { const H = await import('/js/haptik.js'); return { ...H.haptikZaehler, vib: window.__vib ? [...window.__vib] : null, weg: H.haptikMoeglich() ? 'vibrate' : 'keiner', schalter: 0, elemente: document.getElementsByTagName('*').length, labels: document.querySelectorAll('#haptik').length }; });
 const setzeHaptik = (h, w) => h.ev((w) => import('/js/einstellungen.js').then((E) => E.setze('haptik', w)), w);
 // im Rennen (Physik angehalten): drei Knöpfe nacheinander, dann Aufprall leicht (Wucht 2 von 14: 20 + 40 · 2/14 = 26 ms), hart, Gangwechsel, Checkpoint
 async function haptikRunde(h) {
@@ -591,7 +590,8 @@ if (teil('n')) {
 }
 if (teil('o')) {
   console.log('(o) ohne navigator.vibrate: iPhone-Schalter, sonst nichts');
-  for (const [name, geraet, weg] of [['iPhone (nachgestellt)', { ...HANDY, userAgent: IPHONE_UA }, 'schalter'], ['anderes Gerät ohne Vibration', HANDY, 'keiner']]) {
+  // M9a.2: kein iPhone-Schalter mehr, ohne navigator.vibrate passiert überall nichts
+  for (const [name, geraet, weg] of [['iPhone (nachgestellt)', { ...HANDY, userAgent: IPHONE_UA }, 'keiner'], ['anderes Gerät ohne Vibration', HANDY, 'keiner']]) {
     const h = await rennenHandy(402, 874, '?menue=aus&ton=aus', { geraet, vorher: OHNE_VIB });
     await h.ev(() => { const A = window.__alpineRally; A.anhalten = true; A.start({ countdown: false }); A.rennen.zustand = 'laeuft'; });
     await h.bild();
@@ -710,7 +710,7 @@ if (teil('r')) {
   const r = await h.ev(async () => {
     const T = await import('/js/texte.js'), P = await import('/js/pixel.js');
     const neu = ['hud.touchHandbremse', 'einst.autoGas', 'einst.autoGasHinweis', 'einst.haptik', 'einst.haptikHinweis', 'wert.knoepfe', 'wert.voll',
-      'einst.haptikTesten', 'einst.haptikTestenHinweis', 'haptik.vibrate', 'haptik.schalter', 'haptik.keiner', 'haptik.aus', 'touch.auto'];
+      'einst.haptikTesten', 'einst.haptikTestenHinweis', 'haptik.vibrate', 'haptik.aus', 'touch.auto'];
     const zeichen = new Set(P.SCHRIFT_ZEICHEN), fehlt = []; let breitest = 0;
     for (const k of neu) for (const sp of ['de', 'en']) {
       const tx = T.TEXTE[k] && T.TEXTE[k][sp];
