@@ -937,7 +937,8 @@ console.log('[M6 h, 6.1 h] Einstellungen ANZEIGE, Texte');
   const anzeige = await A(p, () => { const l = window.__alpineRally.seiten.einstellungen.eintraege; const i = l.findIndex((e) => e.text === 'einst.anzeige'); return l.slice(i + 1, i + 4).map((e) => `${e.typ}:${e.text}`); });
   pruefe(gruppen.indexOf('einst.anzeige') === gruppen.indexOf('einst.grafik') + 1 && gruppen.indexOf('einst.steuerung') === gruppen.indexOf('einst.anzeige') + 1,
     'Gruppe ANZEIGE zwischen GRAFIK und STEUERUNG', gruppen.join(', '));
-  pruefe(anzeige.join() === 'umschalter:einst.minimap,umschalter:einst.vergleich,auswahl:einst.vergleichMit', 'darin: Minimap, Live-Vergleich, Vergleich mit', anzeige.join(', '));
+  // (seit M9a.2 steht HUD-GRÖSSE als erster Eintrag unter ANZEIGE)
+  pruefe(anzeige.join() === 'auswahl:einst.hudGroesse,umschalter:einst.minimap,umschalter:einst.vergleich', 'darin: HUD-Grösse, Minimap, Live-Vergleich', anzeige.join(', '));
   const std = await A(p, () => ({ m: window.__alpineRally.einstellungen.minimap, v: window.__alpineRally.einstellungen.vergleich, mit: window.__alpineRally.einstellungen.vergleichMit }));
   pruefe(std.m === true && std.v === true && std.mit === 'best', 'Standard: Minimap an, Live-Vergleich an, Vergleich mit Bestzeit');
   // sofort wirksam: Referenz fahren, dann aus- und einschalten

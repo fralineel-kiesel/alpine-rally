@@ -75,6 +75,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M8h Bestzeiten je Auto: Top 10 je Auto (neuer Speicher, alte Zeiten beim ersten Start nach Auto übernommen, alter Speicher bleibt unberührt), Gesamt-Top-3 über alle Autos, Live-Vergleich und Zielbildschirm gegen die Bestzeit des gefahrenen Autos, Titel GESAMTREKORD!, Zeile GESAMT PLATZ 2/3, Bestzeiten-Seite mit GESAMT TOP 3 oben und TOP 10 des gewählten Autos (Links/Rechts wechselt das Auto) (fertig)
 - M9a Touch-Steuerung fürs Handy: D-Pad, A/B, L/R, START/SELECT/NOTES im Pixel-Look, Hochformat (Bild in voller Breite über der Steuerfläche) und Querformat (Knöpfe links und rechts), Mehrfinger, Menü mit D-Pad und Antippen, Einstellung TOUCH-STEUERUNG, Web-App-Modus mit eigenen Icons (fertig)
 - M9a.1 Touch-Feinschliff nach Linos Handy-Test: R = Handbremse über A/B, L = zurück auf die Strasse, kleine Knöpfe als Pillen, D-Pad im Querformat grösser mit asymmetrischen Lenk-Zonen (im Menü klassisch), Einstellungen AUTO-GAS und HAPTIK (fertig)
+- M9a.2 Touch nach Linos Test: Handbremse R wieder in der Ecke, Haptik nur Android (iPhone ohne), Einstellungen KNOPFGRÖSSE, LAYOUT (gespiegelt für Linkshänder) und HUD-GRÖSSE (fertig)
 - Als Nächstes: Strecke als Daten (noch kein Prompt)
 - Danach: evtl. Geisterauto aus der Fahrspur
 

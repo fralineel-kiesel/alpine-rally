@@ -103,7 +103,8 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     aufbauen();
     const W = window.innerWidth, Hf = window.innerHeight;
     const alt = lay;
-    lay = berechneLayout(W, Hf, leseSafe());
+    // M9a.2: Knopfgrösse und Layout (gespiegelt) aus den Einstellungen
+    lay = berechneLayout(W, Hf, leseSafe(), { faktor: T.knopfGroessen[einstellungen.knopfGroesse] || 1, gespiegelt: einstellungen.touchLayout === 'gespiegelt' });
     setze(buehne, lay.bild);
     if (lay.flaeche) { flaeche.style.display = 'block'; setze(flaeche, lay.flaeche); } else flaeche.style.display = 'none';
     for (const n of NAMEN) setze(leinwand[n], lay.el[n].v);
@@ -347,7 +348,11 @@ export function baueTouch({ buehne, hudLeinwand, ablauf, menue, zumMenue, anpass
     return !!trefferBei(ev.clientX, ev.clientY, null);
   }
 
-  beiAenderung((name) => { if (name === 'touchAutoGas') zeigen(); });
+  beiAenderung((name) => {
+    if (name === 'touchAutoGas') zeigen();
+    // M9a.2: Knopfgrösse / Layout sofort (die Knöpfe sind in EINSTELLUNGEN zu sehen); kein Finger bleibt hängen
+    if ((name === 'knopfGroesse' || name === 'touchLayout') && modus.an) { alleLos(); anpassen(); }
+  });
   setzeHaptikAktiv(() => modus.an); // M9a.1: Haptik nur im Touch-Modus
   aktualisiere();
   return {

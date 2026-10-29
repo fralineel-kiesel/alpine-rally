@@ -105,18 +105,25 @@ export const TEXTE = {
   'wert.webApp': { de: 'WEB-APP', en: 'WEB APP' },
   'einst.touch': { de: 'TOUCH-STEUERUNG', en: 'TOUCH CONTROLS' },
   'einst.touchHinweis': { de: 'AUTO = KNÖPFE NUR AUF TOUCH-GERÄTEN', en: 'AUTO = BUTTONS ONLY ON TOUCH DEVICES' },
+  // M9a.2: nur im Touch-Modus
+  'einst.knopfGroesse': { de: 'KNOPFGRÖSSE', en: 'BUTTON SIZE' },
+  'einst.knopfGroesseHinweis': { de: 'GROSS = BILD IM QUERFORMAT KLEINER', en: 'LARGE = SMALLER PICTURE IN LANDSCAPE' },
+  'einst.touchLayout': { de: 'LAYOUT', en: 'LAYOUT' },
+  'einst.touchLayoutHinweis': { de: 'GESPIEGELT = D-PAD RECHTS (LINKSHÄNDER)', en: 'MIRRORED = D-PAD ON THE RIGHT (LEFT-HANDED)' },
+  'wert.klein': { de: 'KLEIN', en: 'SMALL' },
+  'wert.normal': { de: 'NORMAL', en: 'NORMAL' },
+  'wert.gross': { de: 'GROSS', en: 'LARGE' },
+  'wert.gespiegelt': { de: 'GESPIEGELT', en: 'MIRRORED' },
   // M9a.1: nur im Touch-Modus
   'einst.autoGas': { de: 'AUTO-GAS', en: 'AUTO THROTTLE' },
   'einst.autoGasHinweis': { de: 'GAS LÄUFT VON ALLEIN, B BREMST', en: 'GAS IS AUTOMATIC, B BRAKES' },
   'einst.haptik': { de: 'HAPTIK', en: 'HAPTICS' },
-  'einst.haptikHinweis': { de: 'AUF DEM IPHONE NUR EIN KURZER TICK', en: 'ON IPHONE ONLY A SHORT TICK' },
+  'einst.haptikHinweis': { de: 'VIBRATION BEI KNÖPFEN UND IM RENNEN', en: 'VIBRATION ON BUTTONS AND IN RACES' }, // M9a.2
   'wert.knoepfe': { de: 'NUR KNÖPFE', en: 'BUTTONS ONLY' },
   'wert.voll': { de: 'VOLL', en: 'FULL' },
   'einst.haptikTesten': { de: 'HAPTIK TESTEN', en: 'TEST HAPTICS' },
   'einst.haptikTestenHinweis': { de: 'AUSWÄHLEN = EIN TICK', en: 'SELECT = ONE TICK' },
   'haptik.vibrate': { de: 'VIBRATION GESENDET', en: 'VIBRATION SENT' },
-  'haptik.schalter': { de: 'TICK GESENDET (IPHONE)', en: 'TICK SENT (IPHONE)' },
-  'haptik.keiner': { de: 'DIESES GERÄT KANN ES NICHT', en: 'NOT SUPPORTED HERE' },
   'haptik.aus': { de: 'HAPTIK IST AUS', en: 'HAPTICS ARE OFF' },
   'wert.auto': { de: 'AUTO', en: 'AUTO' },
   'einst.einheiten': { de: 'EINHEITEN', en: 'UNITS' },
@@ -147,6 +154,9 @@ export const TEXTE = {
   // M6: Gruppe ANZEIGE
   'einst.anzeige': { de: 'ANZEIGE', en: 'DISPLAY' },
   'einst.minimap': { de: 'MINIMAP', en: 'MINIMAP' },
+  'einst.hudGroesse': { de: 'HUD-GRÖSSE', en: 'HUD SIZE' }, // M9a.2
+  'einst.hudGroesseHinweis': { de: 'ZEIT, ANSAGEN, KARTE UND TACHO IM RENNEN', en: 'TIME, NOTES, MAP AND GAUGES IN RACES' },
+  'wert.mittel': { de: 'MITTEL', en: 'MEDIUM' },
   'einst.vergleich': { de: 'LIVE-VERGLEICH', en: 'LIVE DELTA' },
   'einst.vergleichHinweis': { de: 'GRÜN = SCHNELLER, ROT = LANGSAMER', en: 'GREEN = FASTER, RED = SLOWER' },
   'einst.vergleichMit': { de: 'VERGLEICH MIT', en: 'COMPARE WITH' },

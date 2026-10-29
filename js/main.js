@@ -1187,7 +1187,7 @@ function schleife(jetzt) {
     if (ablauf.zustand === 'countdown' || lauf.pauseVon === 'countdown' && ablauf.zustand === 'pause' || lauf.go > 0) {
       zeichneCountdown(hudCtx, lauf.countdown, lauf.go);
     }
-  } else hudCtx.clearRect(0, 0, B, H);
+  } else { hudCtx.clearRect(0, 0, B, H); hud.leeren(); } // (M9a.2: auch die Ebenen von HUD-GRÖSSE KLEIN / GROSS)
   const k = dt / M.blende;
   dunkel = nach(dunkel, def.abdunkeln, k * 0.5);
   sicht = nach(sicht, def.menue ? 1 : 0, k);

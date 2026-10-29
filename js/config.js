@@ -4,7 +4,7 @@
 // =====================================================================
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.9a.1';
+export const VERSION = '0.9a.2';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1277,6 +1277,16 @@ export const CONFIG = {
   // --- Anzeigen (HUD) ----------------------------------------------------
   // Masse in Pixeln des 320x180-Bildes.
   hud: {
+    // M9a.2: Einstellung HUD-GRÖSSE: Faktor je HUD-Teil (zeit = Zeit-Tafel, Live-Vergleich und Meldung; notes = Pace-Notes
+    // mit R-Countdown; karte = Minimap; tacho = Tachos). MITTEL = 1 = wie bisher. Ein Teil mit Faktor f malt auf eine
+    // Leinwand von 320/f x 180/f Pixeln (ganze Pixel); sauber sind nur Faktoren, bei denen beides ganz aufgeht oder fast:
+    // 0.8 (400x225), 1.25 (256x144), 1.43 (224x126, statt 1.5 = 213.3x120). Nicht skaliert: Menüs, Countdown, "ZIEL!",
+    // Hilfezeilen vor dem Start, Hinweis HUD AUS/AN, Debug.
+    groesse: {
+      klein: { zeit: 0.8, notes: 0.8, karte: 0.8, tacho: 0.8 },
+      mittel: { zeit: 1, notes: 1, karte: 1, tacho: 1 },
+      gross: { zeit: 1.43, notes: 1.43, karte: 1.43, tacho: 1.25 }, // (Tacho kleiner: sonst über der Strasse und dem Auto)
+    },
     // Zeit oben links auf einer kleinen Tafel, darunter die Checkpoint-Punkte (seit M4.1 links, vorher Mitte)
     zeit: {
       links: 3,                // Abstand der Tafel vom linken Bildrand
@@ -1609,6 +1619,9 @@ export const CONFIG = {
       touch: 'auto',           // M9a: Touch-Knöpfe 'auto' (nur auf Touch-Geräten), 'an' (immer, auch am Computer mit der Maus), 'aus'
       touchAutoGas: false,     // M9a.1: AUTO-GAS (nur Touch, nur im laufenden Rennen): Gas von allein, solange B nicht gedrückt ist
       haptik: 'voll',          // M9a.1: HAPTIK (nur Touch) 'aus', 'knoepfe' (Tick bei Knopfdruck) oder 'voll' (dazu Spielereignisse)
+      knopfGroesse: 'normal',  // M9a.2: KNOPFGRÖSSE (nur Touch) 'klein', 'normal', 'gross' (Faktoren: touch.knopfGroessen)
+      touchLayout: 'normal',   // M9a.2: LAYOUT (nur Touch) 'normal' oder 'gespiegelt' (D-Pad rechts, A/B links: Linkshänder)
+      hudGroesse: 'mittel',    // M9a.2: HUD-GRÖSSE (alle Geräte) 'klein', 'mittel' (wie bisher), 'gross' (Faktoren: hud.groesse)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
@@ -1688,10 +1701,14 @@ export const CONFIG = {
     ab: 72,                    // A und B: Durchmesser
     abVersatz: [76, 40],       // B liegt so weit links und tiefer als A (diagonal versetzt)
     schulter: [80, 40],        // L (oben links, zurück auf die Strasse): Breite, Höhe
-    schulterR: [80, 44],       // M9a.1: R (Handbremse) direkt über A/B, in Daumenreichweite: Breite, Höhe
+    schulterR: [80, 44],       // R (Handbremse, M9a.2 wieder oben in der rechten Ecke wie in M9a): Breite, Höhe
     klein: 26,                 // START, SELECT, NOTES: Höhe der flachen Pille mit Beschriftung innen (M9a.1: 26 statt runde 36)
     kleinTreffer: 36,          // ... ihre Trefferfläche im Querformat mindestens so gross (nur diese drei dürfen unter minTreffer)
     luecke: 12,                // Abstand zwischen den Reihen (Schulterknöpfe, D-Pad, kleine Knöpfe)
+    // M9a.2: Einstellung KNOPFGRÖSSE: alle Knöpfe zusammen mal diesen Faktor (D-Pad, A/B, L/R, kleine Knöpfe, D-Pad-Zone;
+    // im Querformat wachsen auch die Seitenzonen mit). Passt es im Fenster nicht, wird der Faktor dort kleiner.
+    // Trefferflächen bleiben mindestens minTreffer (kleine Knöpfe quer kleinTreffer), auch bei KLEIN.
+    knopfGroessen: { klein: 0.85, normal: 1, gross: 1.2 },
     hoch: {
       steuerAnteil: 0.46,      // Hochformat: Steuerfläche unten ist mindestens so hoch (Anteil der Fensterhöhe) ...
       kleinLuecke: 20,         // ... die drei kleinen Knöpfe liegen nebeneinander mit dieser Lücke ...
@@ -1738,8 +1755,8 @@ export const CONFIG = {
     deckkraft: 0.9,            // alle Knöpfe zusammen (1 = deckend)
   },
 
-  // --- Haptik (Meilenstein 9a.1, js/haptik.js): Vibration (Android) bzw. kurzer Tick (iPhone), nur im Touch-Modus ----
-  // Zahlen = Millisekunden vibrieren, Listen = an, aus, an, ... (nur Android; das iPhone kennt nur einen gleichen Tick)
+  // --- Haptik (Meilenstein 9a.1, js/haptik.js): Vibration nur mit navigator.vibrate (Android, M9a.2: nicht iPhone), nur Touch ----
+  // Zahlen = Millisekunden vibrieren, Listen = an, aus, an, ...
   haptik: {
     knopf: 10,                 // Knopfdruck (auch im Menü)
     gang: 12,                  // Gangwechsel
