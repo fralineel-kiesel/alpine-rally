@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
-import { leseErzeugt, schreibeErzeugt } from './strecke-erzeugt.mjs';
+import { leseErzeugt, schreibeErzeugt, STRECKEN_DATEI } from './strecke-erzeugt.mjs';
 
 const spiel = await starteSpiel();
 // Spiel ohne eingefrorene Kühe laden: die Datei kurz durch eine leere Liste ersetzen
@@ -44,4 +44,4 @@ ${zeilen}
   ],
 };
 `);
-console.log(`${kuehe.length} Kühe nach strecken/alpen.js (erzeugt.kuhfolge) geschrieben`);
+console.log(`${kuehe.length} Kühe nach ${STRECKEN_DATEI()} (erzeugt.kuhfolge) geschrieben`);

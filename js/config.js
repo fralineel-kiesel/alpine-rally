@@ -139,7 +139,7 @@ export const CONFIG = {
     stroh: { abstand: 5.95, alle: [11, 19], ballen: [0.95, 0.48, 0.42], obenAnteil: 0.5 }, // Kleinballen vor Band/Zaun: Abstand zur Mitte, alle so viele Meter, Grösse (L, T, H)
     bande: { abstand: 6.75, alle: [18, 30] },  // Werbebanden hinter dem Band (erfundene Sponsoren)
     fahne: { hoehe: 6, breite: 1.5, hoehe2: 1.0, // Fahnenmasten: Höhe, Grösse der Fahne
-      plaetze: [[2, -8.8, 'kreuz'], [-4, 9.2, 'karo'], [-24, 9.6, 'farbe'], [28, -9.2, 'kreuz'], [44, 9.6, 'farbe']] }, // [Meter ab Linie, seitlich, Art]
+      plaetze: [[2, -8.8, 'motiv'], [-4, 9.2, 'karo'], [-24, 9.6, 'farbe'], [28, -9.2, 'motiv'], [44, 9.6, 'farbe']] }, // [Meter ab Linie, seitlich, Art: motiv = Landesfahne der Strecke, karo = Zielflagge, farbe]
     // Plätze (Meter ab der Linie, seitlich: + rechts / - links in Fahrtrichtung)
     platz: {
       uhr: 7.2,                // Startuhr (rechts, kurz vor der Startlinie)
@@ -169,7 +169,7 @@ export const CONFIG = {
       hosen: ['#2a3550', '#26262a', '#5a5f66', '#5b4632', '#3d5a8a'],
       muetzen: ['#d0202a', '#f2f0e8', '#f0c020', '#2b5fc2', '#2f9a48', '#ef7d22'],
       haare: ['#3b2a1c', '#1c1714', '#c9a24a', '#7a3b1e', '#9a9a9a'],
-      fahnenRot: '#d0202a',     // die meisten Fahnen sind rot (Schweizer Kreuz)
+      fahnenRot: '#d0202a',     // Fahnenfarbe der Zuschauer, wenn das Motiv keine eigene hat (js/motive.js: zuschauerFarbe)
     },
     landschaft: S.startZiel.landschaft, // Bäume und Büsche um Start und Ziel (Gruppen): Streckendatei
   },
@@ -177,6 +177,22 @@ export const CONFIG = {
   // --- Leben an der Strecke (Meilenstein 3d, js/leben.js) --------------
   // Alpweide, Fan-Spots, Wracks, Zäune und Herden: alles Orte dieser Strecke, darum ganz in der Streckendatei (Block "leben")
   leben: S.leben,
+  klangWasser: S.klang.wasser || [], // M10b: Wasser-Klang an See und Fluss [[Streckenmeter, seitlich], ...] (Streckendatei, klang.wasser)
+
+  // --- Deko-Sets (seit M10b): welche Motive und Typen diese Strecke zeigt ---------------------------
+  // Die Wahl steht in der Streckendatei (Block "deko"); der Code kennt nur Arten ("Fahne mit Motiv", "Tier mit Typ",
+  // "Haus mit Typ") und malt das passende Pixelbild (js/motive.js, js/kuhbild.js, js/pixel.js, js/leben.js).
+  // Fehlt der Block (Streckendatei von vor M10b), gilt dieser Standard (= die Wahl der Alpen in 0.10a).
+  deko: {
+    fahne: 'schweiz',          // Motiv der Fahnen (Zuschauer, Fahnenmasten): schweiz, finnland
+    tier: 'kuh',               // Tiere in Herden am Rand: kuh, rentier
+    tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken) oder null (still)
+    haus: 'alphuette',         // Haus an der Weide: alphuette, holzhaus
+    stadel: 'heustadel',       // kleiner Schuppen: heustadel, holzschuppen
+    nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer
+    laubbaum: 'laub',          // Laubbaum: laub, birke
+    ...(S.deko || {}),
+  },
 
   // --- Gelände --------------------------------------------------------
   gelaende: {

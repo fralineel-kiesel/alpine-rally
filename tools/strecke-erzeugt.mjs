@@ -9,7 +9,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const STRECKEN_DATEI = (wurzel = WURZEL) => path.join(wurzel, 'strecken/alpen.js');
+// M10b: Streckenwahl für alle Werkzeuge: --strecke <id oder Datei> (Standard alpen).
+// Ergebnis: { id, datei (absolut), relativ (zur Projektwurzel, für Meldungen) }
+export function streckenWahl(argv = process.argv) {
+  const i = argv.indexOf('--strecke');
+  const wert = i > 0 && argv[i + 1] ? argv[i + 1] : 'alpen';
+  const datei = /[\\/]|\.js$/.test(wert) ? path.resolve(wert) : path.join(WURZEL, `strecken/${wert}.js`);
+  if (!fs.existsSync(datei)) throw new Error(`Streckendatei ${datei} fehlt (--strecke ${wert})`);
+  return { id: path.basename(datei, '.js'), datei, relativ: path.relative(WURZEL, datei) };
+}
+// Datei, in die die Werkzeuge erzeugte Daten schreiben: die gewählte Strecke (--strecke), sonst strecken/alpen.js.
+// Mit anderer Wurzel (alter Stand zum Vergleich) die gleichnamige Datei dort.
+export const STRECKEN_DATEI = (wurzel = WURZEL) => path.join(wurzel, streckenWahl().relativ);
 
 function grenzen(text, schluessel) {
   const a = text.indexOf(`    // <erzeugt ${schluessel}>`);

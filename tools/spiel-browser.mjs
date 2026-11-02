@@ -17,9 +17,14 @@ export const AUTO = (() => { const i = process.argv.indexOf('--auto'); return i 
 // index.html-Adressen bekommen das Fahrprofil (wenn sie noch keins haben), andere Seiten bleiben, wie sie sind
 export function mitAuto(adresse, auto = AUTO) {
   const u = new URL(adresse, 'http://x');
-  if (!auto || !/(^|\/)index\.html$/.test(u.pathname) || u.searchParams.has('auto')) return adresse; // (auto '' = nichts anhängen)
+  if (!/(^|\/)index\.html$/.test(u.pathname)) return adresse;
+  // M10b: --strecke <id> auf der Kommandozeile: jede Spiel-Adresse lädt diese Strecke (?strecke=, js/strecken.js)
+  if (STRECKE_ARG && !u.searchParams.has('strecke')) { adresse = `${adresse}${u.search ? '&' : '?'}strecke=${encodeURIComponent(STRECKE_ARG)}`; u.search = '?x'; }
+  if (!auto || u.searchParams.has('auto')) return adresse; // (auto '' = nichts anhängen)
   return `${adresse}${u.search ? '&' : '?'}auto=${encodeURIComponent(auto)}`;
 }
+// M10b: Strecke aus der Kommandozeile (nur Id; eine Datei laden strecke-karte/strecke-abfahren über __streckeAdresse)
+export const STRECKE_ARG = (() => { const i = process.argv.indexOf('--strecke'); const w = i > 0 ? process.argv[i + 1] : null; return w && /^[a-z0-9-]+$/.test(w) ? w : null; })();
 
 async function ladePlaywright() {
   for (const versuch of [

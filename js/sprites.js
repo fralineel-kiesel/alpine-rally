@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { zufall, zufallAb, fbm, mische, glatt } from './util.js';
-import { tannenTextur, laubTextur, steinTextur, felsbrockenTextur, buschTextur, BUSCH } from './pixel.js';
+import { nadelbaumTextur, laubbaumTextur, steinTextur, felsbrockenTextur, buschTextur, BUSCH } from './pixel.js';
 import { baueKollision } from './kollision.js';
 import { randAbstand, torPruefer } from './strassenrand.js';
 import { planeAlleSperren, baueStaemme } from './sperren.js';
@@ -193,7 +193,7 @@ export function bauePflanzen(szene, strecke, welt) {
     return liste;
   }
 
-  const tanne = tannenTextur(), laub = laubTextur(), stein = steinTextur();
+  const tanne = nadelbaumTextur(CONFIG.deko.nadelbaum), laub = laubbaumTextur(CONFIG.deko.laubbaum), stein = steinTextur(); // Baum-Typen der Strecke (deko)
 
   // Tannen: Waldstücke an den Hängen und einzelne nahe der Strasse
   const tannen = verteile(c.tannenProKm, tanne, c.tannenHoehe, (wald, d, steil) => {

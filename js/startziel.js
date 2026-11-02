@@ -18,6 +18,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { fahne as fahnenMotiv } from './motive.js';
 import { zufall, mische } from './util.js';
 import { baueKollision } from './kollision.js';
 import { startZielAtlas, zuschauerAtlas, ZUSCHAUER_POSEN, SPONSOREN } from './startzielbild.js';
@@ -316,14 +317,14 @@ export function baueStartZiel(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     stelleHin(p.x, p.z, ux, uz, l, 0.1, 0.25);
   }
 
-  // Fahnenmast mit Fahne (Kreuz, Zielflagge oder einfarbig)
+  // Fahnenmast mit Fahne (Landesfahne nach Motiv, Zielflagge oder einfarbig; 'kreuz' = alter Name für 'motiv')
   function fahnenmast(m, lat, art, f = WEISS) {
     const p = ort(m, lat), y = boden(p.x, p.z), H = C.fahne.hoehe;
     if (!frei(p.x, p.z, 0.3, { objekt: 0.2 })) return false;
     balken([p.x, y - 0.1, p.z], [p.x, y + H, p.z], 0.08, 'metall', 0.95);
     // Fahne weht quer zur Strasse (Wind vom Tal), leicht gewellt: drei Streifen
     const wx = p.tx, wz = p.tz, b = C.fahne.breite, h = C.fahne.hoehe2;
-    const kachel = art === 'kreuz' ? 'fahneKreuz' : art === 'karo' ? 'fahneKaro' : 'stoff';
+    const kachel = art === 'motiv' || art === 'kreuz' ? 'fahneKreuz' : art === 'karo' ? 'fahneKaro' : 'stoff';
     for (let k = 0; k < 3; k++) {
       const a0 = (k / 3) * b, a1 = ((k + 1) / 3) * b;
       const w0 = Math.sin(k * 1.7) * 0.12, w1 = Math.sin((k + 1) * 1.7) * 0.12;
@@ -468,6 +469,7 @@ export function baueStartZiel(szene, strecke, welt, { pflanzen, rand, kuehe }) {
   ];
   const meshes = [], zuschauerListe = [], objekte = [];
   const ZF = C.zuschauer;
+  const FAHNE_FARBE = fahnenMotiv(CONFIG.deko.fahne).zuschauerFarbe || ZF.fahnenRot; // Fahnen der Zuschauer (Motiv der Strecke)
   const jacken = ZF.jacken.map(farbe), hosen = ZF.hosen.map(farbe), muetzen = ZF.muetzen.map(farbe), haare = ZF.haare.map(farbe);
   const wahl = (liste) => liste[Math.floor(rnd() * liste.length)];
 
@@ -559,7 +561,7 @@ export function baueStartZiel(szene, strecke, welt, { pflanzen, rand, kuehe }) {
           const kind = rnd() < ZF.kinder;
           const groesse = kind ? mische(0.6, 0.72, rnd()) : mische(ZF.groesse[0], ZF.groesse[1], rnd()) / 1.75;
           const name = ZUSCHAUER_POSEN[pose];
-          const muetze = name.startsWith('fahne') && rnd() < 0.7 ? farbe(ZF.fahnenRot) : farbe(wahl(ZF.muetzen));
+          const muetze = name.startsWith('fahne') && rnd() < 0.7 ? farbe(FAHNE_FARBE) : farbe(wahl(ZF.muetzen));
           const takt = name === 'winkend' || name === 'jubelnd' || name.startsWith('fahne') ? mische(ZF.winken[0], ZF.winken[1], rnd()) : 0;
           liste.push({
             x: p.x, z: p.z, y: welt.gelaendeHoehe(p.x, p.z) - 0.04, m, lat, blick, pose, groesse, hell: 0.9 + rnd() * 0.15,

@@ -124,6 +124,91 @@ export function laubTextur(varianten = 2, seed = 23) {
   return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
 }
 
+// M10b: Kiefern (Nadelbaum der Finnland-Strecke): hoher, rötlicher Stamm, lockere Krone aus Büscheln oben, je 16x32 Pixel
+// (gleiche Grösse wie die Tannen, damit Platzierung und Sperren gleich rechnen)
+const KIEFER = ['#1c3a20', '#28502a', '#386a34', '#4f8240', '#122a16'];
+const KIEFER_STAMM = ['#5e3a26', '#764a2e', '#432a1c'];
+export function kiefernTextur(varianten = 3, seed = 13) {
+  const B = 16, H = 32;
+  const l = leinwand(B * varianten, H);
+  const rnd = zufall(seed);
+  const farben = KIEFER.map(hexZuRgb), stamm = KIEFER_STAMM.map(hexZuRgb);
+  for (let v = 0; v < varianten; v++) {
+    const ox = v * B;
+    const kroneUnten = 15 + Math.floor(rnd() * 4);
+    // Stamm (schlank, oben leicht schief), ein paar kahle Aststummel
+    for (let y = 4; y < H; y++) {
+      const x = 7 + (y < 10 && v === 1 ? 1 : 0);
+      setze(l, ox + x, y, stamm[y > 26 ? 2 : 0]);
+      setze(l, ox + x + 1, y, stamm[1]);
+    }
+    for (let k = 0; k < 2; k++) { const y = kroneUnten + 3 + Math.floor(rnd() * 6); setze(l, ox + (rnd() < 0.5 ? 6 : 9), y, stamm[2]); }
+    // Krone: 4-6 Büschel (flache Ellipsen) um den oberen Stamm
+    const bueschel = [];
+    const n = 4 + Math.floor(rnd() * 3);
+    for (let i = 0; i < n; i++) bueschel.push({ x: 8 + (rnd() - 0.5) * 9, y: 2 + (kroneUnten - 4) * (i / (n - 1)) + (rnd() - 0.5) * 2, rx: 2.6 + rnd() * 2.4, ry: 1.6 + rnd() * 1.2 });
+    for (let y = 0; y < kroneUnten + 2; y++) {
+      for (let x = 0; x < B; x++) {
+        let drin = null;
+        for (const b of bueschel) { const dx = (x + 0.5 - b.x) / b.rx, dy = (y + 0.5 - b.y) / b.ry; if (dx * dx + dy * dy < 1 + (rnd() - 0.5) * 0.35) drin = b; }
+        if (!drin) continue;
+        const ly = (y + 0.5 - drin.y) / drin.ry, lx = (x + 0.5 - drin.x) / drin.rx;
+        let f = ly < -0.3 ? (lx < 0.2 ? 3 : 2) : ly > 0.45 ? 0 : 1;
+        if (rnd() < 0.08) f = 4;
+        setze(l, ox + x, y, farben[f]);
+      }
+    }
+  }
+  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
+}
+
+// M10b: Birken (Laubbaum der Finnland-Strecke): weisser Stamm mit schwarzen Flecken, kleine, lockere hellgrüne Krone, je 24x32
+const BIRKE = ['#3e6e26', '#5a8e34', '#7cad46', '#a2c85e', '#2c5420'];
+const BIRKE_STAMM = ['#e8e6de', '#c8c6be', '#2a2622'];
+export function birkenTextur(varianten = 2, seed = 29) {
+  const B = 24, H = 32;
+  const l = leinwand(B * varianten, H);
+  const rnd = zufall(seed);
+  const farben = BIRKE.map(hexZuRgb), stamm = BIRKE_STAMM.map(hexZuRgb);
+  for (let v = 0; v < varianten; v++) {
+    const ox = v * B;
+    for (let y = 9; y < H; y++) {
+      const x = 11 + (y < 16 ? (v ? 1 : -1) * (y < 12 ? 1 : 0) : 0);
+      const fleck = rnd() < 0.22;
+      setze(l, ox + x, y, fleck ? stamm[2] : stamm[0]);
+      setze(l, ox + x + 1, y, fleck && rnd() < 0.5 ? stamm[2] : stamm[1]);
+    }
+    const kreise = [];
+    for (let i = 0; i < 7; i++) kreise.push({ x: 12 + (rnd() - 0.5) * 11, y: 9 + (rnd() - 0.5) * 12, r: 3 + rnd() * 2.6 });
+    for (let y = 0; y < 24; y++) {
+      for (let x = 0; x < B; x++) {
+        let drin = null;
+        for (const k of kreise) if (Math.hypot(x + 0.5 - k.x, y + 0.5 - k.y) < k.r + (rnd() - 0.5) * 1.2) drin = k;
+        if (!drin || rnd() < 0.1) continue; // locker: ein paar Lücken
+        const lx = (x + 0.5 - drin.x) / drin.r, ly = (y + 0.5 - drin.y) / drin.r;
+        const licht = -lx * 0.6 - ly * 0.8;
+        let f = licht > 0.45 ? 3 : licht > 0.0 ? 2 : licht > -0.5 ? 1 : 0;
+        if (rnd() < 0.05) f = 4;
+        setze(l, ox + x, y, farben[f]);
+      }
+    }
+  }
+  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
+}
+
+// M10b: Bäume nach Typ (Streckendatei deko.nadelbaum / deko.laubbaum)
+const NADEL = { tanne: () => tannenTextur(), kiefer: () => kiefernTextur() };
+const LAUBB = { laub: () => laubTextur(), birke: () => birkenTextur() };
+export const BAUM_TYPEN = { nadelbaum: Object.keys(NADEL), laubbaum: Object.keys(LAUBB) };
+export function nadelbaumTextur(typ = 'tanne') {
+  if (!NADEL[typ]) throw new Error(`Nadelbaum "${typ}" unbekannt (bekannt: ${Object.keys(NADEL).join(', ')})`);
+  return NADEL[typ]();
+}
+export function laubbaumTextur(typ = 'laub') {
+  if (!LAUBB[typ]) throw new Error(`Laubbaum "${typ}" unbekannt (bekannt: ${Object.keys(LAUBB).join(', ')})`);
+  return LAUBB[typ]();
+}
+
 // Steine: unregelmässige Klumpen, je 16x12 Pixel
 export function steinTextur(varianten = 3, seed = 31) {
   const B = 16, H = 12;

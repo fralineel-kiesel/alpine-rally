@@ -17,6 +17,17 @@ export const SPERR_THEMEN = ['fels', 'staemme', 'baeume'];
 // Diese Seeds muss jede Strecke haben (gleiche Zahl = gleiche Welt)
 export const SEEDS = ['gelaende', 'sprites', 'buesche', 'fernwald', 'berge', 'kuehe', 'nebenwegWald', 'stummelSichtschutz',
   'absperrung', 'sperren', 'strassenrand', 'startZiel', 'leben', 'lebenZaun', 'lebenKuehe', 'umgebung'];
+// M10b: bekannte Deko-Typen (müssen zu den Pixelfunktionen im Code passen, prüft tools/m10b-test.mjs):
+// Fahnen js/motive.js, Tiere js/kuhbild.js, Häuser js/leben.js (HAUS_TYPEN), Bäume js/pixel.js
+export const DEKO = {
+  fahne: ['schweiz', 'finnland'],
+  tier: ['kuh', 'rentier'],
+  tierKlang: ['glocke', null],
+  haus: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
+  stadel: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
+  nadelbaum: ['tanne', 'kiefer'],
+  laubbaum: ['laub', 'birke'],
+};
 // Pflichtfelder (oberste Ebene) und ihre Art
 const PFLICHT = {
   format: 'zahl', id: 'text', etappe: 'text', name: 'objekt', beschreibung: 'objekt', laenge: 'zahl', seeds: 'objekt',
@@ -53,6 +64,33 @@ export function pruefeStrecke(d, { voll = false } = {}) {
     else if (t !== t.toUpperCase()) fehler(`${k}.${s}`, `"${t}": Pixelschrift kennt nur Grossbuchstaben`);
   }
   if (!(d.laenge >= 200 && d.laenge <= 50000)) fehler('laenge', `${d.laenge} m liegt nicht zwischen 200 und 50000`);
+
+  // --- Optionale Felder seit M10b (fehlen sie, gilt die Datei weiter) ---
+  if ('untergrundInfo' in d) {
+    if (!istObjekt(d.untergrundInfo)) fehler('untergrundInfo', 'Objekt { de, en } erwartet');
+    else for (const s of ['de', 'en']) {
+      const t = d.untergrundInfo[s];
+      if (typeof t !== 'string' || !t.trim()) fehler(`untergrundInfo.${s}`, 'fehlt');
+      else if (t !== t.toUpperCase()) fehler(`untergrundInfo.${s}`, `"${t}": Pixelschrift kennt nur Grossbuchstaben`);
+      else if (t.length > 22) fehler(`untergrundInfo.${s}`, `"${t}": höchstens 22 Zeichen (Platz in der Etappenwahl)`);
+    }
+  }
+  if ('deko' in d) {
+    if (!istObjekt(d.deko)) fehler('deko', 'Objekt erwartet');
+    else for (const [k, v] of Object.entries(d.deko)) {
+      if (!(k in DEKO)) fehler(`deko.${k}`, `unbekanntes Feld (bekannt: ${Object.keys(DEKO).join(', ')})`);
+      else if (!DEKO[k].includes(v)) fehler(`deko.${k}`, `${JSON.stringify(v)} unbekannt (bekannt: ${DEKO[k].map((x) => JSON.stringify(x)).join(', ')})`);
+    }
+  }
+  if ('sprung' in d) {
+    // Markierte Kuppen (später Sprünge, M10c): heute ohne Wirkung im Spiel
+    if (!Array.isArray(d.sprung)) fehler('sprung', 'Liste erwartet');
+    else d.sprung.forEach((sp, i) => {
+      if (!istObjekt(sp) || !istZahl(sp.s) || typeof sp.name !== 'string' || !sp.name.trim()) { fehler(`sprung[${i}]`, '{ s: Streckenmeter, name } erwartet'); return; }
+      if (!(sp.s > 0 && sp.s < d.laenge)) fehler(`sprung[${i}].s`, `${sp.s} liegt nicht auf der Strecke (0 bis ${d.laenge})`);
+      if (i > 0 && istZahl(d.sprung[i - 1].s) && sp.s <= d.sprung[i - 1].s) fehler(`sprung[${i}].s`, `${sp.s} nicht hinter sprung[${i - 1}] (${d.sprung[i - 1].s})`);
+    });
+  }
 
   // --- Seeds ---
   for (const k of SEEDS) {
@@ -152,6 +190,9 @@ export function pruefeStrecke(d, { voll = false } = {}) {
 
   // --- Klang ---
   const K = d.klang;
+  if ('wasser' in K) {
+    if (!Array.isArray(K.wasser) || !K.wasser.every((w) => Array.isArray(w) && w.length === 2 && w.every(istZahl) && w[0] >= 0 && w[0] <= d.laenge)) fehler('klang.wasser', 'Liste von [Streckenmeter, seitlich] erwartet');
+  }
   if (K.boeenAbschnitt != null && !(K.boeenAbschnitt in d.abschnitte)) fehler('klang.boeenAbschnitt', `"${K.boeenAbschnitt}" steht nicht in abschnitte`);
   if (!istObjekt(K.publikumOrte)) fehler('klang.publikumOrte', 'Objekt erwartet');
   else {
@@ -181,7 +222,8 @@ export function pruefeStrecke(d, { voll = false } = {}) {
 
   // --- Erzeugte Daten (Werkzeuge schreiben sie; passen sie nicht, nimmt das Spiel sie nicht) ---
   const E = d.erzeugt;
-  for (const k of ['abkuerzungen', 'kurvenTempo', 'baumfolge', 'kuhfolge']) if (!istObjekt(E[k])) fehler(`erzeugt.${k}`, 'fehlt (Werkzeug laufen lassen, siehe docs/strecken-format.md)');
+  // (baumfolge und kuhfolge seit M10b freiwillig: nur Strecken mit "eingefrorener" Welt wie die Alpen brauchen sie)
+  for (const k of ['abkuerzungen', 'kurvenTempo']) if (!istObjekt(E[k])) fehler(`erzeugt.${k}`, 'fehlt (Werkzeug laufen lassen, siehe docs/strecken-format.md)');
   if (istObjekt(E.abkuerzungen)) {
     if (!(Math.abs(E.abkuerzungen.streckenLaenge - d.laenge) <= 0.5)) fehler('erzeugt.abkuerzungen.streckenLaenge', `${E.abkuerzungen.streckenLaenge} passt nicht zu laenge ${d.laenge} (neu: node tools/abkuerzungen.mjs)`);
     (E.abkuerzungen.sperren || []).forEach((x, i) => { if (!istZahl(x.s) || (x.seite !== 1 && x.seite !== -1)) fehler(`erzeugt.abkuerzungen.sperren[${i}]`, '{ s, seite: 1/-1, von, bis } erwartet'); });

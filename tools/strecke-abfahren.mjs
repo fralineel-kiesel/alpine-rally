@@ -1,4 +1,4 @@
-// Strecke mit dem Testfahrer abfahren (M10a):  node tools/strecke-abfahren.mjs <datei> [--auto <id>] [--aus <datei.txt>]
+// Strecke mit dem Testfahrer abfahren (M10a):  node tools/strecke-abfahren.mjs [<datei> | --strecke <id>] [--auto <id>] [--aus <datei.txt>]
 // Lädt das Spiel im Headless-Chromium mit dieser Streckendatei (statt strecken/alpen.js) und lässt den vorhandenen
 // Testfahrer (tools/testfahrer-browser.js, fahreEtappe – nicht neu geschrieben) die Etappe in der echten Physik fahren,
 // in den drei Stilen vorsichtig / mittel / flott wie tools/testfahrer.mjs. Meldet Gesamtzeit, Zwischenzeiten, Aufpralle,
@@ -8,11 +8,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { streckenWahl } from './strecke-erzeugt.mjs';
 import { starteSpiel, WURZEL, AUTO } from './spiel-browser.mjs';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
-const datei = process.argv.slice(2).find((a, i, l) => !a.startsWith('--') && !(l[i - 1] || '').startsWith('--'));
-if (!datei || !fs.existsSync(datei)) { console.log('Aufruf: node tools/strecke-abfahren.mjs <datei> [--auto <id>] [--aus <datei.txt>]'); process.exit(1); }
+// Strecke: Datei als Argument oder (seit M10b) --strecke <id oder Datei>, Standard alpen
+const datei = process.argv.slice(2).find((a, i, l) => !a.startsWith('--') && !(l[i - 1] || '').startsWith('--')) || streckenWahl().datei;
+if (!datei || !fs.existsSync(datei)) { console.log('Aufruf: node tools/strecke-abfahren.mjs [<datei> | --strecke <id>] [--auto <id>] [--aus <datei.txt>]'); process.exit(1); }
 const inhalt = fs.readFileSync(datei, 'utf8');
 const id = (/id: '([^']+)'/.exec(inhalt) || [])[1] || path.basename(datei, '.js');
 const aus = arg('--aus') || `/tmp/strecke-abfahren-${id}-${AUTO}.txt`;

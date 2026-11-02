@@ -31,11 +31,33 @@ const FELLE = [
   { name: 'braun', grund: '#7c6550', weiss: null, flecken: 0, kopfWeiss: false, socken: false, bauch: false,
     maul: '#d3c8b4', nase: '#2a2420', ohr: '#6e5945', quaste: '#2e2620', dunkelUnten: '#5e4c3c' },
 ];
+// M10b: Rentiere (Tier-Typ "rentier", Streckendatei deko.tier): gleicher Bildaufbau (3 Fellarten x mit/ohne Geweih),
+// graubraun mit hellem Hals und Bauch, dunkle Beine, Geweih statt Hörnern. Fantasie-Tiere im Pixel-Look.
+const RENTIER_FELLE = [
+  { name: 'graubraun', grund: '#6e5c49', weiss: '#d9d3c5', flecken: 0, kopfWeiss: false, socken: false, bauch: true, halsHell: true,
+    maul: '#4a3f35', nase: '#2a2420', ohr: '#6e5c49', quaste: '#e2dccf', dunkelUnten: '#3b3129' },
+  { name: 'hellgrau', grund: '#9a948a', weiss: '#ece8de', flecken: 0, kopfWeiss: false, socken: false, bauch: true, halsHell: true,
+    maul: '#6a645c', nase: '#2e2a26', ohr: '#9a948a', quaste: '#efebe2', dunkelUnten: '#4c4640' },
+  { name: 'dunkelbraun', grund: '#4f3f31', weiss: '#c9c1b0', flecken: 0, kopfWeiss: false, socken: false, bauch: false, halsHell: true,
+    maul: '#3a3028', nase: '#1e1a16', ohr: '#4f3f31', quaste: '#d6cfc0', dunkelUnten: '#2c241d' },
+];
+const TIERE = {
+  kuh: { felle: FELLE, mit: 'mit Hörnern', ohne: 'ohne Hörner', schmuck: 'horn' },
+  rentier: { felle: RENTIER_FELLE, mit: 'mit Geweih', ohne: 'ohne Geweih', schmuck: 'geweih' },
+};
+// Arten eines Tier-Typs: jede Fellart mit und ohne Hörner (Geweih)
+export function tierArten(typ = 'kuh') {
+  const T = TIERE[typ];
+  if (!T) throw new Error(`Tier-Typ "${typ}" unbekannt (bekannt: ${Object.keys(TIERE).join(', ')})`);
+  return T.felle.flatMap((f, i) => [{ fell: i, horn: true, name: `${f.name} ${T.mit}`, f, schmuck: T.schmuck }, { fell: i, horn: false, name: `${f.name} ${T.ohne}`, f, schmuck: T.schmuck }]);
+}
+export const TIER_TYPEN = Object.keys(TIERE);
 // 6 Kuh-Arten: jede Fellart mit und ohne Hörner
 export const KUH_ARTEN = FELLE.flatMap((f, i) => [{ fell: i, horn: true, name: `${f.name} mit Hörnern` }, { fell: i, horn: false, name: `${f.name} ohne Hörner` }]);
 
 // Farben einmal in RGB umrechnen
-for (const f of FELLE) for (const k of ['grund', 'weiss', 'maul', 'nase', 'ohr', 'quaste', 'dunkelUnten']) if (f[k]) f[k] = hexZuRgb(f[k]);
+for (const f of [...FELLE, ...RENTIER_FELLE]) for (const k of ['grund', 'weiss', 'maul', 'nase', 'ohr', 'quaste', 'dunkelUnten']) if (f[k]) f[k] = hexZuRgb(f[k]);
+const GEWEIH = hexZuRgb('#b39c78'), GEWEIH_SPITZE = hexZuRgb('#d8c8a6');
 const HORN = hexZuRgb('#e0d3b0'), HORN_SPITZE = hexZuRgb('#3b342b'), HUF = hexZuRgb('#2a2420'), AUGE = hexZuRgb('#141110');
 
 // --- kleine Vektor-Hilfen -------------------------------------------------------
@@ -59,7 +81,7 @@ function ei(teil, c, dir, rLang, rBreit, rHoch) {
 const kugel = (teil, c, rx, ry, rz) => ({ teil, c, e: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], r: [rx, ry, rz] });
 
 // Kopf: P = Stirn zwischen den Ohren, F = Richtung der Schnauze
-function kopf(P, F, horn) {
+function kopf(P, F, horn, schmuck = 'horn') {
   const U = norm(plus(OBEN, mal(F, -punkt(F, OBEN)))); // Oberseite des Kopfs
   const teile = [
     ei('kopf', plus(P, mal(F, 0.2)), F, 0.3, 0.165, 0.165),
@@ -69,14 +91,27 @@ function kopf(P, F, horn) {
     const S = [s, 0, 0];
     teile.push(kugel('auge', plus(plus(plus(P, mal(F, 0.16)), mal(S, 0.135)), mal(U, 0.04)), 0.035, 0.035, 0.035));
     teile.push(ei('ohr', plus(plus(plus(P, mal(S, 0.21)), mal(F, 0.04)), mal(U, -0.03)), plus(S, mal(F, 0.2)), 0.11, 0.07, 0.035));
-    if (horn) teile.push(ei('horn', plus(plus(plus(P, mal(S, 0.15)), mal(U, 0.07)), mal(F, 0.02)), norm(plus(plus(S, mal(U, 0.9)), mal(F, 0.15))), 0.12, 0.033, 0.033));
+    if (horn && schmuck === 'geweih') teile.push(...geweih(P, F, U, S));
+    else if (horn) teile.push(ei('horn', plus(plus(plus(P, mal(S, 0.15)), mal(U, 0.07)), mal(F, 0.02)), norm(plus(plus(S, mal(U, 0.9)), mal(F, 0.15))), 0.12, 0.033, 0.033));
   }
   return teile;
 }
 
+// Geweih (Rentier): je Seite eine Stange nach oben-hinten, zwei Enden nach vorne, oben eine kleine Schaufel
+function geweih(P, F, U, S) {
+  const t = [], basis = plus(plus(P, mal(S, 0.1)), mal(U, 0.08));
+  const stange = (a, richtung, laenge, r) => { const b = plus(a, mal(norm(richtung), laenge)); t.push(ei('geweih', mitte(a, b), norm(richtung), laenge / 2, r, r)); return b; };
+  const a1 = stange(basis, plus(plus(U, mal(F, -0.45)), mal(S, 0.35)), 0.3, 0.03);
+  const a2 = stange(a1, plus(plus(U, mal(F, -0.1)), mal(S, 0.15)), 0.26, 0.026);
+  stange(a1, plus(F, mal(U, 0.5)), 0.16, 0.022);                       // Augspross nach vorne
+  stange(a2, plus(plus(mal(F, 0.8), mal(U, 0.7)), mal(S, 0.2)), 0.14, 0.02); // Ende oben vorne
+  t.push(ei('geweih', plus(a2, mal(U, 0.05)), norm(plus(U, mal(F, 0.3))), 0.09, 0.05, 0.02)); // kleine Schaufel
+  return t;
+}
+
 // Das Modell einer Kuh in einer Pose. Kuh steht im Ursprung und schaut nach +z, y = oben.
 // dy = so weit ist der Rumpf abgesenkt (für die Lage der Flecken)
-function modell(pose, horn) {
+function modell(pose, horn, schmuck = 'horn') {
   const t = [];
   const dy = pose === 'liegend' ? -0.56 : 0;
   const breiter = pose === 'liegend' ? 0.04 : 0;
@@ -91,7 +126,7 @@ function modell(pose, horn) {
       ? [[0, 1.13, 0.72], [0, 1.2, 1.0], [0, 1.33, 1.06], norm([0, -0.55, 0.84])]
       : [[0, 1.1, 0.7], [0, 0.6, 1.0], [0, 0.55, 1.08], norm([0, -0.93, 0.36])];
     t.push(ei('koerper', mitte(h1, h2), plus(h2, mal(h1, -1)), 0.24, 0.17, 0.2));
-    t.push(...kopf(P, F, horn));
+    t.push(...kopf(P, F, horn, schmuck));
     // Beine: oben Teil des Rumpfs, unten schlank, dunkle Hufe
     for (const s of [-1, 1]) {
       for (const z of [0.52, -0.58]) {
@@ -108,7 +143,7 @@ function modell(pose, horn) {
   } else {
     // liegend: Kopf oben (wiederkäuen), Vorderbeine eingeklappt, ein Hinterbein zur Seite
     t.push(ei('koerper', mitte([0, 0.6, 0.65], [0, 0.74, 0.9]), [0, 0.14, 0.25], 0.22, 0.17, 0.2));
-    t.push(...kopf([0, 0.9, 0.98], norm([0, -0.4, 0.92]), horn));
+    t.push(...kopf([0, 0.9, 0.98], norm([0, -0.4, 0.92]), horn, schmuck));
     for (const s of [-1, 1]) {
       t.push(ei('bein', [s * 0.2, 0.08, 0.62], [0, 0, 1], 0.28, 0.07, 0.07));
       t.push(kugel('huf', [s * 0.2, 0.06, 0.88], 0.07, 0.055, 0.08));
@@ -124,7 +159,7 @@ function modell(pose, horn) {
 
 // Fellfarbe an einem Punkt (Kuh-Koordinaten). blobs = Flecken dieser Kuh-Art
 function farbe(teil, P, art, blobs, dy, lokal) {
-  const f = FELLE[art.fell];
+  const f = art.f || FELLE[art.fell];
   const grund = f.grund, weiss = f.weiss;
   const k = [P[0], P[1] - dy, P[2]]; // Rumpf-Koordinaten (Flecken wandern beim Liegen mit)
   const fleck = () => {
@@ -137,6 +172,7 @@ function farbe(teil, P, art, blobs, dy, lokal) {
   };
   switch (teil) {
     case 'horn': return lokal[0] > 0.4 ? HORN_SPITZE : HORN;
+    case 'geweih': return lokal[0] > 0.5 ? GEWEIH_SPITZE : GEWEIH;
     case 'huf': return HUF;
     case 'auge': return AUGE;
     case 'maul': return lokal[0] > 0.55 ? f.nase : f.maul;
@@ -151,6 +187,7 @@ function farbe(teil, P, art, blobs, dy, lokal) {
       if (f.dunkelUnten && P[1] < 0.35) return f.dunkelUnten;
       return fleck() ? weiss : grund;
     default: // Rumpf, Hals, Schwanz
+      if (f.halsHell && teil === 'koerper' && k[2] > 0.62 && k[1] > 0.75) return weiss; // heller Hals (Rentier)
       if (f.bauch && k[1] < 0.72 && teil === 'koerper' && Math.abs(k[2]) < 0.68) return weiss; // Bauch (nicht der Hals)
       return fleck() ? weiss : grund;
   }
@@ -213,17 +250,18 @@ function faerben(l, ox, oy, B, H, breiteM, pyM, F, teile, tiefe, welche, d, r, l
   }
 }
 
-// Das ganze Bild: 8 Ansichten x 6 Arten x 3 Posen
-export function kuhAtlas(seed = 71) {
+// Das ganze Bild: 8 Ansichten x 6 Arten x 3 Posen. typ = Tier-Typ (Streckendatei deko.tier, seit M10b)
+export function kuhAtlas(seed = 71, typ = 'kuh') {
   const K = KUH_BILD, B = K.zelleB, H = K.zelleH;
-  const zeilen = KUH_ARTEN.length * K.posen.length;
+  const ARTEN = typ === 'kuh' ? KUH_ARTEN : tierArten(typ);
+  const zeilen = ARTEN.length * K.posen.length;
   const l = leinwand(B * K.spalten, H * zeilen);
   const rnd = zufall(seed);
   const pyM = K.hoeheM / H;
-  KUH_ARTEN.forEach((art, ai) => {
+  ARTEN.forEach((art, ai) => {
     // Flecken dieser Kuh-Art: Eier auf dem Rumpf, bis ungefähr der gewünschte Anteil weiss ist
     // (gemessen an Stichproben auf der Oberfläche des Rumpfs)
-    const f = FELLE[art.fell], blobs = [];
+    const f = art.f || FELLE[art.fell], blobs = [];
     if (f.flecken > 0) {
       const probe = [];
       for (let i = 0; i < 300; i++) {
@@ -240,7 +278,7 @@ export function kuhAtlas(seed = 71) {
       }
     }
     K.posen.forEach((pose, pi) => {
-      const { teile, dy } = modell(pose, art.horn);
+      const { teile, dy } = modell(pose, art.horn, art.schmuck);
       const zeile = ai * K.posen.length + pi;
       for (let v = 0; v < K.spalten; v++) {
         // Ansicht v: Kamera unter dem Winkel a zur Blickrichtung der Kuh (0 = von vorne).
