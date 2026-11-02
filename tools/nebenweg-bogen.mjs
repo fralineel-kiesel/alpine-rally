@@ -1,6 +1,6 @@
 // Nebenweg-Bogen in die Strecke einpassen (seit Meilenstein 3a).
 //
-//   node tools/nebenweg-bogen.mjs            rechnet und schreibt die Stützpunkte in js/track.js
+//   node tools/nebenweg-bogen.mjs            rechnet und schreibt die Stützpunkte in strecken/alpen.js (Feld punkte)
 //   node tools/nebenweg-bogen.mjs --zeigen   rechnet nur und zeigt das Ergebnis
 //
 // Ein Nebenweg ersetzt ein Stück der Etappe: Die Etappe verlässt die Hauptstrasse (Abzweig),
@@ -13,7 +13,7 @@
 // Zwei Geraden (frei: 'lage') werden so ausgerechnet, dass der Bogen am Endpunkt ankommt, und ein
 // Winkel (frei: 'laenge') wird gesucht, bis die ganze Strecke wieder genau gleich lang ist.
 // Die letzte Kurve (frei: 'richtung') dreht so weit, dass die Richtung am Ende passt.
-// Das Ergebnis kommt in js/track.js zwischen die Zeilen "<nebenweg NAME>" und "</nebenweg>".
+// Das Ergebnis kommt in strecken/alpen.js (seit M10a) zwischen die Zeilen "<nebenweg NAME>" und "</nebenweg>".
 //
 // Für einen weiteren Nebenweg (M3b): einen neuen Eintrag in BOGEN_LISTE anlegen (Start- und
 // Endpunkt sind Stützpunkte, die bleiben; dazwischen wird ersetzt) und im track.js die zwei
@@ -31,7 +31,7 @@ register(`data:text/javascript,${encodeURIComponent(`export async function resol
   return n(s, c);
 }`)}`);
 const THREE = await import(path.join(WURZEL, 'lib/three.module.min.js'));
-const TRACK = path.join(WURZEL, 'js/track.js');
+const TRACK = path.join(WURZEL, 'strecken/alpen.js'); // (seit M10a: Streckendatei)
 
 // Länge der Strecke vor M3a (Meter) – alles danach soll an derselben Stelle bleiben
 const ZIEL_LAENGE = 3667.5869258559796;
@@ -54,7 +54,7 @@ const BOGEN_LISTE = [{
   ende: { x: 113.7, z: -980.4 },   // bleibt (danach kommt die Kurve 1085–1230)
   stuecke: [
     { gerade: 10, marke: 'Hauptstrasse bis zum Abzweig' },
-    { abschnitt: "{ abschnitt: 'Waldstück', baeume: 2.2, wald: 1, nah: true }" },
+    { abschnitt: "'Waldstück'" },
     { kurve: 80, radius: 28, marke: 'Abzweig: rechts auf den Nebenweg (Schotter)' },
     { gerade: 20, frei: 'lage' },
     { kurve: -67, radius: 35, frei: 'laenge', marke: 'Nebenweg: Kurve links' },
@@ -83,7 +83,7 @@ const BOGEN_LISTE = [{
   endeVor: { x: 730.1, z: -1337.8 },   // alter Punkt vor dem Ende
   stuecke: [
     { gerade: 19, marke: 'Hauptstrasse bis zum Abzweig' },
-    { abschnitt: "{ abschnitt: 'Almweg', baeume: 0.45, wald: 0.05 }" },
+    { abschnitt: "'Almweg'" },
     { kurve: 45, radius: 25, marke: 'Abzweig: rechts auf den Almweg (Schotter)' },
     { gerade: 30, frei: 'lage' },
     { kurve: -40, radius: 110, frei: 'laenge', marke: 'Almweg: grosse Kurve links' },
@@ -91,7 +91,7 @@ const BOGEN_LISTE = [{
     { kurve: 45, radius: 80, marke: 'Almweg: grosse Kurve rechts' },
     { gerade: 20 },
     { kurve: -40, radius: 30, marke: 'Einmündung: links auf die Hauptstrasse' },
-    { abschnitt: "{ abschnitt: 'Felswand 1', baeume: 1.0, wald: 0.2, wand: 'links' }" },
+    { abschnitt: "'Felswand 1'" },
     { gerade: 5, marke: 'Hauptstrasse' },
     { kurve: 5, radius: 150, frei: 'richtung', marke: 'Hauptstrasse' },
     { gerade: 4 },
@@ -110,7 +110,7 @@ const BOGEN_LISTE = [{
   endeVor: { x: 1313.6, z: -1690.7 },
   stuecke: [
     { gerade: 3, marke: 'Hauptstrasse bis zum Abzweig' },
-    { abschnitt: "{ abschnitt: 'Wiesenweg', baeume: 0.25, wald: 0 }" },
+    { abschnitt: "'Wiesenweg'" },
     { kurve: 36, radius: 25, marke: 'Abzweig: rechts auf den Wiesenweg' },
     { gerade: 20, frei: 'lage' },
     { kurve: -15, radius: 80, frei: 'laenge', marke: 'Wiesenweg: Kurve links' },
@@ -118,7 +118,7 @@ const BOGEN_LISTE = [{
     { kurve: 36, radius: 70, marke: 'Wiesenweg: Kurve rechts' },
     { gerade: 10 },
     { kurve: -36, radius: 25, marke: 'Einmündung: links auf die Hauptstrasse' },
-    { abschnitt: "{ abschnitt: 'Abfahrt', baeume: 1.0, wald: 0.2, wand: 'rechts' }" },
+    { abschnitt: "'Abfahrt'" },
     { gerade: 8, marke: 'Hauptstrasse' },
     { kurve: 5, radius: 150, frei: 'richtung', marke: 'Hauptstrasse' },
     { gerade: 4 },
@@ -135,8 +135,10 @@ const richtungVek = (w) => [Math.sin(w * GRAD), -Math.cos(w * GRAD)];
 // Stützpunkte aus der Liste in track.js lesen (ohne Three.js: nur die Zahlen)
 function lesePunkte(text) {
   const liste = [];
-  const re = /\{ abschnitt: [^}]*\}|\{ x: (-?[\d.]+), z: (-?[\d.]+), h: (-?[\d.]+) \}/g;
-  const block = text.slice(text.indexOf('export const STRECKEN_PUNKTE'), text.indexOf('];', text.indexOf('export const STRECKEN_PUNKTE')));
+  // (seit M10a: Feld "punkte" der Streckendatei, Abschnitte als 'Name', Punkte als [x, z, h])
+  const re = /'[^']+'|\[(-?[\d.]+), (-?[\d.]+), (-?[\d.]+)\]/g;
+  const a = text.indexOf('\n  punkte: [');
+  const block = text.slice(a + 12, text.indexOf('\n  ],', a));
   let m;
   while ((m = re.exec(block))) {
     if (m[1] === undefined) liste.push({ abschnitt: m[0] });
@@ -219,7 +221,7 @@ for (const def of BOGEN_LISTE) {
   const alle = lesePunkte(neuText);
   const iS = alle.findIndex((p) => p.x === def.start.x && p.z === def.start.z);
   const iE = alle.findIndex((p) => p.x === def.ende.x && p.z === def.ende.z);
-  if (iS < 0 || iE < 0) throw new Error('Start- oder Endpunkt nicht in track.js gefunden');
+  if (iS < 0 || iE < 0) throw new Error('Start- oder Endpunkt nicht in strecken/alpen.js gefunden');
   const vor = alle.slice(0, iS + 1), nach = alle.slice(iE);
   const pS = alle[iS], pE = alle[iE];
   // Richtung am Start: wie die Spline am Startpunkt (vom Punkt davor zum Startpunkt hin, gemittelt)
@@ -365,37 +367,37 @@ for (const def of BOGEN_LISTE) {
   }
 
   // Text für track.js: Kommentar pro Stück wie im Rest der Datei, Punkte 3 pro Zeile
-  const zeilen = [marke0, '  // (automatisch von tools/nebenweg-bogen.mjs – Bogen dort ändern, nicht hier)'];
+  const zeilen = [marke0, '    // (automatisch von tools/nebenweg-bogen.mjs – Bogen dort ändern, nicht hier)'];
   let zeile = [];
-  const flush = () => { if (zeile.length) zeilen.push('  ' + zeile.join(', ') + ','); zeile = []; };
+  const flush = () => { if (zeile.length) zeilen.push('    ' + zeile.join(', ') + ','); zeile = []; };
   let stueck = -1;
   const steigung = (k) => {
     const ps = v.punkte.filter((p) => p.stueck === k);
     return ps.length > 1 ? ((ps[ps.length - 1].h - ps[0].h) / (ps[ps.length - 1].t - ps[0].t)) * 100 : 0;
   };
   for (const p of v.punkte) {
-    if (p.abschnitt) { flush(); zeilen.push('  ' + p.abschnitt + ','); continue; }
+    if (p.abschnitt) { flush(); zeilen.push('    ' + p.abschnitt + ','); continue; }
     if (p.stueck !== stueck) {
       flush();
       stueck = p.stueck;
       const mk = v.b.marken.find((m) => m.k === stueck), st = mk.st;
       const was = st.gerade !== undefined ? `gerade ${Math.round(mk.bis.t - mk.von.t)} m`
         : `Kurve ${(mk.bis.w - mk.von.w) > 0 ? 'rechts' : 'links'} ${Math.round(Math.abs(mk.bis.w - mk.von.w))}°, Radius ${st.radius} m`;
-      zeilen.push(`  // ${was}, Steigung ${steigung(stueck).toFixed(0)} %${st.marke ? ` – ${st.marke}` : ''}`);
+      zeilen.push(`    // ${was}, Steigung ${steigung(stueck).toFixed(0)} %${st.marke ? ` – ${st.marke}` : ''}`);
     }
-    zeile.push(`{ x: ${p.x.toFixed(4)}, z: ${p.z.toFixed(4)}, h: ${p.h.toFixed(4)} }`);
+    zeile.push(`[${p.x.toFixed(4)}, ${p.z.toFixed(4)}, ${p.h.toFixed(4)}]`);
     if (zeile.length === 3) flush();
   }
   flush();
-  zeilen.push('  ' + marke1);
+  zeilen.push(marke1);
   const block = zeilen.join('\n');
 
   const a = neuText.indexOf(marke0), e = neuText.indexOf(marke1, a);
-  if (a < 0 || e < 0) throw new Error(`Marker "${marke0}" / "${marke1}" fehlen in js/track.js`);
+  if (a < 0 || e < 0) throw new Error(`Marker "${marke0}" / "${marke1}" fehlen in strecken/alpen.js`);
   const zeilenAnfang = neuText.lastIndexOf('\n', a) + 1;
   neuText = neuText.slice(0, zeilenAnfang) + block + neuText.slice(e + marke1.length);
 }
 if (!process.argv.includes('--zeigen')) {
   fs.writeFileSync(TRACK, neuText);
-  console.log('-> js/track.js geschrieben');
+  console.log('-> strecken/alpen.js geschrieben');
 }

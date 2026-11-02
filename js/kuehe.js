@@ -9,7 +9,7 @@
 // Regeln, die nie gebrochen werden (Werte in config.js, Block "kuehe"):
 //   - mindestens abstandStrasse von jeder Strassenmitte (auch von einer anderen Kehre)
 //   - hinter einem Zaun im Feld, nicht in den Pfosten (abstandZaun), Weidetore bleiben frei
-//   - nie auf der Innenseite der Kurven aus js/abkuerzungen.js (plus Puffer): Kühe sind
+//   - nie auf der Innenseite der Kurven aus erzeugt.abkuerzungen (plus Puffer): Kühe sind
 //     Hindernisse und dürfen an der Abkürzungs-Balance nichts ändern
 //   - nur wo es flach ist und kein Wald steht
 // Fester Zufall (seed): gleiche Strecke = gleiche Kühe.
@@ -21,7 +21,9 @@ import { baueKollision } from './kollision.js';
 import { kuhAtlas, KUH_ARTEN, KUH_BILD } from './kuhbild.js';
 import { spriteMaterial } from './sprites.js';
 import { randAbstand, torPruefer } from './strassenrand.js';
-import { KUHFOLGE } from './kuhfolge.js';
+import { STRECKE } from './streckenlader.js';
+
+const KUHFOLGE = STRECKE.erzeugt.kuhfolge; // eingefrorene Kühe (erzeugt von tools/kuhfolge-schreiben.mjs)
 
 // Wie die Bäume (sprites.js), aber die Ansicht (Spalte im Bild) hängt vom Winkel ab
 const VERTEX = /* glsl */ `
@@ -197,7 +199,7 @@ export function planeKuehe(strecke, welt, pflanzen, rand, frei = []) {
   let herdenNr = 0;
   const fellStart = Math.floor(rnd() * 3);
 
-  // M3d: eingefrorene Kühe (js/kuhfolge.js): stehen genau dort wie beim Stand M3b. Jede wird noch geprüft.
+  // M3d: eingefrorene Kühe (Streckendatei, erzeugt.kuhfolge): stehen genau dort wie beim Stand M3b. Jede wird noch geprüft.
   const folge = KUHFOLGE && KUHFOLGE.seed === c.seed ? KUHFOLGE.kuehe : null;
   let weggefallen = 0;
   if (folge) {

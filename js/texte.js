@@ -72,9 +72,14 @@ export const TEXTE = {
   'lack.imprexaDunkel': { de: 'DUNKEL', en: 'DARK' },
   'lack.imprexaRot': { de: 'ROT', en: 'RED' }, // M8f
   'etappe.titel': { de: 'ETAPPE', en: 'STAGE' },
-  'etappe.pass.name': { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
+  // (Name und Beschreibung der Etappe kommen seit M10a aus der Streckendatei: strecke.<id>.name / .beschreibung)
   'etappe.daten1': { de: '{km} KM · {cps} CHECKPOINTS', en: '{km} KM · {cps} CHECKPOINTS' },
-  'etappe.pass.daten2': { de: 'ASPHALT, SCHOTTER, WIESENWEG', en: 'TARMAC, GRAVEL, MEADOW TRACK' },
+  // Fehlerseite, wenn die Strecke nicht geladen werden kann (M10a, js/fehlerseite.js)
+  'fehler.strecke.titel': { de: 'STRECKE KONNTE NICHT GELADEN WERDEN', en: 'THE STAGE COULD NOT BE LOADED' },
+  'fehler.strecke.datei': { de: 'STRECKENDATEI FEHLT ODER IST KAPUTT', en: 'STAGE FILE MISSING OR BROKEN' },
+  'fehler.strecke.ungueltig': { de: 'STRECKENDATEI IST UNGÜLTIG', en: 'STAGE FILE IS INVALID' },
+  'fehler.strecke.laenge': { de: 'LÄNGE DER STRECKE PASST NICHT', en: 'STAGE LENGTH DOES NOT MATCH' },
+  'fehler.strecke.hinweis': { de: 'NEU LADEN. HILFT DAS NICHT: BITTE MELDEN.', en: 'RELOAD. IF THAT DOES NOT HELP: PLEASE REPORT.' },
   'etappe.spaeter': { de: 'WEITERE ETAPPEN FOLGEN', en: 'MORE STAGES TO COME' },
 
   // --- Bestzeiten ---

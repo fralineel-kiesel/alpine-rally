@@ -3,8 +3,14 @@
 // Einheiten: Meter, Sekunden, m/s (1 m/s = 3.6 km/h), Grad wo angegeben.
 // =====================================================================
 
+// Seit M10a: Alles, was nur für die Strecke gilt (Orte, Seeds, Palette, Licht, Nebel, Umgebungsklang), steht in der
+// Streckendatei (strecken/alpen.js, Format: docs/strecken-format.md). Hier wird es unter den alten Namen eingebunden.
+import { STRECKE } from './streckenlader.js';
+
+const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
+
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.9a.2';
+export const VERSION = '0.10a';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -14,48 +20,14 @@ export const CONFIG = {
     ganzzahligSkalieren: false // true = nur ganze Vielfache (schärfer, aber evtl. grössere schwarze Ränder)
   },
 
-  // --- Farben (Palette) -----------------------------------------------
-  farben: {
-    himmelOben: '#2d6fd2',     // klares Blau im Zenit
-    dunst: '#aabdc8',          // Blaugrau am Horizont (= Nebelfarbe, auch für Gelände und Bergfüsse)
-    gras: '#4e9a2c',           // sattes Gras
-    grasDunkel: '#3b7d22',     // dunklere Grasflecken
-    fels: '#7f7b74',           // Steingrau (steile Hänge, Felswand)
-    felsDunkel: '#5f5b55',     // dunkler Fels
-    erde: '#7a6446',           // Erde an steilen, nicht ganz felsigen Stellen
-    bankett: '#8b6e4a',        // Schotterbraun neben der Strasse
-    asphalt: '#56585b',        // Strassenbelag
-    mittellinie: '#c9c9bd',    // dezente Mittellinie
-    schotter: '#ada48f',       // Schotter-Nebenweg: helles Graubeige (seit M3a)
-    schotterSpur: '#968d7a',   // ... festgefahrene Fahrspuren, etwas dunkler
-    wiesenweg: '#7c6243',      // Wiesenweg (M3b): erdbraun ...
-    wiesenwegSpur: '#6a523a',  // ... die zwei festgefahrenen Fahrspuren, dunkler
-    wiesenwegGras: '#4e9a2c',  // ... Gras in der Mitte und am Rand (wie farben.gras)
-    bergFels: '#596070',         // Hintergrundberge, Fels
-    bergFuss: '#3f6a30',       // Hintergrundberge, bewaldeter Fuss (passt zum fernen Gelände)
-    schnee: '#f2f5fa',         // Schneekappen
-    // (Autofarben seit M8a in autoOptik: Lackierungen und feste Farben)
-  },
+  // --- Farben (Palette: Himmel, Dunst, Gras, Fels, Beläge, Berge): Streckendatei (umgebung.farben) ---
+  farben: U.farben,
 
-  // --- Licht ----------------------------------------------------------
-  licht: {
-    sonneStaerke: 2.2,         // Helligkeit der Sonne
-    sonneFarbe: '#fff3df',     // leicht warmes Sonnenlicht
-    sonneRichtung: [0.5, 0.9, 0.35], // woher die Sonne scheint (x, y, z)
-    umgebungStaerke: 1.15,     // Grundhelligkeit (Schattenseiten)
-    umgebungFarbe: '#c9d6ec',  // leicht bläuliches Umgebungslicht
-  },
+  // --- Licht (Sonne, Umgebungslicht): Streckendatei (umgebung.licht) ---
+  licht: U.licht,
 
-  // --- Nebel / Dunst --------------------------------------------------
-  nebel: {
-    start: 120,                // ab hier beginnt der Dunst (Meter)
-    ende: 3000,                // hier ist der Dunst am dichtesten (Meter)
-    maxDichte: 0.45,           // so dicht wird der Dunst höchstens (0..1). Nur leichte Tiefenwirkung:
-                               // je höher, desto eher entsteht wieder ein milchiger Dunststreifen
-    bergDunst: 0.15,           // Hintergrundberge: so viel Dunst liegt auf den Gipfeln (0..1)
-    bergDunstUnten: 0.3,       // ... und so viel kommt zum Bergfuss hin dazu. Fuss = beide zusammen,
-                               // sollte etwa maxDichte sein, dann passt der Fuss zum fernen Gelände
-  },
+  // --- Nebel / Dunst (start, ende, maxDichte, Dunst auf den Bergen): Streckendatei (umgebung.nebel) ---
+  nebel: U.nebel,
 
   // --- Strasse --------------------------------------------------------
   strasse: {
@@ -65,9 +37,9 @@ export const CONFIG = {
     mittellinieStrich: 3,      // davon ist so viel Strich (Meter)
     mittellinieBreite: 0.2,    // Breite der Mittellinie (Meter)
     mittellinieMinPixel: 1,    // in der Ferne mind. so viele Bildpunkte breit (gegen Flimmern)
-    startBeiMeter: 25,         // Startlinie: so viele Meter nach Strassenanfang
-    zielVorEnde: 45,           // Ziellinie: so viele Meter vor Strassenende
-    spawnBeiMeter: 10,         // hier steht das Auto beim Start
+    startBeiMeter: S.strasse.startBeiMeter,  // Startlinie: so viele Meter nach Strassenanfang (Streckendatei)
+    zielVorEnde: S.strasse.zielVorEnde,  // Ziellinie: so viele Meter vor Strassenende (Streckendatei)
+    spawnBeiMeter: S.strasse.spawnBeiMeter,  // hier steht das Auto beim Start (Streckendatei)
   },
 
   // --- Beläge (Meilenstein 3a) ------------------------------------------
@@ -79,62 +51,9 @@ export const CONFIG = {
   },
 
   // --- Nebenwege (Meilenstein 3a) ---------------------------------------
-  // Die Etappe biegt von der Hauptstrasse auf einen Nebenweg ab und mündet später wieder ein.
-  // Die Hauptstrasse läuft an beiden Stellen als Stummel weiter (abgesperrt, Ende versteckt).
-  // Die Stützpunkte des Nebenwegs stehen in js/track.js (gerechnet mit tools/nebenweg-bogen.mjs).
-  // Weiterer Nebenweg: neuer Eintrag hier + Stützpunkte (Anleitung in STAND.md, Meilenstein 3b).
-  nebenwege: [
-    {
-      name: 'Talschleife',
-      abzweig: 800,            // hier verlässt die Etappe die Hauptstrasse (Streckenmeter, Anfang der Abbiege-Kurve)
-      einmuendung: 1020.5,     // hier ist sie wieder auf der Hauptstrasse (Ende der Einmündungs-Kurve)
-      belag: 'schotter',       // Belag dazwischen
-      sperreAbzweig: 'band',   // Absperrung auf dem Stummel: 'band', 'reifen', 'heu', 'zaun' (leer = reihum)
-      sperreEinmuendung: 'reifen',
-      // Form der Stummel (fehlt etwas, gilt der Wert aus "stummel" unten)
-      stummelAbzweig: { kurve: -75, radius: 50, seitenschutz: 'zaun' },
-      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'planke' },
-    },
-    {
-      // M3b: nach den Kehren, ca. 415 m: biegt nach rechts ab (Talseite), lange Gerade über die Alp, kommt von links
-      // (Bergseite) zurück. Die Felswand hört davor auf und beginnt danach wieder.
-      name: 'Almweg',
-      abzweig: 1985.6,         // Werte laut tools/nebenweg-bogen.mjs (Ausgabe "Streckenmeter")
-      einmuendung: 2400.8,
-      belag: 'schotter',
-      // Absperrungen ohne Angabe: reihum (absperrung.reihenfolge), hier Strohballen (heu) und Holzböcke (zaun)
-      // Waldrand (M3b, sonst wie nebenwegWald): Alp und Wiese, nur lockere Gruppen mit viel Wiese dazwischen.
-      // Dichter nur, wo man sonst abkürzen könnte (geprüft mit tools/nebenweg-wald.mjs)
-      wald: {
-        innenAbKruemmung: 1 / 130, // auch die weiten Kurven (Radius bis 130 m) haben eine dichte Innenseite
-        innen: { abstand: [6.2, 6.9], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [9, 12] },
-        aussen: { abstand: [8, 15], gruppe: [1, 3], schritt: [2, 3.5], luecke: [16, 38], zweiteReihe: 0.15, zweiteAbstand: [11, 16] },
-      },
-      // Kreuzungen mit flacherem Winkel (40-45°) als bei der Talschleife: Etappe und Stummel liegen länger
-      // übereinander, darum liegt der Stummel länger genau auf der Höhe der Etappe (hoeheAngleichen)
-      stummelAbzweig: { kurve: -70, radius: 50, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
-      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
-    },
-    {
-      // M3b: auf der Abfahrt, nach rechts über die Wiese (Feldweg), ca. 310 m. Checkpoint 3 liegt darauf.
-      name: 'Wiesenweg',
-      abzweig: 2797.7,
-      einmuendung: 3107.9,
-      belag: 'wiesenweg',
-      // Absperrungen ohne Angabe: reihum (absperrung.reihenfolge), hier Flatterband (band) und Reifen
-      // Waldrand (M3b, sonst wie nebenwegWald): Alp und Wiese, nur lockere Gruppen mit viel Wiese dazwischen.
-      // Dichter nur, wo man sonst abkürzen könnte (geprüft mit tools/nebenweg-wald.mjs)
-      wald: {
-        innenAbKruemmung: 1 / 130, // auch die weiten Kurven (Radius bis 130 m) haben eine dichte Innenseite
-        innen: { abstand: [6.2, 6.9], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [9, 12] },
-        aussen: { abstand: [8, 15], gruppe: [1, 3], schritt: [2, 3.5], luecke: [16, 38], zweiteReihe: 0.15, zweiteAbstand: [11, 16] },
-        steinAnteil: 0.3,          // Wiese: mehr Felsbrocken statt Tannen
-      },
-      // Kreuzungen mit flachem Winkel (36°): Stummel länger auf der Höhe der Etappe (siehe Almweg)
-      stummelAbzweig: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [32, 54] },
-      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [32, 54] },
-    },
-  ],
+  // Untergrund-Abschnitte: die Etappe biegt auf einen Nebenweg ab und mündet später wieder ein (Stummel abgesperrt).
+  // Seit M10a in der Streckendatei (Block "nebenwege", Stützpunkte dort in "punkte").
+  nebenwege: S.nebenwege,
   // Standardform eines Stummels (Hauptstrasse, die hinter der Absperrung weiterläuft)
   stummel: {
     gerade: 34,                // erst so weit geradeaus (Meter ab Abzweig/Einmündung)
@@ -147,7 +66,7 @@ export const CONFIG = {
     seitenschutz: 'planke',    // links und rechts hinter der Absperrung: 'planke' (Leitplanke) oder 'zaun' (Holzzaun)
     schutzBisAbstand: 52,      // Seitenschutz läuft, bis er so weit von der Etappe weg ist (grenze.maxAbstand + Reserve)
     sichtschutz: 14,           // so viele Tannen stehen dicht quer vor dem Stummel-Ende (Sichtschutz)
-    sichtschutzSeed: 3301,     // Zufallszahl für den Sichtschutz
+    sichtschutzSeed: Z.stummelSichtschutz,  // Zufallszahl für den Sichtschutz (Streckendatei)
   },
   // Waldrand am Nebenweg (M3a, seit M3a.1 locker; js/sprites.js): Tannen in Gruppen mit Lücken,
   // ein paar Felsbrocken, dazwischen Wiese. Dicht nur auf der Innenseite der Kurven (nur dort kann man
@@ -155,7 +74,7 @@ export const CONFIG = {
   // die Strasse) und node tools/abkuerzungen.mjs --pruefen.
   nebenwegWald: {
     an: true,
-    seed: 6060,                // Zufallszahl
+    seed: Z.nebenwegWald,  // Zufallszahl (Streckendatei)
     vor: 42,                   // so viele Meter vor dem Abzweig beginnt der Waldrand ...
     nach: 72,                  // ... und so viele nach der Einmündung hört er auf
     innenAbKruemmung: 1 / 90,  // ab dieser Krümmung (1/Radius) gilt eine Seite als Kurven-Innenseite ...
@@ -165,17 +84,7 @@ export const CONFIG = {
     // Aussenseite und Geraden: lockere Gruppen, grosse Lücken (Wiese), nur fürs Auge
     aussen: { abstand: [6.8, 10], gruppe: [1, 4], schritt: [1.8, 3], luecke: [7, 20], zweiteReihe: 0.3, zweiteAbstand: [10, 14] },
     steinAnteil: 0.1,          // so ein Anteil wird statt einer Tanne ein Felsbrocken
-    // von Hand gesetzte Gruppen (Tannen und Felsen gemischt): s = Streckenmeter (Mitte), seite -1 links / +1 rechts
-    // 766 links: vor dem Abzweig, schliesst wie in M3a die Linien aus der freien Kurve 482-752 bis an den Abzweig
-    gruppen: [
-      { s: 766, seite: -1, abstand: [7, 10.5], laenge: 12, anzahl: 6, steine: 0.4 },
-      // M3b: Almweg, Innenseite der grossen Linkskurve (dort blieb eine Lücke für eine Abkürzungs-Linie)
-      { s: 2075, seite: -1, abstand: [9, 22], laenge: 30, anzahl: 10, steine: 0.3 },
-      // M3b: Wiesenweg, kleines Wäldchen in der Ecke rechts vom Abzweig: Die Kreuzung ist flach (36°),
-      // quer über die Wiese sparte man dort sonst bis 8.7 m (1.7 s)
-      { s: 2765, seite: 1, abstand: [7, 22], laenge: 34, anzahl: 18, steine: 0.25 },
-      { s: 2812, seite: 1, abstand: [7, 18], laenge: 30, anzahl: 14, steine: 0.25 },
-    ],
+    gruppen: N.nebenwegWaldGruppen, // von Hand gesetzte Gruppen (Tannen und Felsen): Streckendatei
     steinHoehe: [0.9, 1.6],    // Höhe der Felsbrocken (Meter)
     hoehe: [4.5, 11],          // Höhe der Tannen (vorne eher junge, kleine)
     stummelFrei: 7,            // so viel Platz bleibt um die Mitte der Stummel (Asphalt, Bankett, Seitenschutz)
@@ -188,7 +97,7 @@ export const CONFIG = {
     abstandWeg: 0.5,           // M3a.1: Leitwand steht so weit (Meter) neben dem Bankett der Etappe (Kurven-Aussenseite)
     kreisRadius: 0.32,         // Kollision: Kreise entlang der Leitwand ...
     kreisAbstand: 0.5,         // ... alle so viele Meter
-    seed: 4711,                // Zufallszahl (Höhe der Reifenstapel, schiefe Böcke ...)
+    seed: Z.absperrung,  // Zufallszahl (Höhe der Reifenstapel, schiefe Böcke ...) (Streckendatei)
     sichtweite: 350,           // M3b: Absperrungen der weiteren Nebenwege weiter weg als das nicht zeichnen (dort unter 1 Pixel)
     // Grössen seit M3a.1 deutlich grösser (aus 60-80 m erkennbar)
     band: { pfostenAbstand: 2.6, hoehe: 1.5, hoehen: [1.38, 0.9], durchhang: 0.06 },      // Warnstangen (Abstand, Höhe), zwei Bänder, Durchhang
@@ -216,25 +125,11 @@ export const CONFIG = {
   // der Verlängerungen prüfen: node tools/stummel-sicht.mjs (Ende darf man nie sehen).
   startZiel: {
     an: true,                  // false = alles wie vor M3c (Strasse hört an Start und Ziel auf)
-    seed: 3030,                // Zufallszahl für Zuschauer, Strohballen, Bäume
+    seed: Z.startZiel,  // Zufallszahl für Zuschauer, Strohballen, Bäume (Streckendatei)
     zielBremse: 0.6,           // nach dem Ziel bremst das Auto von selbst so stark (0..1; bis M3c 0.35). Aus 180 km/h
                                // steht es so nach ca. 130 m (Ausrollstrecke bis zur Absperrung: ca. 200 m)
-    // Verlängerung hinter dem Start (Richtung Strassenanfang, hinter dem Auto)
-    start: {
-      form: { gerade: 80, kurve: 75, radius: 45, rest: 50, kuppe: 1.8, abfall: 0.08, seitenschutz: 'zaun', sichtschutz: 16, sichtschutzSeed: 3401 },
-      sperreBei: 34,           // Absperrung so viele Meter hinter dem Strassenanfang (Auto steht 10 m davor)
-      sperreBogen: 1.6,        // ... Mitte der Absperrung so viel weiter hinten als die Enden (gebogen)
-      sperreUeber: 0.3,        // ... reicht so weit über das Bankett hinaus (dort beginnt der Seitenschutz)
-      sperreArt: 'heu',        // 'band', 'reifen', 'heu', 'zaun' (wie bei den Nebenwegen)
-    },
-    // Verlängerung hinter dem Ziel: Ausrollstrecke, dann Absperrung, Kurve, versteckt
-    ziel: {
-      form: { gerade: 175, kurve: -80, radius: 50, rest: 55, kuppe: 2.4, abfall: 0.09, seitenschutz: 'zaun', sichtschutz: 18, sichtschutzSeed: 3402 },
-      sperreBei: 155,          // Absperrung so viele Meter nach dem Strassenende (Ziellinie 45 m davor: ca. 200 m Ausrollen)
-      sperreBogen: 2.0,
-      sperreUeber: 0.3,
-      sperreArt: 'reifen',
-    },
+    start: S.startZiel.start,  // Verlängerung hinter dem Start (Form, Absperrung): Streckendatei
+    ziel: S.startZiel.ziel,    // Verlängerung hinter dem Ziel (Ausrollstrecke, Absperrung, Form): Streckendatei
     bereich: { vor: 70, nach: 70 }, // Absperrband und Zuschauer so viele Meter vor und nach der Linie (Start: ab der Absperrung)
     sichtweite: 650,           // weiter weg von der Kamera wird der Aufbau nicht gezeichnet (unter 1 Pixel)
     // Bögen über Start- und Ziellinie (Alu-Gerüst). Pfosten ausserhalb von Band und Zaun, Banner hoch über Auto und Kamera
@@ -276,143 +171,12 @@ export const CONFIG = {
       haare: ['#3b2a1c', '#1c1714', '#c9a24a', '#7a3b1e', '#9a9a9a'],
       fahnenRot: '#d0202a',     // die meisten Fahnen sind rot (Schweizer Kreuz)
     },
-    // Bäume und Büsche: Übergang zur Landschaft. gruppen: bereich, seite, Meter ab der Linie (von, bis), seitlich (von, bis), Anzahl Gruppen
-    landschaft: {
-      gruppen: [
-        { bereich: 'start', seite: 1, m: [-90, 120], lat: [22, 70], anzahl: 8 },
-        { bereich: 'start', seite: -1, m: [-110, -30], lat: [16, 60], anzahl: 5 },
-        { bereich: 'start', seite: -1, m: [-230, -110], lat: [12, 50], anzahl: 6 },
-        { bereich: 'start', seite: 1, m: [-230, -110], lat: [12, 50], anzahl: 6 },
-        { bereich: 'ziel', seite: 1, m: [-90, 120], lat: [24, 70], anzahl: 8 },
-        { bereich: 'ziel', seite: -1, m: [-90, 120], lat: [22, 70], anzahl: 7 },
-        { bereich: 'ziel', seite: 1, m: [80, 190], lat: [14, 40], anzahl: 4 },   // entlang der Ausrollstrecke
-        { bereich: 'ziel', seite: -1, m: [80, 190], lat: [14, 40], anzahl: 4 },
-        { bereich: 'ziel', seite: 1, m: [190, 350], lat: [12, 50], anzahl: 8 },
-        { bereich: 'ziel', seite: -1, m: [190, 350], lat: [12, 50], anzahl: 8 },
-      ],
-      proGruppe: [3, 7],        // Bäume pro Gruppe
-      gruppeRadius: 7,          // ... so weit verstreut
-      laubAnteil: 0.3,          // so ein Anteil Laubbäume (Rest Tannen)
-      strasse: 11,              // Bäume mindestens so weit von jeder Strassenmitte
-      buesche: 45,              // Büsche je Bereich (Versuche)
-      buschLat: [8, 30],        // ... so weit neben der Strasse
-    },
+    landschaft: S.startZiel.landschaft, // Bäume und Büsche um Start und Ziel (Gruppen): Streckendatei
   },
 
   // --- Leben an der Strecke (Meilenstein 3d, js/leben.js) --------------
-  // Wiesenweg als Alpweide (Zaun, Kühe, Alphütte, Heustadel, Brunnen, Steinmännchen, Wegweiser, Heurollen,
-  // Findlinge), drei Fan-Spots und zwei Unfallautos (stehende Wracks). Alles hat eigene seeds: Bäume, Kühe,
-  // Zäune und Schilder von vorher bleiben genau, wo sie sind. Orte: s = Streckenmeter, seite -1 links / +1
-  // rechts (in Fahrtrichtung), lat = so weit neben der Strassenmitte (Meter), drehung in Grad.
-  // Regeln (prüft tools/leben-test.mjs): nie näher als abstandStrasse an einer Strassenmitte (auch Stummel),
-  // nie auf der Innenseite einer Kurve (Abkürzungs-Kurven plus Puffer, dazu jede engere Kurve der Etappe).
-  leben: {
-    an: true,                  // false = alles wie vor M3d
-    seed: 3131,                // Zufallszahl für Fans, Stühle, Steine, Schäden (gleich = gleicher Aufbau)
-    sichtweite: 600,           // weiter weg von der Kamera wird ein Ort nicht gezeichnet (unter 1 Pixel)
-    abstandStrasse: 6.5,       // Hütten, Details, Wracks mindestens so weit neben jeder Strassenmitte
-    pufferNichtSchneiden: 20,  // Innenseite der gesperrten Kurven (sVon–sBis plus so viel) bleibt frei
-    pufferSchneiden: 50,       // ... und der freien Kurven
-    innenRadius: 130,          // dazu jede Kurve enger als das (auch auf den Nebenwegen): Innenseite frei ...
-    innenVorNach: 20,          // ... auch so viele Meter vor und nach der Kurve ...
-    innenBreite: 60,           // ... bis so weit neben der Strasse
-
-    // Holzzaun am Wiesenweg (dazu der Zaun von M2a rechts bei 2931–3068 m). Gebaut wie die anderen Zäune
-    // (Abstand per randAbstand an die schmale Strasse angepasst), mit Weidetoren (Lücken wie in M2a)
-    zaeune: [
-      { seite: -1, von: 2888, bis: 2952, latten: 3, tore: [2905] },  // links nach Checkpoint 3: Weide mit der Herde von vorher; tore: Lücke ab diesem Meter (leer = reihum)
-    ],
-    zaunSeed: 3132,            // Zufall für Tore, Latten, schiefe Pfosten der neuen Zäune
-    torAlle: [24, 40],         // ein Weidetor alle so viele Meter Zaun
-    tor: [4, 5.5],             // Breite der Lücke (Meter)
-
-    // Neue Kühe (eigene Herden mit eigenem seed; die alten Kühe sind in js/kuhfolge.js eingefroren)
-    kuehe: {
-      seed: 3133,
-      herdenAbstand: 26,       // neue Herden mindestens so weit von jeder anderen Herde (Mitte zu Mitte)
-      herden: [
-        { s: 3008, seite: -1, lat: [13, 24], anzahl: 4, radius: 6 },   // vor der Alphütte
-        { s: 2985, seite: 1, lat: [11, 18], anzahl: 3, radius: 5 },    // rechts hinter dem Zaun von M2a
-        { s: 2862, seite: 1, lat: [26, 36], anzahl: 3, radius: 6 },    // rechts am Hang beim Abzweig
-      ],
-    },
-
-    // Wiesenweg (2798–3108 m): Alphütte, Heustadel, Kleinigkeiten
-    wiesenweg: {
-      huette: { s: 2988, seite: -1, lat: 38, drehung: 12, laenge: 7.6, tiefe: 5.6, hoehe: 2.5 }, // Alphütte (laenge entlang der Strasse)
-      stadel: { s: 2900, seite: 1, lat: 52, drehung: -18, laenge: 5.2, tiefe: 4.2, hoehe: 2.3 },  // kleiner Heustadel weiter weg
-      brunnen: { s: 2979, seite: -1, lat: 31, drehung: 20 },       // Brunnentrog mit Röhre
-      holzstapel: true,                                           // Holzstapel an der Hüttenwand
-      wegweiser: { s: 2957, seite: -1, lat: 7.4 },                // gelber Wanderwegweiser (erfundene Ziele)
-      steinmaennchen: [[2852, 1, 21], [2918, 1, 31], [3043, -1, 20]], // [s, seite, lat]
-      heurollen: [[2866, 1, 19], [2869.5, 1, 22.2], [2862, 1, 23.5], [3057, -1, 25], [3062.5, -1, 28]],
-      findlinge: [[2908, -1, 25, 2.0], [3000, 1, 13, 1.6], [2945, 1, 42, 2.6]], // [s, seite, lat, Höhe]
-    },
-
-    // Fan-Spots (Zuschauer wie in M3c: Pixel-Figuren, schauen zur Strasse, hinter dem Absperrband)
-    fans: {
-      abstand: 7.2,            // Zuschauer mindestens so weit neben jeder Strassenmitte
-      gruppe: [3, 7],          // Grösse der Gruppen
-      gruppeLaenge: 6,         // eine Gruppe steht über so viele Meter verteilt
-      radius: 0.35,            // Kollision und Platzbedarf je Zuschauer
-      dicht: 0.75,             // so nah stehen zwei Zuschauer höchstens
-      blickStreuung: 0.6,      // Blick zur Strasse, so viel (Bogenmass) zufällig daneben
-      posen: [0.22, 0.18, 0.14, 0.14, 0.1, 0.12, 0.1], // stehend, winkend, jubelnd, Schweizer Fahne, Fotograf, Mütze, Fahne
-      kinder: 0.1,
-      spots: [
-        {
-          name: 'kehren', s: [1694, 1716], seite: 1, lat: [8.5, 19], anzahl: 22, blickS: 1668, // am Hang aussen an Kehre 3
-          band: [[1692, 1718, 7.9]],               // Absperrband: von, bis, lat
-          banner: [[1704.5, 9.6, 'kehre']],          // Fan-Banner auf zwei Pfosten: s, lat, Name (lebenbild.js)
-          fahnen: [[1697, 16, 'kreuz'], [1706, 13.5, 'gruen']],
-          stuehle: 3,                              // Klappstühle (mit sitzenden Fans)
-        },
-        {
-          name: 'pass', s: [2590, 2652], seite: 1, lat: [8, 17], anzahl: 28, blickS: null,   // Passhöhe, grösster Spot
-          band: [[2596, 2656, 7.2]],
-          banner: [[2616, 9.2, 'pass'], [2641, 9.4, 'turbo']],
-          fahnen: [[2600, 11, 'kreuz'], [2624, 12.5, 'kreuz'], [2646, 11.5, 'rot']],
-          stuehle: 4,
-          camper: [2630, 21.5, 14],                // Wohnmobil: s, lat, Drehung
-          zelt: [2609, 17.5],                      // Pavillon
-        },
-        {
-          name: 'alm', s: [1970, 1990], seite: -1, lat: [8.5, 14], anzahl: 14, blickS: 1984,  // hinter der Strohballen-Wand am Almweg-Abzweig
-          band: [[1968, 1986, 7.8]],
-          banner: [[1977, 9.4, 'alm']],
-          fahnen: [[1984, 12.5, 'kreuz']],
-          stuehle: 2,
-          pickup: [1979, 18.5, -60],               // parkierter Pickup: s, lat, Drehung
-        },
-      ],
-    },
-
-    // Unfallautos (stehende Wracks, Fantasie-Rallyeautos im Stil der 80er-Gruppe B, keine echten Modelle)
-    //   typ 'brunnwald' (Keil-Coupé) oder 'vallora' (kantiger Kompakter), Farben, Startnummer, Sponsor
-    //   baum: [s, seite, lat] = das Auto steckt mit der Front am nächsten Baum dort (Baum bleibt, wo er ist)
-    //   sonst s/seite/lat/drehung (Grad: 0 = in Fahrtrichtung, 90 = schaut von der Strasse weg)
-    //   warndreieck: so viele Meter davor am Strassenrand (lat), posten: Streckenposten [s, lat]
-    wracks: [
-      {
-        name: 'tal', typ: 'brunnwald', lack: '#f2f0e8', akzent: '#c8202a', nummer: '14', sponsor: 'firn',
-        baum: [638, 1, 12.2], anstoss: 0.28, winkel: 42,   // Front 0.28 m neben der Mitte am Stamm, so schräg zur Strasse
-        schaden: 'front',                                   // Front eingedrückt, Haube offen, Rad schief
-        warndreieck: { vor: 24, lat: 6.3 }, flagge: { vor: 20, lat: 7.0 },
-        posten: [[651, 13.5], [626, 15.5]],
-      },
-      {
-        name: 'abfahrt', typ: 'vallora', lack: '#2f62c8', akzent: '#f0c020', nummer: '23', sponsor: 'murmeli',
-        s: 2488, seite: 1, lat: 9.6, drehung: 62,           // an der Böschung gleich nach dem Ende der Leitplanke (vor dem Weidezaun)
-        schaden: 'seite',                                   // Seite eingedrückt, Rad ab, Tür abgesprungen, Flügel schief
-        warndreieck: { vor: 26, lat: 5.85 }, flagge: { vor: 18, lat: 6.6 },
-        posten: [[2503, 13.5], [2474, 12.5]],
-      },
-    ],
-    kreisRadius: 0.92,         // Wrack-Kollision: drei Kreise entlang der Karosserie mit diesem Radius
-    postenJacken: ['#ff6a10', '#e2f02a'], // Warnwesten (orange, gelb)
-    postenFahne: '#f4d21a',    // gelbe Flagge
-    rauch: { anzahl: 6, leben: 5, steigen: 0.5, groesse: [0.5, 1.9], dichte: 0.38, farbe: '#a9a7a2', wind: [0.35, 0.15] }, // dezente Rauchfahne je Wrack (Wölkchen, Lebensdauer s, Steigen m/s, Grösse m, Dichte 0..1)
-  },
+  // Alpweide, Fan-Spots, Wracks, Zäune und Herden: alles Orte dieser Strecke, darum ganz in der Streckendatei (Block "leben")
+  leben: S.leben,
 
   // --- Gelände --------------------------------------------------------
   gelaende: {
@@ -427,14 +191,14 @@ export const CONFIG = {
     flachBis: 7.5,             // bis zu diesem Abstand von der Strassenmitte ist es flach
     uebergang: 12,             // danach geht es über so viele Meter ins natürliche Gelände
     randSteigung: 0.35,        // so steil darf es gleich neben der Strasse höchstens ansteigen
-    huegelHoehe: 7,            // Höhe der kleinen Zufallshügel
-    grundWeite: 250,           // Grundhöhe der Landschaft = Strassenhöhe, über so viele Meter gemittelt
-    wandBerg: 75,              // Berg hinter den Felswänden (Höhe über der Grundhöhe)
-    talTiefe: 55,              // Tal unter den Abhängen (Tiefe unter der Grundhöhe)
-    randAnstiegAb: 350,        // ab diesem Abstand von der Strecke steigt das Land an ...
-    randAnstiegBis: 1000,      // ... bis hier ...
-    randHoehe: 170,            // ... um so viele Meter (Talflanken, liegen im Dunst)
-    seed: 1987,                // Zufallszahl für Hügel (gleich = gleiches Gelände)
+    huegelHoehe: U.gelaende.huegelHoehe,  // Höhe der kleinen Zufallshügel (Streckendatei)
+    grundWeite: U.gelaende.grundWeite,  // Grundhöhe der Landschaft = Strassenhöhe, über so viele Meter gemittelt (Streckendatei)
+    wandBerg: U.gelaende.wandBerg,  // Berg hinter den Felswänden (Höhe über der Grundhöhe) (Streckendatei)
+    talTiefe: U.gelaende.talTiefe,  // Tal unter den Abhängen (Tiefe unter der Grundhöhe) (Streckendatei)
+    randAnstiegAb: U.gelaende.randAnstiegAb,  // ab diesem Abstand von der Strecke steigt das Land an ... (Streckendatei)
+    randAnstiegBis: U.gelaende.randAnstiegBis,  // ... bis hier ... (Streckendatei)
+    randHoehe: U.gelaende.randHoehe,  // ... um so viele Meter (Talflanken, liegen im Dunst) (Streckendatei)
+    seed: Z.gelaende,  // Zufallszahl für Hügel (gleich = gleiches Gelände) (Streckendatei)
   },
 
   // --- Felswand / Abhang ----------------------------------------------
@@ -454,10 +218,10 @@ export const CONFIG = {
 
   // --- Sprites (Bäume, Steine) ----------------------------------------
   sprites: {
-    seed: 4242,                // Zufallszahl für die Platzierung (gleich = gleiche Welt)
-    tannenProKm: 4200,         // Versuche pro km Strecke (wie viele stehen bleiben, hängt vom Abschnitt ab)
-    laubProKm: 2800,
-    steineProKm: 1600,
+    seed: Z.sprites,  // Zufallszahl für die Platzierung (gleich = gleiche Welt) (Streckendatei)
+    tannenProKm: N.sprites.tannenProKm,  // Versuche pro km Strecke (wie viele stehen bleiben, hängt vom Abschnitt ab) (Streckendatei)
+    laubProKm: N.sprites.laubProKm,  // (Streckendatei)
+    steineProKm: N.sprites.steineProKm,  // (Streckendatei)
     breite: 230,               // so weit links und rechts der Strasse stehen Sprites (Meter)
     verteilung: 1.8,           // > 1 = nahe der Strasse dichter, weiter weg dünner
     mindestAbstand: 9,         // so nah dürfen Objekte an die Strassenmitte
@@ -473,7 +237,7 @@ export const CONFIG = {
   // Eigener seed: die Bäume und Steine von oben bleiben genau gleich.
   buesche: {
     an: true,                  // false = keine Büsche, Jungtannen und Grasbüschel
-    seed: 5150,                // Zufallszahl (gleich = gleiche Büsche)
+    seed: Z.buesche,  // Zufallszahl (gleich = gleiche Büsche) (Streckendatei)
     mindestAbstand: 6,         // so nah dürfen sie an die Strassenmitte (Bankett endet bei 5.5)
     hoehe: [0.6, 1.2],         // Büsche: Höhe von bis (Meter)
     grasHoehe: [0.45, 0.85],   // hohe Gras-/Blumenbüschel
@@ -488,8 +252,8 @@ export const CONFIG = {
     wieseProKm: 260,           // vereinzelte Büsche und Grasbüschel auf den Wiesen (Versuche pro km)
     breite: 140,               // Waldrand und Wiese: so weit neben der Strasse (Meter)
     verteilung: 1.6,           // > 1 = nahe der Strasse dichter
-    blueten: 0.18,             // so ein Anteil der Büsche blüht (rosa Alpenrosen)
-    beeren: 0.15,              // ... so ein Anteil sind Heidelbeer-Sträucher
+    blueten: N.buesche.blueten,  // so ein Anteil der Büsche blüht (rosa Alpenrosen) (Streckendatei)
+    beeren: N.buesche.beeren,  // ... so ein Anteil sind Heidelbeer-Sträucher (Streckendatei)
     abstandKuh: 1.8,           // so weit weg von Kühen
     maxSteil: 0.6,             // nicht an steileren Hängen (0.6 = 60 %, dort ist Fels)
   },
@@ -503,15 +267,15 @@ export const CONFIG = {
     farbeAb: [140, 230],       // ab so vielen Metern neben der Strasse wird eingefärbt, voll ab dem zweiten Wert
     dichteAb: [250, 600],      // Talflanken: ab hier wird der Wald dichter als an der Strasse, ab dem zweiten Wert normal
                                // (an der Strasse gilt die Baumdichte des Abschnitts, z. B. im Tal nur 35 %)
-    waldFarbe: '#224821',      // Tannengrün der Waldstücke ...
-    waldDunkel: '#163418',     // ... mit dunkleren Flecken (Kronen)
+    waldFarbe: U.fernwald.waldFarbe,  // Tannengrün der Waldstücke ... (Streckendatei)
+    waldDunkel: U.fernwald.waldDunkel,  // ... mit dunkleren Flecken (Kronen) (Streckendatei)
     waldStaerke: 1.0,          // wie stark der Wald die Grasfarbe ersetzt (0..1)
-    wiesenFarbe: '#5da838',    // offene Wiese in der Ferne: etwas heller
+    wiesenFarbe: U.fernwald.wiesenFarbe,  // offene Wiese in der Ferne: etwas heller (Streckendatei)
     wiesenStaerke: 0.35,       // ... so stark (0 = wie früher)
-    geroellFarbe: '#77736a',   // Geröllflecken an Hängen
+    geroellFarbe: U.fernwald.geroellFarbe,  // Geröllflecken an Hängen (Streckendatei)
     geroell: 0.74,             // Geröll, wo das Rauschen über diesem Wert liegt (höher = weniger Flecken)
     baeume: true,              // false = keine Fernbäume
-    seed: 2024,                // Zufallszahl für die Fernbäume
+    seed: Z.fernwald,  // Zufallszahl für die Fernbäume (Streckendatei)
     baeumeProKm: 6500,         // Versuche pro km Strecke (stehen bleiben nur die an Waldstellen)
     von: 195,                  // Fernbäume ab so vielen Metern neben der Strasse ...
     voll: 270,                 // ... voll dicht ab hier (weicher Übergang zu den nahen Bäumen)
@@ -528,14 +292,14 @@ export const CONFIG = {
   // zufällige Blickrichtung; gezeigt wird die Ansicht, die zum Winkel zur Kamera passt (8 Ansichten).
   kuehe: {
     an: true,                  // false = keine Kühe
-    seed: 1300,                // Zufallszahl (gleich = gleiche Kühe an gleicher Stelle). M3a: 1291 -> 1300, die grösste Weide im Tal ist jetzt Wald am Nebenweg
-    anzahl: 34,                // so viele Kühe insgesamt (ungefähr; passen nicht alle hin, sind es weniger)
+    seed: Z.kuehe,  // Zufallszahl (gleich = gleiche Kühe an gleicher Stelle; Streckendatei)
+    anzahl: N.kuehe.anzahl,  // so viele Kühe insgesamt (ungefähr; passen nicht alle hin, sind es weniger) (Streckendatei)
     herde: [2, 6],             // Herdengrösse von bis
-    einzeln: 3,                // dazu so viele Einzeltiere
-    anteilTal: 0.6,            // so ein Anteil der Kühe steht auf den Weiden im Tal (Rest auf den Alpwiesen)
-    alpAb: 120,                // Alpwiese: Strasse höher als so viele Meter über dem Start ...
-    alpBreite: [10, 30],       // ... Kühe so weit neben der Strasse (mehr als 45 m kommt man mit dem Auto nicht hin)
-    passBei: 2586,             // nahe dieser Stelle (Passhöhe, Streckenmeter) steht sicher eine Herde auf der Alpwiese
+    einzeln: N.kuehe.einzeln,  // dazu so viele Einzeltiere (Streckendatei)
+    anteilTal: N.kuehe.anteilTal,  // so ein Anteil der Kühe steht auf den Weiden im Tal (Rest auf den Alpwiesen) (Streckendatei)
+    alpAb: N.kuehe.alpAb,  // Alpwiese: Strasse höher als so viele Meter über dem Start ... (Streckendatei)
+    alpBreite: N.kuehe.alpBreite,  // ... Kühe so weit neben der Strasse (mehr als 45 m kommt man mit dem Auto nicht hin) (Streckendatei)
+    passBei: N.kuehe.passBei,  // nahe dieser Stelle (Passhöhe, Streckenmeter) steht sicher eine Herde auf der Alpwiese (Streckendatei)
     weideTiefe: [3, 25],       // Weide hinter einem Zaun: so weit hinter dem Zaun
     abstandStrasse: 8,         // nie näher an die Strassenmitte (auch nicht an eine andere Kehre)
     abstandZaun: 3.5,          // so weit weg von Zaun, Leitplanke und Schildern (nicht in die Pfosten)
@@ -555,24 +319,10 @@ export const CONFIG = {
     groesse: [0.92, 1.06],     // Grösse (1 = 1.4 m hoch, 2.4 m lang)
     radius: 0.95,              // Kollision: Kreis um den Körper (Meter) ...
     radiusLiegend: 0.75,       // ... bei liegenden Kühen
-    // M3c: zusätzliche Herden beim Start und beim Ziel (s = Streckenmeter, seite -1 links / +1 rechts,
-    // lat = so weit neben der Strasse). Werden zuletzt geplant: alle anderen Kühe bleiben gleich.
-    zusatzHerden: [
-      { s: 150, seite: 1, lat: [26, 40], anzahl: 5 },   // Start: Wiese rechts, nach dem Zuschauerbereich
-      { s: 3505, seite: 1, lat: [20, 34], anzahl: 5 },  // Ziel: Weide rechts hinter dem Zaun, vor dem Zuschauerbereich
-    ],
+    zusatzHerden: N.kuehe.zusatzHerden, // M3c: zusätzliche Herden beim Start und beim Ziel (Streckendatei)
   },
 
-  // --- Hintergrundberge -----------------------------------------------
-  berge: {
-    anzahl: 34,                // Berge im hinteren Kranz (vorne kommen 70 % dazu)
-    abstand: [1400, 2200],     // Entfernung hinter dem Geländerand (Meter)
-    hoehe: [1000, 1750],       // Gipfelhöhe (bei bezugsAbstand, weiter weg etwas höher)
-    bezugsAbstand: 3300,       // bei dieser Entfernung gilt die Gipfelhöhe
-    schneeAb: 0.5,             // Schnee ab diesem Anteil der Höhe
-    fussBis: 0.3,              // bis zu diesem Anteil der Höhe geht der Bergfuss von Grün (farben.bergFuss) in Fels über
-    seed: 77,
-  },
+  berge: U.berge,             // Hintergrundberge (Anzahl, Abstand, Höhe, Schnee): Streckendatei (umgebung.berge)
 
   // --- Fahrphysik -----------------------------------------------------
   auto: {
@@ -1021,7 +771,7 @@ export const CONFIG = {
 
   // --- Checkpoints -------------------------------------------------------
   checkpoints: {
-    beiMeter: [900, 1870, 2880], // wo die Tore stehen (Meter ab Strassenanfang)
+    beiMeter: S.checkpoints,   // wo die Tore stehen (Meter ab Strassenanfang; Streckendatei)
     abkuerzungenVerhindern: true, // true = wer einen Checkpoint auslässt, wird zurückgesetzt
     anzeigeDauer: 3,           // so lange steht die Zwischenzeit oben im Bild (Sekunden)
     torBreite: 12.4,           // Abstand der Pfosten (Strasse 7 m + Bankett)
@@ -1088,8 +838,8 @@ export const CONFIG = {
     sperrQuoteMax: 0.5,        // ... und höchstens so viel (ausser Pflicht-Sperren)
     pflichtGewinn: 12,         // spart eine Abkürzung so viele Meter, wird immer gesperrt
     pflichtZeit: 0.5,          // spart Schneiden mit echter Fahrphysik so viele Sekunden, wird immer gesperrt
-    immerSperren: [],          // Streckenmeter irgendwo in einer Kurve, die immer gesperrt sein soll, z. B. [1520]
-    immerFrei: [],             // Streckenmeter irgendwo in einer Kurve, die immer frei sein soll, z. B. [612]
+    immerSperren: S.abkuerzung.immerSperren,  // Streckenmeter irgendwo in einer Kurve, die immer gesperrt sein soll, z. B. [1520] (Streckendatei)
+    immerFrei: S.abkuerzung.immerFrei,  // Streckenmeter irgendwo in einer Kurve, die immer frei sein soll, z. B. [612] (Streckendatei)
     wieseReihe: 16,            // eine Sperre, die länger als das quer in die Wiese ragt, ...
     wieseDichte: 1.2,          // ... und dort weniger Bäume/Steine pro 100 m² hat, gilt als "offene Wiese"
     wieseFaktor: 0.35,         // offene Wiese: Kurve wird so viel seltener gesperrt (sieht künstlich aus)
@@ -1104,12 +854,12 @@ export const CONFIG = {
   // Halten sie nicht mehr, nur die Reihen neu planen (die Wahl der Kurven bleibt gleich):
   //   node tools/abkuerzungen.mjs --nur-reihen --offen tools/abkuerzungen-offen-m2a.json
   sperren: {
-    seed: 815,                 // Zufallszahl (gleich = gleiche Sperren und gleiche Themen)
+    seed: Z.sperren,  // Zufallszahl (gleich = gleiche Sperren und gleiche Themen) (Streckendatei)
     // Thema pro Kurve (seit M2a.1): 'fels' = nur Felsbrocken mit ein paar kleinen Steinen,
     // 'staemme' = nur umgefallene Baumstämme, 'baeume' = nur Tannengruppen.
     // Leer = per Zufall (seed), Nachbarkurven nie gleich. Von Hand: Schlüssel = ein
     // Streckenmeter in der Kurve, z. B. { 1350: 'fels', 1496: 'staemme', 1789: 'baeume' }
-    themen: {},
+    themen: S.abkuerzung.sperrThemen,  // (Streckendatei)
     // Beimischung: in der ersten Kurve mit Thema "in" wird so ein Anteil der Teile durch
     // "thema" ersetzt (Felsbrocken zwischen den Tannen). anteil: 0 = alle Kurven rein.
     beimischung: { in: 'baeume', thema: 'fels', anteil: 0.2 },
@@ -1151,7 +901,7 @@ export const CONFIG = {
   // Wo was steht, wird beim Laden aus der Strecke abgeleitet (js/strassenrand.js).
   // Gleicher seed = gleiche Zäune und Lücken bei jeder Fahrt.
   strassenrand: {
-    seed: 77,                  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (77: Zäune gut verteilt)
+    seed: Z.strassenrand,  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (Streckendatei)
     abstand: 6.0,              // Abstand Strassenmitte -> Vorderkante Leitplanke (Bankett endet bei 5.5).
                                // Zaun und Schilder stehen etwas dahinter (siehe versatz)
     puffer: 20,                // so viele Meter vor/nach einer gesperrten Kurve ("nicht schneiden") bleibt die Innenseite frei
@@ -2146,7 +1896,7 @@ export const CONFIG = {
     // Pegel bei LAUTSTÄRKE 100 % (Ziele: immer unter dem Motor bei Vollgas). Kein eigener Regler.
     umgebung: {
       an: true,                // false = keine Umgebungsklänge
-      seed: 7007,              // feste Zufallsfolge (gleiches Fahren = gleiche Glocken, Vögel, Jubel)
+      seed: Z.umgebung,  // feste Zufallsfolge (gleiches Fahren = gleiche Glocken, Vögel, Jubel) (Streckendatei)
       maxStimmen: 8,           // höchstens so viele einmalige Umgebungsklänge zugleich (eigener Topf, verdrängt nie Aufprall/Signale)
       // Kuhglocken (Treicheln): jede Herde ist eine Quelle; nur die nächsten läuten
       kuhglocken: {
@@ -2171,11 +1921,7 @@ export const CONFIG = {
       // Publikum an Start, Ziel und den drei Fan-Spots. Orte: Meter ab der Linie (Start/Ziel) bzw. aus leben.fans.spots
       publikum: {
         punktAbstand: 25,      // Klangpunkte alle so viele Meter entlang der Strasse (der nächste gilt)
-        orte: {
-          start: { staerke: 1.0, von: -70, bis: 70 },
-          ziel: { staerke: 1.0, von: -70, bis: 350 },
-          kehren: { staerke: 0.6 }, pass: { staerke: 0.8 }, alm: { staerke: 0.5 },
-        },
+        orte: S.klang.publikumOrte, // Start/Ziel (Meter ab der Linie) und je Fan-Spot (leben.fans.spots): Streckendatei
         gemurmel: {
           pegel: 0.0222,       // RMS des Gemurmels bei "referenz" Metern (ca. -36 dBFS bei Stärke 1)
           referenz: 10, radius: 80, rolloff: 1,
@@ -2211,10 +1957,7 @@ export const CONFIG = {
         tempoDaempfung: 0.7,   // je schneller, desto weniger Rufe: Dichte x (1 - Tempo / hoechstTempo x diesem Wert)
         hoechstTempo: 50,      // m/s (180 km/h)
         ueberblendung: 40,     // an den Abschnittsgrenzen so weich (m)
-        dichte: {              // je Abschnitt (Name wie in track.js; fehlt einer, gilt 0.5)
-          'Start im Tal': 0.7, 'Talabschnitt': 1.0, 'Waldstück': 1.0, 'Kehrengruppe': 0.5, 'Felswand 1': 0,
-          'Almweg': 0.7, 'Passhöhe': 0.15, 'Wiesenweg': 1.0, 'Abfahrt': 0.4, 'Zielgerade': 0.6,
-        },
+        dichte: S.klang.voegelDichte, // je Abschnitt (Streckendatei: abschnitte[].voegel; fehlt einer, gilt 0.5)
       },
       // Brunnen auf der Alpweide (leben.wiesenweg.brunnen): Plätschern aus der Röhre
       brunnen: {
@@ -2226,7 +1969,7 @@ export const CONFIG = {
       // Windböen auf der Passhöhe (unabhängig vom Tempo, zusätzlich zum Fahrtwind)
       boeen: {
         pegel: 0.032,          // RMS bei voller Stärke (ca. -30 dBFS)
-        abschnitt: 'Passhöhe', // Abschnitt aus track.js: dort voll ...
+        abschnitt: S.klang.boeenAbschnitt, // Abschnitt (Streckendatei): dort voll ...
         blende: 80,            // ... davor und danach so viele Meter weich ein und aus
         rauf: [1.5, 3], runter: [2, 4], pause: [2, 6], // Böe: Anschwellen, Abschwellen, Pause (s)
         spitze: [0.65, 1],     // so stark wird eine Böe (Anteil) ...

@@ -9,8 +9,9 @@ import { tannenTextur, laubTextur, steinTextur, felsbrockenTextur, buschTextur, 
 import { baueKollision } from './kollision.js';
 import { randAbstand, torPruefer } from './strassenrand.js';
 import { planeAlleSperren, baueStaemme } from './sperren.js';
-import { ABKUERZUNGEN } from './abkuerzungen.js';
-import { BAUMFOLGE } from './baumfolge.js';
+import { STRECKE } from './streckenlader.js';
+
+const ABKUERZUNGEN = STRECKE.erzeugt.abkuerzungen, BAUMFOLGE = STRECKE.erzeugt.baumfolge; // (erzeugt, Streckendatei)
 
 const VERTEX = /* glsl */ `
   #include <common>
@@ -91,13 +92,13 @@ export function spriteGruppe(liste, tex) {
   return mesh;
 }
 
-// Feste Zufallsfolge der Baum-Versuche (M3a). In js/baumfolge.js steht für jeden Versuch, ob er
+// Feste Zufallsfolge der Baum-Versuche (M3a). In der Streckendatei (erzeugt.baumfolge) steht für jeden Versuch, ob er
 // beim Einfrieren (Stand M2c) einen Baum gestellt hat (dann brauchte er 8 Zufallszahlen, sonst 4).
 // Daraus ergibt sich, wo in der Zufallsfolge jeder Versuch beginnt. Passt die Datei nicht (seed oder
 // Anzahl Versuche geändert), wird wie früher der Reihe nach gewürfelt (dann ein neuer Wald).
 function folgePlan(baumfolge, seed, anzahl) {
   if (!baumfolge || baumfolge.seed !== seed || baumfolge.versuche.some((n, k) => n !== anzahl[k])) {
-    if (baumfolge) console.info('js/baumfolge.js passt nicht (seed oder Anzahl Bäume geändert): neuer Wald.');
+    if (baumfolge) console.info('erzeugt.baumfolge passt nicht (seed oder Anzahl Bäume geändert): neuer Wald.');
     return null;
   }
   const bits = Uint8Array.from(atob(baumfolge.bits), (z) => z.charCodeAt(0));
@@ -145,7 +146,7 @@ export function bauePflanzen(szene, strecke, welt) {
   }
 
   // Feste Zufallsfolge (seit M3a): Jeder Versuch hat seinen festen Platz in der Zufallsfolge
-  // (js/baumfolge.js). Früher hing der Platz davon ab, wie viele Bäume vorher schon standen –
+  // (erzeugt.baumfolge). Früher hing der Platz davon ab, wie viele Bäume vorher schon standen –
   // jede Änderung an der Strecke hätte so ALLE Bäume neu gewürfelt. Jetzt ändern sich nur die
   // Bäume dort, wo sich wirklich etwas geändert hat (z. B. am Nebenweg).
   const anzahlVersuche = [c.tannenProKm, c.laubProKm, c.steineProKm].map((k) => Math.round((k * strecke.laenge) / 1000));

@@ -658,7 +658,7 @@ if (teil('j')) {
   const ok = /ok\s+\(j\)/.test(r.text);
   if (ok) melde(true, '(j) alle Kurven im Zielbereich');
   else console.log('  KOMP (j) nicht alle Kurven im Zielbereich – Liste oben, Erklärung in STAND.md');
-  melde(!r.text.includes('pacenotes-tempo.js geschrieben'), 'js/pacenotes-tempo.js wurde nicht neu geschrieben');
+  melde(!r.text.includes('kurvenTempo geschrieben'), 'erzeugt.kurvenTempo (früher js/pacenotes-tempo.js) wurde nicht neu geschrieben');
 }
 
 // ---------------------------------------------------------------- (k) Abkürzungen

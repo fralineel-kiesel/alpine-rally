@@ -12,7 +12,7 @@
 //
 // Regeln, die nie gebrochen werden:
 //   - kein Randobjekt auf der Felswand-Seite
-//   - kein Randobjekt auf der Innenseite der Kurven aus js/abkuerzungen.js ("nichtSchneiden"
+//   - kein Randobjekt auf der Innenseite der Kurven aus erzeugt.abkuerzungen ("nichtSchneiden"
 //     und "schneiden", plus Puffer): Ob man abkürzen kann, entscheidet allein die Spielbalance
 //   - nichts bei den Checkpoint-Toren und nichts nahe an einem anderen Ast der Strecke
 //
@@ -463,7 +463,7 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
     if (tc && tc.an) {
       const D = tc.groesse * G;
       const tafel = (wert, unten = tc.hoehe) => ({ kachel: `tempo${wert}`, b: D, h: D, unten, form: 'kreis', zahl: wert });
-      const wuensche = [{ s: strecke.startS + tc.startNach, wert: tc.tal, wo: 'Talabschnitt', versuche: vorne(60) }];
+      const wuensche = [{ s: strecke.startS + tc.startNach, wert: tc.tal, wo: 'nach dem Start', versuche: vorne(60) }];
       folgen.forEach((f, j) => {
         const kehre = kehren.some((k) => k.von >= f.von - 1 && k.bis <= f.bis + 1);
         const wert = kehre ? tc.kehren : 1 / f.maxK < tc.engRadius ? tc.eng : null;

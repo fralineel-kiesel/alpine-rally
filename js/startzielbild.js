@@ -8,6 +8,7 @@
 
 import { leinwand, setze, zuTextur, hexZuRgb } from './pixel.js';
 import { zufall } from './util.js';
+import { STRECKE } from './streckenlader.js';
 
 // Kleine Schrift 3x5 (Sponsoren, Schilder)
 export const KLEIN = {
@@ -39,10 +40,8 @@ export function schreibe(px, text, x0, y0, rgb, schrift = KLEIN) {
 }
 export const textBreite = (text, schrift = KLEIN) => [...text].reduce((b, z) => b + ((schrift[z] || KLEIN[' '])[0].length + 1), 0) - 1;
 
-// Erfundene Sponsoren: Name, Grundfarbe, Schriftfarbe
-export const SPONSOREN = [
-  ['BERGKRAFT', '#1f4fa8', '#f2f0e8'], ['SENNHOF', '#2c7a3a', '#f4e27a'], ['AUDAN', '#c8202a', '#f2f0e8'], ['PASSGOLD', '#f0c020', '#1c1c1c'],
-];
+// Erfundene Sponsoren: Name, Grundfarbe, Schriftfarbe (Streckendatei, beschriftung.sponsoren)
+export const SPONSOREN = STRECKE.beschriftung.sponsoren;
 
 export function startZielAtlas(seed = 91) {
   const N = 256, NH = 128, RAND = 2;
@@ -91,7 +90,8 @@ export function startZielAtlas(seed = 91) {
   // Rückseite der Banner (was man im Rückspiegel sähe): schlicht mit Sponsor
   kachel('bannerHinten', 48, 11, (px) => {
     for (let y = 0; y < 11; y++) for (let x = 0; x < 48; x++) px(x, y, y === 0 || y === 10 ? ROT : hell(BLAU, 0.9));
-    schreibe(px, 'BERGKRAFT', Math.floor((48 - textBreite('BERGKRAFT')) / 2), 3, WEISS);
+    const name = SPONSOREN[0][0]; // erster Sponsor der Strecke
+    schreibe(px, name, Math.floor((48 - textBreite(name)) / 2), 3, WEISS);
   });
   // Gerüst (Alu-Fachwerk): zwei Längsrohre, Querstreben im Zickzack, dazwischen durchsichtig. 8x16
   kachel('geruest', 8, 16, (px) => {
