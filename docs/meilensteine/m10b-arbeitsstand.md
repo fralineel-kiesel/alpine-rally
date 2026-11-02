@@ -33,4 +33,9 @@ Ziel: Etappenwahl im Menü + zweite Strecke „Finnland-Schotter“, Version 0.1
 
 ## Offen / Fragen
 - Kuh-Warnschild ist eine allgemeine Tier-Silhouette (bleibt auch in Finnland so).
-- Teil D: volle Regression, Bilder, Bericht, Version 0.10b. Ton nach Etappenwechsel erst ab der nächsten Eingabe.
+- Ton nach Etappenwechsel erst ab der nächsten Eingabe (Browser-Regel).
+
+## Teil D – Tests, Bilder, Bericht (fertig)
+- Version 0.10b. Voller Lauf `m10b-test --alt 0.10a --lang`: 110 ok; rot nur Ladezeit (+73 ms, Nachmessungen −24/−77 ms),
+  CONFIG-Menüwerte (Test angepasst) und m8h-test (Zeiger/AUTO-Zeile, behoben: 99 ok). menue-test 2 rot wie in 0.10a.
+- Bilder `screenshots/m10b/01–05`, Bericht `docs/meilensteine/m10b.md`, STAND/KONZEPT nachgeführt.

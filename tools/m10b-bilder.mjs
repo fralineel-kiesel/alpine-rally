@@ -45,7 +45,7 @@ for (const [b, h] of [[402, 874], [874, 402]]) {
   const s = await starteSpiel({ breite: b, hoehe: h, geraet: { hasTouch: true, isMobile: true, deviceScaleFactor: 1 } });
   await s.page.addInitScript((bz) => { localStorage.clear(); localStorage.setItem('alpineRally.bestzeiten2', bz); }, BZ);
   await s.page.goto(`${s.url}/index.html?ton=aus`);
-  await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 180000 });
+  await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 180000, polling: 200 });
   await s.page.evaluate(async () => { const A = window.__alpineRally; A.zumMenue(); A.menue.oeffne(A.seiten.etappe); await new Promise((o) => setTimeout(o, 1500)); A.menue.runter(); A.menue.neuZeichnen(); });
   await s.page.waitForTimeout(1500);
   etappen.push(`data:image/png;base64,${(await s.page.screenshot()).toString('base64')}`);
@@ -58,7 +58,7 @@ for (const [b, h] of [[402, 874], [874, 402]]) {
   const s = await starteSpiel({ breite: 640, hoehe: 360 });
   await s.page.addInitScript(UHR);
   await s.page.goto(`${s.url}/index.html?menue=aus&ton=aus&strecke=finnland`);
-  await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 180000 });
+  await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 180000, polling: 200 });
   await s.page.evaluate(() => window.__bild(2, 1000 / 60));
   for (const [name, sM] of [['02-finnland-wald.png', 655], ['03-finnland-see.png', 2640]]) {
     await s.page.evaluate((sM) => { const A = window.__alpineRally; A.anhalten = true; A.setzeAuf(sM); A.kameraSofort(); window.__bild(6, 1000 / 60); }, sM);
@@ -84,7 +84,7 @@ for (const [b, h] of [[402, 874], [874, 402]]) {
   const s = await starteSpiel({ breite: 640, hoehe: 360 });
   await s.page.addInitScript((bz) => { localStorage.clear(); localStorage.setItem('alpineRally.bestzeiten2', bz); }, BZ);
   await s.page.goto(`${s.url}/index.html?ton=aus`);
-  await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 180000 });
+  await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 180000, polling: 200 });
   const bilder = await s.page.evaluate(async () => {
     const A = window.__alpineRally; A.szene.visible = false; A.zumMenue(); A.menue.oeffne(A.seiten.bestzeiten);
     await new Promise((o) => setTimeout(o, 1200));
