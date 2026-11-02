@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { zufall, mische } from './util.js';
 import { baueKollision } from './kollision.js';
-import { kuhAtlas, KUH_ARTEN, KUH_BILD } from './kuhbild.js';
+import { kuhAtlas, tierArten, KUH_BILD } from './kuhbild.js';
 import { spriteMaterial } from './sprites.js';
 import { randAbstand, torPruefer } from './strassenrand.js';
 import { STRECKE } from './streckenlader.js';
@@ -299,7 +299,7 @@ export function baueKuehe(szene, strecke, welt, pflanzen, rand, frei = []) {
   const plan = planeKuehe(strecke, welt, pflanzen, rand, frei);
   const { kuehe } = plan;
   const tPlan = performance.now() - t0;
-  const atlas = kuhAtlas();
+  const atlas = kuhAtlas(71, CONFIG.deko.tier); // Tier-Typ der Strecke (deko.tier)
   const tBild = performance.now() - t0 - tPlan;
 
   // Ein Viereck pro Kuh, alle in einem Zeichenaufruf
@@ -335,7 +335,7 @@ export function baueKuehe(szene, strecke, welt, pflanzen, rand, frei = []) {
     eingefroren: plan.eingefroren, weggefallen: plan.weggefallen, neu: zaehle((k) => k.leben), // M3d
     tal: zaehle((k) => k.wo === 'tal'), alp: zaehle((k) => k.wo === 'alp'),
     stehend: zaehle((k) => k.pose === 0), grasend: zaehle((k) => k.pose === 1), liegend: zaehle((k) => k.pose === 2),
-    arten: KUH_ARTEN.map((a, i) => `${a.name}: ${zaehle((k) => k.art === i)}`),
+    arten: tierArten(CONFIG.deko.tier).map((a, i) => `${a.name}: ${zaehle((k) => k.art === i)}`),
     naechsteStrasse: kuehe.length ? Math.round(Math.min(...kuehe.map((k) => k.abstand)) * 10) / 10 : null,
     ms: Math.round(performance.now() - t0), msPlan: Math.round(tPlan), msBild: Math.round(tBild),
   };

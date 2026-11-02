@@ -31,7 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { starteSpiel, WURZEL, AUTO } from './spiel-browser.mjs';
 import { pathToFileURL } from 'node:url';
-import { schreibeErzeugt } from './strecke-erzeugt.mjs';
+import { schreibeErzeugt, STRECKEN_DATEI } from './strecke-erzeugt.mjs';
 
 const schreiben = process.argv.includes('--schreiben');
 const PRUEF_WINKEL = 25;    // (a): Richtungsänderung (Grad) auf ...
@@ -84,7 +84,7 @@ ${zeilen.join('\n')}
   ],
 };
 `);
-  console.log(`-> strecken/alpen.js: erzeugt.kurvenTempo geschrieben (${messung.length} Kurven). Für die Prüfung neu laden ...`);
+  console.log(`-> ${STRECKEN_DATEI().replace(WURZEL + "/", "")}: erzeugt.kurvenTempo geschrieben (${messung.length} Kurven). Für die Prüfung neu laden ...`);
   await spiel.ladeSpiel();
 }
 
@@ -216,7 +216,7 @@ console.log(`Zusammengefasst ("UND"): ${d.notes.filter((n) => n.text.includes(' 
     melde(nichtGemessen === 0 && !veraltet.length, `(c) alle Kurven gemessen und erzeugt.kurvenTempo aktuell (ohne Messung: ${nichtGemessen}, abweichend: ${veraltet.length})`);
   } else {
     // M8a (j): anderes Profil gegen die Referenz – Asphalt höchstens ±5 %, Schotter/Wiesenweg bis +10 %; Stufe nur melden
-    const KURVEN_TEMPO = (await import(`${pathToFileURL(path.join(WURZEL, 'strecken/alpen.js')).href}?${Date.now()}`)).default.erzeugt.kurvenTempo;
+    const KURVEN_TEMPO = (await import(`${pathToFileURL(STRECKEN_DATEI()).href}?${Date.now()}`)).default.erzeugt.kurvenTempo;
     const { CONFIG } = await import(pathToFileURL(path.join(WURZEL, 'js/config.js')).href);
     const stufe = (kmh) => { let st = 1; for (const gr of CONFIG.pacenotes.stufenGrenzen) if (kmh >= gr) st++; return st; };
     console.log(`       (j) Grenztempo ${AUTO} gegen die Referenz (erzeugt.kurvenTempo), Stufe 1-6 (Grenzen ${CONFIG.pacenotes.stufenGrenzen.join('/')} km/h):`);

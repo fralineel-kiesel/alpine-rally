@@ -7,6 +7,8 @@
 import { leinwand, setze, zuTextur, hexZuRgb } from './pixel.js';
 import { zufall } from './util.js';
 import { STRECKE } from './streckenlader.js';
+import { CONFIG } from './config.js';
+import { fahne as fahnenMotiv, motivFarbe } from './motive.js';
 import { KLEIN, schreibe as schreibeKlein } from './startzielbild.js';
 
 // Zusätzliche Zeichen zur kleinen 3x5-Schrift (Startnummern, Zeitangaben)
@@ -144,7 +146,8 @@ export function lebenAtlas(seed = 313) {
   kachel('stange', 4, 16, voll(4, 16, (x, y) => hell(Math.floor(y / 4) % 2 ? WEISS : ROT, x === 3 ? 0.8 : 1)));
   kachel('stoff', 4, 4, voll(4, 4, () => hell(WEISS, 0.95 + rnd() * 0.05)));
   kachel('metall', 4, 4, voll(4, 4, (x) => hell(GRAU, x === 0 ? 1.1 : x === 3 ? 0.8 : 1)));
-  kachel('fahneKreuz', 12, 8, voll(12, 8, (x, y) => ((x >= 5 && x <= 6 && y >= 1 && y <= 6) || (y >= 3 && y <= 4 && x >= 3 && x <= 8) ? WEISS : ROT)));
+  const FM = fahnenMotiv(CONFIG.deko.fahne), FG = motivFarbe(FM.grund, ROT, WEISS, hx), FZ = motivFarbe(FM.zeichen, ROT, WEISS, hx);
+  kachel('fahneKreuz', 12, 8, voll(12, 8, (x, y) => (FM.gross(x, y) ? FZ : FG))); // Landesfahne nach Motiv (deko.fahne)
   // Zeltdach grün-weiss
   kachel('dachGruen', 16, 16, voll(16, 16, (x) => hell(Math.floor(x / 4) % 2 ? WEISS : hx('#2c7a3a'), 0.96 + rnd() * 0.06)));
   // Camper: Wohnwagen-Streifen (braun-orange, 70er/80er), Tür, Fenster
@@ -203,8 +206,10 @@ export function lebenAtlas(seed = 313) {
       }
     });
   }
-  // Sponsor-Streifen fürs Auto (Schrift auf Farbe), Schmutzfänger
-  for (const k of ['firn', 'murmeli', 'turbo']) {
+  // Sponsor-Streifen fürs Auto (Schrift auf Farbe), Schmutzfänger. Welche: Streckendatei beschriftung.autoSponsoren
+  // (M10b; fehlt die Liste: die Sponsoren der Wracks)
+  const autoSponsoren = STRECKE.beschriftung.autoSponsoren || [...new Set((STRECKE.leben.wracks || []).map((w) => w.sponsor).filter(Boolean))];
+  for (const k of autoSponsoren) {
     const [text, grund, schrift] = LEBEN_SPONSOREN[k];
     const b = breite(text) + 4;
     kachel(`sp_${k}`, b, 7, (px) => {
@@ -216,6 +221,19 @@ export function lebenAtlas(seed = 313) {
   // Warndreieck: roter Rand, Mitte rot-durchscheinend (hier hell), unten Spitze. 8x8
   kachel('warn', 8, 8, voll(8, 8, (x, y) => (y > 5 || x < 2 || x > 5 ? hx('#e0262a') : hx('#f2d0c8'))));
   kachel('fahneGelb', 8, 6, voll(8, 6, (x, y) => hell(hx('#f4d21a'), y === 5 ? 0.85 : 1)));
+
+  // --- M10b: rote Holzhäuser mit weissen Kanten (Haus-Typ holzhaus/holzschuppen). Nur gemalt, wenn die Strecke sie
+  // braucht (deko.haus/deko.stadel), sonst bleibt der Atlas genau wie vorher.
+  if (['holzhaus', 'holzschuppen'].includes(CONFIG.deko.haus) || ['holzhaus', 'holzschuppen'].includes(CONFIG.deko.stadel)) {
+    // Bretter waagrecht, Falunrot, Fugen dunkel. 16x16
+    kachel('bretterRot', 16, 16, voll(16, 16, (x, y) => (y % 4 === 3 ? hx('#4a1610') : hell(hx(rnd() < 0.5 ? '#8e2a1e' : '#9c3222'), 0.9 + rnd() * 0.16 - (y > 13 ? 0.1 : 0)))));
+    // Dach: dunkle Blechbahnen (grau-schwarz). 16x16
+    kachel('dachDunkel', 16, 16, voll(16, 16, (x) => (x % 4 === 0 ? hx('#1e1f22') : hell(hx('#3c3e42'), x % 4 === 1 ? 1.15 : 1))));
+    // Eckbretter und Fensterrahmen: weiss. 4x4
+    kachel('kanteWeiss', 4, 4, voll(4, 4, (x) => hell(WEISS, x === 3 ? 0.85 : 1)));
+    // Fenster mit weissem Rahmen und Sprossenkreuz, ohne Läden. 12x8
+    kachel('hfensterWeiss', 12, 8, voll(12, 8, (x, y) => (x <= 1 || x >= 10 || y === 0 || y === 7 || x === 5 || x === 6 || y === 3 ? WEISS : y < 3 && x < 5 ? hx('#7f9db0') : hx('#26343f'))));
+  }
 
   const textur = zuTextur(l);
   return {

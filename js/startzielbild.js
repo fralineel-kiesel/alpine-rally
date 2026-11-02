@@ -9,6 +9,8 @@
 import { leinwand, setze, zuTextur, hexZuRgb } from './pixel.js';
 import { zufall } from './util.js';
 import { STRECKE } from './streckenlader.js';
+import { CONFIG } from './config.js';
+import { fahne as fahnenMotiv, motivFarbe } from './motive.js';
 
 // Kleine Schrift 3x5 (Sponsoren, Schilder)
 export const KLEIN = {
@@ -159,11 +161,9 @@ export function startZielAtlas(seed = 91) {
   kachel('metall', 4, 4, voll(4, 4, (x) => hell(GRAU, x === 0 ? 1.1 : x === 3 ? 0.8 : 1)));
   kachel('holz', 8, 8, voll(8, 8, (x, y) => hexZuRgb(y === 7 ? '#5a4128' : rnd() < 0.2 ? '#8a6b46' : '#a1815a')));
   kachel('stoff', 4, 4, voll(4, 4, () => hell(WEISS, 0.95 + rnd() * 0.05)));
-  // Fahnen: Schweizer Kreuz (rot, weisses Kreuz) und Zielflagge (Schachbrett). 12x8
-  kachel('fahneKreuz', 12, 8, voll(12, 8, (x, y) => {
-    const kreuz = (x >= 5 && x <= 6 && y >= 1 && y <= 6) || (y >= 3 && y <= 4 && x >= 3 && x <= 8);
-    return kreuz ? WEISS : ROT;
-  }));
+  // Fahnen: Landesfahne nach Motiv der Strecke (deko.fahne, js/motive.js) und Zielflagge (Schachbrett). 12x8
+  const FM = fahnenMotiv(CONFIG.deko.fahne), FG = motivFarbe(FM.grund, ROT, WEISS, hexZuRgb), FZ = motivFarbe(FM.zeichen, ROT, WEISS, hexZuRgb);
+  kachel('fahneKreuz', 12, 8, voll(12, 8, (x, y) => (FM.gross(x, y) ? FZ : FG)));
   kachel('fahneKaro', 12, 8, voll(12, 8, (x, y) => ((Math.floor(x / 2) + Math.floor(y / 2)) % 2 ? SCHWARZ : WEISS)));
   // Werbebande (Sponsor gross, quer): wie die Volants, aber eigene Kachel je Sponsor (oben schon: sponsor0..3)
 
@@ -253,13 +253,15 @@ export function zuschauerAtlas() {
       const xs = seite ? 10 : 11;
       rechteck(xs, xs, 9, 25, HOLZ);
       px(xs, 11, HAUT); px(xs - 1, 11, JACKE_D); px(xs - 1, 10, JACKE_D);
-      // Fahne 5x5 Pixel: das Kreuz (3x3) sitzt genau in der Mitte
+      // Fahne 5x5 Pixel mit dem Motiv der Strecke (js/motive.js); der Schlüssel-Teil bekommt die Fahnenfarbe
+      const FM = fahnenMotiv(CONFIG.deko.fahne);
       for (let x = xs + 1; x <= Math.min(15, xs + 5); x++) {
         const welle = bild ? (x % 2 ? 1 : 0) : 0;
         for (let h = 21 - welle; h <= 25 - welle; h++) {
           const fx = x - xs - 1, fh = h - (21 - welle);
-          const k = kreuz && ((fx === 2 && fh >= 1 && fh <= 3) || (fh === 2 && fx >= 1 && fx <= 3));
-          px(x, h, k ? WEISS : h === 21 - welle ? MUETZE_D : MUETZE);
+          const zeichen = kreuz && FM.klein(fx, fh);
+          const weiss = kreuz && (FM.schluessel === 'grund' ? zeichen : !zeichen);
+          px(x, h, weiss ? WEISS : h === 21 - welle ? MUETZE_D : MUETZE);
         }
       }
     };

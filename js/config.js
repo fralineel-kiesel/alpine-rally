@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10a';
+export const VERSION = '0.10b';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -54,6 +54,8 @@ export const CONFIG = {
   // Untergrund-Abschnitte: die Etappe biegt auf einen Nebenweg ab und mündet später wieder ein (Stummel abgesperrt).
   // Seit M10a in der Streckendatei (Block "nebenwege", Stützpunkte dort in "punkte").
   nebenwege: S.nebenwege,
+  // M10b: Untergrund-Abschnitte ohne Abzweig (nur der Belag wechselt, z. B. Schotter auf der ganzen Etappe): Streckendatei
+  belagAbschnitte: S.belagAbschnitte || [],
   // Standardform eines Stummels (Hauptstrasse, die hinter der Absperrung weiterläuft)
   stummel: {
     gerade: 34,                // erst so weit geradeaus (Meter ab Abzweig/Einmündung)
@@ -139,7 +141,7 @@ export const CONFIG = {
     stroh: { abstand: 5.95, alle: [11, 19], ballen: [0.95, 0.48, 0.42], obenAnteil: 0.5 }, // Kleinballen vor Band/Zaun: Abstand zur Mitte, alle so viele Meter, Grösse (L, T, H)
     bande: { abstand: 6.75, alle: [18, 30] },  // Werbebanden hinter dem Band (erfundene Sponsoren)
     fahne: { hoehe: 6, breite: 1.5, hoehe2: 1.0, // Fahnenmasten: Höhe, Grösse der Fahne
-      plaetze: [[2, -8.8, 'kreuz'], [-4, 9.2, 'karo'], [-24, 9.6, 'farbe'], [28, -9.2, 'kreuz'], [44, 9.6, 'farbe']] }, // [Meter ab Linie, seitlich, Art]
+      plaetze: [[2, -8.8, 'motiv'], [-4, 9.2, 'karo'], [-24, 9.6, 'farbe'], [28, -9.2, 'motiv'], [44, 9.6, 'farbe']] }, // [Meter ab Linie, seitlich, Art: motiv = Landesfahne der Strecke, karo = Zielflagge, farbe]
     // Plätze (Meter ab der Linie, seitlich: + rechts / - links in Fahrtrichtung)
     platz: {
       uhr: 7.2,                // Startuhr (rechts, kurz vor der Startlinie)
@@ -169,7 +171,7 @@ export const CONFIG = {
       hosen: ['#2a3550', '#26262a', '#5a5f66', '#5b4632', '#3d5a8a'],
       muetzen: ['#d0202a', '#f2f0e8', '#f0c020', '#2b5fc2', '#2f9a48', '#ef7d22'],
       haare: ['#3b2a1c', '#1c1714', '#c9a24a', '#7a3b1e', '#9a9a9a'],
-      fahnenRot: '#d0202a',     // die meisten Fahnen sind rot (Schweizer Kreuz)
+      fahnenRot: '#d0202a',     // Fahnenfarbe der Zuschauer, wenn das Motiv keine eigene hat (js/motive.js: zuschauerFarbe)
     },
     landschaft: S.startZiel.landschaft, // Bäume und Büsche um Start und Ziel (Gruppen): Streckendatei
   },
@@ -177,6 +179,39 @@ export const CONFIG = {
   // --- Leben an der Strecke (Meilenstein 3d, js/leben.js) --------------
   // Alpweide, Fan-Spots, Wracks, Zäune und Herden: alles Orte dieser Strecke, darum ganz in der Streckendatei (Block "leben")
   leben: S.leben,
+  klangWasser: S.klang.wasser || [], // M10b: Wasser-Klang an See und Fluss [[Streckenmeter, seitlich], ...] (Streckendatei, klang.wasser)
+  // --- Wasser (seit M10b, js/wasser.js): Aussehen von Seen, Flüssen und Brücken; wo sie liegen, steht in der Streckendatei
+  wasser: {
+    farbe: '#3c6a86',          // Grundfarbe des Wassers (Abendlicht: dunkles Blaugrau)
+    farbeHell: '#9fb8c4',      // helle Wellenstriche
+    farbeDunkel: '#33596f',    // dunkle Flecken
+    texturMeter: 12,           // eine Textur-Kachel deckt so viele Meter
+    ufer: 9,                   // Böschung am Ufer: so viele Meter vom Wasserrand bis zum normalen Gelände
+    uferHoehe: 0.6,            // ... dort liegt das Gelände so viel über dem Wasserspiegel (Rest: wie vorher)
+    tiefeRand: 0.8,            // Grund am Wasserrand so tief unter dem Spiegel ...
+    tiefeMehr: 2.5,            // ... zur Mitte hin bis so viel tiefer
+    trockenAb: 1.5,            // Bäume, Büsche: mindestens so weit vom Wasserrand
+    brueckeUeber: 5,           // Brücke reicht so weit über das Flussufer hinaus (je Seite)
+    brueckeHolz: '#8a6a48',    // Holz von Geländer und Handlauf
+    brueckeDunkel: '#4a3626',  // dunkles Holz (Seitenbalken, Pfosten)
+    gelaenderHoehe: 1.0,       // Höhe des Geländers über der Fahrbahn
+    gelaenderKreis: 0.3,       // Kollision: Kreise mit diesem Radius entlang des Geländers
+  },
+
+  // --- Deko-Sets (seit M10b): welche Motive und Typen diese Strecke zeigt ---------------------------
+  // Die Wahl steht in der Streckendatei (Block "deko"); der Code kennt nur Arten ("Fahne mit Motiv", "Tier mit Typ",
+  // "Haus mit Typ") und malt das passende Pixelbild (js/motive.js, js/kuhbild.js, js/pixel.js, js/leben.js).
+  // Fehlt der Block (Streckendatei von vor M10b), gilt dieser Standard (= die Wahl der Alpen in 0.10a).
+  deko: {
+    fahne: 'schweiz',          // Motiv der Fahnen (Zuschauer, Fahnenmasten): schweiz, finnland
+    tier: 'kuh',               // Tiere in Herden am Rand: kuh, rentier
+    tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken) oder null (still)
+    haus: 'alphuette',         // Haus an der Weide: alphuette, holzhaus
+    stadel: 'heustadel',       // kleiner Schuppen: heustadel, holzschuppen
+    nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer
+    laubbaum: 'laub',          // Laubbaum: laub, birke
+    ...(S.deko || {}),
+  },
 
   // --- Gelände --------------------------------------------------------
   gelaende: {
@@ -1335,6 +1370,9 @@ export const CONFIG = {
     bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten bis 0.8g (eine Liste je Etappe; seit M8h nur gelesen, für die Übernahme)
     bestzeitenNameV2: 'alpineRally.bestzeiten2', // Bestzeiten seit M8h: Top 10 je Etappe und Auto (mit Fahrspur)
     letzterLaufName: 'alpineRally.letzterLauf', // der letzte fertige Lauf je Etappe (M6, für den Live-Vergleich)
+    // M10b: Etappenwahl (Seite ETAPPE): links die Liste, rechts die Vorschau-Karte (Draufsicht der Strecke)
+    etappenSeite: { breite: 312, spalte: 178, kartenHoehe: 104 }, // Tafel, Breite der Liste, Höhe der Karte (Pixel)
+    etappenKarte: { grund: '#141a20', rand: 6, strasse: '#e8d8a8', schatten: '#05080a', start: '#4cd060', ziel: '#f2f0e8' },
     // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
     standard: {
       vollbild: false,         // Vollbild an/aus (wird beim ersten Tastendruck auf dem Titel wieder eingeschaltet)

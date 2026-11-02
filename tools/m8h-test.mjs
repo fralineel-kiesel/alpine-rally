@@ -523,7 +523,7 @@ const fuellen = (p, daten) => p.evaluate(async (daten) => {
 const seitenStand = (p) => p.evaluate(async () => {
   const A = window.__alpineRally, TX = await import('/js/texte.js');
   const l = A.menue.seite.eintraege();
-  const wahl = l.find((e) => e.typ === 'auswahl');
+  const wahl = l.find((e) => e.typ === 'auswahl' && e.text === 'bestzeiten.auto'); // (M10b: darüber steht die Zeile ETAPPE)
   return {
     id: A.menue.seite.id,
     gesamt: l.filter((e) => e.autoKurz).map((e) => `${e.inhalt().split(' ').slice(0, 2).join(' ')} ${e.autoKurz()}${e.neu ? ' (neu)' : ''}`),
@@ -573,7 +573,7 @@ if (teil('k')) {
   const st3 = await seitenStand(p);
   melde(st3.auto === 'SUBORA IMPREXA', `links über den Anfang: ${st3.auto} (rundum, fünf Autos)`);
   // Maus: Klick rechts vom Wert (Pfeil >) = nächstes Auto, Klick links davon = voriges (wie in den Einstellungen)
-  const tr = await p.evaluate(() => { const A = window.__alpineRally, l = A.menue.seite.eintraege(); const nr = l.findIndex((e) => e.typ === 'auswahl'); const h = A.menue.treffer.find((x) => x.nr === nr); return { ...h, skala: document.getElementById('hud').getBoundingClientRect().width / 320, links: document.getElementById('hud').getBoundingClientRect().left, oben: document.getElementById('hud').getBoundingClientRect().top }; });
+  const tr = await p.evaluate(() => { const A = window.__alpineRally, l = A.menue.seite.eintraege(); const nr = l.findIndex((e) => e.typ === 'auswahl' && e.text === 'bestzeiten.auto'); const h = A.menue.treffer.find((x) => x.nr === nr); return { ...h, skala: document.getElementById('hud').getBoundingClientRect().width / 320, links: document.getElementById('hud').getBoundingClientRect().left, oben: document.getElementById('hud').getBoundingClientRect().top }; });
   const klick = async (x) => { const px = tr.links + x * tr.skala, py = tr.oben + (tr.y + tr.h / 2) * tr.skala; await p.mouse.move(px, py); await warteBild(p); await p.mouse.down(); await p.mouse.up(); await warteBild(p); };
   await klick(tr.x + tr.b - 10);
   const st4 = await seitenStand(p);

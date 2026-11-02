@@ -11,7 +11,9 @@ Der Lader holt die Datei aus dem Register (`js/strecken.js`), prüft sie schnell
 Pflichtfelder) und stellt sie als `STRECKE` bereit. `config.js` bindet die Streckenwerte unter den alten Namen ein
 (z. B. `CONFIG.nebenwege`), darum bleibt der übrige Spielcode gleich. Geht etwas schief, zeigt das Spiel eine Fehlerseite
 („STRECKE KONNTE NICHT GELADEN WERDEN“ mit Grund) statt eines leeren Bildschirms.
-Eine Strecke wechselt man (ab M10b) durch Neuladen: alle Bauteile entstehen beim Laden aus genau einer Strecke.
+Eine Strecke wechselt man (seit M10b) durch Neuladen: alle Bauteile entstehen beim Laden aus genau einer Strecke. Welche,
+sagt `?strecke=<id>` in der Adresse (Werkzeuge, Tests) oder sonst die Wahl im Menü ETAPPE (Browser-Speicher
+`alpineRally.etappe`); Standard ist die erste Strecke im Register (Alpen). Andere Strecken lädt das Spiel nicht beim Start.
 
 ## Felder
 
@@ -35,7 +37,14 @@ Eine Strecke wechselt man (ab M10b) durch Neuladen: alle Bauteile entstehen beim
 | `beschriftung` | Fan-Banner, Wegweiser, Sponsoren (erfundene Namen, Grossbuchstaben) |
 | `klang` | `publikumOrte` (Start, Ziel, je Fan-Spot), `boeenAbschnitt` (Windböen) |
 | `abkuerzung` | von Hand: `immerSperren`, `immerFrei`, `sperrThemen` |
-| `erzeugt` | von Werkzeugen geschrieben, **nicht von Hand ändern**: `abkuerzungen` (`tools/abkuerzungen.mjs`), `kurvenTempo` (`tools/pacenotes-test.mjs --schreiben`), `baumfolge`, `kuhfolge` (`tools/kuhfolge-schreiben.mjs`). Passen sie nicht zur Strecke (Länge, Seed), lässt das Spiel sie weg |
+| `untergrundInfo` | *(seit M10b, freiwillig)* `{ de, en }`, Grossbuchstaben, höchstens 22 Zeichen – Kurzinfo in der Etappenwahl, z. B. `'SCHOTTER'` |
+| `deko` | *(seit M10b, freiwillig)* welche Motive/Typen der Code malt: `fahne` (`schweiz`, `finnland`), `tier` (`kuh`, `rentier`), `tierKlang` (`'glocke'` oder `null`), `haus` / `stadel` (`alphuette`, `heustadel`, `holzhaus`, `holzschuppen`), `nadelbaum` (`tanne`, `kiefer`), `laubbaum` (`laub`, `birke`). Fehlt ein Wert: Standard aus `config.js` (= Alpen) |
+| `sprung` | *(seit M10b, freiwillig)* markierte Kuppen `[{ s, name }]`, aufsteigend – heute ohne Wirkung, ab M10c Sprünge |
+| `belagAbschnitte` | *(seit M10b, freiwillig)* Untergrund ohne Abzweig/Stummel `[{ von, bis, belag }]` (Finnland: Schotter ausser im Dorf) |
+| `wasser` | *(seit M10b, freiwillig)* `seen: [{ s, seite, lat, rx, rz, drehung, tiefe }]` (Ellipse neben der Strasse, Spiegel `tiefe` unter der Strasse), `fluesse: [{ s, breite, laenge, winkel, tiefe }]` (kreuzt die Strasse bei `s`, dort steht eine Holzbrücke) |
+| `klang.wasser` | *(seit M10b, freiwillig)* Wasser-Klang an mehreren Orten `[[s, seitlich], ...]` (der nächste klingt) |
+| `leben.wiesenweg.haeuser`, `.stege` | *(seit M10b, freiwillig)* weitere Häuser (`{ s, seite, lat, drehung, laenge, tiefe, hoehe, schuppen }`) und Stege am Wasser (`{ s, seite, lat, drehung, laenge, hoehe }`) |
+| `erzeugt` | von Werkzeugen geschrieben, **nicht von Hand ändern**: `abkuerzungen` (`tools/abkuerzungen.mjs`), `kurvenTempo` (`tools/pacenotes-test.mjs --schreiben`), `baumfolge`, `kuhfolge` (`tools/kuhfolge-schreiben.mjs`; beide seit M10b freiwillig, nur für „eingefrorene“ Welten wie die Alpen). Passen sie nicht zur Strecke (Länge, Seed), lässt das Spiel sie weg |
 
 Werte, die für jede Strecke gleich wirken (Grössen von Bögen, Bändern, Schildern, Physik, Belag-Katalog), bleiben in
 `js/config.js`. Was berechnet wird (Pace-Notes, Leitplanken, Schilder, Minimap, Stummel), kommt aus den Regeln im Code.
@@ -99,9 +108,17 @@ die Zeile `Gesamtzeiten: …`. Datei (Standard `/tmp/strecke-abfahren-<id>-<auto
 und das höchste Tempo je Abschnitt. Rückgabe 1, wenn ein Stil nicht ins Ziel kommt. Für die Alpen trifft es die Zeiten
 von `tools/testfahrer.mjs` genau (Prototyp 2:59.33 / 2:42.35 / 2:31.92).
 
-## Neue Strecke anlegen (für M10b)
+## Streckenwahl in den Werkzeugen (seit M10b)
 
-1. `strecken/alpen.js` kopieren, `id`, `etappe`, Namen ändern, Punkte und Orte ersetzen.
+Alle Werkzeuge nehmen `--strecke <id oder Datei>` (Standard `alpen`): `strecke-karte.mjs`, `strecke-abfahren.mjs`,
+`abkuerzungen.mjs` (Zahlen für jede Strecke, Erwartung 127 / 2 / 342 / 84 nur für die Alpen), `pacenotes-test.mjs
+--schreiben`, `kuhfolge-schreiben.mjs`, `testfahrer.mjs` (über `tools/spiel-browser.mjs`). Erzeugte Daten gehen in die
+gewählte Datei.
+
+## Neue Strecke anlegen
+
+1. Vorlage: `strecken/finnland.js` (kleiner als die Alpen) kopieren, `id`, `etappe`, Namen, `deko` ändern, Punkte und Orte
+   ersetzen. Punkte bequem aus „Gerade / Kurve mit Radius“: Vorbild `tools/finnland-entwurf.mjs`.
 2. Eintrag in `js/strecken.js` ergänzen.
-3. `node tools/strecke-pruefen.mjs strecken/<id>.js`, Karte ansehen, abfahren, dann die Werkzeuge für `erzeugt` laufen lassen
-   (bis M10b schreiben sie noch fest in `strecken/alpen.js`, siehe `tools/strecke-erzeugt.mjs`).
+3. `node tools/strecke-pruefen.mjs strecken/<id>.js`, Karte ansehen (`strecke-karte.mjs --strecke <id>`), abfahren, dann
+   `node tools/abkuerzungen.mjs --strecke <id>` und `node tools/pacenotes-test.mjs --strecke <id> --schreiben`.

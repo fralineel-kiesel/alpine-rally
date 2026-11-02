@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { STRECKE } from './streckenlader.js';
+import { wasserFlaechen, wasserSchnitt, imWasser } from './wasser.js';
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
@@ -35,6 +36,9 @@ export function baueWelt(szene, strecke, netz) {
   const ausdehnung = Math.hypot(box.maxX - box.minX, box.maxZ - box.minZ) / 2; // halbe Diagonale
   welt.mitte = mitte;
   welt.ausdehnung = ausdehnung;
+  // M10b: Seen und Flüsse (Streckendatei, Block "wasser"; fehlt er, ist plan.an false und nichts ändert sich)
+  const WASSER = wasserFlaechen(STRECKE.wasser, strecke, netz);
+  welt.wasser = WASSER;
 
   // Geländefläche: Streckenbox plus Rand, in Kacheln aufgeteilt
   const T = g.kachel;
@@ -231,6 +235,7 @@ export function baueWelt(szene, strecke, netz) {
         h = Math.min(h, q.h - 0.3 + Math.max(0, q.abstand - g.flachBis) * g.randSteigung);
       }
     }
+    if (WASSER.an) h = wasserSchnitt(WASSER, x, z, h); // M10b: unter Seen und Flüssen ausheben
     return h;
   }
 
@@ -838,6 +843,7 @@ export function baueWelt(szene, strecke, netz) {
   // Auf dem Berg hinter der Wand (Gelände über der Felsfläche) steht es nicht im Fels.
   const STAMM = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [0.71, 0.71], [-0.71, 0.71], [0.71, -0.71], [-0.71, -0.71]];
   welt.imFels = function (x, z, r = 0) {
+    if (WASSER.an && imWasser(WASSER, x, z, r)) return true; // M10b: im Wasser steht auch nichts
     if (!felsZellen.size) return false;
     const toleranz = CONFIG.felswand.imFelsToleranz;
     for (const [a, b] of STAMM) {

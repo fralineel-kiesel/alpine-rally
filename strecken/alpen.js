@@ -12,6 +12,17 @@ export default {
   etappe: 'passstrasse',      // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
   name: { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
   beschreibung: { de: 'ASPHALT, SCHOTTER, WIESENWEG', en: 'TARMAC, GRAVEL, MEADOW TRACK' },
+  untergrundInfo: { de: 'ASPHALT UND SCHOTTER', en: 'TARMAC AND GRAVEL' }, // Kurzinfo für die Etappenwahl (seit M10b)
+  // Deko-Sets (seit M10b): welche Motive und Typen der Spielcode malt (Pixelbilder im Code, Liste: docs/strecken-format.md)
+  deko: {
+    fahne: 'schweiz',          // Fahnen der Zuschauer und an den Masten: Schweizer Kreuz
+    tier: 'kuh',               // Herden auf Weide und Alp: Kühe
+    tierKlang: 'glocke',       // ... mit Kuhglocken
+    haus: 'alphuette',         // Haus an der Weide: Alphütte
+    stadel: 'heustadel',       // kleiner Schuppen: Heustadel
+    nadelbaum: 'tanne',        // Nadelbaum: Tanne
+    laubbaum: 'laub',          // Laubbaum: runde Krone
+  },
   laenge: 3667.587,           // Meter (Kontrolle: das Spiel rechnet nach, mehr als 0.5 m daneben = Fehlerseite)
 
   // --- Zufallszahlen (gleiche Zahl = gleiche Welt) ---
@@ -508,14 +519,14 @@ export default {
           name: 'kehren', s: [1694, 1716], seite: 1, lat: [8.5, 19], anzahl: 22, blickS: 1668, // am Hang aussen an Kehre 3
           band: [[1692, 1718, 7.9]],               // Absperrband: von, bis, lat
           banner: [[1704.5, 9.6, 'kehre']],          // Fan-Banner auf zwei Pfosten: s, lat, Name (lebenbild.js)
-          fahnen: [[1697, 16, 'kreuz'], [1706, 13.5, 'gruen']],
+          fahnen: [[1697, 16, 'motiv'], [1706, 13.5, 'gruen']],
           stuehle: 3,                              // Klappstühle (mit sitzenden Fans)
         },
         {
           name: 'pass', s: [2590, 2652], seite: 1, lat: [8, 17], anzahl: 28, blickS: null,   // Passhöhe, grösster Spot
           band: [[2596, 2656, 7.2]],
           banner: [[2616, 9.2, 'pass'], [2641, 9.4, 'turbo']],
-          fahnen: [[2600, 11, 'kreuz'], [2624, 12.5, 'kreuz'], [2646, 11.5, 'rot']],
+          fahnen: [[2600, 11, 'motiv'], [2624, 12.5, 'motiv'], [2646, 11.5, 'rot']],
           stuehle: 4,
           camper: [2630, 21.5, 14],                // Wohnmobil: s, lat, Drehung
           zelt: [2609, 17.5],                      // Pavillon
@@ -524,7 +535,7 @@ export default {
           name: 'alm', s: [1970, 1990], seite: -1, lat: [8.5, 14], anzahl: 14, blickS: 1984,  // hinter der Strohballen-Wand am Almweg-Abzweig
           band: [[1968, 1986, 7.8]],
           banner: [[1977, 9.4, 'alm']],
-          fahnen: [[1984, 12.5, 'kreuz']],
+          fahnen: [[1984, 12.5, 'motiv']],
           stuehle: 2,
           pickup: [1979, 18.5, -60],               // parkierter Pickup: s, lat, Drehung
         },
@@ -569,6 +580,8 @@ export default {
       pass: ['HOPP HOPP PASSFANS', '#c8202a', '#f2f0e8'], // Fan-Spot Passhöhe
       alm: ['ALMRAUSCH FANS', '#f0c020', '#1c1c1c'],    // Fan-Spot Almweg
     },
+    // Sponsor-Streifen für die Unfallautos (Schlüssel aus banner; seit M10b hier statt im Code)
+    autoSponsoren: ['firn', 'murmeli', 'turbo'],
     // Wanderwegweiser auf der Alpweide (gelb): je Ziel eine Tafel
     wegweiser: ['ALP 1 STD', 'FURGGA 2 STD', 'SEELI 40 MIN'],
     // Sponsoren an Start und Ziel (Banden, Banner): Name, Grundfarbe, Schriftfarbe

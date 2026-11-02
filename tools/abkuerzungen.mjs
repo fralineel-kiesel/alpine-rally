@@ -1,8 +1,9 @@
 // Abkürzungen messen, Kurven sperren oder freigeben und Sperren planen (M1.1, seit M1.2 mit Sperrquote).
 //
-//   node tools/abkuerzungen.mjs           Analyse vorher, Sperren planen, in strecken/alpen.js (erzeugt.abkuerzungen) schreiben,
+//   node tools/abkuerzungen.mjs           Analyse vorher, Sperren planen, in die Streckendatei (erzeugt.abkuerzungen) schreiben,
 //                                         danach im Spiel nachprüfen
 //   node tools/abkuerzungen.mjs --pruefen nur nachprüfen (nichts schreiben)
+//   ... --strecke <id oder Datei>         andere Strecke (Standard alpen; seit M10b). Erwartung 127/2/342/84 nur für die Alpen
 //   node tools/abkuerzungen.mjs --nur-reihen  (seit M2a.1) nur die Reihen der schon gesperrten Kurven
 //                                         neu planen. Welche Kurven gesperrt/frei sind ("nichtSchneiden",
 //                                         "schneiden") bleibt genau gleich, danach wird nachgeprüft
@@ -21,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { leseErzeugt, schreibeErzeugt } from './strecke-erzeugt.mjs';
+import { leseErzeugt, schreibeErzeugt, streckenWahl } from './strecke-erzeugt.mjs';
 
 const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const nurPruefen = process.argv.includes('--pruefen');
@@ -30,6 +31,9 @@ const argWert = (name) => { const i = process.argv.indexOf(name); return i > 0 ?
 const offenDatei = argWert('--offen'), offenMerken = argWert('--offen-merken');
 const REFERENZ = offenDatei ? JSON.parse(fs.readFileSync(path.resolve(offenDatei), 'utf8')) : null;
 const AUTO = argWert('--auto') || 'prototyp'; // M8a: Fahrprofil (Referenz: prototyp)
+const WAHL = streckenWahl(); // M10b: --strecke <id oder Datei> (Standard alpen); erzeugte Daten gehen in diese Datei
+// Erwartung der Kurven-Zahlen ("übrig in Kurve"): nur für die Alpen bekannt (Referenzwerte seit M2a.1)
+const ERWARTUNG = WAHL.id === 'alpen' ? '127/2/342/84' : null;
 
 // Playwright suchen (lokal oder global installiert)
 async function ladePlaywright() {
@@ -51,7 +55,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(datei).pipe(res);
 });
 await new Promise((r) => server.listen(0, r));
-const URL_SPIEL = `http://localhost:${server.address().port}/index.html?menue=aus&auto=${encodeURIComponent(AUTO)}`; // am Menü vorbei (M5a), Fahrprofil (M8a)
+const URL_SPIEL = `http://localhost:${server.address().port}/index.html?menue=aus&auto=${encodeURIComponent(AUTO)}&strecke=${encodeURIComponent(WAHL.id)}`; // am Menü vorbei (M5a), Fahrprofil (M8a), Strecke (M10b)
 
 const pw = await ladePlaywright();
 const { chromium } = pw.chromium ? pw : pw.default;
@@ -84,7 +88,7 @@ if (!nurPruefen && !nurReihen) {
     const m = await import('/tools/abkuerzungen-analyse.js');
     const { baueKollision } = await import('/js/kollision.js');
     const px = await import('/js/pixel.js');
-    const tex = { tanne: px.tannenTextur(), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
+    const tex = { tanne: px.nadelbaumTextur(window.__alpineRally.CONFIG.deko.nadelbaum), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
     // Hindernisse ohne die Sperren (falls schon welche drin sind)
     const basis = A.pflanzen.hindernisse.filter((h) => !h.sperre);
     const kol = baueKollision(basis);
@@ -191,8 +195,8 @@ ${frei.map((k) => `    { sVon: ${k.sVon}, sBis: ${k.sBis}, seite: '${k.seite}', 
 };
 `;
 
-  schreibeErzeugt('abkuerzungen', datei); // (seit M10a in der Streckendatei)
-  console.log('-> strecken/alpen.js: erzeugt.abkuerzungen geschrieben');
+  schreibeErzeugt('abkuerzungen', datei, WAHL.datei); // (seit M10a in der Streckendatei)
+  console.log(`-> ${WAHL.relativ}: erzeugt.abkuerzungen geschrieben`);
 }
 
 // --- 1b. nur die Reihen der gesperrten Kurven neu planen (M2a.1) ------------------
@@ -205,7 +209,7 @@ if (nurReihen) {
     const { planeAlleSperren } = await import('/js/sperren.js');
     const ABKUERZUNGEN = (await import('/js/streckenlader.js')).STRECKE.erzeugt.abkuerzungen;
     const px = await import('/js/pixel.js');
-    const tex = { tanne: px.tannenTextur(), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
+    const tex = { tanne: px.nadelbaumTextur(window.__alpineRally.CONFIG.deko.nadelbaum), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
     const basis = A.pflanzen.hindernisse.filter((h) => !h.sperre);
     // alles ausser den Sperren (auch Leitplanken, Zäune, Schilder): so ist das Spiel ohne Sperren
     const ohneSperren = basis.concat(A.strassenrand ? A.strassenrand.hindernisse : []);
@@ -256,11 +260,11 @@ if (nurReihen) {
       plan.frei.some((f) => f.gewinnJetzt !== f.gewinnListe || (f.offenVorher != null && f.offen !== f.offenVorher))) {
     console.log('NICHT geschrieben: Sperren halten nicht oder die freien Kurven ändern sich.');
   } else {
-    const alt = leseErzeugt('abkuerzungen', 'ABKUERZUNGEN'); // (seit M10a in der Streckendatei)
+    const alt = leseErzeugt('abkuerzungen', 'ABKUERZUNGEN', WAHL.datei); // (seit M10a in der Streckendatei)
     const neu = alt.replace(/  sperren: \[\n[\s\S]*?\n  \],\n/,
       `  sperren: [\n${plan.sperren.map((s) => `    { s: ${s.s}, seite: ${s.seite}, von: ${s.von}, bis: ${s.bis} },`).join('\n')}\n  ],\n`);
-    schreibeErzeugt('abkuerzungen', neu);
-    console.log('-> strecken/alpen.js: in erzeugt.abkuerzungen nur die Liste "sperren" ersetzt');
+    schreibeErzeugt('abkuerzungen', neu, WAHL.datei);
+    console.log(`-> ${WAHL.relativ}: in erzeugt.abkuerzungen nur die Liste "sperren" ersetzt`);
   }
 }
 
@@ -270,7 +274,7 @@ const nach = await page.evaluate(async () => {
   const A = window.__alpineRally;
   const m = await import('/tools/abkuerzungen-analyse.js');
   const px = await import('/js/pixel.js');
-  const tex = { tanne: px.tannenTextur(), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
+  const tex = { tanne: px.nadelbaumTextur(window.__alpineRally.CONFIG.deko.nadelbaum), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
   const ABKUERZUNGEN = (await import('/js/streckenlader.js')).STRECKE.erzeugt.abkuerzungen;
   const linien = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision);
   const linien18 = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision, { breite: 1.8 });
@@ -315,6 +319,9 @@ for (const z of nach.zonen) {
 }
 const durchGesperrt = nach.zonen.filter((z) => z.gesperrt).reduce((n, z) => n + z.linien, 0);
 console.log(`Durchkommen in gesperrten Kurven: ${durchGesperrt} Linien`);
+// M10b: Kernzahlen für jede Strecke; die Erwartung gilt nur für die Alpen
+const kern = nach.zonen.map((z) => z.linien).join('/');
+console.log(`Strecke ${WAHL.id}: übrige Linien je Kurve ${kern || '(keine)'}${ERWARTUNG ? ` – Erwartung ${ERWARTUNG}: ${kern === ERWARTUNG ? 'gleich' : 'ANDERS'}` : ' (keine feste Erwartung für diese Strecke)'}`);
 console.log(`Grösste Lücke in einer Sperre (Engstelle der Kette): ${runde(nach.luecke.max, 2)} m (bei ${nach.luecke.wo} m)`);
 console.log(`Nächster sichtbarer Teil zur Strassenmitte (Bankett endet bei 5.5 m): Felsbrocken ${runde(nach.nahFels, 2)} m,` +
   ` Stämme ${runde(nach.nahStamm, 2)} m, Tannen-Stamm ${runde(nach.nahTanne, 2)} m`);

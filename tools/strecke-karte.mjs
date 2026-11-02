@@ -1,4 +1,4 @@
-// Karte, Höhenprofil und Bericht einer Strecke (M10a):  node tools/strecke-karte.mjs <datei> [--aus <ordner>]
+// Karte, Höhenprofil und Bericht einer Strecke (M10a):  node tools/strecke-karte.mjs [<datei> | --strecke <id>] [--aus <ordner>]
 // Lädt das Spiel im Headless-Chromium mit dieser Streckendatei (wie tools/strecke-abfahren.mjs) und zeichnet mit den
 // echten Bauteilen des Spiels (Spline, Netz mit Stummeln, Pace-Notes, Abkürzungen), Pixel im Code, keine Bibliothek:
 //   <id>-karte.png   Draufsicht: Strasse mit Breite und Belag, Stummel, Felswände, Start/Ziel, Checkpoints mit Nummer,
@@ -9,11 +9,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { streckenWahl } from './strecke-erzeugt.mjs';
 import { starteSpiel } from './spiel-browser.mjs';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
-const datei = process.argv.slice(2).find((a, i, l) => !a.startsWith('--') && !(l[i - 1] || '').startsWith('--'));
-if (!datei || !fs.existsSync(datei)) { console.log('Aufruf: node tools/strecke-karte.mjs <datei> [--aus <ordner>]'); process.exit(1); }
+// Strecke: Datei als Argument oder (seit M10b) --strecke <id oder Datei>, Standard alpen
+const datei = process.argv.slice(2).find((a, i, l) => !a.startsWith('--') && !(l[i - 1] || '').startsWith('--')) || streckenWahl().datei;
+if (!datei || !fs.existsSync(datei)) { console.log('Aufruf: node tools/strecke-karte.mjs [<datei> | --strecke <id>] [--aus <ordner>]'); process.exit(1); }
 const ordner = arg('--aus') || '/tmp/strecke-karte';
 fs.mkdirSync(ordner, { recursive: true });
 const inhalt = fs.readFileSync(datei, 'utf8');

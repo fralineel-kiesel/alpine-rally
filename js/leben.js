@@ -20,6 +20,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { fahne as fahnenMotiv } from './motive.js';
 import { zufall, mische } from './util.js';
 import { baueKollision } from './kollision.js';
 import { lebenAtlas } from './lebenbild.js';
@@ -30,6 +31,15 @@ const GRAD = Math.PI / 180;
 const farbe = (hex) => new THREE.Color(hex);
 const WEISS = new THREE.Color('#ffffff');
 
+// Haus nach Typ (Streckendatei deko.haus / deko.stadel, seit M10b). stadel = kleiner Schuppen (auf Steinblöcken,
+// breite Tür), sonst Wohnhaus (Sockel, Tür, Fenster, Kamin). Kacheln je Typ aus dem Atlas (lebenbild.js).
+export const HAUS_TYPEN = {
+  alphuette: { stadel: false, wand: 'bretter', giebel: 'bretterQuer', dach: 'schindel', fenster: 'hfenster', kanten: null },
+  heustadel: { stadel: true, wand: 'bretter', giebel: 'bretterQuer', dach: 'schindel', fenster: 'hfenster', kanten: null },
+  holzhaus: { stadel: false, wand: 'bretterRot', giebel: 'bretterRot', dach: 'dachDunkel', fenster: 'hfensterWeiss', kanten: 'kanteWeiss' },
+  holzschuppen: { stadel: true, wand: 'bretterRot', giebel: 'bretterRot', dach: 'dachDunkel', fenster: 'hfensterWeiss', kanten: 'kanteWeiss' },
+};
+
 // Plätze, die für die neuen Kühe frei bleiben (Hütte, Stadel, Brunnen, Details am Wiesenweg).
 // netz = Strassennetz (js/netz.js). Ergebnis: Kreise { x, z, r }
 export function lebenPlaetze(netz) {
@@ -37,7 +47,8 @@ export function lebenPlaetze(netz) {
   if (!L || L.an === false) return [];
   const W = L.wiesenweg, aus = [];
   const p = (s, seite, lat, r) => { const q = netz.etappePunkt(s); aus.push({ x: q.x - q.tz * seite * lat, z: q.z + q.tx * seite * lat, r }); };
-  for (const h of [W.huette, W.stadel]) if (h) p(h.s, h.seite, h.lat, Math.hypot(h.laenge, h.tiefe) / 2 + 2.5);
+  for (const h of [W.huette, W.stadel, ...(W.haeuser || [])]) if (h) p(h.s, h.seite, h.lat, Math.hypot(h.laenge, h.tiefe) / 2 + 2.5);
+  for (const st of W.stege || []) p(st.s, st.seite, st.lat, st.laenge / 2 + 1.5);
   if (W.brunnen) p(W.brunnen.s, W.brunnen.seite, W.brunnen.lat, 2.5);
   for (const [s, sd, lat] of [...(W.steinmaennchen || []), ...(W.heurollen || [])]) p(s, sd, lat, 1.6);
   for (const [s, sd, lat, h] of W.findlinge || []) p(s, sd, lat, h + 0.8);
@@ -299,11 +310,14 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     return y;
   }
 
-  // Alphütte / Heustadel: Steinsockel, Bretterwände, Satteldach mit Schindeln (First entlang b)
-  function huette(cfg, stadel) {
+  // Alphütte / Heustadel (und M10b: andere Haus-Typen): Steinsockel, Bretterwände, Satteldach (First entlang b)
+  function huette(cfg, typ) {
+    const T = HAUS_TYPEN[typ];
+    if (!T) throw new Error(`Haus-Typ "${typ}" unbekannt (bekannt: ${Object.keys(HAUS_TYPEN).join(', ')})`);
+    const stadel = T.stadel;
     const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung);
     const lb = cfg.laenge / 2, ta = cfg.tiefe / 2; // halbe Länge (b) und Tiefe (a)
-    if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.6, ta + 0.6, { krone: true })) { abgelehnt.push(stadel ? 'stadel' : 'huette'); return null; }
+    if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.6, ta + 0.6, { krone: true })) { abgelehnt.push((stadel ? 'stadel' : 'huette') + (grund ? ` (${grund})` : '')); return null; }
     const y0 = bodenUnter(R.x, R.z, R.ux, R.uz, lb, ta);
     const yHoch = Math.max(...[-1, 1].flatMap((a) => [-1, 1].map((c) => boden(R.x + R.ux * lb * a - R.uz * ta * c, R.z + R.uz * lb * a + R.ux * ta * c))));
     rahmen(R.x, y0, R.z, R.ux, R.uz);
@@ -314,13 +328,14 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
       // auf Steinblöcken (Luft unter dem Boden), Bretter mit Lücken
       for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, -1], [0, 1]]) quader(a * ta - 0.25, a * ta + 0.25, -0.3, sockel, b * lb - 0.25, b * lb + 0.25, 'steinmauer', 0.95);
     } else quader(-ta - 0.08, ta + 0.08, -0.4, sockel, -lb - 0.08, lb + 0.08, 'steinmauer', 1);
-    quader(-ta, ta, sockel, sockel + H, -lb, lb, { seite: 'bretter', oben: 'keins' }, stadel ? 0.92 : 1);
+    quader(-ta, ta, sockel, sockel + H, -lb, lb, { seite: T.wand, oben: 'keins' }, stadel ? 0.92 : 1);
+    if (T.kanten) for (const a of [-1, 1]) for (const b of [-1, 1]) quader(a * ta - 0.09, a * ta + 0.09, sockel, sockel + H, b * lb - 0.09, b * lb + 0.09, T.kanten, 1); // weisse Eckbretter
     // Giebel (Dreiecke an den Enden b = ±lb) und Dach
     const yt = sockel + H, yf = yt + dach, ue = 0.4, ueb = 0.35;
-    for (const b of [-lb, lb]) dreieck([b < 0 ? ta : -ta, yt, b], [b < 0 ? -ta : ta, yt, b], [0, yf, b], 'bretterQuer', 0.9);
+    for (const b of [-lb, lb]) dreieck([b < 0 ? ta : -ta, yt, b], [b < 0 ? -ta : ta, yt, b], [0, yf, b], T.giebel, 0.9);
     for (const sd of [-1, 1]) {
       const unten = (bb) => [sd * (ta + ue), yt - ue * (dach / ta), bb], oben = (bb) => [0, yf + 0.06, bb];
-      viereck(unten(-lb - ueb), unten(lb + ueb), oben(lb + ueb), oben(-lb - ueb), 'schindel', sd > 0 ? 1.04 : 0.86);
+      viereck(unten(-lb - ueb), unten(lb + ueb), oben(lb + ueb), oben(-lb - ueb), T.dach, sd > 0 ? 1.04 : 0.86);
     }
     // Front: Tür und Fenster; Rückseite ein Fenster
     const fa = vorn * (ta + 0.02);
@@ -329,9 +344,9 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
       flaeche(fa, -0.9, 0.9, sockel + 0.05, sockel + H - 0.15, 'htuer', 0.95);
     } else {
       flaeche(fa, -0.45 - lb * 0.15, 0.45 - lb * 0.15, sockel, sockel + 1.85, 'htuer');
-      for (const b of [-lb * 0.62, lb * 0.45]) flaeche(fa, b - 0.55, b + 0.55, sockel + 0.95, sockel + 1.6, 'hfenster', 1.05);
-      flaeche(-fa, -0.5, 0.5, sockel + 0.95, sockel + 1.55, 'hfenster', 0.95);
-      for (const b of [-lb - 0.02, lb + 0.02]) viereck([-0.5, sockel + 1.0, b], [0.5, sockel + 1.0, b], [0.5, sockel + 1.6, b], [-0.5, sockel + 1.6, b], 'hfenster', 0.9);
+      for (const b of [-lb * 0.62, lb * 0.45]) flaeche(fa, b - 0.55, b + 0.55, sockel + 0.95, sockel + 1.6, T.fenster, 1.05);
+      flaeche(-fa, -0.5, 0.5, sockel + 0.95, sockel + 1.55, T.fenster, 0.95);
+      for (const b of [-lb - 0.02, lb + 0.02]) viereck([-0.5, sockel + 1.0, b], [0.5, sockel + 1.0, b], [0.5, sockel + 1.6, b], [-0.5, sockel + 1.6, b], T.fenster, 0.9);
       // Kamin aus Stein
       quader(-0.3 - ta * 0.3, 0.3 - ta * 0.3, yt + dach * 0.5, yf + 0.7, lb * 0.4 - 0.3, lb * 0.4 + 0.3, 'steinmauer', 0.9);
       // Holzstapel an der Stirnseite (b = -lb), Bank vor der Front
@@ -346,6 +361,21 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     rechteckKreise(R.x - R.ux * (stadel ? 0 : 0.3), R.z - R.uz * (stadel ? 0 : 0.3), R.ux, R.uz, lx, lz, stadel ? 'stadel' : 'huette', 0.4);
     stelleHin(R.x, R.z, R.ux, R.uz, lx + 0.4, lz + 0.6, 0.5);
     return { x: R.x, z: R.z, ux: R.ux, uz: R.uz, l: lx, b: lz };
+  }
+
+  // M10b: Steg am Wasser: Bretterboden auf Pfählen, laenge = vom Ufer weg (quer zur Strasse), liegt hoehe über dem Boden
+  function steg(cfg) {
+    const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung || 0);
+    const lb = 0.8, ta = cfg.laenge / 2;
+    if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.3, 1.2, {})) { abgelehnt.push('steg' + ` (${grund})`); return; }
+    // Höhe: Boden, über dem Wasser aber der Wasserspiegel des nächsten Sees (M10b, welt.wasser)
+    let y0 = cfg.y != null ? cfg.y : boden(R.x, R.z);
+    const W = welt.wasser;
+    if (cfg.y == null && W && W.an) for (const f of W.seen) if (Math.hypot(f.x - R.x, f.z - R.z) < Math.max(f.rx, f.rz) + 25) y0 = Math.max(y0, f.h);
+    rahmen(R.x, y0, R.z, R.ux, R.uz);
+    const h = cfg.hoehe ?? 0.5;
+    quader(-ta, ta, h - 0.12, h, -lb, lb, { seite: 'bretterQuer', oben: 'bretterQuer' }, 1.05);
+    for (let a = -ta + 0.3; a <= ta; a += 1.6) for (const b of [-lb + 0.1, lb - 0.1]) quader(a - 0.08, a + 0.08, -1.5, h - 0.12, b - 0.08, b + 0.08, 'rinde', 0.8);
   }
 
   function brunnen(cfg) {
@@ -468,7 +498,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     stelleHin(p.x, p.z, p.tx, p.tz, l / 2, 0.15, 0.3);
   }
 
-  // Fahnenmast (Schweizer Kreuz oder einfarbig)
+  // Fahnenmast (Landesfahne nach Motiv der Strecke oder einfarbig; 'kreuz' = alter Name für 'motiv')
   function fahne(s, lat, art) {
     const p = ort(s, lat);
     if (!platzOk(p.x, p.z, 0.3, { strasse: L.fans.abstand - 0.6 })) { abgelehnt.push(`fahne ${s}` + ` (${grund})`); return; }
@@ -476,7 +506,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     T = (q) => q;
     balken([p.x, y - 0.1, p.z], [p.x, y + H, p.z], 0.07, 'metall', 0.95);
     const f = art === 'gruen' ? farbe('#2c7a3a') : art === 'rot' ? farbe('#c8202a') : WEISS;
-    const kachel = art === 'kreuz' ? 'fahneKreuz' : 'stoff';
+    const kachel = art === 'motiv' || art === 'kreuz' ? 'fahneKreuz' : 'stoff';
     for (let k = 0; k < 3; k++) {
       const a0 = (k / 3) * 1.4, a1 = ((k + 1) / 3) * 1.4, w0 = Math.sin(k * 1.7) * 0.12, w1 = Math.sin((k + 1) * 1.7) * 0.12;
       const q = (a, w, oben) => [p.x + p.tx * a - p.tz * w, y + H - 0.05 - (oben ? 0 : 0.95) - a * 0.06, p.z + p.tz * a + p.tx * w];
@@ -806,6 +836,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
   // =====================================================================
   const F = L.fans;
   const ZF = CONFIG.startZiel.zuschauer;
+  const FAHNE_FARBE = fahnenMotiv(CONFIG.deko.fahne).zuschauerFarbe || ZF.fahnenRot; // Fahnen der Zuschauer (Motiv der Strecke)
   const jacken = ZF.jacken.map(farbe), hosen = ZF.hosen.map(farbe), muetzen = ZF.muetzen.map(farbe), haare = ZF.haare.map(farbe);
   const wahl = (liste) => liste[Math.floor(rnd() * liste.length)];
   const figuren = [];
@@ -814,7 +845,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     const name = ZUSCHAUER_POSEN[pose];
     const kind = name !== 'posten' && name !== 'sitzend' && rnd() < F.kinder;
     const groesse = kind ? mische(0.6, 0.72, rnd()) : mische(ZF.groesse[0], ZF.groesse[1], rnd()) / 1.75;
-    const muetze = name.startsWith('fahne') && rnd() < 0.7 ? farbe(ZF.fahnenRot) : farbe(wahl(ZF.muetzen));
+    const muetze = name.startsWith('fahne') && rnd() < 0.7 ? farbe(FAHNE_FARBE) : farbe(wahl(ZF.muetzen));
     const takt = name === 'winkend' || name === 'jubelnd' || name.startsWith('fahne') || name === 'posten' ? mische(ZF.winken[0], ZF.winken[1], rnd()) : 0;
     const f = { x, z, y: welt.gelaendeHoehe(x, z) - 0.04, blick, pose, groesse, hell: 0.9 + rnd() * 0.15,
       jacke: wahl(jacken), hose: wahl(hosen), muetze, haar: wahl(haare), takt, phase: rnd() * 2, ort: ortName, ...extra };
@@ -884,8 +915,11 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     G = { pos: [], uv: [], col: [], idx: [] };
     geos.set('wiesenweg', G);
     const W = L.wiesenweg;
-    const h = W.huette ? versuche('huette', (ds, dl) => huette({ ...W.huette, s: W.huette.s + ds, lat: W.huette.lat + dl }, false)) : null;
-    if (W.stadel) versuche('stadel', (ds, dl) => huette({ ...W.stadel, s: W.stadel.s + ds, lat: W.stadel.lat + dl }, true));
+    const h = W.huette ? versuche('huette', (ds, dl) => huette({ ...W.huette, s: W.huette.s + ds, lat: W.huette.lat + dl }, CONFIG.deko.haus)) : null;
+    if (W.stadel) versuche('stadel', (ds, dl) => huette({ ...W.stadel, s: W.stadel.s + ds, lat: W.stadel.lat + dl }, CONFIG.deko.stadel));
+    // M10b: weitere Häuser und Schuppen (Dorf) und Stege am Wasser
+    for (const [k, hs] of (W.haeuser || []).entries()) versuche(`haus ${k}`, (ds, dl) => huette({ ...hs, s: hs.s + ds, lat: hs.lat + dl }, hs.schuppen ? CONFIG.deko.stadel : CONFIG.deko.haus));
+    for (const [k, st] of (W.stege || []).entries()) versuche(`steg ${k}`, (ds, dl) => steg({ ...st, s: st.s + ds, lat: st.lat + dl }));
     if (W.brunnen) versuche('brunnen', (ds, dl) => brunnen({ ...W.brunnen, s: W.brunnen.s + ds, lat: W.brunnen.lat + dl }));
     if (W.wegweiser) wegweiser(W.wegweiser);
     for (const [s, sd, lat] of W.steinmaennchen || []) versuche(`steinmann ${s}`, (ds, dl) => steinmann(s + ds, sd, lat + dl));

@@ -35,6 +35,9 @@ export function randAbstand(s, seite) { // eslint-disable-line no-unused-vars
   for (const nw of CONFIG.nebenwege || []) {
     if (s > nw.abzweig && s < nw.einmuendung) return CONFIG.strassenrand.abstand - (B.asphalt.breite - B[nw.belag || 'schotter'].breite) / 2;
   }
+  for (const ab of CONFIG.belagAbschnitte || []) { // M10b: Untergrund-Abschnitte ohne Abzweig
+    if (s > ab.von && s < ab.bis) return CONFIG.strassenrand.abstand - (B.asphalt.breite - B[ab.belag].breite) / 2;
+  }
   return CONFIG.strassenrand.abstand;
 }
 

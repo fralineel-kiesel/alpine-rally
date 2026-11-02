@@ -59,7 +59,8 @@ export function umgebungsQuellen({ strecke, netz, kuehe, startZiel, leben }) {
   // Herden: Mittelpunkt, Radius (weiteste Kuh), Kühe mit Pose
   const herden = [];
   const nachNr = new Map();
-  for (const k of (kuehe && kuehe.kuehe) || []) {
+  // (M10b: nur wenn die Tiere der Strecke Glocken tragen, deko.tierKlang = 'glocke'; sonst sind die Herden still)
+  for (const k of (CONFIG.deko.tierKlang === 'glocke' && kuehe && kuehe.kuehe) || []) {
     if (k.herde == null) continue;
     if (!nachNr.has(k.herde)) { const h = { nr: k.herde, x: 0, z: 0, r: 0, anzahl: 0, posen: [0, 0, 0], kuehe: [] }; nachNr.set(k.herde, h); herden.push(h); }
     const h = nachNr.get(k.herde);
@@ -100,6 +101,11 @@ export function umgebungsQuellen({ strecke, netz, kuehe, startZiel, leben }) {
     const b = CONFIG.leben.wiesenweg.brunnen, [x, z] = etappe(b.s, b.seite * b.lat);
     brunnen = { x, z };
   }
+  // M10b: weitere Wasser-Orte (See, Fluss) aus der Streckendatei: klang.wasser = [[Streckenmeter, seitlich], ...].
+  // Der Brunnen-Klang spielt am jeweils nächsten Ort (ohne Liste: nur der Brunnen wie bisher).
+  const wasser = brunnen ? [brunnen] : [];
+  for (const [s, lat] of (CONFIG.klangWasser || [])) { const [x, z] = etappe(s, lat); wasser.push({ x, z }); }
+  if (!brunnen && wasser.length) brunnen = wasser[0];
   // Vögel: Dichte je Meter (aus den Abschnitten in track.js), an den Grenzen weich überblendet
   const V = U.voegel, L = Math.ceil(strecke.laenge) + 1, roh = new Float32Array(L), dichte = new Float32Array(L);
   const fehlen = [];
@@ -115,7 +121,7 @@ export function umgebungsQuellen({ strecke, netz, kuehe, startZiel, leben }) {
   // Böen: Abschnitt (Passhöhe) von ... bis
   const pa = strecke.abschnitte.filter((a) => a.name === U.boeen.abschnitt);
   const pass = pa.length ? { von: Math.min(...pa.map((a) => a.von)), bis: Math.max(...pa.map((a) => a.bis)) } : null;
-  return { herden, orte, brunnen, voegel: { dichte, fehlen, namen: strecke.abschnitte.map((a) => a.name) }, pass, laenge: strecke.laenge };
+  return { herden, orte, brunnen, ...(wasser.length > 1 ? { wasser } : {}), voegel: { dichte, fehlen, namen: strecke.abschnitte.map((a) => a.name) }, pass, laenge: strecke.laenge };
 }
 
 // --- Puffer-Rezepte (nach dem Entsperren in Häppchen berechnet, siehe audio.js) ----------------------------------------
@@ -623,7 +629,12 @@ export function baueUmgebung(ctx, ausgang, puffer, merke = () => {}) {
   function brunnen() {
     const B = U.brunnen;
     if (!Q.brunnen) { z.brunnenPegel = 0; setz(10, bru.gP, 0); return; }
-    RAUM_EIN[0] = z.hx; RAUM_EIN[1] = z.hz; RAUM_EIN[2] = z.yaw; RAUM_EIN[3] = Q.brunnen.x; RAUM_EIN[4] = Q.brunnen.z;
+    let w = Q.brunnen;
+    if (Q.wasser) { // M10b: mehrere Wasser-Orte: der nächste klingt (ohne neue Objekte pro Bild)
+      let best = Infinity;
+      for (let i = 0; i < Q.wasser.length; i++) { const o = Q.wasser[i], d = (o.x - z.hx) ** 2 + (o.z - z.hz) ** 2; if (d < best) { best = d; w = o; } }
+    }
+    RAUM_EIN[0] = z.hx; RAUM_EIN[1] = z.hz; RAUM_EIN[2] = z.yaw; RAUM_EIN[3] = w.x; RAUM_EIN[4] = w.z;
     raumRechnen(B, ro);
     z.brunnenPegel = B.pegel / SCHLEIFE_RMS * ro.gain;
     setz(10, bru.gP, z.brunnenPegel); setz(11, bru.panP, ro.pan); setz(12, bru.lpP, ro.tiefpass);

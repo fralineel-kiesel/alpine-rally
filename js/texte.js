@@ -79,8 +79,16 @@ export const TEXTE = {
   'fehler.strecke.datei': { de: 'STRECKENDATEI FEHLT ODER IST KAPUTT', en: 'STAGE FILE MISSING OR BROKEN' },
   'fehler.strecke.ungueltig': { de: 'STRECKENDATEI IST UNGÜLTIG', en: 'STAGE FILE IS INVALID' },
   'fehler.strecke.laenge': { de: 'LÄNGE DER STRECKE PASST NICHT', en: 'STAGE LENGTH DOES NOT MATCH' },
+  'fehler.strecke.zurueck': { de: 'TASTE ODER ANTIPPEN: ZUR STANDARD-ETAPPE', en: 'KEY OR TAP: BACK TO THE DEFAULT STAGE' }, // M10b
   'fehler.strecke.hinweis': { de: 'NEU LADEN. HILFT DAS NICHT: BITTE MELDEN.', en: 'RELOAD. IF THAT DOES NOT HELP: PLEASE REPORT.' },
   'etappe.spaeter': { de: 'WEITERE ETAPPEN FOLGEN', en: 'MORE STAGES TO COME' },
+  // M10b: Etappenwahl (Liste mit Vorschau-Karte)
+  'etappe.zeile': { de: '{km} KM  BESTZEIT {zeit}', en: '{km} KM  BEST {zeit}' },
+  'etappe.keineZeit': { de: '-:--.--', en: '-:--.--' },
+  'etappe.laedt': { de: 'LÄDT ...', en: 'LOADING ...' },
+  'etappe.kaputt': { de: 'DATEI KAPUTT', en: 'FILE BROKEN' },
+  'etappe.hinweis': { de: 'BESTÄTIGEN = WÄHLEN (KURZ NEU LADEN)', en: 'CONFIRM = SELECT (SHORT RELOAD)' },
+  'etappe.wechsel': { de: 'ETAPPE WIRD GELADEN ...', en: 'LOADING STAGE ...' },
 
   // --- Bestzeiten ---
   'bestzeiten.titel': { de: 'BESTZEITEN', en: 'BEST TIMES' },
