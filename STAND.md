@@ -2,12 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 10a fertig** (Version 0.10a) – **die Alpenstrecke ist jetzt eine Datendatei** (`strecken/alpen.js`),
-das Spiel fährt sich, klingt und sieht aus **wie 0.9a.2** (Testfahrer, Pace-Notes, 26 Bilder und Ton gegen 0.9a.2 verglichen).
-Neu: Lader mit Fehlerseite, Strecken-Register, Prüfer und Werkzeuge (Karte, Höhenprofil, Abfahren). **Nur Chromium, kein Handy.**
-**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m10a.md`** (vor allem: sind deine Bestzeiten noch da?).
-Davor: 9a.2 (Touch: R in der Ecke, Knopfgrösse, Layout, HUD-Grösse). Nächster Schritt: **M10b Etappenwahl + Finnland-Schotter**
-(noch kein Prompt).
+Aktuell: **Meilenstein 10b fertig** (Version 0.10b) – **Etappenwahl im Menü und zweite Strecke „Finnland-Schotter“**.
+Menü → ETAPPE: Liste mit Vorschau-Karte, wählen lädt kurz neu; BESTZEITEN mit Etappen-Umschalter (Alpen-Zeiten
+unverändert). Die **Alpen sind gegen 0.10a gleich** (Bilder pixelgleich, Ton, Testfahrer). **Nur Chromium, kein Handy.**
+**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m10b.md`.** Nächster Schritt: **M10c Sprünge mit Flugphase**
+auf den markierten Kuppen von Finnland (noch kein Prompt).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -57,6 +56,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/checkpoints.js` – Checkpoints: Tore quer über die Strasse (zwei Pfosten und ein Banner).
 - `js/config.js` – alle Stellschrauben an einem Ort (gross: nur bereichsweise lesen)
 - `js/demofahrt.js` – Demo-Fahrt hinter Titel und Hauptmenü (seit M5a).
+- `js/etappenwahl.js` – Etappenwahl (M10b): Infos aller Strecken, Vorschau-Karte, Wählen = merken + neu laden.
 - `js/einstellungen.js` – Einstellungen (seit M5a): Werte, Standardwerte aus config.js (Block…
 - `js/fehlerseite.js` – Fehlerseite (M10a), wenn die Strecke nicht geladen werden kann (Pixel-Look, de/en).
 - `js/fahrlabor.js` – Fahr-Labor (Meilenstein 8a): Seitenpanel zum Nachstellen des Fahrgefühls…
@@ -76,6 +76,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/main.js` – Start des Spiels und Spielschleife.
 - `js/menue.js` – Menü-Baustein (seit M5a): Seiten mit einer Liste von Einträgen, gezeichnet i…
 - `js/menueseiten.js` – Die Menüseiten (seit M5a): Titel, Hauptmenü, Auto, Etappe, Bestzeiten,…
+- `js/motive.js` – Landesfahnen als Pixelbild (M10b), Wahl in der Streckendatei (`deko.fahne`).
 - `js/minimap.js` – Minimap oben rechts (Meilenstein 6, seit M6.1 ein mitfahrender Ausschnitt)…
 - `js/musik.js` – Menü-Musik (M7b): spielt das Stück aus js/musikstueck.js mit Web Audio, alle…
 - `js/musikstueck.js` – Menü-Musik (M7b): Notendaten des Stücks "Passfahrt" – Eigenkomposition…
@@ -91,7 +92,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/startziel.js` – Start- und Zielbereich (Meilenstein 3c).
 - `js/startzielbild.js` – Pixel-Bilder für den Start- und Zielbereich (Meilenstein 3c), im Cod…
 - `js/staub.js` – Staub auf Schotter (Meilenstein 3a): helle Wölkchen hinter den Hinterrädern.
-- `js/strecken.js` – Strecken-Register (M10a): Liste der Strecken (heute nur `alpen`), aktuelle Strecke.
+- `js/strecken.js` – Strecken-Register (M10a): Liste der Strecken (`alpen`, seit M10b `finnland`), gewählte Strecke.
 - `js/streckenlader.js` – Lader (M10a): Streckendatei holen, schnell prüfen, `STRECKE` bereitstellen.
 - `js/streckenpruefung.js` – Prüfung einer Streckendatei (M10a; schnell im Lader, voll in `tools/strecke-pruefen.mjs`).
 - `js/strassenrand.js` – Strassenrand (Meilenstein 2a): Leitplanken, Holzzäune und Schilder.
@@ -106,6 +107,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/umgebung.js` – Umgebungsklänge (M7b): Kuhglocken, Publikum (Gemurmel, Jubel, Klatschen),…
 - `js/util.js` – Kleine Hilfsfunktionen: Zufall mit festem Startwert, Rauschen, Mathe.
 - `js/vergleich.js` – Live-Vergleich zur Bestzeit oder zum letzten Lauf (Meilenstein 6).
+- `js/wasser.js` – Seen, Flüsse und Holzbrücken (M10b), Orte in der Streckendatei (`wasser`).
 - `js/world.js` – Die Welt: Gelände, Strasse, Felswand, Hintergrundberge, Himmel.
 
 Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
@@ -129,6 +131,10 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - **Limits:** Draw Calls pro Auto ≤ 12, Dreiecke pro Auto ≤ 1800, kein Garbage pro Bild, Ladezeit gleich, Ton ändert nie das Spiel.
 
 ## Werkzeuge und Tests
+
+- `node tools/m10b-test.mjs --alt <ordner 0.10a>` – alle Prüfungen von M10b (a1–a5, b … s); einzeln `--nur e,f`; Regression
+  mit `--lang` (0.10a: `git worktree add <ordner> e7054e3`). `node tools/m10b-bilder.mjs` – Bilder nach `screenshots/m10b/`.
+  Strecken-Werkzeuge nehmen `--strecke <id>` (Standard `alpen`); Finnland-Verlauf: `tools/finnland-entwurf.mjs`.
 
 - `node tools/m10a-test.mjs --alt <ordner 0.9a.2>` – alle Prüfungen von M10a (a) bis (l); einzeln `--nur e,f`; Regression mit
   `--lang` (0.9a.2: `git worktree add <ordner> 90df3d8`). Bilder: eigene Bild-Uhr im Test (pixelgleich vergleichbar).
@@ -196,9 +202,12 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
+- **Strecken (M10b-Ideen):** Rentier-Warnschild (heute allgemeine Tier-Silhouette), Sonnenscheibe/Abendrot am Himmel,
+  Spiegelung im See, Ton nach dem Etappenwechsel ohne neue Eingabe (geht im Browser nicht ohne Klick), Strecke
+  wechseln ohne Neuladen, eigene Grip-Abstimmung der Hecktriebler auf Schotter (M10c mit Auto-Gewicht).
+
 - **Strecken (M10a-Ideen):** Geisterauto aus der Fahrspur, Rally-Modus mit mehreren Etappen hintereinander, Wetter und
-  Tageszeit als Streckendaten, Strecken-Editor im Browser. Dazu: Zuschauer-Fahne als Datenwert (heute Schweizer Kreuz im
-  Code), Werkzeuge für erzeugte Daten mit `--strecke <id>`.
+  Tageszeit als Streckendaten, Strecken-Editor im Browser. (Fahne als Datenwert und `--strecke` sind seit M10b erledigt.)
 
 - **Touch (M9a.2-Ideen):** kurzer Klickton als Ersatz für die iPhone-Haptik, eigener Handbremsen-Knopf neben A/B,
   analoge Lenkung nach Daumenposition im D-Pad, Knöpfe frei verschieben (ziehen), Wake Lock (Bildschirm bleibt an).
@@ -236,6 +245,11 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Während der Arbeit: `docs/meilensteine/<name>-arbeitsstand.md` (10 bis 20 Zeilen: erledigt, Werte, offene Fragen) nach jedem Teil nachführen.
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
+
+- **M10b** (0.10b) – Etappenwahl (Liste + Vorschau-Karte, wählen = kurz neu laden, Hauptmenü zeigt die Etappe), Bestzeiten
+  je Etappe mit Umschalter, neue Strecke **Finnland-Schotter** (2.7 km, 89 % Schotter, Seen, Dorf, Holzbrücke, Spitzkehre,
+  4 markierte Kuppen für M10c), Deko-Sets als Streckendaten (Fahne, Tier, Haus, Bäume), Werkzeuge mit `--strecke`.
+  Alpen gegen 0.10a gleich. Bericht, Tests, Testfahrer-Zeiten, Unsicherheiten, Test-Anleitung: `docs/meilensteine/m10b.md`.
 
 - **M10a** (0.10a) – Bericht mit Inventur, Format, Tests alt/neu, Unsicherheiten, Test-Anleitung: `docs/meilensteine/m10a.md`.
   - **Strecke als Daten:** `strecken/alpen.js` (52 KB, reine Daten), Lader `js/streckenlader.js`, Register `js/strecken.js`;

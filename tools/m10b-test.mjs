@@ -244,6 +244,7 @@ if (teil('a3')) {
     // (M10b: Fahnen-Art 'kreuz' heisst jetzt 'motiv' = Landesfahne der Strecke; gleiche Wirkung, darum gleichgesetzt)
     const ordne = (o) => (Array.isArray(o) ? o.map(ordne) : o && typeof o === 'object' ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, ordne(o[k])])) : o === 'motiv' ? 'kreuz' : o);
     const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
+    if (cn.menue) { delete cn.menue.etappenSeite; delete cn.menue.etappenKarte; } // (M10b: neue Werte der Seite ETAPPE)
     const NEU_M10B = ['deko', 'klangWasser', 'belagAbschnitte', 'wasser']; // neue Blöcke in M10b (gleiche Wirkung: Wahl der Alpen wie vorher im Code)
     const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
     melde(unterschiede.length === 0, `CONFIG (alle Werte, sortiert) gleich wie 0.10a${unterschiede.length ? `; anders: ${unterschiede.join(', ')}` : ''}`);
@@ -327,13 +328,16 @@ if (teil('a4')) {
     await s.page.goto(`${s.url}/tools/leer.html`).catch(() => {});
     const paare = Object.keys(neu).filter((k) => k !== 'seiten' && k !== 'fehler').map((k) => [k, neu[k], alt[k]])
       .concat(Object.keys(neu.seiten).map((k) => [`menü ${k}`, neu.seiten[k], alt.seiten[k]]));
-    const rot = [], nurVersion = [];
+    const rot = [], nurVersion = [], neuGestaltet = [];
+    // M10b: absichtlich neu gestaltete Menüseiten (Etappenwahl, Hauptmenü mit Namen der Etappe, Bestzeiten mit Umschalter)
+    const NEU_GESTALTET = ['menü etappe', 'menü haupt', 'menü bestzeiten'];
     // Seit Teil D steht 0.10b statt 0.10a in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
     // anders sein (Unterschied höchstens 7 Pixel hoch, ganz in der Zeile, in der die Version steht)
     const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 230 && box[1] >= 168) || k === 'menü credits');
     for (const [k, n, a] of paare) {
       const v = await vergleiche(s.page, a, n, k === 'rt4-weide' || k === 'titel');
-      if (v.anders !== 0 && versionsZeile(k, v.box)) nurVersion.push(`${k} (${v.anders} Pixel in x ${v.box[0]}–${v.box[2]}, y ${v.box[1]}–${v.box[3]})`);
+      if (v.anders !== 0 && NEU_GESTALTET.includes(k)) neuGestaltet.push(`${k} (${v.anders} Pixel)`);
+      else if (v.anders !== 0 && versionsZeile(k, v.box)) nurVersion.push(`${k} (${v.anders} Pixel in x ${v.box[0]}–${v.box[2]}, y ${v.box[1]}–${v.box[3]})`);
       else if (v.anders !== 0) rot.push(`${k}: ${v.anders} Pixel (${v.box})`);
       if (v.url) fs.writeFileSync(path.join(LOG, `vergleich-${k}.png`), Buffer.from(v.url.split(',')[1], 'base64'));
     }
@@ -341,8 +345,9 @@ if (teil('a4')) {
     const gegen = await vergleiche(s.page, neu['rt4-pass'], neu['rt4-weide']);
     await s.schliessen();
     for (const [k, b] of Object.entries(neu)) if (typeof b === 'string') fs.writeFileSync(path.join(LOG, `neu-${k}.png`), Buffer.from(b.split(',')[1], 'base64'));
-    melde(rot.length === 0, `${paare.length} Bilder verglichen: ${paare.length - nurVersion.length} pixelgleich wie 0.10a, ${nurVersion.length} bis auf die Versionszeile (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
+    melde(rot.length === 0, `${paare.length} Bilder verglichen: ${paare.length - nurVersion.length - neuGestaltet.length} pixelgleich wie 0.10a, ${nurVersion.length} bis auf die Versionszeile, ${neuGestaltet.length} Menüseiten neu gestaltet (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
     if (nurVersion.length) info(`nur die Versionszeile anders (0.10a -> 0.10b): ${nurVersion.join(', ')}`);
+    if (neuGestaltet.length) info(`absichtlich neu gestaltet (M10b): ${neuGestaltet.join(', ')}`);
     melde(gegen.anders > 1000, `Gegenprobe: Passhöhe und Weide unterscheiden sich in ${gegen.anders} Pixeln (der Vergleich sieht Unterschiede)`);
     melde(neu.fehler.length === 0 && alt.fehler.length === 0, `Konsole ohne Fehler (neu ${neu.fehler.length}, alt ${alt.fehler.length})`);
     info(`Bilder: ${LOG}/neu-*.png, Vergleich alt | neu | Unterschied: ${LOG}/vergleich-weide.png`);
@@ -605,7 +610,7 @@ if (teil('d')) {
   console.log('(d) strecke-karte: Karte, Profil, Bericht');
   if (!fs.existsSync(path.join(WURZEL, 'tools/strecke-karte.mjs'))) melde(false, 'tools/strecke-karte.mjs fehlt');
   else {
-    const r = werkzeug('strecke-karte.mjs', ['strecken/alpen.js', '--aus', LOG]);
+    const r = werkzeug('strecke-karte.mjs', ['--strecke', 'alpen', '--aus', LOG]);
     fs.writeFileSync(path.join(LOG, 'karte.log'), r.text);
     const bericht = fs.existsSync(path.join(LOG, 'alpen-bericht.txt')) ? fs.readFileSync(path.join(LOG, 'alpen-bericht.txt'), 'utf8') : '';
     const laenge = +((/Länge: ([\d.]+) m/.exec(bericht) || [])[1]);
@@ -620,7 +625,7 @@ if (teil('d')) {
   if (!fs.existsSync(path.join(WURZEL, 'tools/strecke-abfahren.mjs'))) melde(false, 'tools/strecke-abfahren.mjs fehlt');
   else {
     for (const [id, erwartet] of [['prototyp', '2:59.33 / 2:42.35 / 2:31.92'], ['l073', null]]) {
-      const r = werkzeug('strecke-abfahren.mjs', ['strecken/alpen.js', '--auto', id, '--aus', path.join(LOG, `abfahren-${id}.txt`)]);
+      const r = werkzeug('strecke-abfahren.mjs', ['--strecke', 'alpen', '--auto', id, '--aus', path.join(LOG, `abfahren-${id}.txt`)]);
       const zeiten = ((/Gesamtzeiten: (.*)/.exec(r.text) || [])[1] || '').trim();
       let soll = erwartet;
       if (!soll) { const t = werkzeug('testfahrer.mjs', ['--auto', id]).text; soll = t.split('\n').filter((x) => /^\s+(vorsichtig|mittel|flott)\b/.test(x)).map((x) => x.trim().split(/\s+/)[1]).join(' / '); }
