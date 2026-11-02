@@ -54,6 +54,8 @@ export const CONFIG = {
   // Untergrund-Abschnitte: die Etappe biegt auf einen Nebenweg ab und mündet später wieder ein (Stummel abgesperrt).
   // Seit M10a in der Streckendatei (Block "nebenwege", Stützpunkte dort in "punkte").
   nebenwege: S.nebenwege,
+  // M10b: Untergrund-Abschnitte ohne Abzweig (nur der Belag wechselt, z. B. Schotter auf der ganzen Etappe): Streckendatei
+  belagAbschnitte: S.belagAbschnitte || [],
   // Standardform eines Stummels (Hauptstrasse, die hinter der Absperrung weiterläuft)
   stummel: {
     gerade: 34,                // erst so weit geradeaus (Meter ab Abzweig/Einmündung)
@@ -178,6 +180,23 @@ export const CONFIG = {
   // Alpweide, Fan-Spots, Wracks, Zäune und Herden: alles Orte dieser Strecke, darum ganz in der Streckendatei (Block "leben")
   leben: S.leben,
   klangWasser: S.klang.wasser || [], // M10b: Wasser-Klang an See und Fluss [[Streckenmeter, seitlich], ...] (Streckendatei, klang.wasser)
+  // --- Wasser (seit M10b, js/wasser.js): Aussehen von Seen, Flüssen und Brücken; wo sie liegen, steht in der Streckendatei
+  wasser: {
+    farbe: '#3c6a86',          // Grundfarbe des Wassers (Abendlicht: dunkles Blaugrau)
+    farbeHell: '#9fb8c4',      // helle Wellenstriche
+    farbeDunkel: '#33596f',    // dunkle Flecken
+    texturMeter: 12,           // eine Textur-Kachel deckt so viele Meter
+    ufer: 9,                   // Böschung am Ufer: so viele Meter vom Wasserrand bis zum normalen Gelände
+    uferHoehe: 0.6,            // ... dort liegt das Gelände so viel über dem Wasserspiegel (Rest: wie vorher)
+    tiefeRand: 0.8,            // Grund am Wasserrand so tief unter dem Spiegel ...
+    tiefeMehr: 2.5,            // ... zur Mitte hin bis so viel tiefer
+    trockenAb: 1.5,            // Bäume, Büsche: mindestens so weit vom Wasserrand
+    brueckeUeber: 5,           // Brücke reicht so weit über das Flussufer hinaus (je Seite)
+    brueckeHolz: '#8a6a48',    // Holz von Geländer und Handlauf
+    brueckeDunkel: '#4a3626',  // dunkles Holz (Seitenbalken, Pfosten)
+    gelaenderHoehe: 1.0,       // Höhe des Geländers über der Fahrbahn
+    gelaenderKreis: 0.3,       // Kollision: Kreise mit diesem Radius entlang des Geländers
+  },
 
   // --- Deko-Sets (seit M10b): welche Motive und Typen diese Strecke zeigt ---------------------------
   // Die Wahl steht in der Streckendatei (Block "deko"); der Code kennt nur Arten ("Fahne mit Motiv", "Tier mit Typ",

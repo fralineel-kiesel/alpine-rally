@@ -44,6 +44,7 @@ export function kurvenTempo(rMin, winkel, grip, P = CONFIG.pacenotes) {
 // Gemessenes Grenztempo einer Kurve (km/h, Infinity = Vollgas) aus der Streckendatei (erzeugt.kurvenTempo), sonst null.
 // Die Kurve muss dort mit (fast) gleichem Anfang und Ende stehen.
 export function gemessenesTempo(von, bis, daten = KURVEN_TEMPO) {
+  if (!daten) return null; // (M10b: neue Strecke, noch nicht gemessen)
   for (const m of daten.kurven) {
     if (Math.abs(m.von - von) <= 3 && Math.abs(m.bis - bis) <= 3) return m.kmh == null ? Infinity : m.kmh;
   }

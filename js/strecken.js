@@ -5,6 +5,7 @@
 
 export const STRECKEN = [
   { id: 'alpen', datei: 'alpen.js' },
+  { id: 'finnland', datei: 'finnland.js' },
 ];
 
 export const SPEICHER_ETAPPE = 'alpineRally.etappe'; // gewählte Strecke (Id), Standard: die erste (Alpen)

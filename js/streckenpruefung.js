@@ -92,6 +92,38 @@ export function pruefeStrecke(d, { voll = false } = {}) {
     });
   }
 
+  if ('belagAbschnitte' in d) {
+    // Untergrund ohne Abzweig: { von, bis, belag }, aufsteigend, ohne Überlappung
+    if (!Array.isArray(d.belagAbschnitte)) fehler('belagAbschnitte', 'Liste erwartet');
+    else d.belagAbschnitte.forEach((b, i) => {
+      const p = `belagAbschnitte[${i}]`;
+      if (!istObjekt(b) || !istZahl(b.von) || !istZahl(b.bis) || !(b.bis > b.von)) { fehler(p, '{ von < bis, belag } erwartet'); return; }
+      if (!BELAEGE.includes(b.belag)) fehler(`${p}.belag`, `"${b.belag}" unbekannt (bekannt: ${BELAEGE.join(', ')})`);
+      const vor = d.belagAbschnitte[i - 1];
+      if (i > 0 && istObjekt(vor) && istZahl(vor.bis) && b.von < vor.bis) fehler(p, `überlappt belagAbschnitte[${i - 1}] (bis ${vor.bis})`);
+    });
+  }
+  if ('wasser' in d) {
+    const W = d.wasser;
+    if (!istObjekt(W)) fehler('wasser', 'Objekt { seen, fluesse } erwartet');
+    else {
+      (Array.isArray(W.seen) ? W.seen : W.seen == null ? [] : (fehler('wasser.seen', 'Liste erwartet'), [])).forEach((w, i) => {
+        const p = `wasser.seen[${i}]`;
+        if (!istObjekt(w) || !['s', 'lat', 'rx', 'rz', 'tiefe'].every((k) => istZahl(w[k])) || (w.seite !== 1 && w.seite !== -1)) { fehler(p, '{ s, seite: 1/-1, lat, rx, rz, tiefe } erwartet'); return; }
+        if (!(w.s >= 0 && w.s <= d.laenge)) fehler(`${p}.s`, `${w.s} liegt nicht auf der Strecke`);
+        if (!(w.rx > 0 && w.rz > 0)) fehler(p, 'rx und rz müssen grösser als 0 sein');
+        if (w.lat - w.rx < 12) fehler(p, `Ufer nur ${(w.lat - w.rx).toFixed(1)} m neben der Strasse (mindestens 12)`);
+      });
+      (Array.isArray(W.fluesse) ? W.fluesse : W.fluesse == null ? [] : (fehler('wasser.fluesse', 'Liste erwartet'), [])).forEach((w, i) => {
+        const p = `wasser.fluesse[${i}]`;
+        if (!istObjekt(w) || !['s', 'breite', 'laenge', 'tiefe'].every((k) => istZahl(w[k]))) { fehler(p, '{ s, breite, laenge, winkel, tiefe } erwartet'); return; }
+        if (!(w.s > 0 && w.s < d.laenge)) fehler(`${p}.s`, `${w.s} liegt nicht auf der Strecke`);
+        if (!(w.breite > 0 && w.breite <= 30)) fehler(`${p}.breite`, `${w.breite}: 0 bis 30 m erwartet`);
+        if (w.winkel != null && !(Math.abs(w.winkel) <= 45)) fehler(`${p}.winkel`, `${w.winkel}: höchstens 45° schräg`);
+      });
+    }
+  }
+
   // --- Seeds ---
   for (const k of SEEDS) {
     if (!(k in d.seeds)) fehler(`seeds.${k}`, 'fehlt');
@@ -210,6 +242,14 @@ export function pruefeStrecke(d, { voll = false } = {}) {
       for (const [, , name] of sp.banner || []) if (!(name in banner)) fehler(`leben.fans.spots[${i}].banner`, `"${name}" steht nicht in beschriftung.banner`);
       if (!Array.isArray(sp.s) || !(sp.s[1] > sp.s[0])) fehler(`leben.fans.spots[${i}].s`, '[von, bis] erwartet');
     });
+    const WW = L.wiesenweg || {};
+    for (const k of ['haeuser', 'stege']) if (k in WW) {
+      if (!Array.isArray(WW[k])) { fehler(`leben.wiesenweg.${k}`, 'Liste erwartet'); continue; }
+      WW[k].forEach((h, i) => {
+        const pflicht = k === 'haeuser' ? ['s', 'lat', 'laenge', 'tiefe', 'hoehe'] : ['s', 'lat', 'laenge'];
+        if (!istObjekt(h) || !pflicht.every((x) => istZahl(h[x])) || (h.seite !== 1 && h.seite !== -1)) fehler(`leben.wiesenweg.${k}[${i}]`, `{ ${pflicht.join(', ')}, seite: 1/-1 } erwartet`);
+      });
+    }
     (L.wracks || []).forEach((w, i) => { if (w.sponsor && !(w.sponsor in banner)) fehler(`leben.wracks[${i}].sponsor`, `"${w.sponsor}" steht nicht in beschriftung.banner`); });
   }
   if (!Array.isArray(d.beschriftung.wegweiser) || !Array.isArray(d.beschriftung.sponsoren)) fehler('beschriftung', 'wegweiser und sponsoren: Listen erwartet');

@@ -33,6 +33,8 @@ export async function ladeStrecke(eintrag) {
 // Aus den Daten die Laufzeit-Werte bauen (die Datei selbst bleibt, wie sie ist; hier kommen nur Felder dazu)
 function bereite(d) {
   // Stützpunkte so, wie track.js sie liest: Abschnitts-Zeilen { abschnitt, baeume, ... } und Punkte { x, z, h }
+  // M10b: noch nicht erzeugte Abkürzungs-Daten (neue Strecke, Werkzeug noch nicht gelaufen) = keine Sperren
+  if (!d.erzeugt.abkuerzungen) d.erzeugt.abkuerzungen = { streckenLaenge: d.laenge, minGewinn: 0, sperren: [], nichtSchneiden: [], schneiden: [] };
   d.stuetzpunkte = d.punkte.map((e) => (typeof e === 'string' ? { abschnitt: e, ...d.abschnitte[e] } : { x: e[0], z: e[1], h: e[2] }));
   // Seeds an die Blöcke, die sie als eigenes Feld lesen
   d.leben.seed = d.seeds.leben;

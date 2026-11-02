@@ -368,7 +368,10 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung || 0);
     const lb = 0.8, ta = cfg.laenge / 2;
     if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.3, 1.2, {})) { abgelehnt.push('steg' + ` (${grund})`); return; }
-    const y0 = cfg.y != null ? cfg.y : boden(R.x, R.z);
+    // Höhe: Boden, über dem Wasser aber der Wasserspiegel des nächsten Sees (M10b, welt.wasser)
+    let y0 = cfg.y != null ? cfg.y : boden(R.x, R.z);
+    const W = welt.wasser;
+    if (cfg.y == null && W && W.an) for (const f of W.seen) if (Math.hypot(f.x - R.x, f.z - R.z) < Math.max(f.rx, f.rz) + 25) y0 = Math.max(y0, f.h);
     rahmen(R.x, y0, R.z, R.ux, R.uz);
     const h = cfg.hoehe ?? 0.5;
     quader(-ta, ta, h - 0.12, h, -lb, lb, { seite: 'bretterQuer', oben: 'bretterQuer' }, 1.05);

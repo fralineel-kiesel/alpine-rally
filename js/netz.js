@@ -128,6 +128,11 @@ export function baueNetz(strecke) {
   for (const nw of nebenwege) {
     for (let i = Math.ceil(nw.abzweig); i <= Math.floor(nw.einmuendung); i++) if (i >= 0 && i < n) belag[i] = nw.belag || 'schotter';
   }
+  // M10b: Untergrund-Abschnitte ohne Abzweig (Streckendatei belagAbschnitte: { von, bis, belag }), z. B. Schotter auf der
+  // ganzen Etappe ausser im Dorf. Keine Stummel, keine Kreuzung: nur der Belag wechselt.
+  for (const ab of C.belagAbschnitte || []) {
+    for (let i = Math.ceil(ab.von); i <= Math.floor(ab.bis); i++) if (i >= 0 && i < n) belag[i] = ab.belag;
+  }
   const halbBei = (s) => C.belaege[belag[Math.max(0, Math.min(n - 1, Math.round(s)))]].breite / 2;
 
   // --- Stummel ------------------------------------------------------------------------
