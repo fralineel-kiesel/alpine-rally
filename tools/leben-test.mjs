@@ -154,7 +154,7 @@ const erg = await spiel.page.evaluate(async () => {
   // 3. nichts weggelassen, Kühe
   if (LB.statistik.abgelehnt.length) fehler.push(`weggelassen: ${LB.statistik.abgelehnt.join(', ')}`);
   if (LB.statistik.verschoben.length) fehler.push(`verschoben: ${LB.statistik.verschoben.join(', ')}`);
-  const { KUHFOLGE } = await import('/js/kuhfolge.js');
+  const KUHFOLGE = (await import('/js/streckenlader.js')).STRECKE.erzeugt.kuhfolge;
   const kst = A.kuehe.statistik;
   ergebnis.kuehe = { eingefroren: kst.eingefroren, alt: KUHFOLGE ? KUHFOLGE.kuehe.length : 0, weggefallen: kst.weggefallen, neu: kst.neu, anzahl: kst.anzahl };
   if (!kst.eingefroren || kst.weggefallen) fehler.push('nicht alle Kühe von vorher stehen noch da');

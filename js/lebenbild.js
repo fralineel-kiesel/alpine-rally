@@ -6,6 +6,7 @@
 
 import { leinwand, setze, zuTextur, hexZuRgb } from './pixel.js';
 import { zufall } from './util.js';
+import { STRECKE } from './streckenlader.js';
 import { KLEIN, schreibe as schreibeKlein } from './startzielbild.js';
 
 // Zusätzliche Zeichen zur kleinen 3x5-Schrift (Startnummern, Zeitangaben)
@@ -25,15 +26,8 @@ const ZIFFERN = {
   4: ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'], 7: ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
 };
 
-// Erfundene Sponsoren und Fanclubs (Name, Grund, Schrift)
-export const LEBEN_SPONSOREN = {
-  firn: ['FIRNWERK', '#c8202a', '#f2f0e8'],        // Wrack 1 (rot-weiss)
-  murmeli: ['MURMELI OEL', '#1d3f8f', '#f0c020'],  // Wrack 2 (blau-gelb)
-  turbo: ['TURBO SENN', '#1c1c1c', '#f0c020'],
-  kehre: ['FANCLUB KEHRE 3', '#2c7a3a', '#f2f0e8'], // Fan-Spot Kehren
-  pass: ['HOPP HOPP PASSFANS', '#c8202a', '#f2f0e8'], // Fan-Spot Passhöhe
-  alm: ['ALMRAUSCH FANS', '#f0c020', '#1c1c1c'],    // Fan-Spot Almweg
-};
+// Erfundene Sponsoren und Fanclubs (Name, Grund, Schrift): Streckendatei, beschriftung.banner
+export const LEBEN_SPONSOREN = STRECKE.beschriftung.banner;
 
 export function lebenAtlas(seed = 313) {
   const N = 256, NH = 256, RAND = 2;
@@ -127,7 +121,7 @@ export function lebenAtlas(seed = 313) {
   kachel('fels', 8, 8, voll(8, 8, () => hell(hx(rnd() < 0.3 ? '#6f6b64' : rnd() < 0.5 ? '#8a857c' : '#9a958b'), 0.9 + rnd() * 0.15)));
   kachel('flechte', 8, 8, voll(8, 8, () => (rnd() < 0.18 ? hx('#a4a65a') : hell(hx('#858077'), 0.88 + rnd() * 0.18))));
   // Wegweiser (gelb, schwarze Schrift, Spitze rechts): je Ziel eine Kachel 30x6
-  for (const [name, text] of [['weg1', 'ALP 1 STD'], ['weg2', 'FURGGA 2 STD'], ['weg3', 'SEELI 40 MIN']]) {
+  for (const [name, text] of STRECKE.beschriftung.wegweiser.map((x, i) => [`weg${i + 1}`, x])) { // Ziele: Streckendatei
     kachel(name, 32, 7, (px) => {
       for (let y = 0; y < 7; y++) for (let x = 0; x < 32; x++) {
         const spitze = x > 27 && Math.abs(y - 3) > (31 - x);

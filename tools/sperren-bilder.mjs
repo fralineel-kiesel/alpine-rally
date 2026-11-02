@@ -35,7 +35,7 @@ const info = () => page.evaluate(() => {
 // --- 1. Teile pro gesperrter Kurve und Teile, die ineinander stecken ---------------
 const kurven = await page.evaluate(async () => {
   const A = window.__alpineRally;
-  const { ABKUERZUNGEN } = await import('/js/abkuerzungen.js');
+  const ABKUERZUNGEN = (await import('/js/streckenlader.js')).STRECKE.erzeugt.abkuerzungen;
   const S = await import('/js/sperren.js');
   const px = await import('/js/pixel.js');
   const tex = { tanne: px.tannenTextur(), fels: px.felsbrockenTextur(), stein: px.steinTextur() };

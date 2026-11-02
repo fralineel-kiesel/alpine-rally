@@ -186,7 +186,7 @@ export function pruefeStrecke(d, { voll = false } = {}) {
     if (!(Math.abs(E.abkuerzungen.streckenLaenge - d.laenge) <= 0.5)) fehler('erzeugt.abkuerzungen.streckenLaenge', `${E.abkuerzungen.streckenLaenge} passt nicht zu laenge ${d.laenge} (neu: node tools/abkuerzungen.mjs)`);
     (E.abkuerzungen.sperren || []).forEach((x, i) => { if (!istZahl(x.s) || (x.seite !== 1 && x.seite !== -1)) fehler(`erzeugt.abkuerzungen.sperren[${i}]`, '{ s, seite: 1/-1, von, bis } erwartet'); });
   }
-  if (istObjekt(E.kurvenTempo)) (E.kurvenTempo.kurven || []).forEach((k, i) => { if (!(k.bis > k.von) || !(k.kmh > 0)) fehler(`erzeugt.kurvenTempo.kurven[${i}]`, '{ von < bis, kmh > 0 } erwartet'); });
+  if (istObjekt(E.kurvenTempo)) (E.kurvenTempo.kurven || []).forEach((k, i) => { if (!(k.bis > k.von) || !(k.kmh === null || k.kmh > 0)) fehler(`erzeugt.kurvenTempo.kurven[${i}]`, '{ von < bis, kmh > 0 oder null (= ohne Grenze) } erwartet'); });
   if (istObjekt(E.baumfolge) && E.baumfolge.seed !== d.seeds.sprites) fehler('erzeugt.baumfolge.seed', `${E.baumfolge.seed} passt nicht zu seeds.sprites (${d.seeds.sprites})`);
   if (istObjekt(E.kuhfolge) && E.kuhfolge.seed !== d.seeds.kuehe) fehler('erzeugt.kuhfolge.seed', `${E.kuhfolge.seed} passt nicht zu seeds.kuehe (${d.seeds.kuehe})`);
   return f;

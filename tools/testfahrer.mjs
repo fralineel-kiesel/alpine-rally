@@ -47,7 +47,7 @@ if (!schneiden) {
     const f = await import(window.__fahrerUrl);
     const m = await import('/tools/abkuerzungen-analyse.js');
     const { baueKollision } = await import('/js/kollision.js');
-    const { ABKUERZUNGEN } = await import('/js/abkuerzungen.js');
+    const ABKUERZUNGEN = (await import('/js/streckenlader.js')).STRECKE.erzeugt.abkuerzungen;
     // ohne Sperren: Kollision nur mit den Bäumen und Steinen aus M1
     const basis = baueKollision(A.pflanzen.hindernisse.filter((h) => !h.sperre));
     const original = A.kollision.loese;

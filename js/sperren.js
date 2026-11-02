@@ -2,7 +2,7 @@
 // auf der Innenseite von Kurven, die man sonst schneiden könnte.
 //
 // Wo eine Sperre steht, rechnet das Werkzeug tools/abkuerzungen.mjs aus und
-// schreibt es nach js/abkuerzungen.js. Jede Sperre ("Reihe") ist eine Linie, die
+// schreibt es in die Streckendatei (erzeugt.abkuerzungen). Jede Sperre ("Reihe") ist eine Linie, die
 // an der Stelle s quer von der Strasse weg ins Kurveninnere führt (von / bis =
 // Abstand zur Strassenmitte). Entlang dieser Linie muss eine lückenlose Kette
 // stehen (Lücken höchstens maxLuecke, das Auto ist breiter).

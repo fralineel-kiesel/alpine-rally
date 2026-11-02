@@ -891,7 +891,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     for (const [s, sd, lat] of W.steinmaennchen || []) versuche(`steinmann ${s}`, (ds, dl) => steinmann(s + ds, sd, lat + dl));
     for (const [s, sd, lat] of W.heurollen || []) versuche(`heurolle ${s}`, (ds, dl) => heurolle(s + ds * 0.5, sd, lat + dl * 0.5));
     for (const [s, sd, lat, hh] of W.findlinge || []) versuche(`findling ${s}`, (ds, dl) => findling(s + ds, sd, lat + dl, hh));
-    orte.push({ name: 'wiesenweg', s: W.huette ? W.huette.s : 2950, huette: h });
+    orte.push({ name: 'wiesenweg', s: (W.huette || W.stadel || W.brunnen || W.wegweiser || { s: 0 }).s, huette: h }); // (M10a: ohne feste Zahl)
   }
   // 2. Fan-Spots
   const fanZahlen = {};

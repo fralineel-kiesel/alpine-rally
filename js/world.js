@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { STRECKE } from './streckenlader.js';
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
@@ -17,16 +18,9 @@ const NEBEN_BELAEGE = {
   wiesenweg: { textur: wiesenwegTextur, laenge: WIESENWEG_LAENGE, u: WIESENWEG_U },
 };
 
-// Zusätzliche Landschaftsformen von Hand: grosse Hügel und Senken.
-// radius = wie breit, hoehe = wie hoch (negativ = Senke).
+// Zusätzliche Landschaftsformen von Hand (grosse Hügel und Senken): Streckendatei, umgebung.landschaft.
 // Berge hinter den Felswänden und Täler unter den Abhängen entstehen automatisch.
-export const LANDSCHAFT = [
-  { x: -260, z: -350, radius: 220, hoehe: 70 },   // Hügel westlich vom Tal
-  { x: 330, z: -500, radius: 200, hoehe: 45 },    // Hügel östlich vom Tal
-  { x: 250, z: -1330, radius: 190, hoehe: 70 },   // Hang über der Kehrengruppe
-  { x: 1150, z: -1150, radius: 260, hoehe: -40 }, // Senke unter der Felswand 1
-  { x: 1500, z: -1450, radius: 230, hoehe: 70 },  // Berg zwischen Pass und Abfahrt
-];
+export const LANDSCHAFT = STRECKE.umgebung.landschaft;
 
 export function baueWelt(szene, strecke, netz) {
   const welt = { netz };

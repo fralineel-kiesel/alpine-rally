@@ -1,6 +1,6 @@
 // Abkürzungen messen, Kurven sperren oder freigeben und Sperren planen (M1.1, seit M1.2 mit Sperrquote).
 //
-//   node tools/abkuerzungen.mjs           Analyse vorher, Sperren planen, js/abkuerzungen.js schreiben,
+//   node tools/abkuerzungen.mjs           Analyse vorher, Sperren planen, in strecken/alpen.js (erzeugt.abkuerzungen) schreiben,
 //                                         danach im Spiel nachprüfen
 //   node tools/abkuerzungen.mjs --pruefen nur nachprüfen (nichts schreiben)
 //   node tools/abkuerzungen.mjs --nur-reihen  (seit M2a.1) nur die Reihen der schon gesperrten Kurven
@@ -21,6 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { leseErzeugt, schreibeErzeugt } from './strecke-erzeugt.mjs';
 
 const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const nurPruefen = process.argv.includes('--pruefen');
@@ -190,8 +191,8 @@ ${frei.map((k) => `    { sVon: ${k.sVon}, sBis: ${k.sBis}, seite: '${k.seite}', 
 };
 `;
 
-  fs.writeFileSync(path.join(WURZEL, 'js/abkuerzungen.js'), datei);
-  console.log('-> js/abkuerzungen.js geschrieben');
+  schreibeErzeugt('abkuerzungen', datei); // (seit M10a in der Streckendatei)
+  console.log('-> strecken/alpen.js: erzeugt.abkuerzungen geschrieben');
 }
 
 // --- 1b. nur die Reihen der gesperrten Kurven neu planen (M2a.1) ------------------
@@ -202,7 +203,7 @@ if (nurReihen) {
     const m = await import('/tools/abkuerzungen-analyse.js');
     const { baueKollision } = await import('/js/kollision.js');
     const { planeAlleSperren } = await import('/js/sperren.js');
-    const { ABKUERZUNGEN } = await import('/js/abkuerzungen.js');
+    const ABKUERZUNGEN = (await import('/js/streckenlader.js')).STRECKE.erzeugt.abkuerzungen;
     const px = await import('/js/pixel.js');
     const tex = { tanne: px.tannenTextur(), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
     const basis = A.pflanzen.hindernisse.filter((h) => !h.sperre);
@@ -255,12 +256,11 @@ if (nurReihen) {
       plan.frei.some((f) => f.gewinnJetzt !== f.gewinnListe || (f.offenVorher != null && f.offen !== f.offenVorher))) {
     console.log('NICHT geschrieben: Sperren halten nicht oder die freien Kurven ändern sich.');
   } else {
-    const datei = path.join(WURZEL, 'js/abkuerzungen.js');
-    const alt = fs.readFileSync(datei, 'utf8');
+    const alt = leseErzeugt('abkuerzungen', 'ABKUERZUNGEN'); // (seit M10a in der Streckendatei)
     const neu = alt.replace(/  sperren: \[\n[\s\S]*?\n  \],\n/,
       `  sperren: [\n${plan.sperren.map((s) => `    { s: ${s.s}, seite: ${s.seite}, von: ${s.von}, bis: ${s.bis} },`).join('\n')}\n  ],\n`);
-    fs.writeFileSync(datei, neu);
-    console.log('-> js/abkuerzungen.js: nur die Liste "sperren" ersetzt');
+    schreibeErzeugt('abkuerzungen', neu);
+    console.log('-> strecken/alpen.js: in erzeugt.abkuerzungen nur die Liste "sperren" ersetzt');
   }
 }
 
@@ -271,7 +271,7 @@ const nach = await page.evaluate(async () => {
   const m = await import('/tools/abkuerzungen-analyse.js');
   const px = await import('/js/pixel.js');
   const tex = { tanne: px.tannenTextur(), fels: px.felsbrockenTextur(), stein: px.steinTextur() };
-  const { ABKUERZUNGEN } = await import('/js/abkuerzungen.js');
+  const ABKUERZUNGEN = (await import('/js/streckenlader.js')).STRECKE.erzeugt.abkuerzungen;
   const linien = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision);
   const linien18 = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision, { breite: 1.8 });
   const offenKeys = linien.concat(linien18).map((l) => `${l.i}-${l.j}-${l.halb}`);

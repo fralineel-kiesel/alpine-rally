@@ -18,7 +18,9 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { zufall, mische } from './util.js';
 import { absperrAtlas } from './pixel.js';
-import { ABKUERZUNGEN } from './abkuerzungen.js';
+import { STRECKE } from './streckenlader.js';
+
+const ABKUERZUNGEN = STRECKE.erzeugt.abkuerzungen; // (erzeugt von tools/abkuerzungen.mjs)
 
 // andere: Hindernisse, die schon stehen (Bäume, Strassenrand) – die Richtungstafel weicht ihnen aus
 export function baueAbsperrungen(szene, welt, andere = []) {

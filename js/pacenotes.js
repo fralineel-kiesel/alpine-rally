@@ -8,7 +8,9 @@
 // nicht schneiden, Belag), text (fertiger Text) und stufe (1-6, nur bei Kurven).
 
 import { CONFIG } from './config.js';
-import { KURVEN_TEMPO } from './pacenotes-tempo.js';
+import { STRECKE } from './streckenlader.js';
+
+const KURVEN_TEMPO = STRECKE.erzeugt.kurvenTempo; // (erzeugt von tools/pacenotes-test.mjs --schreiben)
 import { kachelBreite } from './pacenotesbild.js';
 
 const GRAD = 180 / Math.PI;
@@ -39,7 +41,7 @@ export function kurvenTempo(rMin, winkel, grip, P = CONFIG.pacenotes) {
   return Math.sqrt(P.querBeschl * grip * rEff);
 }
 
-// Gemessenes Grenztempo einer Kurve (km/h, Infinity = Vollgas) aus js/pacenotes-tempo.js, sonst null.
+// Gemessenes Grenztempo einer Kurve (km/h, Infinity = Vollgas) aus der Streckendatei (erzeugt.kurvenTempo), sonst null.
 // Die Kurve muss dort mit (fast) gleichem Anfang und Ende stehen.
 export function gemessenesTempo(von, bis, daten = KURVEN_TEMPO) {
   for (const m of daten.kurven) {
