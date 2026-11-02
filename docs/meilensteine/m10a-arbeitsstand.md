@@ -25,4 +25,6 @@ Vergleichsstand 0.9a.2 = Commit 90df3d8 (Arbeitskopie: `git worktree add <ordner
 ## Teil C – Prüfwerkzeuge (fertig)
 - `tools/strecke-karte.mjs` (Karte, Profil, Bericht; Kuppen/Senken wie die Pace-Notes), `tools/strecke-abfahren.mjs`
   (Testfahrer wiederverwendet, Zeiten exakt wie testfahrer.mjs: Prototyp und Lanza 073). Tests (k), (l) grün.
-## Teil D – Bericht (offen)
+## Teil D – Bericht (fertig)
+- Version 0.10a; Bericht `docs/meilensteine/m10a.md`, Bilder `screenshots/m10a/` (4), STAND.md, KONZEPT.md.
+- Regression `--lang`: (a)–(l) grün, alte Tests grün bis auf menue-test (2 Zeilen, gleich rot in 0.9a.2).

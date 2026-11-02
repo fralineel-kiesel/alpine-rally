@@ -79,7 +79,7 @@ export const TEXTE = {
   'fehler.strecke.datei': { de: 'STRECKENDATEI FEHLT ODER IST KAPUTT', en: 'STAGE FILE MISSING OR BROKEN' },
   'fehler.strecke.ungueltig': { de: 'STRECKENDATEI IST UNGÜLTIG', en: 'STAGE FILE IS INVALID' },
   'fehler.strecke.laenge': { de: 'LÄNGE DER STRECKE PASST NICHT', en: 'STAGE LENGTH DOES NOT MATCH' },
-  'fehler.strecke.hinweis': { de: 'SEITE NEU LADEN. HILFT DAS NICHT: BITTE MELDEN.', en: 'RELOAD THE PAGE. IF THAT DOES NOT HELP: PLEASE REPORT IT.' },
+  'fehler.strecke.hinweis': { de: 'NEU LADEN. HILFT DAS NICHT: BITTE MELDEN.', en: 'RELOAD. IF THAT DOES NOT HELP: PLEASE REPORT.' },
   'etappe.spaeter': { de: 'WEITERE ETAPPEN FOLGEN', en: 'MORE STAGES TO COME' },
 
   // --- Bestzeiten ---

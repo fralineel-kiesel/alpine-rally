@@ -76,6 +76,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M9a Touch-Steuerung fürs Handy: D-Pad, A/B, L/R, START/SELECT/NOTES im Pixel-Look, Hochformat (Bild in voller Breite über der Steuerfläche) und Querformat (Knöpfe links und rechts), Mehrfinger, Menü mit D-Pad und Antippen, Einstellung TOUCH-STEUERUNG, Web-App-Modus mit eigenen Icons (fertig)
 - M9a.1 Touch-Feinschliff nach Linos Handy-Test: R = Handbremse über A/B, L = zurück auf die Strasse, kleine Knöpfe als Pillen, D-Pad im Querformat grösser mit asymmetrischen Lenk-Zonen (im Menü klassisch), Einstellungen AUTO-GAS und HAPTIK (fertig)
 - M9a.2 Touch nach Linos Test: Handbremse R wieder in der Ecke, Haptik nur Android (iPhone ohne), Einstellungen KNOPFGRÖSSE, LAYOUT (gespiegelt für Linkshänder) und HUD-GRÖSSE (fertig)
-- Als Nächstes: Strecke als Daten (noch kein Prompt)
-- Danach: evtl. Geisterauto aus der Fahrspur
+- M10a Strecke als Daten: die Alpenstrecke steht in `strecken/alpen.js` (reine Daten, Format `docs/strecken-format.md`), Lader mit Fehlerseite, Strecken-Register, Prüfer und Werkzeuge (Karte, Höhenprofil, Abfahren mit dem Testfahrer); das Spiel ist pixel- und zeitgleich wie 0.9a.2 (fertig)
+- Als Nächstes: M10b Etappenwahl + Finnland-Schotter (noch kein Prompt)
+- Danach: weitere Maps (M10c …), evtl. Geisterauto aus der Fahrspur
 

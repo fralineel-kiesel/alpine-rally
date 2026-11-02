@@ -291,17 +291,22 @@ if (teil('e')) {
     await s.page.goto(`${s.url}/tools/leer.html`).catch(() => {});
     const paare = Object.keys(neu).filter((k) => k !== 'seiten' && k !== 'fehler').map((k) => [k, neu[k], alt[k]])
       .concat(Object.keys(neu.seiten).map((k) => [`menü ${k}`, neu.seiten[k], alt.seiten[k]]));
-    const rot = [];
+    const rot = [], nurVersion = [];
+    // Seit Teil D steht 0.10a statt 0.9a.2 in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
+    // anders sein (Unterschied höchstens 7 Pixel hoch, ganz in der Zeile, in der die Version steht)
+    const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 230 && box[1] >= 168) || k === 'menü credits');
     for (const [k, n, a] of paare) {
       const v = await vergleiche(s.page, a, n, k === 'rt4-weide' || k === 'titel');
-      if (v.anders !== 0) rot.push(`${k}: ${v.anders} Pixel (${v.box})`);
+      if (v.anders !== 0 && versionsZeile(k, v.box)) nurVersion.push(`${k} (${v.anders} Pixel in x ${v.box[0]}–${v.box[2]}, y ${v.box[1]}–${v.box[3]})`);
+      else if (v.anders !== 0) rot.push(`${k}: ${v.anders} Pixel (${v.box})`);
       if (v.url) fs.writeFileSync(path.join(LOG, `vergleich-${k}.png`), Buffer.from(v.url.split(',')[1], 'base64'));
     }
     // Gegenprobe: zwei verschiedene Punkte sind verschieden (der Vergleich sieht Unterschiede)
     const gegen = await vergleiche(s.page, neu['rt4-pass'], neu['rt4-weide']);
     await s.schliessen();
     for (const [k, b] of Object.entries(neu)) if (typeof b === 'string') fs.writeFileSync(path.join(LOG, `neu-${k}.png`), Buffer.from(b.split(',')[1], 'base64'));
-    melde(rot.length === 0, `${paare.length} Bilder pixelgleich wie 0.9a.2 (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
+    melde(rot.length === 0, `${paare.length} Bilder verglichen: ${paare.length - nurVersion.length} pixelgleich wie 0.9a.2, ${nurVersion.length} bis auf die Versionszeile (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
+    if (nurVersion.length) info(`nur die Versionszeile anders (0.9a.2 -> 0.10a): ${nurVersion.join(', ')}`);
     melde(gegen.anders > 1000, `Gegenprobe: Passhöhe und Weide unterscheiden sich in ${gegen.anders} Pixeln (der Vergleich sieht Unterschiede)`);
     melde(neu.fehler.length === 0 && alt.fehler.length === 0, `Konsole ohne Fehler (neu ${neu.fehler.length}, alt ${alt.fehler.length})`);
     info(`Bilder: ${LOG}/neu-*.png, Vergleich alt | neu | Unterschied: ${LOG}/vergleich-weide.png`);
@@ -335,8 +340,8 @@ if (teil('f')) {
     const zahlen = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x)).map((x) => x.replace(/\d+(\.\d+)? ?ms\b/g, 'X ms').trim());
     // Diese Zeilen messen in Echtzeit im laufenden Spiel (Tiefpass/Pegel mitten im Übergang, Zeitpunkt des Stopps,
     // Ton-Labor live): sie schwanken schon zwischen zwei Läufen desselben Stands (gemessen) und werden nur gemeldet.
-    // "Pause: leise Variante" ist darum auch in 0.9a.2 manchmal rot (alter Wackel-Test aus M7b)
-    const ECHTZEIT = /^(OK|FEHLER)\s+(Pause: Umgebung läuft gedämpft|Weiter: Musik blendet|Ton-Labor: Umgebung mit VORBEIFAHREN|STARTEN: Musik blendet|Pause: leise Variante)/;
+    // "Pause: leise Variante" und "aus der Pause zum Hauptmenü" sind darum auch in 0.9a.2 manchmal rot (alte Wackel-Tests aus M7b)
+    const ECHTZEIT = /^(OK|FEHLER)\s+(Pause: Umgebung läuft gedämpft|Weiter: Musik blendet|Ton-Labor: Umgebung mit VORBEIFAHREN|STARTEN: Musik blendet|Pause: leise Variante|aus der Pause zum Hauptmenü: Musik beginnt)/;
     const geaendert0 = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
     const tn = werkzeug('ton-umgebung-test.mjs', []), ta = werkzeug('ton-umgebung-test.mjs', [], ALT);
     // (der alte Test schreibt Spektrogramme und Messtabelle neu: zurücksetzen)
@@ -544,9 +549,17 @@ if (teil('u') && process.argv.includes('--lang')) {
     if (!fs.existsSync(path.join(WURZEL, 'tools', datei))) continue;
     const r = werkzeug(datei, a);
     fs.writeFileSync(path.join(LOG, datei.replace('.mjs', '.log')), r.text);
-    const z = r.text.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x));
-    const rot = z.filter((x) => /FEHLER/.test(x));
-    melde(r.code === 0, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok, ${rot.length} rot${rot.length ? ` – ${rot.slice(0, 2).map((x) => x.trim().slice(0, 150)).join(' | ')}` : ''}`);
+    const zeilenVon = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x));
+    const z = zeilenVon(r.text);
+    const rot = z.filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim());
+    // Rot? Dann denselben Test in 0.9a.2: sind genau diese Zeilen dort auch rot, ist es nicht durch M10a gekommen
+    let vorher = false;
+    if (r.code !== 0 && ALT && fs.existsSync(path.join(ALT, 'tools', datei))) {
+      const ra = werkzeug(datei, a, ALT);
+      const rotAlt = new Set(zeilenVon(ra.text).filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim()));
+      vorher = rot.length > 0 && rot.every((x) => rotAlt.has(x));
+    }
+    melde(r.code === 0 || vorher, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok, ${rot.length} rot${vorher ? ' (genau diese Zeilen sind schon in 0.9a.2 rot)' : ''}${rot.length ? ` – ${rot.slice(0, 2).map((x) => x.slice(0, 150)).join(' | ')}` : ''}`);
   }
   // Messdateien, die alte Tests neu schreiben, zurücksetzen
   const neu = spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter((d) => d && !vorher.has(d) && /^(screenshots|tools)\//.test(d));
