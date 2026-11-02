@@ -245,14 +245,15 @@ export function baueSeiten(api) {
   const bestzeitenSeite = {
     id: 'bestzeiten', titel: 'bestzeiten.titel',
     // beim Öffnen (menue.oeffne liest start einmal): Auto = das eben gefahrene (markierter Lauf), sonst das der Garage.
-    // null = der Zeiger steht auf dem ersten wählbaren Eintrag (AUTO)
+    // M10b: Zeiger auf AUTO (Nummer in der Liste; davor steht die Zeile ETAPPE)
     get start() {
       const mark = api.markiert ? api.markiert() : null;
       const i = mark ? AUTOS.findIndex((a) => a.id === mark.auto) : -1;
       bestAuto = i >= 0 ? i : auswahl.auto;
       bestEtappe = Math.max(0, ETAPPEN_INFO.findIndex((x) => x.id === aktuelleInfo().id)); // M10b: die gefahrene Etappe
       ladeAlleInfos().then(() => menue.neuZeichnen());
-      return null;
+      // Zeiger wie bisher auf AUTO (die Zeile ETAPPE darüber erreicht man mit Pfeil hoch)
+      return Math.max(0, bestzeitenSeite.eintraege().indexOf(autoWahlZeile));
     },
     eintraege: () => {
       const info = ETAPPEN_INFO[bestEtappe] || aktuelleInfo();
