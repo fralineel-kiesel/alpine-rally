@@ -233,7 +233,8 @@ export function baueSeiten(api) {
   // M10b: welche Etappe die Seite zeigt (Nummer in ETAPPEN_INFO); Links/Rechts in der Zeile ETAPPE wechselt
   let bestEtappe = 0;
   const etappeWahlZeile = {
-    typ: 'auswahl', text: 'bestzeiten.gesamt', etappeWahl: true,
+    typ: 'auswahl', text: 'bestzeiten.gesamt', etappeWahl: true, kopf: true,
+    inhalt: () => { const i = ETAPPEN_INFO[bestEtappe]; return `${t('bestzeiten.gesamt')} ${i && i.status === 'da' ? t(i.name) : ''}`.trim(); }, // (für Tests, wie die alte Kopfzeile)
     optionen: () => ETAPPEN_INFO.map((info, i) => ({ wert: i, text: () => (info.status === 'da' ? t(info.name) : info.id.toUpperCase()) })),
     lesen: () => bestEtappe, setzen: (w) => { bestEtappe = w; },
   };
