@@ -23,6 +23,14 @@ Ziel: Etappenwahl im Menü + zweite Strecke „Finnland-Schotter“, Version 0.1
 - Abkürzungen Finnland: 3 Kurven gesperrt, 3 frei (übrig 8/9/11 Linien, Gewinn bis 3–4 m), Durchkommen gesperrt 0.
 - Seen näher an die Strasse gerückt (Ufer 20 m), Wald dort lichter (danach Abkürzungen neu).
 
+## Teil C – Etappenwahl, Bestzeiten je Etappe (fertig)
+- `js/etappenwahl.js`: Infos aller Strecken (andere erst beim Öffnen von ETAPPE/BESTZEITEN geladen, nur Daten),
+  Vorschau-Karte (einmal gemalt), Wählen = merken (`alpineRally.etappe`) + Neuladen, danach direkt Hauptmenü auf ETAPPE.
+- Seite ETAPPE: Liste (Name, Untergrund, Länge, Bestzeit), rechts Karte; Hauptmenü zeigt den Namen der Strecke.
+- BESTZEITEN: Zeile „GESAMT TOP 3 ◀ ETAPPE ▶“ (Kopf + Umschalter in einer Zeile, sonst rollt die Seite).
+- Kaputte andere Strecke: in der Liste „DATEI KAPUTT“; war sie gewählt: Fehlerseite + Taste = zurück zur Standard-Etappe.
+- Tests (k)–(s) grün: Tastatur, Gamepad, Maus, Touch, Neuladen, getrennte Listen, Live-Vergleich, Layout 5 Grössen.
+
 ## Offen / Fragen
 - Kuh-Warnschild ist eine allgemeine Tier-Silhouette (bleibt auch in Finnland so).
-- Teil B: Finnland-Datei, Wasser (Seen, Fluss, Brücke), Schotter ohne Abzweig (`belagAbschnitte`).
+- Teil D: volle Regression, Bilder, Bericht, Version 0.10b. Ton nach Etappenwechsel erst ab der nächsten Eingabe.

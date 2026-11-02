@@ -169,7 +169,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
     if (!e) return;
     // (der Ton kommt nach der Aktion: wird dabei weitergefahren, hat der Pausenton Vorrang)
     // (M8e: gibt die Aktion 'ohneTon' zurück, macht sie selbst einen Klang, z. B. Aufheulen in der Garage)
-    if (e.typ === 'aktion') { if (e.aktion() !== 'ohneTon') klang('bestaetigen'); }
+    if (e.typ === 'aktion' || (e.typ === 'info' && e.aktion)) { if (e.aktion() !== 'ohneTon') klang('bestaetigen'); } // (M10b: wählbare Info-Zeile mit Aktion, z. B. Etappe)
     else if (e.typ === 'zurueck') zurueck();
     else if (e.typ === 'umschalter' || e.typ === 'auswahl') aendern(e, 1);
     else if (e.typ === 'taste') { warten = { aktion: e.aktion, platz: o.platz }; meldung = null; klang('bestaetigen'); }

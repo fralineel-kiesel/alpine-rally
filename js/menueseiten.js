@@ -9,7 +9,8 @@ import { einstellungen, setze, AKTIONEN, tastenStandard } from './einstellungen.
 import { tastenVon, tastenName, knopfName } from './input.js';
 import { zeichneKachel, kachelBreite } from './pacenotesbild.js';
 import { ladeBestzeiten, ladeGesamtTop, loescheBestzeiten, formatDatum, hundertstel, BESTZEITEN_ANZAHL, GESAMT_ANZAHL } from './bestzeiten.js';
-import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
+import { AUTOS, auswahl } from './inhalte.js';
+import { ETAPPEN_INFO, aktuelleInfo, ladeAlleInfos, vorschauKarte, waehleEtappe } from './etappenwahl.js';
 import { AUTO_MODELLE, kurzName } from './autos.js';
 import { formatZeit } from './hud.js';
 import { touchAn, webAppModus } from './touch.js'; // M9a
@@ -135,12 +136,54 @@ export function baueSeiten(api) {
     // (M9a: nach Touch "A ODER ANTIPPEN")
     hinweis: () => t(menue.letzteEingabe === 'gamepad' ? 'garage.hinweisPad' : menue.letzteEingabe === 'touch' ? 'garage.hinweisTouch' : 'garage.hinweis'),
   };
+  // --- Etappe (M10b): Liste der Strecken (Name, Untergrund, Länge, Bestzeit), rechts die Vorschau-Karte der markierten.
+  // Bestätigen wählt die Etappe (Seite lädt kurz neu mit dieser Strecke), Zurück verlässt ohne Änderung.
+  const ES = M.etappenSeite;
+  const besteZeit = (info) => { const z = info.etappe ? ladeGesamtTop(info.etappe, 1)[0] : null; return z ? formatZeit(z.zeit) : t('etappe.keineZeit'); };
+  const etappenZeile = (info) => ({
+    typ: 'info', waehlbar: true, hoehe: 31, etappeId: info.id, // (etappeId: für Tests)
+    breite: () => ES.spalte - 16,
+    inhalt: () => (info.status === 'da' ? `${t(info.name)} ${t(info.untergrund)} ${t('etappe.zeile', { km: info.laengeKm.toFixed(1), zeit: besteZeit(info) })}` : info.id),
+    zeichne(c, x, y, b, w) {
+      const gewaehlt = info.id === aktuelleInfo().id;
+      if (w) pixelText(c, '▶', x, y + 3, 1, M.farbeAuswahl);
+      if (info.status !== 'da') {
+        pixelText(c, info.id.toUpperCase(), x + 10, y + 3, 1, w ? M.farbeAuswahl : M.farbeTitel);
+        pixelText(c, t(info.status === 'fehler' ? 'etappe.kaputt' : 'etappe.laedt'), x + 10, y + 13, 1, M.farbeHinweis);
+        return;
+      }
+      pixelText(c, t(info.name), x + 10, y + 3, 1, w ? M.farbeAuswahl : gewaehlt ? M.farbeWert : M.farbeTitel);
+      pixelText(c, t(info.untergrund), x + 10, y + 12, 1, M.farbeText);
+      pixelText(c, t('etappe.zeile', { km: info.laengeKm.toFixed(1), zeit: besteZeit(info) }), x + 10, y + 21, 1, M.farbeHinweis);
+    },
+    aktion: () => {
+      if (info.status !== 'da') return 'ohneTon';
+      if (info.id === aktuelleInfo().id) { menue.zurueck(); return undefined; } // schon gewählt: zurück ins Hauptmenü
+      menue.zeigeMeldung(t('etappe.wechsel'), M.farbeTitel);
+      waehleEtappe(info.id);
+      return undefined;
+    },
+  });
+  // rechts: Vorschau-Karte der markierten Etappe (einmal gemalt, hier nur hineinkopiert)
+  function etappeRechts(c, x, y, b) {
+    const e = etappeSeite.eintraege()[menue.wahl];
+    const info = (e && e.etappeId && ETAPPEN_INFO.find((i) => i.id === e.etappeId)) || aktuelleInfo();
+    const kb = (b - M.innen - 4) & ~1, kh = ES.kartenHoehe, kx = x + 2, ky = y;
+    c.fillStyle = M.farbeRand; c.globalAlpha = 0.5; c.fillRect(kx - 1, ky - 1, kb + 2, kh + 2); c.globalAlpha = 1;
+    const karte = vorschauKarte(info, kb, kh);
+    if (karte) c.drawImage(karte, kx, ky);
+    else { c.fillStyle = CONFIG.menue.etappenKarte.grund; c.fillRect(kx, ky, kb, kh); pixelText(c, t(info.status === 'fehler' ? 'etappe.kaputt' : 'etappe.laedt'), kx + kb / 2, ky + kh / 2 - 3, 1, M.farbeHinweis, 'mitte'); }
+  }
   const etappeSeite = {
-    id: 'etappe', titel: 'etappe.titel',
-    eintraege: () => [
-      ...ETAPPEN.map((e, i) => karte(e.name, () => [t('etappe.daten1', { km: e.laenge.toFixed(1), cps: e.checkpoints }), ...e.daten.map((d) => t(d))], () => auswahl.etappe === i)),
-      leer(), textZeile('etappe.spaeter', M.farbeHinweis, true), leer(3), ZURUECK,
-    ],
+    id: 'etappe', titel: 'etappe.titel', breite: ES.breite, spalte: ES.spalte,
+    // beim Öffnen: die anderen Strecken laden (nur Daten), Zeiger auf der gewählten
+    get start() {
+      ladeAlleInfos().then(() => menue.neuZeichnen());
+      return Math.max(0, ETAPPEN_INFO.findIndex((i) => i.id === aktuelleInfo().id));
+    },
+    eintraege: () => [...ETAPPEN_INFO.map(etappenZeile), leer(3), ZURUECK],
+    zeichneRechts: etappeRechts,
+    hinweis: 'etappe.hinweis',
   };
 
   // --- Bestzeiten (seit M5b gefüllt). M8h: eine Seite mit oben der GESAMT TOP 3 (alle Autos, je Zeile der Kurzname)
@@ -187,6 +230,13 @@ export function baueSeiten(api) {
     },
   });
   let bestAuto = 0; // Nummer in AUTOS: wessen Top 10 die Seite zeigt
+  // M10b: welche Etappe die Seite zeigt (Nummer in ETAPPEN_INFO); Links/Rechts in der Zeile ETAPPE wechselt
+  let bestEtappe = 0;
+  const etappeWahlZeile = {
+    typ: 'auswahl', text: 'bestzeiten.gesamt', etappeWahl: true,
+    optionen: () => ETAPPEN_INFO.map((info, i) => ({ wert: i, text: () => (info.status === 'da' ? t(info.name) : info.id.toUpperCase()) })),
+    lesen: () => bestEtappe, setzen: (w) => { bestEtappe = w; },
+  };
   const autoWahlZeile = {
     typ: 'auswahl', text: 'bestzeiten.auto',
     optionen: () => AUTOS.map((a, i) => ({ wert: i, text: a.name })),
@@ -200,10 +250,13 @@ export function baueSeiten(api) {
       const mark = api.markiert ? api.markiert() : null;
       const i = mark ? AUTOS.findIndex((a) => a.id === mark.auto) : -1;
       bestAuto = i >= 0 ? i : auswahl.auto;
+      bestEtappe = Math.max(0, ETAPPEN_INFO.findIndex((x) => x.id === aktuelleInfo().id)); // M10b: die gefahrene Etappe
+      ladeAlleInfos().then(() => menue.neuZeichnen());
       return null;
     },
     eintraege: () => {
-      const etappe = ETAPPEN[auswahl.etappe];
+      const info = ETAPPEN_INFO[bestEtappe] || aktuelleInfo();
+      const etappe = { id: info.etappe || '', name: info.name || 'etappe.laedt' }; // (M10b: gewählte Etappe der Seite)
       const auto = AUTOS[bestAuto] || AUTOS[0];
       const mark = api.markiert ? api.markiert() : null;
       const neu = (z) => !!mark && mark.etappe === etappe.id && mark.datum === z.datum && mark.auto === z.auto;
@@ -217,13 +270,13 @@ export function baueSeiten(api) {
         return rest > 0 ? [...l, leer(rest)] : l;
       };
       return [
-        kopfZeiten('bestzeiten.gesamt', () => t(etappe.name)),
+        etappeWahlZeile, // (M10b: Kopf der Gesamtwertung und Etappen-Umschalter in einer Zeile, sonst rollt die Seite)
         ...block(gesamt.map((z, i) => zeitZeile(z, i + 1, neu(z), true)), 'bestzeiten.leer', GESAMT_ANZAHL),
         leer(2),
         autoWahlZeile,
         kopfZeiten('bestzeiten.top10'),
         ...block(liste.map((z, i) => zeitZeile(z, i + 1, neu(z), false)), 'bestzeiten.leerAuto', BESTZEITEN_ANZAHL),
-        leer(2), ZURUECK,
+        ZURUECK,
       ];
     },
   };
@@ -524,7 +577,7 @@ export function baueSeiten(api) {
     eintraege: [
       { typ: 'aktion', text: 'menue.starten', aktion: () => api.starten() },
       { typ: 'aktion', text: 'menue.auto', aktion: () => menue.oeffne(autoSeite) },
-      { typ: 'aktion', text: 'menue.etappe', aktion: () => menue.oeffne(etappeSeite) },
+      { typ: 'aktion', text: 'menue.etappe', wert: () => t(aktuelleInfo().name), aktion: () => menue.oeffne(etappeSeite) }, // M10b: mit Namen der gewählten Strecke
       { typ: 'aktion', text: 'menue.bestzeiten', aktion: () => menue.oeffne(bestzeitenSeite) },
       { typ: 'aktion', text: 'menue.einstellungen', aktion: () => menue.oeffne(einstellungenSeite) },
       { typ: 'aktion', text: 'menue.steuerung', aktion: () => menue.oeffne(steuerungSeite) },

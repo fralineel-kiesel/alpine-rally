@@ -16,7 +16,7 @@ function umbrechen(text, n) {
   return zeilen;
 }
 
-export function zeigeFehlerseite(fehler) {
+export function zeigeFehlerseite(fehler, { zurueck = false } = {}) {
   // Sprache wie in den Einstellungen (sonst Browser-Sprache)
   let sprache = (navigator.language || 'de').startsWith('de') ? 'de' : 'en';
   try { const e = JSON.parse(window.localStorage.getItem('alpineRally.einstellungen') || '{}'); if (e.sprache === 'de' || e.sprache === 'en') sprache = e.sprache; } catch { /* egal */ }
@@ -47,5 +47,11 @@ export function zeigeFehlerseite(fehler) {
   pixelText(ctx, grund, B / 2, 64, 1, '#f0c020', 'mitte');
   umbrechen(String(fehler.mehr || '').toUpperCase(), 46).slice(0, 4).forEach((z, i) => pixelText(ctx, z, 24, 80 + i * 10, 1, '#c9c9bd'));
   umbrechen(t('fehler.strecke.hinweis'), 46).forEach((z, i) => pixelText(ctx, z, B / 2, 124 + i * 10, 1, '#f4f4ee', 'mitte'));
-  window.__fehlerseite = { grund: fehler.grund, mehr: fehler.mehr }; // für Tests
+  // M10b: andere Strecke kaputt: Taste/Klick/Antippen lädt neu mit der Standard-Etappe (ohne ?strecke= in der Adresse)
+  if (zurueck) {
+    pixelText(ctx, t('fehler.strecke.zurueck'), B / 2, 156, 1, '#f0c020', 'mitte');
+    const weiter = () => { const u = new URL(window.location.href); u.searchParams.delete('strecke'); window.location.replace(u.href); };
+    for (const n of ['keydown', 'pointerdown', 'touchstart']) window.addEventListener(n, weiter, { once: true });
+  }
+  window.__fehlerseite = { grund: fehler.grund, mehr: fehler.mehr, zurueck }; // für Tests
 }

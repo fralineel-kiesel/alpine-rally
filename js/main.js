@@ -57,6 +57,7 @@ import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
+import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser } from './wasser.js';
 import { umgebungsQuellen } from './umgebung.js';
 
@@ -1285,7 +1286,15 @@ neustart();
 lade.style.display = 'none';
 if (menueAn) {
   demo.start();
-  ablauf.wechsle('titel');
+  if (nachEtappenwahl()) {
+    // M10b: nach der Etappenwahl (Seite neu geladen) direkt ins Hauptmenü, Zeiger auf ETAPPE. Ton erst nach der
+    // nächsten Eingabe (der Browser erlaubt Ton nur nach einem Tastendruck/Klick auf dieser Seite).
+    const entsperren = () => { ton.entsperren(); for (const n of ['keydown', 'pointerdown', 'touchstart']) window.removeEventListener(n, entsperren, true); };
+    for (const n of ['keydown', 'pointerdown', 'touchstart']) window.addEventListener(n, entsperren, true);
+    seiten.haupt.start = 2;
+    ablauf.wechsle('menue');
+    delete seiten.haupt.start;
+  } else ablauf.wechsle('titel');
 } else ablauf.wechsle('rennen');
 requestAnimationFrame(schleife);
 // M8a: Fahr-Labor nur mit ?fahrlabor=1 nachladen (sonst weder Datei noch Aufwand)

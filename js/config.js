@@ -1370,6 +1370,9 @@ export const CONFIG = {
     bestzeitenName: 'alpineRally.bestzeiten',  // Bestzeiten bis 0.8g (eine Liste je Etappe; seit M8h nur gelesen, für die Übernahme)
     bestzeitenNameV2: 'alpineRally.bestzeiten2', // Bestzeiten seit M8h: Top 10 je Etappe und Auto (mit Fahrspur)
     letzterLaufName: 'alpineRally.letzterLauf', // der letzte fertige Lauf je Etappe (M6, für den Live-Vergleich)
+    // M10b: Etappenwahl (Seite ETAPPE): links die Liste, rechts die Vorschau-Karte (Draufsicht der Strecke)
+    etappenSeite: { breite: 312, spalte: 178, kartenHoehe: 104 }, // Tafel, Breite der Liste, Höhe der Karte (Pixel)
+    etappenKarte: { grund: '#141a20', rand: 6, strasse: '#e8d8a8', schatten: '#05080a', start: '#4cd060', ziel: '#f2f0e8' },
     // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
     standard: {
       vollbild: false,         // Vollbild an/aus (wird beim ersten Tastendruck auf dem Titel wieder eingeschaltet)

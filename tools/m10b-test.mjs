@@ -459,6 +459,39 @@ if (teil('s')) {
     }
   }
   info(`Bilder: ${LOG}/fehlerseite-*.png (die kaputten Dateien liegen nur im Test, nicht im Repo)`);
+  // M10b: Finnland kaputt. (1) In der Etappenwahl: Zeile „DATEI KAPUTT“, nicht wählbar, Alpen laufen weiter.
+  const fiKaputt = (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'export default { format: 1, \n' });
+  {
+    const s = await starteSpiel({ breite: 640, hoehe: 360 });
+    s.fehler = []; s.page.on('pageerror', (e) => s.fehler.push(String(e.message || e)));
+    await s.page.route('**/strecken/finnland.js', fiKaputt);
+    await s.page.goto(`${s.url}/index.html?ton=aus`);
+    await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 180000 });
+    const r = await s.page.evaluate(async () => {
+      const A = window.__alpineRally; A.szene.visible = false; A.zumMenue(); A.menue.oeffne(A.seiten.etappe);
+      await new Promise((o) => setTimeout(o, 1500));
+      A.menue.runter(); A.menue.bestaetigen();
+      await new Promise((o) => setTimeout(o, 500));
+      return { zeilen: A.seiten.etappe.eintraege().filter((e) => e.etappeId).map((e) => e.inhalt()), seite: A.menue.seite.id, speicher: localStorage.getItem('alpineRally.etappe'), laenge: A.strecke.laenge };
+    });
+    melde(r.seite === 'etappe' && r.speicher === null && Math.abs(r.laenge - 3667.587) < 0.5, `Finnland-Datei kaputt, Alpen geladen: Etappenwahl zeigt Finnland nicht wählbar (Bestätigen tut nichts), Alpen laufen weiter (${r.laenge.toFixed(1)} m)`);
+    await s.schliessen();
+  }
+  // (2) Finnland gewählt und kaputt: Fehlerseite mit „zur Standard-Etappe“, Taste lädt die Alpen
+  {
+    const s = await starteSpiel({ breite: 640, hoehe: 360 });
+    await s.page.route('**/strecken/finnland.js', fiKaputt);
+    await s.page.addInitScript(() => { if (!sessionStorage.getItem('m10bs')) { localStorage.setItem('alpineRally.etappe', 'finnland'); sessionStorage.setItem('m10bs', '1'); } });
+    await s.page.goto(`${s.url}/index.html?ton=aus`);
+    await s.page.waitForFunction(() => window.__alpineRally || window.__fehlerseite, null, { timeout: 180000 });
+    const f = await s.page.evaluate(() => ({ f: window.__fehlerseite || null, speicher: localStorage.getItem('alpineRally.etappe') }));
+    fs.writeFileSync(path.join(LOG, 'fehlerseite-finnland.png'), await s.page.screenshot());
+    await Promise.all([s.page.waitForNavigation({ timeout: 60000 }), s.page.keyboard.press('Enter')]);
+    await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 180000 });
+    const l = await s.page.evaluate(() => window.__alpineRally.strecke.laenge);
+    melde(f.f && f.f.zurueck && f.f.grund === 'datei' && f.speicher === 'alpen' && Math.abs(l - 3667.587) < 0.5, `Finnland gewählt und kaputt: Fehlerseite „${f.f && f.f.grund}“ mit Hinweis zur Standard-Etappe, Wahl zurück auf "${f.speicher}"; Taste -> Alpen spielbar (${l.toFixed(1)} m)`);
+    await s.schliessen();
+  }
 }
 
 // ===================================================================== (i) grep: nichts Alpines im Spielcode
@@ -593,6 +626,288 @@ if (teil('d')) {
       if (!soll) { const t = werkzeug('testfahrer.mjs', ['--auto', id]).text; soll = t.split('\n').filter((x) => /^\s+(vorsichtig|mittel|flott)\b/.test(x)).map((x) => x.trim().split(/\s+/)[1]).join(' / '); }
       melde(r.code === 0 && zeiten === soll, `${id}: ${zeiten || r.text.trim().slice(0, 120)} (Testfahrer: ${soll})`);
     }
+  }
+}
+
+// ===================================================================== Teil B: Finnland (e)–(i)
+const FI = 'finnland';
+if (teil('e')) {
+  console.log('(e) Prüfer: strecken/finnland.js gültig, kaputte Varianten abgelehnt');
+  const ok = werkzeug('strecke-pruefen.mjs', ['strecken/finnland.js']);
+  melde(ok.code === 0, `tools/strecke-pruefen.mjs strecken/finnland.js: Rückgabe ${ok.code} – ${ok.text.trim().split('\n')[0].slice(0, 160)}`);
+  const { pruefeStrecke } = await import('../js/streckenpruefung.js');
+  const original = (await import('../strecken/finnland.js')).default;
+  const roh = () => JSON.parse(JSON.stringify(original));
+  const faelle = [
+    ['Belag unbekannt', (d) => { d.belagAbschnitte[0].belag = 'eis'; }, 'belagAbschnitte[0].belag:'],
+    ['Belag-Abschnitte überlappen', (d) => { d.belagAbschnitte[1].von = 1000; }, 'belagAbschnitte[1]:'],
+    ['Belag-Abschnitt verkehrt', (d) => { d.belagAbschnitte[0].bis = -5; }, 'belagAbschnitte[0]:'],
+    ['See zu nah an der Strasse', (d) => { d.wasser.seen[0].lat = 50; }, 'wasser.seen[0]:'],
+    ['See ohne Seite', (d) => { delete d.wasser.seen[0].seite; }, 'wasser.seen[0]:'],
+    ['Fluss zu schräg', (d) => { d.wasser.fluesse[0].winkel = 70; }, 'wasser.fluesse[0].winkel:'],
+    ['Fluss hinter dem Ende', (d) => { d.wasser.fluesse[0].s = 9000; }, 'wasser.fluesse[0].s:'],
+    ['Haus ohne Seite', (d) => { delete d.leben.wiesenweg.haeuser[0].seite; }, 'leben.wiesenweg.haeuser[0]:'],
+    ['Steg ohne Länge', (d) => { delete d.leben.wiesenweg.stege[0].laenge; }, 'leben.wiesenweg.stege[0]:'],
+    ['Tier unbekannt', (d) => { d.deko.tier = 'elch'; }, 'deko.tier:'],
+    ['Sprung hinter dem Ende', (d) => { d.sprung[3].s = 5000; }, 'sprung[3].s:'],
+    ['untergrundInfo klein', (d) => { d.untergrundInfo.de = 'Schotter'; }, 'untergrundInfo.de:'],
+    ['Länge passt nicht', (d) => { d.laenge = 3500; }, 'laenge:'],
+    ['Checkpoint hinter dem Ziel', (d) => { d.checkpoints[2] = 2790; }, 'checkpoints[2]:'],
+  ];
+  const schlecht = [];
+  for (const [name, aendere, pfad] of faelle) { const d = roh(); aendere(d); const f = pruefeStrecke(d, { voll: true }); if (!f.some((x) => x.startsWith(pfad))) schlecht.push(`${name} -> ${f[0] || 'kein Fehler'}`); }
+  melde(schlecht.length === 0, `${faelle.length - schlecht.length} von ${faelle.length} kaputten Finnland-Varianten abgelehnt${schlecht.length ? `; nicht erkannt: ${schlecht.join(' | ')}` : ''}`);
+  const reg = fs.readFileSync(path.join(WURZEL, 'js/strecken.js'), 'utf8');
+  melde(/id: 'alpen', datei: 'alpen\.js'/.test(reg) && /id: 'finnland', datei: 'finnland\.js'/.test(reg), 'Register js/strecken.js: alpen (erster Eintrag, Standard) und finnland');
+}
+if (teil('f')) {
+  console.log('(f) Finnland: Länge, Checkpoints, Start/Ziel, Belag, Kuppen');
+  const s = await oeffne(WURZEL, `?menue=aus&ton=aus&strecke=${FI}`);
+  await bereit(s);
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, st = A.strecke, n = A.netz;
+    let schotter = 0, alle = 0;
+    for (let i = Math.ceil(st.startS); i <= st.zielS; i++) { alle++; if (n.belag[i] === 'schotter') schotter++; }
+    return { id: A.CONFIG.deko.fahne, laenge: st.laenge, start: st.startS, ziel: st.zielS, cps: A.checkpoints.map((c) => c.s), notes: A.paceNotes.notes.map((x) => (/"kuppe"/.test(JSON.stringify(x)) ? "kuppe" : "andere")), schotter: schotter / alle, wasser: A.welt.wasser.seen.length + '/' + A.welt.wasser.fluesse.length };
+  });
+  const daten = (await import('../strecken/finnland.js')).default;
+  melde(r.laenge >= 2500 && r.laenge <= 3000 && Math.abs(r.laenge - daten.laenge) <= 0.5, `Länge ${r.laenge.toFixed(3)} m (Ziel 2500–3000, Datei ${daten.laenge}), gefahren ${(r.ziel - r.start).toFixed(1)} m`);
+  melde(r.cps.length >= 3 && r.cps.length <= 4 && r.cps.every((c, i) => c > r.start && c < r.ziel && (i === 0 || c > r.cps[i - 1])), `Checkpoints ${r.cps.join(' / ')} m in Reihenfolge zwischen Start ${r.start} m und Ziel ${r.ziel.toFixed(1)} m`);
+  melde(r.schotter > 0.8, `Belag zwischen Start und Ziel: ${(r.schotter * 100).toFixed(1)} % Schotter (Rest Asphalt im Dorf)`);
+  const kuppen = r.notes.filter((x) => x === 'kuppe').length;
+  melde(kuppen >= 3 && daten.sprung.length >= 3 && daten.sprung.length <= 4, `${daten.sprung.length} markierte Kuppen (sprung: ${daten.sprung.map((k) => `${k.name} ${k.s} m`).join(', ')}), ${kuppen} Kuppen-Ansagen, ${r.notes.length} Pace-Notes`);
+  melde(r.wasser === '2/1' && r.id === 'finnland', `Wasser: ${r.wasser} (Seen/Flüsse), Fahnen-Motiv ${r.id}`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('g')) {
+  console.log('(g) Finnland: Testfahrer, fünf Autos und Prototyp (strecke-abfahren, drei Stile)');
+  const tabelle = [];
+  for (const id of ['prototyp', ...AUTOS]) {
+    const r = werkzeug('strecke-abfahren.mjs', ['--strecke', FI, '--auto', id, '--aus', path.join(LOG, `abfahren-${FI}-${id}.txt`)]);
+    fs.writeFileSync(path.join(LOG, `abfahren-${FI}-${id}.log`), r.text);
+    const z = (/Gesamtzeiten: (.+)/.exec(r.text) || [])[1] || '--';
+    const vorsichtig = (/^vorsichtig .*$/m.exec(r.text) || [''])[0];
+    const sauber = /Aufpralle 0, Gras 0x, Wandnähe 0x, Stillstand 0x/.test(vorsichtig);
+    const stile = ['vorsichtig', 'mittel', 'flott'].map((st) => (new RegExp(`^${st} .*Aufpralle (\\d+), Gras (\\d+)x, Wandnähe (\\d+)x, Stillstand (\\d+)x`, 'm').exec(r.text) || []).slice(1).join('/'));
+    tabelle.push(`${id}: ${z} (Aufpralle/Gras/Wand/Stillstand je Stil: ${stile.join(' | ')})`);
+    melde(r.code === 0 && sauber, `${id}: ${z} – alle Stile im Ziel, vorsichtig ohne Aufprall/Abkommen/Stillstand${sauber ? '' : ' (NICHT sauber)'}`);
+  }
+  info(`Tabelle: ${tabelle.join('; ')}`);
+  const proto = fs.readFileSync(path.join(LOG, `abfahren-${FI}-prototyp.log`), 'utf8');
+  const sek = ((/^mittel\s+(\d+):(\d+\.\d+)/m.exec(proto) || []).slice(1)).map(Number);
+  melde(sek.length === 2 && sek[0] * 60 + sek[1] >= 95 && sek[0] * 60 + sek[1] <= 140, `Prototyp „mittel“ ${sek.join(':')} (Richtwert 1:50–2:20 für den Testfahrer; Schnitt höher als in den Alpen)`);
+}
+if (teil('h')) {
+  console.log('(h) Finnland: Abkürzungen (abkuerzungen.mjs --pruefen --strecke finnland)');
+  const r = werkzeug('abkuerzungen.mjs', ['--pruefen', '--strecke', FI]);
+  fs.writeFileSync(path.join(LOG, `abkuerzungen-${FI}.log`), r.text);
+  const kern = (/übrige Linien je Kurve ([\d/]+|\(keine\))/.exec(r.text) || [])[1];
+  const durch = +((/Durchkommen in gesperrten Kurven: (\d+)/.exec(r.text) || [])[1]);
+  const zonen = [...r.text.matchAll(/übrig in Kurve ([\d – ]+): (\d+) Linien, Gewinn bis ([\d.]+) m/g)].map((m) => `${m[1].trim()} m: ${m[2]} Linien, bis ${m[3]} m`);
+  const nicht = (/"nicht schneiden": (\d+), "schneiden": (\d+)/.exec(r.text) || []).slice(1);
+  melde(r.code === 0 && durch === 0, `Strecke finnland: übrige Linien je Kurve ${kern}; gesperrt ${nicht[0]} Kurven, frei ${nicht[1]}; Durchkommen in gesperrten Kurven ${durch}`);
+  info(`freie Kurven (Schneiden erlaubt, Pace-Note „schneiden“): ${zonen.join('; ')}`);
+}
+if (teil('i')) {
+  console.log('(i) Finnland: Bilder an festen Punkten (nur zur Ansicht)');
+  const s = await oeffne(WURZEL, `?menue=aus&ton=aus&strecke=${FI}`, { uhr: true });
+  await bereit(s);
+  await bilder(s, 2);
+  const punkte = [['start', null], ['kiefernwald', 640], ['seeufer', 935], ['dorf', 1240], ['bruecke', 1372], ['birkenkuppe', 1600], ['kehre', 1890], ['ziel', 2700]];
+  for (const [name, sM] of punkte) {
+    if (sM != null) await s.page.evaluate((sM) => { const A = window.__alpineRally; A.anhalten = true; A.setzeAuf(sM); A.kameraSofort(); }, sM);
+    await bilder(s, 6);
+    fs.writeFileSync(path.join(LOG, `finnland-${name}.png`), Buffer.from((await foto(s)).split(',')[1], 'base64'));
+  }
+  melde(s.fehler.length === 0, `${punkte.length} Bilder: ${LOG}/finnland-*.png (Konsole ohne Fehler: ${s.fehler.length})`);
+  await s.schliessen();
+}
+
+// ===================================================================== Teil C: Etappenwahl (k)–(r)
+// Spiel mit Menü öffnen (Speicher einmal vorbefüllt, bleibt über Neuladen), Menü-Leinwand ohne 3D (Test-Browser langsam)
+async function mitMenue({ speicher = null, breite = 640, hoehe = 360, geraet = undefined, gamepad = false } = {}) {
+  const s = await starteSpiel({ breite, hoehe, ...(geraet ? { geraet } : {}) });
+  s.fehler = [];
+  s.anfragen = [];
+  s.page.on('pageerror', (e) => s.fehler.push(String(e.message || e)));
+  s.page.on('request', (r) => s.anfragen.push(r.url()));
+  if (gamepad) await s.page.addInitScript(() => { window.__knopf = -1; navigator.getGamepads = () => [{ connected: true, axes: [0, 0], buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: i === window.__knopf, value: i === window.__knopf ? 1 : 0 })) }]; });
+  await s.page.addInitScript((sp) => { if (!sessionStorage.getItem('m10b')) { localStorage.clear(); for (const [k, v] of Object.entries(sp || {})) localStorage.setItem(k, v); sessionStorage.setItem('m10b', '1'); } }, speicher);
+  await s.page.goto(`${s.url}/index.html?ton=aus`);
+  await bereitMenue(s);
+  return s;
+}
+const bereitMenue = async (s) => { await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 180000, polling: 200 }); await s.page.evaluate(() => { window.__alpineRally.szene.visible = false; }); };
+const zustand = (s) => s.page.evaluate(() => { const A = window.__alpineRally; return { strecke: A.strecke.laenge, id: A.CONFIG.deko.fahne === 'finnland' ? 'finnland' : 'alpen', ablauf: A.ablauf.zustand, seite: A.menue.seite && A.menue.seite.id, wahl: A.menue.wahl, speicher: localStorage.getItem('alpineRally.etappe') }; });
+const zeilenText = (s) => s.page.evaluate(() => { const A = window.__alpineRally; const l = typeof A.menue.seite.eintraege === 'function' ? A.menue.seite.eintraege() : A.menue.seite.eintraege; return l.map((e) => (e.inhalt ? e.inhalt() : e.typ === 'aktion' ? `${e.text}${e.wert ? `=${e.wert()}` : ''}` : e.typ === 'auswahl' ? `${e.text}:${e.lesen()}` : e.typ)); });
+const warteNeuladen = async (s) => { await s.page.waitForLoadState('load'); await s.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue && window.__alpineRally.ablauf.zustand === 'menue', null, { timeout: 180000, polling: 200 }); await s.page.evaluate(() => { window.__alpineRally.szene.visible = false; }); };
+const BZ = (etappe, auto, zeit, cps) => ({ [etappe]: { [auto]: [{ zeit, cps, datum: '2026-09-01T10:00:00.000Z', auto, aufpralle: 0, resets: 0, hoechstTempo: 50, spur: [] }] } });
+
+if (teil('k') || teil('p') || teil('r')) {
+  console.log('(k) (p) (r) Etappe wählen (Tastatur), Neuladen, gewählte Strecke startet; Gamepad, Maus, Touch');
+  const s = await mitMenue();
+  const a0 = await zustand(s);
+  melde(a0.id === 'alpen' && a0.ablauf === 'titel' && a0.speicher === null, `Start ohne Wahl: Alpen (${a0.strecke.toFixed(1)} m), Titel; Finnland-Datei beim Start nicht geladen: ${!s.anfragen.some((u) => /finnland\.js/.test(u)) ? 'ja' : 'NEIN'}`);
+  await s.page.keyboard.press('Enter');
+  await s.page.waitForFunction(() => window.__alpineRally.ablauf.zustand === 'menue');
+  const haupt = await zeilenText(s);
+  melde(haupt.includes('menue.etappe=PASSSTRASSE'), `Hauptmenü: Zeile ETAPPE zeigt den Namen der gewählten Strecke (${haupt.find((x) => x.startsWith('menue.etappe'))})`);
+  // ETAPPE öffnen (Pfeil runter zweimal, Enter)
+  await s.page.keyboard.press('ArrowDown'); await s.page.keyboard.press('ArrowDown'); await s.page.keyboard.press('Enter');
+  await s.page.waitForFunction(() => window.__alpineRally.menue.seite.id === 'etappe');
+  await s.page.waitForFunction(() => window.__alpineRally.menue.seite.eintraege().filter((e) => e.etappeId).every((e) => !/^[a-z]+$/.test(e.inhalt())), null, { timeout: 30000 });
+  const liste = await zeilenText(s);
+  melde(liste[0].startsWith('PASSSTRASSE ASPHALT UND SCHOTTER 3.6 KM') && liste[1].startsWith('FINNLAND-SCHOTTER SCHOTTER 2.7 KM') && liste.some((x) => x === 'zurueck'), `Etappenliste: ${liste.slice(0, 2).join(' | ')}`);
+  melde(s.anfragen.some((u) => /finnland\.js/.test(u)), 'Finnland-Daten erst beim Öffnen der Seite ETAPPE geladen (nur die Datei, keine Welt)');
+  const w0 = await zustand(s);
+  melde(w0.wahl === 0, `Zeiger beginnt auf der gewählten Etappe (Zeile ${w0.wahl})`);
+  // Zurück ohne Änderung
+  await s.page.keyboard.press('Escape');
+  const z1 = await zustand(s);
+  melde(z1.seite === 'haupt' && z1.speicher === null, `Zurück (Esc) verlässt ohne Änderung (Seite ${z1.seite}, Speicher ${z1.speicher})`);
+  await s.page.keyboard.press('Enter');
+  await s.page.waitForFunction(() => window.__alpineRally.menue.seite.id === 'etappe');
+  await s.page.keyboard.press('ArrowDown');
+  await Promise.all([s.page.waitForNavigation({ timeout: 60000 }), s.page.keyboard.press('Enter')]);
+  await warteNeuladen(s);
+  const z2 = await zustand(s);
+  const haupt2 = await zeilenText(s);
+  melde(z2.id === 'finnland' && z2.speicher === 'finnland' && z2.ablauf === 'menue' && z2.seite === 'haupt' && z2.wahl === 2, `nach Enter: Seite neu geladen mit Finnland (${z2.strecke.toFixed(1)} m), Speicher "${z2.speicher}", direkt im Hauptmenü auf ETAPPE (Zeile ${z2.wahl})`);
+  melde(haupt2.includes('menue.etappe=FINNLAND-SCHOTTER'), `Hauptmenü zeigt ${haupt2.find((x) => x.startsWith('menue.etappe'))}`);
+  // (p) nach Neuladen (ohne Merker) bleibt die Etappe
+  await s.page.reload();
+  await bereitMenue(s);
+  const z3 = await zustand(s);
+  melde(z3.id === 'finnland' && z3.ablauf === 'titel', `(p) normales Neuladen: Finnland bleibt gewählt (${z3.strecke.toFixed(1)} m), Start wieder mit Titel`);
+  // (k) STARTEN startet die gewählte Strecke
+  await s.page.keyboard.press('Enter');
+  await s.page.waitForFunction(() => window.__alpineRally.ablauf.zustand === 'menue');
+  await s.page.keyboard.press('Enter'); // STARTEN
+  await s.page.waitForFunction(() => window.__alpineRally.ablauf.zustand !== 'menue', null, { timeout: 30000 });
+  const z4 = await s.page.evaluate(() => ({ ablauf: window.__alpineRally.ablauf.zustand, laenge: window.__alpineRally.strecke.laenge, x: window.__alpineRally.physik.x }));
+  melde(['countdown', 'rennen'].includes(z4.ablauf) && Math.abs(z4.laenge - 2795.7) < 1, `(k) STARTEN: ${z4.ablauf} auf Finnland (${z4.laenge.toFixed(1)} m)`);
+  // (r) Maus: Hauptmenü -> ETAPPE -> Klick auf PASSSTRASSE
+  await s.page.evaluate(() => window.__alpineRally.zumHauptmenue());
+  await s.page.evaluate(() => { const A = window.__alpineRally; A.menue.oeffne(A.seiten.etappe); });
+  await s.page.waitForFunction(() => window.__alpineRally.menue.treffer.length > 2, null, { timeout: 30000 });
+  const klick = await s.page.evaluate(() => {
+    const A = window.__alpineRally, h = A.menue.treffer.find((t) => t.nr === 0), c = document.getElementById('menue') || document.getElementById('hud');
+    const r = c.getBoundingClientRect();
+    return { x: r.left + (h.x + h.b / 2) * r.width / 320, y: r.top + (h.y + h.h / 2) * r.height / 180 };
+  });
+  await s.page.mouse.move(klick.x, klick.y);
+  await Promise.all([s.page.waitForNavigation({ timeout: 60000 }), s.page.mouse.click(klick.x, klick.y)]);
+  await warteNeuladen(s);
+  const z5 = await zustand(s);
+  melde(z5.id === 'alpen' && z5.speicher === 'alpen', `(r) Maus: Klick auf PASSSTRASSE wählt die Alpen (${z5.strecke.toFixed(1)} m, Speicher "${z5.speicher}")`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length}${s.fehler.length ? `: ${s.fehler[0]}` : ''})`);
+  await s.schliessen();
+  // (r) Gamepad: Steuerkreuz runter (Knopf 13), A (Knopf 0)
+  {
+    const g = await mitMenue({ gamepad: true });
+    const druecke = async (k) => { await g.page.evaluate((k) => { window.__knopf = k; }, k); await g.page.waitForTimeout(250); await g.page.evaluate(() => { window.__knopf = -1; }); await g.page.waitForTimeout(250); };
+    await druecke(0); // Titel -> Menü
+    await g.page.waitForFunction(() => window.__alpineRally.ablauf.zustand === 'menue', null, { timeout: 20000 });
+    await druecke(13); await druecke(13); await druecke(0);
+    await g.page.waitForFunction(() => window.__alpineRally.menue.seite.id === 'etappe', null, { timeout: 20000 });
+    await druecke(13);
+    const wahl = (await zustand(g)).wahl;
+    await Promise.all([g.page.waitForNavigation({ timeout: 60000 }), druecke(0)]);
+    await warteNeuladen(g);
+    const z = await zustand(g);
+    melde(wahl === 1 && z.id === 'finnland', `(r) Gamepad (Steuerkreuz, A): Finnland gewählt (${z.strecke.toFixed(1)} m)`);
+    await g.schliessen();
+  }
+  // (r) Touch: Antippen der Zeile FINNLAND (Handy hoch 402x874)
+  {
+    const h = await mitMenue({ breite: 402, hoehe: 874, geraet: { hasTouch: true, isMobile: true, deviceScaleFactor: 1 } });
+    const cdp = await h.page.context().newCDPSession(h.page);
+    const tippe = async (p) => { await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x, y: p.y, id: 1 }] }); await h.page.waitForTimeout(60); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await h.page.waitForTimeout(200); };
+    const punkt = (nr) => h.page.evaluate((nr) => { const A = window.__alpineRally, t = A.menue.treffer.find((x) => x.nr === nr); const c = document.getElementById('menue') || document.getElementById('hud'); const r = c.getBoundingClientRect(); return { x: r.left + (t.x + t.b / 2) * r.width / 320, y: r.top + (t.y + t.h / 2) * r.height / 180 }; }, nr);
+    await h.page.evaluate(() => window.__alpineRally.zumMenue ? window.__alpineRally.zumMenue() : null);
+    await h.page.evaluate(() => { const A = window.__alpineRally; A.menue.oeffne(A.seiten.etappe); });
+    await h.page.waitForFunction(() => window.__alpineRally.menue.treffer.some((t) => t.nr === 1), null, { timeout: 30000 });
+    const p = await punkt(1);
+    // Antippen: wählt die Zeile; lädt das nicht schon neu, bestätigt ein zweites Antippen (wie bei den anderen Seiten)
+    const nav1 = h.page.waitForNavigation({ timeout: 8000 }).then(() => true, () => false);
+    await tippe(p);
+    let zweimal = false;
+    if (!(await nav1)) { zweimal = true; await Promise.all([h.page.waitForNavigation({ timeout: 60000 }), tippe(p)]); }
+    await warteNeuladen(h);
+    const z = await zustand(h);
+    melde(z.id === 'finnland', `(r) Touch (Antippen, Handy hoch 402x874): Finnland gewählt (${z.strecke.toFixed(1)} m, ${zweimal ? 'zweimal' : 'einmal'} angetippt)`);
+    await h.schliessen();
+  }
+}
+
+if (teil('l') || teil('m') || teil('n') || teil('o')) {
+  console.log('(l) (m) (n) (o) Bestzeiten je Etappe, Umschalter, Live-Vergleich');
+  const alpen = BZ('passstrasse', 'rt4', 140.12, [27.1, 75.2, 112.3]);
+  const speicher = { 'alpineRally.bestzeiten2': JSON.stringify({ ...alpen, ...BZ('finnland', 'rt4', 99.5, [20.5, 50.5, 80.5]) }) };
+  const s = await oeffne(WURZEL, `?menue=aus&ton=aus&auto=rt4&strecke=${FI}`, { speicher, auto: 'rt4' });
+  await bereit(s);
+  // (o) Live-Vergleich gegen die Finnland-Bestzeit des gefahrenen Autos
+  const ref = await s.page.evaluate(() => { const A = window.__alpineRally; A.referenzLaden(); return Array.from(A.vergleich.refCps); });
+  melde(ref[0] === 20.5 && ref[2] === 80.5, `(o) Live-Vergleich auf Finnland: Referenz = Finnland-Bestzeit Audan (Zwischenzeiten ${ref.join(' / ')}; Alpen wären 27.1 / 75.2 / 112.3)`);
+  const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+  const lauf = await s.page.evaluate(async (code) => {
+    const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    const r = f.fahreEtappe(window.__alpineRally, 'mittel');
+    await new Promise((ok) => { let n = 0; const g = () => (++n > 10 ? ok() : requestAnimationFrame(g)); requestAnimationFrame(g); });
+    return { zeit: r.zeit, ziel: r.ziel, speicher: JSON.parse(localStorage.getItem('alpineRally.bestzeiten2')), letzter: JSON.parse(localStorage.getItem('alpineRally.letzterLauf')) };
+  }, fahrerCode);
+  const fi = lauf.speicher.finnland.rt4.map((x) => x.zeit), al = lauf.speicher.passstrasse.rt4.map((x) => x.zeit);
+  melde(lauf.ziel && fi.length === 2 && fi.includes(99.5) && JSON.stringify(lauf.speicher.passstrasse) === JSON.stringify(alpen.passstrasse), `(l) Lauf auf Finnland (${lauf.zeit.toFixed(2)} s): finnland.rt4 = ${fi.join(', ')}; Alpen-Liste unverändert (${al.join(', ')})`);
+  melde(lauf.letzter && lauf.letzter.finnland && !lauf.letzter.passstrasse, `(l) letzter Lauf unter "finnland" (${lauf.letzter.finnland.zeit.toFixed(2)} s), nichts unter "passstrasse"`);
+  await s.schliessen();
+  // (n) Bestzeiten-Seite mit Etappen-Umschalter (Alpen geladen, vorbefüllt mit beiden Etappen)
+  const s2 = await oeffne(WURZEL, '?ton=aus', { speicher: { 'alpineRally.bestzeiten2': JSON.stringify(lauf.speicher) } });
+  await s2.page.waitForFunction(() => window.__alpineRally && window.__alpineRally.menue, null, { timeout: 180000 });
+  const seite = await s2.page.evaluate(async () => {
+    const A = window.__alpineRally;
+    A.szene.visible = false;
+    A.menue.zeige(A.seiten.bestzeiten);
+    const text = () => A.seiten.bestzeiten.eintraege().map((e) => (e.inhalt ? e.inhalt() : e.typ === 'auswahl' ? `${e.text}:${e.lesen()}` : e.typ));
+    const vorher = text();
+    await new Promise((ok) => setTimeout(ok, 1500)); // Finnland-Daten laden
+    const zeile = A.seiten.bestzeiten.eintraege().find((e) => e.etappeWahl);
+    zeile.setzen(1);
+    const nachher = text();
+    zeile.setzen(0);
+    return { vorher, nachher, zurueck: text(), optionen: zeile.optionen().map((o) => (typeof o.text === 'function' ? o.text() : o.text)) };
+  });
+  const zeiten = (l) => l.filter((x) => /^\d+\. \d/.test(x)).join(' | ');
+  melde(/140\.12|02:20\.12/.test(zeiten(seite.vorher)) && !/01:39\.50/.test(zeiten(seite.vorher)), `(m) Alpen-Seite zeigt die alten Alpen-Zeiten: ${zeiten(seite.vorher).slice(0, 120)}`);
+  melde(/01:39\.50/.test(zeiten(seite.nachher)) && !/02:20\.12/.test(zeiten(seite.nachher)), `(n) Umschalter auf ${seite.optionen[1]}: nur Finnland-Zeiten (${zeiten(seite.nachher).slice(0, 120)})`);
+  melde(JSON.stringify(seite.zurueck) === JSON.stringify(seite.vorher), `(n) zurück auf ${seite.optionen[0]}: wieder genau die Alpen-Liste`);
+  melde(s2.fehler.length === 0, `Konsole ohne Fehler (${s2.fehler.length})`);
+  await s2.schliessen();
+}
+
+if (teil('q')) {
+  console.log('(q) Layout der Etappenwahl und Bestzeiten in allen Fenstergrössen (M9a)');
+  for (const [b, h, touch] of [[402, 874, true], [874, 402, true], [640, 360, false], [640, 360, true], [1280, 720, false]]) {
+    const s = await mitMenue({ breite: b, hoehe: h, ...(touch ? { geraet: { hasTouch: true, isMobile: true, deviceScaleFactor: 1 } } : {}) });
+    const r = await s.page.evaluate(async () => {
+      const A = window.__alpineRally, aus = {};
+      A.zumMenue();
+      for (const n of ['etappe', 'bestzeiten', 'haupt']) {
+        A.menue.oeffne(A.seiten[n]);
+        await new Promise((ok) => setTimeout(ok, 800));
+        A.menue.neuZeichnen();
+        await new Promise((ok) => setTimeout(ok, 300));
+        const m = A.menue.rollen, tr = A.menue.treffer.map((t) => [t.x, t.y, t.b, t.h]);
+        let ueber = 0;
+        for (let i = 0; i < tr.length; i++) for (let j = i + 1; j < tr.length; j++) { const [ax, ay, ab, ah] = tr[i], [bx, by, bb, bh] = tr[j]; if (ax < bx + bb && bx < ax + ab && ay < by + bh && by < ay + ah) ueber++; }
+        aus[n] = { x: Math.round((320 - m.breite) / 2), y: m.y0, b: m.breite, h: m.hoehe, rollen: m.max, treffer: tr.length, ueber };
+        A.menue.zurueck();
+      }
+      return aus;
+    });
+    const ok = Object.values(r).every((m) => m.x >= 0 && m.y >= 0 && m.x + m.b <= 320 && m.y + m.h <= 180 && !m.rollen && m.ueber === 0);
+    melde(ok, `${b}x${h}${touch ? ' Touch' : ''}: ${Object.entries(r).map(([n, m]) => `${n} ${m.b}x${m.h} bei ${m.x},${m.y}${m.rollen ? ' ROLLT' : ''}${m.ueber ? ` ${m.ueber} Überlappungen` : ''}`).join(', ')}`);
+    await s.schliessen();
   }
 }
 
