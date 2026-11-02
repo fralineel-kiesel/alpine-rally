@@ -74,8 +74,34 @@ Sprung/Knick, bekannte Beläge und Absperrungen, Seeds, Fan-Spots mit Banner und
 Meldet Fehler mit Pfad (`checkpoints[2]: 3700 liegt hinter dem Ziel …`), Rückgabe 0 = in Ordnung, 1 = Fehler.
 Pace-Notes stehen nicht in der Datei: Das Spiel berechnet sie aus der Geometrie (Symbole sind darum immer bekannt).
 
+## Ansehen und abfahren (Werkzeuge, seit M10a)
+
+Beide laden das Spiel im Headless-Chromium mit der angegebenen Datei (statt `strecken/alpen.js`), bauen die Strecke mit
+den echten Regeln des Spiels und ändern nichts am Spiel.
+
+```
+node tools/strecke-karte.mjs strecken/alpen.js [--aus <ordner>]
+```
+
+Schreibt nach `/tmp/strecke-karte/` (oder `--aus`): `<id>-karte.png` (Draufsicht: Strasse mit Breite und Belag, Stummel,
+Felswände, Start/Ziel, Checkpoints mit Nummer, Pace-Notes mit Kürzel wie `3R` = Stufe 3 rechts, `KEL` = Kehre links,
+Abkürzungen rot/grün, enge Kurven unter 30 m rot), `<id>-profil.png` (Höhenprofil, gefärbt nach Steigung, Kuppen,
+Senken, Checkpoints, Belag) und `<id>-bericht.txt` (Länge, Höhenmeter, Steigung/Gefälle, engster Radius, Anteile je
+Belag, Anzahl Pace-Notes und Checkpoints). Der Bericht steht auch im Terminal.
+
+```
+node tools/strecke-abfahren.mjs strecken/alpen.js [--auto <id>] [--aus <datei.txt>]
+```
+
+Lässt den vorhandenen Testfahrer (`tools/testfahrer-browser.js`) die Etappe in drei Stilen (vorsichtig, mittel, flott)
+in der echten Physik fahren. Terminal: je Stil Zeit, Zwischenzeiten, Anzahl Aufpralle/Abkommen/Wandnähe/Stillstand und
+die Zeile `Gesamtzeiten: …`. Datei (Standard `/tmp/strecke-abfahren-<id>-<auto>.txt`): alle Stellen in Streckenmetern
+und das höchste Tempo je Abschnitt. Rückgabe 1, wenn ein Stil nicht ins Ziel kommt. Für die Alpen trifft es die Zeiten
+von `tools/testfahrer.mjs` genau (Prototyp 2:59.33 / 2:42.35 / 2:31.92).
+
 ## Neue Strecke anlegen (für M10b)
 
 1. `strecken/alpen.js` kopieren, `id`, `etappe`, Namen ändern, Punkte und Orte ersetzen.
 2. Eintrag in `js/strecken.js` ergänzen.
-3. `node tools/strecke-pruefen.mjs strecken/<id>.js`, dann die Werkzeuge für `erzeugt` laufen lassen.
+3. `node tools/strecke-pruefen.mjs strecken/<id>.js`, Karte ansehen, abfahren, dann die Werkzeuge für `erzeugt` laufen lassen
+   (bis M10b schreiben sie noch fest in `strecken/alpen.js`, siehe `tools/strecke-erzeugt.mjs`).

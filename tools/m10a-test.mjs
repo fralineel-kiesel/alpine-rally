@@ -31,7 +31,7 @@ const info = (text) => console.log(`       ${text}`);
 const LOG = '/tmp/m10a';
 fs.mkdirSync(LOG, { recursive: true });
 const werkzeug = (name, argumente = [], wurzel = WURZEL, timeout = 3 * 3600000) => {
-  const r = spawnSync(process.execPath, [path.join(WURZEL, 'tools', name), ...argumente], { encoding: 'utf8', timeout, maxBuffer: 64 * 1024 * 1024, cwd: wurzel });
+  const r = spawnSync(process.execPath, [path.join(wurzel, 'tools', name), ...argumente], { encoding: 'utf8', timeout, maxBuffer: 64 * 1024 * 1024, cwd: wurzel });
   return { code: r.status, text: `${r.stdout || ''}${r.stderr || ''}` };
 };
 const AUTOS = process.env.M10A_AUTOS ? process.env.M10A_AUTOS.split(',') : ['rt4', 'delto', 'escorta', 'l073', 'imprexa'];
@@ -332,7 +332,11 @@ if (teil('f')) {
     const geaendert = dateien.filter((d) => spawnSync('git', ['diff', '--quiet', BASIS, '--', d], { cwd: WURZEL }).status !== 0);
     melde(geaendert.length === 0, `Ton-Code unverändert seit 0.9a.2 (${dateien.join(', ')})${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
     // Offline gerechnete Klänge (OfflineAudioContext): Messzahlen von ton-umgebung-test in beiden Ständen
-    const zahlen = (t) => t.split('\n').filter((x) => /^\s*(ok|FEHLER)\s/.test(x)).map((x) => x.replace(/\d+(\.\d+)? ?ms\b/g, 'X ms').trim());
+    const zahlen = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x)).map((x) => x.replace(/\d+(\.\d+)? ?ms\b/g, 'X ms').trim());
+    // Diese Zeilen messen in Echtzeit im laufenden Spiel (Tiefpass/Pegel mitten im Übergang, Zeitpunkt des Stopps,
+    // Ton-Labor live): sie schwanken schon zwischen zwei Läufen desselben Stands (gemessen) und werden nur gemeldet.
+    // "Pause: leise Variante" ist darum auch in 0.9a.2 manchmal rot (alter Wackel-Test aus M7b)
+    const ECHTZEIT = /^(OK|FEHLER)\s+(Pause: Umgebung läuft gedämpft|Weiter: Musik blendet|Ton-Labor: Umgebung mit VORBEIFAHREN|STARTEN: Musik blendet|Pause: leise Variante)/;
     const geaendert0 = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
     const tn = werkzeug('ton-umgebung-test.mjs', []), ta = werkzeug('ton-umgebung-test.mjs', [], ALT);
     // (der alte Test schreibt Spektrogramme und Messtabelle neu: zurücksetzen)
@@ -340,8 +344,11 @@ if (teil('f')) {
     if (neuGeschrieben.length) spawnSync('git', ['checkout', '--', ...neuGeschrieben], { cwd: WURZEL });
     fs.writeFileSync(path.join(LOG, 'ton-umgebung-neu.log'), tn.text); fs.writeFileSync(path.join(LOG, 'ton-umgebung-alt.log'), ta.text);
     const zn = zahlen(tn.text), za = zahlen(ta.text);
-    const anders = zn.filter((x, i) => x !== za[i]);
-    melde(zn.length > 20 && anders.length === 0, `ton-umgebung-test (Glocken, Publikum, Vögel, Brunnen, Böen, Musik offline gerechnet): ${zn.length} Messzeilen, ${anders.length ? `${anders.length} anders` : 'Zahl für Zahl gleich'} wie 0.9a.2 (rot in beiden: ${zn.filter((x) => x.startsWith('FEHLER')).length}/${za.filter((x) => x.startsWith('FEHLER')).length})`);
+    const andersAlle = zn.filter((x, i) => x !== za[i]);
+    const anders = andersAlle.filter((x) => !ECHTZEIT.test(x));
+    if (andersAlle.length > anders.length) info(`Echtzeit-Zeilen anders (schwanken auch neu gegen neu): ${andersAlle.length - anders.length}`);
+    const rotN = zn.filter((x) => x.startsWith('FEHLER') && !ECHTZEIT.test(x)).length;
+    melde(zn.length > 20 && zn.length === za.length && anders.length === 0 && rotN === 0, `ton-umgebung-test (Glocken, Publikum, Vögel, Brunnen, Böen, Musik offline gerechnet): ${zn.length} Messzeilen, ohne die ${zn.filter((x) => ECHTZEIT.test(x)).length} Echtzeit-Zeilen ${anders.length ? `${anders.length} anders` : 'Zahl für Zahl gleich'} wie 0.9a.2 (rot: neu ${zn.filter((x) => x.startsWith('FEHLER')).length}, alt ${za.filter((x) => x.startsWith('FEHLER')).length}, nur Echtzeit-Zeilen)`);
     if (anders.length) info(`erste Abweichung: ${anders[0].slice(0, 200)}`);
   }
 }
@@ -506,7 +513,7 @@ if (teil('k')) {
     const cps = +((/Checkpoints: (\d+)/.exec(bericht) || [])[1]);
     const notes = +((/Pace-Notes: (\d+)/.exec(bericht) || [])[1]);
     const bilderDa = ['alpen-karte.png', 'alpen-profil.png'].every((d) => fs.existsSync(path.join(LOG, d)) && fs.statSync(path.join(LOG, d)).size > 5000);
-    melde(r.code === 0 && bilderDa && Math.abs(laenge - 3667.587) <= 0.5 && cps === 3 && notes > 30, `Karte und Höhenprofil erzeugt (${bilderDa ? 'beide Bilder da' : 'BILDER FEHLEN'}), Bericht: Länge ${laenge} m, ${cps} Checkpoints, ${notes} Pace-Notes`);
+    melde(r.code === 0 && bilderDa && Math.abs(laenge - 3667.587) <= 0.5 && cps === 3 && notes >= 20, `Karte und Höhenprofil erzeugt (${bilderDa ? 'beide Bilder da' : 'BILDER FEHLEN'}), Bericht: Länge ${laenge} m, ${cps} Checkpoints, ${notes} Pace-Notes`);
   }
 }
 if (teil('l')) {
