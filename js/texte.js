@@ -143,6 +143,8 @@ export const TEXTE = {
   'einst.tacho': { de: 'TACHO', en: 'GAUGES' }, // M8g
   'einst.tachoHinweis': { de: 'AUTO-STIL = JEDES AUTO HAT SEINEN TACHO', en: 'CAR STYLE = EVERY CAR HAS ITS OWN GAUGES' },
   'einst.fps': { de: 'FPS-ANZEIGE (F3)', en: 'FPS DISPLAY (F3)' },
+  'einst.schatten': { de: 'SCHATTEN', en: 'SHADOWS' }, // M10b.2
+  'einst.schattenHinweis': { de: 'NUR AUF STRECKEN MIT SCHATTEN', en: 'ONLY ON STAGES WITH SHADOWS' },
   'einst.steuerung': { de: 'STEUERUNG', en: 'CONTROLS' },
   'einst.tasten': { de: 'TASTEN BELEGEN', en: 'KEY BINDINGS' },
   'einst.lenk': { de: 'LENKEMPFINDLICHKEIT', en: 'STEERING SENSITIVITY' },

@@ -1,4 +1,4 @@
-// Strecke mit dem Testfahrer abfahren (M10a):  node tools/strecke-abfahren.mjs [<datei> | --strecke <id>] [--auto <id>] [--aus <datei.txt>]
+// Strecke mit dem Testfahrer abfahren (M10a):  node tools/strecke-abfahren.mjs [<datei> | --strecke <id>] [--auto <id>] [--aus <datei.txt>] [--stil digital]
 // Lädt das Spiel im Headless-Chromium mit dieser Streckendatei (statt strecken/alpen.js) und lässt den vorhandenen
 // Testfahrer (tools/testfahrer-browser.js, fahreEtappe – nicht neu geschrieben) die Etappe in der echten Physik fahren,
 // in den drei Stilen vorsichtig / mittel / flott wie tools/testfahrer.mjs. Meldet Gesamtzeit, Zwischenzeiten, Aufpralle,
@@ -20,7 +20,8 @@ const id = (/id: '([^']+)'/.exec(inhalt) || [])[1] || path.basename(datei, '.js'
 const aus = arg('--aus') || `/tmp/strecke-abfahren-${id}-${AUTO}.txt`;
 const fmt = (t) => (t == null ? '--' : `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`);
 
-const spiel = await starteSpiel();
+// M10b.2: --wurzel <ordner>: Spiel aus einem anderen Stand (z. B. 0.10b.1 zum Vergleich), Testfahrer aus diesem Stand
+const spiel = await starteSpiel(arg('--wurzel') ? { wurzel: path.resolve(arg('--wurzel')) } : {});
 // Streckendatei unterschieben: das Spiel lädt sie über window.__streckeAdresse (js/strecken.js, nur für Werkzeuge)
 await spiel.page.route('**/__strecke/**', (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: inhalt }));
 await spiel.page.addInitScript((n) => { window.__streckeAdresse = `${location.origin}/__strecke/${n}`; }, path.basename(datei));
@@ -36,7 +37,9 @@ await spiel.page.evaluate((code) => { window.__fahrerUrl = URL.createObjectURL(n
 const zeilen = [`Strecke ${id} (${datei}), Fahrprofil ${AUTO}`];
 const zeiten = [];
 let probleme = 0;
-for (const profil of ['vorsichtig', 'mittel', 'flott']) {
+// M10b.2: --stil <name[,name]> wählt die Stile (z. B. digital = Tastatur/Controller wie Lino), Standard die drei bisherigen
+const STILE = arg('--stil') ? arg('--stil').split(',') : ['vorsichtig', 'mittel', 'flott'];
+for (const profil of STILE) {
   const r = await spiel.page.evaluate(async (profil) => {
     const f = await import(window.__fahrerUrl);
     const A = window.__alpineRally, S = A.strecke, C = A.CONFIG, q = {};

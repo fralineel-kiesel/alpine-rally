@@ -2,11 +2,12 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 10b.1 fertig** (Version 0.10b.1) – **Finnland-Feinschliff**: Strecke neu (4.1 km, drei
-Spitzkehren, Schikane, Untergrundwechsel nur an Einmündungen), dunkler Fichtenwald mit Unterholz, Dorf mit sechs Häusern,
-Escorta als Schotter-Spezialist. **Kunst-Schatten (Teil D) fehlen noch.** Alpen gleich wie 0.10b (nur der Escorta ist an den
-Schotterstellen etwas schneller). **Nur Chromium, kein Handy.** **Bitte zuerst die Test-Anleitung in
-`docs/meilensteine/m10b1.md`.** Nächster Schritt: **M10c Sprünge mit Flugphase** (noch kein Prompt).
+Aktuell: **Meilenstein 10b.2 fertig** (Version 0.10b.2) – **Finnland: Hang, Wasser, Escorta, Rentier-Ton, Schatten**: Der
+Hang zum See bei Meter 969 ist abgeschliffen (flache Schulter, gleichmässiger Hang, man kommt wieder heraus), zu tief ins
+Wasser = Platsch, 3 s schwarz (HUD bleibt, Zeit läuft), zurück auf die Strasse; Escorta auf Schotter stabil und schneller als
+der Imprexa (Tastatur-Testfahrer); Rentiere schnauben leise; Kunst-Schatten mit Einstellung SCHATTEN AN/AUS. Alpen gleich
+(nur der Escorta ist an den Schotterstellen etwas schneller). **Nur Chromium, kein Handy.** **Bitte zuerst die
+Test-Anleitung in `docs/meilensteine/m10b2.md`.** Nächster Schritt: **M10c Sprünge mit Flugphase** (noch kein Prompt).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -128,9 +129,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Pace-Notes-Tabelle und Abkürzungs-Daten (seit M10a in `strecken/alpen.js` unter `erzeugt`) und `tools/schneiden-zeiten.json` nicht neu schreiben.
 - Profil `prototyp` bleibt bit-gleich (Referenz für Pace-Notes, Sperren, Testfahrer). Fertige Autos bleiben bit-gleich, wenn der
   Auftrag sie nicht nennt (Aussehen, Fahrgefühl, Ton, Tacho).
+- **Finnland (seit M10b.2):** Länge 4161.6 m, Testfahrer Prototyp 2:55.88 / 2:39.06 / 2:28.61, Hang-Check 0 Stellen über 0.45.
 - **Limits:** Draw Calls pro Auto ≤ 12, Dreiecke pro Auto ≤ 1800, kein Garbage pro Bild, Ladezeit gleich, Ton ändert nie das Spiel.
 
 ## Werkzeuge und Tests
+
+- `node tools/m10b2-test.mjs --alt <ordner 0.10b.1> --vorE <ordner d1eb680>` – alle Prüfungen von M10b.2 (a … x, Alpen x1–x5);
+  einzeln `--nur a,x2` (`x1-5` = alle Alpen-Tests); Regression mit `--lang` (0.10b.1: `git worktree add <ordner> a289fad`).
+  `node tools/m10b2-bilder.mjs --alt <0.10b.1>` – Bilder nach `screenshots/m10b2/`. `node tools/hang-pruefen.mjs --strecke <id>`
+  (Hang-Check), `strecke-abfahren --stil digital` (Tastatur-Fahrer), `node --import ./tools/node-three.mjs tools/schotter-messung.mjs`.
 
 - `node tools/m10b1-test.mjs --alt <ordner 0.10b>` – alle Prüfungen von M10b.1 (a … p, Alpen x1–x5); einzeln `--nur a,x2`; Regression
   mit `--lang` (0.10b: `git worktree add <ordner> 61004a7`). `node tools/m10b1-bilder.mjs --alt <0.10b>` – Bilder nach `screenshots/m10b1/`.
@@ -206,7 +213,12 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
-- **Offen aus M10b.1:** **Kunst-Schatten** (Teil D: Streckenfeld `schatten`, Flecken unter Auto, Bäumen, Häusern, Einstellung
+- **Offen aus M10b.2:** Schatten unter Schildern und der Brücke fehlen; zwei Hang-Stellen an der Brücke 0.38/0.42 (Fluss
+  liegt schräg nah an der Strasse); der Testfahrer zeigt nicht, dass der Lanza 073 schneller als der Escorta ist (er fliegt
+  im Stil „digital“ öfter ab). Ideen: Wasserbad-Zähler in der Fahrtstatistik, Fluss etwas von der Strasse weg legen,
+  Schatten auf den Alpen, Schatten-Länge je Tageszeit, Rentier-Glöckchen (manche Herden tragen welche).
+
+- **Erledigt in M10b.2 (aus M10b.1):** Kunst-Schatten, Rentier-Ton. **Offen aus M10b.1 (alt):** **Kunst-Schatten** (Teil D: Streckenfeld `schatten`, Flecken unter Auto, Bäumen, Häusern, Einstellung
   SCHATTEN AN/AUS) – nicht gebaut. Fahrbarkeit: Audan/Subora flott und Lanza 073 mittel haben im Testfahrer noch 1–2
   Aufpralle auf Finnland (Bericht). Ideen: Testfahrer mit eigener Kurven-Messung je Auto (statt der Prototyp-Tempi),
   Wohnmobil an der Birkenkuppe (kein Platz), Rentier-Ton, Fahnenmast im Dorf, Zuschauer auch an den Kehren.
@@ -254,6 +266,14 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Während der Arbeit: `docs/meilensteine/<name>-arbeitsstand.md` (10 bis 20 Zeilen: erledigt, Werte, offene Fragen) nach jedem Teil nachführen.
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
+
+- **M10b.2** (0.10b.2) – Finnland nach Linos Test: **Hang** zum See bei 969 m abgeschliffen (Streckenfeld `umgebung.boeschung`:
+  Schulter, höchstens 0.3 Gefälle, Ufer weich; vorher sprang das Gelände senkrecht = „Faltenwurf“), Hang-Check-Werkzeug
+  (Finnland 7 → 0 Stellen über 0.45; Alpen nur Bericht). **Wasser:** zu tief = Platsch, 3 s schwarz mit HUD, Zeit läuft, zurück
+  auf die letzte sichere Strassenstelle. **Escorta:** Tastatur-Testfahrer „digital“ zeigte 23 s Rückstand und 37° Drift auf
+  Schotter; neue Werte `schotterHeck/-Stabil/-Traktion` (nur Escorta, nur Schotter) → 0.6 s vor dem Imprexa, ohne Abflug.
+  **Rentier-Ton** (Schnauben, Klicken), **Kunst-Schatten** (Streckenfeld `schatten`, Einstellung SCHATTEN AN/AUS). Alpen gleich.
+  Bericht: `docs/meilensteine/m10b2.md`.
 
 - **M10b.1** (0.10b.1) – Finnland-Feinschliff nach Linos Test: Strecke 4161.6 m (vorher 2.8 km) mit drei Spitzkehren, Schikane,
   geraden Bremszonen; Untergrundwechsel wie in den Alpen an vier Einmündungen (Stummel abgesperrt); `revision` → Bestzeiten

@@ -60,7 +60,8 @@ export function umgebungsQuellen({ strecke, netz, kuehe, startZiel, leben }) {
   const herden = [];
   const nachNr = new Map();
   // (M10b: nur wenn die Tiere der Strecke Glocken tragen, deko.tierKlang = 'glocke'; sonst sind die Herden still)
-  for (const k of (CONFIG.deko.tierKlang === 'glocke' && kuehe && kuehe.kuehe) || []) {
+  // (M10b.2: auch für Rentiere, deko.tierKlang = 'rentier': Schnauben und Klicken statt Glocken, js/config.js rentierKlang)
+  for (const k of ((CONFIG.deko.tierKlang === 'glocke' || CONFIG.deko.tierKlang === 'rentier') && kuehe && kuehe.kuehe) || []) {
     if (k.herde == null) continue;
     if (!nachNr.has(k.herde)) { const h = { nr: k.herde, x: 0, z: 0, r: 0, anzahl: 0, posen: [0, 0, 0], kuehe: [] }; nachNr.set(k.herde, h); herden.push(h); }
     const h = nachNr.get(k.herde);
@@ -342,7 +343,36 @@ export function umgebungRezepte(rate, rnd) {
     ['u-jubel', () => jubelRezept(halb, P.jubel.kurz, P.jubel, P.klatschen, rnd)],
     ['u-jubel-lang', () => jubelRezept(halb, P.jubel.lang, P.jubel, P.klatschen, rnd)],
     ['u-klatschen', () => klatschRezept(halb, P.klatschen, rnd)],
+    // M10b.2: Rentiere (nur wenn die Strecke sie hören lässt; zuletzt, damit alle Klänge davor gleich bleiben)
+    ...(CONFIG.deko.tierKlang === 'rentier' ? [
+      ['u-rentier-schnauben', () => schnaubRezept(halb, CONFIG.rentierKlang.schnauben, rnd)],
+      ['u-rentier-klick', () => klickRezept(halb, CONFIG.rentierKlang.klick, rnd)],
+    ] : []),
   ];
+}
+
+// M10b.2: Rentier – Schnauben: Luftstoss (Rauschen, tief gefiltert, Hüllkurve schnell an, langsam aus) mit kurzem Grunzen
+// darunter (tiefer Ton mit Rauheit); R = { dauer, band, grunzHz, grunz }
+function schnaubRezept(rate, R, rnd) {
+  const F = filt(R.band, 1.2, rate), F2 = filt(R.band * 2.2, 2, rate);
+  let ph = 0;
+  return einmalRezept(rate, R.dauer, (t) => {
+    const huell = t < 0.025 ? t / 0.025 : Math.exp(-(t - 0.025) / (R.dauer * 0.28));
+    const luft = bp(F, rnd() * 2 - 1) * 0.8 + bp(F2, rnd() * 2 - 1) * 0.35;
+    ph += ZWEI_PI * R.grunzHz * (1 - 0.25 * t / R.dauer) / rate;
+    const grunz = Math.sin(ph) * (0.6 + 0.4 * Math.sin(ph * 0.5)) * Math.exp(-t / (R.dauer * 0.2)) * R.grunz;
+    return (luft + grunz) * huell;
+  });
+}
+// M10b.2: Rentier – Klicken der Sehnen beim Gehen: kurze, helle Knackser (wenige ms) im Schritt-Takt; R = { dauer, anzahl, takt, hz }
+function klickRezept(rate, R, rnd) {
+  const F = filt(R.hz, 4, rate), zeiten = [];
+  for (let k = 0, t = 0.01; k < R.anzahl; k++) { zeiten.push(t); t += R.takt * (0.85 + rnd() * 0.3); }
+  return einmalRezept(rate, R.dauer, (t) => {
+    let v = 0;
+    for (const z of zeiten) { const d = t - z; if (d >= 0 && d < 0.012) v += (rnd() * 2 - 1) * Math.exp(-d / 0.0025); }
+    return bp(F, v);
+  });
 }
 
 // --- Die Umgebung im Klangwerk ---------------------------------------------------------------------------------------
@@ -447,12 +477,13 @@ export function baueUmgebung(ctx, ausgang, puffer, merke = () => {}) {
     heulZiel: 450, heulHz: 450, heulUhr: 0, boeTakt: 0, passStaerke: 0, boePegel: 0, brunnenPegel: 0, murmelPegel: [0, 0], murmelOrt: [-1, -1],
     herdenAktiv: [-1, -1], vogelDichte: 0,
   };
+  let herdSchreck = new Uint8Array(0); // M10b.2: Rentier-Herde schon aufgeschreckt (1) bis der Hörer wieder weit weg ist
   let herdNaechster = new Float64Array(0), herdDist = new Float64Array(0), herdVar = [], ortDist = new Float64Array(0), ortGain = new Float64Array(0);
   let ortPunkt = new Int32Array(0), ortDrin = new Uint8Array(0), ortLetzter = new Float64Array(0);
   function setzeQuellen(q) {
     Q = q;
     const n = q.herden.length;
-    herdNaechster = new Float64Array(n).fill(-1); herdDist = new Float64Array(n);
+    herdNaechster = new Float64Array(n).fill(-1); herdDist = new Float64Array(n); herdSchreck = new Uint8Array(n); // (M10b.2)
     const rq = zufall(U.seed + 11);
     const G = U.kuhglocken;
     herdVar = q.herden.map(() => [0, 1, 2].map(() => ({ klang: Math.floor(rq() * G.klang.length), hz: zw(G.grundton, rq()) })));
@@ -497,6 +528,35 @@ export function baueUmgebung(ctx, ausgang, puffer, merke = () => {}) {
     let k = 1 + G.dichteKuehe * Math.max(0, H.anzahl - 1);
     if (nah) { const m = (a + (b - a) / (k + 1)) / G.aufgeschrecktFaktor; k = m > a + 0.01 ? (b - a) / (m - a) - 1 : 50; }
     return zw(G.abstand, rnd() ** k);
+  }
+  // --- Rentiere (M10b.2): selten ein Schnauben oder Klicken aus der nächsten Herde in Reichweite; fährt das Auto nah
+  // vorbei (Hörer näher als aufgeschreckt), schreckt die Herde einmal kurz auf (kurzes, lauteres Schnauben) ---
+  function rentiere() {
+    const R = CONFIG.rentierKlang, n = Q.herden.length;
+    let a = -1;
+    for (let h = 0; h < n; h++) {
+      const H = Q.herden[h], dx = H.x - z.hx, dz = H.z - z.hz;
+      herdDist[h] = Math.max(0, Math.sqrt(dx * dx + dz * dz) - H.r);
+      if (herdDist[h] < R.radius && (a < 0 || herdDist[h] < herdDist[a])) a = h;
+      // aufgeschreckt: einmal, wenn der Hörer nah kommt (wieder scharf, wenn er weit weg ist)
+      if (herdDist[h] < R.aufgeschreckt && !herdSchreck[h]) { herdSchreck[h] = 1; rentierLaut(h, 'rentier-schreck', 'u-rentier-schnauben', 1.25, R.pegel * R.schreckPegel); }
+      else if (herdDist[h] > R.aufgeschreckt * 2) herdSchreck[h] = 0;
+    }
+    for (let h = 0; h < n; h++) if (h !== a) herdNaechster[h] = -1;
+    z.herdenAktiv[0] = a; z.herdenAktiv[1] = -1;
+    if (a < 0) return;
+    if (herdNaechster[a] < 0) herdNaechster[a] = z.uhr + rnd() * zw(R.abstand, 0.5);
+    if (z.uhr >= herdNaechster[a]) {
+      if (rnd() < R.klickAnteil) rentierLaut(a, 'rentier-klick', 'u-rentier-klick', 0.9 + rnd() * 0.2, R.pegel * R.klickPegel);
+      else rentierLaut(a, 'rentier-schnauben', 'u-rentier-schnauben', 0.85 + rnd() * 0.3, R.pegel);
+      herdNaechster[a] = z.uhr + zw(R.abstand, rnd());
+    }
+  }
+  function rentierLaut(h, art, name, tempo, pegel) {
+    const H = Q.herden[h], k = Math.floor(rnd() * H.anzahl);
+    raumWerte(z.hx, z.hz, z.yaw, H.kuehe[k * 3], H.kuehe[k * 3 + 1], CONFIG.rentierKlang, ro);
+    zuMerken(art, ro.pan); // (Stereo-Seite, für die Tests)
+    einmal(art, name, 0, tempo, pegel, CONFIG.rentierKlang);
   }
   function glocken() {
     const G = U.kuhglocken, n = Q.herden.length;
@@ -707,7 +767,7 @@ export function baueUmgebung(ctx, ausgang, puffer, merke = () => {}) {
     boeen(dt);
     jubelNachfuehren();
     if (!z.pause) { // in der Pause steht die Welt: nichts Neues
-      glocken();
+      if (CONFIG.deko.tierKlang === 'rentier') rentiere(); else glocken(); // M10b.2
       voegel(dt);
       fanSpots(modus === 'rennen');
     }

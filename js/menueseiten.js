@@ -380,6 +380,8 @@ export function baueSeiten(api) {
         optionen: () => [{ wert: 'auto', text: 'wert.tachoAuto' }, { wert: 'klassisch', text: 'wert.tachoKlassisch' }],
         lesen: () => einstellungen.tacho, setzen: (w) => setze('tacho', w),
       },
+      // M10b.2: Kunst-Schatten an/aus (wirkt nur auf Strecken mit Schatten; schwächere Handys schalten ihn ab)
+      { typ: 'umschalter', text: 'einst.schatten', hinweis: 'einst.schattenHinweis', lesen: () => einstellungen.schatten, setzen: (b) => setze('schatten', b) },
       { typ: 'umschalter', text: 'einst.fps', lesen: () => einstellungen.fps, setzen: (b) => setze('fps', b) },
       // M6: Minimap und Live-Vergleich (sofort wirksam)
       { typ: 'gruppe', text: 'einst.anzeige' },

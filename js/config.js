@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10b.1';
+export const VERSION = '0.10b.2';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -179,6 +179,7 @@ export const CONFIG = {
   // --- Leben an der Strecke (Meilenstein 3d, js/leben.js) --------------
   // Alpweide, Fan-Spots, Wracks, Zäune und Herden: alles Orte dieser Strecke, darum ganz in der Streckendatei (Block "leben")
   leben: S.leben,
+  wasserAn: !!(S.wasser && ((S.wasser.seen || []).length + (S.wasser.fluesse || []).length)), // M10b.2: hat die Strecke Wasser? (Platsch-Klang)
   klangWasser: S.klang.wasser || [], // M10b: Wasser-Klang an See und Fluss [[Streckenmeter, seitlich], ...] (Streckendatei, klang.wasser)
   // --- Wasser (seit M10b, js/wasser.js): Aussehen von Seen, Flüssen und Brücken; wo sie liegen, steht in der Streckendatei
   wasser: {
@@ -196,6 +197,52 @@ export const CONFIG = {
     brueckeDunkel: '#4a3626',  // dunkles Holz (Seitenbalken, Pfosten)
     gelaenderHoehe: 1.0,       // Höhe des Geländers über der Fahrbahn
     gelaenderKreis: 0.3,       // Kollision: Kreise mit diesem Radius entlang des Geländers
+    // M10b.2: zu tief ins Wasser gefahren -> Platsch, Bild schwarz (HUD bleibt), zurück auf die Strasse. Die Zeit läuft weiter
+    // (das ist die Strafe). Nur auf Strecken mit Wasser (Streckendatei "wasser"), nur im Rennen (nicht in der Demo-Fahrt).
+    bad: {
+      tiefe: 0.6,              // zu tief: Boden unter dem Auto liegt so viel (m) unter dem Wasserspiegel
+      nassAb: 0.05,            // flaches Wasser ab so viel (m) über dem Boden: Spritzer und Plätschern, sonst nichts
+      abblenden: 0.3,          // so lange (s) wird das Bild schwarz
+      dauer: 3.0,              // so lange (s) bleibt es schwarz (Richtwert 2 bis 4 s); Steuerung gesperrt, Motor aus
+      einblenden: 0.3,         // so lange (s) wird es danach wieder hell (Auto steht schon auf der Strasse)
+      bremsen: 2.5,            // im tiefen Wasser bremst das Auto so stark (1/s)
+      spritzer: 40,            // grosser Spritzer: so viele Tropfen-Wölkchen (Vorrat des Staubs, js/staub.js)
+      spritzerFarbe: '#dbe8ee', // helles Wasserweiss
+      plaetschernAlle: 0.3,    // flaches Wasser: so oft (s) ein kleiner Spritzer und Plätscher-Ton, wenn das Auto fährt
+      platschPegel: 0.9,       // Lautstärke Platsch (mal LAUTSTÄRKE)
+      plaetscherPegel: 0.22,   // Lautstärke Plätschern im flachen Wasser
+      // Klang Platsch (wie die Aufprall-Klänge, js/audio.js klangRezept): dumpfer Schlag, Rauschen, Tropfen-Knistern
+      platsch: { laenge: 1.3, knall: [0.7, 0.12, 1600], schlag: [95, 40, 0.2, 0.8], rascheln: [0.5, 0.9, 260, 2400] },
+    },
+  },
+
+  // --- Kunst-Schatten (M10b.2, js/schatten.js): nur auf Strecken mit dem Feld "schatten" (Sonne, Länge, Dunkelheit) ---
+  schatten: {
+    max: 60,                   // höchstens so viele Flecken (Bäume, Häuser, Tiere, Zuschauer) pro Bild, die nächsten vor dem Auto
+                               // (M10b.2: 240 kostete im Test-Browser +51 % Bildzeit, 60 nichts Messbares)
+    vor: 200, hinter: 30,      // nur Objekte so weit (m) vor / hinter dem Auto entlang der Strecke
+    nahStrecke: 14,            // nur Objekte bis so weit (m) neben der Strasse (Bäume stehen ab 10.5 m: die erste Reihe)
+    farbe: '#16203a',          // kühle Abdunklung (nicht schwarz)
+    stufen: [0.62, 0.42, 0.22], // Deckkraft der drei Dunkelstufen (innen -> aussen), mal "dunkelheit" der Strecke
+    heben: 0.05,               // so hoch (m) über dem Boden (kein Flackern)
+    baumBreite: 0.5,           // Fleck eines Baums: so viel mal die Breite des Baum-Bilds
+    maxLaenge: 14,             // kein Fleck ist länger als so viele Meter (hohe Fichten in der Abendsonne)
+    auto: { laenge: 4.2, breite: 1.8, hoehe: 1.3 }, // Fleck unter dem Auto (m)
+  },
+
+  // --- Rentier-Ton (M10b.2): nur wenn die Strecke Rentiere hören lässt (deko.tierKlang = 'rentier'), js/umgebung.js ---
+  // Selten und leise: Schnauben und Klicken der Sehnen aus der nächsten Herde; Lautstärke hängt an LAUTSTÄRKE (Schiene
+  // Umgebung), in der Pause gedämpft wie die übrige Umgebung. Raum wie die Kuhglocken (Stereo, Abstand, Tiefpass)
+  rentierKlang: {
+    pegel: 0.07,               // Spitze eines Schnaubens bei "referenz" Metern (Kuhglocke 0.142: Rentiere sind leiser)
+    referenz: 6, radius: 45, rolloff: 1, // so weit hört man sie (Kuhglocken 70 m)
+    abstand: [2.5, 7],         // so viele Sekunden zwischen zwei Lauten der nächsten Herde (selten, kein Dauergeräusch)
+    klickAnteil: 0.45,         // so oft ist es ein Klicken statt eines Schnaubens
+    klickPegel: 0.8,           // Klicken etwas leiser als Schnauben
+    aufgeschreckt: 16,         // fährt man näher als so viele Meter vorbei: einmal ein kurzes, lauteres Schnauben
+    schreckPegel: 1.6,
+    schnauben: { dauer: 0.55, band: 420, grunzHz: 85, grunz: 0.5 }, // Luftstoss (Hz), kurzes Grunzen darunter
+    klick: { dauer: 0.6, anzahl: 6, takt: 0.09, hz: 2600 },            // 6 Knackser im Schritt-Takt, hell
   },
 
   // --- Deko-Sets (seit M10b): welche Motive und Typen diese Strecke zeigt ---------------------------
@@ -205,7 +252,7 @@ export const CONFIG = {
   deko: {
     fahne: 'schweiz',          // Motiv der Fahnen (Zuschauer, Fahnenmasten): schweiz, finnland
     tier: 'kuh',               // Tiere in Herden am Rand: kuh, rentier
-    tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken) oder null (still)
+    tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken), 'rentier' (M10b.2: Schnauben, Klicken) oder null (still)
     haus: 'alphuette',         // Haus an der Weide: alphuette, holzhaus
     stadel: 'heustadel',       // kleiner Schuppen: heustadel, holzschuppen
     nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer, fichte, nordwald (M10b.1: Fichten und Kiefern gemischt)
@@ -236,6 +283,10 @@ export const CONFIG = {
     randAnstiegBis: U.gelaende.randAnstiegBis,  // ... bis hier ... (Streckendatei)
     randHoehe: U.gelaende.randHoehe,  // ... um so viele Meter (Talflanken, liegen im Dunst) (Streckendatei)
     seed: Z.gelaende,  // Zufallszahl für Hügel (gleich = gleiches Gelände) (Streckendatei)
+    // M10b.2: Böschung neben der Strasse und am Wasser (Streckendatei, umgebung.boeschung; fehlt = wie bis 0.10b.1):
+    // { schulter: flache Schulter nach dem Bankett (m), steigung: so steil fällt/steigt der Hang höchstens (0.3 = ca. 17°),
+    //   weich: über so viele Meter wird der Hang weich angesetzt (kein Grat), reichweite: so weit von der Strasse gilt es }
+    boeschung: U.boeschung || null,
   },
 
   // --- Felswand / Abhang ----------------------------------------------
@@ -428,6 +479,9 @@ export const CONFIG = {
     vorneJeBelag: { schotter: 1, wiesenweg: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
                                // fehlt ein Belag, gilt 1. Asphalt, Bankett und Gras bewusst nicht: sonst lohnen Abkürzungen)
     schotterGrip: 1,           // M10b.1: Griff (vorne und hinten) nur auf Schotter mal diesem Wert; 1 = wie bisher (alle Autos ausser Escorta)
+    schotterHeck: 1,           // M10b.2: auf Schotter lockern Gas im Drift und der Schub hinten das Heck nur zu diesem Anteil; 1 = wie bisher
+    schotterTraktion: 1,       // M10b.2: Traktion (Haftung beim Beschleunigen) nur auf Schotter mal diesem Wert; 1 = wie bisher
+    schotterStabil: 1,         // M10b.2: auf Schotter fängt sich das Auto im Drift mit dieser Stabilität (mal stabilitaet); 1 = wie bisher
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -577,7 +631,12 @@ export const CONFIG = {
                                  // langen Drift (+5.9°), darunter ruhig – kleine Schritte! (0 = aus)
         heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // gleicht antriebHinten im Kreis auf losem Boden aus (sonst
                                  // Grenztempo Schotter -5 %, Wiesenweg -3 %); im Drift unter Gas bleibt das Heck locker
-        schotterGrip: 1.065,       // M10b.1: Schotter-Spezialist: mehr Griff nur auf Schotter (nicht Asphalt/Wiese, nicht mehr Leistung)
+        schotterGrip: 1.08,        // M10b.1: Schotter-Spezialist: mehr Griff nur auf Schotter (nicht Asphalt/Wiese, nicht mehr Leistung);
+                                 // M10b.2: 1.065 -> 1.08 (mit den drei Werten unten fährt er stabil genug, um ihn zu nutzen)
+        schotterHeck: 0.5,         // M10b.2: auf Schotter lockern Gas im Drift und Schub hinten das Heck nur halb so stark
+                                 // (bricht später und sanfter aus; bei digitalem Vollausschlag 3° statt 37° Schwimmwinkel)
+        schotterStabil: 4,         // M10b.2: auf Schotter fängt er sich im Drift 4x so stark von selbst (ohne Gegenlenken)
+        schotterTraktion: 1.05,    // M10b.2: auf Schotter 5 % mehr Traktion beim Beschleunigen (Räder drehen weniger durch)
       },
       getriebe: {
         allrad: { schotter: 0.95, wiesenweg: 0.9 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden
@@ -1395,6 +1454,7 @@ export const CONFIG = {
       aufloesung: 0,           // Pixelgrösse: Nummer in "aufloesungen" (0 = 320x180, Original-Look)
       einheit: 'kmh',          // 'kmh' oder 'mph'
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
+      schatten: true,          // M10b.2: Kunst-Schatten (nur auf Strecken mit Schatten, z. B. Finnland)
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
       lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)

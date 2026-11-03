@@ -31,7 +31,7 @@ export function wasserFlaechen(daten, strecke, netz) {
     const a = Math.atan2(-p.tz, p.tx) + (w.winkel || 0) * GRAD;
     return { art: 'fluss', s: w.s, x: p.x, z: p.z, ux: Math.cos(a), uz: Math.sin(a), breite: w.breite, laenge: w.laenge, h: hBei(w.s) - w.tiefe, strasseH: hBei(w.s) };
   });
-  return { seen, fluesse, an: seen.length + fluesse.length > 0 };
+  return { seen, fluesse, alle: seen.concat(fluesse), an: seen.length + fluesse.length > 0 };
 }
 
 // Abstand eines Punkts zum Wasserrand (Meter, negativ = im Wasser) und die Fläche; null = weit weg
@@ -50,18 +50,45 @@ function randAbstand(f, x, z) {
 // Geländehöhe am Wasser: unter dem Spiegel ausheben, Ufer als Böschung (Werte: config.js, wasser)
 export function wasserSchnitt(plan, x, z, h) {
   const C = CONFIG.wasser;
-  for (const f of plan.seen.concat(plan.fluesse)) {
+  for (const f of plan.alle) {
     const d = randAbstand(f, x, z);
-    if (d > C.ufer) continue;
-    const ziel = d < 0 ? f.h - C.tiefeRand - Math.min(C.tiefeMehr, -d * 0.15) : f.h - C.tiefeRand + d * (C.tiefeRand + C.uferHoehe) / C.ufer;
+    const B = CONFIG.gelaende.boeschung;
+    if (d > C.ufer && !B) continue;
+    const k0 = (C.tiefeRand + C.uferHoehe) / C.ufer; // Steigung des flachen Ufers
+    let ziel = d < 0 ? f.h - C.tiefeRand - Math.min(C.tiefeMehr, -d * 0.15) : f.h - C.tiefeRand + Math.min(d, C.ufer) * k0;
+    // M10b.2 (Böschung): hinter dem flachen Ufer steigt das Gelände gleichmässig an (höchstens B.steigung, weich
+    // angesetzt) statt am Rand der Uferzone senkrecht auf die alte Höhe zu springen (das war der "Faltenwurf")
+    if (B && d > C.ufer) ziel += uferAnstieg(d - C.ufer, k0, B);
     if (ziel < h) h = ziel;
   }
   return h;
 }
 
+// M10b.2: Anstieg hinter dem Ufer nach e Metern: Steigung wächst über B.weich Meter von k0 auf B.steigung
+export function uferAnstieg(e, k0, B) {
+  const w = Math.max(0.01, B.weich), st = B.steigung;
+  return k0 * e + (st - k0) * (e < w ? (e * e) / (2 * w) : e - w / 2);
+}
+
+// M10b.2: kleinster Abstand zum Rand eines Flusses (negativ = im Fluss, Infinity = kein Fluss nahe)
+export function flussAbstand(plan, x, z) {
+  let d = Infinity;
+  for (const f of plan.fluesse) d = Math.min(d, randAbstand(f, x, z));
+  return d;
+}
+
+// M10b.2: Wie tief liegt der Boden (Höhe boden) an (x, z) unter dem Wasserspiegel? > 0 = im Wasser, sonst -Infinity
+// oder <= 0. Gezählt wird nur, wo die Wasserfläche gezeichnet ist (sie reicht ufer * 0.2 über den Rand hinaus).
+export function wasserTiefe(plan, x, z, boden) {
+  let t = -Infinity;
+  const rand = CONFIG.wasser.ufer * 0.2;
+  for (const f of plan.alle) if (randAbstand(f, x, z) < rand) t = Math.max(t, f.h - boden);
+  return t;
+}
+
 // Liegt ein Kreis (x, z, r) im Wasser (oder am nassen Ufer)?
 export function imWasser(plan, x, z, r = 0) {
-  for (const f of plan.seen.concat(plan.fluesse)) if (randAbstand(f, x, z) < r + CONFIG.wasser.trockenAb) return true;
+  for (const f of plan.alle) if (randAbstand(f, x, z) < r + CONFIG.wasser.trockenAb) return true;
   return false;
 }
 

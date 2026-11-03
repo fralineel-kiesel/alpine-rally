@@ -34,6 +34,7 @@ function uebernimm(d) {
   if (d.touchLayout === 'normal' || d.touchLayout === 'gespiegelt') einstellungen.touchLayout = d.touchLayout; // M9a.2
   if (d.hudGroesse === 'klein' || d.hudGroesse === 'mittel' || d.hudGroesse === 'gross') einstellungen.hudGroesse = d.hudGroesse; // M9a.2
   if (typeof d.fps === 'boolean') einstellungen.fps = d.fps;
+  if (typeof d.schatten === 'boolean') einstellungen.schatten = d.schatten; // M10b.2
   if (ganz(d.lenkStufe, M.lenkStufen.length)) einstellungen.lenkStufe = d.lenkStufe;
   if (ganz(d.totzoneStufe, M.totzonen.length)) einstellungen.totzoneStufe = d.totzoneStufe;
   if (Number.isFinite(d.lautstaerke)) einstellungen.lautstaerke = Math.max(0, Math.min(100, Math.round(d.lautstaerke)));

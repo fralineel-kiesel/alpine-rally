@@ -444,6 +444,8 @@ export function baueKlangwerk(ctx) {
     ['fanfareKurz', () => fanfareRezept(rate, S.fanfare, S.fanfare.kurz)],
     ['fanfareLang', () => fanfareRezept(rate, S.fanfare, S.fanfare.lang)],
     ...umgebungRezepte(rate, zufall(C.umgebung.seed + 2)), // M7b: Glocken, Vögel, Gemurmel, Brunnen, Jubel, Klatschen
+    // M10b.2: Platsch (nur Strecken mit Wasser; zuletzt, damit alle Klänge davor gleich bleiben)
+    ...(CONFIG.wasserAn ? [['platsch', () => klangRezept(rate, CONFIG.wasser.bad.platsch, rndP)]] : []),
   ];
   const aufbau = { fertig: false, ms: 0, haeppchen: 0, laengstesMs: 0, start: 0, ende: 0 };
   let auftrag = 0, rezept = null, buf = null, daten = null, pos = 0;
@@ -762,7 +764,7 @@ export function baueKlangwerk(ctx) {
     setze(W_HOCH, hochGain.gain, zu.hoch);
     // Zielbildschirm: steht das Auto, blendet der Motor aus
     const steht = z.modus === 'ziel' && z.tempo < C.zielStand.ab;
-    zu.motorAn = steht ? 0 : 1;
+    zu.motorAn = steht || z.motorAus ? 0 : 1; // M10b.2: im tiefen Wasser abgewürgt (z.motorAus), danach wieder an
     setze(W_AUS, motorAus.gain, ctx.currentTime < motorWechsel.stummBis ? 0 : zu.motorAn, steht ? C.zielStand.blende / 3 : 0.05); // (M8d: stumm beim Umschalten)
     // Turbo: Ladedruck läuft Gas und Drehzahl träge hinterher (eigenes Modell, Profil ohne Turbo wie bis 0.8a).
     // M8b: Mit Turbo im Fahrprofil (z.turboAn) folgt er dem echten Ladedruck des Getriebes (z.ladedruck, nur kurz
@@ -933,6 +935,14 @@ export function baueKlangwerk(ctx) {
     if (wucht >= AU.duckAb) ducke(AU.duckDb, AU.duckDauer, AU.duckZurueck, true);
     return true;
   }
+  // M10b.2: Platsch ins Wasser (staerke 1 = tief hinein, klein = Plätschern im flachen Wasser)
+  function platsch(staerke = 1) {
+    const WB = CONFIG.wasser.bad;
+    const pegel = staerke >= 1 ? WB.platschPegel : WB.plaetscherPegel * staerke;
+    merke(staerke >= 1 ? 'platsch' : 'plaetschern', pegel);
+    spiele('platsch', 'platsch', fahrzeug, pegel, 0, staerke >= 1 ? 0.95 + rnd() * 0.1 : 1.4 + rnd() * 0.4, staerke >= 1 ? 0 : 3000);
+    if (staerke >= 1) ducke(AU.duckDb, AU.duckDauer, AU.duckZurueck, true);
+  }
   // Menü: tick, bestaetigen, zurueck, regler (wert 0..1), fehler. Derselbe Ton kurz hintereinander nur einmal
   const menueZeit = {};
   function menue(art, wert = 0) {
@@ -1022,7 +1032,7 @@ export function baueKlangwerk(ctx) {
     stimmenListe: stimmen,
     puffernStarten, puffernSofort, neuBauen, motorNeu, motorWechsel, aktualisiere, allesAus, lautstaerke, signalLautstaerke, musikLautstaerke, spitzen,
     musik: musikWerk, umgebung: umgebungWerk, setzeQuellen: (q) => umgebungWerk.setzeQuellen(q), // M7b
-    blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote,
+    blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote, platsch,
     setzeKnallHoerer: (f) => { knallHoerer = f; }, // M8e
   };
 }
@@ -1073,7 +1083,7 @@ export function baueTon({ an = true } = {}) {
     musikStatus() { return werk ? werk.musik.status() : { laeuft: false, art: '', pegel: 0 }; },
   };
   // Alle Ereignisse: ohne Ton leer, Fehler im Ton stören das Spiel nie
-  for (const name of ['aktualisiere', 'allesAus', 'blowOff', 'knall', 'aufprall', 'menue', 'pauseTon', 'countdown', 'go', 'checkpoint', 'verpasst', 'fanfare', 'paceNote']) {
+  for (const name of ['aktualisiere', 'allesAus', 'blowOff', 'knall', 'aufprall', 'menue', 'pauseTon', 'countdown', 'go', 'checkpoint', 'verpasst', 'fanfare', 'paceNote', 'platsch']) {
     ton[name] = (a, b) => { if (!werk) return; try { werk[name](a, b); } catch { /* Ton ist nie wichtiger als das Spiel */ } };
   }
   if (ton.an) {

@@ -18,7 +18,7 @@ export default {
   deko: {
     fahne: 'finnland',         // blau-weisse Fahnen (nordisches Kreuz)
     tier: 'rentier',           // Rentiere statt Kühe
-    tierKlang: null,           // ... ohne Glocken (still)
+    tierKlang: 'rentier',      // ... ohne Glocken; M10b.2: leises Schnauben und Klicken (js/config.js rentierKlang)
     haus: 'holzhaus',          // rote Holzhäuser mit weissen Kanten
     stadel: 'holzschuppen',    // rote Schuppen
     nadelbaum: 'nordwald',     // M10b.1: Fichten (dunkle Kegel, Hauptbaum) und Kiefern gemischt, ca. 2 : 1
@@ -347,7 +347,7 @@ export default {
       { s: 4093, seite: 1, lat: 56, rx: 38, rz: 90, drehung: 0, tiefe: 2.0 },   // Zielgerade am See (rechts)
     ],
     fluesse: [
-      { s: 1477, breite: 9, laenge: 420, winkel: 8, tiefe: 3.0 },             // Fluss mit Holzbrücke (im Dorf)
+      { s: 1477, breite: 9, laenge: 420, winkel: 8, tiefe: 2.5 },             // Fluss mit Holzbrücke (im Dorf; M10b.2: 2.5 statt 3.0 m tief, sonst wird die Böschung neben der Brücke zu steil)
     ],
   },
 
@@ -385,7 +385,14 @@ export default {
     fernwald: { waldFarbe: '#1f3b21', waldDunkel: '#142916', wiesenFarbe: '#557f30', geroellFarbe: '#6a665e' },
     gelaende: { huegelHoehe: 4, grundWeite: 250, wandBerg: 0, talTiefe: 0, randAnstiegAb: 350, randAnstiegBis: 1000, randHoehe: 55 },
     landschaft: [],
+    // M10b.2: Böschung (Gelände neben der Strasse und am Ufer): flache Schulter 2.5 m nach dem Bankett, Hang höchstens
+    // 0.3 (ca. 17°), über 4 m weich angesetzt, gilt bis 40 m neben der Strasse (docs/strecken-format.md)
+    boeschung: { schulter: 2.5, steigung: 0.3, weich: 4, reichweite: 40 },
   },
+
+  // M10b.2: Kunst-Schatten (js/schatten.js): Sonne im Westsüdwesten (Grad, 0 = Nord, wie licht.sonneRichtung), tiefe
+  // Abendsonne = lange Schatten (Länge = Objekthöhe mal laenge), dunkelheit = Deckkraft der Flecken
+  schatten: { sonne: 240, laenge: 2.2, dunkelheit: 0.75 },
 
   // --- Natur ---
   natur: {
@@ -567,7 +574,7 @@ export default {
         { sVon: 3380, sBis: 3585, seite: 'links' }, // Gewinn bis 5.8 m – Gewinn 5.8 m, Umgebung: 3.75 Bäume/Steine pro 100 m²
       ],
       schneiden: [
-        { sVon: 1002, sBis: 1120, seite: 'links', gewinn: 4.1 }, // Quote erreicht, kleinerer Gewinn (4.9 m) oder Nachbar schon gesperrt
+        { sVon: 1002, sBis: 1120, seite: 'links', gewinn: 4.7 }, // Quote erreicht, kleinerer Gewinn (5.5 m) oder Nachbar schon gesperrt
         { sVon: 1578, sBis: 1661, seite: 'links', gewinn: 4 }, // Quote erreicht, kleinerer Gewinn (4.0 m) oder Nachbar schon gesperrt
         { sVon: 2116, sBis: 2159, seite: 'links', gewinn: 3.3 }, // Quote erreicht, kleinerer Gewinn (3.3 m) oder Nachbar schon gesperrt
         { sVon: 2173, sBis: 2214, seite: 'rechts', gewinn: 3.4 }, // von Hand: immerFrei
