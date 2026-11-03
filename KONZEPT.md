@@ -78,6 +78,7 @@ Retro-Rallyspiel im Browser, echtes 3D im Pixel-Look (N64/PS1), gefahren auf Sch
 - M9a.2 Touch nach Linos Test: Handbremse R wieder in der Ecke, Haptik nur Android (iPhone ohne), Einstellungen KNOPFGRÖSSE, LAYOUT (gespiegelt für Linkshänder) und HUD-GRÖSSE (fertig)
 - M10a Strecke als Daten: die Alpenstrecke steht in `strecken/alpen.js` (reine Daten, Format `docs/strecken-format.md`), Lader mit Fehlerseite, Strecken-Register, Prüfer und Werkzeuge (Karte, Höhenprofil, Abfahren mit dem Testfahrer); das Spiel ist pixel- und zeitgleich wie 0.9a.2 (fertig)
 - M10b Etappenwahl + Finnland-Schotter: Menüpunkt ETAPPE mit Liste und Vorschau-Karte, Bestzeiten je Etappe (Umschalter), zweite Strecke `strecken/finnland.js` (schnelle Schotter-Waldstrecke im Spätsommer-Abend, Seen, Dorf, Holzbrücke, 4 markierte Kuppen), Deko-Sets (Fahne, Tier, Haus, Bäume) als Streckendaten (fertig)
-- Als Nächstes: M10c Sprünge mit Flugphase (Abheben, Landung, Fahrwerk, Ton) auf den markierten Kuppen von Finnland, danach auch Autos/Auto-Gewicht anpassen (noch kein Prompt)
-- Danach: weitere Maps (Schnee, Nacht) und Ideen wie Geisterauto, Rally-Modus mit mehreren Etappen, Wetter/Tageszeit, Strecken-Editor
+- M10b.1 Finnland-Feinschliff: Strecke ca. 4 km mit drei Spitzkehren und Schikane, Untergrundwechsel an Einmündungen wie in den Alpen, Fichtenwald mit Unterholz, grösseres Dorf, Escorta als Schotter-Spezialist (`schotterGrip`); Kunst-Schatten noch offen (fertig bis auf Teil D)
+- Als Nächstes: M10c Sprünge mit Flugphase (Abheben, Landung, Fahrwerk, Ton) auf den markierten Kuppen von Finnland; der Schatten-Fleck bleibt dabei am Boden und zeigt die Flughöhe (noch kein Prompt)
+- Danach: weitere Maps (Schnee, Nacht) und Ideen wie Geisterauto, Rally-Modus mit mehreren Etappen, Wetter/Tageszeit, Strecken-Editor, Schatten auf den Alpen
 

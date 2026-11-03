@@ -25,9 +25,14 @@ export const DEKO = {
   tierKlang: ['glocke', null],
   haus: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
   stadel: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
-  nadelbaum: ['tanne', 'kiefer'],
+  // (M10b.1: Haus-Typen je Haus in leben.wiesenweg.haeuser[].typ, = HAUS_TYPEN in js/leben.js)
+  nadelbaum: ['tanne', 'kiefer', 'fichte', 'nordwald'],
   laubbaum: ['laub', 'birke'],
+  unterholz: [null, 'nordisch'],   // M10b.1
+  tierschild: ['allgemein', 'elch'], // M10b.1
 };
+// M10b.1: alle Haus-Typen (js/leben.js, HAUS_TYPEN) für leben.wiesenweg.haeuser[].typ
+export const HAUS_TYPEN_PRUEFER = ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen', 'scheune', 'saunahuette'];
 // Pflichtfelder (oberste Ebene) und ihre Art
 const PFLICHT = {
   format: 'zahl', id: 'text', etappe: 'text', name: 'objekt', beschreibung: 'objekt', laenge: 'zahl', seeds: 'objekt',
@@ -64,6 +69,9 @@ export function pruefeStrecke(d, { voll = false } = {}) {
     else if (t !== t.toUpperCase()) fehler(`${k}.${s}`, `"${t}": Pixelschrift kennt nur Grossbuchstaben`);
   }
   if (!(d.laenge >= 200 && d.laenge <= 50000)) fehler('laenge', `${d.laenge} m liegt nicht zwischen 200 und 50000`);
+
+  // M10b.1: Verlauf-Stand (Ganzzahl ab 1, fehlt = 1). Neuer Verlauf = höhere Zahl: die Bestzeiten bekommen einen neuen Schlüssel
+  if ('revision' in d && !(Number.isInteger(d.revision) && d.revision >= 1 && d.revision <= 999)) fehler('revision', `${JSON.stringify(d.revision)}: ganze Zahl ab 1 erwartet`);
 
   // --- Optionale Felder seit M10b (fehlen sie, gilt die Datei weiter) ---
   if ('untergrundInfo' in d) {
@@ -243,11 +251,14 @@ export function pruefeStrecke(d, { voll = false } = {}) {
       if (!Array.isArray(sp.s) || !(sp.s[1] > sp.s[0])) fehler(`leben.fans.spots[${i}].s`, '[von, bis] erwartet');
     });
     const WW = L.wiesenweg || {};
-    for (const k of ['haeuser', 'stege']) if (k in WW) {
+    // (M10b.1: dazu holzstapelOrte, briefkaesten, holzzaeune, parkwagen, boote)
+    for (const k of ['haeuser', 'stege', 'holzstapelOrte', 'briefkaesten', 'holzzaeune', 'parkwagen', 'boote']) if (k in WW) {
       if (!Array.isArray(WW[k])) { fehler(`leben.wiesenweg.${k}`, 'Liste erwartet'); continue; }
       WW[k].forEach((h, i) => {
-        const pflicht = k === 'haeuser' ? ['s', 'lat', 'laenge', 'tiefe', 'hoehe'] : ['s', 'lat', 'laenge'];
+        const pflicht = k === 'haeuser' ? ['s', 'lat', 'laenge', 'tiefe', 'hoehe'] : k === 'stege' || k === 'holzzaeune' ? ['s', 'lat', 'laenge'] : ['s', 'lat'];
         if (!istObjekt(h) || !pflicht.every((x) => istZahl(h[x])) || (h.seite !== 1 && h.seite !== -1)) fehler(`leben.wiesenweg.${k}[${i}]`, `{ ${pflicht.join(', ')}, seite: 1/-1 } erwartet`);
+        else if (k === 'haeuser' && h.typ != null && !HAUS_TYPEN_PRUEFER.includes(h.typ)) fehler(`leben.wiesenweg.haeuser[${i}].typ`, `"${h.typ}" unbekannt (bekannt: ${HAUS_TYPEN_PRUEFER.join(', ')})`);
+        else if (k === 'haeuser' && h.dach != null && !['rot', 'braun', 'grau'].includes(h.dach)) fehler(`leben.wiesenweg.haeuser[${i}].dach`, `"${h.dach}" unbekannt (rot, braun, grau)`);
       });
     }
     (L.wracks || []).forEach((w, i) => { if (w.sponsor && !(w.sponsor in banner)) fehler(`leben.wracks[${i}].sponsor`, `"${w.sponsor}" steht nicht in beschriftung.banner`); });
@@ -272,4 +283,11 @@ export function pruefeStrecke(d, { voll = false } = {}) {
   if (istObjekt(E.baumfolge) && E.baumfolge.seed !== d.seeds.sprites) fehler('erzeugt.baumfolge.seed', `${E.baumfolge.seed} passt nicht zu seeds.sprites (${d.seeds.sprites})`);
   if (istObjekt(E.kuhfolge) && E.kuhfolge.seed !== d.seeds.kuehe) fehler('erzeugt.kuhfolge.seed', `${E.kuhfolge.seed} passt nicht zu seeds.kuehe (${d.seeds.kuehe})`);
   return f;
+}
+
+// M10b.1: Schlüssel der Bestzeiten und des letzten Laufs einer Strecke. Ohne revision (oder 1) genau die Etappe (Alpen:
+// 'passstrasse', unverändert). Ab revision 2 mit Zusatz (Finnland: 'finnland-r2'): Zeiten des alten Verlaufs bleiben im
+// Speicher liegen, werden aber nicht mehr gezeigt (sie passen nicht zur neuen Strecke).
+export function bestzeitSchluessel(d) {
+  return Number.isInteger(d.revision) && d.revision > 1 ? `${d.etappe}-r${d.revision}` : d.etappe;
 }

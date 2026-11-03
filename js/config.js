@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10b';
+export const VERSION = '0.10b.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -208,8 +208,10 @@ export const CONFIG = {
     tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken) oder null (still)
     haus: 'alphuette',         // Haus an der Weide: alphuette, holzhaus
     stadel: 'heustadel',       // kleiner Schuppen: heustadel, holzschuppen
-    nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer
+    nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer, fichte, nordwald (M10b.1: Fichten und Kiefern gemischt)
     laubbaum: 'laub',          // Laubbaum: laub, birke
+    unterholz: null,           // M10b.1: Unterholz (Farn, Heide, Stümpfe, Totholz, Schilf): null = keins, 'nordisch'
+    tierschild: 'allgemein',   // M10b.1: Tier-Warnschild: 'allgemein' (Kuh-Silhouette) oder 'elch'
     ...(S.deko || {}),
   },
 
@@ -259,12 +261,24 @@ export const CONFIG = {
     steineProKm: N.sprites.steineProKm,  // (Streckendatei)
     breite: 230,               // so weit links und rechts der Strasse stehen Sprites (Meter)
     verteilung: 1.8,           // > 1 = nahe der Strasse dichter, weiter weg dünner
-    mindestAbstand: 9,         // so nah dürfen Objekte an die Strassenmitte
-    waldAbstand: 7.5,          // im Waldstück dürfen Bäume näher ran
+    mindestAbstand: N.sprites.mindestAbstand ?? 9, // so nah dürfen Objekte an die Strassenmitte (M10b.1: Streckendatei darf ändern)
+    waldAbstand: N.sprites.waldAbstand ?? 7.5,      // im Waldstück dürfen Bäume näher ran (M10b.1: Streckendatei darf ändern)
     tannenHoehe: [8, 15],      // Höhe von bis (Meter)
     laubHoehe: [7, 11],
     steinHoehe: [0.8, 2.2],
     helligkeit: 1.0,           // Helligkeit der Sprites
+  },
+
+  // --- Unterholz (M10b.1, nur mit deko.unterholz, js/sprites.js): Farn, Heide, Stümpfe, Totholz, Findlinge, Schilf ---
+  // Ohne Kollision (wie die Büsche). Werte der Strecke: natur.unterholz (fehlt = diese hier)
+  unterholz: {
+    mindestAbstand: 6.2,       // so nah an die Strassenmitte (Schotter 3.1 + Bankett 2 = 5.1 m)
+    randSchritt: [4, 9],       // Band am Strassenrand: alle so viele Meter je Seite eine Gruppe (1-3 Stück) ...
+    randLat: [6.5, 10],        // ... so weit neben der Mitte (zwischen Bankett und Waldrand)
+    waldProKm: 900,            // Waldboden: Versuche pro km (nur wo Wald steht)
+    waldLat: [10, 70],         // ... so weit neben der Strasse
+    schilfAbstand: 1.6,        // Schilf am Seeufer: alle so viele Meter ein Büschel
+    ...(N.unterholz || {}),
   },
 
   // --- Büsche, Jungtannen, Grasbüschel (Meilenstein 2b) -----------------
@@ -413,6 +427,7 @@ export const CONFIG = {
     heckJeBelag: { schotter: 1, wiesenweg: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
     vorneJeBelag: { schotter: 1, wiesenweg: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
                                // fehlt ein Belag, gilt 1. Asphalt, Bankett und Gras bewusst nicht: sonst lohnen Abkürzungen)
+    schotterGrip: 1,           // M10b.1: Griff (vorne und hinten) nur auf Schotter mal diesem Wert; 1 = wie bisher (alle Autos ausser Escorta)
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -562,6 +577,7 @@ export const CONFIG = {
                                  // langen Drift (+5.9°), darunter ruhig – kleine Schritte! (0 = aus)
         heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // gleicht antriebHinten im Kreis auf losem Boden aus (sonst
                                  // Grenztempo Schotter -5 %, Wiesenweg -3 %); im Drift unter Gas bleibt das Heck locker
+        schotterGrip: 1.065,       // M10b.1: Schotter-Spezialist: mehr Griff nur auf Schotter (nicht Asphalt/Wiese, nicht mehr Leistung)
       },
       getriebe: {
         allrad: { schotter: 0.95, wiesenweg: 0.9 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden

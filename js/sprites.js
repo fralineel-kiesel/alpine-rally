@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { zufall, zufallAb, fbm, mische, glatt } from './util.js';
-import { nadelbaumTextur, laubbaumTextur, steinTextur, felsbrockenTextur, buschTextur, BUSCH } from './pixel.js';
+import { nadelbaumTextur, laubbaumTextur, steinTextur, felsbrockenTextur, buschTextur, BUSCH, unterholzTextur, UNTERHOLZ } from './pixel.js';
 import { baueKollision } from './kollision.js';
 import { randAbstand, torPruefer } from './strassenrand.js';
 import { planeAlleSperren, baueStaemme } from './sperren.js';
@@ -476,6 +476,54 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe, extra = []
   const rndExtra = zufall(c.seed + 303);
   for (const e of extra) setzeBusch(e.x, e.z, e.gras ? 'gras' : 'gruen', rndExtra);
 
+  // 6. M10b.1: Unterholz im nordischen Wald (deko.unterholz = 'nordisch'): Farn, Heidekraut, Stümpfe, Totholz, kleine
+  //    Findlinge als Band am Strassenrand (vor dem Wald), dazu auf dem Waldboden und Schilf am Seeufer. Eigener Zufall
+  //    und eigenes Bild: Büsche und Bäume bleiben genau gleich; die Alpen (ohne Unterholz) sind unverändert.
+  const U = CONFIG.unterholz, unterholz = [];
+  const uhTex = CONFIG.deko.unterholz === 'nordisch' ? unterholzTextur() : null;
+  if (uhTex) {
+    const rndU = zufall(c.seed + 707), UH = UNTERHOLZ;
+    const art = () => {
+      const w = rndU();
+      return w < 0.42 ? UH.farn[rndU() < 0.5 ? 0 : 1] : w < 0.72 ? UH.heide[rndU() < 0.5 ? 0 : 1] : w < 0.8 ? UH.stumpf : w < 0.91 ? UH.totholz : UH.findling;
+    };
+    const HOEHE = { 0: [0.55, 0.95], 1: [0.5, 0.85], 2: [0.3, 0.5], 3: [0.35, 0.6], 4: [0.45, 0.75], 5: [0.35, 0.5], 6: [0.5, 0.9], 7: [1.2, 1.8] };
+    const setzeUH = (x, z, v) => {
+      const h = mische(...HOEHE[v], rndU()), b = h * (v === UH.totholz ? 2.4 : v === UH.findling ? 1.2 : 1) * (0.9 + rndU() * 0.25);
+      const hell = 0.85 + rndU() * 0.2, spiegeln = rndU() < 0.5;
+      if (steilheit(x, z) > c.maxSteil || !frei(x, z, U.mindestAbstand, 0.3)) return;
+      unterholz.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.06, h, b, variante: v, hell, spiegeln });
+    };
+    // Band am Strassenrand: je Seite alle paar Meter eine kleine Gruppe zwischen Bankett und Waldrand
+    for (const seite of [-1, 1]) {
+      for (let s = 2; s < strecke.laenge - 2; s += mische(U.randSchritt[0], U.randSchritt[1], rndU())) {
+        const i = Math.round(s), lat = mische(U.randLat[0], U.randLat[1], rndU());
+        const [mx, mz] = punktNeben(i, seite * lat);
+        const n = 1 + Math.floor(rndU() * 3);
+        for (let k = 0; k < n; k++) setzeUH(mx + (rndU() - 0.5) * 3, mz + (rndU() - 0.5) * 3, art());
+      }
+    }
+    // Waldboden: nur wo Wald steht (Rauschen der Waldstücke wie bei den Bäumen)
+    for (let n = versuche(U.waldProKm); n > 0; n--) {
+      const i = Math.floor(rndU() * strecke.anzahl), seite = rndU() < 0.5 ? -1 : 1;
+      const lat = mische(U.waldLat[0], U.waldLat[1], Math.pow(rndU(), 1.5));
+      const [x, z] = punktNeben(i, seite * lat);
+      if (rndU() > welt.waldBei(x, z, i) + 0.15) continue;
+      setzeUH(x, z, art());
+    }
+    // Schilf am Seeufer: ein Kranz knapp ausserhalb des Wasserrands (nicht vor der Strasse)
+    for (const f of (welt.wasser && welt.wasser.seen) || []) {
+      const umfang = Math.PI * (f.rx + f.rz), n = Math.round(umfang / U.schilfAbstand);
+      for (let k = 0; k < n; k++) {
+        const w = (k / n) * Math.PI * 2 + rndU() * 0.05, r = 1.01 + rndU() * 0.06;
+        const q0 = Math.cos(w) * f.rx * r, l0 = Math.sin(w) * f.rz * r;
+        const x = f.x + f.uz * q0 + f.ux * l0, z = f.z - f.ux * q0 + f.uz * l0;
+        if (rndU() < 0.25) continue; // Lücken im Schilf
+        setzeUH(x, z, UH.schilf);
+      }
+    }
+  }
+
   // --- Wald in der Ferne: grosse Tannen zwischen fw.von und fw.bis neben der Strasse ---
   const fw = CONFIG.fernwald;
   const fern = [];
@@ -505,10 +553,11 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe, extra = []
   if (m.tannen) { szene.remove(m.tannen); m.tannen.geometry.dispose(); m.tannen.material.dispose(); }
   szene.add(m.tannen = spriteGruppe([...pflanzen.tannen, ...jungTannen, ...fern], pflanzen.tanne));
   if (buesche.length) szene.add(m.buesche = spriteGruppe(buesche, busch));
+  if (unterholz.length) szene.add(m.unterholz = spriteGruppe(unterholz, uhTex)); // M10b.1 (nur mit deko.unterholz)
 
   const statistik = {
     buesche: buesche.filter((b) => !b.gras).length, gras: buesche.filter((b) => b.gras).length,
-    jungTannen: jungTannen.length, fernbaeume: fern.length, ms: Math.round(performance.now() - t0),
+    jungTannen: jungTannen.length, fernbaeume: fern.length, unterholz: unterholz.length, ms: Math.round(performance.now() - t0),
   };
-  return { buesche, jungTannen, fernbaeume: fern, statistik };
+  return { buesche, jungTannen, fernbaeume: fern, unterholz, statistik };
 }

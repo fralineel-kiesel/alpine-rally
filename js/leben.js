@@ -33,11 +33,16 @@ const WEISS = new THREE.Color('#ffffff');
 
 // Haus nach Typ (Streckendatei deko.haus / deko.stadel, seit M10b). stadel = kleiner Schuppen (auf Steinblöcken,
 // breite Tür), sonst Wohnhaus (Sockel, Tür, Fenster, Kamin). Kacheln je Typ aus dem Atlas (lebenbild.js).
+// M10b.1: Dachfarben der Häuser (cfg.dach), mal der grauen Dach-Kachel; fehlt = grau wie bisher
+const DACH_FARBEN = { rot: '#c2584a', braun: '#9a7454' };
 export const HAUS_TYPEN = {
   alphuette: { stadel: false, wand: 'bretter', giebel: 'bretterQuer', dach: 'schindel', fenster: 'hfenster', kanten: null },
   heustadel: { stadel: true, wand: 'bretter', giebel: 'bretterQuer', dach: 'schindel', fenster: 'hfenster', kanten: null },
   holzhaus: { stadel: false, wand: 'bretterRot', giebel: 'bretterRot', dach: 'dachDunkel', fenster: 'hfensterWeiss', kanten: 'kanteWeiss' },
   holzschuppen: { stadel: true, wand: 'bretterRot', giebel: 'bretterRot', dach: 'dachDunkel', fenster: 'hfensterWeiss', kanten: 'kanteWeiss' },
+  // M10b.1 (Finnland-Dorf): Scheune mit grossem Tor (rot, weisse Kanten), kleine dunkle Sauna-/Gartenhütte (dunkle Bretter)
+  scheune: { stadel: true, tor: true, wand: 'bretterRot', giebel: 'bretterRot', dach: 'dachDunkel', fenster: 'hfensterWeiss', kanten: 'kanteWeiss' },
+  saunahuette: { stadel: false, klein: true, wand: 'bretter', giebel: 'bretterQuer', dach: 'dachDunkel', fenster: 'hfensterWeiss', kanten: null, wandHell: 0.55 },
 };
 
 // Plätze, die für die neuen Kühe frei bleiben (Hütte, Stadel, Brunnen, Details am Wiesenweg).
@@ -317,7 +322,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     const stadel = T.stadel;
     const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung);
     const lb = cfg.laenge / 2, ta = cfg.tiefe / 2; // halbe Länge (b) und Tiefe (a)
-    if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.6, ta + 0.6, { krone: true })) { abgelehnt.push((stadel ? 'stadel' : 'huette') + (grund ? ` (${grund})` : '')); return null; }
+    if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.6, ta + 0.6, { krone: true })) { abgelehnt.push((stadel ? 'stadel' : 'huette') + (L.wiesenweg.haeuser ? ` ${typ} ${Math.round(cfg.s)}` : '') + (grund ? ` (${grund})` : '')); return null; }
     const y0 = bodenUnter(R.x, R.z, R.ux, R.uz, lb, ta);
     const yHoch = Math.max(...[-1, 1].flatMap((a) => [-1, 1].map((c) => boden(R.x + R.ux * lb * a - R.uz * ta * c, R.z + R.uz * lb * a + R.ux * ta * c))));
     rahmen(R.x, y0, R.z, R.ux, R.uz);
@@ -328,20 +333,34 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
       // auf Steinblöcken (Luft unter dem Boden), Bretter mit Lücken
       for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, -1], [0, 1]]) quader(a * ta - 0.25, a * ta + 0.25, -0.3, sockel, b * lb - 0.25, b * lb + 0.25, 'steinmauer', 0.95);
     } else quader(-ta - 0.08, ta + 0.08, -0.4, sockel, -lb - 0.08, lb + 0.08, 'steinmauer', 1);
-    quader(-ta, ta, sockel, sockel + H, -lb, lb, { seite: T.wand, oben: 'keins' }, stadel ? 0.92 : 1);
+    quader(-ta, ta, sockel, sockel + H, -lb, lb, { seite: T.wand, oben: 'keins' }, T.wandHell ?? (stadel ? 0.92 : 1));
     if (T.kanten) for (const a of [-1, 1]) for (const b of [-1, 1]) quader(a * ta - 0.09, a * ta + 0.09, sockel, sockel + H, b * lb - 0.09, b * lb + 0.09, T.kanten, 1); // weisse Eckbretter
     // Giebel (Dreiecke an den Enden b = ±lb) und Dach
     const yt = sockel + H, yf = yt + dach, ue = 0.4, ueb = 0.35;
-    for (const b of [-lb, lb]) dreieck([b < 0 ? ta : -ta, yt, b], [b < 0 ? -ta : ta, yt, b], [0, yf, b], T.giebel, 0.9);
+    for (const b of [-lb, lb]) dreieck([b < 0 ? ta : -ta, yt, b], [b < 0 ? -ta : ta, yt, b], [0, yf, b], T.giebel, 0.9 * (T.wandHell ?? 1));
+    // M10b.1: Dachfarbe je Haus (cfg.dach: 'rot', 'braun', sonst grau wie bisher)
+    const dachF = DACH_FARBEN[cfg.dach] ? farbe(DACH_FARBEN[cfg.dach]) : WEISS;
     for (const sd of [-1, 1]) {
       const unten = (bb) => [sd * (ta + ue), yt - ue * (dach / ta), bb], oben = (bb) => [0, yf + 0.06, bb];
-      viereck(unten(-lb - ueb), unten(lb + ueb), oben(lb + ueb), oben(-lb - ueb), T.dach, sd > 0 ? 1.04 : 0.86);
+      viereck(unten(-lb - ueb), unten(lb + ueb), oben(lb + ueb), oben(-lb - ueb), T.dach, sd > 0 ? 1.04 : 0.86, dachF);
     }
     // Front: Tür und Fenster; Rückseite ein Fenster
     const fa = vorn * (ta + 0.02);
     const flaeche = (a, b0, b1, h0, h1, kachel, hell = 1) => viereck([a, h0, b0], [a, h0, b1], [a, h1, b1], [a, h1, b0], kachel, hell);
-    if (stadel) {
+    if (stadel && T.tor) {
+      // M10b.1: Scheune: grosses Doppeltor mit weissem Rahmen, kleines Fenster im Giebel
+      const tb = Math.min(lb * 0.42, 2.2);
+      flaeche(fa, -tb, tb, sockel + 0.02, sockel + H - 0.25, 'htuer', 0.9);
+      if (T.kanten) for (const b of [-tb, tb]) flaeche(fa * 1.003, b - 0.09, b + 0.09, sockel, sockel + H - 0.15, T.kanten, 1);
+      if (T.kanten) flaeche(fa * 1.003, -tb - 0.09, tb + 0.09, sockel + H - 0.25, sockel + H - 0.1, T.kanten, 1);
+      for (const b of [-lb - 0.02, lb + 0.02]) viereck([-0.45, yt + dach * 0.25, b], [0.45, yt + dach * 0.25, b], [0.45, yt + dach * 0.6, b], [-0.45, yt + dach * 0.6, b], T.fenster, 0.9);
+    } else if (stadel) {
       flaeche(fa, -0.9, 0.9, sockel + 0.05, sockel + H - 0.15, 'htuer', 0.95);
+    } else if (T.klein) {
+      // M10b.1: Sauna-/Gartenhütte: Tür und ein kleines Fenster, Ofenrohr
+      flaeche(fa, -0.4 - lb * 0.3, 0.4 - lb * 0.3, sockel, sockel + 1.8, 'htuer', 0.8);
+      flaeche(fa, lb * 0.35 - 0.35, lb * 0.35 + 0.35, sockel + 1.05, sockel + 1.5, T.fenster, 0.95);
+      balken([-ta * 0.3, yt + dach * 0.4, lb * 0.5], [-ta * 0.3, yf + 0.9, lb * 0.5], 0.09, 'metall', 0.7);
     } else {
       flaeche(fa, -0.45 - lb * 0.15, 0.45 - lb * 0.15, sockel, sockel + 1.85, 'htuer');
       for (const b of [-lb * 0.62, lb * 0.45]) flaeche(fa, b - 0.55, b + 0.55, sockel + 0.95, sockel + 1.6, T.fenster, 1.05);
@@ -361,6 +380,70 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     rechteckKreise(R.x - R.ux * (stadel ? 0 : 0.3), R.z - R.uz * (stadel ? 0 : 0.3), R.ux, R.uz, lx, lz, stadel ? 'stadel' : 'huette', 0.4);
     stelleHin(R.x, R.z, R.ux, R.uz, lx + 0.4, lz + 0.6, 0.5);
     return { x: R.x, z: R.z, ux: R.ux, uz: R.uz, l: lx, b: lz };
+  }
+
+  // ---------------------------------------------------------------------------------------------------
+  // M10b.1: Dorf-Deko (Finnland): Holzstapel, Briefkasten, Holzzaun, parkender Wagen, Ruderboot.
+  // Alle aus Quadern im Pixel-Look, Kollision wie die übrigen Objekte; Liste in der Streckendatei (leben.wiesenweg).
+  function holzstapel(cfg) {
+    const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung || 0);
+    const lb = (cfg.laenge || 2.4) / 2, ta = 0.5, h = cfg.hoehe || 1.1;
+    if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.2, ta + 0.2, {})) { abgelehnt.push('holzstapel' + ` (${grund})`); return; }
+    rahmen(R.x, bodenUnter(R.x, R.z, R.ux, R.uz, lb, ta), R.z, R.ux, R.uz);
+    quader(-ta, ta, -0.1, h, -lb, lb, { seite: 'rinde', vorne: 'holzende', hinten: 'holzende', oben: 'rinde', links: 'holzende', rechts: 'holzende' }, 1);
+    for (const b of [-lb - 0.08, lb + 0.08]) quader(-ta - 0.05, ta + 0.05, -0.1, h + 0.15, b - 0.06, b + 0.06, 'bretterQuer', 0.8); // Stützpfosten
+    rechteckKreise(R.x, R.z, R.ux, R.uz, lb + 0.1, ta + 0.1, 'holzstapel', 0.35);
+    stelleHin(R.x, R.z, R.ux, R.uz, lb + 0.1, ta + 0.1, 0.3);
+  }
+  function briefkasten(cfg) {
+    const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung || 0);
+    if (!flaecheOk(R.x, R.z, R.ux, R.uz, 0.3, 0.3, {})) { abgelehnt.push('briefkasten' + ` (${grund})`); return; }
+    rahmen(R.x, boden(R.x, R.z), R.z, R.ux, R.uz);
+    balken([0, -0.1, 0], [0, 1.0, 0], 0.07, 'bretterQuer', 0.9);
+    const f = farbe(cfg.farbe || '#e8c22a');
+    quader(-0.16, 0.16, 1.0, 1.28, -0.24, 0.24, { seite: 'lack', oben: 'lack' }, 1.05, f);
+    kreis(R.x, R.z, 0.12, 'briefkasten');
+  }
+  function holzzaun(cfg) {
+    const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung || 0);
+    const lb = cfg.laenge / 2;
+    if (!flaecheOk(R.x, R.z, R.ux, R.uz, lb + 0.2, 0.3, {})) { abgelehnt.push('holzzaun' + ` (${grund})`); return; }
+    rahmen(R.x, boden(R.x, R.z), R.z, R.ux, R.uz);
+    const n = Math.max(1, Math.round(cfg.laenge / 2.2));
+    for (let k = 0; k <= n; k++) {
+      const b = -lb + (cfg.laenge * k) / n;
+      quader(-0.06, 0.06, -0.1, 1.05, b - 0.06, b + 0.06, 'bretterQuer', 0.85);
+      kreis(R.x + R.ux * b, R.z + R.uz * b, 0.12, 'zaun');
+    }
+    for (const y of [0.45, 0.85]) quader(-0.03, 0.03, y, y + 0.1, -lb, lb, 'bretterQuer', 1.0);
+    stelleHin(R.x, R.z, R.ux, R.uz, lb, 0.15, 0.2);
+  }
+  // Parkender Wagen: einfacher Kombi aus Quadern (keine der Rennauto-Formen), Lackfarbe je Wagen
+  function parkwagen(cfg) {
+    const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung || 0);
+    if (!flaecheOk(R.x, R.z, R.ux, R.uz, 2.2, 0.95, {})) { abgelehnt.push('parkwagen' + ` (${grund})`); return; }
+    rahmen(R.x, bodenUnter(R.x, R.z, R.ux, R.uz, 2.1, 0.85), R.z, R.ux, R.uz);
+    const f = farbe(cfg.farbe || '#4a6a8c');
+    quader(-0.85, 0.85, 0.32, 0.95, -2.1, 2.1, { seite: 'lack', oben: 'lack' }, 1, f);                 // Unterbau
+    quader(-0.78, 0.78, 0.95, 1.45, -1.35, 1.25, { seite: 'scheibe', oben: 'lack', vorne: 'scheibe', hinten: 'scheibe' }, 1, WEISS); // Dach/Scheiben
+    quader(-0.8, 0.8, 1.42, 1.5, -1.38, 1.28, { seite: 'lack', oben: 'lack' }, 1, f);                  // Dachblech
+    for (const a of [-0.86, 0.86]) for (const b of [-1.35, 1.35]) quader(a - 0.1, a + 0.1, 0, 0.62, b - 0.31, b + 0.31, { seite: 'gummi', links: 'felge', rechts: 'felge' }, 0.9);
+    for (const a of [-0.55, 0.55]) quader(a - 0.17, a + 0.17, 0.62, 0.78, 2.09, 2.13, 'licht', 1.1);       // Scheinwerfer
+    rechteckKreise(R.x, R.z, R.ux, R.uz, 2.15, 0.9, 'parkwagen', 0.35);
+    stelleHin(R.x, R.z, R.ux, R.uz, 2.2, 0.95, 0.3);
+  }
+  // Ruderboot am Steg: Rumpf aus Brettern, Bug spitz, liegt auf dem Wasserspiegel des nächsten Sees
+  function boot(cfg) {
+    const R = platzRahmen(cfg.s, cfg.seite * cfg.lat, cfg.drehung || 0);
+    let y0 = boden(R.x, R.z);
+    const W = welt.wasser;
+    if (W && W.an) for (const f of W.seen) if (Math.hypot(f.x - R.x, f.z - R.z) < Math.max(f.rx, f.rz) + 25) y0 = Math.max(y0, f.h);
+    rahmen(R.x, y0, R.z, R.ux, R.uz);
+    const f = farbe(cfg.farbe || '#b8452e');
+    quader(-0.62, 0.62, -0.15, 0.32, -1.5, 1.4, { seite: 'bretterQuer', oben: 'keins' }, 0.95, f);
+    quader(-0.5, 0.5, 0.05, 0.08, -1.4, 1.3, 'bretterQuer', 0.8);                                       // Boden innen
+    for (const sd of [-1, 1]) dreieck([sd * 0.62, -0.15, 1.4], [sd * 0.62, 0.32, 1.4], [0, 0.32, 2.1], 'bretterQuer', 0.9, f); // Bug
+    quader(-0.55, 0.55, 0.22, 0.3, -0.15, 0.15, 'bretterQuer', 0.85);                                   // Ruderbank
   }
 
   // M10b: Steg am Wasser: Bretterboden auf Pfählen, laenge = vom Ufer weg (quer zur Strasse), liegt hoehe über dem Boden
@@ -918,8 +1001,12 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     const h = W.huette ? versuche('huette', (ds, dl) => huette({ ...W.huette, s: W.huette.s + ds, lat: W.huette.lat + dl }, CONFIG.deko.haus)) : null;
     if (W.stadel) versuche('stadel', (ds, dl) => huette({ ...W.stadel, s: W.stadel.s + ds, lat: W.stadel.lat + dl }, CONFIG.deko.stadel));
     // M10b: weitere Häuser und Schuppen (Dorf) und Stege am Wasser
-    for (const [k, hs] of (W.haeuser || []).entries()) versuche(`haus ${k}`, (ds, dl) => huette({ ...hs, s: hs.s + ds, lat: hs.lat + dl }, hs.schuppen ? CONFIG.deko.stadel : CONFIG.deko.haus));
+    for (const [k, hs] of (W.haeuser || []).entries()) versuche(`haus ${k}`, (ds, dl) => huette({ ...hs, s: hs.s + ds, lat: hs.lat + dl }, hs.typ || (hs.schuppen ? CONFIG.deko.stadel : CONFIG.deko.haus))); // (M10b.1: typ je Haus)
     for (const [k, st] of (W.stege || []).entries()) versuche(`steg ${k}`, (ds, dl) => steg({ ...st, s: st.s + ds, lat: st.lat + dl }));
+    // M10b.1: Dorf-Deko (nur wenn die Strecke sie nennt)
+    const liste = (name, fn) => { for (const [k, d] of (W[name] || []).entries()) versuche(`${name} ${k}`, (ds, dl) => fn({ ...d, s: d.s + ds, lat: d.lat + dl })); };
+    liste('holzstapelOrte', holzstapel); liste('briefkaesten', briefkasten); liste('holzzaeune', holzzaun); liste('parkwagen', parkwagen);
+    for (const [k, b] of (W.boote || []).entries()) boot(b); // (auf dem Wasser: ohne Platzprüfung und ohne Kollision)
     if (W.brunnen) versuche('brunnen', (ds, dl) => brunnen({ ...W.brunnen, s: W.brunnen.s + ds, lat: W.brunnen.lat + dl }));
     if (W.wegweiser) wegweiser(W.wegweiser);
     for (const [s, sd, lat] of W.steinmaennchen || []) versuche(`steinmann ${s}`, (ds, dl) => steinmann(s + ds, sd, lat + dl));

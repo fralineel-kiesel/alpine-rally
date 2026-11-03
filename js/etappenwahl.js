@@ -7,7 +7,7 @@
 import { CONFIG } from './config.js';
 import { STRECKEN, dateiAdresse, merkeId } from './strecken.js';
 import { STRECKE } from './streckenlader.js';
-import { pruefeStrecke } from './streckenpruefung.js';
+import { pruefeStrecke, bestzeitSchluessel } from './streckenpruefung.js';
 import { TEXTE } from './texte.js';
 
 export const NACH_WAHL = 'alpineRally.nachEtappenwahl'; // (sessionStorage) nach dem Neuladen ins Hauptmenü
@@ -16,7 +16,7 @@ export const NACH_WAHL = 'alpineRally.nachEtappenwahl'; // (sessionStorage) nach
 export const ETAPPEN_INFO = STRECKEN.map((e) => ({ id: e.id, eintrag: e, etappe: null, name: null, laengeKm: 0, status: 'offen', punkte: null, karte: null, grund: '' }));
 
 function fuelle(info, d) {
-  info.etappe = d.etappe;
+  info.etappe = bestzeitSchluessel(d); // Schlüssel der Bestzeiten (M10b.1: mit revision)
   info.name = `strecke.${d.id}.name`;
   TEXTE[info.name] = d.name;
   TEXTE[`strecke.${d.id}.untergrund`] = d.untergrundInfo || d.beschreibung;

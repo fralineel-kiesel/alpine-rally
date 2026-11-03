@@ -37,7 +37,11 @@ export function bauePfad(A, xs, zs, profil) {
     const lang = Math.hypot(xs[b] - xs[a], zs[b] - zs[a]) || 1;
     const kappa = Math.abs(winkelNorm(w2 - w1)) / (lang / 2); // Richtungswechsel zwischen den Mitten der beiden Stücke
     const art = A.welt.bodenBei(xs[i], zs[i], A.strecke.abfrage(xs[i], zs[i], q)).art;
-    const grip = A.CONFIG.untergrund[art].grip;
+    let grip = A.CONFIG.untergrund[art].grip;
+    // M10b.1: Schotter-Griff des Autos (auto.schotterGrip, nur Escorta > 1): der Fahrer nutzt den Griff in den Kurven aus.
+    // Bei allen anderen Autos 1 = keine Rechnung (Zeiten bit-gleich wie vorher)
+    const sg = A.CONFIG.auto.schotterGrip;
+    if (art === 'schotter' && sg && sg !== 1) grip *= sg;
     vZiel[i] = Math.min(60, Math.sqrt((profil.quer * grip) / Math.max(kappa, 1e-4)));
   }
   // rechtzeitig bremsen: vom Ende her
