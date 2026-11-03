@@ -31,6 +31,11 @@ Kunst-Schatten, Version 0.10b.2. Vergleichsstand 0.10b.1 = `a289fad` (`git workt
   Andere Autos bit-gleich (alle Stile, Messwerte, Alpen x2). Escorta Alpen 2:59.95/2:43.43/2:34.08 → 2:59.80/2:43.13/2:33.50.
 - Handbremsen-Drift Schotter: Einlenken gleich, Spitze 25° statt 43°, gefangen 0.9 s statt 1.8 s (Asphalt bit-gleich).
 
+## Teil D – Rentier-Ton (fertig)
+- `deko.tierKlang: 'rentier'` (Finnland), `CONFIG.rentierKlang`: Schnauben und Klicken (im Code erzeugt), alle 2.5–7 s aus der
+  nächsten Herde in 45 m, Stereo/Abstand wie Kuhglocken, einmal Aufschrecken unter 16 m. Pause: nichts Neues, Umgebung gedämpft.
+- Alpen: Glocken wie bisher, keine Rentier-Puffer; x5 grün (eine Musik-Echtzeitzeile wackelt, zweiter Lauf grün).
+
 ## Offen / nächste Schritte
-- D Rentier-Ton, E Schatten, F Bericht.
+- E Schatten, F Bericht.
 - Bild Meter 969: Kamera für die Bilder in Teil F neu ausrichten (Hang besser im Bild).

@@ -22,7 +22,7 @@ export const SEEDS = ['gelaende', 'sprites', 'buesche', 'fernwald', 'berge', 'ku
 export const DEKO = {
   fahne: ['schweiz', 'finnland'],
   tier: ['kuh', 'rentier'],
-  tierKlang: ['glocke', null],
+  tierKlang: ['glocke', 'rentier', null], // (M10b.2: rentier)
   haus: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
   stadel: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
   // (M10b.1: Haus-Typen je Haus in leben.wiesenweg.haeuser[].typ, = HAUS_TYPEN in js/leben.js)

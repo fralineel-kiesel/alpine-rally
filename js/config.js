@@ -216,6 +216,21 @@ export const CONFIG = {
     },
   },
 
+  // --- Rentier-Ton (M10b.2): nur wenn die Strecke Rentiere hören lässt (deko.tierKlang = 'rentier'), js/umgebung.js ---
+  // Selten und leise: Schnauben und Klicken der Sehnen aus der nächsten Herde; Lautstärke hängt an LAUTSTÄRKE (Schiene
+  // Umgebung), in der Pause gedämpft wie die übrige Umgebung. Raum wie die Kuhglocken (Stereo, Abstand, Tiefpass)
+  rentierKlang: {
+    pegel: 0.07,               // Spitze eines Schnaubens bei "referenz" Metern (Kuhglocke 0.142: Rentiere sind leiser)
+    referenz: 6, radius: 45, rolloff: 1, // so weit hört man sie (Kuhglocken 70 m)
+    abstand: [2.5, 7],         // so viele Sekunden zwischen zwei Lauten der nächsten Herde (selten, kein Dauergeräusch)
+    klickAnteil: 0.45,         // so oft ist es ein Klicken statt eines Schnaubens
+    klickPegel: 0.8,           // Klicken etwas leiser als Schnauben
+    aufgeschreckt: 16,         // fährt man näher als so viele Meter vorbei: einmal ein kurzes, lauteres Schnauben
+    schreckPegel: 1.6,
+    schnauben: { dauer: 0.55, band: 420, grunzHz: 85, grunz: 0.5 }, // Luftstoss (Hz), kurzes Grunzen darunter
+    klick: { dauer: 0.6, anzahl: 6, takt: 0.09, hz: 2600 },            // 6 Knackser im Schritt-Takt, hell
+  },
+
   // --- Deko-Sets (seit M10b): welche Motive und Typen diese Strecke zeigt ---------------------------
   // Die Wahl steht in der Streckendatei (Block "deko"); der Code kennt nur Arten ("Fahne mit Motiv", "Tier mit Typ",
   // "Haus mit Typ") und malt das passende Pixelbild (js/motive.js, js/kuhbild.js, js/pixel.js, js/leben.js).
@@ -223,7 +238,7 @@ export const CONFIG = {
   deko: {
     fahne: 'schweiz',          // Motiv der Fahnen (Zuschauer, Fahnenmasten): schweiz, finnland
     tier: 'kuh',               // Tiere in Herden am Rand: kuh, rentier
-    tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken) oder null (still)
+    tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken), 'rentier' (M10b.2: Schnauben, Klicken) oder null (still)
     haus: 'alphuette',         // Haus an der Weide: alphuette, holzhaus
     stadel: 'heustadel',       // kleiner Schuppen: heustadel, holzschuppen
     nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer, fichte, nordwald (M10b.1: Fichten und Kiefern gemischt)

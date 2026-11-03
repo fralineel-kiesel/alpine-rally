@@ -143,7 +143,7 @@ if (teil('x3')) {
     // (M10b: Fahnen-Art 'kreuz' heisst jetzt 'motiv' = Landesfahne der Strecke; gleiche Wirkung, darum gleichgesetzt)
     const ordne = (o) => (Array.isArray(o) ? o.map(ordne) : o && typeof o === 'object' ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, ordne(o[k])])) : o === 'motiv' ? 'kreuz' : o);
     const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
-    const NEU_M10B = ['wasserAn']; // neue Blöcke in M10b.2 (wasserAn: Strecke hat Wasser, Alpen false)
+    const NEU_M10B = ['wasserAn', 'rentierKlang']; // neue Blöcke in M10b.2 (wasserAn: Strecke hat Wasser, Alpen false)
     // neue Werte innerhalb der Blöcke (M10b.2, für die Alpen wirkungslos): gelaende.boeschung (Alpen null), NEU_WERTE
     for (const c of [cn, ca]) { if (c.gelaende) delete c.gelaende.boeschung; for (const f of NEU_WERTE) f(c); }
     const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
@@ -283,8 +283,9 @@ if (teil('x5')) {
     const zahlen = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x)).map((x) => x.replace(/\d+(\.\d+)? ?ms\b/g, 'X ms').trim());
     // Diese Zeilen messen in Echtzeit im laufenden Spiel (Tiefpass/Pegel mitten im Übergang, Zeitpunkt des Stopps,
     // Ton-Labor live): sie schwanken schon zwischen zwei Läufen desselben Stands (gemessen) und werden nur gemeldet.
-    // "Pause: leise Variante" und "aus der Pause zum Hauptmenü" sind darum auch in 0.10b.1 manchmal rot (alte Wackel-Tests aus M7b)
-    const ECHTZEIT = /^(OK|FEHLER)\s+(Pause: Umgebung läuft gedämpft|Weiter: Musik blendet|Ton-Labor: Umgebung mit VORBEIFAHREN|STARTEN: Musik blendet|Pause: leise Variante|aus der Pause zum Hauptmenü: Musik beginnt)/;
+    // "Pause: leise Variante" und "aus der Pause zum Hauptmenü" sind darum auch in 0.10b.1 manchmal rot (alte Wackel-Tests aus M7b);
+    // M10b.2: "vom Zielbildschirm zum Hauptmenü" ebenso (einmal rot, im nächsten Lauf desselben Stands grün)
+    const ECHTZEIT = /^(OK|FEHLER)\s+(Pause: Umgebung läuft gedämpft|Weiter: Musik blendet|Ton-Labor: Umgebung mit VORBEIFAHREN|STARTEN: Musik blendet|Pause: leise Variante|aus der Pause zum Hauptmenü: Musik beginnt|vom Zielbildschirm zum Hauptmenü: wieder Menü-Musik)/;
     const geaendert0 = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
     const tn = werkzeug('ton-umgebung-test.mjs', []), ta = werkzeug('ton-umgebung-test.mjs', [], ALT);
     // (der alte Test schreibt Spektrogramme und Messtabelle neu: zurücksetzen)
@@ -707,6 +708,74 @@ if (teil('o')) {
   const t = TEXTE['auto.escorta.daten2'];
   melde(/SCHOTTER-SPEZIALIST/.test(t.de) && /GRAVEL SPECIALIST/.test(t.en), `Garage-Zeile: "${t.de}" / "${t.en}"`);
   if (ALT) melde(fs.readFileSync(path.join(ALT, 'js/autos.js'), 'utf8') === fs.readFileSync(path.join(WURZEL, 'js/autos.js'), 'utf8'), 'js/autos.js (Werte-Balken, Aussehen) unverändert gegen 0.10b.1');
+}
+
+// ===================================================================== Teil D: Rentier-Ton (p)–(s)
+// Spiel mit Ton (Taste auf dem Titel), Umgebung direkt mit einem gedachten Hörer rechnen (wie das Spiel jedes Bild)
+async function tonSpiel(strecke) {
+  const s = await starteSpiel({ args: ['--autoplay-policy=no-user-gesture-required'] });
+  await s.page.goto(`${s.url}/index.html?strecke=${strecke}`);
+  await bereit(s);
+  await s.page.waitForTimeout(1500);
+  await s.page.keyboard.press('Enter');
+  await s.page.waitForFunction(() => { const t = window.__alpineRally.ton; return t.werk && t.werk.aufbau.fertig; }, null, { timeout: 60000 });
+  return s;
+}
+// Hörer im Abstand d (m) neben der nächsten Herde (seite +1 = Herde rechts vom Hörer), sek Sekunden lang Bilder rechnen
+const HOEREN = ({ d, seite, sek, modus = 'rennen', herde = 0 }) => {
+  const A = window.__alpineRally, U = A.ton.werk.umgebung, H = U.quellen.herden[herde];
+  const Z = { hx: H.x + seite * (H.r + d), hz: H.z, hyaw: 0, s: 0, tempo: 0 }; // Blick +z: rechts = -x (Herde rechts = Hörer weiter +x)
+  const z0 = { ...U.zaehler };
+  for (let t = 0; t < sek; t += 1 / 60) U.aktualisiere(1 / 60, modus, Z);
+  const neu = (k) => (U.zaehler[k] || 0) - (z0[k] || 0);
+  const pans = U.protokoll.filter((p) => /^rentier/.test(p.art)).slice(-5).map((p) => Math.round(p.wert * 100) / 100);
+  return { schnauben: neu('rentier-schnauben'), klick: neu('rentier-klick'), schreck: neu('rentier-schreck'), glocke: neu('glocke'), pans, herden: U.quellen.herden.length };
+};
+if (teil('p') || teil('r') || teil('s')) {
+  const s = await tonSpiel('finnland');
+  if (teil('p')) {
+    console.log('(p) Rentiere: Ton nur in Reichweite, Stereo-Seite stimmt, Abstand dämpft, selten, Aufschrecken beim Vorbeifahren');
+    const nah = await s.page.evaluate(HOEREN, { d: 25, seite: 1, sek: 60 });
+    const fern = await s.page.evaluate(HOEREN, { d: 60, seite: 1, sek: 60 });
+    const links = await s.page.evaluate(HOEREN, { d: 25, seite: -1, sek: 30 });
+    const schreck = await s.page.evaluate(HOEREN, { d: 8, seite: 1, sek: 10 });
+    const laute = nah.schnauben + nah.klick;
+    melde(nah.herden > 0 && laute >= 6 && laute <= 25 && nah.glocke === 0, `${nah.herden} Rentier-Herden; 25 m daneben in 60 s: ${nah.schnauben}× Schnauben, ${nah.klick}× Klicken (selten: alle 2.5–7 s, keine Glocken)`);
+    melde(fern.schnauben + fern.klick + fern.schreck === 0, `60 m weg (Reichweite 45 m): nichts zu hören (${fern.schnauben + fern.klick})`);
+    melde(nah.pans.every((p) => p > 0.05) && links.pans.every((p) => p < -0.05), `Stereo: Herde rechts -> Pan ${nah.pans.join(', ')}; Herde links -> ${links.pans.join(', ')}`);
+    melde(schreck.schreck === 1, `8 m daneben (Rentier nah an der Strasse): einmal aufgeschreckt (${schreck.schreck}×), nicht dauernd`);
+    const g = await s.page.evaluate(async () => {
+      const { raumWerte } = await import('./js/umgebung.js');
+      const R = window.__alpineRally.CONFIG.rentierKlang, o = {};
+      return [5, 10, 20, 35, 44].map((d) => Math.round(raumWerte(0, 0, 0, -d, 0, R, o).gain * 1000) / 1000);
+    });
+    melde(g.every((x, i) => i === 0 || x < g[i - 1]) && g[0] === 1, `Abstand dämpft: Pegel bei 5/10/20/35/44 m = ${g.join(' / ')}`);
+  }
+  if (teil('r')) {
+    console.log('(r) Pause dämpft (wie die übrige Umgebung), in der Pause nichts Neues');
+    const r = await s.page.evaluate(HOEREN, { d: 20, seite: 1, sek: 30, modus: 'pause' });
+    const P = await s.page.evaluate(() => { const A = window.__alpineRally; A.ton.werk.aktualisiere(0.5, { ...A.tonZ, modus: 'pause' }); return { pegel: A.CONFIG.audio.pause.pegel, filter: A.CONFIG.audio.pause.filter }; });
+    melde(r.schnauben + r.klick + r.schreck === 0, `Pause: keine neuen Rentier-Laute (${r.schnauben + r.klick + r.schreck}); laufende werden über die Umgebungs-Schiene gedämpft (Pegel ${P.pegel}, Tiefpass ${P.filter} Hz, wie Kuhglocken)`);
+  }
+  if (teil('s')) {
+    console.log('(s) kein neues Objekt pro Bild (Rechnen ohne Laut)');
+    const cdp = await s.page.context().newCDPSession(s.page);
+    const heap = async () => { for (let i = 0; i < 3; i++) await cdp.send('HeapProfiler.collectGarbage'); return (await cdp.send('Runtime.getHeapUsage')).usedSize; };
+    await s.page.evaluate(() => { window.__Z = { hx: 1e5, hz: 1e5, hyaw: 0, s: 0, tempo: 0 }; });
+    const h0 = await heap();
+    const m = await s.page.evaluate(() => { const U = window.__alpineRally.ton.werk.umgebung, R = () => U.protokoll.filter((p) => /^rentier/.test(p.art)).length, p0 = R(); const m0 = performance.memory.usedJSHeapSize; for (let i = 0; i < 6000; i++) U.aktualisiere(1 / 60, 'rennen', window.__Z); return { zuwachs: performance.memory.usedJSHeapSize - m0, laute: R() - p0 }; });
+    const h1 = await heap();
+    melde(h1 - h0 < 64 * 1024 && m.laute === 0, `6000 Bilder Umgebung mit Rentieren (ohne Laut): Speicher nach GC ${((h1 - h0) / 1024).toFixed(1)} KB (Grenze 64 KB), Zuwachs ohne GC ${(m.zuwachs / 1024).toFixed(0)} KB, Rentier-Laute ${m.laute}`);
+  }
+  await s.schliessen();
+}
+if (teil('q')) {
+  console.log('(q) Alpen: keine Rentier-Laute, Kuhglocken wie bisher');
+  const s = await tonSpiel('alpen');
+  const r = await s.page.evaluate(HOEREN, { d: 15, seite: 1, sek: 30 });
+  const pu = await s.page.evaluate(() => Object.keys(window.__alpineRally.ton.werk.puffer).filter((k) => /rentier|platsch/.test(k)));
+  await s.schliessen();
+  melde(r.schnauben + r.klick + r.schreck === 0 && r.glocke > 0 && pu.length === 0, `Alpen: ${r.glocke}× Glocke, 0 Rentier-Laute, keine Rentier-/Platsch-Puffer (${pu.join(', ') || 'keine'})`);
 }
 
 // @@TEILE@@

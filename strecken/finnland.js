@@ -18,7 +18,7 @@ export default {
   deko: {
     fahne: 'finnland',         // blau-weisse Fahnen (nordisches Kreuz)
     tier: 'rentier',           // Rentiere statt Kühe
-    tierKlang: null,           // ... ohne Glocken (still)
+    tierKlang: 'rentier',      // ... ohne Glocken; M10b.2: leises Schnauben und Klicken (js/config.js rentierKlang)
     haus: 'holzhaus',          // rote Holzhäuser mit weissen Kanten
     stadel: 'holzschuppen',    // rote Schuppen
     nadelbaum: 'nordwald',     // M10b.1: Fichten (dunkle Kegel, Hauptbaum) und Kiefern gemischt, ca. 2 : 1
