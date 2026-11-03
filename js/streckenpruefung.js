@@ -65,6 +65,9 @@ export function pruefeStrecke(d, { voll = false } = {}) {
   }
   if (!(d.laenge >= 200 && d.laenge <= 50000)) fehler('laenge', `${d.laenge} m liegt nicht zwischen 200 und 50000`);
 
+  // M10b.1: Verlauf-Stand (Ganzzahl ab 1, fehlt = 1). Neuer Verlauf = höhere Zahl: die Bestzeiten bekommen einen neuen Schlüssel
+  if ('revision' in d && !(Number.isInteger(d.revision) && d.revision >= 1 && d.revision <= 999)) fehler('revision', `${JSON.stringify(d.revision)}: ganze Zahl ab 1 erwartet`);
+
   // --- Optionale Felder seit M10b (fehlen sie, gilt die Datei weiter) ---
   if ('untergrundInfo' in d) {
     if (!istObjekt(d.untergrundInfo)) fehler('untergrundInfo', 'Objekt { de, en } erwartet');
@@ -272,4 +275,11 @@ export function pruefeStrecke(d, { voll = false } = {}) {
   if (istObjekt(E.baumfolge) && E.baumfolge.seed !== d.seeds.sprites) fehler('erzeugt.baumfolge.seed', `${E.baumfolge.seed} passt nicht zu seeds.sprites (${d.seeds.sprites})`);
   if (istObjekt(E.kuhfolge) && E.kuhfolge.seed !== d.seeds.kuehe) fehler('erzeugt.kuhfolge.seed', `${E.kuhfolge.seed} passt nicht zu seeds.kuehe (${d.seeds.kuehe})`);
   return f;
+}
+
+// M10b.1: Schlüssel der Bestzeiten und des letzten Laufs einer Strecke. Ohne revision (oder 1) genau die Etappe (Alpen:
+// 'passstrasse', unverändert). Ab revision 2 mit Zusatz (Finnland: 'finnland-r2'): Zeiten des alten Verlaufs bleiben im
+// Speicher liegen, werden aber nicht mehr gezeigt (sie passen nicht zur neuen Strecke).
+export function bestzeitSchluessel(d) {
+  return Number.isInteger(d.revision) && d.revision > 1 ? `${d.etappe}-r${d.revision}` : d.etappe;
 }

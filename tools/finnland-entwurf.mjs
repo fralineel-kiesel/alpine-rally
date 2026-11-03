@@ -13,23 +13,41 @@ const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // Stücke: { ab } = neuer Abschnitt, { gerade: Meter }, { kurve: Grad (+ rechts, - links), radius: Meter }
 export const ENTWURF = [
-  { ab: 'Start am Waldrand' }, { gerade: 180 },
-  { ab: 'Kiefernwald' }, { kurve: 40, radius: 260 }, { gerade: 70 }, { kurve: -55, radius: 200 }, { gerade: 150, kuppe: 'KIEFERNKUPPE' },
-  { ab: 'Seeufer' }, { kurve: 60, radius: 260 }, { gerade: 120 },
-  { ab: 'Dorf' }, { kurve: -90, radius: 28 }, { gerade: 90 }, { kurve: 95, radius: 24 }, { gerade: 110, bruecke: true },
-  { ab: 'Birkenhain' }, { kurve: -40, radius: 200 }, { gerade: 140, kuppe: 'BIRKENKUPPE', kuppeBei: 0.4 }, { kurve: 60, radius: 160 },
-  { ab: 'Kehre am Hügel' }, { kurve: -165, radius: 22 }, { gerade: 80 },
-  { ab: 'Hochwald' }, { kurve: 45, radius: 140 }, { kurve: -45, radius: 140 }, { gerade: 150, kuppe: 'HOCHWALDKUPPE' },
-  { ab: 'Zielgerade am See' }, { kurve: -35, radius: 300 }, { gerade: 200, kuppe: 'SEEKUPPE', kuppeBei: 0.3, kuppeHoehe: 1.5 },
+  { ab: 'Start am Waldrand' }, { gerade: 100 },
+  { ab: 'Kiefernwald' }, { kurve: 50, radius: 60, abzweig: 'Waldweg' }, { gerade: 80 },
+  { kurve: 50, radius: 200 }, { gerade: 160, kuppe: 'KIEFERNKUPPE', kuppeBei: 0.5 }, { kurve: -30, radius: 300 },
+  { ab: 'Kiefernkehre' }, { gerade: 170 }, { kurve: 165, radius: 21 }, { gerade: 60 },
+  { ab: 'Seeufer' }, { kurve: -30, radius: 180 }, { gerade: 213 }, { gerade: 8 },
+  { ab: 'Dorf' }, { kurve: -50, radius: 38, einmuendung: 'Waldweg' }, { gerade: 230, bruecke: true },
+  { ab: 'Birkenhain' }, { kurve: -85, radius: 36, abzweig: 'Birkenweg' }, { gerade: 150, kuppe: 'BIRKENKUPPE', kuppeBei: 0.7 }, { kurve: 35, radius: 300 }, { gerade: 150 },
+  { kurve: -35, radius: 60 }, { kurve: 35, radius: 60 }, { gerade: 40 },
+  { ab: 'Kehre am Hügel' }, { kurve: 30, radius: 316.6 }, { gerade: 120 }, { kurve: -170, radius: 20 }, { gerade: 40 }, { kurve: 45, radius: 220 }, { gerade: 40 },
+  { ab: 'Hochwald' }, { kurve: -35, radius: 260 }, { gerade: 240, kuppe: 'HOCHWALDKUPPE', kuppeBei: 0.45 },
+  { ab: 'Hochwaldkehre' }, { gerade: 60 }, { kurve: 170, radius: 21 }, { gerade: 50 },
+  { kurve: -65, radius: 140 }, { gerade: 30 },
+  { ab: 'Zielgerade am See' }, { gerade: 110, kuppe: 'SEEKUPPE', kuppeHoehe: 1.3 }, { kurve: 35, radius: 300 }, { gerade: 116 }, { gerade: 8 },
+  { kurve: -50, radius: 38, einmuendung: 'Birkenweg' }, { gerade: 110 },
 ];
 
 // Höhenprofil (Meter über dem Start) über die Streckenmeter s der Linie: zwei Wellen, Kuppen, Senke an der Brücke
-export function hoehe(s, marken) {
-  let h = 5 * Math.sin((2 * Math.PI * s) / 700) + 2.5 * Math.sin((2 * Math.PI * s) / 260 + 1.3);
-  h -= 5 * Math.sin(1.3) * 0.5; // Start etwa auf 0
-  for (const k of marken.kuppen) h += (k.hoehe ?? 2.2) * Math.exp(-(((s - k.s) / 19) ** 2)) - 0.7 * Math.exp(-(((s - k.s + 45) / 16) ** 2)); // Kuppe, davor eine kleine Mulde
+function grundHoehe(s, marken) {
+  // M10b.1: Wellen flacher als in M10b (5 m / 2.5 m), sonst bremst man vor den Kehren über Kuppen
+  let h = 3.5 * Math.sin((2 * Math.PI * s) / 700) + 2 * Math.sin((2 * Math.PI * s) / 260 + 1.3);
+  h -= 2 * Math.sin(1.3); // Start etwa auf 0
+  for (const k of marken.kuppen) h += (k.hoehe ?? 1.7) * Math.exp(-(((s - k.s) / 19) ** 2)) - 0.4 * Math.exp(-(((s - k.s + 45) / 16) ** 2)); // Kuppe, davor eine kleine Mulde (M10b.1: 1.7 m / 0.4 m statt 2.2 / 0.7)
   if (marken.bruecke) h -= 3 * Math.exp(-(((s - marken.bruecke) / 45) ** 2)); // Flusstal
   for (const d of marken.dorf) h = h * (1 - 0.6 * Math.exp(-(((s - d) / 120) ** 2))); // Dorf flacher
+  return h;
+}
+// M10b.1: vor Spitzkehren und Kreuzungen ruhiges Gelände (Bremszone nicht über eine Welle): die Höhe geht dort
+// weich zum Mittel der Bremszone (140 m vor bis 40 m nach dem Kurvenanfang)
+export function hoehe(s, marken) {
+  let h = grundHoehe(s, marken);
+  for (const r of marken.ruhig || []) {
+    let m = 0;
+    for (let d = -140; d <= 40; d += 10) m += grundHoehe(r + d, marken) / 19;
+    h += 0.9 * Math.exp(-(((s - (r - 70)) / 140) ** 2)) * (m - h);
+  }
   return h;
 }
 
@@ -37,7 +55,7 @@ export function hoehe(s, marken) {
 export function rechne() {
   const pkt = [{ x: 0, z: 0, s: 0, kommentar: null, ab: null }];
   let x = 0, z = 0, w = 0, s = 0, ab = null, abAktuell = null;
-  const tabelle = [], marken = { kuppen: [], bruecke: null, dorf: [] };
+  const tabelle = [], marken = { kuppen: [], bruecke: null, dorf: [], wege: {}, ruhig: [] };
   for (const st of ENTWURF) {
     if (st.ab) { ab = st.ab; abAktuell = st.ab; continue; }
     const s0 = s;
@@ -45,7 +63,7 @@ export function rechne() {
       const n = Math.max(1, Math.round(st.gerade / 25)), d = st.gerade / n;
       for (let i = 1; i <= n; i++) { x += Math.sin(w) * d; z -= Math.cos(w) * d; s += d; pkt.push({ x, z, s, ab: i === 1 ? ab : null, kommentar: i === 1 ? `gerade ${st.gerade} m` : null }); ab = null; }
     } else {
-      const winkel = (st.kurve * Math.PI) / 180, L = Math.abs(winkel) * st.radius, n = Math.max(2, Math.round(L / 25)), dw = winkel / n;
+      const winkel = (st.kurve * Math.PI) / 180, L = Math.abs(winkel) * st.radius, n = Math.max(2, Math.round(L / 25), Math.ceil(Math.abs(st.kurve) / 50)), dw = winkel / n; // enge Kehren: höchstens 50° je Punkt
       for (let i = 1; i <= n; i++) {
         // Sehne eines Kreisbogens: Richtung in der Mitte des Teilbogens
         const sehne = 2 * st.radius * Math.sin(Math.abs(dw) / 2), wm = w + dw / 2;
@@ -55,6 +73,10 @@ export function rechne() {
     }
     if (st.kuppe) marken.kuppen.push({ s: s0 + (s - s0) * (st.kuppeBei ?? 0.5), name: st.kuppe, hoehe: st.kuppeHoehe });
     if (st.bruecke) marken.bruecke = (s0 + s) / 2;
+    if (st.kurve && (Math.abs(st.kurve) >= 150 || st.abzweig || st.einmuendung)) marken.ruhig.push(s0);
+    // Untergrundwechsel (M10b.1): Abzweig = Anfang der Abbiege-Kurve, Einmündung = Ende der Einmündungs-Kurve
+    if (st.abzweig) (marken.wege[st.abzweig] ||= {}).abzweig = s0;
+    if (st.einmuendung) (marken.wege[st.einmuendung] ||= {}).einmuendung = s;
     tabelle.push({ ab: abAktuell, von: Math.round(s0), bis: Math.round(s), was: st.gerade ? `gerade ${st.gerade}` : `${st.kurve > 0 ? 'R' : 'L'} ${Math.abs(st.kurve)}° r${st.radius}`, kuppe: st.kuppe || '' });
   }
   // Der erste Abschnitts-Name gehört vor den Startpunkt
@@ -70,6 +92,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const { pkt, tabelle, marken, laenge, ende } = rechne();
   for (const t of tabelle) console.log(`${String(t.von).padStart(5)} – ${String(t.bis).padStart(5)}  ${t.was}${t.kuppe ? `  (Kuppe ${t.kuppe})` : ''}`);
   console.log(`Linie ${laenge.toFixed(1)} m, ${pkt.length} Punkte, Ende bei x ${ende.x.toFixed(0)} z ${ende.z.toFixed(0)}, Richtung ${(ende.w * 180 / Math.PI).toFixed(0)}°`);
+  console.log(`Nebenwege: ${Object.entries(marken.wege).map(([n, w]) => `${n} ${w.abzweig.toFixed(1)}–${w.einmuendung.toFixed(1)} m`).join(', ')}`);
   console.log(`Kuppen: ${marken.kuppen.map((k) => `${k.name} ${k.s.toFixed(0)} m`).join(', ')}; Brücke ${marken.bruecke.toFixed(0)} m`);
   const hs = pkt.map((p) => p.h);
   console.log(`Höhe ${Math.min(...hs).toFixed(1)} bis ${Math.max(...hs).toFixed(1)} m`);

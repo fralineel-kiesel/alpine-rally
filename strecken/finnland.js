@@ -1,16 +1,18 @@
 // Strecke "Finnland-Schotter" (seit M10b) – reine Daten, Format: docs/strecken-format.md
-// Schnelle, flüssige Waldstrecke im Spätsommer-Abend: Kiefern- und Birkenwald, zwei Seen, ein Dorf mit zwei engen
-// Ecken (Asphalt), Holzbrücke über einen Fluss, eine Spitzkehre, vier markierte Kuppen (später Sprünge, M10c).
+// Waldstrecke im Spätsommer-Abend (seit M10b.1 ca. 4 km): Tannen-, Kiefern- und Birkenwald, zwei Seen, ein Dorf auf
+// Asphalt (man biegt an Einmündungen auf den Schotter ab und wieder ein), Holzbrücke über einen Fluss, drei Spitzkehren,
+// eine Schikane, vier markierte Kuppen (später Sprünge, M10c).
 // Der Verlauf kommt aus tools/finnland-entwurf.mjs (Gerade / Kurve mit Radius, Höhenprofil): dort ändern, nicht hier.
 
 export default {
   format: 1,
   id: 'finnland',
   etappe: 'finnland',          // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
+  revision: 2,                 // Verlauf-Stand (seit M10b.1): neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
   name: { de: 'FINNLAND-SCHOTTER', en: 'FINLAND GRAVEL' },
   beschreibung: { de: 'SCHOTTER, KUPPEN, SEEN', en: 'GRAVEL, CRESTS, LAKES' },
   untergrundInfo: { de: 'SCHOTTER', en: 'GRAVEL' },
-  laenge: 2795.676,             // Meter (Kontrolle: das Spiel rechnet nach, mehr als 0.5 m daneben = Fehlerseite)
+  laenge: 4161.647,             // Meter (Kontrolle: das Spiel rechnet nach, mehr als 0.5 m daneben = Fehlerseite)
 
   // Deko-Sets: was der Spielcode malt (Pixelbilder im Code)
   deko: {
@@ -25,10 +27,10 @@ export default {
 
   // Markierte Kuppen: hier wird die Strecke in M10c abheben (heute ohne Wirkung, normale Kuppen)
   sprung: [
-    { s: 699, name: 'KIEFERNKUPPE' },
-    { s: 1645, name: 'BIRKENKUPPE' },
-    { s: 2335, name: 'HOCHWALDKUPPE' },
-    { s: 2653, name: 'SEEKUPPE' },
+    { s: 487, name: 'KIEFERNKUPPE' },
+    { s: 1751, name: 'BIRKENKUPPE' },
+    { s: 3108, name: 'HOCHWALDKUPPE' },
+    { s: 3656, name: 'SEEKUPPE' },
   ],
 
   // --- Zufallszahlen (gleiche Zahl = gleiche Welt) ---
@@ -41,187 +43,305 @@ export default {
   // --- Abschnitte (wie bei den Alpen: baeume, wald, nah, voegel) ---
   abschnitte: {
     'Start am Waldrand': { baeume: 1.2, wald: 0.5, voegel: 0.9 },
-    'Kiefernwald': { baeume: 2.6, wald: 1, nah: true, voegel: 1.0 },
+    'Kiefernwald': { baeume: 2.6, wald: 1, voegel: 1.0 },
+    'Kiefernkehre': { baeume: 1.1, wald: 0.35, voegel: 0.9 },   // Lichtung um die erste Spitzkehre (Platz zum Rutschen)
     'Seeufer': { baeume: 0.55, wald: 0.15, voegel: 1.3 },
     'Dorf': { baeume: 0.12, wald: 0, voegel: 0.7 },
-    'Birkenhain': { baeume: 2.0, wald: 0.5, nah: true, voegel: 1.3 },
-    'Kehre am Hügel': { baeume: 1.8, wald: 0.7, voegel: 0.8 },
-    'Hochwald': { baeume: 2.6, wald: 1, nah: true, voegel: 0.9 },
+    'Birkenhain': { baeume: 2.0, wald: 0.5, voegel: 1.3 },
+    'Kehre am Hügel': { baeume: 2.6, wald: 1, voegel: 0.8 },  // dicht: zwischen den Schenkeln der Kehre keine Abkürzung
+    'Hochwald': { baeume: 2.6, wald: 1, voegel: 0.9 },
+    'Hochwaldkehre': { baeume: 1.1, wald: 0.35, voegel: 0.9 },  // Lichtung um die dritte Spitzkehre
     'Zielgerade am See': { baeume: 0.3, wald: 0, voegel: 1.1 },
   },
 
   punkte: [
     // <punkte> (geschrieben von tools/finnland-entwurf.mjs – Entwurf dort ändern)
     'Start am Waldrand',
-    [0.0, 0.0, 0.00],
-    // gerade 180 m
-    [0.0, -25.7, 1.08],
-    [0.0, -51.4, 1.23],
-    [0.0, -77.1, 0.73],
-    [0.0, -102.9, 0.08],
-    [0.0, -128.6, -0.22],
-    [0.0, -154.3, 0.13],
-    [0.0, -180.0, 1.11],
+    [0.0, 0.0, -0.17],
+    // gerade 100 m
+    [0.0, -25.0, -0.10],
+    [0.0, -50.0, -0.08],
+    [0.0, -75.0, -0.10],
+    [0.0, -100.0, -0.22],
 
     'Kiefernwald',
-    // Kurve rechts 40°, Radius 260 m
-    [1.3, -205.9, 2.38],
-    [5.2, -231.5, 3.41],
-    [11.6, -256.6, 3.64],
-    [20.4, -281.0, 2.78],
-    [31.7, -304.3, 0.86],
-    [45.2, -326.5, -1.73],
-    [60.8, -347.1, -4.36],
-    // gerade 70 m
-    [75.8, -365.0, -6.25],
-    [90.8, -382.9, -7.37],
-    [105.8, -400.7, -7.61],
-    // Kurve links 55°, Radius 200 m
-    [120.1, -420.0, -7.11],
-    [132.0, -440.8, -6.21],
-    [141.3, -463.0, -5.36],
-    [147.9, -486.0, -4.92],
-    [151.7, -509.7, -5.06],
-    [152.6, -533.7, -5.70],
-    [150.6, -557.6, -6.53],
-    [145.8, -581.1, -7.13],
-    // gerade 150 m
-    [139.3, -605.2, -7.65],
-    [132.9, -629.4, -5.73],
-    [126.4, -653.5, -1.83],
-    [119.9, -677.7, -1.14],
-    [113.4, -701.8, 0.98],
-    [107.0, -726.0, 2.93],
+    // Kurve rechts 50°, Radius 60 m
+    [5.6, -125.4, -0.39],
+    [21.4, -146.0, -0.33],
+    // gerade 80 m
+    [41.9, -163.1, 0.19],
+    [62.3, -180.2, 1.12],
+    [82.7, -197.4, 2.02],
+    // Kurve rechts 50°, Radius 200 m
+    [102.8, -212.2, 2.37],
+    [124.5, -224.4, 1.93],
+    [147.6, -233.8, 0.66],
+    [171.6, -240.2, -1.16],
+    [196.3, -243.6, -3.10],
+    [221.2, -243.9, -4.70],
+    [246.0, -241.1, -5.62],
+    // gerade 160 m
+    [272.3, -236.5, -6.03],
+    [298.5, -231.9, -5.00],
+    [324.8, -227.2, -2.56],
+    [351.0, -222.6, -3.32],
+    [377.3, -218.0, -3.37],
+    [403.6, -213.4, -3.72],
+    // Kurve links 30°, Radius 300 m
+    [429.5, -209.9, -4.29],
+    [455.7, -208.8, -4.61],
+    [481.8, -209.9, -4.25],
+    [507.8, -213.4, -3.10],
+    [533.3, -219.0, -1.47],
+    [558.3, -226.9, 0.08],
+
+    'Kiefernkehre',
+    // gerade 170 m
+    [581.1, -235.2, 1.01],
+    [603.9, -243.5, 1.40],
+    [626.7, -251.8, 1.43],
+    [649.6, -260.1, 1.38],
+    [672.4, -268.4, 1.32],
+    [695.2, -276.7, 1.18],
+    [718.0, -285.0, 0.84],
+    // Kurve rechts 165°, Radius 21 m
+    [732.8, -284.9, 0.57],
+    [743.8, -275.0, 0.30],
+    [745.6, -260.3, 0.11],
+    [737.2, -248.1, 0.02],
+    // gerade 60 m
+    [712.7, -230.9, 0.17],
+    [688.1, -213.7, 0.36],
 
     'Seeufer',
-    // Kurve rechts 60°, Radius 260 m
-    [101.7, -750.1, 3.91],
-    [98.8, -774.7, 3.85],
-    [98.2, -799.4, 2.95],
-    [100.0, -824.1, 1.63],
-    [104.1, -848.5, 0.40],
-    [110.5, -872.4, -0.35],
-    [119.1, -895.6, -0.45],
-    [129.9, -917.9, -0.04],
-    [142.8, -939.0, 0.51],
-    [157.6, -958.8, 0.74],
-    [174.3, -977.1, 0.26],
-    // gerade 120 m
-    [191.2, -994.1, -1.03],
-    [208.2, -1011.0, -2.96],
-    [225.2, -1028.0, -5.10],
-    [242.2, -1045.0, -6.86],
-    [259.1, -1062.0, -7.71],
+    // Kurve links 30°, Radius 180 m
+    [669.7, -198.9, 0.11],
+    [653.5, -181.9, -0.71],
+    [639.5, -162.9, -2.01],
+    [628.2, -142.3, -3.44],
+    // gerade 213 m
+    [618.2, -120.9, -4.57],
+    [608.2, -99.4, -5.09],
+    [598.2, -78.0, -5.02],
+    [588.2, -56.5, -4.61],
+    [578.2, -35.1, -4.20],
+    [568.2, -13.6, -3.92],
+    [558.2, 7.8, -3.70],
+    [548.2, 29.3, -3.38],
+    [538.2, 50.7, -2.91],
+    // gerade 8 m
+    [534.8, 58.0, -2.73],
 
     'Dorf',
-    // Kurve links 90°, Radius 28 m
-    [267.3, -1081.8, -7.49],
-    [259.1, -1101.5, -6.44],
-    // gerade 90 m
-    [243.2, -1117.5, -4.91],
-    [227.3, -1133.4, -3.41],
-    [211.4, -1149.3, -2.26],
-    [195.5, -1165.2, -1.59],
-    // Kurve rechts 95°, Radius 24 m
-    [188.5, -1183.2, -1.40],
-    [197.0, -1200.5, -1.64],
-    // gerade 110 m
-    [218.1, -1218.2, -2.85],
-    [239.2, -1235.9, -4.33],
-    [260.2, -1253.6, -4.34],
-    [281.3, -1271.3, -2.88],
+    // Kurve links 50°, Radius 38 m
+    [531.2, 74.0, -2.35],
+    [534.8, 90.1, -1.97],
+    // gerade 230 m
+    [545.6, 113.3, -1.38],
+    [556.4, 136.4, -0.79],
+    [567.2, 159.6, -0.30],
+    [578.0, 182.8, 0.09],
+    [588.8, 205.9, 0.44],
+    [599.6, 229.1, 0.67],
+    [610.4, 252.2, 0.84],
+    [621.2, 275.4, 1.08],
+    [632.0, 298.6, 1.32],
 
     'Birkenhain',
-    // Kurve links 40°, Radius 200 m
-    [298.2, -1287.2, -1.20],
-    [313.2, -1305.0, 0.73],
-    [325.9, -1324.5, 2.69],
-    [336.4, -1345.2, 4.25],
-    [344.3, -1367.1, 5.02],
-    [349.7, -1389.7, 4.37],
-    // gerade 140 m
-    [353.7, -1412.7, 3.39],
-    [357.8, -1435.7, 3.61],
-    [361.9, -1458.7, 1.19],
-    [365.9, -1481.6, -1.76],
-    [370.0, -1504.6, -2.96],
-    [374.0, -1527.6, -3.43],
-    // Kurve rechts 60°, Radius 160 m
-    [379.9, -1550.8, -3.33],
-    [389.2, -1572.8, -2.96],
-    [401.7, -1593.2, -2.76],
-    [417.0, -1611.5, -3.05],
-    [435.0, -1627.4, -4.01],
-    [455.1, -1640.3, -5.53],
-    [476.9, -1650.2, -7.28],
+    // Kurve links 85°, Radius 36 m
+    [650.9, 316.6, 1.24],
+    [677.0, 317.2, 0.53],
+    // gerade 150 m
+    [700.4, 308.6, -0.57],
+    [723.9, 300.1, -1.89],
+    [747.4, 291.5, -2.38],
+    [770.9, 283.0, -1.01],
+    [794.4, 274.4, -1.69],
+    [817.9, 265.9, -1.95],
+    // Kurve rechts 35°, Radius 300 m
+    [842.9, 258.0, -2.06],
+    [868.4, 252.3, -2.80],
+    [894.4, 248.9, -4.08],
+    [920.5, 247.8, -5.57],
+    [946.7, 248.9, -6.79],
+    [972.6, 252.3, -7.28],
+    [998.2, 258.0, -6.82],
+    // gerade 150 m
+    [1022.3, 264.5, -5.57],
+    [1046.5, 270.9, -3.84],
+    [1070.6, 277.4, -2.05],
+    [1094.7, 283.9, -0.65],
+    [1118.9, 290.4, 0.11],
+    [1143.0, 296.8, 0.18],
+    // Kurve links 35°, Radius 60 m
+    [1161.2, 298.8, -0.09],
+    [1179.1, 295.2, -0.48],
+    // Kurve rechts 35°, Radius 60 m
+    [1197.0, 291.7, -0.83],
+    [1215.1, 293.7, -1.02],
+    // gerade 40 m
+    [1234.5, 298.9, -0.94],
+    [1253.8, 304.0, -0.56],
 
     'Kehre am Hügel',
-    // Kurve links 165°, Radius 22 m
-    [490.6, -1665.2, -8.65],
-    [486.2, -1685.0, -9.52],
-    [467.4, -1692.8, -9.66],
-    // gerade 80 m
-    [440.8, -1690.4, -8.70],
-    [414.3, -1688.1, -6.68],
-    [387.7, -1685.8, -4.15],
+    // Kurve rechts 30°, Radius 316.6 m
+    [1276.4, 311.0, 0.10],
+    [1298.4, 319.7, 0.65],
+    [1319.8, 329.9, 0.76],
+    [1340.3, 341.8, 0.25],
+    [1359.8, 355.1, -0.75],
+    [1378.4, 369.9, -1.86],
+    [1395.7, 386.0, -2.73],
+    // gerade 120 m
+    [1412.7, 402.9, -3.21],
+    [1429.7, 419.9, -3.41],
+    [1446.6, 436.9, -3.55],
+    [1463.6, 453.9, -3.73],
+    [1480.6, 470.8, -3.86],
+    // Kurve links 170°, Radius 20 m
+    [1493.8, 476.7, -3.85],
+    [1507.6, 472.0, -3.77],
+    [1514.5, 459.3, -3.62],
+    [1511.1, 445.2, -3.47],
+    // gerade 40 m
+    [1499.6, 428.8, -3.38],
+    [1488.1, 412.4, -3.54],
+    // Kurve rechts 45°, Radius 220 m
+    [1475.2, 391.5, -4.13],
+    [1464.6, 369.2, -4.97],
+    [1456.6, 345.8, -5.68],
+    [1451.2, 321.8, -5.89],
+    [1448.6, 297.2, -5.32],
+    [1448.8, 272.6, -4.00],
+    [1451.7, 248.1, -2.17],
+    // gerade 40 m
+    [1455.2, 228.4, -0.60],
+    [1458.6, 208.7, 0.80],
 
     'Hochwald',
-    // Kurve rechts 45°, Radius 140 m
-    [360.3, -1686.1, -1.74],
-    [333.4, -1691.7, -0.14],
-    [308.2, -1702.5, 0.41],
-    [285.5, -1718.0, 0.13],
-    // Kurve links 45°, Radius 140 m
-    [262.9, -1733.5, -0.44],
-    [237.6, -1744.3, -0.67],
-    [210.8, -1749.9, -0.18],
-    [183.3, -1750.2, 1.05],
-    // gerade 150 m
-    [158.4, -1748.1, 1.87],
-    [133.5, -1745.9, 3.95],
-    [108.6, -1743.7, 6.39],
-    [83.7, -1741.5, 4.04],
-    [58.8, -1739.3, 2.06],
-    [33.9, -1737.2, -0.28],
+    // Kurve links 35°, Radius 260 m
+    [1461.9, 182.4, 2.04],
+    [1462.5, 155.9, 2.37],
+    [1460.4, 129.6, 1.87],
+    [1455.6, 103.6, 0.87],
+    [1448.2, 78.1, -0.14],
+    [1438.2, 53.6, -0.78],
+    // gerade 240 m
+    [1428.1, 31.9, -0.93],
+    [1418.0, 10.1, -0.98],
+    [1407.8, -11.6, -0.99],
+    [1397.7, -33.4, -0.41],
+    [1387.5, -55.1, -1.34],
+    [1377.4, -76.9, -2.97],
+    [1367.2, -98.6, -3.98],
+    [1357.1, -120.4, -4.64],
+    [1347.0, -142.1, -4.94],
+    [1336.8, -163.9, -5.09],
+
+    'Hochwaldkehre',
+    // gerade 60 m
+    [1324.1, -191.1, -5.31],
+    [1311.5, -218.3, -5.43],
+    // Kurve rechts 170°, Radius 21 m
+    [1310.5, -233.5, -5.34],
+    [1320.0, -245.3, -5.08],
+    [1335.0, -247.6, -4.67],
+    [1347.7, -239.2, -4.18],
+    // gerade 50 m
+    [1362.0, -218.7, -3.43],
+    [1376.4, -198.2, -3.04],
+    // Kurve links 65°, Radius 140 m
+    [1393.5, -178.1, -3.13],
+    [1414.1, -161.6, -3.51],
+    [1437.5, -149.2, -3.73],
+    [1462.7, -141.4, -3.39],
+    [1489.0, -138.5, -2.29],
+    [1515.4, -140.7, -0.60],
+    // gerade 30 m
+    [1544.9, -145.9, 1.22],
 
     'Zielgerade am See',
-    // Kurve links 35°, Radius 300 m
-    [8.0, -1733.7, -2.95],
-    [-17.6, -1728.1, -5.21],
-    [-42.6, -1720.2, -6.56],
-    [-66.7, -1710.2, -6.88],
-    [-90.0, -1698.1, -6.37],
-    [-112.0, -1684.0, -5.54],
-    [-132.8, -1668.1, -5.23],
-    // gerade 200 m
-    [-151.9, -1652.0, -5.36],
-    [-171.1, -1636.0, -4.42],
-    [-190.2, -1619.9, -5.75],
-    [-209.4, -1603.8, -7.48],
-    [-228.5, -1587.8, -7.88],
-    [-247.7, -1571.7, -7.34],
-    [-266.8, -1555.6, -5.80],
-    [-286.0, -1539.6, -3.48],
+    // gerade 110 m
+    [1572.0, -150.6, 2.97],
+    [1599.1, -155.4, 4.70],
+    [1626.1, -160.2, 2.96],
+    [1653.2, -165.0, 1.35],
+    // Kurve rechts 35°, Radius 300 m
+    [1679.2, -168.4, -0.34],
+    [1705.3, -169.5, -1.78],
+    [1731.5, -168.4, -2.68],
+    [1757.4, -165.0, -3.05],
+    [1783.0, -159.3, -3.20],
+    [1807.9, -151.4, -3.44],
+    [1832.1, -141.4, -3.81],
+    // gerade 116 m
+    [1853.1, -131.6, -4.13],
+    [1874.2, -121.8, -4.33],
+    [1895.2, -112.0, -4.47],
+    [1916.2, -102.2, -4.70],
+    [1937.2, -92.4, -5.11],
+    // gerade 8 m
+    [1944.5, -89.0, -5.28],
+    // Kurve links 50°, Radius 38 m
+    [1960.6, -85.4, -5.61],
+    [1976.6, -89.0, -5.82],
+    // gerade 110 m
+    [2001.5, -100.6, -5.60],
+    [2026.5, -112.3, -4.53],
+    [2051.4, -123.9, -2.95],
+    [2076.3, -135.5, -1.48],
     // </punkte>
   ],
 
   strasse: { startBeiMeter: 25, zielVorEnde: 45, spawnBeiMeter: 10 },
-  checkpoints: [800, 1500, 2220],
-  nebenwege: [],               // keine Abzweige mit Stummel
-  // Untergrund ohne Abzweig: Schotter überall ausser im Dorf (Asphalt, mit der Brücke)
-  belagAbschnitte: [
-    { von: 0, bis: 1150, belag: 'schotter' },
-    { von: 1462, bis: 2900, belag: 'schotter' },
+  checkpoints: [1000, 1707, 2614, 3419],
+  // --- Nebenwege wie in den Alpen (seit M10b.1): Start, Dorf und Ziel liegen an einer Asphaltstrasse. Die Etappe biegt
+  //     an jedem Untergrundwechsel ab (Abzweig) oder ein (Einmündung); die Asphaltstrasse läuft dort als abgesperrter
+  //     Stummel weiter. Dazwischen Schotter. Streckenmeter laut tools/finnland-entwurf.mjs (Anfang/Ende der Kurve).
+  nebenwege: [
+    {
+      name: 'Waldweg',         // vom Start (Asphalt) rechts ab in den Wald, links ins Dorf hinein
+      abzweig: 100.0,
+      einmuendung: 1362.9,
+      belag: 'schotter',
+      sperreAbzweig: 'heu', sperreEinmuendung: 'band',
+      // Waldrand am Schotterweg (wie in den Alpen, sonst nebenwegWald in config.js): innen dicht (keine Abkürzung),
+      // aber weiter weg als in den Alpen (innen ab 9.2 m statt 6.2 m, aussen ab 10.5 m: auf Schotter rutscht man weiter hinaus)
+      wald: {
+        innenVorNach: 60,      // dichte Innenseite auch 60 m vor und nach engen Kurven (Schenkel der Kehren)
+        innen: { abstand: [9.2, 10], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
+        aussen: { abstand: [10.5, 15], gruppe: [1, 4], schritt: [1.8, 3], luecke: [5, 14], zweiteReihe: 0.35, zweiteAbstand: [12, 16] },
+      },
+      // flache Kreuzungen (50°): Stummel länger auf der Höhe der Etappe (wie Almweg/Wiesenweg in den Alpen)
+      stummelAbzweig: { kurve: -70, radius: 50, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
+      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
+    },
+    {
+      name: 'Birkenweg',       // hinter der Brücke links ab aus dem Dorf, kurz vor dem Ziel links auf die Seestrasse
+      abzweig: 1592.9,
+      einmuendung: 4051.1,
+      belag: 'schotter',
+      sperreAbzweig: 'reifen', sperreEinmuendung: 'heu',
+      // Waldrand am Schotterweg (wie in den Alpen, sonst nebenwegWald in config.js): innen dicht (keine Abkürzung),
+      // aber weiter weg als in den Alpen (innen ab 9.2 m statt 6.2 m, aussen ab 10.5 m: auf Schotter rutscht man weiter hinaus)
+      wald: {
+        innenVorNach: 60,      // dichte Innenseite auch 60 m vor und nach engen Kurven (Schenkel der Kehren)
+        innen: { abstand: [9.2, 10], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
+        aussen: { abstand: [10.5, 15], gruppe: [1, 4], schritt: [1.8, 3], luecke: [5, 14], zweiteReihe: 0.35, zweiteAbstand: [12, 16] },
+      },
+      stummelAbzweig: { kurve: 70, radius: 50, seitenschutz: 'zaun' },
+      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
+    },
   ],
 
   // --- Wasser: zwei Seen und ein Fluss mit Holzbrücke (js/wasser.js) ---
   wasser: {
     seen: [
-      { s: 910, seite: 1, lat: 66, rx: 46, rz: 130, drehung: 0, tiefe: 2.2 },   // Seeufer: See rechts, innen in der Kurve
-      { s: 2690, seite: -1, lat: 60, rx: 40, rz: 170, drehung: 0, tiefe: 2.0 }, // Zielgerade am See (links)
+      { s: 1090, seite: -1, lat: 70, rx: 46, rz: 105, drehung: 0, tiefe: 2.2 },  // Seeufer: See links, innen in der Kurve
+      { s: 4093, seite: 1, lat: 56, rx: 38, rz: 90, drehung: 0, tiefe: 2.0 },   // Zielgerade am See (rechts)
     ],
     fluesse: [
-      { s: 1395, breite: 9, laenge: 420, winkel: 8, tiefe: 3.0 },             // Fluss mit Holzbrücke
+      { s: 1477, breite: 9, laenge: 420, winkel: 8, tiefe: 3.0 },             // Fluss mit Holzbrücke (im Dorf)
     ],
   },
 
@@ -263,13 +383,14 @@ export default {
 
   // --- Natur ---
   natur: {
-    sprites: { tannenProKm: 5600, laubProKm: 3000, steineProKm: 700 }, // Kiefern, Birken, Steine
+    sprites: { tannenProKm: 5600, laubProKm: 3000, steineProKm: 700, // Kiefern, Birken, Steine
+      mindestAbstand: 10.5, waldAbstand: 10.5 }, // M10b.1: Bäume erst ab 10.5 m neben der Mitte (Platz zum Rutschen auf Schotter)
     buesche: { blueten: 0, beeren: 0.45 },  // keine Alpenrosen, viele Heidelbeeren
     kuehe: {                   // (Tiere: Rentiere, deko.tier)
       anzahl: 6, einzeln: 3, anteilTal: 1, alpAb: 999, alpBreite: [10, 30], passBei: 2000,
       zusatzHerden: [
-        { s: 160, seite: 1, lat: [26, 40], anzahl: 4 },
-        { s: 2560, seite: 1, lat: [22, 34], anzahl: 4 },
+        { s: 330, seite: 1, lat: [26, 40], anzahl: 4 },
+        { s: 2824, seite: 1, lat: [22, 34], anzahl: 4 },
       ],
     },
     nebenwegWaldGruppen: [],
@@ -309,24 +430,24 @@ export default {
     kuehe: {                   // (Tiere: Rentiere)
       herdenAbstand: 26,
       herden: [
-        { s: 1250, seite: 1, lat: [26, 36], anzahl: 3, radius: 6 },   // Wiese hinter dem Dorf
-        { s: 1030, seite: -1, lat: [18, 28], anzahl: 3, radius: 5 },  // Lichtung gegenüber dem See
+        { s: 1560, seite: 1, lat: [32, 42], anzahl: 3, radius: 6 },   // Wiese hinter dem Dorf
+        { s: 1090, seite: 1, lat: [18, 28], anzahl: 3, radius: 5 },   // Lichtung gegenüber dem See
       ],
     },
     // Häuser im Dorf (Haus-Typ deko.haus, mit schuppen: true deko.stadel) und Stege am See
     wiesenweg: {
       holzstapel: false,
       haeuser: [
-        { s: 1232, seite: 1, lat: 15, drehung: 0, laenge: 8, tiefe: 6, hoehe: 2.6 },
-        { s: 1262, seite: -1, lat: 16, drehung: 5, laenge: 9, tiefe: 6.5, hoehe: 2.8 },
-        { s: 1268, seite: 1, lat: 23, drehung: -10, laenge: 5, tiefe: 4, hoehe: 2.2, schuppen: true },
-        { s: 1372, seite: -1, lat: 17, drehung: 8, laenge: 8, tiefe: 6, hoehe: 2.6 },
-        { s: 1388, seite: 1, lat: 19, drehung: -4, laenge: 5.5, tiefe: 4, hoehe: 2.2, schuppen: true },
-        { s: 1062, seite: 1, lat: 22, drehung: 15, laenge: 5, tiefe: 4, hoehe: 2.3 },               // Sauna am See
+        { s: 1388, seite: 1, lat: 15, drehung: 0, laenge: 8, tiefe: 6, hoehe: 2.6 },
+        { s: 1412, seite: -1, lat: 16, drehung: 5, laenge: 9, tiefe: 6.5, hoehe: 2.8 },
+        { s: 1422, seite: 1, lat: 24, drehung: -10, laenge: 5, tiefe: 4, hoehe: 2.2, schuppen: true },
+        { s: 1505, seite: 1, lat: 17, drehung: 8, laenge: 8, tiefe: 6, hoehe: 2.6 },
+        { s: 1528, seite: 1, lat: 23, drehung: -4, laenge: 5.5, tiefe: 4, hoehe: 2.2, schuppen: true },
+        { s: 1240, seite: -1, lat: 24, drehung: 15, laenge: 5, tiefe: 4, hoehe: 2.3 },               // Sauna am See
       ],
       stege: [
-        { s: 1030, seite: 1, lat: 24, drehung: 10, laenge: 10, hoehe: 0.4 },
-        { s: 2700, seite: -1, lat: 22, drehung: -10, laenge: 9, hoehe: 0.4 },
+        { s: 1170, seite: -1, lat: 24, drehung: 10, laenge: 10, hoehe: 0.4 },
+        { s: 4093, seite: 1, lat: 22, drehung: -10, laenge: 9, hoehe: 0.4 },
       ],
     },
     fans: {
@@ -335,19 +456,19 @@ export default {
       kinder: 0.1,
       spots: [
         {
-          name: 'dorf', s: [1172, 1204], seite: 1, lat: [8.5, 17], anzahl: 20, blickS: 1150, // aussen an der Dorf-Ecke
-          band: [[1170, 1206, 7.9]],
-          banner: [[1188, 9.6, 'dorf']],
-          fahnen: [[1178, 13, 'motiv'], [1197, 12, 'motiv']],
+          name: 'dorf', s: [1540, 1578], seite: -1, lat: [8.5, 17], anzahl: 20, blickS: 1600, // vor der Einmündung am Dorfende
+          band: [[1538, 1580, 7.9]],
+          banner: [[1558, 9.6, 'dorf']],
+          fahnen: [[1546, 13, 'motiv'], [1571, 12, 'motiv']],
           stuehle: 3,
         },
         {
-          name: 'kuppe', s: [1632, 1662], seite: 1, lat: [8, 15], anzahl: 22, blickS: null, // an der Birkenkuppe
-          band: [[1629, 1665, 7.4]],
-          banner: [[1645, 9.4, 'hyppy']],
-          fahnen: [[1635, 11, 'motiv'], [1657, 12, 'motiv']],
+          name: 'kuppe', s: [1737, 1767], seite: 1, lat: [8, 15], anzahl: 22, blickS: null, // an der Birkenkuppe
+          band: [[1734, 1770, 7.4]],
+          banner: [[1751, 9.4, 'hyppy']],
+          fahnen: [[1741, 11, 'motiv'], [1763, 12, 'motiv']],
           stuehle: 3,
-          camper: [1651, 19, 8],
+          camper: [1757, 19, 8],
         },
       ],
     },
@@ -376,10 +497,10 @@ export default {
       dorf: { staerke: 0.7 }, kuppe: { staerke: 0.8 },
     },
     boeenAbschnitt: null,      // keine Böen (Wind in den Kiefern über die Vögel/den Fahrtwind)
-    wasser: [[910, 22], [1395, 0], [2690, -22]], // Wasser-Klang (Brunnen-Klang) an See, Fluss und See
+    wasser: [[1090, -22], [1477, 0], [4093, 22]], // Wasser-Klang (Brunnen-Klang) an See, Fluss und See
   },
 
-  abkuerzung: { immerSperren: [], immerFrei: [], sperrThemen: {} },
+  abkuerzung: { immerSperren: [1347, 4031], immerFrei: [2185, 2300, 2559], sperrThemen: {} }, // Einmündungen ins Dorf und vor dem Ziel (innen sonst 7–8 m Gewinn)
 
   // --- Von Werkzeugen erzeugt – bitte nicht von Hand ändern ---
   erzeugt: {
@@ -399,33 +520,35 @@ export default {
     //   minGewinn Meter Weg gegenüber der Strassenmitte) -> Pace-Note "schneiden".
     //   sVon/sBis = Streckenmeter, seite = Kurveninnenseite, gewinn = gesparte Meter.
     abkuerzungen: {
-      streckenLaenge: 2795.68,
+      streckenLaenge: 4161.65,
       minGewinn: 3,
       sperren: [
-        { s: 1154, seite: -1, von: 6, bis: 11.8 },
-        { s: 1189, seite: -1, von: 6, bis: 40 },
-        { s: 1198, seite: -1, von: 6, bis: 10.2 },
-        { s: 1233, seite: -1, von: 6, bis: 40 },
-        { s: 1255, seite: 1, von: 6, bis: 31.6 },
-        { s: 1273, seite: 1, von: 6, bis: 40 },
-        { s: 1306, seite: 1, von: 6, bis: 10.8 },
-        { s: 1324, seite: 1, von: 6, bis: 40 },
-        { s: 1918, seite: -1, von: 6, bis: 12 },
-        { s: 1931, seite: -1, von: 6, bis: 10.2 },
-        { s: 1944, seite: -1, von: 6, bis: 10.9 },
-        { s: 2010, seite: -1, von: 6, bis: 40 },
-        { s: 2016, seite: -1, von: 6, bis: 25 },
+        { s: 910, seite: 1, von: 6, bis: 11.1 },
+        { s: 925, seite: 1, von: 6, bis: 10.4 },
+        { s: 940, seite: 1, von: 6, bis: 11.5 },
+        { s: 1619, seite: -1, von: 6, bis: 11.2 },
+        { s: 2575, seite: -1, von: 6, bis: 10.1 },
+        { s: 2577, seite: -1, von: 6, bis: 9.2 },
+        { s: 2666, seite: 1, von: 6, bis: 11.9 },
+        { s: 2671, seite: 1, von: 6, bis: 8 },
+        { s: 3316, seite: 1, von: 6, bis: 11.1 },
+        { s: 3330, seite: 1, von: 6, bis: 10.4 },
+        { s: 3335, seite: 1, von: 6, bis: 8.7 },
+        { s: 3346, seite: 1, von: 6, bis: 11 },
       ],
       nichtSchneiden: [
-        { sVon: 1153, sBis: 1225, seite: 'links' }, // Gewinn bis 40.3 m – Pflicht: Gewinn 40.3 m >= 12 m
-        { sVon: 1287, sBis: 1357, seite: 'rechts' }, // Gewinn bis 45.8 m – Pflicht: Gewinn 45.8 m >= 12 m
-        { sVon: 1886, sBis: 1977, seite: 'links' }, // Gewinn bis 108.6 m – Pflicht: Gewinn 108.6 m >= 12 m
+        { sVon: 880, sBis: 972, seite: 'rechts' }, // Gewinn bis 5.2 m – Gewinn 5.2 m, Umgebung: 10.52 Bäume/Steine pro 100 m²
+        { sVon: 1578, sBis: 1661, seite: 'links' }, // Gewinn bis 3.7 m – Gewinn 3.7 m, Umgebung: 5.38 Bäume/Steine pro 100 m²
+        { sVon: 2602, sBis: 2810, seite: 'rechts' }, // Gewinn bis 5 m – Gewinn 5.0 m, Umgebung: 7.99 Bäume/Steine pro 100 m²
+        { sVon: 3283, sBis: 3377, seite: 'rechts' }, // Gewinn bis 5.3 m – Gewinn 5.3 m, Umgebung: 6.84 Bäume/Steine pro 100 m²
       ],
       schneiden: [
-        { sVon: 1440, sBis: 1601, seite: 'links', gewinn: 3.2 }, // Quote erreicht, kleinerer Gewinn (3.9 m) oder Nachbar schon gesperrt
-        { sVon: 1719, sBis: 1884, seite: 'rechts', gewinn: 3.5 }, // Quote erreicht, kleinerer Gewinn (5.1 m) oder Nachbar schon gesperrt
-        { sVon: 2027, sBis: 2140, seite: 'rechts', gewinn: 4 }, // Quote erreicht, kleinerer Gewinn (4.0 m) oder Nachbar schon gesperrt
-        { sVon: 2402, sBis: 2605, seite: 'links', gewinn: 3.4 }, // Quote erreicht, kleinerer Gewinn (3.4 m) oder Nachbar schon gesperrt
+        { sVon: 1002, sBis: 1120, seite: 'links', gewinn: 3.2 }, // Quote erreicht, kleinerer Gewinn (4.1 m) oder Nachbar schon gesperrt
+        { sVon: 2116, sBis: 2159, seite: 'links', gewinn: 3.3 }, // Quote erreicht, kleinerer Gewinn (3.3 m) oder Nachbar schon gesperrt
+        { sVon: 2173, sBis: 2214, seite: 'rechts', gewinn: 3.4 }, // von Hand: immerFrei
+        { sVon: 2235, sBis: 2416, seite: 'rechts', gewinn: 3.4 }, // von Hand: immerFrei
+        { sVon: 2515, sBis: 2600, seite: 'links', gewinn: 5 }, // von Hand: immerFrei
+        { sVon: 3380, sBis: 3585, seite: 'links', gewinn: 4.2 }, // Quote erreicht, kleinerer Gewinn (4.9 m) oder Nachbar schon gesperrt
       ],
     },
     // </erzeugt>
@@ -440,17 +563,24 @@ export default {
     // Daraus macht js/pacenotes.js die Stufe 1-6 (Grenzen: config.js, pacenotes.stufenGrenzen).
     kurvenTempo: {
       kurven: [
-        { von: 193, bis: 349, kmh: 146.4 }, // rechts 35°, Radius 206 m, schotter
-        { von: 425, bis: 631, kmh: 132.7 }, // links 55°, Radius 171 m, schotter
-        { von: 788, bis: 1034, kmh: 146 }, // rechts 55°, Radius 199 m, schotter
-        { von: 1154, bis: 1224, kmh: 63.2 }, // links 95°, Radius 19 m, asphalt
-        { von: 1288, bis: 1356, kmh: 59.6 }, // rechts 101°, Radius 17 m, asphalt
-        { von: 1460, bis: 1597, kmh: 132 }, // links 38°, Radius 170 m, schotter
-        { von: 1723, bis: 1883, kmh: 120.2 }, // rechts 59°, Radius 69 m, schotter
-        { von: 1887, bis: 1976, kmh: 47 }, // links 166°, Radius 16 m, schotter, Kehre
-        { von: 2031, bis: 2138, kmh: 114.1 }, // rechts 41°, Radius 98 m, schotter
-        { von: 2165, bis: 2272, kmh: 106.6 }, // links 41°, Radius 95 m, schotter
-        { von: 2428, bis: 2579, kmh: 153.2 }, // links 29°, Radius 271 m, schotter
+        { von: 87, bis: 166, kmh: 87.6 }, // rechts 53°, Radius 43 m, schotter
+        { von: 225, bis: 397, kmh: 132.4 }, // rechts 47°, Radius 165 m, schotter
+        { von: 582, bis: 709, kmh: 152.8 }, // links 25°, Radius 223 m, schotter
+        { von: 881, bis: 970, kmh: 47 }, // rechts 169°, Radius 18 m, schotter, Kehre
+        { von: 1008, bis: 1116, kmh: null }, // links 29°, Radius 145 m, schotter, Vollgas
+        { von: 1324, bis: 1376, kmh: 75.7 }, // links 52°, Radius 29 m, schotter
+        { von: 1578, bis: 1661, kmh: 65.3 }, // links 91°, Radius 24 m, schotter
+        { von: 1812, bis: 1964, kmh: 153.2 }, // rechts 30°, Radius 242 m, schotter
+        { von: 2118, bis: 2159, kmh: 93.6 }, // links 29°, Radius 41 m, schotter
+        { von: 2174, bis: 2213, kmh: 78.6 }, // rechts 29°, Radius 42 m, schotter
+        { von: 2299, bis: 2394, kmh: 154.6 }, // rechts 18°, Radius 247 m, schotter
+        { von: 2516, bis: 2599, kmh: 46 }, // links 174°, Radius 17 m, schotter, Kehre
+        { von: 2603, bis: 2807, kmh: null }, // rechts 47°, Radius 188 m, schotter, Vollgas
+        { von: 2855, bis: 2986, kmh: 148.2 }, // links 30°, Radius 201 m, schotter
+        { von: 3284, bis: 3376, kmh: 47 }, // rechts 174°, Radius 18 m, schotter, Kehre
+        { von: 3402, bis: 3580, kmh: null }, // links 65°, Radius 111 m, schotter, Vollgas
+        { von: 3726, bis: 3878, kmh: 153.9 }, // rechts 30°, Radius 245 m, schotter
+        { von: 4012, bis: 4065, kmh: 75.7 }, // links 52°, Radius 29 m, schotter
       ],
     },
     // </erzeugt>
