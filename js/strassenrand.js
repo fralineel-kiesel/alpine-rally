@@ -592,7 +592,7 @@ export function baueStrassenrand(szene, strecke, welt, pflanzen) {
   let rnd = zufall(c.seed + 2); // Helligkeit, kaputte Latten, schiefe Pfosten
   const kmZahlen = plan.schilder.filter((s) => s.art === 'km').map((s) => s.tafeln[0].zahl);
   const tempoZahlen = [...new Set(plan.schilder.flatMap((s) => s.tafeln.filter((t) => t.form === 'kreis').map((t) => t.zahl)))];
-  const atlas = strassenrandAtlas(kmZahlen, Math.max(4, plan.kehren.length), 61, tempoZahlen);
+  const atlas = strassenrandAtlas(kmZahlen, Math.max(4, plan.kehren.length), 61, tempoZahlen, CONFIG.deko.tierschild); // M10b.1: Tier-Warnschild je Strecke
   const hindernisse = [];
   const gelaende = (x, z) => welt.gelaendeHoehe(x, z);
 

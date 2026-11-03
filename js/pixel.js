@@ -124,46 +124,94 @@ export function laubTextur(varianten = 2, seed = 23) {
   return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
 }
 
-// M10b: Kiefern (Nadelbaum der Finnland-Strecke): hoher, rötlicher Stamm, lockere Krone aus Büscheln oben, je 16x32 Pixel
-// (gleiche Grösse wie die Tannen, damit Platzierung und Sperren gleich rechnen)
-const KIEFER = ['#1c3a20', '#28502a', '#386a34', '#4f8240', '#122a16'];
-const KIEFER_STAMM = ['#5e3a26', '#764a2e', '#432a1c'];
-export function kiefernTextur(varianten = 3, seed = 13) {
-  const B = 16, H = 32;
-  const l = leinwand(B * varianten, H);
-  const rnd = zufall(seed);
-  const farben = KIEFER.map(hexZuRgb), stamm = KIEFER_STAMM.map(hexZuRgb);
-  for (let v = 0; v < varianten; v++) {
-    const ox = v * B;
-    const kroneUnten = 15 + Math.floor(rnd() * 4);
-    // Stamm (schlank, oben leicht schief), ein paar kahle Aststummel
-    for (let y = 4; y < H; y++) {
-      const x = 7 + (y < 10 && v === 1 ? 1 : 0);
-      setze(l, ox + x, y, stamm[y > 26 ? 2 : 0]);
-      setze(l, ox + x + 1, y, stamm[1]);
-    }
-    for (let k = 0; k < 2; k++) { const y = kroneUnten + 3 + Math.floor(rnd() * 6); setze(l, ox + (rnd() < 0.5 ? 6 : 9), y, stamm[2]); }
-    // Krone: 4-6 Büschel (flache Ellipsen) um den oberen Stamm
-    const bueschel = [];
-    const n = 4 + Math.floor(rnd() * 3);
-    for (let i = 0; i < n; i++) bueschel.push({ x: 8 + (rnd() - 0.5) * 9, y: 2 + (kroneUnten - 4) * (i / (n - 1)) + (rnd() - 0.5) * 2, rx: 2.6 + rnd() * 2.4, ry: 1.6 + rnd() * 1.2 });
-    for (let y = 0; y < kroneUnten + 2; y++) {
-      for (let x = 0; x < B; x++) {
-        let drin = null;
-        for (const b of bueschel) { const dx = (x + 0.5 - b.x) / b.rx, dy = (y + 0.5 - b.y) / b.ry; if (dx * dx + dy * dy < 1 + (rnd() - 0.5) * 0.35) drin = b; }
-        if (!drin) continue;
-        const ly = (y + 0.5 - drin.y) / drin.ry, lx = (x + 0.5 - drin.x) / drin.rx;
-        let f = ly < -0.3 ? (lx < 0.2 ? 3 : 2) : ly > 0.45 ? 0 : 1;
-        if (rnd() < 0.08) f = 4;
-        setze(l, ox + x, y, farben[f]);
-      }
+// M10b: Kiefern (Nadelbaum der Finnland-Strecke), je 16x32 Pixel (gleiche Grösse wie die Tannen, damit Platzierung und
+// Sperren gleich rechnen). M10b.1 (Linos Test: "zu hell, fast orange, viel Stamm, sieht nach Savanne aus"): gedämpftes,
+// dunkles Grün, Stamm graubraun statt orange, Krone tiefer und voller (weniger Stamm sichtbar).
+const KIEFER = ['#142a18', '#1d3b22', '#29502d', '#37633a', '#0d1f10'];
+const KIEFER_STAMM = ['#4a3e35', '#5a4c40', '#332b25'];
+function maleKiefer(l, ox, rnd, v) {
+  const farben = KIEFER.map(hexZuRgb), stamm = KIEFER_STAMM.map(hexZuRgb), H = l.h;
+  const kroneUnten = 21 + Math.floor(rnd() * 4);
+  // Stamm (schlank, oben leicht schief), unten ein kurzes Stück sichtbar
+  for (let y = 4; y < H; y++) {
+    const x = 7 + (y < 10 && v % 2 === 1 ? 1 : 0);
+    setze(l, ox + x, y, stamm[y > 27 ? 2 : 0]);
+    setze(l, ox + x + 1, y, stamm[1]);
+  }
+  // Krone: 6-8 Büschel (flache Ellipsen) um den Stamm, unten breiter
+  const bueschel = [];
+  const n = 6 + Math.floor(rnd() * 3);
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    bueschel.push({ x: 8 + (rnd() - 0.5) * (5 + t * 5), y: 2 + (kroneUnten - 4) * t + (rnd() - 0.5) * 2, rx: 2.8 + t * 2.2 + rnd() * 1.6, ry: 1.9 + rnd() * 1.1 });
+  }
+  for (let y = 0; y < kroneUnten + 2; y++) {
+    for (let x = 0; x < 16; x++) {
+      let drin = null;
+      for (const b of bueschel) { const dx = (x + 0.5 - b.x) / b.rx, dy = (y + 0.5 - b.y) / b.ry; if (dx * dx + dy * dy < 1 + (rnd() - 0.5) * 0.35) drin = b; }
+      if (!drin) continue;
+      const ly = (y + 0.5 - drin.y) / drin.ry, lx = (x + 0.5 - drin.x) / drin.rx;
+      let f = ly < -0.3 ? (lx < 0.2 ? 3 : 2) : ly > 0.4 ? 0 : 1;
+      if (rnd() < 0.1) f = 4;
+      setze(l, ox + x, y, farben[f]);
     }
   }
-  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
+}
+export function kiefernTextur(varianten = 3, seed = 13) {
+  const l = leinwand(16 * varianten, 32);
+  const rnd = zufall(seed);
+  for (let v = 0; v < varianten; v++) maleKiefer(l, v * 16, rnd, v);
+  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: 16 / 32 };
+}
+
+// M10b.1: Fichte (nordische Tanne, Hauptbaum in Finnland): schmaler, dichter Kegel aus dunklem Grün bis fast zum Boden,
+// Äste hängen in Stufen nach unten, Stamm nur unten 2-3 Pixel (dunkles Graubraun). 16x32 wie die Tanne.
+const FICHTE = ['#0f2615', '#163420', '#1f4529', '#2a5733', '#0a1a0e'];
+const FICHTE_STAMM = ['#3a332d', '#4a4038'];
+function maleFichte(l, ox, rnd) {
+  const farben = FICHTE.map(hexZuRgb), stamm = FICHTE_STAMM.map(hexZuRgb), H = l.h;
+  const unten = 28 + Math.floor(rnd() * 2), stufen = 6 + Math.floor(rnd() * 2);
+  const breit = 6.4 + rnd() * 1.2; // halbe Breite ganz unten
+  for (let y = unten - 1; y < H; y++) { setze(l, ox + 7, y, stamm[0]); setze(l, ox + 8, y, stamm[1]); }
+  for (let y = 0; y <= unten; y++) {
+    const t = y / unten;                         // 0 oben .. 1 unten
+    const k = Math.floor(t * stufen), inStufe = t * stufen - k;
+    // Kegel, jede Stufe hängt unten etwas weiter aus (hängende Äste)
+    const hb = Math.max(0.5, breit * (0.12 + 0.88 * t) * (0.82 + 0.28 * inStufe));
+    for (let x = 0; x < 16; x++) {
+      const dx = x + 0.5 - 8;
+      if (Math.abs(dx) > hb + (rnd() - 0.5) * 0.9) continue;
+      // Aststufen: unten an jeder Stufe hängen die Spitzen herab (aussen tiefer als innen)
+      if (inStufe > 0.78 && Math.abs(dx) > hb * 0.55 && rnd() < 0.55) continue;
+      const rel = dx / Math.max(1, hb);
+      let f = rel < -0.4 ? (rnd() < 0.6 ? 2 : 3) : rel > 0.4 ? (rnd() < 0.65 ? 0 : 1) : (rnd() < 0.3 ? 2 : 1);
+      if (inStufe > 0.7 && rnd() < 0.6) f = 0; // Schatten unter den Ästen
+      if (rnd() < 0.04) f = 4;
+      setze(l, ox + x, y, farben[f]);
+    }
+  }
+  setze(l, ox + 8, 0, farben[1]);
+}
+export function fichtenTextur(varianten = 4, seed = 17) {
+  const l = leinwand(16 * varianten, 32);
+  const rnd = zufall(seed);
+  for (let v = 0; v < varianten; v++) maleFichte(l, v * 16, rnd);
+  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: 16 / 32 };
+}
+// M10b.1: Nordischer Nadelwald: Fichten und Kiefern auf einem Bild (je Baum zufällig eine Variante: 4 Fichten, 2 Kiefern
+// = ca. 2 : 1). Die Platzierung bleibt die eines einzigen Nadelbaums (gleiche Grösse 16x32).
+export const NORDWALD = { fichten: 4, kiefern: 2 };
+export function nordwaldTextur(seed = 19) {
+  const n = NORDWALD.fichten + NORDWALD.kiefern;
+  const l = leinwand(16 * n, 32);
+  const rnd = zufall(seed);
+  for (let v = 0; v < n; v++) (v < NORDWALD.fichten ? maleFichte(l, v * 16, rnd) : maleKiefer(l, v * 16, rnd, v));
+  return { textur: zuTextur(l), varianten: n, seitenVerhaeltnis: 16 / 32 };
 }
 
 // M10b: Birken (Laubbaum der Finnland-Strecke): weisser Stamm mit schwarzen Flecken, kleine, lockere hellgrüne Krone, je 24x32
-const BIRKE = ['#3e6e26', '#5a8e34', '#7cad46', '#a2c85e', '#2c5420'];
+// M10b.1: Laub kühler und dunkler (im Abendlicht vorher fast gelb-orange)
+const BIRKE = ['#2b5225', '#3c6a30', '#527f3e', '#6c9650', '#1f3f1c'];
 const BIRKE_STAMM = ['#e8e6de', '#c8c6be', '#2a2622'];
 export function birkenTextur(varianten = 2, seed = 29) {
   const B = 24, H = 32;
@@ -197,7 +245,7 @@ export function birkenTextur(varianten = 2, seed = 29) {
 }
 
 // M10b: Bäume nach Typ (Streckendatei deko.nadelbaum / deko.laubbaum)
-const NADEL = { tanne: () => tannenTextur(), kiefer: () => kiefernTextur() };
+const NADEL = { tanne: () => tannenTextur(), kiefer: () => kiefernTextur(), fichte: () => fichtenTextur(), nordwald: () => nordwaldTextur() };
 const LAUBB = { laub: () => laubTextur(), birke: () => birkenTextur() };
 export const BAUM_TYPEN = { nadelbaum: Object.keys(NADEL), laubbaum: Object.keys(LAUBB) };
 export function nadelbaumTextur(typ = 'tanne') {
@@ -612,7 +660,7 @@ export function pfostenTextur() {
 const ZIFFERN0 = { ...ZIFFERN, 0: ['###', '#.#', '#.#', '#.#', '###'] };
 // tempoZahlen: Zahlen für die Tempo-Tafeln (z. B. [50, 60, 80]). Seit M2a.1 ist das Bild 128x256
 // (oben dieselben Kacheln wie bisher, darunter die neuen).
-export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61, tempoZahlen = []) {
+export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61, tempoZahlen = [], tierschild = 'allgemein') {
   const N = 128, NH = 256, RAND = 2;
   const l = leinwand(N, NH);
   const rnd = zufall(seed);
@@ -828,7 +876,16 @@ export function strassenrandAtlas(kmZahlen = [], kehren = 4, seed = 61, tempoZah
 
   // --- Meilenstein 2a.1 ---------------------------------------------------------
   // Weitere Warnschilder: Kühe (Weide/Viehtrieb) und Kreuzung (Feldweg mündet ein)
-  dreieck('warnKuh', [
+  // M10b.1: Strecken mit deko.tierschild = 'elch' (Finnland) zeigen einen Elch mit Schaufelgeweih, sonst wie bisher
+  dreieck('warnKuh', tierschild === 'elch' ? [
+    'k.k.....',
+    'kkk.....',
+    '.kk.....',
+    'kkkkkkk.',
+    '..kkkkkk',
+    '..k...k.',
+    '..k...k.',
+  ] : [
     '........',
     'k.......',
     'kkkkkkk.',
@@ -938,6 +995,87 @@ export function buschTextur(seed = 83) {
         const b = blume[Math.floor(rnd() * blume.length)];
         setze(l, ox + x, y, b); setze(l, ox + x + 1, y, b);
       }
+    }
+  }
+  return { textur: zuTextur(l), varianten: N, seitenVerhaeltnis: B / H };
+}
+
+// M10b.1: Unterholz im nordischen Wald (nur Strecken mit deko.unterholz = 'nordisch'), je 16x16 Pixel, Boden unten,
+// ohne Kollision (wie die Büsche): 0-1 Farn, 2-3 Heidekraut (violett), 4 Baumstumpf, 5 Totholz (liegender Ast),
+// 6 kleiner Findling mit Moos, 7 Schilf (Seeufer). Eigenes Bild: das Busch-Bild der Alpen bleibt unverändert.
+export const UNTERHOLZ = { farn: [0, 1], heide: [2, 3], stumpf: 4, totholz: 5, findling: 6, schilf: 7 };
+export function unterholzTextur(seed = 97) {
+  const B = 16, H = 16, N = 8;
+  const l = leinwand(B * N, H);
+  const rnd = zufall(seed);
+  const rgb = (h) => hexZuRgb(h);
+  const FARN = ['#183a1c', '#24502a', '#33693a', '#4a8048'].map(rgb);
+  const HEIDE = ['#2c3a22', '#3e4c2c', '#6a4a7a', '#8c62a0', '#a67cb8'].map(rgb);
+  const HOLZ = ['#3a3028', '#54463a', '#6e5e4c', '#8a7a64', '#2a231d'].map(rgb);
+  const STEIN = ['#4c4b48', '#686661', '#83807a', '#3a5a2c', '#2a2927'].map(rgb);
+  const SCHILF = ['#4a5a2c', '#6a7a3a', '#8e9450', '#b0a868', '#5a3a24'].map(rgb);
+  // Farn: Wedel fächerförmig von unten Mitte, mit Fiedern
+  for (let v = 0; v < 2; v++) {
+    const ox = B * v, wedel = 6 + v;
+    for (let i = 0; i < wedel; i++) {
+      const w = -1.25 + (2.5 * i) / (wedel - 1) + (rnd() - 0.5) * 0.2, lang = 7 + rnd() * 5;
+      for (let t = 0; t < lang; t += 0.5) {
+        const x = 8 + Math.sin(w) * t + Math.sin(w) * t * t * 0.02, y = H - 1 - Math.cos(w) * t * 0.85 + t * t * 0.025;
+        setze(l, ox + Math.round(x), Math.round(y), FARN[t < 2 ? 0 : t > lang - 2 ? 3 : 1 + (rnd() < 0.4 ? 1 : 0)]);
+        if (t > 1.5 && Math.round(t * 2) % 3 === 0) { // Fiedern links und rechts
+          const nx = Math.cos(w), ny = Math.sin(w) * 0.85;
+          setze(l, ox + Math.round(x + nx), Math.round(y + ny), FARN[2]); setze(l, ox + Math.round(x - nx), Math.round(y - ny), FARN[1]);
+        }
+      }
+    }
+  }
+  // Heidekraut: niedriges, dichtes Polster, oben violette Blüten
+  for (let v = 0; v < 2; v++) {
+    const ox = B * (2 + v), hoehe = 6 + v * 2;
+    for (let y = H - hoehe; y < H; y++) for (let x = 1; x < 15; x++) {
+      const rand0 = Math.abs(x + 0.5 - 8) / 7, oben = H - hoehe + rand0 * rand0 * hoehe * 0.8;
+      if (y < oben + (rnd() - 0.5) * 1.5 || rnd() < 0.08) continue;
+      const bluete = y < oben + 2.2 && rnd() < 0.7;
+      setze(l, ox + x, y, bluete ? HEIDE[2 + Math.floor(rnd() * 3)] : HEIDE[rnd() < 0.5 ? 0 : 1]);
+    }
+  }
+  // Baumstumpf: kurzer Zylinder mit heller Schnittfläche oben, Wurzeln
+  {
+    const ox = B * 4;
+    for (let y = 6; y < H; y++) for (let x = 4; x < 12; x++) setze(l, ox + x, y, HOLZ[x < 6 ? 2 : x > 9 ? 4 : 1]);
+    for (let x = 4; x < 12; x++) { setze(l, ox + x, 5, HOLZ[3]); setze(l, ox + x, 6, HOLZ[x % 3 ? 3 : 2]); }
+    for (const [x, y] of [[3, 14], [2, 15], [12, 14], [13, 15], [3, 15], [12, 15]]) setze(l, ox + x, y, HOLZ[0]);
+    for (let k = 0; k < 6; k++) setze(l, ox + 4 + Math.floor(rnd() * 8), 9 + Math.floor(rnd() * 6), STEIN[3]); // Moos
+  }
+  // Totholz: liegender, grauer Ast mit Aststummeln
+  {
+    const ox = B * 5;
+    for (let x = 0; x < 16; x++) {
+      const y0 = 11 + Math.round(Math.sin(x * 0.5) * 0.6);
+      for (let d = 0; d < 3; d++) setze(l, ox + x, y0 + d, HOLZ[d === 0 ? 3 : d === 1 ? 2 : 4]);
+      if (x === 4 || x === 11) { setze(l, ox + x, y0 - 1, HOLZ[2]); setze(l, ox + x + 1, y0 - 2, HOLZ[2]); }
+    }
+    for (let k = 0; k < 4; k++) setze(l, ox + Math.floor(rnd() * 16), 14 + Math.floor(rnd() * 2), FARN[0]);
+  }
+  // Findling: runder Stein mit Moos oben
+  {
+    const ox = B * 6;
+    for (let y = 4; y < H; y++) for (let x = 0; x < 16; x++) {
+      const d = Math.hypot((x + 0.5 - 8) / 7.2, (y + 0.5 - 11) / 6.6);
+      if (d > 1 + (rnd() - 0.5) * 0.08) continue;
+      const licht = -(x - 8) * 0.06 - (y - 11) * 0.12;
+      let f = licht > 0.5 ? 2 : licht > -0.1 ? 1 : licht > -0.6 ? 0 : 4;
+      if (y < 8 && rnd() < 0.55) f = 3; // Moos
+      setze(l, ox + x, y, STEIN[f]);
+    }
+  }
+  // Schilf: hohe Halme, ein paar braune Kolben
+  {
+    const ox = B * 7;
+    for (let i = 0; i < 16; i++) {
+      const fuss = 2 + rnd() * 12, neigung = (rnd() - 0.5) * 0.35, lang = 9 + rnd() * 6;
+      for (let t = 0; t < lang; t++) setze(l, ox + Math.round(fuss + neigung * t), H - 1 - t, SCHILF[t > lang - 3 ? 3 : t < 3 ? 0 : 1 + Math.floor(rnd() * 2)]);
+      if (rnd() < 0.35) { const x = Math.round(fuss + neigung * lang), y = Math.round(H - 1 - lang); for (let d = 0; d < 3; d++) setze(l, ox + x, y + d, SCHILF[4]); }
     }
   }
   return { textur: zuTextur(l), varianten: N, seitenVerhaeltnis: B / H };

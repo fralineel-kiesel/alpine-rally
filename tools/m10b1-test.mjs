@@ -134,7 +134,9 @@ if (teil('x3')) {
     // (M10b: Fahnen-Art 'kreuz' heisst jetzt 'motiv' = Landesfahne der Strecke; gleiche Wirkung, darum gleichgesetzt)
     const ordne = (o) => (Array.isArray(o) ? o.map(ordne) : o && typeof o === 'object' ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, ordne(o[k])])) : o === 'motiv' ? 'kreuz' : o);
     const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
-    const NEU_M10B = []; // neue Blöcke in M10b.1 (keine; neue Werte innerhalb der Blöcke: siehe unten)
+    const NEU_M10B = ['unterholz']; // neue Blöcke in M10b.1 (Unterholz, nur Finnland nutzt es)
+    // neue Werte innerhalb der Blöcke (M10b.1, für die Alpen wirkungslos): deko.unterholz/tierschild, auto.schotterGrip
+    for (const c of [cn, ca]) { if (c.deko) { delete c.deko.unterholz; delete c.deko.tierschild; } if (c.auto) delete c.auto.schotterGrip; }
     const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
     melde(unterschiede.length === 0, `CONFIG (alle Werte, sortiert) gleich wie 0.10b${unterschiede.length ? `; anders: ${unterschiede.join(', ')}` : ''}`);
     const reihenfolge = Object.keys(JSON.parse(neu.config)).filter((k) => !NEU_M10B.includes(k)).join() === Object.keys(JSON.parse(alt.config)).join();
@@ -208,7 +210,7 @@ async function vergleiche(seite, a, b, bild = false) {
     return { anders, pixel: da.width * da.height, url, box: anders ? [x0, y0, x1, y1] : null };
   }, { a, b, bild });
 }
-if (teil('x4')) {
+if (teil('x4') || teil('l')) {
   console.log('(x4) Alpen-Bilder gegen 0.10b (eigene Bild-Uhr, gleiche Seeds)');
   if (!ALT) info('nur mit --alt');
   else {
@@ -291,12 +293,12 @@ if (teil('x5')) {
 }
 
 // ===================================================================== (j) Ladezeit, Bildzeit, Garbage, Grösse
-async function leistung(wurzel) {
-  const s = await oeffne(wurzel, '?menue=aus&ton=aus');
+async function leistung(wurzel, extra = '', sM = 2610) {
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus${extra}`);
   await bereit(s);
   const cdp = await s.page.context().newCDPSession(s.page);
   const heap = async () => { for (let i = 0; i < 3; i++) await cdp.send('HeapProfiler.collectGarbage'); return (await cdp.send('Runtime.getHeapUsage')).usedSize; };
-  await s.page.evaluate(() => { const A = window.__alpineRally; A.setzeAuf(2610); A.kameraSofort(); });
+  await s.page.evaluate((sM) => { const A = window.__alpineRally; A.setzeAuf(sM); A.kameraSofort(); }, sM);
   await s.page.waitForTimeout(1500);
   // Garbage: Speicher vor und nach 4 s Fahren im Rennen (Testfahrer-Gas), ohne GC dazwischen gemessen über die Zunahme
   const h0 = await heap();
@@ -317,6 +319,7 @@ async function leistung(wurzel) {
 
 // ===================================================================== Teil A: Finnland neu (a)–(f)
 const FI = 'finnland';
+const BILDZEIT = {}; // (k) -> (u)
 const zeitSek = (t) => { const m = /^(\d+):(\d+\.\d+)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : NaN; };
 if (teil('a')) {
   console.log('(a) Finnland: Prüfer, Länge 3.9–4.2 km, Checkpoints, revision');
@@ -338,6 +341,10 @@ if (teil('a')) {
     ['Sprung hinter dem Ende', (d) => { d.sprung[3].s = 5000; }, 'sprung[3].s:'],
     ['Länge passt nicht', (d) => { d.laenge = 3500; }, 'laenge:'],
     ['Checkpoint hinter dem Ziel', (d) => { d.checkpoints[3] = 4150; }, 'checkpoints[3]:'],
+    ['Haus-Typ unbekannt (M10b.1)', (d) => { d.leben.wiesenweg.haeuser[0].typ = 'iglu'; }, 'leben.wiesenweg.haeuser[0].typ:'],
+    ['Dachfarbe unbekannt (M10b.1)', (d) => { d.leben.wiesenweg.haeuser[0].dach = 'lila'; }, 'leben.wiesenweg.haeuser[0].dach:'],
+    ['Boot ohne Seite (M10b.1)', (d) => { delete d.leben.wiesenweg.boote[0].seite; }, 'leben.wiesenweg.boote[0]:'],
+    ['Unterholz unbekannt (M10b.1)', (d) => { d.deko.unterholz = 'tropisch'; }, 'deko.unterholz:'],
   ];
   const schlecht = [];
   for (const [name, aendere, pfad] of faelle) { const d = roh(); aendere(d); const f = pruefeStrecke(d, { voll: true }); if (!f.some((x) => x.startsWith(pfad))) schlecht.push(`${name} -> ${f[0] || 'kein Fehler'}`); }
@@ -469,6 +476,104 @@ if (teil('f')) {
   melde(lauf.letzter['finnland-r2'] && Math.abs(lauf.letzter['finnland-r2'].zeit - lauf.zeit) < 0.01, `letzter Lauf unter "finnland-r2" (${lauf.letzter['finnland-r2'] && lauf.letzter['finnland-r2'].zeit})`);
   melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
   await s.schliessen();
+}
+
+// ===================================================================== Teil B: Wald, Deko, Dorf (g)–(l)
+async function dekoDaten() {
+  const s = await oeffne(WURZEL, `?menue=aus&ton=aus&strecke=${FI}`);
+  await bereit(s);
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, P = A.pflanzen, D = A.deko, L = A.leben, R = A.strassenrand, q = {};
+    // Dichte: je Strassenseite und 100-m-Stück die Deko neben der Strecke (5 bis 30 m neben der Mitte, nicht hinter der Strasse)
+    const n100 = Math.ceil(S.laenge / 100), zahl = [new Int32Array(n100), new Int32Array(n100)];
+    const zaehle = (x, z) => { S.abfrage(x, z, q); if (q.abstand < 5 || q.abstand > 30) return; const k = Math.floor(Math.max(0, q.s) / 100); if (k < n100) zahl[q.seite > 0 ? 1 : 0][k]++; };
+    for (const t of [...P.tannen, ...P.laubbaeume, ...P.steine, ...D.buesche, ...(D.unterholz || []), ...D.jungTannen]) zaehle(t.x, t.z);
+    for (const h of [...L.hindernisse, ...(R.hindernisse || [])]) zaehle(h.x, h.z);
+    // grösste Lücke je Seite (in Metern, auf 1 m genau: Deko je Meter)
+    const meter = [new Uint8Array(Math.ceil(S.laenge) + 1), new Uint8Array(Math.ceil(S.laenge) + 1)];
+    const mark = (x, z) => { S.abfrage(x, z, q); if (q.abstand < 5 || q.abstand > 30) return; const i = Math.round(Math.max(0, Math.min(S.laenge, q.s))); meter[q.seite > 0 ? 1 : 0][i] = 1; };
+    for (const t of [...P.tannen, ...P.laubbaeume, ...P.steine, ...D.buesche, ...(D.unterholz || []), ...D.jungTannen]) mark(t.x, t.z);
+    for (const h of [...L.hindernisse, ...(R.hindernisse || [])]) mark(h.x, h.z);
+    const luecke = meter.map((m) => { let best = 0, von = 0, an = 0; for (let i = Math.ceil(S.startS); i <= S.zielS; i++) { if (m[i]) { if (i - an > best) { best = i - an; von = an; } an = i; } } return { best, von }; });
+    // Bäume nahe der Strecke (bis 60 m): Fichten = Varianten 0-3 des Nordwald-Bilds, Kiefern 4-5, Birken = Laubbäume
+    const nah = (t) => S.abfrage(t.x, t.z, q).abstand < 60;
+    const ta = P.tannen.filter(nah), la = P.laubbaeume.filter(nah);
+    const fichte = ta.filter((t) => t.variante < 4).length;
+    // Dorf: Gebäude zwischen Einmündung und Abzweig
+    const W = A.CONFIG.leben.wiesenweg, dorf = A.netz.nebenwege;
+    const imDorf = (W.haeuser || []).filter((h) => h.s > dorf[0].einmuendung && h.s < dorf[1].abzweig);
+    return { luecke, min100: zahl.map((z) => Math.min(...z.slice(0, n100 - 1))), fichte, kiefer: ta.length - fichte, birke: la.length,
+      unterholz: (D.unterholz || []).length, dorf: imDorf.map((h) => `${h.typ}${h.dach ? '/' + h.dach : ''}`), abgelehnt: L.statistik.abgelehnt.slice(),
+      deko: A.CONFIG.deko, fehler: null };
+  });
+  r.fehler = s.fehler.slice();
+  await s.schliessen();
+  return r;
+}
+let DEKO_D = null;
+if (teil('g') || teil('h') || teil('i')) DEKO_D = await dekoDaten();
+if (teil('g')) {
+  console.log('(g) Finnland: keine Lücke über 150 m ohne Deko neben der Strecke (beide Seiten, 5–30 m neben der Mitte)');
+  const [l, r] = DEKO_D.luecke;
+  melde(l.best <= 150 && r.best <= 150, `grösste Lücke links ${l.best} m (ab ${l.von} m), rechts ${r.best} m (ab ${r.von} m); kleinste Zahl je 100 m: links ${DEKO_D.min100[0]}, rechts ${DEKO_D.min100[1]}; Unterholz ${DEKO_D.unterholz} Stück`);
+}
+if (teil('h')) {
+  console.log('(h) Finnland: Dorf mit 5–6 Gebäuden in mindestens 3 Bauarten');
+  const arten = new Set(DEKO_D.dorf.map((x) => x.split('/')[0]));
+  const daecher = new Set(DEKO_D.dorf.map((x) => x.split('/')[1] || 'grau'));
+  melde(DEKO_D.dorf.length >= 5 && DEKO_D.dorf.length <= 6 && arten.size >= 3, `${DEKO_D.dorf.length} Gebäude im Dorf (${DEKO_D.dorf.join(', ')}), ${arten.size} Bauarten, ${daecher.size} Dachfarben`);
+  melde(DEKO_D.abgelehnt.length === 0, `alle Objekte stehen (abgelehnt: ${DEKO_D.abgelehnt.join(', ') || 'keins'})`);
+  melde(DEKO_D.fehler.length === 0, `Konsole ohne Fehler (${DEKO_D.fehler.length})`);
+}
+if (teil('i')) {
+  console.log('(i) Finnland: Baum-Anteile (Richtwert Fichte/Tanne 55 %, Kiefer 30 %, Birke 15 %)');
+  const n = DEKO_D.fichte + DEKO_D.kiefer + DEKO_D.birke, p = (x) => (100 * x) / n;
+  melde(Math.abs(p(DEKO_D.fichte) - 55) <= 5 && Math.abs(p(DEKO_D.kiefer) - 30) <= 5 && Math.abs(p(DEKO_D.birke) - 15) <= 5,
+    `${n} Bäume bis 60 m neben der Strecke: Fichten ${p(DEKO_D.fichte).toFixed(1)} %, Kiefern ${p(DEKO_D.kiefer).toFixed(1)} %, Birken ${p(DEKO_D.birke).toFixed(1)} % (je ±5 %)`);
+  melde(DEKO_D.deko.nadelbaum === 'nordwald' && DEKO_D.deko.unterholz === 'nordisch' && DEKO_D.deko.tierschild === 'elch', `Deko-Set: nadelbaum ${DEKO_D.deko.nadelbaum}, laubbaum ${DEKO_D.deko.laubbaum}, unterholz ${DEKO_D.deko.unterholz}, tierschild ${DEKO_D.deko.tierschild}`);
+}
+if (teil('j')) {
+  console.log('(j) Farbtest der Baum-Pixel (Kronen dunkelgrün, Stämme nicht orange; Alpen-Tanne unverändert)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await bereit(s);
+  const r = await s.page.evaluate(async () => {
+    const P = await import('/js/pixel.js');
+    const lesen = (t) => { const c = t.image; return c.getContext('2d').getImageData(0, 0, c.width, c.height); };
+    // Krone = grünliche Pixel (g > r), Stamm = Pixel mit r > g (braun/orange/grau)
+    const mittel = (tex, von = 0, bis = tex.varianten) => {
+      const d = lesen(tex.textur), B = d.width / tex.varianten, k = [0, 0, 0, 0], st = [0, 0, 0, 0];
+      for (let y = 0; y < d.height; y++) for (let x = von * B; x < bis * B; x++) {
+        const i = (y * d.width + x) * 4; if (d.data[i + 3] < 128) continue;
+        const [r, g, b] = [d.data[i], d.data[i + 1], d.data[i + 2]];
+        const z = g > r ? k : st; z[0] += r; z[1] += g; z[2] += b; z[3]++;
+      }
+      const m = (z) => (z[3] ? [z[0] / z[3], z[1] / z[3], z[2] / z[3]].map(Math.round) : null);
+      return { krone: m(k), stamm: m(st), kroneN: k[3], stammN: st[3] };
+    };
+    const nw = P.nordwaldTextur(), birke = P.birkenTextur();
+    return { fichte: mittel(nw, 0, P.NORDWALD.fichten), kiefer: mittel(nw, P.NORDWALD.fichten), birke: mittel(birke), tanne: mittel(P.tannenTextur()) };
+  });
+  await s.schliessen();
+  const hell = (c) => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+  const dunkelgruen = (c) => c && c[1] > c[0] && c[1] >= c[2] && hell(c) < 75;
+  const orange = (c) => c && c[0] - c[2] > 45 && c[0] > 110; // stark rot-gelb und hell = orange
+  melde(dunkelgruen(r.fichte.krone) && dunkelgruen(r.kiefer.krone), `Kronen dunkelgrün: Fichte rgb(${r.fichte.krone}) Helligkeit ${hell(r.fichte.krone).toFixed(0)}, Kiefer rgb(${r.kiefer.krone}) ${hell(r.kiefer.krone).toFixed(0)} (Grenze < 75; Alpen-Tanne rgb(${r.tanne.krone}) ${hell(r.tanne.krone).toFixed(0)})`);
+  melde(!orange(r.fichte.stamm) && !orange(r.kiefer.stamm), `Stämme nicht orange: Fichte rgb(${r.fichte.stamm}) (${r.fichte.stammN} Pixel), Kiefer rgb(${r.kiefer.stamm}) (${r.kiefer.stammN} Pixel); Stamm-Anteil Fichte ${(100 * r.fichte.stammN / (r.fichte.stammN + r.fichte.kroneN)).toFixed(1)} %, Kiefer ${(100 * r.kiefer.stammN / (r.kiefer.stammN + r.kiefer.kroneN)).toFixed(1)} %`);
+  melde(r.birke.krone && r.birke.krone[1] > r.birke.krone[0] + 25 && hell(r.birke.krone) < 110, `Birkenlaub grün, nicht gelb-orange: rgb(${r.birke.krone}) Helligkeit ${hell(r.birke.krone).toFixed(0)}`);
+}
+if (teil('k')) {
+  console.log('(k) Bildzeit Finnland gegen 0.10b (höchstens +10 %), Alpen unverändert; kein Garbage pro Bild');
+  if (!ALT) info('nur mit --alt');
+  else {
+    // je zwei Messungen, die bessere zählt (Software-Grafik im Test-Browser streut)
+    const mess = async (w, extra, sM) => { const a = await leistung(w, extra, sM), b = await leistung(w, extra, sM); return a.ms <= b.ms ? a : b; };
+    const fn = await mess(WURZEL, `&strecke=${FI}`, 600), fa = await mess(ALT, `&strecke=${FI}`, 640);
+    const an = await mess(WURZEL), aa = await mess(ALT);
+    BILDZEIT.finnland = fn.ms;
+    melde(fn.ms <= fa.ms * 1.10, `Bildzeit Finnland im Wald (Vollgas, 4 s): 0.10b ${fa.ms.toFixed(1)} ms, jetzt ${fn.ms.toFixed(1)} ms (${((fn.ms / fa.ms - 1) * 100).toFixed(1)} %, höchstens +10 %)`);
+    melde(an.ms <= aa.ms * 1.10, `Bildzeit Alpen (Passhöhe): 0.10b ${aa.ms.toFixed(1)} ms, jetzt ${an.ms.toFixed(1)} ms (${((an.ms / aa.ms - 1) * 100).toFixed(1)} %, Streuung ±10 %)`);
+    melde(fn.rest < fa.rest + 300000 && an.rest < aa.rest + 300000, `Speicher nach 4 s Fahren (nach GC): Finnland ${(fn.rest / 1024).toFixed(0)} KB (0.10b ${(fa.rest / 1024).toFixed(0)} KB), Alpen ${(an.rest / 1024).toFixed(0)} KB (0.10b ${(aa.rest / 1024).toFixed(0)} KB) – kein Leck`);
+  }
 }
 
 //@@TEILE@@

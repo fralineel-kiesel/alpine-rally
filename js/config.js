@@ -208,8 +208,10 @@ export const CONFIG = {
     tierKlang: 'glocke',       // Klang der Herden: 'glocke' (Kuhglocken) oder null (still)
     haus: 'alphuette',         // Haus an der Weide: alphuette, holzhaus
     stadel: 'heustadel',       // kleiner Schuppen: heustadel, holzschuppen
-    nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer
+    nadelbaum: 'tanne',        // Nadelbaum: tanne, kiefer, fichte, nordwald (M10b.1: Fichten und Kiefern gemischt)
     laubbaum: 'laub',          // Laubbaum: laub, birke
+    unterholz: null,           // M10b.1: Unterholz (Farn, Heide, Stümpfe, Totholz, Schilf): null = keins, 'nordisch'
+    tierschild: 'allgemein',   // M10b.1: Tier-Warnschild: 'allgemein' (Kuh-Silhouette) oder 'elch'
     ...(S.deko || {}),
   },
 
@@ -265,6 +267,18 @@ export const CONFIG = {
     laubHoehe: [7, 11],
     steinHoehe: [0.8, 2.2],
     helligkeit: 1.0,           // Helligkeit der Sprites
+  },
+
+  // --- Unterholz (M10b.1, nur mit deko.unterholz, js/sprites.js): Farn, Heide, Stümpfe, Totholz, Findlinge, Schilf ---
+  // Ohne Kollision (wie die Büsche). Werte der Strecke: natur.unterholz (fehlt = diese hier)
+  unterholz: {
+    mindestAbstand: 6.2,       // so nah an die Strassenmitte (Schotter 3.1 + Bankett 2 = 5.1 m)
+    randSchritt: [4, 9],       // Band am Strassenrand: alle so viele Meter je Seite eine Gruppe (1-3 Stück) ...
+    randLat: [6.5, 10],        // ... so weit neben der Mitte (zwischen Bankett und Waldrand)
+    waldProKm: 900,            // Waldboden: Versuche pro km (nur wo Wald steht)
+    waldLat: [10, 70],         // ... so weit neben der Strasse
+    schilfAbstand: 1.6,        // Schilf am Seeufer: alle so viele Meter ein Büschel
+    ...(N.unterholz || {}),
   },
 
   // --- Büsche, Jungtannen, Grasbüschel (Meilenstein 2b) -----------------

@@ -21,8 +21,10 @@ export default {
     tierKlang: null,           // ... ohne Glocken (still)
     haus: 'holzhaus',          // rote Holzhäuser mit weissen Kanten
     stadel: 'holzschuppen',    // rote Schuppen
-    nadelbaum: 'kiefer',       // Kiefern
-    laubbaum: 'birke',         // Birken
+    nadelbaum: 'nordwald',     // M10b.1: Fichten (dunkle Kegel, Hauptbaum) und Kiefern gemischt, ca. 2 : 1
+    laubbaum: 'birke',         // Birken (Farbtupfer)
+    unterholz: 'nordisch',     // M10b.1: Farn, Heidekraut, Stümpfe, Totholz, Findlinge, Schilf am See
+    tierschild: 'elch',        // M10b.1: Warnschild mit Elch statt der allgemeinen Tier-Silhouette
   },
 
   // Markierte Kuppen: hier wird die Strecke in M10c abheben (heute ohne Wirkung, normale Kuppen)
@@ -306,10 +308,12 @@ export default {
       belag: 'schotter',
       sperreAbzweig: 'heu', sperreEinmuendung: 'band',
       // Waldrand am Schotterweg (wie in den Alpen, sonst nebenwegWald in config.js): innen dicht (keine Abkürzung),
-      // aber weiter weg als in den Alpen (innen ab 9.2 m statt 6.2 m, aussen ab 10.5 m: auf Schotter rutscht man weiter hinaus)
+      // aber weiter weg als in den Alpen (innen ab 9.5 m statt 6.2 m, aussen ab 10.5 m, ohne Felsbrocken: auf Schotter rutscht man weiter hinaus)
       wald: {
+        nach: 6,               // Waldrand hört kurz nach der Einmündung ins Dorf auf (Alpen: 72 m)
         innenVorNach: 60,      // dichte Innenseite auch 60 m vor und nach engen Kurven (Schenkel der Kehren)
-        innen: { abstand: [9.2, 10], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
+        steinAnteil: 0,        // keine Felsbrocken im Waldrand (Findlinge stehen als Unterholz weiter weg)
+        innen: { abstand: [9.5, 10.3], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
         aussen: { abstand: [10.5, 15], gruppe: [1, 4], schritt: [1.8, 3], luecke: [5, 14], zweiteReihe: 0.35, zweiteAbstand: [12, 16] },
       },
       // flache Kreuzungen (50°): Stummel länger auf der Höhe der Etappe (wie Almweg/Wiesenweg in den Alpen)
@@ -323,10 +327,12 @@ export default {
       belag: 'schotter',
       sperreAbzweig: 'reifen', sperreEinmuendung: 'heu',
       // Waldrand am Schotterweg (wie in den Alpen, sonst nebenwegWald in config.js): innen dicht (keine Abkürzung),
-      // aber weiter weg als in den Alpen (innen ab 9.2 m statt 6.2 m, aussen ab 10.5 m: auf Schotter rutscht man weiter hinaus)
+      // aber weiter weg als in den Alpen (innen ab 9.5 m statt 6.2 m, aussen ab 10.5 m, ohne Felsbrocken: auf Schotter rutscht man weiter hinaus)
       wald: {
+        vor: 6,                // ... und beginnt erst kurz vor dem Abzweig aus dem Dorf (Alpen: 42 m)
         innenVorNach: 60,      // dichte Innenseite auch 60 m vor und nach engen Kurven (Schenkel der Kehren)
-        innen: { abstand: [9.2, 10], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
+        steinAnteil: 0,        // keine Felsbrocken im Waldrand (Findlinge stehen als Unterholz weiter weg)
+        innen: { abstand: [9.5, 10.3], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
         aussen: { abstand: [10.5, 15], gruppe: [1, 4], schritt: [1.8, 3], luecke: [5, 14], zweiteReihe: 0.35, zweiteAbstand: [12, 16] },
       },
       stummelAbzweig: { kurve: 70, radius: 50, seitenschutz: 'zaun' },
@@ -383,7 +389,7 @@ export default {
 
   // --- Natur ---
   natur: {
-    sprites: { tannenProKm: 5600, laubProKm: 3000, steineProKm: 700, // Kiefern, Birken, Steine
+    sprites: { tannenProKm: 6200, laubProKm: 4600, steineProKm: 800, // Fichten+Kiefern, Birken, Steine (M10b.1: dichter, mehr Birken)
       mindestAbstand: 10.5, waldAbstand: 10.5 }, // M10b.1: Bäume erst ab 10.5 m neben der Mitte (Platz zum Rutschen auf Schotter)
     buesche: { blueten: 0, beeren: 0.45 },  // keine Alpenrosen, viele Heidelbeeren
     kuehe: {                   // (Tiere: Rentiere, deko.tier)
@@ -438,17 +444,40 @@ export default {
     wiesenweg: {
       holzstapel: false,
       haeuser: [
-        { s: 1388, seite: 1, lat: 15, drehung: 0, laenge: 8, tiefe: 6, hoehe: 2.6 },
-        { s: 1412, seite: -1, lat: 16, drehung: 5, laenge: 9, tiefe: 6.5, hoehe: 2.8 },
-        { s: 1422, seite: 1, lat: 24, drehung: -10, laenge: 5, tiefe: 4, hoehe: 2.2, schuppen: true },
-        { s: 1505, seite: 1, lat: 17, drehung: 8, laenge: 8, tiefe: 6, hoehe: 2.6 },
-        { s: 1528, seite: 1, lat: 23, drehung: -4, laenge: 5.5, tiefe: 4, hoehe: 2.2, schuppen: true },
-        { s: 1240, seite: -1, lat: 24, drehung: 15, laenge: 5, tiefe: 4, hoehe: 2.3 },               // Sauna am See
+        // M10b.1: Dorf mit sechs Gebäuden in drei Bauarten (typ), verschiedene Grössen, Drehungen und Dachfarben (dach)
+        { s: 1388, seite: 1, lat: 15, drehung: 0, laenge: 8, tiefe: 6, hoehe: 2.6, typ: 'holzhaus', dach: 'rot' },
+        { s: 1404, seite: -1, lat: 15, drehung: 5, laenge: 9, tiefe: 6.5, hoehe: 2.8, typ: 'holzhaus' },
+        { s: 1428, seite: 1, lat: 27, drehung: -8, laenge: 11, tiefe: 7, hoehe: 3.4, typ: 'scheune', dach: 'braun' },
+        { s: 1448, seite: -1, lat: 25, drehung: 20, laenge: 5, tiefe: 4, hoehe: 2.2, typ: 'holzschuppen', dach: 'rot' },
+        { s: 1507, seite: 1, lat: 17, drehung: 12, laenge: 7, tiefe: 5.5, hoehe: 2.4, typ: 'holzhaus', dach: 'braun' },
+        { s: 1527, seite: 1, lat: 28, drehung: -15, laenge: 4, tiefe: 3.5, hoehe: 2.1, typ: 'saunahuette' },
+        { s: 1240, seite: -1, lat: 24, drehung: 15, laenge: 5, tiefe: 4, hoehe: 2.3, typ: 'saunahuette' }, // Sauna am See
       ],
       stege: [
         { s: 1170, seite: -1, lat: 24, drehung: 10, laenge: 10, hoehe: 0.4 },
         { s: 4093, seite: 1, lat: 22, drehung: -10, laenge: 9, hoehe: 0.4 },
       ],
+      // M10b.1: Ruderboote neben den Stegen (liegen auf dem Wasser)
+      boote: [
+        { s: 1173, seite: -1, lat: 29, drehung: 75, farbe: '#b8452e' },
+        { s: 4096, seite: 1, lat: 27, drehung: -80, farbe: '#3f6a8a' },
+      ],
+      // M10b.1: Leben im Dorf: Holzstapel, Briefkästen an der Strasse, Holzzäune, Heuballen, Brunnen, parkende Wagen
+      holzstapelOrte: [
+        { s: 1400, seite: -1, lat: 22, drehung: 10 }, { s: 1534, seite: 1, lat: 20, drehung: -5, laenge: 3 },
+        { s: 700, seite: 1, lat: 13, drehung: 0, laenge: 4 }, { s: 2980, seite: -1, lat: 13, drehung: 0, laenge: 5, hoehe: 1.3 }, // am Waldrand
+      ],
+      briefkaesten: [
+        { s: 1382, seite: 1, lat: 9, farbe: '#e8c22a' }, { s: 1416, seite: -1, lat: 9, farbe: '#3a6ab0' }, { s: 1501, seite: 1, lat: 9, farbe: '#e8c22a' },
+      ],
+      holzzaeune: [
+        { s: 1396, seite: 1, lat: 11.5, laenge: 14 }, { s: 1514, seite: 1, lat: 11.5, laenge: 12 }, { s: 1420, seite: -1, lat: 11.5, laenge: 10 },
+      ],
+      parkwagen: [
+        { s: 1456, seite: -1, lat: 13, drehung: 0, farbe: '#4a6a8c' }, { s: 1514, seite: 1, lat: 22, drehung: 80, farbe: '#c8c0a8' },
+      ],
+      heurollen: [[1438, 1, 36], [1444, 1, 38], [1450, 1, 35]],
+      brunnen: { s: 1426, seite: -1, lat: 13, drehung: 0 },
     },
     fans: {
       abstand: 7.2, gruppe: [3, 7], gruppeLaenge: 6, radius: 0.35, dicht: 0.75, blickStreuung: 0.6,
@@ -456,10 +485,10 @@ export default {
       kinder: 0.1,
       spots: [
         {
-          name: 'dorf', s: [1540, 1578], seite: -1, lat: [8.5, 17], anzahl: 20, blickS: 1600, // vor der Einmündung am Dorfende
-          band: [[1538, 1580, 7.9]],
-          banner: [[1558, 9.6, 'dorf']],
-          fahnen: [[1546, 13, 'motiv'], [1571, 12, 'motiv']],
+          name: 'dorf', s: [1546, 1582], seite: 1, lat: [8.5, 17], anzahl: 28, blickS: 1600, // vor dem Abzweig am Dorfende, aussen (M10b.1: mehr Fans)
+          band: [[1544, 1584, 7.9]],
+          banner: [[1564, 9.6, 'dorf']],
+          fahnen: [[1552, 13, 'motiv'], [1576, 12, 'motiv']],
           stuehle: 3,
         },
         {
@@ -468,7 +497,6 @@ export default {
           banner: [[1751, 9.4, 'hyppy']],
           fahnen: [[1741, 11, 'motiv'], [1763, 12, 'motiv']],
           stuehle: 3,
-          camper: [1757, 19, 8],
         },
       ],
     },
@@ -523,32 +551,31 @@ export default {
       streckenLaenge: 4161.65,
       minGewinn: 3,
       sperren: [
-        { s: 910, seite: 1, von: 6, bis: 11.1 },
-        { s: 925, seite: 1, von: 6, bis: 10.4 },
-        { s: 940, seite: 1, von: 6, bis: 11.5 },
-        { s: 1619, seite: -1, von: 6, bis: 11.2 },
-        { s: 2575, seite: -1, von: 6, bis: 10.1 },
-        { s: 2577, seite: -1, von: 6, bis: 9.2 },
-        { s: 2666, seite: 1, von: 6, bis: 11.9 },
-        { s: 2671, seite: 1, von: 6, bis: 8 },
-        { s: 3316, seite: 1, von: 6, bis: 11.1 },
-        { s: 3330, seite: 1, von: 6, bis: 10.4 },
-        { s: 3335, seite: 1, von: 6, bis: 8.7 },
-        { s: 3346, seite: 1, von: 6, bis: 11 },
+        { s: 911, seite: 1, von: 6, bis: 11.6 },
+        { s: 923, seite: 1, von: 6, bis: 10.4 },
+        { s: 928, seite: 1, von: 6, bis: 8.9 },
+        { s: 939, seite: 1, von: 6, bis: 11.1 },
+        { s: 1259, seite: -1, von: 6, bis: 11.2 },
+        { s: 1264, seite: -1, von: 6, bis: 11 },
+        { s: 2575, seite: -1, von: 6, bis: 10.2 },
+        { s: 2667, seite: 1, von: 6, bis: 11.6 },
+        { s: 3350, seite: 1, von: 6, bis: 10 },
+        { s: 3436, seite: -1, von: 6, bis: 11.9 },
       ],
       nichtSchneiden: [
-        { sVon: 880, sBis: 972, seite: 'rechts' }, // Gewinn bis 5.2 m – Gewinn 5.2 m, Umgebung: 10.52 Bäume/Steine pro 100 m²
-        { sVon: 1578, sBis: 1661, seite: 'links' }, // Gewinn bis 3.7 m – Gewinn 3.7 m, Umgebung: 5.38 Bäume/Steine pro 100 m²
-        { sVon: 2602, sBis: 2810, seite: 'rechts' }, // Gewinn bis 5 m – Gewinn 5.0 m, Umgebung: 7.99 Bäume/Steine pro 100 m²
-        { sVon: 3283, sBis: 3377, seite: 'rechts' }, // Gewinn bis 5.3 m – Gewinn 5.3 m, Umgebung: 6.84 Bäume/Steine pro 100 m²
+        { sVon: 880, sBis: 972, seite: 'rechts' }, // Gewinn bis 5.2 m – Gewinn 5.2 m, Umgebung: 10.5 Bäume/Steine pro 100 m²
+        { sVon: 1323, sBis: 1378, seite: 'links' }, // Gewinn bis 16.6 m – Pflicht: Gewinn 16.6 m >= 12 m
+        { sVon: 2602, sBis: 2810, seite: 'rechts' }, // Gewinn bis 4.9 m – Gewinn 4.9 m, Umgebung: 9.27 Bäume/Steine pro 100 m²
+        { sVon: 3380, sBis: 3585, seite: 'links' }, // Gewinn bis 5.8 m – Gewinn 5.8 m, Umgebung: 5.73 Bäume/Steine pro 100 m²
       ],
       schneiden: [
-        { sVon: 1002, sBis: 1120, seite: 'links', gewinn: 3.2 }, // Quote erreicht, kleinerer Gewinn (4.1 m) oder Nachbar schon gesperrt
+        { sVon: 1002, sBis: 1120, seite: 'links', gewinn: 3.2 }, // Quote erreicht, kleinerer Gewinn (4.9 m) oder Nachbar schon gesperrt
+        { sVon: 1578, sBis: 1661, seite: 'links', gewinn: 3.7 }, // Quote erreicht, kleinerer Gewinn (3.7 m) oder Nachbar schon gesperrt
         { sVon: 2116, sBis: 2159, seite: 'links', gewinn: 3.3 }, // Quote erreicht, kleinerer Gewinn (3.3 m) oder Nachbar schon gesperrt
         { sVon: 2173, sBis: 2214, seite: 'rechts', gewinn: 3.4 }, // von Hand: immerFrei
         { sVon: 2235, sBis: 2416, seite: 'rechts', gewinn: 3.4 }, // von Hand: immerFrei
-        { sVon: 2515, sBis: 2600, seite: 'links', gewinn: 5 }, // von Hand: immerFrei
-        { sVon: 3380, sBis: 3585, seite: 'links', gewinn: 4.2 }, // Quote erreicht, kleinerer Gewinn (4.9 m) oder Nachbar schon gesperrt
+        { sVon: 2515, sBis: 2600, seite: 'links', gewinn: 5.8 }, // von Hand: immerFrei
+        { sVon: 3283, sBis: 3377, seite: 'rechts', gewinn: 5.3 }, // Quote erreicht, kleinerer Gewinn (5.3 m) oder Nachbar schon gesperrt
       ],
     },
     // </erzeugt>
