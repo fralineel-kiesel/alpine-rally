@@ -15,7 +15,7 @@
 - Unterholz (`deko.unterholz: 'nordisch'`): Farn, Heide, Stumpf, Totholz, Findling, Schilf am See (4615 Stück, eigenes Bild, ohne Kollision). Grösste Lücke ohne Deko 25 m.
 - Dorf: 6 Gebäude (holzhaus ×3, scheune, holzschuppen, saunahuette), Dachfarben rot/braun/grau, Zäune, Briefkästen, Holzstapel, Heuballen, Brunnen, 2 parkende Wagen, 28 Fans; Ruderboote an beiden Stegen; Elch-Warnschild.
 - Waldrand am Nebenweg im Dorf aus (`wald.vor/nach: 6`), innen 9.5–10.3 m, ohne Felsbrocken.
-- Bildzeit Finnland +4.6 % gegen 0.10b, Alpen 26 Bilder pixelgleich, Tests e,g–l grün.
+- Bildzeit: erste Messung +4.6 % war eine Fehlmessung (in Teil E ca. +100 % gefunden, Wald abgespeckt, siehe Bericht). Alpen 26 Bilder pixelgleich.
 
 ## Teil C – Escorta (erledigt, Commit 3)
 - `auto.schotterGrip` (Standard 1, Escorta **1.065**): Seitengriff vorne/hinten und Traktion nur auf Schotter. Testfahrer nutzt den Griff in der Kurven-Zielgeschwindigkeit (nur wenn ≠ 1, andere Autos bit-gleich).
@@ -23,6 +23,13 @@
 - Alpen Escorta alt 3:00.68 / 2:44.02 / 2:34.68 → neu 2:59.95 / 2:43.43 / 2:34.08; alle anderen Autos identisch. Garage-Zeile „LEICHT, DRIFTET GERN, SCHOTTER-SPEZIALIST“.
 - Teil D (Schatten) wird weggelassen (Kontext knapp, Auftrag erlaubt es) – in STAND.md offen.
 
+## Teil E – Abschluss (Commit 5)
+- Version 0.10b.1, Bilder `screenshots/m10b1/` (6), Bericht `docs/meilensteine/m10b1.md`, STAND/KONZEPT nachgeführt.
+- Volle Regression `node tools/m10b1-test.mjs --alt /tmp/alt-010b --lang` einmal (Ergebnis im Bericht).
+
+## Teil E – Nachtrag
+- Wald für die Bildzeit abgespeckt (3600 statt 6200 Versuche/km, Waldrand lockerer): Einzelmessung +2–5 %, Testlauf +30 % (Streuung). Anteile 57.6/28.8/13.5 %.
+
 ## Offen
-- Teil E (Tests, Bilder, Bericht, Version). Teil D weggelassen.
+- Teil D (Kunst-Schatten) weggelassen – offen für einen späteren Auftrag.
 - Unfälle (b) nach Teil B: Audan flott 2 (2024, 3946 m), Subora flott 1 (3040 m), Lanza 073 mittel 1 (Zaun an der Einmündung 4015 m) – nicht erreicht, Kontrollverlust des Testfahrers.

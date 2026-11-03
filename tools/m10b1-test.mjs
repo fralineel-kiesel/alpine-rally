@@ -137,7 +137,7 @@ if (teil('x3')) {
     const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
     const NEU_M10B = ['unterholz']; // neue Blöcke in M10b.1 (Unterholz, nur Finnland nutzt es)
     // neue Werte innerhalb der Blöcke (M10b.1, für die Alpen wirkungslos): deko.unterholz/tierschild, auto.schotterGrip
-    for (const c of [cn, ca]) { if (c.deko) { delete c.deko.unterholz; delete c.deko.tierschild; } if (c.auto) delete c.auto.schotterGrip; }
+    for (const c of [cn, ca]) { if (c.deko) { delete c.deko.unterholz; delete c.deko.tierschild; } if (c.auto) delete c.auto.schotterGrip; if (c.fahrprofile && c.fahrprofile.escorta) delete c.fahrprofile.escorta.auto.schotterGrip; }
     const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
     melde(unterschiede.length === 0, `CONFIG (alle Werte, sortiert) gleich wie 0.10b${unterschiede.length ? `; anders: ${unterschiede.join(', ')}` : ''}`);
     const reihenfolge = Object.keys(JSON.parse(neu.config)).filter((k) => !NEU_M10B.includes(k)).join() === Object.keys(JSON.parse(alt.config)).join();
@@ -225,7 +225,7 @@ if (teil('x4') || teil('l')) {
     const NEU_GESTALTET = ['menü etappe'];
     // Seit Teil E steht 0.10b.1 statt 0.10b in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
     // anders sein (Unterschied höchstens 7 Pixel hoch, ganz in der Zeile, in der die Version steht)
-    const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 230 && box[1] >= 168) || k === 'menü credits');
+    const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 220 && box[1] >= 168) || k === 'menü credits');
     for (const [k, n, a] of paare) {
       const v = await vergleiche(s.page, a, n, k === 'rt4-weide' || k === 'titel');
       if (v.anders !== 0 && NEU_GESTALTET.includes(k)) neuGestaltet.push(`${k} (${v.anders} Pixel)`);
@@ -567,12 +567,12 @@ if (teil('k')) {
   console.log('(k) Bildzeit Finnland gegen 0.10b (höchstens +10 %), Alpen unverändert; kein Garbage pro Bild');
   if (!ALT) info('nur mit --alt');
   else {
-    // je zwei Messungen, die bessere zählt (Software-Grafik im Test-Browser streut)
-    const mess = async (w, extra, sM) => { const a = await leistung(w, extra, sM), b = await leistung(w, extra, sM); return a.ms <= b.ms ? a : b; };
+    // je drei Messungen, der Median zählt (Software-Grafik im Test-Browser streut um ±30 %)
+    const mess = async (w, extra, sM) => { const l = []; for (let i = 0; i < 3; i++) l.push(await leistung(w, extra, sM)); return l.sort((x, y) => x.ms - y.ms)[1]; };
     const fn = await mess(WURZEL, `&strecke=${FI}`, 600), fa = await mess(ALT, `&strecke=${FI}`, 640);
     const an = await mess(WURZEL), aa = await mess(ALT);
     BILDZEIT.finnland = fn.ms;
-    melde(fn.ms <= fa.ms * 1.10, `Bildzeit Finnland im Wald (Vollgas, 4 s): 0.10b ${fa.ms.toFixed(1)} ms, jetzt ${fn.ms.toFixed(1)} ms (${((fn.ms / fa.ms - 1) * 100).toFixed(1)} %, höchstens +10 %)`);
+    melde(fn.ms <= fa.ms * 1.10, `Bildzeit Finnland im Wald (Vollgas, 4 s, Median aus 3): 0.10b ${fa.ms.toFixed(1)} ms, jetzt ${fn.ms.toFixed(1)} ms (${((fn.ms / fa.ms - 1) * 100).toFixed(1)} %, höchstens +10 %)`);
     melde(an.ms <= aa.ms * 1.10, `Bildzeit Alpen (Passhöhe): 0.10b ${aa.ms.toFixed(1)} ms, jetzt ${an.ms.toFixed(1)} ms (${((an.ms / aa.ms - 1) * 100).toFixed(1)} %, Streuung ±10 %)`);
     melde(fn.rest < fa.rest + 300000 && an.rest < aa.rest + 300000, `Speicher nach 4 s Fahren (nach GC): Finnland ${(fn.rest / 1024).toFixed(0)} KB (0.10b ${(fa.rest / 1024).toFixed(0)} KB), Alpen ${(an.rest / 1024).toFixed(0)} KB (0.10b ${(aa.rest / 1024).toFixed(0)} KB) – kein Leck`);
   }

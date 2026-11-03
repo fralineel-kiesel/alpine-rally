@@ -2,11 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 10b fertig** (Version 0.10b) – **Etappenwahl im Menü und zweite Strecke „Finnland-Schotter“**.
-Menü → ETAPPE: Liste mit Vorschau-Karte, wählen lädt kurz neu; BESTZEITEN mit Etappen-Umschalter (Alpen-Zeiten
-unverändert). Die **Alpen sind gegen 0.10a gleich** (Bilder pixelgleich, Ton, Testfahrer). **Nur Chromium, kein Handy.**
-**Bitte zuerst die Test-Anleitung in `docs/meilensteine/m10b.md`.** Nächster Schritt: **M10c Sprünge mit Flugphase**
-auf den markierten Kuppen von Finnland (noch kein Prompt).
+Aktuell: **Meilenstein 10b.1 fertig** (Version 0.10b.1) – **Finnland-Feinschliff**: Strecke neu (4.1 km, drei
+Spitzkehren, Schikane, Untergrundwechsel nur an Einmündungen), dunkler Fichtenwald mit Unterholz, Dorf mit sechs Häusern,
+Escorta als Schotter-Spezialist. **Kunst-Schatten (Teil D) fehlen noch.** Alpen gleich wie 0.10b (nur der Escorta ist an den
+Schotterstellen etwas schneller). **Nur Chromium, kein Handy.** **Bitte zuerst die Test-Anleitung in
+`docs/meilensteine/m10b1.md`.** Nächster Schritt: **M10c Sprünge mit Flugphase** (noch kein Prompt).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -132,6 +132,10 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Werkzeuge und Tests
 
+- `node tools/m10b1-test.mjs --alt <ordner 0.10b>` – alle Prüfungen von M10b.1 (a … p, Alpen x1–x5); einzeln `--nur a,x2`; Regression
+  mit `--lang` (0.10b: `git worktree add <ordner> 61004a7`). `node tools/m10b1-bilder.mjs --alt <0.10b>` – Bilder nach `screenshots/m10b1/`.
+  Finnland-Verlauf: `tools/finnland-entwurf.mjs` (Gerade/Kurve, Höhenprofil, Nebenwege); `strecke-abfahren --tempo` = Tempoprofil.
+
 - `node tools/m10b-test.mjs --alt <ordner 0.10a>` – alle Prüfungen von M10b (a1–a5, b … s); einzeln `--nur e,f`; Regression
   mit `--lang` (0.10a: `git worktree add <ordner> e7054e3`). `node tools/m10b-bilder.mjs` – Bilder nach `screenshots/m10b/`.
   Strecken-Werkzeuge nehmen `--strecke <id>` (Standard `alpen`); Finnland-Verlauf: `tools/finnland-entwurf.mjs`.
@@ -202,6 +206,11 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
+- **Offen aus M10b.1:** **Kunst-Schatten** (Teil D: Streckenfeld `schatten`, Flecken unter Auto, Bäumen, Häusern, Einstellung
+  SCHATTEN AN/AUS) – nicht gebaut. Fahrbarkeit: Audan/Subora flott und Lanza 073 mittel haben im Testfahrer noch 1–2
+  Aufpralle auf Finnland (Bericht). Ideen: Testfahrer mit eigener Kurven-Messung je Auto (statt der Prototyp-Tempi),
+  Wohnmobil an der Birkenkuppe (kein Platz), Rentier-Ton, Fahnenmast im Dorf, Zuschauer auch an den Kehren.
+
 - **Strecken (M10b-Ideen):** Rentier-Warnschild (heute allgemeine Tier-Silhouette), Sonnenscheibe/Abendrot am Himmel,
   Spiegelung im See, Ton nach dem Etappenwechsel ohne neue Eingabe (geht im Browser nicht ohne Klick), Strecke
   wechseln ohne Neuladen, eigene Grip-Abstimmung der Hecktriebler auf Schotter (M10c mit Auto-Gewicht).
@@ -245,6 +254,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Während der Arbeit: `docs/meilensteine/<name>-arbeitsstand.md` (10 bis 20 Zeilen: erledigt, Werte, offene Fragen) nach jedem Teil nachführen.
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
+
+- **M10b.1** (0.10b.1) – Finnland-Feinschliff nach Linos Test: Strecke 4161.6 m (vorher 2.8 km) mit drei Spitzkehren, Schikane,
+  geraden Bremszonen; Untergrundwechsel wie in den Alpen an vier Einmündungen (Stummel abgesperrt); `revision` → Bestzeiten
+  `finnland-r2` (alte bleiben liegen). Wald: Fichten (dunkel), Kiefern dunkler, Birken kühler (57/28/15 %), Unterholz,
+  Dorf mit 6 Gebäuden in 4 Bauarten, Boote, Elch-Schild. Escorta `schotterGrip` 1.065 (mittel 0.5 s vor Audan/Subora).
+  Bildzeit: Wald für den Software-Renderer abgespeckt, Testlauf trotzdem +30 % (Einzelmessung +2–5 %), nicht sicher erreicht.
+  Testfahrer Prototyp 2:55.88 / 2:39.06 / 2:28.61 (Schnitt vorsichtig 83.7 km/h). **Nicht erreicht:** Kunst-Schatten,
+  Unfälle Audan/Subora flott und Lanza 073 mittel (je 1–2), Schnitt knapp unter 85 km/h. Alpen gleich (ausser Escorta auf
+  Schotter). Bericht, Testtabelle, Test-Anleitung: `docs/meilensteine/m10b1.md`.
 
 - **M10b** (0.10b) – Etappenwahl (Liste + Vorschau-Karte, wählen = kurz neu laden, Hauptmenü zeigt die Etappe), Bestzeiten
   je Etappe mit Umschalter, neue Strecke **Finnland-Schotter** (2.7 km, 89 % Schotter, Seen, Dorf, Holzbrücke, Spitzkehre,

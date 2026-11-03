@@ -314,7 +314,7 @@ export default {
         innenVorNach: 60,      // dichte Innenseite auch 60 m vor und nach engen Kurven (Schenkel der Kehren)
         steinAnteil: 0,        // keine Felsbrocken im Waldrand (Findlinge stehen als Unterholz weiter weg)
         innen: { abstand: [9.5, 10.3], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
-        aussen: { abstand: [10.5, 15], gruppe: [1, 4], schritt: [1.8, 3], luecke: [5, 14], zweiteReihe: 0.35, zweiteAbstand: [12, 16] },
+        aussen: { abstand: [10.5, 15], gruppe: [1, 3], schritt: [1.8, 3], luecke: [10, 24], zweiteReihe: 0.15, zweiteAbstand: [12, 16] }, // M10b.1: locker (Bildzeit)
       },
       // flache Kreuzungen (50°): Stummel länger auf der Höhe der Etappe (wie Almweg/Wiesenweg in den Alpen)
       stummelAbzweig: { kurve: -70, radius: 50, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
@@ -333,7 +333,7 @@ export default {
         innenVorNach: 60,      // dichte Innenseite auch 60 m vor und nach engen Kurven (Schenkel der Kehren)
         steinAnteil: 0,        // keine Felsbrocken im Waldrand (Findlinge stehen als Unterholz weiter weg)
         innen: { abstand: [9.5, 10.3], gruppe: [3, 6], schritt: [1.7, 2.3], luecke: [0.5, 1.1], zweiteReihe: 0.35, zweiteAbstand: [10, 13] },
-        aussen: { abstand: [10.5, 15], gruppe: [1, 4], schritt: [1.8, 3], luecke: [5, 14], zweiteReihe: 0.35, zweiteAbstand: [12, 16] },
+        aussen: { abstand: [10.5, 15], gruppe: [1, 3], schritt: [1.8, 3], luecke: [10, 24], zweiteReihe: 0.15, zweiteAbstand: [12, 16] }, // M10b.1: locker (Bildzeit)
       },
       stummelAbzweig: { kurve: 70, radius: 50, seitenschutz: 'zaun' },
       stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
@@ -389,7 +389,7 @@ export default {
 
   // --- Natur ---
   natur: {
-    sprites: { tannenProKm: 6200, laubProKm: 4600, steineProKm: 800, // Fichten+Kiefern, Birken, Steine (M10b.1: dichter, mehr Birken)
+    sprites: { tannenProKm: 3600, laubProKm: 2700, steineProKm: 800, // Fichten+Kiefern, Birken, Steine (M10b.1: mehr Birken; weniger Versuche als 0.10b wegen der Bildzeit, dichter wirkt der Wald durch Fichten und Unterholz)
       mindestAbstand: 10.5, waldAbstand: 10.5 }, // M10b.1: Bäume erst ab 10.5 m neben der Mitte (Platz zum Rutschen auf Schotter)
     buesche: { blueten: 0, beeren: 0.45 },  // keine Alpenrosen, viele Heidelbeeren
     kuehe: {                   // (Tiere: Rentiere, deko.tier)
@@ -471,7 +471,7 @@ export default {
         { s: 1382, seite: 1, lat: 9, farbe: '#e8c22a' }, { s: 1416, seite: -1, lat: 9, farbe: '#3a6ab0' }, { s: 1501, seite: 1, lat: 9, farbe: '#e8c22a' },
       ],
       holzzaeune: [
-        { s: 1396, seite: 1, lat: 11.5, laenge: 14 }, { s: 1514, seite: 1, lat: 11.5, laenge: 12 }, { s: 1420, seite: -1, lat: 11.5, laenge: 10 },
+        { s: 1402, seite: 1, lat: 10.6, laenge: 8 }, { s: 1514, seite: 1, lat: 11.5, laenge: 12 }, { s: 1408, seite: -1, lat: 11.5, laenge: 8 },
       ],
       parkwagen: [
         { s: 1456, seite: -1, lat: 13, drehung: 0, farbe: '#4a6a8c' }, { s: 1514, seite: 1, lat: 22, drehung: 80, farbe: '#c8c0a8' },
@@ -551,30 +551,28 @@ export default {
       streckenLaenge: 4161.65,
       minGewinn: 3,
       sperren: [
-        { s: 911, seite: 1, von: 6, bis: 11.6 },
-        { s: 923, seite: 1, von: 6, bis: 10.4 },
-        { s: 928, seite: 1, von: 6, bis: 8.9 },
+        { s: 911, seite: 1, von: 6, bis: 11.2 },
+        { s: 925, seite: 1, von: 6, bis: 10.4 },
         { s: 939, seite: 1, von: 6, bis: 11.1 },
-        { s: 1259, seite: -1, von: 6, bis: 11.2 },
-        { s: 1264, seite: -1, von: 6, bis: 11 },
+        { s: 1327, seite: -1, von: 6, bis: 40 },
         { s: 2575, seite: -1, von: 6, bis: 10.2 },
-        { s: 2667, seite: 1, von: 6, bis: 11.6 },
+        { s: 2667, seite: 1, von: 6, bis: 12 },
         { s: 3350, seite: 1, von: 6, bis: 10 },
         { s: 3436, seite: -1, von: 6, bis: 11.9 },
       ],
       nichtSchneiden: [
-        { sVon: 880, sBis: 972, seite: 'rechts' }, // Gewinn bis 5.2 m – Gewinn 5.2 m, Umgebung: 10.5 Bäume/Steine pro 100 m²
+        { sVon: 880, sBis: 972, seite: 'rechts' }, // Gewinn bis 5.2 m – Gewinn 5.2 m, Umgebung: 8.58 Bäume/Steine pro 100 m²
         { sVon: 1323, sBis: 1378, seite: 'links' }, // Gewinn bis 16.6 m – Pflicht: Gewinn 16.6 m >= 12 m
-        { sVon: 2602, sBis: 2810, seite: 'rechts' }, // Gewinn bis 4.9 m – Gewinn 4.9 m, Umgebung: 9.27 Bäume/Steine pro 100 m²
-        { sVon: 3380, sBis: 3585, seite: 'links' }, // Gewinn bis 5.8 m – Gewinn 5.8 m, Umgebung: 5.73 Bäume/Steine pro 100 m²
+        { sVon: 2602, sBis: 2810, seite: 'rechts' }, // Gewinn bis 5 m – Gewinn 5.0 m, Umgebung: 6.3 Bäume/Steine pro 100 m²
+        { sVon: 3380, sBis: 3585, seite: 'links' }, // Gewinn bis 5.8 m – Gewinn 5.8 m, Umgebung: 3.75 Bäume/Steine pro 100 m²
       ],
       schneiden: [
-        { sVon: 1002, sBis: 1120, seite: 'links', gewinn: 3.2 }, // Quote erreicht, kleinerer Gewinn (4.9 m) oder Nachbar schon gesperrt
-        { sVon: 1578, sBis: 1661, seite: 'links', gewinn: 3.7 }, // Quote erreicht, kleinerer Gewinn (3.7 m) oder Nachbar schon gesperrt
+        { sVon: 1002, sBis: 1120, seite: 'links', gewinn: 4.1 }, // Quote erreicht, kleinerer Gewinn (4.9 m) oder Nachbar schon gesperrt
+        { sVon: 1578, sBis: 1661, seite: 'links', gewinn: 4 }, // Quote erreicht, kleinerer Gewinn (4.0 m) oder Nachbar schon gesperrt
         { sVon: 2116, sBis: 2159, seite: 'links', gewinn: 3.3 }, // Quote erreicht, kleinerer Gewinn (3.3 m) oder Nachbar schon gesperrt
         { sVon: 2173, sBis: 2214, seite: 'rechts', gewinn: 3.4 }, // von Hand: immerFrei
         { sVon: 2235, sBis: 2416, seite: 'rechts', gewinn: 3.4 }, // von Hand: immerFrei
-        { sVon: 2515, sBis: 2600, seite: 'links', gewinn: 5.8 }, // von Hand: immerFrei
+        { sVon: 2515, sBis: 2600, seite: 'links', gewinn: 5 }, // von Hand: immerFrei
         { sVon: 3283, sBis: 3377, seite: 'rechts', gewinn: 5.3 }, // Quote erreicht, kleinerer Gewinn (5.3 m) oder Nachbar schon gesperrt
       ],
     },
