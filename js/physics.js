@@ -111,6 +111,8 @@ export class Fahrphysik {
     // (M8a: mal heckJeBelag des Profils, z. B. Allrad hält das Heck auf Schotter besser; Prototyp: 1)
     let gripH = c.gripHinten * boden.grip * (boden.heck ?? 1);
     if (boden.belag && c.heckJeBelag) gripH *= c.heckJeBelag[boden.belag] ?? 1;
+    // M10b.1: Schotter-Griff des Autos (Escorta > 1; 1 = keine Rechnung, damit die anderen Autos bit-gleich bleiben)
+    if (boden.belag === 'schotter' && c.schotterGrip && c.schotterGrip !== 1) { gripV *= c.schotterGrip; gripH *= c.schotterGrip; }
     const schraeg = Math.atan2(vSeit, Math.max(Math.abs(vVor), 0.5));
     if (Math.abs(schraeg) > 0.12) gripH *= 1 - c.gasImDrift * eingabe.gas;
     // M8c: Hinterradantrieb (antriebHinten = Anteil des Antriebs, der die Haftung hinten aufbraucht; fehlt/0 = aus):

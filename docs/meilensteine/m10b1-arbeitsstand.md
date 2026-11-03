@@ -17,6 +17,12 @@
 - Waldrand am Nebenweg im Dorf aus (`wald.vor/nach: 6`), innen 9.5–10.3 m, ohne Felsbrocken.
 - Bildzeit Finnland +4.6 % gegen 0.10b, Alpen 26 Bilder pixelgleich, Tests e,g–l grün.
 
+## Teil C – Escorta (erledigt, Commit 3)
+- `auto.schotterGrip` (Standard 1, Escorta **1.065**): Seitengriff vorne/hinten und Traktion nur auf Schotter. Testfahrer nutzt den Griff in der Kurven-Zielgeschwindigkeit (nur wenn ≠ 1, andere Autos bit-gleich).
+- Finnland mittel: Escorta 2:38.24, 0.57 s vor Audan (2:38.81), 0.54 s vor Subora (2:38.78); Delto 2:38.84, Prototyp 2:39.06 dahinter; flott 2:30.63 ohne Unfall.
+- Alpen Escorta alt 3:00.68 / 2:44.02 / 2:34.68 → neu 2:59.95 / 2:43.43 / 2:34.08; alle anderen Autos identisch. Garage-Zeile „LEICHT, DRIFTET GERN, SCHOTTER-SPEZIALIST“.
+- Teil D (Schatten) wird weggelassen (Kontext knapp, Auftrag erlaubt es) – in STAND.md offen.
+
 ## Offen
-- Teil C (Escorta), D (Schatten), E (Tests, Bilder, Bericht).
+- Teil E (Tests, Bilder, Bericht, Version). Teil D weggelassen.
 - Unfälle (b) nach Teil B: Audan flott 2 (2024, 3946 m), Subora flott 1 (3040 m), Lanza 073 mittel 1 (Zaun an der Einmündung 4015 m) – nicht erreicht, Kontrollverlust des Testfahrers.

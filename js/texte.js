@@ -36,7 +36,7 @@ export const TEXTE = {
   'auto.delto.daten2': { de: 'KOMPAKT, WENDIG, GRIFFIG', en: 'COMPACT, NIMBLE, GRIPPY' },
   'auto.escorta.name': { de: 'FARD ESCORTA', en: 'FARD ESCORTA' }, // M8c
   'auto.escorta.daten1': { de: 'HINTERRAD · OHNE TURBO · 5 GÄNGE AUTOMATIK', en: 'RWD · NO TURBO · 5-SPEED AUTOMATIC' },
-  'auto.escorta.daten2': { de: 'LEICHT, VERSPIELT, DRIFTET GERN', en: 'LIGHT, PLAYFUL, LOVES TO DRIFT' },
+  'auto.escorta.daten2': { de: 'LEICHT, DRIFTET GERN, SCHOTTER-SPEZIALIST', en: 'LIGHT, LOVES TO DRIFT, GRAVEL SPECIALIST' }, // M10b.1
   'auto.l073.name': { de: 'LANZA 073', en: 'LANZA 073' }, // M8e
   'auto.l073.daten1': { de: 'MITTELMOTOR · HINTERRAD · KOMPRESSOR', en: 'MID-ENGINE · RWD · SUPERCHARGER' },
   'auto.l073.daten2': { de: 'LEICHT, SCHNELL, ZICKIG', en: 'LIGHT, FAST, TWITCHY' },

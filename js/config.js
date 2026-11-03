@@ -427,6 +427,7 @@ export const CONFIG = {
     heckJeBelag: { schotter: 1, wiesenweg: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
     vorneJeBelag: { schotter: 1, wiesenweg: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
                                // fehlt ein Belag, gilt 1. Asphalt, Bankett und Gras bewusst nicht: sonst lohnen Abkürzungen)
+    schotterGrip: 1,           // M10b.1: Griff (vorne und hinten) nur auf Schotter mal diesem Wert; 1 = wie bisher (alle Autos ausser Escorta)
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -576,6 +577,7 @@ export const CONFIG = {
                                  // langen Drift (+5.9°), darunter ruhig – kleine Schritte! (0 = aus)
         heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // gleicht antriebHinten im Kreis auf losem Boden aus (sonst
                                  // Grenztempo Schotter -5 %, Wiesenweg -3 %); im Drift unter Gas bleibt das Heck locker
+        schotterGrip: 1.065,       // M10b.1: Schotter-Spezialist: mehr Griff nur auf Schotter (nicht Asphalt/Wiese, nicht mehr Leistung)
       },
       getriebe: {
         allrad: { schotter: 0.95, wiesenweg: 0.9 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden
