@@ -15,6 +15,13 @@ Kunst-Schatten, Version 0.10b.2. Vergleichsstand 0.10b.1 = `a289fad` (`git workt
 - Finnland-Testfahrer alle 6 Profile identisch wie 0.10b.1; Alpen x1–x4 grün (26 Bilder pixelgleich).
 - Schilf nur noch, wo der Seerand nicht aufgefüllt ist. Test: `node tools/m10b2-test.mjs --alt <0.10b.1> --nur a,b,c,d,e`.
 
+## Teil B – Wasser (fertig)
+- `CONFIG.wasser.bad`: zu tief = Boden 0.6 m unter dem Spiegel; abblenden 0.3 s, schwarz 3.0 s, einblenden 0.3 s (3.3 s
+  mindestens halb dunkel). HUD bleibt (Schwarz hinter das HUD gemalt), Steuerung gesperrt, Motor aus, Platsch + Spritzer.
+  Zurück auf die letzte sichere Stelle der Etappe (Blick in Fahrtrichtung, Tempo 0, Checkpoints bleiben), Zeit läuft weiter.
+- Flaches Wasser: kleine Spritzer und Plätschern. Taste R im Schwarzbild gesperrt, Pause friert es ein, Demo löst nichts aus.
+- Platsch-Klang nur auf Strecken mit Wasser (`CONFIG.wasserAn`), Alpen: Bilder/Ton/Zeiten gleich. Tests (f)–(j) grün.
+
 ## Offen / nächste Schritte
-- Teil B Wasser (Platsch, Schwarzbild, zurück), C Escorta, D Rentier-Ton, E Schatten, F Bericht.
+- C Escorta, D Rentier-Ton, E Schatten, F Bericht.
 - Bild Meter 969: Kamera für die Bilder in Teil F neu ausrichten (Hang besser im Bild).

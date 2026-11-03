@@ -77,6 +77,15 @@ export function flussAbstand(plan, x, z) {
   return d;
 }
 
+// M10b.2: Wie tief liegt der Boden (Höhe boden) an (x, z) unter dem Wasserspiegel? > 0 = im Wasser, sonst -Infinity
+// oder <= 0. Gezählt wird nur, wo die Wasserfläche gezeichnet ist (sie reicht ufer * 0.2 über den Rand hinaus).
+export function wasserTiefe(plan, x, z, boden) {
+  let t = -Infinity;
+  const rand = CONFIG.wasser.ufer * 0.2;
+  for (const f of plan.alle) if (randAbstand(f, x, z) < rand) t = Math.max(t, f.h - boden);
+  return t;
+}
+
 // Liegt ein Kreis (x, z, r) im Wasser (oder am nassen Ufer)?
 export function imWasser(plan, x, z, r = 0) {
   for (const f of plan.alle) if (randAbstand(f, x, z) < r + CONFIG.wasser.trockenAb) return true;

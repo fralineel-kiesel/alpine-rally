@@ -103,7 +103,9 @@ if (teil('x2')) {
 
 // ===================================================================== (d) Pace-Notes, Checkpoints, Strecke
 // M10b.2: weitere neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
-const NEU_WERTE = [];
+const NEU_WERTE = [
+  (c) => { delete c.wasserAn; if (c.wasser) delete c.wasser.bad; }, // Teil B: Wasserbad (Alpen: kein Wasser)
+];
 async function streckenAbdruck(wurzel, strecke = 'alpen') {
   const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}`);
   await bereit(s);
@@ -139,7 +141,7 @@ if (teil('x3')) {
     // (M10b: Fahnen-Art 'kreuz' heisst jetzt 'motiv' = Landesfahne der Strecke; gleiche Wirkung, darum gleichgesetzt)
     const ordne = (o) => (Array.isArray(o) ? o.map(ordne) : o && typeof o === 'object' ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, ordne(o[k])])) : o === 'motiv' ? 'kreuz' : o);
     const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
-    const NEU_M10B = []; // neue Blöcke in M10b.2 (keine)
+    const NEU_M10B = ['wasserAn']; // neue Blöcke in M10b.2 (wasserAn: Strecke hat Wasser, Alpen false)
     // neue Werte innerhalb der Blöcke (M10b.2, für die Alpen wirkungslos): gelaende.boeschung (Alpen null), NEU_WERTE
     for (const c of [cn, ca]) { if (c.gelaende) delete c.gelaende.boeschung; for (const f of NEU_WERTE) f(c); }
     const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
@@ -272,7 +274,7 @@ if (teil('x5')) {
     melde(neu.audio === alt.audio, 'CONFIG.audio identisch (alle Klangwerte, Seeds, Umgebung)');
     // M10b: js/umgebung.js absichtlich geändert (Glocken nur bei deko.tierKlang 'glocke', mehrere Wasser-Orte);
     // für die Alpen zählt, dass Quellen (oben) und offline gerechnete Klänge (unten) gleich sind
-    const dateien = ['js/audio.js', 'js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js'];
+    const dateien = ['js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js']; // (js/audio.js: M10b.2 Platsch, nur bei Wasser; Wirkung unten offline geprüft)
     const geaendert = dateien.filter((d) => spawnSync('git', ['diff', '--quiet', BASIS, '--', d], { cwd: WURZEL }).status !== 0);
     melde(geaendert.length === 0, `Ton-Code unverändert seit 0.10b.1 (${dateien.join(', ')}; umgebung.js geändert, Wirkung für die Alpen gleich)${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
     // Offline gerechnete Klänge (OfflineAudioContext): Messzahlen von ton-umgebung-test in beiden Ständen
@@ -472,6 +474,157 @@ if (teil('e')) {
     if (v.url) fs.writeFileSync(path.join(LOG, 'hang-969-vergleich.png'), Buffer.from(v.url.split(',')[1], 'base64'));
     melde(v.anders > 2000, `Hang bei 969 m sichtbar anders: ${v.anders} von ${v.pixel} Pixeln (Bilder ${LOG}/hang-969-alt.png, -neu.png, -vergleich.png)`);
   }
+}
+
+// ===================================================================== Teil B: Wasser (f)–(j)
+// Auto auf der Strasse bei 950 m ins Rennen setzen, kurz fahren (sichere Stelle), dann quer zum See bei 969 m
+// mit Tempo kmh hineinfahren lassen. Ergebnis im Browser: window.__wb
+const WASSER_FAHRT = ({ kmh, gasWasser }) => {
+  const A = window.__alpineRally, S = A.strecke, P = A.physik;
+  A.anhalten = true;
+  A.setzeAuf(950); A.rennen.zustand = 'laeuft'; A.rennen.letztesS = 950; A.rennen.zeit = 20;
+  for (let i = 0; i < 120; i++) A.rennSchritt(A.SCHRITT, { gas: 0.4, bremse: 0, lenkung: 0, handbremse: false });
+  const sicher = A.wasserBad.sicherS, cp = A.rennen.naechsterCp;
+  const p = S.punktBei(969);
+  P.reset(p.x + p.tz * 6, p.z - p.tx * 6, Math.atan2(p.tz, -p.tx)); P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+  window.__wb = { sicher, cp, zeit0: A.rennen.zeit, gasWasser };
+};
+const WASSER_BIS = ({ bis }) => { // fahren, bis das Schwarzbild (bis = 'schwarz') oder das Wasserbad zu Ende ist ('ende')
+  const A = window.__alpineRally, P = A.physik, W = window.__wb;
+  for (let i = 0; i < 120 * 15; i++) {
+    const e = A.wasserBad.aktiv ? { gas: 1, bremse: 0, lenkung: 1, handbremse: true } : { gas: W.gasWasser, bremse: 0, lenkung: 0, handbremse: false };
+    const r0 = P.richtung, v0 = P.tempo, aktiv0 = A.wasserBad.aktiv;
+    A.rennSchritt(A.SCHRITT, e);
+    if (A.wasserBad.aktiv && W.start == null) { W.start = A.rennen.zeit; W.anzahl0 = A.wasserBad.anzahl; }
+    if (aktiv0 && A.wasserBad.aktiv && !A.wasserBad.versetzt) { W.maxBeschl = Math.max(W.maxBeschl || 0, P.tempo - v0); W.maxDreh = Math.max(W.maxDreh || 0, Math.abs(P.richtung - r0)); }
+    if (A.wasserSchwarz() >= 0.5) { W.schwarz = (W.schwarz || 0) + A.SCHRITT; if (W.r == null) W.r = A.rTaste(); }
+    if (bis === 'schwarz' && A.wasserBad.aktiv && A.wasserBad.t > 1.5) return true;
+    if (bis === 'ende' && W.start != null && !A.wasserBad.aktiv) return true;
+  }
+  return false;
+};
+async function wasserFahrt(wurzel, kmh = 40, { ton = false } = {}) {
+  const s = ton ? await (async () => { const x = await starteSpiel({ wurzel, args: ['--autoplay-policy=no-user-gesture-required'] }); await x.page.goto(`${x.url}/index.html?strecke=finnland`); return x; })()
+    : await oeffne(wurzel, '?menue=aus&ton=aus&strecke=finnland', { uhr: true });
+  await bereit(s);
+  return s;
+}
+
+if (teil('f') || teil('h')) {
+  console.log('(f) tiefer See: Platsch, Schwarzbild 2–4 s mit HUD, Zeit läuft, zurück auf die Strasse; (h) Eingaben gesperrt');
+  const s = await wasserFahrt(WURZEL);
+  await bilder(s, 2);
+  await s.page.evaluate(WASSER_FAHRT, { kmh: 40, gasWasser: 1 });
+  const ok1 = await s.page.evaluate(WASSER_BIS, { bis: 'schwarz' });
+  // Bild mitten im Schwarzbild: 3D-Bild schwarz, HUD (Zeit oben links, Tacho unten, Karte oben rechts) sichtbar
+  const b = await foto(s);
+  fs.writeFileSync(path.join(LOG, 'wasser-schwarz.png'), Buffer.from(b.split(',')[1], 'base64'));
+  const px = await s.page.evaluate(async (url) => {
+    const im = await createImageBitmap(await (await fetch(url)).blob()), c = new OffscreenCanvas(im.width, im.height), x = c.getContext('2d');
+    x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, im.width, im.height).data, W = im.width, H = im.height;
+    const hell = (x0, y0, x1, y1) => { let n = 0, a = 0; for (let y = Math.floor(y0 * H); y < y1 * H; y++) for (let xx = Math.floor(x0 * W); xx < x1 * W; xx++) { const i = (y * W + xx) * 4; a++; if (d[i] + d[i + 1] + d[i + 2] > 60) n++; } return n / a; };
+    return { mitte: hell(0.3, 0.35, 0.7, 0.6), zeit: hell(0, 0, 0.25, 0.15), unten: hell(0, 0.7, 1, 1), karte: hell(0.75, 0, 1, 0.3) };
+  }, b);
+  // Pause im Schwarzbild: Zeit des Wasserbads steht, danach weiter
+  const pause = await s.page.evaluate(() => { const A = window.__alpineRally, t0 = A.wasserBad.t; A.pausieren(); return { t0, zustand: A.ablauf.zustand }; });
+  await bilder(s, 30);
+  const nachPause = await s.page.evaluate(() => { const A = window.__alpineRally, t = A.wasserBad.t, schwarz = A.wasserSchwarz(); A.weiter(); A.anhalten = true; return { t, schwarz, zustand: A.ablauf.zustand }; });
+  const ok2 = await s.page.evaluate(WASSER_BIS, { bis: 'ende' });
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, P = A.physik, W = window.__wb, q = S.abfrage(P.x, P.z, {});
+    const p = S.punktBei(q.s);
+    return { ...W, anzahl: A.wasserBad.anzahl, zeit: A.rennen.zeit, s: q.s, abstand: q.abstand, tempo: P.tempo, richtungDiff: Math.abs(Math.atan2(Math.sin(P.richtung - Math.atan2(p.tx, p.tz)), Math.cos(P.richtung - Math.atan2(p.tx, p.tz)))), cpNachher: A.rennen.naechsterCp, zustand: A.rennen.zustand, rNachher: A.rTaste() };
+  });
+  await s.schliessen();
+  melde(ok1 && ok2 && r.anzahl === 1 && r.anzahl0 === 1, `Auto fährt mit 40 km/h bei 969 m in den See: Wasserbad ausgelöst (einmal, keine Mehrfach-Auslösung: ${r.anzahl})`);
+  melde(r.schwarz >= 2 && r.schwarz <= 4, `Schwarzbild (mindestens halb dunkel) ${r.schwarz.toFixed(2)} s (2–4 s; abblenden ${0.3} + schwarz 3.0 + einblenden 0.3)`);
+  melde(px.mitte < 0.02 && px.zeit > 0.03 && px.unten > 0.03 && px.karte > 0.03, `Bild im Schwarzbild: Mitte ${(px.mitte * 100).toFixed(1)} % hell (schwarz), HUD sichtbar: Zeit ${(px.zeit * 100).toFixed(0)} %, Tacho-Zeile ${(px.unten * 100).toFixed(0)} %, Karte ${(px.karte * 100).toFixed(0)} % (${LOG}/wasser-schwarz.png)`);
+  const lief = r.zeit - r.start;
+  melde(lief >= 3.3 && lief <= 3.8, `Zeit läuft weiter: ${lief.toFixed(2)} s zwischen Platsch und Ende (Strafe), Rennen ${r.zustand}`);
+  melde(r.abstand < 0.5 && Math.abs(r.s - r.sicher) < 25 && r.tempo < 0.01 && r.richtungDiff < 0.01 && r.cpNachher === r.cp, `danach auf der Strasse: ${r.s.toFixed(1)} m (letzte sichere Stelle ${r.sicher.toFixed(1)} m, nicht über den See), Mitte ${r.abstand.toFixed(2)} m, Tempo ${r.tempo.toFixed(2)}, Richtung = Strecke (${r.richtungDiff.toFixed(3)} rad), Checkpoint-Fortschritt gleich (${r.cpNachher})`);
+  console.log('(h) Eingaben im Schwarzbild gesperrt');
+  melde((r.maxBeschl || 0) <= 0.001 && (r.maxDreh || 0) < 0.01, `Gas, Lenkung und Handbremse voll im Schwarzbild: Tempo steigt nie (${(r.maxBeschl || 0).toFixed(4)} m/s je Schritt), Drehung höchstens ${(r.maxDreh || 0).toFixed(4)} rad je Schritt`);
+  melde(r.r === 'gesperrt' && r.rNachher !== 'gesperrt', `Taste R im Schwarzbild: "${r.r}" (nichts passiert), danach wieder "${r.rNachher}"`);
+  melde(pause.zustand === 'pause' && Math.abs(nachPause.t - pause.t0) < 1e-9 && nachPause.schwarz > 0.9 && nachPause.zustand === 'rennen', `Pause im Schwarzbild: Wasserbad steht (${pause.t0.toFixed(2)} s -> ${nachPause.t.toFixed(2)} s), Bild bleibt schwarz, weiter geht es normal`);
+  info('Touch, Gamepad und Tastatur gehen alle durch dieselbe Eingabe: im Wasserbad ersetzt sie die Sperre (wie beim R-Countdown)');
+}
+
+if (teil('g')) {
+  console.log('(g) flaches Ufer: Spritzer, sonst nichts; Demo-Fahrt löst nichts aus');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, P = A.physik, W = A.welt, f = W.wasser.seen[0];
+    A.anhalten = true; A.setzeAuf(1100); A.rennen.zustand = 'laeuft'; A.rennen.naechsterCp = 1; // (CP1 bei 1000 m schon durch)
+    // Punkt im flachen Wasser am Ufer des ersten Sees suchen (0.15–0.4 m tief), weit weg von der Strasse
+    let ziel = null;
+    for (let k = 0; k < 360 && !ziel; k++) {
+      const w = k / 360 * Math.PI * 2;
+      for (let r = 0.9; r < 1.03 && !ziel; r += 0.005) { // (Wasserfläche reicht ufer*0.2 = 1.8 m über die Ellipse)
+        const q0 = Math.cos(w) * f.rx * r, l0 = Math.sin(w) * f.rz * r, x = f.x + f.uz * q0 + f.ux * l0, z = f.z - f.ux * q0 + f.uz * l0;
+        const b = W.bodenBei(x, z); const t = f.h - b.h;
+        const ab = S.abfrage(x, z, {}).abstand;
+        if (b.art === 'gras' && t > 0.15 && t < 0.4 && ab > 22 && ab < 38) ziel = { x, z, t, w };
+      }
+    }
+    if (!ziel) return { gefunden: false };
+    // längs am Ufer langsam fahren (Richtung tangential)
+    P.reset(ziel.x, ziel.z, Math.atan2(-Math.sin(ziel.w) * f.rx, Math.cos(ziel.w) * f.rz)); P.vx = Math.sin(P.richtung) * 5; P.vz = Math.cos(P.richtung) * 5;
+    const a0 = A.wasserBad.anzahl, sp0 = A.wasserBad.spritzer; let nass = 0, spritz = 0;
+    for (let i = 0; i < 120; i++) { A.rennSchritt(A.SCHRITT, { gas: 0.3, bremse: 0, lenkung: 0, handbremse: false }); if (A.wasserBad.nass) nass++; spritz = A.wasserBad.spritzer - sp0; }
+    return { gefunden: true, tiefe: ziel.t, anzahl: A.wasserBad.anzahl - a0, nass, spritz, aktiv: A.wasserBad.aktiv };
+  });
+  await s.schliessen();
+  melde(r.gefunden && r.anzahl === 0 && !r.aktiv && r.nass > 10 && r.spritz > 0, `flaches Wasser ${r.tiefe?.toFixed(2)} m tief: ${r.nass} von 120 Schritten nass, ${r.spritz} kleine Spritzer mit Plätschern, Wasserbad ${r.anzahl}× (Ziel 0), man fährt weiter`);
+  const d = await oeffne(WURZEL, '?ton=aus&strecke=finnland');
+  await bereit(d);
+  const demo = await d.page.evaluate(async () => {
+    const A = window.__alpineRally, P = A.physik, S = A.strecke, p = S.punktBei(969);
+    await new Promise((ok) => setTimeout(ok, 1500));
+    // Demo-Fahrt (nurFahren): auch quer in den See gesetzt löst nichts aus
+    P.reset(p.x + p.tz * 20, p.z - p.tx * 20, Math.atan2(p.tz, -p.tx)); P.vx = Math.sin(P.richtung) * 10; P.vz = Math.cos(P.richtung) * 10;
+    for (let i = 0; i < 240; i++) A.physikSchritt(A.SCHRITT, { gas: 1, bremse: 0, lenkung: 0, handbremse: false }, true);
+    return { anzahl: A.wasserBad.anzahl, aktiv: A.wasserBad.aktiv, zustand: A.ablauf.zustand };
+  });
+  await d.schliessen();
+  melde(demo.anzahl === 0 && !demo.aktiv, `Menü-Demofahrt (${demo.zustand}): Wasser löst nichts aus (Wasserbad ${demo.anzahl}×)`);
+}
+
+if (teil('i')) {
+  console.log('(i) Alpen: kein Wasser, nichts angefasst');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await bereit(s);
+  const r = await s.page.evaluate(() => { const A = window.__alpineRally; return { an: A.welt.wasser.an, wasserAn: A.CONFIG.wasserAn, boeschung: A.CONFIG.gelaende.boeschung }; });
+  await s.schliessen();
+  melde(r.an === false && r.wasserAn === false && r.boeschung === null, `Alpen: keine Wasserflächen (befahrbares Wasser: keins; der Brunnen ist ein Hindernis), kein Platsch-Klang, keine Böschung – Gleichheit mit 0.10b.1: x1–x5`);
+}
+
+if (teil('j')) {
+  console.log('(j) Ton: Platsch erzeugt Ton, Motor im Schwarzbild aus, danach wieder an');
+  const s = await wasserFahrt(WURZEL, 40, { ton: true });
+  await s.page.waitForTimeout(1500);
+  await s.page.keyboard.press('Enter'); // Taste auf dem Titel: Ton an (wie ton-test)
+  const bereitTon = await s.page.evaluate(async () => {
+    const A = window.__alpineRally; A.ton.entsperren();
+    for (let i = 0; i < 200 && !(A.ton.werk && A.ton.werk.aufbau.fertig); i++) await new Promise((ok) => setTimeout(ok, 100));
+    return !!(A.ton.werk && A.ton.werk.aufbau.fertig && A.ton.werk.puffer.platsch);
+  });
+  await s.page.evaluate(() => { const A = window.__alpineRally; A.start({ countdown: false }); A.anhalten = true; });
+  await s.page.evaluate(WASSER_FAHRT, { kmh: 40, gasWasser: 1 });
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, Z = A.ton.werk.zaehler, zu = A.ton.werk.zustand, out = { vorher: zu.motorAn };
+    const p0 = Z.platsch || 0;
+    let aus = false, wiederAn = false;
+    for (let i = 0; i < 120 * 12; i++) {
+      A.rennSchritt(A.SCHRITT, { gas: 1, bremse: 0, lenkung: 0, handbremse: false });
+      if (i % 2 === 0) A.tonBild(A.SCHRITT * 2);
+      if (A.wasserBad.aktiv && !A.wasserBad.versetzt && A.wasserBad.t > 0.5 && zu.motorAn === 0) aus = true;
+      if (aus && A.wasserBad.versetzt && zu.motorAn === 1) { wiederAn = true; break; }
+    }
+    return { ...out, platsch: (Z.platsch || 0) - p0, aus, wiederAn };
+  });
+  await s.schliessen();
+  melde(bereitTon && r.platsch === 1 && r.aus && r.wiederAn, `Platsch-Puffer gebaut ${bereitTon}, Platsch gespielt ${r.platsch}×, Motor im Schwarzbild aus ${r.aus}, nach dem Zurücksetzen wieder an ${r.wiederAn}`);
 }
 
 // @@TEILE@@

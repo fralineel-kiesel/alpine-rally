@@ -58,7 +58,7 @@ import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
-import { baueWasser } from './wasser.js';
+import { baueWasser, wasserTiefe } from './wasser.js';
 import { umgebungsQuellen } from './umgebung.js';
 
 // Einstellungen laden (fehlt der Browser-Speicher: Standardwerte) und Sprache setzen
@@ -277,8 +277,12 @@ let pnStand = 0; // so viele Pace-Notes-Kacheln sind schon erschienen (für das 
 const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken und Rollen in js/federung.js)
 
+// M10b.2: Wasserbad (zu tief ins Wasser): aktiv = Schwarzbild läuft, t = Zeit seitdem, sicherS = letzte sichere Stelle
+// auf der Strasse (dorthin geht es zurück, nicht zum nächsten Strassenpunkt über den See hinweg), anzahl (Tests)
+const wasserBad = { aktiv: false, t: 0, versetzt: false, sicherS: 0, plaetscher: 0, anzahl: 0, nass: false, spritzer: 0 };
 function setzeAuf(s, seite = 0) {
   rueck.rest = 0; // ein laufender R-Countdown ist damit erledigt
+  wasserBad.aktiv = false; wasserBad.sicherS = s; // M10b.2: Neustart/Setzen beendet ein Schwarzbild
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
   getriebe.reset();
@@ -337,6 +341,7 @@ function referenzLaden() {
 const rueck = { rest: 0, anzahl: 0 }; // rest = verbleibende Wartezeit (s, 0 = kein Countdown), anzahl = ausgelöste Resets
 function rTaste() {
   if (ablauf.zustand === 'countdown') return 'gesperrt';
+  if (wasserBad.aktiv) return 'gesperrt'; // M10b.2: im Schwarzbild nach dem Wasser setzt das Spiel selbst zurück
   if (rennen.zustand === 'ziel') { neuStarten(); return 'neustart'; }
   if (rennen.zustand !== 'laeuft' || !(CONFIG.zurueck.wartezeit > 0)) { aufStrasse(); return 'sofort'; }
   if (rueck.rest > 0) return 'laeuft schon';
@@ -388,6 +393,8 @@ function physikSchritt(dt, e, nurFahren = false) {
       SPERRE.gas = physik.vVor < -0.5 ? zb : 0; // rückwärts rollend: Gas bremst
     }
   }
+  // M10b.2: im Wasserbad (Schwarzbild) ist die Steuerung gesperrt
+  if (wasserBad.aktiv && !nurFahren) { eingabe = SPERRE; SPERRE.gas = 0; SPERRE.bremse = 0; }
   // Nach dem Ziel bremst das Auto von selbst bis zum Stand (aber nicht weiter in den Rückwärtsgang)
   // (M3c: Stärke in config.js, startZiel.zielBremse – das Auto steht vor der Absperrung der Ausrollstrecke)
   const zb = CONFIG.startZiel && CONFIG.startZiel.an !== false ? CONFIG.startZiel.zielBremse : 0.35;
@@ -546,6 +553,9 @@ function physikSchritt(dt, e, nurFahren = false) {
   vergleich.schritt(s, rennen.zeit, rennen.zustand);
   rennen.letztesS = s;
 
+  // M10b.2: Wasser (nur Strecken mit Wasser)
+  if (welt.wasser.an) wasserSchritt(dt, q2);
+
   // R-Countdown abgelaufen: zurück auf die Strassenmitte, Tempo 0
   if (rueck.rest > 0) {
     rueck.rest -= dt;
@@ -555,6 +565,56 @@ function physikSchritt(dt, e, nurFahren = false) {
       rueck.anzahl++;
     }
   }
+}
+
+// M10b.2: Wasser. Zu tief (Boden mehr als wasser.bad.tiefe unter dem Spiegel): Platsch, grosser Spritzer, Motor aus,
+// Bild schwarz (HUD bleibt), Steuerung gesperrt; nach abblenden + dauer steht das Auto auf der letzten sicheren Stelle
+// der Strasse (Blick in Fahrtrichtung, Tempo 0, Checkpoints bleiben), dann wird es wieder hell. Die Zeit läuft weiter.
+// Flaches Wasser: Spritzer und Plätschern, sonst nichts. Auf Strasse und Brücke zählt kein Wasser.
+function wasserSchritt(dt, q) {
+  const W = CONFIG.wasser.bad;
+  if (wasserBad.aktiv) {
+    wasserBad.t += dt;
+    const k = Math.exp(-W.bremsen * dt);
+    physik.vx *= k; physik.vz *= k; physik.drehrate *= k;
+    const umsetzen = W.abblenden + W.dauer;
+    if (!wasserBad.versetzt && wasserBad.t >= umsetzen - 1e-9) {
+      const t = wasserBad.t;
+      setzeAuf(wasserBad.sicherS); // (beendet das Wasserbad: gleich wieder an, jetzt zum Einblenden)
+      wasserBad.aktiv = true; wasserBad.t = t; wasserBad.versetzt = true;
+    }
+    if (wasserBad.t >= umsetzen + W.einblenden - 1e-9) wasserBad.aktiv = false;
+    return;
+  }
+  if (rennen.zustand !== 'laeuft') return;
+  const b = welt.bodenBei(physik.x, physik.z);
+  const tiefe = b.art === 'gras' ? wasserTiefe(welt.wasser, physik.x, physik.z, b.h) : -Infinity;
+  if (tiefe > W.tiefe) {
+    wasserBad.aktiv = true; wasserBad.t = 0; wasserBad.versetzt = false; wasserBad.anzahl++;
+    rueck.rest = 0; // ein laufender R-Countdown ist erledigt
+    ton.platsch(1);
+    staub.spritzer(physik.x, b.h + tiefe, physik.z, W.spritzer, 1);
+    return;
+  }
+  wasserBad.nass = tiefe > W.nassAb;
+  if (wasserBad.nass) {
+    // flaches Wasser: bei Fahrt ab und zu ein kleiner Spritzer und Plätschern
+    wasserBad.plaetscher -= dt;
+    if (physik.tempo > 1.5 && wasserBad.plaetscher <= 0) {
+      wasserBad.plaetscher = W.plaetschernAlle; wasserBad.spritzer++;
+      const st = Math.min(1, physik.tempo / 15);
+      ton.platsch(0.3 + 0.6 * st);
+      staub.spritzer(physik.x, b.h + tiefe, physik.z, 3 + Math.round(5 * st), 0.35 + 0.4 * st);
+    }
+  } else if (b.art !== 'bankett' && q.abstand <= netz.halbBei(q.s)) wasserBad.sicherS = q.s; // sichere Stelle: auf der Etappe
+}
+// Wie weit ist das Bild im Wasserbad schwarz (0..1)? Für das Zeichnen (auch in der Pause eingefroren)
+function wasserSchwarz() {
+  if (!wasserBad.aktiv) return 0;
+  const W = CONFIG.wasser.bad, t = wasserBad.t, u = W.abblenden + W.dauer;
+  if (t < W.abblenden) return t / W.abblenden;
+  if (t < u) return 1;
+  return Math.max(0, 1 - (t - u) / W.einblenden);
 }
 
 // Wie tief steckt die Karosserie in der Felswand? Geprüft werden Punkte rundherum am Umriss (alle gut 0.5 m),
@@ -1192,6 +1252,16 @@ function schleife(jetzt) {
     if (ablauf.zustand === 'countdown' || lauf.pauseVon === 'countdown' && ablauf.zustand === 'pause' || lauf.go > 0) {
       zeichneCountdown(hudCtx, lauf.countdown, lauf.go);
     }
+    // M10b.2: Schwarzbild nach dem Wasser: hinter das HUD gemalt (Zeit, Tacho, Karte, Ansagen bleiben sichtbar)
+    const ws = def.welt === 'rennen' || ablauf.zustand === 'pause' ? wasserSchwarz() : 0;
+    if (ws > 0) {
+      hudCtx.globalCompositeOperation = 'destination-over';
+      hudCtx.globalAlpha = ws;
+      hudCtx.fillStyle = '#000';
+      hudCtx.fillRect(0, 0, B, H);
+      hudCtx.globalAlpha = 1;
+      hudCtx.globalCompositeOperation = 'source-over';
+    }
   } else { hudCtx.clearRect(0, 0, B, H); hud.leeren(); } // (M9a.2: auch die Ebenen von HUD-GRÖSSE KLEIN / GROSS)
   const k = dt / M.blende;
   dunkel = nach(dunkel, def.abdunkeln, k * 0.5);
@@ -1234,6 +1304,7 @@ const tonZ = {
   handbremse: false, aufprall: 0, aufprallArt: 0, kontaktArt: -1, kontaktTempo: 0,
   ladedruck: 0, turboAn: false, // M8b: echter Ladedruck des Getriebes und ob das Fahrprofil einen Turbo hat
   turboMal: 1, knallMal: 1,     // M8c: Turbo-Pfeifen/Blow-off und Knall-Chance mal diesen Werten (Fahrprofil)
+  motorAus: false,              // M10b.2: Motor abgewürgt (tiefes Wasser)
 };
 let hapSchaltet = false; // M9a.1: Gangwechsel für die Haptik (Beginn der Schaltpause)
 function tonBild(dt) {
@@ -1252,6 +1323,7 @@ function tonBild(dt) {
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
   tonZ.ladedruck = getriebe.ladedruck; tonZ.turboAn = !!CONFIG.getriebe.turbo.an; // M8b
   tonZ.turboMal = tonWerte.turboMal; tonZ.knallMal = tonWerte.knallMal; // M8c: Ton je Auto (Fahrprofil, Block "ton")
+  tonZ.motorAus = wasserBad.aktiv && !wasserBad.versetzt; // M10b.2: im tiefen Wasser abgewürgt
   tonZ.aufprall = tonInfo.wucht; tonZ.aufprallArt = tonInfo.art; tonZ.kontaktArt = tonInfo.kontaktArt; tonZ.kontaktTempo = tonInfo.kontaktTempo;
   tonInfo.wucht = 0; tonInfo.kontaktArt = -1;
   // M8e: Aufheulen in der Garage (Ton-Modus 'garage': Motor an, keine Reifen, kein Wind, keine Umgebung)
@@ -1328,4 +1400,5 @@ window.__alpineRally = {
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
+  wasserBad, wasserSchwarz, // M10b.2 (Tests): Wasserbad
 };

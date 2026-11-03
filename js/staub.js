@@ -116,6 +116,19 @@ export function baueStaub(szene) {
     staerke[k] = st;
   }
 
+  // M10b.2: Spritzer (Wasser): n Tropfen-Wölkchen aus dem Vorrat, nach oben und zur Seite geworfen. kraft 0..1
+  const wasserFarbe = new THREE.Color((CONFIG.wasser && CONFIG.wasser.bad && CONFIG.wasser.bad.spritzerFarbe) || '#dbe8ee').multiply(licht);
+  function spritzer(x, y, z, n, kraft = 1) {
+    for (let i = 0; i < n; i++) {
+      const w = rnd() * Math.PI * 2, v = (1 + rnd() * 3) * kraft;
+      starte(x, y, z, 0, 0, 1, Math.cos(w) * v, Math.sin(w) * v, wasserFarbe);
+      const k = (naechster + N - 1) % N;
+      vy[k] = (2 + rnd() * 3.5) * kraft;
+      leben[k] *= 0.8;
+    }
+    mesh.visible = true;
+  }
+
   // M3a.1: Welches Hinterrad ist als Nächstes dran? Wird über die Bilder hinweg gemerkt.
   // (Vorher fing jedes Bild wieder links an: Bei ruhiger Fahrt entsteht nur etwa ein Wölkchen pro
   // Bild, darum staubte es immer nur auf einer Seite.)
@@ -166,5 +179,5 @@ export function baueStaub(szene) {
     zustand.aktiv = aktiv;
     mesh.visible = aktiv > 0; // kein Staub: kein Zeichenaufruf
   }
-  return { mesh, aktualisiere, zustand };
+  return { mesh, aktualisiere, zustand, spritzer };
 }

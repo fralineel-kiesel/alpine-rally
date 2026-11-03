@@ -179,6 +179,7 @@ export const CONFIG = {
   // --- Leben an der Strecke (Meilenstein 3d, js/leben.js) --------------
   // Alpweide, Fan-Spots, Wracks, Zäune und Herden: alles Orte dieser Strecke, darum ganz in der Streckendatei (Block "leben")
   leben: S.leben,
+  wasserAn: !!(S.wasser && ((S.wasser.seen || []).length + (S.wasser.fluesse || []).length)), // M10b.2: hat die Strecke Wasser? (Platsch-Klang)
   klangWasser: S.klang.wasser || [], // M10b: Wasser-Klang an See und Fluss [[Streckenmeter, seitlich], ...] (Streckendatei, klang.wasser)
   // --- Wasser (seit M10b, js/wasser.js): Aussehen von Seen, Flüssen und Brücken; wo sie liegen, steht in der Streckendatei
   wasser: {
@@ -196,6 +197,23 @@ export const CONFIG = {
     brueckeDunkel: '#4a3626',  // dunkles Holz (Seitenbalken, Pfosten)
     gelaenderHoehe: 1.0,       // Höhe des Geländers über der Fahrbahn
     gelaenderKreis: 0.3,       // Kollision: Kreise mit diesem Radius entlang des Geländers
+    // M10b.2: zu tief ins Wasser gefahren -> Platsch, Bild schwarz (HUD bleibt), zurück auf die Strasse. Die Zeit läuft weiter
+    // (das ist die Strafe). Nur auf Strecken mit Wasser (Streckendatei "wasser"), nur im Rennen (nicht in der Demo-Fahrt).
+    bad: {
+      tiefe: 0.6,              // zu tief: Boden unter dem Auto liegt so viel (m) unter dem Wasserspiegel
+      nassAb: 0.05,            // flaches Wasser ab so viel (m) über dem Boden: Spritzer und Plätschern, sonst nichts
+      abblenden: 0.3,          // so lange (s) wird das Bild schwarz
+      dauer: 3.0,              // so lange (s) bleibt es schwarz (Richtwert 2 bis 4 s); Steuerung gesperrt, Motor aus
+      einblenden: 0.3,         // so lange (s) wird es danach wieder hell (Auto steht schon auf der Strasse)
+      bremsen: 2.5,            // im tiefen Wasser bremst das Auto so stark (1/s)
+      spritzer: 40,            // grosser Spritzer: so viele Tropfen-Wölkchen (Vorrat des Staubs, js/staub.js)
+      spritzerFarbe: '#dbe8ee', // helles Wasserweiss
+      plaetschernAlle: 0.3,    // flaches Wasser: so oft (s) ein kleiner Spritzer und Plätscher-Ton, wenn das Auto fährt
+      platschPegel: 0.9,       // Lautstärke Platsch (mal LAUTSTÄRKE)
+      plaetscherPegel: 0.22,   // Lautstärke Plätschern im flachen Wasser
+      // Klang Platsch (wie die Aufprall-Klänge, js/audio.js klangRezept): dumpfer Schlag, Rauschen, Tropfen-Knistern
+      platsch: { laenge: 1.3, knall: [0.7, 0.12, 1600], schlag: [95, 40, 0.2, 0.8], rascheln: [0.5, 0.9, 260, 2400] },
+    },
   },
 
   // --- Deko-Sets (seit M10b): welche Motive und Typen diese Strecke zeigt ---------------------------
