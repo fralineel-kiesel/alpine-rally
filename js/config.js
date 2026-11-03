@@ -236,6 +236,10 @@ export const CONFIG = {
     randAnstiegBis: U.gelaende.randAnstiegBis,  // ... bis hier ... (Streckendatei)
     randHoehe: U.gelaende.randHoehe,  // ... um so viele Meter (Talflanken, liegen im Dunst) (Streckendatei)
     seed: Z.gelaende,  // Zufallszahl für Hügel (gleich = gleiches Gelände) (Streckendatei)
+    // M10b.2: Böschung neben der Strasse und am Wasser (Streckendatei, umgebung.boeschung; fehlt = wie bis 0.10b.1):
+    // { schulter: flache Schulter nach dem Bankett (m), steigung: so steil fällt/steigt der Hang höchstens (0.3 = ca. 17°),
+    //   weich: über so viele Meter wird der Hang weich angesetzt (kein Grat), reichweite: so weit von der Strasse gilt es }
+    boeschung: U.boeschung || null,
   },
 
   // --- Felswand / Abhang ----------------------------------------------

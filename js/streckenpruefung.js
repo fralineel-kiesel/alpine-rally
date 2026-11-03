@@ -227,6 +227,14 @@ export function pruefeStrecke(d, { voll = false } = {}) {
   }
   if (!Array.isArray(U.landschaft)) fehler('umgebung.landschaft', 'Liste erwartet (darf leer sein)');
   else U.landschaft.forEach((b, i) => { if (!['x', 'z', 'radius', 'hoehe'].every((k) => istZahl(b[k])) || b.radius <= 0) fehler(`umgebung.landschaft[${i}]`, '{ x, z, radius > 0, hoehe } erwartet'); });
+  // M10b.2: Böschung (freiwillig): flache Schulter, höchste Steigung, weicher Ansatz, Reichweite
+  if ('boeschung' in U) {
+    const B = U.boeschung, BEREICH = { schulter: [0, 10], steigung: [0.05, 0.6], weich: [0, 20], reichweite: [10, 80] };
+    if (!istObjekt(B)) fehler('umgebung.boeschung', 'Objekt { schulter, steigung, weich, reichweite } erwartet');
+    else for (const [k, [a, b]] of Object.entries(BEREICH)) {
+      if (!istZahl(B[k]) || B[k] < a || B[k] > b) fehler(`umgebung.boeschung.${k}`, `${JSON.stringify(B[k])}: Zahl von ${a} bis ${b} erwartet`);
+    }
+  }
 
   // --- Klang ---
   const K = d.klang;

@@ -519,6 +519,8 @@ export function baueDeko(szene, strecke, welt, pflanzen, rand, kuehe, extra = []
         const q0 = Math.cos(w) * f.rx * r, l0 = Math.sin(w) * f.rz * r;
         const x = f.x + f.uz * q0 + f.ux * l0, z = f.z - f.ux * q0 + f.uz * l0;
         if (rndU() < 0.25) continue; // Lücken im Schilf
+        // M10b.2: wo die Böschung den Rand des Sees aufgefüllt hat (Hang zur Strasse), steht kein Schilf im Trockenen
+        if (CONFIG.gelaende.boeschung && welt.gelaendeHoehe(x, z) > f.h + 0.9) continue;
         setzeUH(x, z, UH.schilf);
       }
     }

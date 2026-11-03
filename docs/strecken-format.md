@@ -32,6 +32,7 @@ sagt `?strecke=<id>` in der Adresse (Werkzeuge, Tests) oder sonst die Wahl im Me
 | `checkpoints` | Streckenmeter der Tore, aufsteigend, zwischen Start und Ziel |
 | `nebenwege` | Untergrund-Abschnitte: `{ name, abzweig, einmuendung, belag, … }`, Belag `asphalt`/`schotter`/`wiesenweg`, sonst Asphalt |
 | `umgebung` | `farben` (Palette, Himmel, Dunst), `licht`, `nebel`, `berge`, `fernwald` (Farben), `gelaende` (Landschafts-Charakter), `landschaft` (Hügel/Senken von Hand) |
+| `umgebung.boeschung` | *(seit M10b.2, freiwillig)* `{ schulter, steigung, weich, reichweite }`: Gelände neben der Strasse und am Ufer. Nach dem Bankett eine flache **Schulter** (Meter, Finnland 2.5), dann fällt das Gelände höchstens mit **steigung** ab (0.3 = ca. 17°), über **weich** Meter weich angesetzt (kein Grat); gilt bis **reichweite** Meter neben der Strasse. Liegt das Gelände tiefer (Seeufer, Senke), wird es bis zu dieser Linie aufgefüllt – das Ufer rückt dann von selbst weiter weg. Am Wasser steigt das Gelände hinter dem flachen Ufer mit derselben Steigung an (vorher sprang es am Rand der Uferzone senkrecht hoch: „Faltenwurf“). In Flüssen (unter Brücken) wird nicht aufgefüllt. Fehlt das Feld (Alpen): Gelände wie bis 0.10b.1. Prüfer: alle vier Zahlen Pflicht (schulter 0–10, steigung 0.05–0.6, weich 0–20, reichweite 10–80). Kontrolle: `node tools/hang-pruefen.mjs --strecke <id>` |
 | `natur` | Baumdichte (`sprites`), Büsche (`buesche`), Kühe (`kuehe`), Waldrand-Gruppen an den Nebenwegen. *Seit M10b.1 freiwillig:* `sprites.mindestAbstand` / `sprites.waldAbstand` (so nah dürfen Bäume an die Strassenmitte, fehlt = 9 / 7.5 m wie in den Alpen; Finnland 10.5 m: auf Schotter rutscht man weiter) |
 | `startZiel` | Verlängerungen hinter Start und Ziel, Bäume um Start und Ziel |
 | `leben` | Leben an der Strecke (Weide, Fan-Spots, Wracks, Zäune, Herden), `an: false` = nichts |
@@ -124,6 +125,21 @@ in der echten Physik fahren. Terminal: je Stil Zeit, Zwischenzeiten, Anzahl Aufp
 die Zeile `Gesamtzeiten: …`. Datei (Standard `/tmp/strecke-abfahren-<id>-<auto>.txt`): alle Stellen in Streckenmetern
 und das höchste Tempo je Abschnitt. Rückgabe 1, wenn ein Stil nicht ins Ziel kommt. Für die Alpen trifft es die Zeiten
 von `tools/testfahrer.mjs` genau (Prototyp 2:59.33 / 2:42.35 / 2:31.92).
+
+## Hang-Check (seit M10b.2)
+
+```
+node tools/hang-pruefen.mjs --strecke <id> [--aus <datei.txt>] [--pruefen]
+```
+
+Misst im gezeichneten Gelände (dieselben Dreiecke, auf denen das Auto fährt) alle 2 m beide Seiten der Etappe, die ersten
+15 m ab der äusseren Bankett-Kante (die Kante Bankett → Gras zählt mit): die **Steigung quer zur Strasse** und **Knicke**
+(Grate: Steigung zweier benachbarter 1-m-Stücke sehr verschieden). Grenzen: Warnung **0.45** (ca. 24°: so steil fährt man
+mit Schwung noch hinauf, das Auto bleibt erst ab 0.55 hängen), Ziel **0.35** (ca. 19°), Knick **0.35**. Ausgabe: Stellen
+(Meter von–bis, Seite, grösste Steigung, Ursache) und die Zahl der Stellen über der Grenze. Ursachen: `Ufer`, `Böschung`
+(fällt weg), `Kuppe` (steigt an), `Kehre` (Hang zum anderen Ast), mit Absicht und ohne Fehler: `Wand`, `Abhang`
+(Gegenseite der Felswand), `Brücke` (±6 m um die Brücke), `Kreuzung` (Grasstreifen zwischen zwei Banketten am Abzweig).
+`--pruefen`: Rückgabe 1, wenn es Stellen über 0.45 ohne Absicht gibt.
 
 ## Streckenwahl in den Werkzeugen (seit M10b)
 

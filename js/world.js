@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { STRECKE } from './streckenlader.js';
-import { wasserFlaechen, wasserSchnitt, imWasser } from './wasser.js';
+import { wasserFlaechen, wasserSchnitt, imWasser, uferAnstieg, flussAbstand } from './wasser.js';
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
@@ -236,7 +236,37 @@ export function baueWelt(szene, strecke, netz) {
       }
     }
     if (WASSER.an) h = wasserSchnitt(WASSER, x, z, h); // M10b: unter Seen und Flüssen ausheben
+    if (BOESCHUNG && minD < BOESCHUNG.reichweite + 6) h = boeschungUnten(x, z, h); // M10b.2
     return h;
+  }
+
+  // M10b.2: Böschung (Streckendatei umgebung.boeschung, fehlt = aus): neben der Strasse fällt das Gelände nach einer
+  // flachen Schulter höchstens mit "steigung" ab (weich angesetzt), auch zum Wasser hin. Liegt das Gelände tiefer
+  // (Seeufer, Senke), wird es bis zu dieser Linie aufgefüllt; das Ufer rückt dann von selbst weiter weg.
+  // Zwei Strassen nahe (Kehre, Stummel): beide Linien gemischt nach Abstand (wie die Rampe von Strasse zu Strasse),
+  // so gibt es keinen Sprung, wo die nächste Strasse wechselt, und keine Stufe am Rand der tieferen Strasse.
+  // In Flüssen (unter der Brücke) wird nicht aufgefüllt: der Damm läuft bis 1 m ins Flussbett aus (ab 7 m vor dem Ufer
+  // weich ausgeblendet; neben der Brücke ist zwischen Strasse und Fluss zu wenig Platz für einen ganz flachen Hang).
+  const BOESCHUNG = g.boeschung;
+  const RAND_AUSSEN = CONFIG.strasse.breite / 2 + CONFIG.strasse.bankett;
+  const qb1 = {}, qb2 = {};
+  function unterGrenze(q) {
+    if (q.wandSeite && Math.sign(q.seite) === q.wandSeite) return -Infinity; // an Felswänden nichts ändern
+    const a = q.abstand - (RAND_AUSSEN + BOESCHUNG.schulter);
+    return q.h - 0.3 - (a > 0 ? uferAnstieg(a, 0, BOESCHUNG) : 0);
+  }
+  function boeschungUnten(x, z, h) {
+    const B = BOESCHUNG;
+    if (netz) netz.abfrage(x, z, qb1); else strecke.abfrage(x, z, qb1);
+    if (qb1.abstand > B.reichweite) return h;
+    let L = unterGrenze(qb1);
+    if (netz ? netz.zweiteStrasse(x, z, qb1, B.reichweite, qb2) : strecke.andererAst(x, z, qb1.s, 40, B.reichweite, qb2)) {
+      const e1 = Math.max(0, qb1.abstand - g.flachBis), e2 = Math.max(0, qb2.abstand - g.flachBis);
+      L = mische(L, unterGrenze(qb2), glatt(0, 1, e1 / Math.max(1e-3, e1 + e2)));
+    }
+    if (L <= h) return h;
+    const fluss = WASSER.an ? glatt(-1, 7, flussAbstand(WASSER, x, z)) : 1;
+    return h + (L - h) * fluss;
   }
 
   // ---------------------------------------------------------------
