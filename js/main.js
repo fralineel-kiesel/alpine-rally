@@ -59,6 +59,8 @@ import { winkelNorm, begrenze } from './util.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe } from './wasser.js';
+import { baueSchatten } from './schatten.js';
+import { STRECKE } from './streckenlader.js';
 import { umgebungsQuellen } from './umgebung.js';
 
 // Einstellungen laden (fehlt der Browser-Speicher: Standardwerte) und Sprache setzen
@@ -178,6 +180,21 @@ function nebenwegSperrenZeigen(kamPos) {
 }
 // Leben an der Strecke (M3d): Alphütte und Details am Wiesenweg, Fan-Spots, Unfallautos – sind auch Hindernisse
 const leben = baueLeben(szene, strecke, welt, { pflanzen, rand: strassenrand, kuehe });
+// M10b.2: Kunst-Schatten (nur Strecken mit dem Feld "schatten"): Bäume, Rentiere/Kühe, Zuschauer, Häuser, dazu das Auto
+const schatten = (() => {
+  if (!STRECKE.schatten) return baueSchatten(szene, strecke, welt, [], null);
+  const Q = [], bb = CONFIG.schatten.baumBreite;
+  for (const t of pflanzen.tannen.concat(pflanzen.laubbaeume)) Q.push({ x: t.x, z: t.z, h: t.h, b: t.b * bb });
+  for (const k of kuehe.kuehe) Q.push({ x: k.x, z: k.z, h: 1.3 * (k.groesse || 1), b: 1.1 * (k.groesse || 1) });
+  for (const f of leben.figuren || []) Q.push({ x: f.x, z: f.z, h: 1.7 * (f.groesse || 1), b: 0.7 });
+  const W = CONFIG.leben && CONFIG.leben.wiesenweg;
+  for (const hs of (W && W.haeuser) || []) {
+    const p = netz.etappePunkt(hs.s), lat = hs.seite * hs.lat;
+    Q.push({ x: p.x - p.tz * lat, z: p.z + p.tx * lat, h: (hs.hoehe || 2.5) + 1.2, b: Math.max(hs.laenge || 6, hs.tiefe || 5) });
+  }
+  return baueSchatten(szene, strecke, welt, Q, STRECKE.schatten);
+})();
+schatten.setzeAn(einstellungen.schatten !== false);
 strassenrand.hindernisse.push(...leben.hindernisse);
 // M10b: Seen, Flüsse und Brücken (nur wenn die Strecke Wasser hat) – Brückengeländer sind Hindernisse
 const wasser = baueWasser(szene, strecke, netz, welt.wasser);
@@ -1044,6 +1061,7 @@ ablauf.registriere('ziel', {
 beiAenderung((name, wert) => {
   if (name === 'aufloesung') { aufloesungSetzen(); auto.detail(renderer.domElement.width); } // M8a: Schrift am Auto je Pixelgrösse
   if (name === 'fps') debugAn = wert;
+  if (name === 'schatten') schatten.setzeAn(wert); // M10b.2
   if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
   if (name === 'lautstaerke') ton.lautstaerke(wert); // M7a: sofort, weich
   if (name === 'signale') ton.signalLautstaerke(wert); // M7a.1: Regler SIGNALTÖNE, sofort
@@ -1212,6 +1230,7 @@ function schleife(jetzt) {
   startZiel.aktualisiere(dtWelt, kamera.position);
   leben.aktualisiere(dtWelt, kamera.position);
   nebenwegSperrenZeigen(kamera.position);
+  schatten.aktualisiere(physik.x, physik.z, physik.richtung); // M10b.2 (nur Strecken mit Schatten)
   renderer.render(szene, kamera);
   szeneInfo.calls = renderer.info.render.calls; szeneInfo.dreiecke = renderer.info.render.triangles; // M8c: nur die Szene
   // M8c: Garage – das drehende Modell in den Vorschau-Rahmen (nur solange die Seite AUTO zu sehen ist)
@@ -1400,5 +1419,5 @@ window.__alpineRally = {
   get auto() { return aktivesProfil(); }, waehleFahrprofil, fahrlabor: null, // M8a: Id des Fahrprofils
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
-  wasserBad, wasserSchwarz, // M10b.2 (Tests): Wasserbad
+  wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
 };

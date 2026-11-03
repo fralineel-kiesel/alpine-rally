@@ -227,6 +227,12 @@ export function pruefeStrecke(d, { voll = false } = {}) {
   }
   if (!Array.isArray(U.landschaft)) fehler('umgebung.landschaft', 'Liste erwartet (darf leer sein)');
   else U.landschaft.forEach((b, i) => { if (!['x', 'z', 'radius', 'hoehe'].every((k) => istZahl(b[k])) || b.radius <= 0) fehler(`umgebung.landschaft[${i}]`, '{ x, z, radius > 0, hoehe } erwartet'); });
+  // M10b.2: Kunst-Schatten (freiwillig, oberste Ebene): Sonne (Himmelsrichtung), Länge, Dunkelheit
+  if ('schatten' in d) {
+    const Sch = d.schatten, BER = { sonne: [0, 360], laenge: [0.2, 6], dunkelheit: [0.1, 1] };
+    if (!istObjekt(Sch)) fehler('schatten', 'Objekt { sonne, laenge, dunkelheit } erwartet');
+    else for (const [k, [a, b]] of Object.entries(BER)) if (!istZahl(Sch[k]) || Sch[k] < a || Sch[k] > b) fehler(`schatten.${k}`, `${JSON.stringify(Sch[k])}: Zahl von ${a} bis ${b} erwartet`);
+  }
   // M10b.2: Böschung (freiwillig): flache Schulter, höchste Steigung, weicher Ansatz, Reichweite
   if ('boeschung' in U) {
     const B = U.boeschung, BEREICH = { schulter: [0, 10], steigung: [0.05, 0.6], weich: [0, 20], reichweite: [10, 80] };

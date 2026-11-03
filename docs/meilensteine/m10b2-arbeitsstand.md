@@ -36,6 +36,13 @@ Kunst-Schatten, Version 0.10b.2. Vergleichsstand 0.10b.1 = `a289fad` (`git workt
   nächsten Herde in 45 m, Stereo/Abstand wie Kuhglocken, einmal Aufschrecken unter 16 m. Pause: nichts Neues, Umgebung gedämpft.
 - Alpen: Glocken wie bisher, keine Rentier-Puffer; x5 grün (eine Musik-Echtzeitzeile wackelt, zweiter Lauf grün).
 
+## Teil E – Kunst-Schatten (fertig, ohne Schilder/Brücke)
+- Streckenfeld `schatten: { sonne 240, laenge 2.2, dunkelheit 0.75 }` (Finnland), `js/schatten.js`: Flecken (3 Stufen, Raster,
+  multipliziert = kühle Abdunklung) unter Auto (Bodenhöhe, für M10c), Bäumen, Rentieren, Zuschauern, Häusern. 4843 Flecken
+  nahe der Strecke, höchstens 240 je Bild (vor dem Auto), ein Zeichenaufruf. Nicht über Wasser. Schilder und Brücke: keine.
+- Einstellung SCHATTEN AN/AUS (Grafik, Hinweis NUR AUF STRECKEN MIT SCHATTEN). AUS = pixelgleich wie vor Teil E.
+- Bildzeit Median aus 5: 544 -> 522 ms (Rauschen), Alpen-Referenz gleich. Vergleichsstand vor E: `git worktree add <o> d1eb680`.
+
 ## Offen / nächste Schritte
-- E Schatten, F Bericht.
+- F: Bilder, Bericht, STAND/KONZEPT, Version 0.10b.2, volle Regression (--lang), PR.
 - Bild Meter 969: Kamera für die Bilder in Teil F neu ausrichten (Hang besser im Bild).

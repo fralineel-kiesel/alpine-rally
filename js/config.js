@@ -216,6 +216,18 @@ export const CONFIG = {
     },
   },
 
+  // --- Kunst-Schatten (M10b.2, js/schatten.js): nur auf Strecken mit dem Feld "schatten" (Sonne, Länge, Dunkelheit) ---
+  schatten: {
+    max: 240,                  // höchstens so viele Flecken (Bäume, Häuser, Tiere, Zuschauer) pro Bild, die nächsten vor dem Auto
+    vor: 200, hinter: 30,      // nur Objekte so weit (m) vor / hinter dem Auto entlang der Strecke
+    nahStrecke: 28,            // nur Objekte bis so weit (m) neben der Strasse
+    farbe: '#16203a',          // kühle Abdunklung (nicht schwarz)
+    stufen: [0.62, 0.42, 0.22], // Deckkraft der drei Dunkelstufen (innen -> aussen), mal "dunkelheit" der Strecke
+    heben: 0.05,               // so hoch (m) über dem Boden (kein Flackern)
+    baumBreite: 0.5,           // Fleck eines Baums: so viel mal die Breite des Baum-Bilds
+    auto: { laenge: 4.2, breite: 1.8, hoehe: 1.3 }, // Fleck unter dem Auto (m)
+  },
+
   // --- Rentier-Ton (M10b.2): nur wenn die Strecke Rentiere hören lässt (deko.tierKlang = 'rentier'), js/umgebung.js ---
   // Selten und leise: Schnauben und Klicken der Sehnen aus der nächsten Herde; Lautstärke hängt an LAUTSTÄRKE (Schiene
   // Umgebung), in der Pause gedämpft wie die übrige Umgebung. Raum wie die Kuhglocken (Stereo, Abstand, Tiefpass)
@@ -1440,6 +1452,7 @@ export const CONFIG = {
       aufloesung: 0,           // Pixelgrösse: Nummer in "aufloesungen" (0 = 320x180, Original-Look)
       einheit: 'kmh',          // 'kmh' oder 'mph'
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
+      schatten: true,          // M10b.2: Kunst-Schatten (nur auf Strecken mit Schatten, z. B. Finnland)
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
       lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)

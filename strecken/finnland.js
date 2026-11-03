@@ -390,6 +390,10 @@ export default {
     boeschung: { schulter: 2.5, steigung: 0.3, weich: 4, reichweite: 40 },
   },
 
+  // M10b.2: Kunst-Schatten (js/schatten.js): Sonne im Westsüdwesten (Grad, 0 = Nord, wie licht.sonneRichtung), tiefe
+  // Abendsonne = lange Schatten (Länge = Objekthöhe mal laenge), dunkelheit = Deckkraft der Flecken
+  schatten: { sonne: 240, laenge: 2.2, dunkelheit: 0.75 },
+
   // --- Natur ---
   natur: {
     sprites: { tannenProKm: 3600, laubProKm: 2700, steineProKm: 800, // Fichten+Kiefern, Birken, Steine (M10b.1: mehr Birken; weniger Versuche als 0.10b wegen der Bildzeit, dichter wirkt der Wald durch Fichten und Unterholz)

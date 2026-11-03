@@ -104,6 +104,7 @@ if (teil('x2')) {
 // ===================================================================== (d) Pace-Notes, Checkpoints, Strecke
 // M10b.2: weitere neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
 const NEU_WERTE = [
+  (c) => { if (c.menue && c.menue.standard) delete c.menue.standard.schatten; }, // Teil E: Einstellung SCHATTEN
   (c) => { delete c.wasserAn; if (c.wasser) delete c.wasser.bad; }, // Teil B: Wasserbad (Alpen: kein Wasser)
   (c) => { if (c.auto) for (const k of ['schotterHeck', 'schotterStabil', 'schotterTraktion']) delete c.auto[k]; // Teil C: Escorta (nur Schotter)
     const e = c.fahrprofile && c.fahrprofile.escorta && c.fahrprofile.escorta.auto; if (e) for (const k of ['schotterGrip', 'schotterHeck', 'schotterStabil', 'schotterTraktion']) delete e[k]; },
@@ -143,7 +144,7 @@ if (teil('x3')) {
     // (M10b: Fahnen-Art 'kreuz' heisst jetzt 'motiv' = Landesfahne der Strecke; gleiche Wirkung, darum gleichgesetzt)
     const ordne = (o) => (Array.isArray(o) ? o.map(ordne) : o && typeof o === 'object' ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, ordne(o[k])])) : o === 'motiv' ? 'kreuz' : o);
     const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
-    const NEU_M10B = ['wasserAn', 'rentierKlang']; // neue Blöcke in M10b.2 (wasserAn: Strecke hat Wasser, Alpen false)
+    const NEU_M10B = ['wasserAn', 'schatten', 'rentierKlang']; // neue Blöcke in M10b.2 (wasserAn: Strecke hat Wasser, Alpen false)
     // neue Werte innerhalb der Blöcke (M10b.2, für die Alpen wirkungslos): gelaende.boeschung (Alpen null), NEU_WERTE
     for (const c of [cn, ca]) { if (c.gelaende) delete c.gelaende.boeschung; for (const f of NEU_WERTE) f(c); }
     const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
@@ -230,7 +231,7 @@ if (teil('x4')) {
       .concat(Object.keys(neu.seiten).map((k) => [`menü ${k}`, neu.seiten[k], alt.seiten[k]]));
     const rot = [], nurVersion = [], neuGestaltet = [];
     // M10b.1: Seite ETAPPE zeigt die Finnland-Zeile (Länge, Vorschau-Karte) der neuen Strecke – absichtlich anders
-    const NEU_GESTALTET = ['menü etappe'];
+    const NEU_GESTALTET = ['menü etappe', 'menü einstellungen']; // (M10b.2: neue Zeile SCHATTEN in den Einstellungen)
     // Seit Teil F steht 0.10b.2 statt 0.10b.1 in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
     // anders sein (Unterschied höchstens 7 Pixel hoch, ganz in der Zeile, in der die Version steht)
     const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 220 && box[1] >= 168) || k === 'menü credits');
@@ -776,6 +777,119 @@ if (teil('q')) {
   const pu = await s.page.evaluate(() => Object.keys(window.__alpineRally.ton.werk.puffer).filter((k) => /rentier|platsch/.test(k)));
   await s.schliessen();
   melde(r.schnauben + r.klick + r.schreck === 0 && r.glocke > 0 && pu.length === 0, `Alpen: ${r.glocke}× Glocke, 0 Rentier-Laute, keine Rentier-/Platsch-Puffer (${pu.join(', ') || 'keine'})`);
+}
+
+// ===================================================================== Teil E: Kunst-Schatten (t)–(x)
+const VOR_E = arg('--vorE') ? path.resolve(arg('--vorE')) : null; // Stand vor Teil E (git worktree add <ordner> d1eb680)
+// Finnland-Bild mit eigener Bild-Uhr an Stelle sM (Auto steht), optional Schatten aus
+async function schattenBild(wurzel, sM, { aus = false, auto, frames = 6, crop = null } = {}) {
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=finnland${auto ? `&auto=${auto}` : ''}`, { uhr: true, auto });
+  await bereit(s);
+  await bilder(s, 2);
+  const info = await s.page.evaluate(({ sM, aus }) => {
+    const A = window.__alpineRally; A.anhalten = true; A.setzeAuf(sM); A.kameraSofort();
+    if (A.schatten && aus) A.schatten.setzeAn(false);
+    return A.schatten ? { an: A.schatten.an, aktiv: A.schatten.aktiv } : null;
+  }, { sM, aus });
+  await bilder(s, frames);
+  const b = await foto(s);
+  const fehlerListe = s.fehler.slice();
+  await s.schliessen();
+  return { b, info, fehler: fehlerListe };
+}
+if (teil('t')) {
+  console.log('(t) Alpen: keine Schatten (Bilder pixelgleich: x4)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await bereit(s);
+  const r = await s.page.evaluate(() => { const A = window.__alpineRally; return { an: A.schatten.an, schatten: A.szene.children.filter((o) => /^schatten/.test(o.name)).length }; });
+  await s.schliessen();
+  melde(!r.an && r.schatten === 0, `Alpen: Schatten ${r.an ? 'an' : 'aus'} (kein Feld "schatten"), keine Schatten-Objekte in der Szene (${r.schatten})`);
+}
+if (teil('u')) {
+  console.log('(u) Finnland: Schatten unter allen fünf Autos, Richtung = Sonnenrichtung in der Welt');
+  const s = await starteSpiel({ breite: 320, hoehe: 200 });
+  for (const id of AUTOS) {
+    const an = await schattenBild(WURZEL, 640, { auto: id }), aus = await schattenBild(WURZEL, 640, { auto: id, aus: true });
+    const v = await vergleiche(s.page, aus.b, an.b, id === 'rt4');
+    if (v.url) fs.writeFileSync(path.join(LOG, 'schatten-an-aus.png'), Buffer.from(v.url.split(',')[1], 'base64'));
+    // Unterschied unter dem Auto (Bildmitte unten: das Auto steht dort)
+    const unten = await s.page.evaluate(async ({ a, b }) => {
+      const lade = async (x) => createImageBitmap(await (await fetch(x)).blob());
+      const d = async (u) => { const im = await lade(u), c = new OffscreenCanvas(im.width, im.height), x = c.getContext('2d'); x.drawImage(im, 0, 0); return x.getImageData(0, 0, im.width, im.height); };
+      const A = await d(a), B = await d(b), W = A.width, H = A.height; let n = 0, dunkler = 0;
+      for (let y = Math.floor(H * 0.55); y < H * 0.8; y++) for (let x = Math.floor(W * 0.3); x < W * 0.7; x++) { const i = (y * W + x) * 4; if (A.data[i] !== B.data[i] || A.data[i + 1] !== B.data[i + 1]) { n++; if (B.data[i] + B.data[i + 1] + B.data[i + 2] < A.data[i] + A.data[i + 1] + A.data[i + 2]) dunkler++; } }
+      return { n, dunkler };
+    }, { a: aus.b, b: an.b });
+    melde(unten.n > 150 && unten.dunkler / unten.n > 0.9 && an.fehler.length === 0, `${id}: Schatten unter dem Auto sichtbar (${unten.n} Pixel um das Auto anders, ${Math.round(unten.dunkler / Math.max(1, unten.n) * 100)} % davon dunkler; ganzes Bild ${v.anders} Pixel)`);
+  }
+  await s.schliessen();
+  const t = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(t);
+  const r = await t.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.schatten, P = A.physik; A.anhalten = true;
+    const daten = A.CONFIG.schattenDaten || null;
+    const erg = [];
+    for (const yaw of [0, 1.2, 2.5, -2]) { // Auto in vier Richtungen: der Fleck liegt immer in derselben Weltrichtung
+      P.reset(P.x, P.z, yaw); S.aktualisiere(P.x, P.z, yaw);
+      const e = S.auto.matrix.elements, dx = e[12] - P.x, dz = e[14] - P.z, l = Math.hypot(dx, dz);
+      erg.push(Math.round(Math.atan2(dx / l, -dz / l) * 180 / Math.PI));
+    }
+    const m = S.statisch.instanceMatrix.array, ux = m[8], uz = m[10], ul = Math.hypot(ux, uz);
+    return { auto: erg, baum: Math.round(Math.atan2(ux / ul, -uz / ul) * 180 / Math.PI), richtung: S.richtung };
+  });
+  await t.schliessen();
+  const soll = 60; // Sonne 240° (Westsüdwest, strecken/finnland.js) -> Schatten nach 60° (Ostnordost)
+  melde(r.auto.every((w) => Math.abs(w - soll) <= 1) && Math.abs(r.baum - soll) <= 1, `Richtung (Grad, 0 = Nord): Auto-Fleck bei vier Blickrichtungen ${r.auto.join(' / ')}, Baum-Fleck ${r.baum}, Soll ${soll} (Sonne 240°)`);
+}
+if (teil('v')) {
+  console.log('(v) SCHATTEN AUS = Bild wie vor Teil E');
+  if (!VOR_E) info('nur mit --vorE <ordner> (git worktree add <ordner> d1eb680)');
+  else {
+    const s = await starteSpiel({ breite: 320, hoehe: 200 });
+    for (const sM of [640, 1420]) {
+      const neu = await schattenBild(WURZEL, sM, { aus: true }), alt = await schattenBild(VOR_E, sM);
+      const v = await vergleiche(s.page, alt.b, neu.b);
+      melde(v.anders === 0, `Finnland ${sM} m, SCHATTEN AUS: ${v.anders} Pixel anders als vor Teil E`);
+    }
+    await s.schliessen();
+  }
+}
+async function flackern(wurzel) {
+  const s = await oeffne(wurzel, '?menue=aus&ton=aus&strecke=finnland', { uhr: true });
+  await bereit(s);
+  await bilder(s, 2);
+  await s.page.evaluate(() => { const A = window.__alpineRally; A.anhalten = true; A.setzeAuf(640); A.kameraSofort(); });
+  await bilder(s, 4);
+  const erstes = await foto(s);
+  let anders = 0;
+  const v = await starteSpiel({ breite: 320, hoehe: 200 });
+  for (let i = 0; i < 4; i++) { await bilder(s, 30); const b = await foto(s); anders = Math.max(anders, (await vergleiche(v.page, erstes, b)).anders); }
+  await v.schliessen(); await s.schliessen();
+  return anders;
+}
+if (teil('w')) {
+  console.log('(w) kein Flackern über 120 Bilder bei stehendem Auto');
+  const neu = await flackern(WURZEL), alt = VOR_E ? await flackern(VOR_E) : null;
+  melde(alt != null ? neu <= alt : neu === 0, `120 Bilder stehend: höchstens ${neu} Pixel anders als im ersten Bild${alt != null ? ` (vor Teil E ohne Schatten: ${alt} – Vögel, Rauch, Zuschauer bewegen sich; mit Schatten nicht mehr)` : ''}`);
+}
+if (teil('x')) {
+  console.log('(x) Bildzeit Finnland mit Schatten gegen vor Teil E (Median aus 5, Alpen als Referenz im selben Lauf)');
+  if (!VOR_E) info('nur mit --vorE <ordner>');
+  else {
+    const med = (l) => l.slice().sort((a, b) => a - b)[Math.floor(l.length / 2)];
+    const m = { neu: [], alt: [], aus: [], alpenNeu: [], alpenAlt: [] };
+    for (let i = 0; i < 5; i++) {
+      m.alt.push((await leistung(VOR_E, '&strecke=finnland', 640)).ms);
+      m.neu.push((await leistung(WURZEL, '&strecke=finnland', 640)).ms);
+      m.alpenAlt.push((await leistung(VOR_E, '', 2610)).ms);
+      m.alpenNeu.push((await leistung(WURZEL, '', 2610)).ms);
+    }
+    const r = { neu: med(m.neu), alt: med(m.alt), an: med(m.alpenNeu), aa: med(m.alpenAlt) };
+    const plus = (r.neu / r.alt - 1) * 100, plusAlpen = (r.an / r.aa - 1) * 100;
+    fs.writeFileSync(path.join(LOG, 'bildzeit.json'), JSON.stringify({ m, r }, null, 1));
+    info(`Einzelwerte (ms): Finnland vor E ${m.alt.map((x) => x.toFixed(0)).join('/')}, mit Schatten ${m.neu.map((x) => x.toFixed(0)).join('/')}; Alpen vor E ${m.alpenAlt.map((x) => x.toFixed(0)).join('/')}, jetzt ${m.alpenNeu.map((x) => x.toFixed(0)).join('/')}`);
+    melde(plus <= 8 + Math.max(0, plusAlpen), `Bildzeit Median Finnland: vor Teil E ${r.alt.toFixed(0)} ms, mit Schatten ${r.neu.toFixed(0)} ms (${plus >= 0 ? '+' : ''}${plus.toFixed(1)} %, Grenze +8 %); Alpen-Referenz ${r.aa.toFixed(0)} -> ${r.an.toFixed(0)} ms (${plusAlpen >= 0 ? '+' : ''}${plusAlpen.toFixed(1)} %, Streuung)`);
+  }
 }
 
 // @@TEILE@@
