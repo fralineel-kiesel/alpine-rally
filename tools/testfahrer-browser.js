@@ -25,6 +25,10 @@ export const PROFILE = {
   vorsichtig: { quer: 4.5, bremsen: 5.5 },
   mittel: { quer: 6, bremsen: 6.5 },
   flott: { quer: 7.5, bremsen: 7.5 },
+  // M10b.2: "digital" = Lino mit Tastatur/Controller: Gas fast immer voll, Lenkung nur links/rechts/gerade mit derselben
+  // Lenk-Rampe wie das Spiel bei Tastatur (js/input.js: tastaturLenkTempo, tastaturRueckTempo, Lenkempfindlichkeit
+  // Standard), Bremsen vor Kurven voll wie "mittel" (gleiche Tempo-Ziele), keine Handbremse, kein Gas-Lupfen im Drift
+  digital: { quer: 6, bremsen: 6.5, digital: true },
 };
 
 // Pfad aus Punktlisten, mit Zieltempo für jeden Punkt
@@ -49,7 +53,7 @@ export function bauePfad(A, xs, zs, profil) {
     const ds = Math.hypot(xs[i + 1] - xs[i], zs[i + 1] - zs[i]);
     vZiel[i] = Math.min(vZiel[i], Math.sqrt(vZiel[i + 1] ** 2 + 2 * profil.bremsen * ds));
   }
-  return { xs, zs, vZiel, n };
+  return { xs, zs, vZiel, n, digital: !!profil.digital, taste: 0, lenk: 0 };
 }
 
 // Nächster Pfadpunkt (in der Nähe des letzten)
@@ -69,8 +73,38 @@ function naechster(pfad, x, z, ab) {
   return best;
 }
 
+// M10b.2: Stil "digital" – Tasten wie ein Mensch: links/rechts drücken und loslassen (antippen), daraus die Lenkung mit
+// der Tastatur-Rampe des Spiels (js/input.js leseEingabe)
+const DIGITAL = { schwelle: 0.08, bremsUeber: 0.3 };
+function steuereDigital(A, pfad, idx) {
+  const p = A.physik, s = A.CONFIG.steuerung, M = A.CONFIG.menue, dt = A.SCHRITT;
+  const v = Math.max(0, p.vVor);
+  const voraus = Math.min(pfad.n - 1, idx + Math.round(5 + v * 0.35));
+  const ziel = Math.atan2(pfad.xs[voraus] - p.x, pfad.zs[voraus] - p.z);
+  const wunsch = begrenze(-winkelNorm(ziel - p.richtung) * 2.5, -1, 1);
+  // Taste halten, solange der Einschlag noch nicht so gross ist wie gewünscht, dann los (antippen wie ein Mensch);
+  // in die Gegenrichtung sofort drücken. Kleine Wünsche (unter schwelle) = geradeaus (keine Taste)
+  const l0 = pfad.lenk || 0;
+  pfad.taste = Math.abs(wunsch) < DIGITAL.schwelle ? 0 : (Math.sign(wunsch) !== Math.sign(l0) || Math.abs(l0) < Math.abs(wunsch)) ? Math.sign(wunsch) : 0;
+  // Tastatur-Rampe wie im Spiel (Lenkempfindlichkeit Standard)
+  const f = M.lenkStufen[(A.einstellungen && A.einstellungen.lenkStufe) ?? 2] ?? 1;
+  let l = pfad.lenk || 0;
+  if (pfad.taste !== 0) {
+    l += pfad.taste * (Math.sign(pfad.taste) !== Math.sign(l) && l !== 0 ? s.tastaturRueckTempo : s.tastaturLenkTempo * f) * dt;
+    l = begrenze(l, -1, 1);
+  } else {
+    const r = s.tastaturRueckTempo * dt;
+    l = Math.abs(l) <= r ? 0 : l - Math.sign(l) * r;
+  }
+  pfad.lenk = l;
+  const vz = pfad.vZiel[Math.min(pfad.n - 1, idx + 2)];
+  const bremse = v - vz > DIGITAL.bremsUeber ? 1 : 0;
+  return { gas: bremse ? 0 : 1, bremse, lenkung: l, handbremse: false, reset: false, debug: false };
+}
+
 // Eingabe für einen Schritt
 function steuere(A, pfad, idx) {
+  if (pfad.digital) return steuereDigital(A, pfad, idx);
   const p = A.physik;
   const v = Math.max(0, p.vVor);
   const voraus = Math.min(pfad.n - 1, idx + Math.round(5 + v * 0.35));

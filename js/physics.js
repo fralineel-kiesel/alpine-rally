@@ -114,7 +114,12 @@ export class Fahrphysik {
     // M10b.1: Schotter-Griff des Autos (Escorta > 1; 1 = keine Rechnung, damit die anderen Autos bit-gleich bleiben)
     if (boden.belag === 'schotter' && c.schotterGrip && c.schotterGrip !== 1) { gripV *= c.schotterGrip; gripH *= c.schotterGrip; }
     const schraeg = Math.atan2(vSeit, Math.max(Math.abs(vVor), 0.5));
-    if (Math.abs(schraeg) > 0.12) gripH *= 1 - c.gasImDrift * eingabe.gas;
+    // M10b.2: Escorta auf Schotter (auto.schotterHeck < 1): Gas im Drift und der Schub hinten lockern das Heck nur zu
+    // diesem Anteil (das Heck bricht später und sanfter aus); 1 = wie bisher (alle anderen Autos, jeder andere Belag)
+    const sh = boden.belag === 'schotter' && c.schotterHeck != null && c.schotterHeck !== 1 ? c.schotterHeck : 1;
+    // M10b.2: ... und das Auto fängt sich im Drift stärker von selbst (auto.schotterStabil > 1: Stabilität mal diesem Wert)
+    const ss = boden.belag === 'schotter' && c.schotterStabil != null && c.schotterStabil !== 1 ? c.schotterStabil : 1;
+    if (Math.abs(schraeg) > 0.12) gripH *= 1 - c.gasImDrift * eingabe.gas * sh;
     // M8c: Hinterradantrieb (antriebHinten = Anteil des Antriebs, der die Haftung hinten aufbraucht; fehlt/0 = aus):
     // wie ein Reibungskreis – je mehr Schub auf die Hinterräder geht, desto weniger halten sie seitlich, und sie bauen
     // die Seitenkraft weicher auf (das Heck schiebt unter Gas nach aussen). Gerechnet gegen die Haftung hinten auf
@@ -123,7 +128,7 @@ export class Fahrphysik {
     let heckSchub = 1;
     const aH = c.antriebHinten || 0;
     if (aH > 0 && eingabe.gas > 0 && vVor > -0.5 && motor.beschl > 0) {
-      const anteil = begrenze((motor.beschl * aH) / Math.max(1e-6, c.gripHinten * lastH), 0, 0.9);
+      const anteil = begrenze((motor.beschl * aH * sh) / Math.max(1e-6, c.gripHinten * lastH), 0, 0.9);
       heckSchub = Math.sqrt(1 - anteil * anteil);
       gripH *= heckSchub;
     }
@@ -196,7 +201,7 @@ export class Fahrphysik {
     const ohnePedal = eingabe.gas < 0.05 && eingabe.bremse < 0.05;
     const laengsQuer = -kraftV * Math.sin(deltaLaengs) * (ohnePedal ? glatt(0.5, 2.0, Math.abs(vVor)) : 1);
     const drehBeschl = (a * kraftV * Math.cos(delta) - b * kraftH) / c.traegheit
-      + c.stabilitaet * (boden.stabilitaet ?? 1) * this.stabAnteil * schraeg * Math.min(1, Math.abs(vVor) / 10);
+      + c.stabilitaet * (boden.stabilitaet ?? 1) * ss * this.stabAnteil * schraeg * Math.min(1, Math.abs(vVor) / 10);
 
     // Längs zuerst Antrieb + Querkraft-Anteil, dann Widerstand (ohne Vorzeichenwechsel)
     let vVorNeu = vVor + (antrieb + laengsQuer) * dt;

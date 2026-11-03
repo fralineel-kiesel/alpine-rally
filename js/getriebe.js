@@ -163,7 +163,9 @@ export class Getriebe {
           if (turbo) beschl *= (1 - T.verlust) + (T.verlust + T.mehr) * this.ladedruck;
           // auf Gras drehen die Räder durch (M8a: Allrad bringt je Belag mehr auf den Boden, Prototyp: 1)
           // M10b.1: Schotter-Griff des Autos (auto.schotterGrip, Escorta) gilt auch für die Traktion (Haftung, nicht Leistung)
-          const sg = belag === 'schotter' && CONFIG.auto.schotterGrip && CONFIG.auto.schotterGrip !== 1 ? CONFIG.auto.schotterGrip : 1;
+          let sg = belag === 'schotter' && CONFIG.auto.schotterGrip && CONFIG.auto.schotterGrip !== 1 ? CONFIG.auto.schotterGrip : 1;
+          // M10b.2: Traktion nur auf Schotter (auto.schotterTraktion, Escorta: Räder drehen weniger durch; 1 = wie bisher)
+          if (belag === 'schotter' && CONFIG.auto.schotterTraktion && CONFIG.auto.schotterTraktion !== 1) sg *= CONFIG.auto.schotterTraktion;
           beschl = Math.min(beschl, g.traktion * grip * sg * (belag && g.allrad ? g.allrad[belag] ?? 1 : 1));
         }
         if (gas < 0.05) {

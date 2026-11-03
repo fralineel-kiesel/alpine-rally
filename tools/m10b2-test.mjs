@@ -105,6 +105,8 @@ if (teil('x2')) {
 // M10b.2: weitere neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
 const NEU_WERTE = [
   (c) => { delete c.wasserAn; if (c.wasser) delete c.wasser.bad; }, // Teil B: Wasserbad (Alpen: kein Wasser)
+  (c) => { if (c.auto) for (const k of ['schotterHeck', 'schotterStabil', 'schotterTraktion']) delete c.auto[k]; // Teil C: Escorta (nur Schotter)
+    const e = c.fahrprofile && c.fahrprofile.escorta && c.fahrprofile.escorta.auto; if (e) for (const k of ['schotterGrip', 'schotterHeck', 'schotterStabil', 'schotterTraktion']) delete e[k]; },
 ];
 async function streckenAbdruck(wurzel, strecke = 'alpen') {
   const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}`);
@@ -412,7 +414,7 @@ if (teil('c')) {
       `Pace-Notes (${neu.notes.length}), Checkpoints, Abschnitte und Strassenpunkte bit-gleich wie 0.10b.1`);
   }
   for (const id of ['prototyp', ...AUTOS]) {
-    if (id === 'escorta' && !NUR?.includes('c')) continue; // Escorta ändert sich ab Teil C (siehe (k))
+    if (id === 'escorta') continue; // Escorta ändert sich ab Teil C (siehe (k))
     const r = abfahren(id);
     const d = r.zeiten.split(' / ').map((t, i) => Math.abs(sek(t) - sek(FI_REF[id].split(' / ')[i])));
     melde(d.length === 3 && d.every((x) => x <= 0.05), `${id}: ${r.zeiten} (0.10b.1: ${FI_REF[id]}), Abweichung höchstens ${Math.max(...d).toFixed(2)} s`);
@@ -625,6 +627,86 @@ if (teil('j')) {
   });
   await s.schliessen();
   melde(bereitTon && r.platsch === 1 && r.aus && r.wiederAn, `Platsch-Puffer gebaut ${bereitTon}, Platsch gespielt ${r.platsch}×, Motor im Schwarzbild aus ${r.aus}, nach dem Zurücksetzen wieder an ${r.wiederAn}`);
+}
+
+// ===================================================================== Teil C: Escorta auf Schotter (k)–(o)
+const STILE = ['vorsichtig', 'mittel', 'flott', 'digital'];
+// Finnland je Auto in allen vier Stilen, neu und (mit --alt) im Stand 0.10b.1 (Spiel und Streckendatei von dort,
+// Testfahrer von hier, damit es den Stil "digital" auch für den alten Stand gibt)
+function abfahrenAlle(id, wurzel) {
+  const extra = ['--stil', STILE.join(',')];
+  if (wurzel !== WURZEL) extra.unshift(path.join(wurzel, 'strecken/finnland.js'), '--wurzel', wurzel);
+  const r = werkzeug('strecke-abfahren.mjs', [...(wurzel === WURZEL ? ['--strecke', 'finnland'] : []), '--auto', id, '--aus', path.join(LOG, `stile-${id}${wurzel === WURZEL ? '' : '-alt'}.txt`), ...extra]);
+  const z = {};
+  for (const st of STILE) {
+    const m = new RegExp(`^${st}\\s+(\\S+).*Aufpralle (\\d+)`, 'm').exec(r.text);
+    z[st] = m ? { zeit: m[1], aufpralle: +m[2] } : { zeit: '--', aufpralle: null };
+  }
+  return z;
+}
+const tabelle = {};
+if (teil('k') || teil('n')) {
+  console.log('(k) Finnland: alle Autos x vier Stile (vorsichtig, mittel, flott, digital), vorher (0.10b.1) / nachher');
+  for (const id of ['prototyp', ...AUTOS]) {
+    const neu = abfahrenAlle(id, WURZEL), alt = ALT ? abfahrenAlle(id, ALT) : null;
+    tabelle[id] = { neu, alt };
+    info(`${id.padEnd(9)} ${STILE.map((st) => `${st} ${alt ? `${alt[st].zeit} (${alt[st].aufpralle}) -> ` : ''}${neu[st].zeit} (${neu[st].aufpralle})`).join(' | ')}`);
+  }
+  const t = (id, st) => sek(tabelle[id].neu[st].zeit);
+  if (ALT) {
+    const andere = ['prototyp', ...AUTOS].filter((id) => id !== 'escorta');
+    const gleich = andere.every((id) => STILE.every((st) => tabelle[id].neu[st].zeit === tabelle[id].alt[st].zeit && tabelle[id].neu[st].aufpralle === tabelle[id].alt[st].aufpralle));
+    melde(gleich, `die anderen fünf Profile sind in allen vier Stilen Zeile für Zeile gleich wie 0.10b.1 (Teil C wirkt nur beim Escorta)`);
+    const a = tabelle.escorta.alt.digital, i = tabelle.imprexa.alt.digital, l = tabelle.l073.alt.digital;
+    info(`vorher (0.10b.1, digital): Escorta ${a.zeit} (${a.aufpralle} Aufpralle), Lanza 073 ${l.zeit}, Imprexa ${i.zeit} – Escorta ${(sek(a.zeit) - sek(i.zeit)).toFixed(1)} s hinter dem Imprexa`);
+  }
+  const d = t('imprexa', 'digital') - t('escorta', 'digital');
+  melde(d >= 0.3 && d <= 1.0, `digital: Escorta ${tabelle.escorta.neu.digital.zeit} ist ${d.toFixed(2)} s schneller als Imprexa ${tabelle.imprexa.neu.digital.zeit} (Richtwert 0.3–1.0 s)`);
+  const vor = ['delto', 'prototyp', 'l073'].map((id) => [id, t(id, 'digital') - t('escorta', 'digital')]);
+  melde(vor.every(([, x]) => x >= 0.4), `digital: Escorta vor ${vor.map(([id, x]) => `${id} (+${x.toFixed(2)} s)`).join(', ')}`);
+  melde(STILE.every((st) => tabelle.escorta.neu[st].aufpralle === 0), `Escorta ohne Unfall in allen vier Stilen (${STILE.map((st) => `${st} ${tabelle.escorta.neu[st].aufpralle}`).join(', ')})`);
+}
+
+if (teil('l') || teil('m')) {
+  const { schotterMessung, messText } = await import('./schotter-messung.mjs');
+  const neu = await schotterMessung(WURZEL), alt = ALT ? await schotterMessung(ALT) : null;
+  fs.writeFileSync(path.join(LOG, 'schotter-messung.txt'), `neu\n${messText(neu)}\n${alt ? `\n0.10b.1\n${messText(alt)}\n` : ''}`);
+  if (teil('l')) {
+    console.log('(l) neue Werte wirken nur beim Escorta und nur auf Schotter');
+    if (alt) {
+      const andere = Object.keys(neu).filter((id) => id !== 'escorta');
+      melde(andere.every((id) => JSON.stringify(neu[id]) === JSON.stringify(alt[id])), `andere Autos: alle Messwerte (0–80, Drift auf Schotter und Asphalt) bit-gleich wie 0.10b.1`);
+      const e = neu.escorta, ea = alt.escorta;
+      melde(e.null80Asphalt === ea.null80Asphalt && e.driftAsphalt === ea.driftAsphalt && e.fangenAsphalt === ea.fangenAsphalt, `Escorta auf Asphalt bit-gleich (0–80 ${e.null80Asphalt.toFixed(2)} s, Drift ${e.driftAsphalt.toFixed(1)}°), auf Schotter anders (Drift ${ea.drift.toFixed(1)}° -> ${e.drift.toFixed(1)}°)`);
+    }
+    const { CONFIG } = await import('../js/config.js');
+    const fremde = Object.entries(CONFIG.fahrprofile).filter(([id, p]) => id !== 'escorta' && p.auto && ['schotterHeck', 'schotterStabil', 'schotterTraktion', 'schotterGrip'].some((k) => k in p.auto));
+    melde(fremde.length === 0 && CONFIG.auto.schotterHeck === 1 && CONFIG.auto.schotterStabil === 1 && CONFIG.auto.schotterTraktion === 1, `schotterHeck/-Stabil/-Traktion: Standard 1 (= keine Rechnung), gesetzt nur beim Escorta`);
+  }
+  if (teil('m')) {
+    console.log('(m) Kurzmessungen auf Schotter (0–80 km/h, Drift-Winkel bei digitalem Vollausschlag mit Vollgas, 70 km/h)');
+    for (const z of messText(neu).split('\n')) info(z);
+    const e = neu.escorta, i = neu.imprexa;
+    melde(e.null80 <= i.null80 * 1.05, `0–80 Schotter: Escorta ${e.null80.toFixed(2)} s, Imprexa ${i.null80.toFixed(2)} s (${((e.null80 / i.null80 - 1) * 100).toFixed(1)} %, höchstens +5 %)${alt ? `; vorher ${alt.escorta.null80.toFixed(2)} s` : ''}`);
+    melde(e.drift < neu.l073.drift && e.drift <= neu.delto.drift + 0.05 && Math.abs(e.drift - i.drift) <= 1, `Drift-Maximum: Escorta ${e.drift.toFixed(2)}° (Lanza 073 ${neu.l073.drift.toFixed(2)}°, Delto ${neu.delto.drift.toFixed(2)}°, Imprexa ${i.drift.toFixed(2)}°)${alt ? `; vorher ${alt.escorta.drift.toFixed(1)}°` : ''}`);
+    melde(!e.dreher && e.fangen != null && e.fangen <= 0.5, `Escorta fängt sich ohne Gegenlenken nach ${e.fangen == null ? 'nie' : e.fangen.toFixed(2) + ' s'}${alt ? ` (vorher ${alt.escorta.fangen?.toFixed(2)} s)` : ''}`);
+  }
+}
+
+if (teil('n')) {
+  console.log('(n) Alpen: Escorta nur an den Schotterstellen anders (andere Autos: x2, Bilder mit Escorta auf Asphalt: x4)');
+  const zeilen = (t) => t.split('\n').filter((x) => /^\s+(vorsichtig|mittel|flott)\b/.test(x)).map((x) => x.trim().split(/\s+/)[1]);
+  const n = zeilen(werkzeug('testfahrer.mjs', ['--auto', 'escorta']).text);
+  const a = ALT ? zeilen(werkzeug('testfahrer.mjs', ['--auto', 'escorta', '--wurzel', ALT]).text) : null;
+  melde(n.length === 3, `Escorta Alpen: ${a ? `${a.join(' / ')} -> ` : ''}${n.join(' / ')} (nur Talschleife und Almweg sind Schotter)`);
+}
+
+if (teil('o')) {
+  console.log('(o) Garage: Zusatz beim Escorta (de + en)');
+  const { TEXTE } = await import('../js/texte.js');
+  const t = TEXTE['auto.escorta.daten2'];
+  melde(/SCHOTTER-SPEZIALIST/.test(t.de) && /GRAVEL SPECIALIST/.test(t.en), `Garage-Zeile: "${t.de}" / "${t.en}"`);
+  if (ALT) melde(fs.readFileSync(path.join(ALT, 'js/autos.js'), 'utf8') === fs.readFileSync(path.join(WURZEL, 'js/autos.js'), 'utf8'), 'js/autos.js (Werte-Balken, Aussehen) unverändert gegen 0.10b.1');
 }
 
 // @@TEILE@@

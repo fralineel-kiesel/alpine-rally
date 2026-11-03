@@ -450,6 +450,9 @@ export const CONFIG = {
     vorneJeBelag: { schotter: 1, wiesenweg: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
                                // fehlt ein Belag, gilt 1. Asphalt, Bankett und Gras bewusst nicht: sonst lohnen Abkürzungen)
     schotterGrip: 1,           // M10b.1: Griff (vorne und hinten) nur auf Schotter mal diesem Wert; 1 = wie bisher (alle Autos ausser Escorta)
+    schotterHeck: 1,           // M10b.2: auf Schotter lockern Gas im Drift und der Schub hinten das Heck nur zu diesem Anteil; 1 = wie bisher
+    schotterTraktion: 1,       // M10b.2: Traktion (Haftung beim Beschleunigen) nur auf Schotter mal diesem Wert; 1 = wie bisher
+    schotterStabil: 1,         // M10b.2: auf Schotter fängt sich das Auto im Drift mit dieser Stabilität (mal stabilitaet); 1 = wie bisher
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -599,7 +602,12 @@ export const CONFIG = {
                                  // langen Drift (+5.9°), darunter ruhig – kleine Schritte! (0 = aus)
         heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // gleicht antriebHinten im Kreis auf losem Boden aus (sonst
                                  // Grenztempo Schotter -5 %, Wiesenweg -3 %); im Drift unter Gas bleibt das Heck locker
-        schotterGrip: 1.065,       // M10b.1: Schotter-Spezialist: mehr Griff nur auf Schotter (nicht Asphalt/Wiese, nicht mehr Leistung)
+        schotterGrip: 1.08,        // M10b.1: Schotter-Spezialist: mehr Griff nur auf Schotter (nicht Asphalt/Wiese, nicht mehr Leistung);
+                                 // M10b.2: 1.065 -> 1.08 (mit den drei Werten unten fährt er stabil genug, um ihn zu nutzen)
+        schotterHeck: 0.5,         // M10b.2: auf Schotter lockern Gas im Drift und Schub hinten das Heck nur halb so stark
+                                 // (bricht später und sanfter aus; bei digitalem Vollausschlag 3° statt 37° Schwimmwinkel)
+        schotterStabil: 4,         // M10b.2: auf Schotter fängt er sich im Drift 4x so stark von selbst (ohne Gegenlenken)
+        schotterTraktion: 1.05,    // M10b.2: auf Schotter 5 % mehr Traktion beim Beschleunigen (Räder drehen weniger durch)
       },
       getriebe: {
         allrad: { schotter: 0.95, wiesenweg: 0.9 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden

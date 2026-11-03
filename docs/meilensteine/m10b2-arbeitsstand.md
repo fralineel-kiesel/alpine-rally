@@ -22,6 +22,15 @@ Kunst-Schatten, Version 0.10b.2. Vergleichsstand 0.10b.1 = `a289fad` (`git workt
 - Flaches Wasser: kleine Spritzer und Plätschern. Taste R im Schwarzbild gesperrt, Pause friert es ein, Demo löst nichts aus.
 - Platsch-Klang nur auf Strecken mit Wasser (`CONFIG.wasserAn`), Alpen: Bilder/Ton/Zeiten gleich. Tests (f)–(j) grün.
 
+## Teil C – Escorta (fertig)
+- Testfahrer-Stil `digital` (`strecke-abfahren --stil digital`): Gas voll, Tasten antippen mit der Lenk-Rampe aus input.js.
+  Vorher Finnland digital: Escorta 3:00.80 (8 Aufpralle), L073 3:04.90, Imprexa 2:37.66. Kurztest Schotter 70 km/h
+  Vollausschlag + Vollgas: Escorta 37° Schwimmwinkel, gefangen nach 2.6 s (Imprexa 3°).
+- Neu (nur Escorta, nur Schotter): `schotterHeck 0.5`, `schotterStabil 4`, `schotterTraktion 1.05`, `schotterGrip` 1.065 → 1.08.
+- Nachher digital 2:37.03 (0 Aufpralle), 0.63 s vor Imprexa; Drift 3.3°, 0–80 Schotter 4.21 s (+3 % zum Imprexa).
+  Andere Autos bit-gleich (alle Stile, Messwerte, Alpen x2). Escorta Alpen 2:59.95/2:43.43/2:34.08 → 2:59.80/2:43.13/2:33.50.
+- Handbremsen-Drift Schotter: Einlenken gleich, Spitze 25° statt 43°, gefangen 0.9 s statt 1.8 s (Asphalt bit-gleich).
+
 ## Offen / nächste Schritte
-- C Escorta, D Rentier-Ton, E Schatten, F Bericht.
+- D Rentier-Ton, E Schatten, F Bericht.
 - Bild Meter 969: Kamera für die Bilder in Teil F neu ausrichten (Hang besser im Bild).
