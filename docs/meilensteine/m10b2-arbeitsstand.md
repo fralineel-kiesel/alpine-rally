@@ -41,8 +41,10 @@ Kunst-Schatten, Version 0.10b.2. Vergleichsstand 0.10b.1 = `a289fad` (`git workt
   multipliziert = kühle Abdunklung) unter Auto (Bodenhöhe, für M10c), Bäumen, Rentieren, Zuschauern, Häusern. 4843 Flecken
   nahe der Strecke, höchstens 240 je Bild (vor dem Auto), ein Zeichenaufruf. Nicht über Wasser. Schilder und Brücke: keine.
 - Einstellung SCHATTEN AN/AUS (Grafik, Hinweis NUR AUF STRECKEN MIT SCHATTEN). AUS = pixelgleich wie vor Teil E.
-- Bildzeit Median aus 5: 544 -> 522 ms (Rauschen), Alpen-Referenz gleich. Vergleichsstand vor E: `git worktree add <o> d1eb680`.
+- Bildzeit: erste Messung (-4 %) war falsch (Flecken unsichtbar). Richtig: 240 Flecken +51 %; jetzt 60 Flecken, nur bis 14 m
+  neben der Mitte: -0.1 % (Median aus 5). Fehler beim Multiplizieren behoben (Alpha, Stencil). Vergleich vor E: `d1eb680`.
 
-## Offen / nächste Schritte
-- F: Bilder, Bericht, STAND/KONZEPT, Version 0.10b.2, volle Regression (--lang), PR.
+## Teil F (fertig)
+- Version 0.10b.2, Bericht `docs/meilensteine/m10b2.md`, Bilder `screenshots/m10b2/` (6), STAND/KONZEPT nachgeführt.
+- Volle Regression grün (z: nur bekannte Zeilen menue 2, overlay 1 rot, wie 0.10b.1).
 - Bild Meter 969: Kamera für die Bilder in Teil F neu ausrichten (Hang besser im Bild).

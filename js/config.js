@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10b.1';
+export const VERSION = '0.10b.2';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -218,13 +218,15 @@ export const CONFIG = {
 
   // --- Kunst-Schatten (M10b.2, js/schatten.js): nur auf Strecken mit dem Feld "schatten" (Sonne, Länge, Dunkelheit) ---
   schatten: {
-    max: 240,                  // höchstens so viele Flecken (Bäume, Häuser, Tiere, Zuschauer) pro Bild, die nächsten vor dem Auto
+    max: 60,                   // höchstens so viele Flecken (Bäume, Häuser, Tiere, Zuschauer) pro Bild, die nächsten vor dem Auto
+                               // (M10b.2: 240 kostete im Test-Browser +51 % Bildzeit, 60 nichts Messbares)
     vor: 200, hinter: 30,      // nur Objekte so weit (m) vor / hinter dem Auto entlang der Strecke
-    nahStrecke: 28,            // nur Objekte bis so weit (m) neben der Strasse
+    nahStrecke: 14,            // nur Objekte bis so weit (m) neben der Strasse (Bäume stehen ab 10.5 m: die erste Reihe)
     farbe: '#16203a',          // kühle Abdunklung (nicht schwarz)
     stufen: [0.62, 0.42, 0.22], // Deckkraft der drei Dunkelstufen (innen -> aussen), mal "dunkelheit" der Strecke
     heben: 0.05,               // so hoch (m) über dem Boden (kein Flackern)
     baumBreite: 0.5,           // Fleck eines Baums: so viel mal die Breite des Baum-Bilds
+    maxLaenge: 14,             // kein Fleck ist länger als so viele Meter (hohe Fichten in der Abendsonne)
     auto: { laenge: 4.2, breite: 1.8, hoehe: 1.3 }, // Fleck unter dem Auto (m)
   },
 

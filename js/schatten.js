@@ -24,12 +24,15 @@ function fleckTextur(dunkel) {
     const b = (BAYER[(y % 4) * 4 + (x % 4)] + 0.5) / 16 * 0.16; // Raster: Grenzen um bis 0.16 verschoben
     const stufe = r + b < 0.6 ? 0 : r + b < 0.85 ? 1 : r + b < 1.06 ? 2 : 3;
     const st = stufe < 3 ? C.stufen[stufe] * dunkel : 0;
-    setze(l, x, y, ab.map((k) => Math.round(k * st * 255)), 255);
+    // (das Bild wird beim Ausgeben in sRGB umgerechnet: Wert so wählen, dass danach genau k * st abgedunkelt wird)
+    setze(l, x, y, ab.map((k) => Math.round(sRGBzuLinear(k * st) * 255)), stufe < 3 ? 255 : 0); // aussen: weggelassen (alphaTest)
   }
   const t = zuTextur(l, { mipmaps: false });
   t.colorSpace = THREE.NoColorSpace; // Werte direkt (keine Farbumrechnung)
   return t;
 }
+
+const sRGBzuLinear = (t) => (t <= 0.04045 ? t / 12.92 : ((t + 0.055) / 1.055) ** 2.4);
 
 // Flaches Viereck in der XZ-Ebene (x und z von -0.5 bis 0.5), Normale +Y
 function viereck() {
@@ -71,8 +74,12 @@ export function baueSchatten(szene, strecke, welt, quellen, daten) {
   const L = daten.laenge, dunkel = daten.dunkelheit;
   const boden = (x, z) => welt.bodenBei(x, z).h;
   const mat = new THREE.MeshBasicMaterial({
-    map: fleckTextur(dunkel), transparent: true, depthWrite: false, fog: false,
+    map: fleckTextur(dunkel), transparent: true, depthWrite: false, fog: false, alphaTest: 0.5,
+    // Schatten addieren sich nicht: jedes Pixel wird höchstens einmal abgedunkelt (Stencil: der erste Fleck merkt sich
+    // das Pixel, weitere Flecken dort fallen weg; der Stencil wird jedes Bild gelöscht)
+    stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilZPass: THREE.ReplaceStencilOp,
     blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.OneMinusSrcColorFactor,
+    blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor, // (Alpha des Bildes bleibt: sonst wird es dort durchsichtig = schwarz)
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
   });
   const geo = viereck();
@@ -81,7 +88,7 @@ export function baueSchatten(szene, strecke, welt, quellen, daten) {
   for (const o of quellen) {
     strecke.abfrage(o.x, o.z, q);
     if (q.abstand > C.nahStrecke || !(o.h > 0.2)) continue;
-    const lang = o.h * L, cx = o.x + dx * lang * 0.5, cz = o.z + dz * lang * 0.5;
+    const lang = Math.min(o.h * L, C.maxLaenge), cx = o.x + dx * lang * 0.5, cz = o.z + dz * lang * 0.5;
     if (welt.wasser && welt.wasser.an && imWasser(welt.wasser, cx, cz, 0)) continue; // über Wasser keine Schatten
     liste.push({ s: q.s, cx, cz, lang: lang + o.b * 0.6, breit: o.b });
   }
