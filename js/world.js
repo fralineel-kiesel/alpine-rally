@@ -271,7 +271,7 @@ export function baueWelt(szene, strecke, netz) {
     if (ns && ns.d < 25) {
       nahB.schulter = ns.see.nah.schulter; nahB.steigung = ns.see.nah.steigung;
       L = mische(unterGrenze(qb1, nahB), L, glatt(10, 25, ns.d));
-      if (ns.d < 0.5 && L > h) L = mische(L, h, glatt(-0.5, 0.5, -ns.d)); // im Wasser: nicht auffüllen
+      if (ns.d < 1 && L > h) L = mische(L, h, glatt(-1, 1.5, -ns.d)); // im Wasser: nicht auffüllen (weich, kein Knick an der Kante)
     }
     if (L <= h) return h;
     const fluss = WASSER.an ? glatt(-1, 7, flussAbstand(WASSER, x, z)) : 1;

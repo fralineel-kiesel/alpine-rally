@@ -357,13 +357,13 @@ export default {
       // M10c.1: Seekehre (Hochwaldkehre, rechts 174°): See an der Aussenseite, fast direkt am Strassenrand (Schulter 1.5 m,
       // flaches Ufer, dann Wasser; Grund fällt im Wasser mit 0.4: nach ca. 2–3 m zu tief). Sechs kleine Kreise entlang des
       // Bogens (das Ufer folgt der Kehre) und der Seekörper dahinter, gleicher Spiegel (pegel). Wasserbad: zurück vor die Kehre (zurueck). Die Leitplanke dort ist weg (strassenrand.ohnePlanke)
-      { s: 3292, seite: -1, lat: 16.9, rx: 7, rz: 7, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
-      { s: 3302, seite: -1, lat: 16.8, rx: 7, rz: 7, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
-      { s: 3312, seite: -1, lat: 17.1, rx: 7, rz: 7, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
-      { s: 3322, seite: -1, lat: 17.9, rx: 7, rz: 7, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
-      { s: 3332, seite: -1, lat: 19.3, rx: 7, rz: 7, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
-      { s: 3342, seite: -1, lat: 21.0, rx: 7, rz: 7, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
-      { s: 3318, seite: -1, lat: 42, rx: 24, rz: 26, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 }, // Seekörper
+      { s: 3292, seite: -1, lat: 19.9, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3302, seite: -1, lat: 19.8, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3312, seite: -1, lat: 20.1, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3322, seite: -1, lat: 20.9, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3332, seite: -1, lat: 22.3, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3342, seite: -1, lat: 24.0, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3318, seite: -1, lat: 38, rx: 22, rz: 28, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 }, // Seekörper
     ],
     fluesse: [
       { s: 1477, breite: 9, laenge: 420, winkel: 8, tiefe: 2.5 },             // Fluss mit Holzbrücke (im Dorf; M10b.2: 2.5 statt 3.0 m tief, sonst wird die Böschung neben der Brücke zu steil)

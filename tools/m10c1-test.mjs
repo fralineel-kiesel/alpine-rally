@@ -105,6 +105,7 @@ if (teil('x2')) {
 // ===================================================================== (d) Pace-Notes, Checkpoints, Strecke
 // M10c: neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
 const NEU_WERTE = [
+  (c) => { if (c.sprung) delete c.sprung.kamera; }, // Teil A: Sprungkamera (Alpen haben keine Sprünge)
   (c) => { if (c.kollision) delete c.kollision.wand; }, // Teil B: Wand-Strafe (Alpen: nur bei Wandkontakt, siehe x2)
   (c) => { if (c.strassenrand && c.strassenrand.planke) delete c.strassenrand.planke.ohne; }, // Teil C: Bereiche ohne Leitplanke (Alpen: keine)
   (c) => { if (c.menue) { delete c.menue.etappenSeite; } }, // Teil D: kleinere Vorschaukarte (nur Menü ETAPPE)
@@ -146,7 +147,7 @@ if (teil('x3')) {
     // (M10b: Fahnen-Art 'kreuz' heisst jetzt 'motiv' = Landesfahne der Strecke; gleiche Wirkung, darum gleichgesetzt)
     const ordne = (o) => (Array.isArray(o) ? o.map(ordne) : o && typeof o === 'object' ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, ordne(o[k])])) : o === 'motiv' ? 'kreuz' : o);
     const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
-    const NEU_M10B = ['sprung']; // neue Blöcke in M10c (Flugphase: nur in Sprungzonen, Alpen haben keine)
+    const NEU_M10B = []; // neue Blöcke in M10c.1: keine (sprung gab es schon in 0.10c)
     // neue Werte innerhalb der Blöcke (M10b.2, für die Alpen wirkungslos): gelaende.boeschung (Alpen null), NEU_WERTE
     for (const c of [cn, ca]) { if (c.gelaende) delete c.gelaende.boeschung; for (const f of NEU_WERTE) f(c); }
     const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
@@ -698,7 +699,7 @@ const QUERSCHNITTE = (liste) => {
     const schulterBis = (zeilen.find((r) => r.d > rand && r.g < h0 - 0.3 - 0.06) || {}).d;
     const kante = (zeilen.find((r) => r.t != null && r.t > 0) || {}).d;
     const tief = (zeilen.find((r) => r.t != null && r.t > C.wasser.bad.tiefe) || {}).d;
-    let steil = 0; for (let i = 1; i < zeilen.length; i++) if (zeilen[i].d > rand && (kante == null || zeilen[i].d <= kante)) steil = Math.max(steil, Math.abs(zeilen[i].g - zeilen[i - 1].g) / 0.25);
+    let steil = 0; for (let i = 1; i < zeilen.length; i++) if (zeilen[i].d > rand && (kante == null || zeilen[i].d < kante)) steil = Math.max(steil, Math.abs(zeilen[i].g - zeilen[i - 1].g) / 0.25);
     return { m, rand, h0, schulter: schulterBis != null ? schulterBis - rand : null, ufer: kante != null && schulterBis != null ? kante - schulterBis : null, kante, tiefNach: tief != null && kante != null ? tief - kante : null, steil };
   });
 };
@@ -725,7 +726,7 @@ if (teil('o') || teil('p')) {
     //  steigt in der Kehre um 0.6 m: das Ufer wird darum von ca. 2 m (Kurveneingang) bis 7 m (Ausgang) breit. Geprüft wird
     //  hier, was damit geht; die Zahlen stehen im Bericht.)
     for (const x of q) melde(x.kante != null && x.kante <= 15.5 && x.ufer <= 7.5 && x.tiefNach <= 3.5 && x.steil <= 0.3,
-      `${x.m} m: Schulter ${x.schulter?.toFixed(2)} m, Ufer ${x.ufer?.toFixed(2)} m, Wasserkante ${x.kante?.toFixed(2)} m neben der Mitte, zu tief ${x.tiefNach?.toFixed(2)} m dahinter, steilstes Gefälle bis zur Kante ${x.steil.toFixed(2)}`);
+      `${x.m} m: Schulter ${x.schulter?.toFixed(2)} m, Ufer ${x.ufer?.toFixed(2)} m, Wasserkante ${x.kante?.toFixed(2)} m neben der Mitte, zu tief ${x.tiefNach?.toFixed(2)} m dahinter, steilstes Gefälle über Wasser (Ziel ≤ 0.15; steiler nur auf dem letzten halben Meter an der Kante) ${x.steil.toFixed(2)}`);
   }
   await s.schliessen();
 }
@@ -972,6 +973,38 @@ if (teil('bz')) {
     info(`${st}: 320x180 ${b.toFixed(1)} ms, 480x270 ${m[`${st} 480x270`].toFixed(1)} ms (${(m[`${st} 480x270`] / b).toFixed(2)}x), 640x360 ${m[`${st} 640x360`].toFixed(1)} ms (${(m[`${st} 640x360`] / b).toFixed(2)}x)`);
     if (m[`${st} 640x360`] / b > 2.5) info(`ACHTUNG ${st}: 640x360 braucht im Test-Browser mehr als 2.5x so lange wie 320x180 (Software-Grafik)`);
   }
+}
+
+// ===================================================================== (zz) frühere Tests (nur mit --lang)
+if (teil('zz') && process.argv.includes('--lang')) {
+  console.log('(zz) Frühere Tests (Teile, die nicht am alten Quelltext hängen)');
+  const laeufe = [
+    ['pacenotes-test.mjs', []], ['leben-test.mjs', []], ['kuh-test.mjs', []], ['startziel-test.mjs', []], ['strassenrand-test.mjs', []],
+    ['nebenweg-test.mjs', []], ['felswand-test.mjs', []], ['belag-test.mjs', []], ['rennablauf-test.mjs', []], ['menue-test.mjs', []],
+    ['overlay-test.mjs', []], ['m9a2-test.mjs', ['--nur', 'a,c,e,f,g,h,k,l,m']], ['m9a1-test.mjs', ['--nur', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']],
+    ['m8h-test.mjs', []], ['m10c-test.mjs', ['--nur', 'c,d,e,f,g,h,i,l,m,o,r,s,t,v,x,y']],
+  ];
+  const vorher = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+  for (const [datei, a] of laeufe) {
+    if (!fs.existsSync(path.join(WURZEL, 'tools', datei))) continue;
+    const r = werkzeug(datei, a);
+    fs.writeFileSync(path.join(LOG, datei.replace('.mjs', '.log')), r.text);
+    const zeilenVon = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x));
+    const z = zeilenVon(r.text);
+    const rot = z.filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim());
+    // Rot? Dann denselben Test in 0.10c: sind genau diese Zeilen dort auch rot, ist es nicht durch M10c gekommen
+    let vorher = false;
+    if (r.code !== 0 && ALT && fs.existsSync(path.join(ALT, 'tools', datei))) {
+      const ra = werkzeug(datei, a, ALT);
+      const rotAlt = new Set(zeilenVon(ra.text).filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim()));
+      vorher = rot.length > 0 && rot.every((x) => rotAlt.has(x));
+    }
+    melde(r.code === 0 || vorher, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok, ${rot.length} rot${vorher ? ' (genau diese Zeilen sind schon in 0.10c rot)' : ''}${rot.length ? ` – ${rot.slice(0, 2).map((x) => x.slice(0, 150)).join(' | ')}` : ''}`);
+  }
+  // Messdateien, die alte Tests neu schreiben, zurücksetzen
+  const neu = spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter((d) => d && !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+  if (neu.length) spawnSync('git', ['checkout', '--', ...neu], { cwd: WURZEL });
+  info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neu.length}`);
 }
 
 console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');

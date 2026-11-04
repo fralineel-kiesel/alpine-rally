@@ -1,22 +1,14 @@
 # M10c.1 – Arbeitsstand (höchstens 20 Zeilen)
 
 Ziel: steifere Sprungkamera (A), Wand-Strafe (B), Seekehre 3314 m (C), kleinere Vorschaukarte (D), AUTO-Auflösung (E), Bericht (F).
-Referenz: 0.10c = 612cc62 (Worktree im Scratchpad), Bilder/Zeiten bei 320x180. Test: `node tools/m10c1-test.mjs --alt <0.10c>`.
+Referenz: 0.10c = 612cc62 (Worktree), Bilder/Zeiten bei 320x180. Test: `node tools/m10c1-test.mjs --alt <0.10c> [--lang]`.
 
-- **A fertig:** `sprung.kamera` zurueck 0.05, heben 0.24, landenZeit 0.25, folgenHoehe 25, ruckAnteil 0.4–0.6 % der Bildhöhe,
-  ruckZeit 0.1; Kamera hält im Flug nicht mehr die Abhebe-Höhe. Messung (110 km/h, alt/neu): Zoom-Out 14.4/3.4 %, Neigung
-  gegen normal bis 27.9°/2.3° (Sprung 3), Anhebung 8.63/0.24 m, Ruck 1.7/0.6 % (1 Bildpunkt bei 180), normal nach 0.38/0.23 s,
-  Nachlaufen 0.050/0.033 s. Tests a–f grün (Bildzeit Finnland −0.8 %). Commit 95cc14f.
-- **B:** `js/wand.js` (Einschlag 25/60/75 % nach Winkel zur Wandrichtung, Pause 0.25 s, Schleifen 35 %/s + Reibung, keine
-  Ausrichtung), Felswand ebenso; Stil `wand` (wie digital, enge Wand-Kurven ohne Bremsen); `tools/wand-kurven.mjs` = Wert der
-  Wand je Kurve (schnellste Fahrt mit gegen ohne Wandkontakt). Exploit-Kurven 0.10c 25 → neu 17 (Finnland 4 → 0, Alpen-Kehren
-  1226/1411/1558/1705 bleiben +0.3–1.0 s). Ganze Etappe: wand schneller als mittel, weil enge Kurven auch ohne Wand schneller
-  gehen, als mittel plant (kein Wand-Effekt). Mittel/vorsichtig ohne Wandkontakt bit-gleich, h–n grün.
-  Commit 3d67fa5.
-- **C:** Seekehre: Leitplanke aussen 3260–3400 weg (`strassenrand.ohnePlanke`), See aus 6 Kreisen + Seekörper (gleicher
-  `pegel` −6.15, `nah`: Ufer 0.15, Grund 0.4, Böschung nach dem See), Ufer 1.5–7 m (Strasse steigt), zu tief nach 2.3–3.3 m,
-  Wasserbad zurück auf 3270 m, 9 Zuschauer aussen vor der Kehre, 3 Findlinge. Hang 0, Verlauf/CPs/Notes/Abkürzungen gleich.
-- **D:** Karte 74x62 statt 124x104 (60 %), Liste 212 px breit, Sprungrekord in der Zeile; Text nie unter der Karte (de/en).
-- **E:** `js/aufloesung.js`: AUTO (Standard, 640x360, 2 Fenster à 4 s unter 50 FPS = eine Stufe tiefer, gemerkt `autoStufe`),
-  Migration 320x180 → AUTO; Werkzeuge hängen `?aufloesung=320x180` an (`--aufloesung`). HUD bleibt 320x180 (pixelgleich). y–ae grün.
-- Nächste: F (Bildzeit-Tabelle `--nur bz`, Bilder, Bericht, Version, volle Regression).
+- **A** (95cc14f): Zoom-Out 14.4 → 3.4 %, Neigung Sprung 3 27.9° → 2.3°, Ruck 0.56 % (1 Bildpunkt), normal nach 0.23 s.
+- **B** (3d67fa5): `js/wand.js`, Stil `wand`, `tools/wand-kurven.mjs`. Exploit-Kurven 25 → 16 (Finnland 0, Alpen-Kehren 1–4
+  bleiben +0.3–0.9 s). Ohne Wandkontakt bit-gleich, keine neue revision.
+- **C** (70f870b + Nachbesserung in F: See zusammenhängend, Kreise r 10): Planke weg, naher See, Ufer 2–7 m, Wasserbad → 3270 m.
+- **D** (0a80732): Karte 74x62, Sprungrekord in der Liste. **E** (be03caf): AUTO, Migration, Werkzeuge fest 320x180.
+- **F**: Version 0.10c.1, Bilder (6) in `screenshots/m10c1/`, Bericht `docs/meilensteine/m10c1.md`, STAND/KONZEPT.
+  Schlusslauf: F1 (alle Tests), F2 (`--lang`, frühere Tests), F3 (Bildzeit f, bz) → Logs `/tmp/m10c1-F*.log`.
+- Offen/melden: Alpen-Kehren, ganze Etappe wand > mittel (Kurvenplanung), Ufer-Breite, kein Testfahrer-Wasserbad,
+  Auflösungswechsel 0.4–0.9 s für 2 Bilder im Software-Browser.
