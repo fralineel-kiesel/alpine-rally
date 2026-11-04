@@ -275,6 +275,30 @@ export class Fahrphysik {
     this.driftWinkel = this.tempo > 2 ? Math.atan2(vSeitNeu, Math.abs(vVorNeu)) / GRAD : 0;
   }
 
+  // M10c: Schritt in der Luft (Sprung, js/sprung.js). Kein Gas, keine Bremse, keine Reifen: das Horizontaltempo bleibt
+  // bis auf den Luftwiderstand (derselbe Wert wie am Boden), die Blickrichtung bleibt (keine Luftlenkung). Die Räder
+  // zeigen den Lenkeinschlag nur optisch.
+  luftSchritt(dt, eingabe) {
+    const c = CONFIG.auto;
+    const v = Math.hypot(this.vx, this.vz);
+    if (v > 1e-6) {
+      const bremsen = c.luftwiderstand * (v / LUFT_BEZUG) ** 2 * dt;
+      const f = Math.max(0, v - bremsen) / v;
+      this.vx *= f; this.vz *= f;
+    }
+    const fx = Math.sin(this.richtung), fz = Math.cos(this.richtung);
+    const lx = Math.cos(this.richtung), lz = -Math.sin(this.richtung);
+    const tAnteil = Math.sqrt(begrenze(Math.abs(this.vVor) / c.lenkReferenzTempo, 0, 1));
+    this.lenkwinkel = -eingabe.lenkung * (c.lenkwinkelLangsam + (c.lenkwinkelSchnell - c.lenkwinkelLangsam) * tAnteil) * GRAD;
+    this.x += this.vx * dt;
+    this.z += this.vz * dt;
+    this.vVor = this.vx * fx + this.vz * fz;
+    this.vSeit = this.vx * lx + this.vz * lz;
+    this.beschlVor = 0;
+    this.beschlSeit = 0;
+    this.driftWinkel = this.tempo > 2 ? Math.atan2(this.vSeit, Math.abs(this.vVor)) / GRAD : 0;
+  }
+
   // Unsichtbare Wand: nx/nz zeigt von der Strasse weg (Richtung Wand),
   // ueber = wie weit das Auto drüber ist.
   anGrenze(nx, nz, ueber) {

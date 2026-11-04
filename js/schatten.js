@@ -102,6 +102,9 @@ export function baueSchatten(szene, strecke, welt, quellen, daten) {
   szene.add(statisch);
   // --- Auto ---
   const autoMesh = new THREE.Mesh(geo, mat);
+  // M10c: in der Luft (Sprung) ein bzw. zwei Dunkelstufen heller (eigene Materialien, einmal beim Bau)
+  const st = C.stufen, hell = [mat, mat.clone(), mat.clone()];
+  hell[1].map = fleckTextur(dunkel * st[1] / st[0]); hell[2].map = fleckTextur(dunkel * st[2] / st[0]);
   autoMesh.name = 'schatten-auto';
   autoMesh.matrixAutoUpdate = false;
   szene.add(autoMesh);
@@ -110,8 +113,10 @@ export function baueSchatten(szene, strecke, welt, quellen, daten) {
   const S = {
     an: true, aktiv: true, anzahl: N, gezeigt: 0, statisch, auto: autoMesh, richtung: [dx, dz], material: mat,
     setzeAn(an) { S.aktiv = !!an; statisch.visible = S.aktiv; autoMesh.visible = S.aktiv; },
-    // jedes Bild: Auto (x, z, Blickrichtung) – Schatten des Autos und die festen Flecken im Abschnitt um das Auto
-    aktualisiere(x, z, richtung) {
+    // jedes Bild: Auto (x, z, Blickrichtung) – Schatten des Autos und die festen Flecken im Abschnitt um das Auto.
+    // M10c: hoehe = Flughöhe über dem Boden (Sprung): Fleck bleibt am Boden, wird heller und kleiner
+    stufe: 0,
+    aktualisiere(x, z, richtung, hoehe = 0) {
       if (!S.aktiv) return;
       // feste Flecken: Abschnitt [s - hinter, s + vor], höchstens C.max (nur neu schreiben, wenn sich der Anfang ändert)
       strecke.abfrage(x, z, qa);
@@ -129,7 +134,10 @@ export function baueSchatten(szene, strecke, welt, quellen, daten) {
       // Auto: Rechteck des Autos, in Sonnenrichtung um Höhe x laenge verlängert, auf der Bodenhöhe unter dem Auto
       const A = C.auto, fx = Math.sin(richtung), fz = Math.cos(richtung), sx = fz, sz = -fx;
       const wurf = A.hoehe * L, df = dx * fx + dz * fz, ds = dx * sx + dz * sz;
-      const lang = A.laenge + Math.abs(df) * wurf, breit = A.breite + Math.abs(ds) * wurf;
+      let lang = A.laenge + Math.abs(df) * wurf, breit = A.breite + Math.abs(ds) * wurf;
+      const SP = CONFIG.sprung.schatten, stufe = hoehe >= SP.stufe2 ? 2 : hoehe >= SP.stufe1 ? 1 : 0;
+      if (stufe !== S.stufe) { S.stufe = stufe; autoMesh.material = hell[stufe]; }
+      if (hoehe > 0) { const k = 1 - Math.min(SP.kleinerMax, hoehe * SP.kleiner); lang *= k; breit *= k; }
       fleckMatrix(autoMesh.matrix.elements, 0, boden, x + dx * wurf * 0.5, z + dz * wurf * 0.5, fx, fz, lang, breit, C.heben);
       autoMesh.matrixWorldNeedsUpdate = true;
     },

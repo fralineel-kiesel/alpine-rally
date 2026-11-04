@@ -227,3 +227,23 @@ export function formatDatum(datum, sprache) {
     ? `${d.getFullYear()}-${zwei(d.getMonth() + 1)}-${zwei(d.getDate())}`
     : `${zwei(d.getDate())}.${zwei(d.getMonth() + 1)}.${zwei(d.getFullYear() % 100)}`;
 }
+
+// M10c: Sprungrekord (weitester gültiger Sprung) je Etappe, eigener Browser-Speicher, NICHT unter dem revision-Schlüssel:
+// ein neuer Streckenverlauf löscht ihn nicht. Gespeichert: { [etappe]: { weite, auto, datum } } (etappe = Feld etappe der Strecke)
+const SPRUNG_SPEICHER = 'alpineRally.sprungRekorde';
+function leseSprungRekorde() {
+  try { const d = JSON.parse(window.localStorage.getItem(SPRUNG_SPEICHER) || '{}'); return d && typeof d === 'object' ? d : {}; } catch { return {}; }
+}
+export function ladeSprungRekord(etappe) {
+  const r = leseSprungRekorde()[etappe];
+  return r && Number.isFinite(r.weite) ? r : null;
+}
+// Neuen weitesten Sprung eintragen, wenn er weiter ist als der bisherige. Ergebnis: { bisher, neu (true = Rekord) }
+export function speichereSprungRekord(etappe, weite, auto) {
+  const bisher = ladeSprungRekord(etappe);
+  if (!(weite > 0) || (bisher && Math.round(weite * 10) <= Math.round(bisher.weite * 10))) return { bisher, neu: false };
+  const d = leseSprungRekorde();
+  d[etappe] = { weite: Math.round(weite * 10) / 10, auto, datum: new Date().toISOString() };
+  try { window.localStorage.setItem(SPRUNG_SPEICHER, JSON.stringify(d)); } catch { /* Speicher voll oder gesperrt: egal */ }
+  return { bisher, neu: true };
+}

@@ -43,7 +43,7 @@ sagt `?strecke=<id>` in der Adresse (Werkzeuge, Tests) oder sonst die Wahl im Me
 | `untergrundInfo` | *(seit M10b, freiwillig)* `{ de, en }`, Grossbuchstaben, höchstens 22 Zeichen – Kurzinfo in der Etappenwahl, z. B. `'SCHOTTER'` |
 | `deko` | *(seit M10b, freiwillig)* welche Motive/Typen der Code malt: `fahne` (`schweiz`, `finnland`), `tier` (`kuh`, `rentier`), `tierKlang` (`'glocke'` oder `null`), `haus` / `stadel` (`alphuette`, `heustadel`, `holzhaus`, `holzschuppen`), `nadelbaum` (`tanne`, `kiefer`), `laubbaum` (`laub`, `birke`). Fehlt ein Wert: Standard aus `config.js` (= Alpen) |
 | `deko` (M10b.1) | neue Werte: `nadelbaum` auch `fichte` und `nordwald` (Fichten und Kiefern gemischt, ca. 2 : 1), `unterholz` (`null` oder `'nordisch'`: Farn, Heidekraut, Stümpfe, Totholz, kleine Findlinge am Strassenrand und im Wald, Schilf um die Seen; ohne Kollision), `tierschild` (`'allgemein'` oder `'elch'`: Motiv des Tier-Warnschilds). Werte für das Unterholz: `natur.unterholz` (sonst `config.js`, Block `unterholz`) |
-| `sprung` | *(seit M10b, freiwillig)* markierte Kuppen `[{ s, name }]`, aufsteigend – heute ohne Wirkung, ab M10c Sprünge |
+| `sprung` | *(seit M10b, freiwillig)* markierte Kuppen `[{ s, name }]`, aufsteigend. Ohne Zone nur eine Markierung (ohne Wirkung). **Seit M10c** mit Sprungzone ein echter Sprung (siehe „Sprünge“ unten): `{ s, name, von, bis, kante, landeVon, landeBis, staerke, form }` |
 | `belagAbschnitte` | *(seit M10b, freiwillig)* Untergrund ohne Abzweig/Stummel `[{ von, bis, belag }]`. Seit M10b.1 nutzt keine Strecke das mehr (Wechsel „aus dem Nichts“); Finnland wechselt wie die Alpen über `nebenwege` |
 | `wasser` | *(seit M10b, freiwillig)* `seen: [{ s, seite, lat, rx, rz, drehung, tiefe }]` (Ellipse neben der Strasse, Spiegel `tiefe` unter der Strasse), `fluesse: [{ s, breite, laenge, winkel, tiefe }]` (kreuzt die Strasse bei `s`, dort steht eine Holzbrücke) |
 | `klang.wasser` | *(seit M10b, freiwillig)* Wasser-Klang an mehreren Orten `[[s, seitlich], ...]` (der nächste klingt) |
@@ -76,6 +76,30 @@ export default {
   /* umgebung, natur, startZiel, leben, beschriftung, klang, abkuerzung, erzeugt */
 };
 ```
+
+## Sprünge (seit M10c, `js/sprung.js`)
+
+Ein Eintrag in `sprung` mit **`von`/`bis`** ist eine Sprungzone. Nur dort kann das Auto abheben (ausserhalb fährt es Bit für
+Bit wie vorher; Strecken ohne Zonen, z. B. die Alpen, sind unverändert).
+
+| Feld | Inhalt |
+|---|---|
+| `von`, `bis` | Streckenmeter der Zone (Anfang des Anlaufs bis Ende des Auslaufs) |
+| `kante` | Meter der Absprungkante (fehlt = `s`); `s` bleibt die Markierung (Pace-Note, Statistik), sinnvoll `s = kante` |
+| `landeVon`, `landeBis` | Landezone (Meter), hinter der Kante: dort ist der Landehang |
+| `staerke` | *(freiwillig, Standard 1.0, 0.2–3)* mal die Steigung der Rampe: grösser = weiter und höher |
+| `form` | *(freiwillig)* `{ anlauf, rampe, kante, gefaelle, auslauf, weich }`, Standard in `FORM_STANDARD` (`js/sprung.js`): Rampe über `anlauf` Meter bis zur Steigung `rampe` (mal `staerke`), Kante `kante` Meter lang, Landehang mit `gefaelle` bis `landeBis`, danach über `auslauf` Meter flach |
+
+**Höhenprofil:** Die Zone legt einen Höhen-Zusatz auf die Strasse (nach dem Spline, im 1-m-Raster): Draufsicht, Länge und alle
+Streckenmeter bleiben gleich, Gelände, Bäume und Deko folgen der neuen Strassenhöhe von selbst. Damit die Strasse nach der
+Zone wieder auf ihrer alten Höhe ist, steigt sie vor der Rampe und nach dem Auslauf gleichmässig an (Ausgleich, aus der Form
+gerechnet). **Abheben:** echte Ballistik. Das Auto hebt ab, wenn der Boden unter ihm schneller fällt als die Flugbahn (Tempo und
+Steigung an der Kante); zu langsam = es rollt über die Kuppe. **Landung:** Tempoverlust aus dem Aufprall senkrecht zum Boden,
+Nase voran und schräger Landung (Werte `CONFIG.sprung` in `js/config.js`).
+
+**Prüfer-Regeln** (`pruefeSprung`): alle vier Meter Pflicht, `von < kante < landeVon < landeBis`, `landeBis + auslauf <= bis`,
+Anlauf lang genug (`von + weich < kante - anlauf`), Zone auf der Strecke, Zonen überlappen nicht, **kein Checkpoint in der Zone
+oder 60 m davor/danach**, Landezone nicht im See oder am Fluss (Strasse ±8 m), Wertebereiche von `staerke` und `form`.
 
 ## Untergrundwechsel an Einmündungen (seit M10b.1 auch Finnland)
 

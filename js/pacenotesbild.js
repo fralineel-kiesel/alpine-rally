@@ -107,6 +107,22 @@ const GROSS = {
     '...........',
     '...........',
   ],
+  // Sprung (M10c): Pfeil nach oben über der Kuppe (hier hebt das Auto ab)
+  sprung: [
+    '.....#.....',
+    '....###....',
+    '...#.#.#...',
+    '.....#.....',
+    '.....#.....',
+    '...........',
+    '....###....',
+    '..##...##..',
+    '.#.......#.',
+    '#.........#',
+    '...........',
+    '###########',
+    '...........',
+  ],
   // Abzweig rechts: die Etappe biegt ab (Pfeil in der Farbe der Stufe),
   // geradeaus geht die alte Strasse weiter, aber abgesperrt (grau mit rotem Balken)
   abzweig: [

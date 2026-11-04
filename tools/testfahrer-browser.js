@@ -22,13 +22,15 @@ export const ANPASSUNG = {
 
 // Fahrprofile: Querbeschleunigung (m/s²) in Kurven und Bremsverzögerung (m/s²)
 export const PROFILE = {
-  vorsichtig: { quer: 4.5, bremsen: 5.5 },
-  mittel: { quer: 6, bremsen: 6.5 },
+  // M10c: sprung = Höchsttempo (m/s) an einer Absprungkante (wie ein Mensch vor einem grossen Sprung Gas wegnimmt);
+  // fehlt = voll. Wirkt nur auf Strecken mit Sprungzonen (Alpen: keine, Zeiten bit-gleich)
+  vorsichtig: { quer: 4.5, bremsen: 5.5, sprung: 95 / 3.6 },
+  mittel: { quer: 6, bremsen: 6.5, sprung: 115 / 3.6 },
   flott: { quer: 7.5, bremsen: 7.5 },
   // M10b.2: "digital" = Lino mit Tastatur/Controller: Gas fast immer voll, Lenkung nur links/rechts/gerade mit derselben
   // Lenk-Rampe wie das Spiel bei Tastatur (js/input.js: tastaturLenkTempo, tastaturRueckTempo, Lenkempfindlichkeit
   // Standard), Bremsen vor Kurven voll wie "mittel" (gleiche Tempo-Ziele), keine Handbremse, kein Gas-Lupfen im Drift
-  digital: { quer: 6, bremsen: 6.5, digital: true },
+  digital: { quer: 6, bremsen: 6.5, digital: true, sprung: 115 / 3.6 },
 };
 
 // Pfad aus Punktlisten, mit Zieltempo für jeden Punkt
@@ -47,6 +49,9 @@ export function bauePfad(A, xs, zs, profil) {
     const sg = A.CONFIG.auto.schotterGrip;
     if (art === 'schotter' && sg && sg !== 1) grip *= sg;
     vZiel[i] = Math.min(60, Math.sqrt((profil.quer * grip) / Math.max(kappa, 1e-4)));
+    // M10c: vor einer Absprungkante höchstens profil.sprung (die letzten 25 m vor der Kante)
+    const zonen = A.strecke.sprungZonen || [];
+    if (profil.sprung && zonen.length) for (const z of zonen) if (q.s > z.kante - 25 && q.s <= z.kante + 1 && q.abstand < 15) vZiel[i] = Math.min(vZiel[i], profil.sprung);
   }
   // rechtzeitig bremsen: vom Ende her
   for (let i = n - 2; i >= 0; i--) {

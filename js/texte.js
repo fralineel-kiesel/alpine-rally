@@ -145,6 +145,8 @@ export const TEXTE = {
   'einst.fps': { de: 'FPS-ANZEIGE (F3)', en: 'FPS DISPLAY (F3)' },
   'einst.schatten': { de: 'SCHATTEN', en: 'SHADOWS' }, // M10b.2
   'einst.schattenHinweis': { de: 'NUR AUF STRECKEN MIT SCHATTEN', en: 'ONLY ON STAGES WITH SHADOWS' },
+  'einst.sprungkamera': { de: 'SPRUNGKAMERA', en: 'JUMP CAMERA' }, // M10c
+  'einst.sprungkameraHinweis': { de: 'FILMISCHE KAMERA BEI SPRÜNGEN', en: 'CINEMATIC CAMERA ON JUMPS' },
   'einst.steuerung': { de: 'STEUERUNG', en: 'CONTROLS' },
   'einst.tasten': { de: 'TASTEN BELEGEN', en: 'KEY BINDINGS' },
   'einst.lenk': { de: 'LENKEMPFINDLICHKEIT', en: 'STEERING SENSITIVITY' },
@@ -263,6 +265,7 @@ export const TEXTE = {
   'legende.kehre': { de: 'KEHRE, NUMMER IN DER FOLGE (1/4)', en: 'HAIRPIN, NUMBER IN THE SERIES (1/4)' },
   'legende.schikane': { de: 'SCHIKANE (RICHTUNG = ERSTE KURVE)', en: 'CHICANE (DIRECTION = FIRST CURVE)' },
   'legende.kuppe': { de: 'KUPPE: DAHINTER SIEHT MAN NICHTS', en: 'CREST: YOU CANNOT SEE BEYOND' },
+  'legende.sprung': { de: 'SPRUNG: HIER HEBT DAS AUTO AB', en: 'JUMP: THE CAR TAKES OFF HERE' }, // M10c
   'legende.abzweig': { de: 'ABZWEIG: GERADEAUS IST GESPERRT', en: 'TURN-OFF: STRAIGHT ON IS CLOSED' },
   'legende.einmuendung': { de: 'EINMÜNDUNG: DIE ANDERE SEITE IST ZU', en: 'T-JUNCTION: THE OTHER WAY IS CLOSED' },
   'legende.ziel': { de: 'ZIEL', en: 'FINISH' },
@@ -307,6 +310,11 @@ export const TEXTE = {
   'ziel.ersteZeit': { de: 'ERSTE ZEIT', en: 'FIRST TIME' },
   'ziel.cp': { de: 'CP {n}', en: 'CP {n}' },
   'ziel.aufpralle': { de: 'AUFPRÄLLE', en: 'IMPACTS' },
+  'ziel.spruenge': { de: 'SPRÜNGE {n}', en: 'JUMPS {n}' }, // M10c
+  'ziel.weitester': { de: 'WEITESTER {w} M', en: 'LONGEST {w} M' },
+  'ziel.sprungRekord': { de: 'REKORD!', en: 'RECORD!' },
+  'ziel.hoechster': { de: 'HÖCHSTER {h} M', en: 'HIGHEST {h} M' },
+  'ziel.laengsterFlug': { de: 'LÄNGSTER FLUG {z} S', en: 'LONGEST AIRTIME {z} S' },
   'ziel.resets': { de: 'RESETS', en: 'RESETS' },
   'ziel.hoechstTempo': { de: 'HÖCHSTTEMPO', en: 'TOP SPEED' },
   'ziel.neuStarten': { de: 'NEU STARTEN', en: 'RESTART' },

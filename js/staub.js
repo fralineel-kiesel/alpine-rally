@@ -129,6 +129,18 @@ export function baueStaub(szene) {
     mesh.visible = true;
   }
 
+  // M10c: Staub/Kies-Stoss beim Abheben und Landen: n Wölkchen in der Farbe des Untergrunds, nach aussen und oben. kraft 0..1
+  function stoss(x, y, z, n, kraft, belag) {
+    const art = jeBelag[belag] || standard;
+    for (let i = 0; i < n; i++) {
+      const w = rnd() * Math.PI * 2, v = (1.5 + rnd() * 3.5) * kraft;
+      starte(x + Math.cos(w) * 0.8, y, z + Math.sin(w) * 0.8, 0, 0, Math.min(1, 0.5 + kraft * 0.6), Math.cos(w) * v, Math.sin(w) * v, art.farbe);
+      const k = (naechster + N - 1) % N;
+      vy[k] = (0.8 + rnd() * 2.2) * kraft;
+    }
+    if (n > 0) mesh.visible = true;
+  }
+
   // M3a.1: Welches Hinterrad ist als Nächstes dran? Wird über die Bilder hinweg gemerkt.
   // (Vorher fing jedes Bild wieder links an: Bei ruhiger Fahrt entsteht nur etwa ein Wölkchen pro
   // Bild, darum staubte es immer nur auf einer Seite.)
@@ -179,5 +191,5 @@ export function baueStaub(szene) {
     zustand.aktiv = aktiv;
     mesh.visible = aktiv > 0; // kein Staub: kein Zeichenaufruf
   }
-  return { mesh, aktualisiere, zustand, spritzer };
+  return { mesh, aktualisiere, zustand, spritzer, stoss };
 }

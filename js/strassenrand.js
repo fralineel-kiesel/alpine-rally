@@ -333,6 +333,7 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
   // versuche: eigene Liste der Verschiebungen (Meter), z. B. nur nach vorne
   // sicht: der Fahrer muss das Schild sehen (kein Baum davor, siehe sichtbar)
   // ausser: Schilder, die für abstandAlle nicht zählen (bewusst gepaart: Warnung + Tempo derselben Stelle)
+  const landezonen = strecke.sprungZonen || []; // M10c: in Landezonen (Sprünge) keine Schilder
   function platz(sWunsch, seiteWunsch, { andereSeite = true, schieben = 20, gruppe = null, abstandAlle = 0, versuche = null, sicht = false, ausser = [] } = {}) {
     if (!versuche) {
       versuche = [0];
@@ -342,6 +343,7 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
       for (const ds of versuche) {
         const s = sWunsch + ds, i = Math.round(s);
         if (i < 2 || i > n - 3 || !grundFrei(sd, i)) continue;
+        if (landezonen.some((z) => s > z.landeVon - 3 && s < z.landeBis + 3)) continue; // M10c: Landezone frei halten
         const lat = randAbstand(s, sd) + cs.versatz;
         if (!eigenerAst(s, sd * lat)) continue;
         punkt(s, sd * lat, P);

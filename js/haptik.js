@@ -37,12 +37,14 @@ export function knopfTick() {
   if (!aktiv() || einstellungen.haptik === 'aus') return;
   if (frei('knopf', CONFIG.haptik.knopfAbstand)) ausgeben(CONFIG.haptik.knopf, 'knopf');
 }
-// Spielereignis: art = 'aufprall' (staerke 0..1 wie im Ton), 'gang', 'checkpoint' oder 'ziel'
+// Spielereignis: art = 'aufprall' (staerke 0..1 wie im Ton), 'gang', 'checkpoint', 'ziel' oder (M10c) 'landung' (Landehärte 0..1)
 export function spielTick(art, staerke = 1) {
   if (!aktiv() || einstellungen.haptik !== 'voll') return;
   const H = CONFIG.haptik;
   if (!frei('spiel', H.spielAbstand)) return;
-  const muster = art === 'aufprall' ? Math.round(H.aufprallLeicht + (H.aufprallHart - H.aufprallLeicht) * Math.max(0, Math.min(1, staerke))) : H[art];
+  const st = Math.max(0, Math.min(1, staerke));
+  const muster = art === 'aufprall' ? Math.round(H.aufprallLeicht + (H.aufprallHart - H.aufprallLeicht) * st)
+    : art === 'landung' ? Math.round(H.landungLeicht + (H.landungHart - H.landungLeicht) * st) : H[art];
   ausgeben(muster, art);
 }
 // Eintrag HAPTIK TESTEN (nur wo haptikMoeglich): ein Tick (ohne Rate-Limit); liefert 'vibrate' oder 'aus'
