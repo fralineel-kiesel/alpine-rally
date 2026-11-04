@@ -1113,6 +1113,27 @@ export const CONFIG = {
     },
   },
 
+  // --- Sprünge mit Flugphase (M10c, js/sprung.js) ------------------------
+  // Abheben geht nur in einer Sprungzone der Strecke (Streckenfeld "sprung"), sonst fährt das Auto wie bisher.
+  sprung: {
+    schwerkraft: 9.81,         // Erdbeschleunigung (m/s²)
+    SCHWERKRAFT_FAKTOR: 1.0,   // mal die Schwerkraft: kleiner = schwebender und weiter, grösser = schwerer und kürzer
+    abhebeSchwelle: 0.04,      // so hoch (m) über dem Boden zählt das Auto als "in der Luft" (kleiner = schon bei Hüpfern)
+    abhebeBreite: 10,          // abheben nur so weit (m) neben der Strassenmitte (Fahrbahn, Bankett, Schulter)
+    teilschritt: 0.25,         // Boden-Prüfung in der Luft alle so viele Meter (nie durch den Boden, auch bei Rucklern)
+    nickMax: 15,               // Nase hebt/senkt sich in der Luft höchstens so viele Grad
+    nickGlaetten: 0.22,        // so schnell (s) folgt die Nase der Flugbahn
+    wankenMax: 6,              // Wanken in der Luft höchstens so viele Grad
+    maxFlugZeit: 6,            // Notbremse: länger als so viele Sekunden in der Luft = sofort aufsetzen
+    // Tempoverlust bei der Landung (Anteil des Tempos). "Senkrecht" = Aufprall senkrecht zum Boden (m/s):
+    // bis senkFrei federt das Auto alles weg (sauber, 0 %), bis senkHart steigt der Verlust auf hartMax, darüber bis max.
+    verlust: {
+      senkFrei: 6.5, senkHart: 11, senkSehrHart: 15, hartMax: 0.25, max: 0.35,
+      naseFrei: 4, naseVoll: 16, naseMax: 0.12,  // Nase voran (Grad tiefer als der Boden): ab naseFrei Verlust bis naseMax
+      gierFrei: 10, gierVoll: 40, gierMax: 0.10, // schräg gelandet (Grad zwischen Auto und Strasse): bis gierMax
+    },
+  },
+
   // --- Kamera -----------------------------------------------------------
   kamera: {
     sichtfeld: 62,             // Blickwinkel (Grad)

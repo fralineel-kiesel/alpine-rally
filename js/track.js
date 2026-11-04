@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { STRECKE, StreckenFehler } from './streckenlader.js';
+import { sprungZonen, wendeProfilAn } from './sprung.js';
 
 // Stützpunkte und Abschnitts-Zeilen in der Reihenfolge der Datei (vom Lader gebaut)
 export const STRECKEN_PUNKTE = STRECKE.stuetzpunkte;
@@ -63,6 +64,10 @@ export function baueStrecke() {
     const wb = abschnitte[b.abschnitt] && abschnitte[b.abschnitt].wand;
     if (wa && wa === wb) wandSeite[i] = wa === 'links' ? -1 : 1;
   }
+  // M10c: Sprungzonen (Streckenfeld "sprung" mit von/bis): Höhen-Zusatz der Strasse für Anlauf, Kante und Landehang.
+  // Nur die Höhe ändert sich, Draufsicht, Länge und Streckenmeter bleiben. Ohne Zonen (Alpen) passiert hier nichts.
+  const sprungZonenListe = sprungZonen(STRECKE.sprung);
+  if (sprungZonenListe.length) wendeProfilAn(py, sArr, sprungZonenListe);
   // Richtung (Tangente) in der Ebene
   for (let i = 0; i < anzahl; i++) {
     const i0 = Math.max(0, i - 1), i1 = Math.min(anzahl - 1, i + 1);
@@ -179,6 +184,7 @@ export function baueStrecke() {
   const strecke = {
     kurve, laenge, anzahl, px, py, pz, tx, tz, s: sArr, wandSeite, wandStaerke,
     abschnitte, abschnittNr, baumFaktor, waldAnteil, nahWald,
+    sprungZonen: sprungZonenListe, // M10c: Sprungzonen (js/sprung.js), leer = keine Sprünge
     box: { minX, maxX, minZ, maxZ },
     startS: CONFIG.strasse.startBeiMeter,
     zielS: laenge - CONFIG.strasse.zielVorEnde,

@@ -37,6 +37,7 @@ import { baueGarage } from './garage.js';
 import { autoZuordnung, gibtAuto, STANDARD_AUTO, AUTO_MODELLE } from './autos.js';
 import { baueFederung } from './federung.js';
 import { Fahrphysik } from './physics.js';
+import { Flugphase } from './sprung.js'; // M10c: Sprünge mit Flugphase
 import { Getriebe } from './getriebe.js';
 import { baueAufheulen } from './tonfahrt.js';
 import { waehleFahrprofil, profilAusAdresse, aktivesProfil, REFERENZ_PROFIL, tonWerte } from './fahrprofil.js';
@@ -229,6 +230,8 @@ for (const [art, d] of Object.entries(CONFIG.autoOptik.dreck.belaege)) {
 const lichtEin = { gas: 0, bremse: 0, handbremse: false };
 const radZustand = { lenkwinkel: 0, strecke: 0, tempo: 0 }; // M8a: Räder (Einschlag, Strecke seit dem letzten Bild, Tempo)
 const physik = new Fahrphysik();
+// M10c: Flugphase (nur in Sprungzonen der Strecke; ohne Zonen rechnet sie nichts)
+const flug = new Flugphase(CONFIG.sprung, strecke.sprungZonen);
 const getriebe = new Getriebe();
 // HUD mit Minimap (M6: die Karte wird hier einmal aus der Strecke gemalt)
 const minimapT0 = performance.now();
@@ -422,7 +425,10 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?
   // (M8a: der Belag geht mit, für die Allrad-Traktion und den Heck-Grip je Belag des Fahrprofils)
   const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip, boden.art);
-  physik.schritt(dt, eingabe, {
+  // M10c: in der Luft (Sprung) kein Reifenmodell: Tempo und Blickrichtung bleiben
+  const fliegt = flug.inLuft;
+  if (fliegt) physik.luftSchritt(dt, eingabe);
+  else physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
     rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1, geradeaus: u.geradeaus ?? 1,
     rueckwaertsMax: u.rueckwaertsMax ?? 1, belag: boden.art,
@@ -436,7 +442,7 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Geländehöhe. Sonst wirkte die kleine Stufe vom Bankett auf die Wiese (wenige cm auf wenigen mm
   // Weg) wie eine senkrechte Wand, und das Auto blieb an der Bankett-Kante hängen.
   const hVorher = boden.art === 'gras' ? hAlt : welt.gelaendeHoehe(xAlt, zAlt);
-  if (bodenNeu.art === 'gras' && weg > 1e-4 && (bodenNeu.h - hVorher) / weg > g.steilsterHang) {
+  if (!fliegt && bodenNeu.art === 'gras' && weg > 1e-4 && (bodenNeu.h - hVorher) / weg > g.steilsterHang) {
     // Richtung bergauf (Gefälle zwischen alter und neuer Position messen)
     const mx = (physik.x + xAlt) / 2, mz = (physik.z + zAlt) / 2;
     let nx = welt.gelaendeHoehe(mx + 1, mz) - welt.gelaendeHoehe(mx - 1, mz);
@@ -509,6 +515,9 @@ function physikSchritt(dt, e, nurFahren = false) {
     }
   }
 
+  // M10c: Höhe nachführen (abheben nur in einer Sprungzone, in der Luft Wurfparabel bis zum Aufsetzen)
+  if (flug.zonen.length) flug.nachher(dt, physik, xAlt, zAlt, q2, bodenHoehe);
+
   if (nurFahren) return; // Demo-Fahrt: kein Rennstand (und keine Statistik)
   aufprallZaehlen(wucht);
   // M7a: für den Ton merken (stärkster Kontakt im Bild; die unsichtbaren Grenzen machen keinen Ton)
@@ -571,7 +580,7 @@ function physikSchritt(dt, e, nurFahren = false) {
   rennen.letztesS = s;
 
   // M10b.2: Wasser (nur Strecken mit Wasser)
-  if (welt.wasser.an) wasserSchritt(dt, q2);
+  if (welt.wasser.an && !flug.inLuft) wasserSchritt(dt, q2); // (M10c: in der Luft über dem Wasser nichts)
 
   // R-Countdown abgelaufen: zurück auf die Strassenmitte, Tempo 0
   if (rueck.rest > 0) {
@@ -727,10 +736,19 @@ function autoZeichnen(dt, wegStrecke) {
   const hv = bodenHoehe(x + fx * 1.3, z + fz * 1.3), hh = bodenHoehe(x - fx * 1.3, z - fz * 1.3);
   const hl = bodenHoehe(x + lx * 0.8, z + lz * 0.8), hr = bodenHoehe(x - lx * 0.8, z - lz * 0.8);
   const k = Math.min(1, dt * 14);
-  optik.neigX += (Math.atan2(hv - hh, 2.6) - optik.neigX) * k;
-  optik.neigZ += (Math.atan2(hl - hr, 1.6) - optik.neigZ) * k;
   const hm = bodenHoehe(x, z);
-  const y = Math.max(hm, (hv + hh) / 2);
+  let y;
+  if (flug.inLuft) {
+    // M10c: in der Luft Höhe aus der Flugbahn, Nase folgt der Flugbahn (sprung.js), Wanken klingt aus (begrenzt)
+    const wMax = CONFIG.sprung.wankenMax * Math.PI / 180;
+    optik.neigX += (flug.nick - optik.neigX) * k;
+    optik.neigZ = begrenze(optik.neigZ * (1 - k * 0.3), -wMax, wMax);
+    y = flug.y;
+  } else {
+    optik.neigX += (Math.atan2(hv - hh, 2.6) - optik.neigX) * k;
+    optik.neigZ += (Math.atan2(hl - hr, 1.6) - optik.neigZ) * k;
+    y = Math.max(hm, (hv + hh) / 2);
+  }
   auto.objekt.position.set(x, y, z);
   auto.objekt.rotation.set(-optik.neigX, yaw, optik.neigZ, 'YXZ');
 
@@ -741,7 +759,7 @@ function autoZeichnen(dt, wegStrecke) {
     const a = o.feder.gelaendeAbstand;
     const krumm = a === 1.3 ? (hv - 2 * hm + hh) / (a * a)
       : (bodenHoehe(x + fx * a, z + fz * a) - 2 * hm + bodenHoehe(x - fx * a, z - fz * a)) / (a * a);
-    federung.schritt(dt, physik.beschlVor, physik.beschlSeit, physik.vVor * physik.vVor * krumm);
+    federung.schritt(dt, physik.beschlVor, physik.beschlSeit, flug.inLuft ? 0 : physik.vVor * physik.vVor * krumm);
   }
   auto.federung(federung);
   const radMax = o.radEinschlagMax * Math.PI / 180; // sichtbarer Einschlag begrenzt (Physik unverändert)
@@ -777,6 +795,7 @@ function kameraZiel() {
   kam.ziel.set(physik.x - Math.sin(kam.yaw) * c.abstand, y + c.hoehe, physik.z - Math.cos(kam.yaw) * c.abstand);
 }
 function kameraSofort() {
+  flug.reset(); // M10c: neu hingesetzt = am Boden
   kam.yaw = physik.richtung;
   federung.reset(); // M8a: neu hingesetzt = Karosserie in Ruhe
   autoZeichnen(0, 0);
@@ -1420,4 +1439,5 @@ window.__alpineRally = {
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
+  flug, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis)
 };

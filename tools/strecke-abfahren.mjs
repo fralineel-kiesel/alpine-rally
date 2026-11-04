@@ -1,4 +1,5 @@
 // Strecke mit dem Testfahrer abfahren (M10a):  node tools/strecke-abfahren.mjs [<datei> | --strecke <id>] [--auto <id>] [--aus <datei.txt>] [--stil digital]
+// M10c: --json <datei> schreibt die Sprünge je Stil (Flugweite, Zeit, Höhe, Verlust, Tempo an Kuppen/Kanten) als JSON.
 // Lädt das Spiel im Headless-Chromium mit dieser Streckendatei (statt strecken/alpen.js) und lässt den vorhandenen
 // Testfahrer (tools/testfahrer-browser.js, fahreEtappe – nicht neu geschrieben) die Etappe in der echten Physik fahren,
 // in den drei Stilen vorsichtig / mittel / flott wie tools/testfahrer.mjs. Meldet Gesamtzeit, Zwischenzeiten, Aufpralle,
@@ -35,12 +36,16 @@ const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.j
 await spiel.page.evaluate((code) => { window.__fahrerUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); }, fahrerCode);
 
 const zeilen = [`Strecke ${id} (${datei}), Fahrprofil ${AUTO}`];
+// M10c: markierte Kuppen (Feld sprung, s) aus der Datei – Tempo dort wird gemeldet (auch ohne Sprungzone)
+const sprungBlock = (/\n  sprung: \[([\s\S]*?)\n  \],/.exec(inhalt) || [])[1] || '';
+const MARKEN = [...sprungBlock.matchAll(/\{ s: ([\d.]+), name: '([^']+)'/g)].map((m) => ({ s: +m[1], name: m[2] }));
+const sprungStat = []; // je Stil: Sprünge (für --json)
 const zeiten = [];
 let probleme = 0;
 // M10b.2: --stil <name[,name]> wählt die Stile (z. B. digital = Tastatur/Controller wie Lino), Standard die drei bisherigen
 const STILE = arg('--stil') ? arg('--stil').split(',') : ['vorsichtig', 'mittel', 'flott'];
 for (const profil of STILE) {
-  const r = await spiel.page.evaluate(async (profil) => {
+  const r = await spiel.page.evaluate(async ([profil, MARKEN]) => {
     const f = await import(window.__fahrerUrl);
     const A = window.__alpineRally, S = A.strecke, C = A.CONFIG, q = {};
     const ab = S.abschnitte.map((a) => ({ name: a.name, von: a.von, bis: a.bis, max: 0 }));
@@ -51,6 +56,10 @@ for (const profil of STILE) {
     // Aufprall-Stellen (M10b.1): seitlicher Abstand zur Mitte und Material (nur lesen)
     const stellen = [];
     let aufLetzt = A.kollision.letzterAufprall;
+    // M10c: Sprünge (nur lesen): je Landung Flugweite, Flugzeit, Höhe, Tempoverlust; Flug ausserhalb einer Zone = Fehler
+    const F = A.flug, Z = S.sprungZonen || [], spruenge = [];
+    let landLetzt = F ? F.ereignis.landung : 0, ausserhalb = 0, luftSchritte = 0;
+    const inZone = (s) => Z.some((z) => s >= z.von && s <= z.bis);
     // je Schritt nur lesen (die Physik merkt nichts davon)
     const proSchritt = () => {
       if (A.rennen.zustand !== 'laeuft') return;
@@ -70,6 +79,16 @@ for (const profil of STILE) {
       if (art === 'gras') { if (grasAn == null) grasAn = s; } else if (grasAn != null) { gras.push([grasAn, s]); grasAn = null; }
       const anWand = q.wandSeite !== 0 && q.wandStaerke > 0.5 && Math.sign(q.seite) === q.wandSeite && Math.abs(q.seite) > C.grenze.wandGrenze - 0.3;
       if (anWand) { if (wandAn == null) wandAn = s; } else if (wandAn != null) { wand.push([wandAn, s]); wandAn = null; }
+      if (F) {
+        if (F.inLuft) { luftSchritte++; if (!inZone(F.startS)) ausserhalb++; }
+        if (F.ereignis.landung !== landLetzt) {
+          landLetzt = F.ereignis.landung;
+          const L = F.letzteLandung, z = Z[L.zone];
+          spruenge.push({ zone: L.zone, name: z ? z.name : '?', startS: L.startS, s: L.s, seite: L.seite, weite: L.weite, zeit: L.zeit, hoehe: L.hoehe,
+            verlust: L.verlust, abTempo: L.abTempo * 3.6, vSenk: L.vSenk, nase: L.winkel, gier: L.gier, klasse: L.klasse, inLandezone: z ? L.s >= z.landeVon && L.s <= z.landeBis : false,
+            aufStrasse: Math.abs(L.seite) <= C.strasse.breite / 2 + C.strasse.bankett + 2.5 });
+        }
+      }
       if (p.tempo < 0.5) { standT += A.SCHRITT; if (standS == null) standS = s; } else { if (standT > 1 && standS != null) stand.push([standS, standT]); standT = 0; standS = null; }
     };
     const e = f.fahreEtappe(A, profil, proSchritt);
@@ -87,9 +106,12 @@ for (const profil of STILE) {
       for (let j = i; j < Math.min(sZ, i + 100); j++) { m = Math.max(m, tempo[j]); t += tempo[j] > 0 ? 3.6 / tempo[j] : 0; }
       profil100.push(Math.round(m)); zeit100.push(t.toFixed(1));
     }
-    return { ...e, ab, gras, wand, stand, stellen, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
+    const tempoMarken = MARKEN.map((m) => ({ ...m, kmh: tempo[Math.round(m.s)] || 0 }));
+    const tempoKanten = Z.map((z) => ({ name: z.name, s: z.kante, kmh: Math.max(...[-3, -2, -1, 0].map((d) => tempo[Math.round(z.kante) + d] || 0)) }));
+    return { ...e, ab, gras, wand, stand, stellen, spruenge, ausserhalb, luftSchritte, tempoMarken, tempoKanten, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
       tempoProfil: { vMax, nahAnteil: n ? nah / n : 0, gefahren: sZ - sA, profil100, zeit100 } };
-  }, profil);
+  }, [profil, MARKEN]);
+  sprungStat.push({ stil: profil, zeit: r.ziel ? r.zeit : null, aufpralle: r.aufpralle.length, gras: r.gras, spruenge: r.spruenge, ausserhalb: r.ausserhalb, luftSchritte: r.luftSchritte, tempoMarken: r.tempoMarken, tempoKanten: r.tempoKanten });
   zeiten.push(r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL');
   const m = (l) => l.map(([a, b]) => `${Math.round(a)}–${Math.round(b)} m`).join(', ') || 'keine';
   zeilen.push('', `${profil}: ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}`,
@@ -104,13 +126,19 @@ for (const profil of STILE) {
     `  Sekunden je 100 m: ${r.tempoProfil.zeit100.join(' ')}`,
     '  Höchstes Tempo je Abschnitt:',
     ...r.ab.map((a) => `    ${a.name.padEnd(16)} ${Math.round(a.von)}–${Math.round(a.bis)} m: ${Math.round(a.max)} km/h`));
+  // M10c: Sprünge
+  if (r.tempoMarken.length) zeilen.push(`  Tempo an den markierten Kuppen: ${r.tempoMarken.map((m) => `${m.name} ${m.s} m ${Math.round(m.kmh)} km/h`).join(', ')}`);
+  if (r.tempoKanten.length) zeilen.push(`  Tempo an den Kanten: ${r.tempoKanten.map((m) => `${m.name} ${Math.round(m.s)} m ${Math.round(m.kmh)} km/h`).join(', ')}`);
+  zeilen.push(`  Sprünge: ${r.spruenge.length}${r.ausserhalb ? `, FLUG AUSSERHALB EINER ZONE: ${r.ausserhalb} Schritte` : ''}`);
+  for (const j of r.spruenge) zeilen.push(`    ${j.name.padEnd(14)} ab ${Math.round(j.startS)} m mit ${Math.round(j.abTempo)} km/h: Weite ${j.weite.toFixed(1)} m, Zeit ${j.zeit.toFixed(2)} s, Höhe ${j.hoehe.toFixed(2)} m, gelandet ${Math.round(j.s)} m (${j.inLandezone ? 'Landezone' : 'AUSSERHALB'}, ${j.seite.toFixed(1)} m neben der Mitte), Verlust ${(j.verlust * 100).toFixed(1)} % (${j.klasse}, senkrecht ${j.vSenk.toFixed(1)} m/s, Nase ${j.nase.toFixed(1)}°, Gier ${j.gier.toFixed(1)}°)`);
   for (const w of r.wege || []) zeilen.push(`  Nebenweg ${w.name} (${w.belag}): ${w.zeit.toFixed(2)} s, max. ${w.maxAbstand.toFixed(1)} m neben der Mitte, neben dem Weg ${w.daneben.toFixed(2)} s`);
   if (!r.ziel) probleme++;
-  console.log(`${profil.padEnd(10)} ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}  CPs ${r.cps.map(fmt).join(' / ')}  Aufpralle ${r.aufpralle.length}, Gras ${r.gras.length}x, Wandnähe ${r.wand.length}x, Stillstand ${r.stand.length}x`);
+  console.log(`${profil.padEnd(10)} ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}  CPs ${r.cps.map(fmt).join(' / ')}  Aufpralle ${r.aufpralle.length}, Gras ${r.gras.length}x, Wandnähe ${r.wand.length}x, Stillstand ${r.stand.length}x${r.spruenge.length ? `, Sprünge ${r.spruenge.map((j) => `${j.weite.toFixed(0)} m/${(j.verlust * 100).toFixed(0)} %`).join(' ')}` : ''}${r.ausserhalb ? ' FLUG AUSSERHALB!' : ''}`);
   if (process.argv.includes('--tempo')) console.log(`           Schnitt ${r.ziel ? ((r.tempoProfil.gefahren / r.zeit) * 3.6).toFixed(1) : '--'} km/h, nahe Höchsttempo ${(r.tempoProfil.nahAnteil * 100).toFixed(1)} % (Höchsttempo ${Math.round(r.tempoProfil.vMax)} km/h)`);
 }
 if (fehlerSeite.length) zeilen.push('', `Konsole: ${fehlerSeite.join(' | ')}`);
 fs.writeFileSync(aus, `${zeilen.join('\n')}\n`);
+if (arg('--json')) fs.writeFileSync(arg('--json'), JSON.stringify({ strecke: id, auto: AUTO, stile: sprungStat }, null, 1)); // M10c
 console.log(`Gesamtzeiten: ${zeiten.join(' / ')}`);
 console.log(`Bericht: ${aus}`);
 await spiel.schliessen();

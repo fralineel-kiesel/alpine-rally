@@ -5,6 +5,8 @@
 // Ergebnis: Liste von Fehlern als Text mit Pfad, z. B. "checkpoints[2]: 3700 liegt hinter dem Ziel (3622.6)".
 // Leere Liste = in Ordnung.
 
+import { pruefeSprung } from './sprung.js';
+
 export const FORMAT = 1;
 
 // Bekannte Beläge (müssen zu den Schlüsseln von config.belaege passen, prüft tools/m10a-test.mjs)
@@ -91,13 +93,15 @@ export function pruefeStrecke(d, { voll = false } = {}) {
     }
   }
   if ('sprung' in d) {
-    // Markierte Kuppen (später Sprünge, M10c): heute ohne Wirkung im Spiel
+    // Markierte Kuppen; seit M10c mit Sprungzone (von/bis …) echte Sprünge, ohne Zone nur Markierung
     if (!Array.isArray(d.sprung)) fehler('sprung', 'Liste erwartet');
     else d.sprung.forEach((sp, i) => {
       if (!istObjekt(sp) || !istZahl(sp.s) || typeof sp.name !== 'string' || !sp.name.trim()) { fehler(`sprung[${i}]`, '{ s: Streckenmeter, name } erwartet'); return; }
       if (!(sp.s > 0 && sp.s < d.laenge)) fehler(`sprung[${i}].s`, `${sp.s} liegt nicht auf der Strecke (0 bis ${d.laenge})`);
       if (i > 0 && istZahl(d.sprung[i - 1].s) && sp.s <= d.sprung[i - 1].s) fehler(`sprung[${i}].s`, `${sp.s} nicht hinter sprung[${i - 1}] (${d.sprung[i - 1].s})`);
     });
+    // M10c: Sprungzonen (von, bis, kante, landeVon, landeBis, staerke, form): Regeln in js/sprung.js
+    pruefeSprung(d, fehler);
   }
 
   if ('belagAbschnitte' in d) {
