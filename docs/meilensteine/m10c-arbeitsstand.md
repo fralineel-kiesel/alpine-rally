@@ -30,5 +30,11 @@ Vergleichsstand 0.10b.2: `git worktree add <ordner> ffca7c3`. Tests: `node tools
 - Abheben nur noch von der Fahrbahn (±4 m): vorher hob ein Auto schräg über Bankett/Böschung der erhöhten Rampe ab.
 - Tests p–u grün (Bildzeit Median aus 5: AN −0.9 %, AUS +2.0 % gegen 0.10b.2); Alpen x1–x5 grün (nur EINSTELLUNGEN neu).
 
+## Teil D – Sprung-Statistik (fertig)
+- Zählung im Lauf (nur gültige Landungen bis 8 m neben der Mitte, nicht im Wasser): Anzahl, weitester, höchster, längster Flug.
+- Zielbildschirm (nur Strecken mit Sprüngen): "SPRÜNGE 4 · WEITESTER 51 M" (+ "REKORD!" grün) und "HÖCHSTER 2.8 M · LÄNGSTER FLUG 1.6 S".
+- Rekord je Etappe in `alpineRally.sprungRekorde` unter dem Feld `etappe` (nicht unter dem revision-Schlüssel).
+- Tests v, w, x, y grün (Alpen-Zielbildschirm 0 Pixel anders).
+
 ## Offen
-- Teil D (Statistik, Skript liegt bereit), E (optional), F.
+- Teil E (optional, Alpen-Sprünge), F (Tests, Bilder, Bericht, Version).

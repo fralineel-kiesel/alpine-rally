@@ -1050,7 +1050,8 @@ const ZIEL_BILD = (e, sprache = null) => {
 const ALPEN_ERG = { zeit: 162.34, cps: [30.1, 80.2, 120.3], auto: 'rt4', aufpralle: 1, resets: 0, hoechstTempo: 40, spur: [], platz: 1, anzahl: 1, bisher: null, gespeichert: true, neueBest: false, gesamtPlatz: 1, gesamtBisher: null, gesamtRekord: false };
 let dLauf = null;
 if (teil('v') || teil('x')) {
-  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland&auto=rt4', { speicher: {}, auto: 'rt4' });
+  // (ohne "speicher": der Test-Browser beginnt leer, und das Neuladen unten soll den Speicher behalten)
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland&auto=rt4', { auto: 'rt4' });
   await bereit(s);
   const code = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
   dLauf = await s.page.evaluate(ETAPPE_MIT_SPRUENGEN, code);

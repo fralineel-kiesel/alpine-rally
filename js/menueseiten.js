@@ -669,6 +669,32 @@ export function baueSeiten(api) {
       });
     },
   });
+  // M10c: Sprünge im Zielbildschirm (nur Strecken mit Sprüngen): "SPRÜNGE 4 · WEITESTER 38 M" und "HÖCHSTER 3.2 M · LÄNGSTER
+  // FLUG 1.8 S"; neuer Sprungrekord der Etappe: weitester Sprung grün (wie eine neue Bestzeit) mit "REKORD!"
+  const sprungTeile = (e) => {
+    const S = e.spruenge, w = Math.round(S.weitester);
+    const t1 = [{ text: t('ziel.spruenge', { n: S.anzahl }), farbe: M.farbeGruppe }, { text: t('ziel.weitester', { w }), farbe: S.rekord ? RA.farbeSchneller : M.farbeText }];
+    if (S.rekord) t1.push({ text: t('ziel.sprungRekord'), farbe: RA.farbeSchneller });
+    const t2 = [{ text: t('ziel.hoechster', { h: S.hoechster.toFixed(1) }), farbe: M.farbeText }, { text: t('ziel.laengsterFlug', { z: S.laengste.toFixed(1) }), farbe: M.farbeText }];
+    return [t1, t2];
+  };
+  const sprungZeilen = (e) => {
+    if (!e.spruenge) return [];
+    const LUECKE_S = 4, punkt = '·';
+    const breite = (teile) => teile.reduce((b, x) => b + textBreite(x.text), 0) + (teile.length - 1) * (textBreite(punkt) + 2 * LUECKE_S);
+    return sprungTeile(e).map((teile, nr) => ({
+      typ: 'info', hoehe: 9, breite: () => breite(sprungTeile(e)[nr]), inhalt: () => sprungTeile(e)[nr].map((x) => x.text).join(' · '),
+      farbe: sprungTeile(e)[nr][1].farbe, farben: sprungTeile(e)[nr].map((x) => x.farbe), // (für Tests)
+      zeichne(c, x, y, b) {
+        const tl = sprungTeile(e)[nr];
+        let xl = x + Math.round((b - breite(tl)) / 2);
+        tl.forEach((s, i) => {
+          if (i) { pixelText(c, punkt, xl + LUECKE_S, y + 1, 1, M.farbeHinweis); xl += textBreite(punkt) + 2 * LUECKE_S; }
+          pixelText(c, s.text, xl, y + 1, 1, s.farbe); xl += textBreite(s.text);
+        });
+      },
+    }));
+  };
   // Zeile über der grossen Zeit (M8h): "PLATZ p VON n" (Liste des Autos) und/oder "GESAMT PLATZ 2" (nur 2 und 3, der
   // Rekord steht im Titel); beide in einer Zeile, damit die Seite nicht höher wird als bis 0.8g
   const platzZeile = (e) => {
@@ -711,9 +737,10 @@ export function baueSeiten(api) {
         vergleichZeile(e),
         leer(4),
         ...e.cps.map((_, n) => cpZeile(e, n)),
-        leer(5),
+        leer(e.spruenge ? 3 : 5),
         statZeile(e),
-        ...(e.gespeichert ? [leer(4)] : [leer(2), textZeile('ziel.nichtGespeichert', M.farbeHinweis, true)]),
+        ...(e.spruenge ? [leer(2), ...sprungZeilen(e)] : []), // M10c (Alpen ohne Sprünge: wie bisher)
+        ...(e.gespeichert ? [leer(e.spruenge ? 3 : 4)] : [leer(2), textZeile('ziel.nichtGespeichert', M.farbeHinweis, true)]),
         ...knoepfe,
       ];
     },

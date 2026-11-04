@@ -310,6 +310,11 @@ export const TEXTE = {
   'ziel.ersteZeit': { de: 'ERSTE ZEIT', en: 'FIRST TIME' },
   'ziel.cp': { de: 'CP {n}', en: 'CP {n}' },
   'ziel.aufpralle': { de: 'AUFPRÄLLE', en: 'IMPACTS' },
+  'ziel.spruenge': { de: 'SPRÜNGE {n}', en: 'JUMPS {n}' }, // M10c
+  'ziel.weitester': { de: 'WEITESTER {w} M', en: 'LONGEST {w} M' },
+  'ziel.sprungRekord': { de: 'REKORD!', en: 'RECORD!' },
+  'ziel.hoechster': { de: 'HÖCHSTER {h} M', en: 'HIGHEST {h} M' },
+  'ziel.laengsterFlug': { de: 'LÄNGSTER FLUG {z} S', en: 'LONGEST AIRTIME {z} S' },
   'ziel.resets': { de: 'RESETS', en: 'RESETS' },
   'ziel.hoechstTempo': { de: 'HÖCHSTTEMPO', en: 'TOP SPEED' },
   'ziel.neuStarten': { de: 'NEU STARTEN', en: 'RESTART' },

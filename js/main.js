@@ -25,7 +25,7 @@ import { baueMenue } from './menue.js';
 import { baueSeiten } from './menueseiten.js';
 import { baueDemo } from './demofahrt.js';
 import { AUTOS, ETAPPEN, auswahl } from './inhalte.js';
-import { speichereBestzeit, hundertstel, ladeBestzeiten, speichereLetztenLauf, ladeLetztenLauf } from './bestzeiten.js';
+import { speichereBestzeit, hundertstel, ladeBestzeiten, speichereLetztenLauf, ladeLetztenLauf, speichereSprungRekord } from './bestzeiten.js';
 import { baueVergleich } from './vergleich.js';
 import { zeichneCountdown, countdownNummer } from './rennablauf.js';
 import { baueStrecke } from './track.js';
@@ -277,7 +277,17 @@ const stat = {
   hoechstTempo: 0,       // m/s
   resetsBasis: 0,        // rueck.anzahl beim Start (Resets = rueck.anzahl - resetsBasis)
   letzterAufprall: -1e9, // rennen.uhr beim letzten gezählten Aufprall (Sperrzeit)
+  // M10c: Sprünge (nur gültige: gelandet auf Strasse, Bankett oder Schulter, nicht im Wald oder Wasser)
+  spruenge: 0, weitester: 0, hoechster: 0, laengste: 0,
 };
+// M10c: so weit neben der Strassenmitte zählt eine Landung als gültig (Fahrbahn, Bankett, Schulter der Böschung)
+const SPRUNG_GUELTIG = CONFIG.strasse.breite / 2 + CONFIG.strasse.bankett + ((STRECKE.umgebung && STRECKE.umgebung.boeschung && STRECKE.umgebung.boeschung.schulter) || 0);
+function sprungZaehlen() {
+  const L = flug.letzteLandung;
+  if (rennen.zustand !== 'laeuft' || Math.abs(L.seite) > SPRUNG_GUELTIG || wasserBad.aktiv) return;
+  stat.spruenge++;
+  stat.weitester = Math.max(stat.weitester, L.weite); stat.hoechster = Math.max(stat.hoechster, L.hoehe); stat.laengste = Math.max(stat.laengste, L.zeit);
+}
 const statResets = () => rueck.anzahl - stat.resetsBasis;
 // Aufprall melden: wucht = Tempo Richtung Hindernis (m/s). Zählt einmal, dann rennablauf.aufprallSperre Ruhe
 function aufprallZaehlen(wucht) {
@@ -330,6 +340,7 @@ function neustart() {
   referenzLaden();
   // M5b: Statistik und Ziel zurück
   stat.aufpralle = 0; stat.hoechstTempo = 0; stat.resetsBasis = rueck.anzahl; stat.letzterAufprall = -1e9;
+  stat.spruenge = 0; stat.weitester = 0; stat.hoechster = 0; stat.laengste = 0; // M10c
   lauf.countdown = 0; lauf.go = 0; lauf.zielWarte = 0; lauf.zielErledigt = false; lauf.ergebnis = null;
   // M7a: Ton – alle Schichten weich aus, nichts bleibt hängen
   ton.allesAus();
@@ -521,7 +532,7 @@ function physikSchritt(dt, e, nurFahren = false) {
   }
 
   // M10c: Höhe nachführen (abheben nur in einer Sprungzone, in der Luft Wurfparabel bis zum Aufsetzen)
-  if (flug.zonen.length) flug.nachher(dt, physik, xAlt, zAlt, q2, bodenHoehe);
+  if (flug.zonen.length && flug.nachher(dt, physik, xAlt, zAlt, q2, bodenHoehe) && !nurFahren) sprungZaehlen();
 
   if (nurFahren) return; // Demo-Fahrt: kein Rennstand (und keine Statistik)
   aufprallZaehlen(wucht);
@@ -1016,6 +1027,12 @@ function zielErreicht() {
     gesamtRekord: !!erg.gesamtBisher && hundertstel(eintrag.zeit) < hundertstel(erg.gesamtBisher.zeit),
   };
   lauf.markiert = erg.platz > 0 ? { etappe: etappe.id, datum: erg.datum, auto: eintrag.auto } : null; // (M8h: mit Auto)
+  // M10c: Sprünge (nur Strecken mit Sprungzonen; Alpen: kein Eintrag, Zielbildschirm wie bisher) und Sprungrekord der Etappe
+  if (strecke.sprungZonen.length) {
+    const r = speichereSprungRekord(STRECKE.etappe, stat.weitester, eintrag.auto);
+    lauf.ergebnis.spruenge = { anzahl: stat.spruenge, weitester: stat.weitester, hoechster: stat.hoechster, laengste: stat.laengste,
+      rekord: r.neu && !!r.bisher, ersterRekord: r.neu && !r.bisher, rekordBisher: r.bisher ? r.bisher.weite : null };
+  }
   ton.fanfare(false); // M7a: kurze Fanfare beim Überfahren der Ziellinie (neue Bestzeit: die lange zum Zielbildschirm)
   if (ablauf.zustand === 'rennen') spielTick('ziel'); // M9a.1
 }
