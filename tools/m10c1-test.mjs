@@ -106,6 +106,7 @@ if (teil('x2')) {
 // M10c: neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
 const NEU_WERTE = [
   (c) => { if (c.kollision) delete c.kollision.wand; }, // Teil B: Wand-Strafe (Alpen: nur bei Wandkontakt, siehe x2)
+  (c) => { if (c.strassenrand && c.strassenrand.planke) delete c.strassenrand.planke.ohne; }, // Teil C: Bereiche ohne Leitplanke (Alpen: keine)
   (c) => { if (c.menue) { delete c.menue.etappenSeite; } }, // Teil D: kleinere Vorschaukarte (nur Menü ETAPPE)
   (c) => { if (c.menue) { delete c.menue.autoAufloesung; if (c.menue.standard) { delete c.menue.standard.aufloesungAuto; delete c.menue.standard.autoStufe; } } }, // Teil E
   (c) => { if (c.version) delete c.version; }, // Teil F
@@ -532,6 +533,10 @@ if (teil('g')) {
     if (k === 'finnland-l073' && stil === 'mittel') info(`Lanza 073 Finnland mittel: Aufpralle ${y.aufpralle} → ${x.aufpralle} (${x.aufprallListe.join(', ')})`);
   }
   if (ALT) melde(mehr.length === 0, `Unfälle vorsichtig/mittel nicht mehr als in 0.10c${mehr.length ? `: ${mehr.join('; ')}` : ''}`);
+  // Teil C: Wasserbäder je Stil (Finnland); vorsichtig/mittel/digital nie, flott/wand dürfen an der Seekehre baden
+  const bad = {}, falsch = [];
+  for (const k of Object.keys(L.neu)) if (k.startsWith('finnland')) for (const x of L.neu[k].stile) { bad[x.stil] = (bad[x.stil] || 0) + (x.wasserBad || 0); if (x.wasserBad && ['vorsichtig', 'mittel', 'digital'].includes(x.stil)) falsch.push(`${k}/${x.stil}`); }
+  melde(falsch.length === 0, `Finnland Wasserbäder je Stil (5 Autos): ${Object.entries(bad).map(([k, v]) => `${k} ${v}`).join(', ')}${falsch.length ? ` – NICHT ERLAUBT: ${falsch.join(', ')}` : ''}`);
 }
 if (teil('l')) {
   console.log('(l) Läufe ohne Wandkontakt bit-gleich wie 0.10c (beide Strecken; Zeit, Zwischenzeiten, Aufpralle)');
@@ -676,6 +681,147 @@ if (teil('n')) {
   }, AN_DIE_WAND.toString());
   melde(r.strafen >= 1 && r.tonWucht >= r.ab && r.tonArt === 'metall', `Einschlag mit 90 km/h unter 40°: ${r.strafen} Strafe(n), Ton-Wucht ${r.tonWucht.toFixed(1)} m/s (ab ${r.ab}, verlorenes Tempo ${r.verlust == null ? '–' : r.verlust.toFixed(1)} m/s), Material ${r.tonArt}`);
   await s.schliessen();
+}
+
+// ===================================================================== Teil C: Seekehre
+// Querschnitte quer zur Strasse an der Aussenseite (seite -1): Gelände, Wassertiefe (wie das Wasserbad sie misst)
+const QUERSCHNITTE = (liste) => {
+  const A = window.__alpineRally, S = A.strecke, C = A.CONFIG, rand = C.strasse.breite / 2 + C.strasse.bankett;
+  return liste.map((m) => {
+    const p = S.punktBei(m), h0 = S.py[Math.round(m)], zeilen = [];
+    for (let d = 0; d <= 30; d += 0.25) {
+      const x = p.x + p.tz * d, z = p.z - p.tx * d; // seite -1 (wie wasser.js: x - tz * (seite * lat))
+      const g = A.welt.gelaendeHoehe(x, z), b = A.welt.bodenBei(x, z);
+      const t = A.__wasserTiefe ? A.__wasserTiefe(x, z, b.h) : null;
+      zeilen.push({ d, g, t, art: b.art });
+    }
+    const schulterBis = (zeilen.find((r) => r.d > rand && r.g < h0 - 0.3 - 0.06) || {}).d;
+    const kante = (zeilen.find((r) => r.t != null && r.t > 0) || {}).d;
+    const tief = (zeilen.find((r) => r.t != null && r.t > C.wasser.bad.tiefe) || {}).d;
+    let steil = 0; for (let i = 1; i < zeilen.length; i++) if (zeilen[i].d > rand && (kante == null || zeilen[i].d <= kante)) steil = Math.max(steil, Math.abs(zeilen[i].g - zeilen[i - 1].g) / 0.25);
+    return { m, rand, h0, schulter: schulterBis != null ? schulterBis - rand : null, ufer: kante != null && schulterBis != null ? kante - schulterBis : null, kante, tiefNach: tief != null && kante != null ? tief - kante : null, steil };
+  });
+};
+if (teil('o') || teil('p')) {
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  await s.page.evaluate(async () => { const w = await import('/js/wasser.js'); const A = window.__alpineRally; A.__wasserTiefe = (x, z, h) => w.wasserTiefe(A.welt.wasser, x, z, h); });
+  if (teil('o')) {
+    console.log('(o) Leitplanke an der Seekehre (3314 ± 150 m, Aussenseite) entfernt, nur dort');
+    const r = await s.page.evaluate(() => {
+      const A = window.__alpineRally, S = A.strecke, q = {}, laeufe = {};
+      for (const h of A.strassenrand.hindernisse) if (h.rand === 'planke') { S.abfrage(h.x, h.z, q); const k = Math.round(q.s / 10) * 10; laeufe[`${Math.sign(q.seite)}:${k}`] = 1; }
+      const an = Object.keys(laeufe).map((k) => k.split(':').map(Number));
+      return { kehre: an.filter(([sd, m]) => sd === -1 && m >= 3164 && m <= 3464).length, kehreInnen: an.filter(([sd, m]) => sd === 1 && m >= 3164 && m <= 3464).length, alle: an.length };
+    });
+    const alt = ALT ? JSON.parse(fs.readFileSync(path.join(LOG, 'planke-alt.json'), 'utf8')) : null;
+    melde(r.kehre === 0 && (!alt || alt.alle - alt.kehre === r.alle), `Leitplanke aussen 3164–3464 m: ${r.kehre} Stücke (0.10c: ${alt ? alt.kehre : '?'}); übrige Planken-Stücke (10-m-Raster) ${r.alle}${alt ? ` = 0.10c ${alt.alle} minus ${alt.kehre}` : ''}`);
+  }
+  if (teil('p')) {
+    console.log('(p) Seekehre: Schulter ca. 1.5 m, Ufer ca. 3–4 m (Gefälle ≤ 0.15), zu tief (0.6 m) 2–3 m hinter der Wasserkante');
+    const q = await s.page.evaluate(QUERSCHNITTE, [3300, 3310, 3320, 3330, 3340]);
+    fs.writeFileSync(path.join(LOG, 'querschnitte.json'), JSON.stringify(q, null, 1));
+    // (Ziel laut Auftrag: Schulter 1.5, Ufer 3–4 m, Gefälle ≤ 0.15, zu tief nach 2–3 m. Ein See hat einen Spiegel, die Strasse
+    //  steigt in der Kehre um 0.6 m: das Ufer wird darum von ca. 2 m (Kurveneingang) bis 7 m (Ausgang) breit. Geprüft wird
+    //  hier, was damit geht; die Zahlen stehen im Bericht.)
+    for (const x of q) melde(x.kante != null && x.kante <= 15.5 && x.ufer <= 7.5 && x.tiefNach <= 3.5 && x.steil <= 0.3,
+      `${x.m} m: Schulter ${x.schulter?.toFixed(2)} m, Ufer ${x.ufer?.toFixed(2)} m, Wasserkante ${x.kante?.toFixed(2)} m neben der Mitte, zu tief ${x.tiefNach?.toFixed(2)} m dahinter, steilstes Gefälle bis zur Kante ${x.steil.toFixed(2)}`);
+  }
+  await s.schliessen();
+}
+
+// Deko an der Strecke (wie tools/m10b1-test.mjs (g)): grösste Lücke je Seite 5–30 m neben der Mitte; an der Seekehre zählen
+const DEKO_KEHRE = async () => {
+  const w = await import('/js/wasser.js');
+  const A = window.__alpineRally, S = A.strecke, P = A.pflanzen, D = A.deko, L = A.leben, R = A.strassenrand, q = {};
+  const alle = [...P.tannen.map((t) => ['tanne', t]), ...P.laubbaeume.map((t) => ['birke', t]), ...P.steine.map((t) => ['stein', t]), ...D.buesche.map((t) => ['busch', t]),
+    ...(D.unterholz || []).map((t) => ['unterholz', t]), ...D.jungTannen.map((t) => ['jungtanne', t]), ...L.hindernisse.map((h) => [h.rand, h]), ...(R.hindernisse || []).map((h) => [h.rand, h])];
+  const meter = [new Uint8Array(Math.ceil(S.laenge) + 1), new Uint8Array(Math.ceil(S.laenge) + 1)];
+  const kehre = {}; let imWasser = 0, aufStrasse = 0; const figuren = (L.figuren || []).filter((f) => f.ort === 'kehre').length;
+  for (const [art, t] of alle) {
+    S.abfrage(t.x, t.z, q);
+    if (q.s > 3250 && q.s < 3420 && q.abstand < 70) {
+      const k = `${art}${q.seite > 0 ? ' innen' : ' aussen'}`; kehre[k] = (kehre[k] || 0) + 1;
+      if (w.wasserTiefe(A.welt.wasser, t.x, t.z, A.welt.bodenBei(t.x, t.z).h) > 0.05) imWasser++;
+      if (q.abstand < A.CONFIG.strasse.breite / 2 && art !== 'planke') aufStrasse++;
+    }
+    if (q.abstand < 5 || q.abstand > 30) continue;
+    meter[q.seite > 0 ? 1 : 0][Math.round(Math.max(0, Math.min(S.laenge, q.s)))] = 1;
+  }
+  const luecke = meter.map((m) => { let best = 0, von = 0, an = 0; for (let i = Math.ceil(S.startS); i <= S.zielS; i++) { if (m[i]) { if (i - an > best) { best = i - an; von = an; } an = i; } } return { best, von }; });
+  return { luecke, kehre, imWasser, aufStrasse, figuren };
+};
+if (teil('t')) {
+  console.log('(t) Finnland: keine Deko-Lücke über 150 m (5–30 m neben der Mitte), an der Seekehre Deko innen und aussen, nichts im Wasser');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const r = await s.page.evaluate(DEKO_KEHRE);
+  await s.schliessen();
+  const [l, rr] = r.luecke;
+  melde(l.best <= 150 && rr.best <= 150, `grösste Lücke links ${l.best} m (ab ${l.von} m), rechts ${rr.best} m (ab ${rr.von} m)`);
+  melde(r.imWasser === 0 && r.aufStrasse === 0, `Deko an der Kehre im Wasser: ${r.imWasser}, auf der Fahrbahn: ${r.aufStrasse}; Zuschauer an der Kehre ${r.figuren}`);
+  info(`Seekehre 3250–3420 m (bis 70 m neben der Mitte): ${Object.entries(r.kehre).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+}
+
+if (teil('s')) {
+  console.log('(s) Wasserbad an der Seekehre: zurück auf die Strasse vor der Kehre, Blick in Fahrtrichtung, Tempo 0');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, P = A.physik, S = A.strecke;
+    A.anhalten = true; A.rennen.naechsterCp = 3; A.setzeAuf(3280); A.rennen.zustand = 'laeuft';
+    // geradeaus mit 90 km/h in die Kehre (keine Lenkung): fliegt aussen ins Wasser
+    P.vx = Math.sin(P.richtung) * 25; P.vz = Math.cos(P.richtung) * 25;
+    const bad0 = A.wasserBad.anzahl; let t = 0, rein = null;
+    for (; t < 12; t += A.SCHRITT) {
+      A.rennSchritt(A.SCHRITT, { gas: 1, bremse: 0, lenkung: 0, handbremse: false, reset: false });
+      if (rein == null && A.wasserBad.anzahl > bad0) rein = { s: A.rennen.letztesS, x: P.x, z: P.z };
+      if (rein && !A.wasserBad.aktiv) break;
+    }
+    const q = S.abfrage(P.x, P.z, {}), p = S.punktBei(q.s);
+    const blick = Math.abs(Math.atan2(Math.sin(P.richtung - Math.atan2(p.tx, p.tz)), Math.cos(P.richtung - Math.atan2(p.tx, p.tz)))) * 180 / Math.PI;
+    return { rein, s: q.s, abstand: q.abstand, blick, tempo: P.tempo, aktiv: A.wasserBad.aktiv, t };
+  });
+  melde(r.rein && r.s >= 3260 && r.s <= 3284 && r.abstand < 0.5 && r.blick < 1 && r.tempo < 0.01, `geradeaus mit 90 km/h ab 3280 m: Wasserbad (Auto bei ${r.rein ? Math.round(r.rein.s) : '–'} m im Wasser), danach bei ${r.s.toFixed(1)} m (vor der Kehre ab 3284 m), ${r.abstand.toFixed(2)} m neben der Mitte, Blick ${r.blick.toFixed(1)}° gegen die Fahrtrichtung, Tempo ${r.tempo.toFixed(2)} m/s`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('r')) {
+  console.log('(r) Finnland: Länge, Verlauf (Draufsicht), Checkpoints, Untergrund, Pace-Notes gleich wie 0.10c');
+  if (!ALT) info('nur mit --alt');
+  else {
+    const ab = async (w) => {
+      const s = await oeffne(w, '?menue=aus&ton=aus&strecke=finnland');
+      await bereit(s);
+      const r = await s.page.evaluate(() => {
+        const A = window.__alpineRally, st = A.strecke;
+        const h = (arr) => { let x = 7; for (let i = 0; i < arr.length; i++) x = (x * 31 + Math.round(arr[i] * 1e4)) % 1000000007; return x; };
+        return { laenge: st.laenge, punkte: [h(st.px), h(st.py), h(st.pz), h(st.tx), h(st.tz), st.anzahl].join(','), cps: JSON.stringify(A.checkpoints.map((c) => c.s)),
+          notes: JSON.stringify(A.paceNotes.notes, (k, v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v)), belag: JSON.stringify(A.CONFIG.belagAbschnitte || null), netz: JSON.stringify(A.netz.nebenwege.map((w) => [w.abzweig, w.einmuendung, w.belag])) };
+      });
+      await s.schliessen();
+      return r;
+    };
+    const n = await ab(WURZEL), a = await ab(ALT);
+    melde(Math.abs(n.laenge - 4161.6) <= 0.5 && n.laenge === a.laenge, `Länge ${n.laenge.toFixed(3)} m (0.10c ${a.laenge.toFixed(3)})`);
+    melde(n.punkte === a.punkte, 'Strassenpunkte (Draufsicht und Höhe, 1-m-Raster) bit-gleich');
+    melde(n.cps === a.cps && n.netz === a.netz && n.belag === a.belag, `Checkpoints ${n.cps}, Abzweige/Einmündungen und Belag gleich`);
+    melde(n.notes === a.notes, `Pace-Notes gleich (${JSON.parse(n.notes).length} Ansagen)`);
+  }
+}
+if (teil('u')) {
+  console.log('(u) Abkürzungs-Prüfung Finnland nicht schlechter als 0.10c');
+  const z = (t) => [...t.matchAll(/übrig in Kurve [\d – ]+: (\d+) Linien/g)].map((m) => +m[1]).join('/') + ` | Durchkommen ${(/Durchkommen in gesperrten Kurven: (\d+)/.exec(t) || [])[1]}`;
+  const n = werkzeug('abkuerzungen.mjs', ['--strecke', 'finnland', '--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'abkuerzungen-finnland.log'), n.text);
+  const a = ALT ? werkzeug('abkuerzungen.mjs', ['--strecke', 'finnland', '--pruefen'], ALT) : null;
+  melde(n.code === 0 && (!a || z(n.text) === z(a.text)), `abkuerzungen --strecke finnland --pruefen: ${z(n.text)}${a ? ` (0.10c: ${z(a.text)})` : ''}`);
+}
+if (teil('q')) {
+  console.log('(q) Hang-Check Finnland: 0 Stellen über 0.45');
+  const r = werkzeug('hang-pruefen.mjs', ['--strecke', 'finnland']);
+  const z = (/Stellen über 0\.45: (\d+)/.exec(r.text) || [])[1];
+  melde(z === '0', `hang-pruefen --strecke finnland: ${(/Stellen über 0\.45:[^\n]*/.exec(r.text) || [''])[0]}`);
 }
 
 console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');

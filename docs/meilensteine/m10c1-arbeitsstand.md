@@ -12,4 +12,9 @@ Referenz: 0.10c = 612cc62 (Worktree im Scratchpad), Bilder/Zeiten bei 320x180. T
   Wand je Kurve (schnellste Fahrt mit gegen ohne Wandkontakt). Exploit-Kurven 0.10c 25 → neu 17 (Finnland 4 → 0, Alpen-Kehren
   1226/1411/1558/1705 bleiben +0.3–1.0 s). Ganze Etappe: wand schneller als mittel, weil enge Kurven auch ohne Wand schneller
   gehen, als mittel plant (kein Wand-Effekt). Mittel/vorsichtig ohne Wandkontakt bit-gleich, h–n grün.
-- Nächste: D (Patch im Scratchpad `teil-d.py`), C, E (`teil-e.py`, `js/aufloesung.js`), F.
+  Commit 3d67fa5.
+- **C:** Seekehre: Leitplanke aussen 3260–3400 weg (`strassenrand.ohnePlanke`), See aus 6 Kreisen + Seekörper (gleicher
+  `pegel` −6.15, `nah`: Ufer 0.15, Grund 0.4, Böschung nach dem See), Ufer 1.5–7 m (Strasse steigt), zu tief nach 2.3–3.3 m,
+  Wasserbad zurück auf 3270 m, 9 Zuschauer aussen vor der Kehre, 3 Findlinge. Hang 0, Verlauf/CPs/Notes/Abkürzungen gleich.
+  Testfahrer: kein Wasserbad (auch flott/wand bremsen dort richtig).
+- Nächste: D (Patch im Scratchpad `teil-d.py`), E (`teil-e.py`, `js/aufloesung.js`), F.

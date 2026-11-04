@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { STRECKE } from './streckenlader.js';
-import { wasserFlaechen, wasserSchnitt, imWasser, uferAnstieg, flussAbstand } from './wasser.js';
+import { wasserFlaechen, wasserSchnitt, imWasser, uferAnstieg, flussAbstand, nahSee } from './wasser.js';
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
@@ -250,11 +250,14 @@ export function baueWelt(szene, strecke, netz) {
   const BOESCHUNG = g.boeschung;
   const RAND_AUSSEN = CONFIG.strasse.breite / 2 + CONFIG.strasse.bankett;
   const qb1 = {}, qb2 = {};
-  function unterGrenze(q) {
+  function unterGrenze(q, B = BOESCHUNG) {
     if (q.wandSeite && Math.sign(q.seite) === q.wandSeite) return -Infinity; // an Felswänden nichts ändern
-    const a = q.abstand - (RAND_AUSSEN + BOESCHUNG.schulter);
-    return q.h - 0.3 - (a > 0 ? uferAnstieg(a, 0, BOESCHUNG) : 0);
+    const a = q.abstand - (RAND_AUSSEN + B.schulter);
+    return q.h - 0.3 - (a > 0 ? uferAnstieg(a, 0, B) : 0);
   }
+  // M10c.1: am nahen See (Seekehre) gilt die Böschung des Sees: schmale Schulter, flaches Ufer (bis 25 m vom Wasser weich
+  // in die normale Böschung übergehend); im Wasser selbst wird nicht aufgefüllt (sonst wäre es dort zu flach)
+  const nahB = { schulter: 0, steigung: 0, weich: 0.5, reichweite: 40 };
   function boeschungUnten(x, z, h) {
     const B = BOESCHUNG;
     if (netz) netz.abfrage(x, z, qb1); else strecke.abfrage(x, z, qb1);
@@ -263,6 +266,12 @@ export function baueWelt(szene, strecke, netz) {
     if (netz ? netz.zweiteStrasse(x, z, qb1, B.reichweite, qb2) : strecke.andererAst(x, z, qb1.s, 40, B.reichweite, qb2)) {
       const e1 = Math.max(0, qb1.abstand - g.flachBis), e2 = Math.max(0, qb2.abstand - g.flachBis);
       L = mische(L, unterGrenze(qb2), glatt(0, 1, e1 / Math.max(1e-3, e1 + e2)));
+    }
+    const ns = WASSER.an ? nahSee(WASSER, x, z) : null;
+    if (ns && ns.d < 25) {
+      nahB.schulter = ns.see.nah.schulter; nahB.steigung = ns.see.nah.steigung;
+      L = mische(unterGrenze(qb1, nahB), L, glatt(10, 25, ns.d));
+      if (ns.d < 0.5 && L > h) L = mische(L, h, glatt(-0.5, 0.5, -ns.d)); // im Wasser: nicht auffüllen
     }
     if (L <= h) return h;
     const fluss = WASSER.an ? glatt(-1, 7, flussAbstand(WASSER, x, z)) : 1;

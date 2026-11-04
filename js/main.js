@@ -60,7 +60,7 @@ import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
-import { baueWasser, wasserTiefe } from './wasser.js';
+import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
 import { baueSchatten } from './schatten.js';
 import { STRECKE } from './streckenlader.js';
 import { umgebungsQuellen } from './umgebung.js';
@@ -651,6 +651,9 @@ function wasserSchritt(dt, q) {
   const tiefe = b.art === 'gras' ? wasserTiefe(welt.wasser, physik.x, physik.z, b.h) : -Infinity;
   if (tiefe > W.tiefe) {
     wasserBad.aktiv = true; wasserBad.t = 0; wasserBad.versetzt = false; wasserBad.anzahl++;
+    // M10c.1: See mit "zurueck" (Seekehre): zurück vor die Kehre, nicht mitten in die Kurve
+    const ns = nahSee(welt.wasser, physik.x, physik.z);
+    if (ns && ns.see.zurueck != null && ns.d < 2 && wasserBad.sicherS > ns.see.zurueck && wasserBad.sicherS < ns.see.zurueck + 250) wasserBad.sicherS = ns.see.zurueck;
     rueck.rest = 0; // ein laufender R-Countdown ist erledigt
     ton.platsch(1);
     staub.spritzer(physik.x, b.h + tiefe, physik.z, W.spritzer, 1);

@@ -190,6 +190,8 @@ export function planeStrassenrand(strecke, welt, pflanzenHindernisse = [], krone
       if (h - Math.min(g1, g2) >= cp.abhangHoehe || kehreAussen[nr(sd)][i]) planke[nr(sd)][i] = 1;
     }
   }
+  // M10c.1: Bereiche ohne Leitplanke (Streckendatei): weder Planke noch Lücken-Füllen
+  for (const [von, bis, sd] of cp.ohne || []) for (let i = idx(von); i <= idx(bis); i++) { planke[nr(sd)][i] = 0; plankeOk[nr(sd)][i] = 0; }
   const plankenLaeufe = [];
   for (const sd of SEITEN) {
     const a = planke[nr(sd)], ok = plankeOk[nr(sd)];

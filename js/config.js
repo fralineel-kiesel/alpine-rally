@@ -1040,6 +1040,8 @@ export const CONFIG = {
 
     planke: {
       an: true,                // false = keine Leitplanken
+      // M10c.1: hier keine Leitplanke (Streckendatei strassenrand.ohnePlanke: [[von, bis, seite], ...], Finnland: Seekehre)
+      ohne: (S.strassenrand && S.strassenrand.ohnePlanke) || [],
       hoehe: 0.75,             // Oberkante der Planke über dem Boden
       profil: 0.32,            // Höhe des Wellprofils (Blech)
       pfostenAbstand: 4,       // Abstand der Pfosten (Meter)
