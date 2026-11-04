@@ -8,7 +8,7 @@ import { t, setzeSprache, aktuelleSprache } from './texte.js';
 import { einstellungen, setze, AKTIONEN, tastenStandard } from './einstellungen.js';
 import { tastenVon, tastenName, knopfName } from './input.js';
 import { zeichneKachel, kachelBreite } from './pacenotesbild.js';
-import { ladeBestzeiten, ladeGesamtTop, loescheBestzeiten, formatDatum, hundertstel, BESTZEITEN_ANZAHL, GESAMT_ANZAHL } from './bestzeiten.js';
+import { ladeBestzeiten, ladeGesamtTop, loescheBestzeiten, formatDatum, hundertstel, BESTZEITEN_ANZAHL, GESAMT_ANZAHL, ladeSprungRekord } from './bestzeiten.js';
 import { AUTOS, auswahl } from './inhalte.js';
 import { ETAPPEN_INFO, aktuelleInfo, ladeAlleInfos, vorschauKarte, waehleEtappe } from './etappenwahl.js';
 import { AUTO_MODELLE, kurzName } from './autos.js';
@@ -143,7 +143,7 @@ export function baueSeiten(api) {
   const etappenZeile = (info) => ({
     typ: 'info', waehlbar: true, hoehe: 31, etappeId: info.id, // (etappeId: für Tests)
     breite: () => ES.spalte - 16,
-    inhalt: () => (info.status === 'da' ? `${t(info.name)} ${t(info.untergrund)} ${t('etappe.zeile', { km: info.laengeKm.toFixed(1), zeit: besteZeit(info) })}` : info.id),
+    inhalt: () => (info.status === 'da' ? `${t(info.name)} ${t(info.untergrund)} ${t('etappe.zeile', { km: info.laengeKm.toFixed(1), zeit: besteZeit(info) })}${info.etappeName && ladeSprungRekord(info.etappeName) ? ` ${t('etappe.sprung', { weite: Math.round(ladeSprungRekord(info.etappeName).weite) })}` : ''}` : info.id),
     zeichne(c, x, y, b, w) {
       const gewaehlt = info.id === aktuelleInfo().id;
       if (w) pixelText(c, '▶', x, y + 3, 1, M.farbeAuswahl);
@@ -154,6 +154,9 @@ export function baueSeiten(api) {
       }
       pixelText(c, t(info.name), x + 10, y + 3, 1, w ? M.farbeAuswahl : gewaehlt ? M.farbeWert : M.farbeTitel);
       pixelText(c, t(info.untergrund), x + 10, y + 12, 1, M.farbeText);
+      // M10c.1: Sprungrekord der Etappe (falls vorhanden) rechts in der zweiten Zeile (Platz von der kleineren Karte)
+      const rek = info.etappeName ? ladeSprungRekord(info.etappeName) : null;
+      if (rek) pixelText(c, t('etappe.sprung', { weite: Math.round(rek.weite) }), x + b - 6, y + 12, 1, M.farbeHinweis, 'rechts');
       pixelText(c, t('etappe.zeile', { km: info.laengeKm.toFixed(1), zeit: besteZeit(info) }), x + 10, y + 21, 1, M.farbeHinweis);
     },
     aktion: () => {

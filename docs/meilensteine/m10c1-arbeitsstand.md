@@ -16,5 +16,5 @@ Referenz: 0.10c = 612cc62 (Worktree im Scratchpad), Bilder/Zeiten bei 320x180. T
 - **C:** Seekehre: Leitplanke aussen 3260–3400 weg (`strassenrand.ohnePlanke`), See aus 6 Kreisen + Seekörper (gleicher
   `pegel` −6.15, `nah`: Ufer 0.15, Grund 0.4, Böschung nach dem See), Ufer 1.5–7 m (Strasse steigt), zu tief nach 2.3–3.3 m,
   Wasserbad zurück auf 3270 m, 9 Zuschauer aussen vor der Kehre, 3 Findlinge. Hang 0, Verlauf/CPs/Notes/Abkürzungen gleich.
-  Testfahrer: kein Wasserbad (auch flott/wand bremsen dort richtig).
-- Nächste: D (Patch im Scratchpad `teil-d.py`), E (`teil-e.py`, `js/aufloesung.js`), F.
+- **D:** Karte 74x62 statt 124x104 (60 %), Liste 212 px breit, Sprungrekord in der Zeile; Text nie unter der Karte (de/en).
+- Nächste: E (`teil-e.py`, `js/aufloesung.js`), F.

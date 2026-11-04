@@ -824,5 +824,48 @@ if (teil('q')) {
   melde(z === '0', `hang-pruefen --strecke finnland: ${(/Stellen über 0\.45:[^\n]*/.exec(r.text) || [''])[0]}`);
 }
 
+// ===================================================================== Teil D: Vorschaukarte
+// Menü ETAPPE auf eine 320x180-Leinwand malen (wie x4), mit und ohne Karte; Textfarben der Menüs zählen
+const ETAPPE_SEITE = async ({ sprache, ohneKarte, rekord }) => {
+  const A = window.__alpineRally, M = A.CONFIG.menue;
+  if (rekord) localStorage.setItem('alpineRally.sprungRekorde', JSON.stringify({ finnland: { weite: 77.4, auto: 'l073', datum: '2026-11-01T10:00:00.000Z' } }));
+  A.einstellungen.sprache = sprache;
+  const tx = await import('/js/texte.js'); tx.setzeSprache && tx.setzeSprache(sprache);
+  const S = A.seiten.etappe, alt = S.zeichneRechts;
+  let karte = null;
+  S.zeichneRechts = ohneKarte ? () => {} : (c, x, y, b) => { karte = { x: x + 2, y, b: (b - M.innen - 4) & ~1, h: M.etappenSeite.kartenHoehe }; alt(c, x, y, b); };
+  A.menue.zeige(S, true);
+  await new Promise((ok) => setTimeout(ok, 300)); // (Infos der anderen Strecken laden)
+  const c = document.createElement('canvas'); c.width = 320; c.height = 180; const x = c.getContext('2d');
+  A.menue.zeichne(x, 0, 1);
+  S.zeichneRechts = alt;
+  const farben = [M.farbeTitel, M.farbeText, M.farbeHinweis, M.farbeAuswahl, M.farbeWert].map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+  const d = x.getImageData(0, 0, 320, 180).data;
+  const istText = (i) => farben.some(([r, g, b]) => d[i] === r && d[i + 1] === g && d[i + 2] === b);
+  return { karte, url: c.toDataURL(), istText: (() => { const t = new Uint8Array(320 * 180); for (let i = 0; i < t.length; i++) t[i] = istText(i * 4) ? 1 : 0; return Array.from(t); })() };
+};
+if (teil('v') || teil('w')) {
+  const lauf = async (w, opt) => { const s = await oeffne(w, '?ton=aus&strecke=finnland', { uhr: false }); await bereit(s); const r = await s.page.evaluate(ETAPPE_SEITE, opt); await s.schliessen(); return r; };
+  if (teil('v')) {
+    console.log('(v) Vorschaukarte: ca. 60 % der Kantenlänge von 0.10c (±10 %)');
+    const n = await lauf(WURZEL, { sprache: 'de' }), a = ALT ? await lauf(ALT, { sprache: 'de' }) : null;
+    const fb = a ? n.karte.b / a.karte.b : null, fh = a ? n.karte.h / a.karte.h : null;
+    melde(n.karte && (!a || (Math.abs(fb - 0.6) <= 0.1 && Math.abs(fh - 0.6) <= 0.1)), `Karte ${n.karte.b}x${n.karte.h} Bildpunkte${a ? ` (0.10c ${a.karte.b}x${a.karte.h}: Breite ${(fb * 100).toFixed(0)} %, Höhe ${(fh * 100).toFixed(0)} %, Fläche ${(fb * fh * 100).toFixed(0)} %)` : ''}`);
+    fs.writeFileSync(path.join(LOG, 'etappe-neu.png'), Buffer.from(n.url.split(',')[1], 'base64'));
+    if (a) fs.writeFileSync(path.join(LOG, 'etappe-alt.png'), Buffer.from(a.url.split(',')[1], 'base64'));
+  }
+  if (teil('w')) {
+    console.log('(w) Menü ETAPPE: kein Text unter der Karte (de/en, mit Sprungrekord); das Menü ist in jeder Pixelgrösse 320x180');
+    for (const sprache of ['de', 'en']) {
+      const mit = await lauf(WURZEL, { sprache, rekord: true }), ohne = await lauf(WURZEL, { sprache, ohneKarte: true, rekord: true });
+      const k = mit.karte; let drunter = 0, rechtsMax = 0;
+      for (let y = 0; y < 180; y++) for (let x = 0; x < 320; x++) { if (!ohne.istText[y * 320 + x]) continue; if (x >= k.x - 1 && x < k.x + k.b + 1 && y >= k.y - 1 && y < k.y + k.h + 1) drunter++; if (y > k.y && y < 150 && x < k.x) rechtsMax = Math.max(rechtsMax, x); }
+      const rekord = ohne.istText.slice(0, 320 * 150).filter(Boolean).length;
+      melde(drunter === 0, `${sprache}: ${drunter} Textpunkte im Kartenfeld (x ${k.x}–${k.x + k.b}, y ${k.y}–${k.y + k.h}); Liste reicht bis x ${rechtsMax}; ${rekord} Textpunkte gesamt`);
+      fs.writeFileSync(path.join(LOG, `etappe-${sprache}-rekord.png`), Buffer.from(mit.url.split(',')[1], 'base64'));
+    }
+  }
+}
+
 console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');
 process.exit(fehler ? 1 : 0);

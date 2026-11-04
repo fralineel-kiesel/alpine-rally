@@ -17,6 +17,7 @@ export const ETAPPEN_INFO = STRECKEN.map((e) => ({ id: e.id, eintrag: e, etappe:
 
 function fuelle(info, d) {
   info.etappe = bestzeitSchluessel(d); // Schlüssel der Bestzeiten (M10b.1: mit revision)
+  info.etappeName = d.etappe; // M10c.1: Feld etappe (ohne revision): Schlüssel des Sprungrekords
   info.name = `strecke.${d.id}.name`;
   TEXTE[info.name] = d.name;
   TEXTE[`strecke.${d.id}.untergrund`] = d.untergrundInfo || d.beschreibung;

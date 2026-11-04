@@ -84,6 +84,7 @@ export const TEXTE = {
   'etappe.spaeter': { de: 'WEITERE ETAPPEN FOLGEN', en: 'MORE STAGES TO COME' },
   // M10b: Etappenwahl (Liste mit Vorschau-Karte)
   'etappe.zeile': { de: '{km} KM  BESTZEIT {zeit}', en: '{km} KM  BEST {zeit}' },
+  'etappe.sprung': { de: 'SPRUNG {weite} M', en: 'JUMP {weite} M' }, // M10c.1: Sprungrekord in der Etappen-Liste
   'etappe.keineZeit': { de: '-:--.--', en: '-:--.--' },
   'etappe.laedt': { de: 'LÄDT ...', en: 'LOADING ...' },
   'etappe.kaputt': { de: 'DATEI KAPUTT', en: 'FILE BROKEN' },
