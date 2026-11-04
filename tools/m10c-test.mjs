@@ -10,6 +10,8 @@
 //       (s) Ton, (t) Haptik, (u) Bildzeit
 //   Teil D – Sprung-Statistik: (v) Zählung gegen den Testfahrer, (w) Alpen-Zielbildschirm pixelgleich, (x) Rekord gespeichert,
 //       (y) Texte de + en, kein Überlauf
+//   Teil F: (x6) Finnland-Testfahrer alt/neu (5 Autos x 4 Stile), (z) nur mit --lang: frühere Tests
+//   Teil E (Sprünge in den Alpen) ist nicht gebaut: die Alpen-Tests x1–x5 erwarten 0.10b.2
 //   Unveränderlich (Alpen wie 0.10b.2): (x1) Länge/Abkürzungen, (x2) Testfahrer, (x3) Pace-Notes/Strecke, (x4) Bilder, (x5) Ton
 //   (z) nur mit --lang: frühere Tests
 
@@ -234,7 +236,7 @@ if (teil('x4')) {
     const rot = [], nurVersion = [], neuGestaltet = [];
     // M10b.1: Seite ETAPPE zeigt die Finnland-Zeile (Länge, Vorschau-Karte) der neuen Strecke – absichtlich anders
     const NEU_GESTALTET = ['menü einstellungen']; // (M10c Teil C: neue Zeile SPRUNGKAMERA)
-    // Seit Teil F steht 0.10b.2 statt 0.10b.2 in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
+    // Seit Teil F steht 0.10c statt 0.10b.2 in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
     // anders sein (Unterschied höchstens 7 Pixel hoch, ganz in der Zeile, in der die Version steht)
     const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 220 && box[1] >= 168) || k === 'menü credits');
     for (const [k, n, a] of paare) {
@@ -249,7 +251,7 @@ if (teil('x4')) {
     await s.schliessen();
     for (const [k, b] of Object.entries(neu)) if (typeof b === 'string') fs.writeFileSync(path.join(LOG, `neu-${k}.png`), Buffer.from(b.split(',')[1], 'base64'));
     melde(rot.length === 0, `${paare.length} Bilder verglichen: ${paare.length - nurVersion.length - neuGestaltet.length} pixelgleich wie 0.10b.2, ${nurVersion.length} bis auf die Versionszeile, ${neuGestaltet.length} Menüseite(n) absichtlich neu (SPRUNGKAMERA) (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
-    if (nurVersion.length) info(`nur die Versionszeile anders (0.10b.2 -> 0.10b.2): ${nurVersion.join(', ')}`);
+    if (nurVersion.length) info(`nur die Versionszeile anders (0.10b.2 -> 0.10c): ${nurVersion.join(', ')}`);
     if (neuGestaltet.length) info(`absichtlich anders (M10c, neue Zeile SPRUNGKAMERA): ${neuGestaltet.join(', ')}`);
     melde(gegen.anders > 1000, `Gegenprobe: Passhöhe und Weide unterscheiden sich in ${gegen.anders} Pixeln (der Vergleich sieht Unterschiede)`);
     melde(neu.fehler.length === 0 && alt.fehler.length === 0, `Konsole ohne Fehler (neu ${neu.fehler.length}, alt ${alt.fehler.length})`);
@@ -1127,3 +1129,57 @@ if (teil('y')) {
   melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
   await s.schliessen();
 }
+
+// ===================================================================== Teil F: Finnland-Testfahrer alt/neu
+if (teil('x6')) {
+  console.log('(x6) Finnland-Testfahrer 0.10b.2 -> 0.10c (5 Autos x 4 Stile, Zeit und Aufpralle)');
+  if (!ALT) info('nur mit --alt');
+  else {
+    const tab = [];
+    for (const id of AUTOS) {
+      const neu = sprungLauf('finnland', id);
+      const alt = werkzeug('strecke-abfahren.mjs', ['--strecke', 'finnland', '--auto', id, '--stil', STILE4, '--aus', path.join(LOG, `alt-finnland-${id}.txt`)], ALT);
+      const az = (/Gesamtzeiten: (.*)/.exec(alt.text) || [])[1] || '';
+      const aa = [...alt.text.matchAll(/Aufpralle (\d+)/g)].map((m) => +m[1]);
+      const fmt = (t) => (t == null ? '--' : `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`);
+      tab.push(`${id.padEnd(8)} ${STILE4.split(',').map((st, i) => `${st} ${az.split(' / ')[i] || '?'} (${aa[i] ?? '?'}) -> ${fmt(neu.stile[i] && neu.stile[i].zeit)} (${neu.stile[i] ? neu.stile[i].aufpralle : '?'})`).join(' | ')}`);
+    }
+    fs.writeFileSync(path.join(LOG, 'finnland-alt-neu.txt'), `${tab.join('\n')}\n`);
+    for (const z of tab) info(z);
+    melde(tab.length === AUTOS.length, `Tabelle ${LOG}/finnland-alt-neu.txt (Zeiten dürfen sich ändern: neue Kuppen)`);
+  }
+}
+
+if (teil('z') && process.argv.includes('--lang')) {
+  console.log('(z) Frühere Tests (Teile, die nicht am alten Quelltext hängen)');
+  const laeufe = [
+    ['pacenotes-test.mjs', []], ['leben-test.mjs', []], ['kuh-test.mjs', []], ['startziel-test.mjs', []], ['strassenrand-test.mjs', []],
+    ['nebenweg-test.mjs', []], ['felswand-test.mjs', []], ['belag-test.mjs', []], ['rennablauf-test.mjs', []], ['menue-test.mjs', []],
+    ['overlay-test.mjs', []], ['m9a2-test.mjs', ['--nur', 'a,c,e,f,g,h,k,l,m']], ['m9a1-test.mjs', ['--nur', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']],
+    ['m8h-test.mjs', []],
+  ];
+  const vorher = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+  for (const [datei, a] of laeufe) {
+    if (!fs.existsSync(path.join(WURZEL, 'tools', datei))) continue;
+    const r = werkzeug(datei, a);
+    fs.writeFileSync(path.join(LOG, datei.replace('.mjs', '.log')), r.text);
+    const zeilenVon = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x));
+    const z = zeilenVon(r.text);
+    const rot = z.filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim());
+    // Rot? Dann denselben Test in 0.10b.2: sind genau diese Zeilen dort auch rot, ist es nicht durch M10c gekommen
+    let vorher = false;
+    if (r.code !== 0 && ALT && fs.existsSync(path.join(ALT, 'tools', datei))) {
+      const ra = werkzeug(datei, a, ALT);
+      const rotAlt = new Set(zeilenVon(ra.text).filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim()));
+      vorher = rot.length > 0 && rot.every((x) => rotAlt.has(x));
+    }
+    melde(r.code === 0 || vorher, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok, ${rot.length} rot${vorher ? ' (genau diese Zeilen sind schon in 0.10b.2 rot)' : ''}${rot.length ? ` – ${rot.slice(0, 2).map((x) => x.slice(0, 150)).join(' | ')}` : ''}`);
+  }
+  // Messdateien, die alte Tests neu schreiben, zurücksetzen
+  const neu = spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter((d) => d && !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+  if (neu.length) spawnSync('git', ['checkout', '--', ...neu], { cwd: WURZEL });
+  info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neu.length}`);
+}
+
+console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');
+process.exit(fehler ? 1 : 0);

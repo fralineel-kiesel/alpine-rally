@@ -36,5 +36,9 @@ Vergleichsstand 0.10b.2: `git worktree add <ordner> ffca7c3`. Tests: `node tools
 - Rekord je Etappe in `alpineRally.sprungRekorde` unter dem Feld `etappe` (nicht unter dem revision-Schlüssel).
 - Tests v, w, x, y grün (Alpen-Zielbildschirm 0 Pixel anders).
 
+## Teil F (fertig)
+- `tools/m10c-test.mjs --alt <0.10b.2> --lang`: 125 Prüfungen grün, 0 Fehler (rot nur bekannt: menue-test 2 Credits-Zeilen).
+- 6 Bilder `screenshots/m10c/`, Bericht `docs/meilensteine/m10c.md`, STAND/KONZEPT nachgeführt, Version 0.10c.
+
 ## Offen
-- Teil E (optional, Alpen-Sprünge), F (Tests, Bilder, Bericht, Version).
+- Teil E (Sprünge in den Alpen) nicht gebaut, in STAND.md als offen notiert.

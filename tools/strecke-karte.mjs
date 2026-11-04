@@ -3,7 +3,7 @@
 // echten Bauteilen des Spiels (Spline, Netz mit Stummeln, Pace-Notes, Abkürzungen), Pixel im Code, keine Bibliothek:
 //   <id>-karte.png   Draufsicht: Strasse mit Breite und Belag, Stummel, Felswände, Start/Ziel, Checkpoints mit Nummer,
 //                    Pace-Notes (Punkt + Kürzel), Abkürzungen (rot = gesperrt, grün = schneiden), enge Kurven rot
-//   <id>-profil.png  Höhenprofil über die Strecke, gefärbt nach Steigung, Kuppen und Senken, Checkpoints, Belag
+//   <id>-profil.png  Höhenprofil über die Strecke, gefärbt nach Steigung, Kuppen und Senken, Checkpoints, Belag, Sprünge (M10c)
 //   <id>-bericht.txt Länge, Höhenmeter, Steigung/Gefälle, engster Radius, Anteile je Belag, Pace-Notes, Checkpoints
 // Standard-Ordner: /tmp/strecke-karte. Format der Datei: docs/strecken-format.md
 
@@ -170,6 +170,13 @@ const erg = await spiel.page.evaluate(async () => {
   }
   for (const i of kuppen) { pixelText(y, 'KUPPE', Math.round(SX(i)), Math.round(HY(S.py[i])) - 18, 1, '#f4f4ee', 'mitte'); y.fillStyle = '#f4f4ee'; y.fillRect(Math.round(SX(i)) - 1, Math.round(HY(S.py[i])) - 9, 3, 6); }
   for (const i of senken) { pixelText(y, 'SENKE', Math.round(SX(i)), Math.round(HY(S.py[i])) + 8, 1, '#9be0ff', 'mitte'); }
+  // M10c: Sprünge – Kante (Pfeil und Name) und Landezone (oranger Balken unter dem Profil)
+  for (const z of S.sprungZonen || []) {
+    const k = Math.round(z.kante), xk = Math.round(SX(k)), yk = Math.round(HY(S.py[k]));
+    y.fillStyle = '#ff9a3a'; y.fillRect(xk - 1, yk - 16, 3, 12); y.fillRect(xk - 3, yk - 14, 7, 2);
+    pixelText(y, `SPRUNG ${z.name}`, xk, yk - 26, 1, '#ff9a3a', 'mitte');
+    y.fillRect(Math.round(SX(z.landeVon)), Math.round(HY(S.py[Math.round(z.landeVon)])) + 3, Math.max(2, Math.round(SX(z.landeBis) - SX(z.landeVon))), 3);
+  }
   const linie = (sM, t, f) => { y.fillStyle = f; for (let yy = O; yy < PH - U; yy += 4) y.fillRect(Math.round(SX(sM)), yy, 1, 2); pixelText(y, t, Math.round(SX(sM)), O - 12, 1, f, 'mitte'); };
   linie(S.startS, 'START', '#5bd16b'); linie(S.zielS, 'ZIEL', '#f4f4ee');
   A.checkpoints.forEach((cp) => linie(cp.s, `CP${cp.nummer}`, '#f0c020'));
@@ -195,6 +202,7 @@ const erg = await spiel.page.evaluate(async () => {
     `Abkürzungen: nicht schneiden ${(S.nichtSchneiden || []).length}, schneiden ${(S.schneiden || []).length}`,
     `Pace-Notes: ${P.notes.length} (${Object.entries(notizen.flatMap((nt) => nt.arten).reduce((o, a) => ({ ...o, [a]: (o[a] || 0) + 1 }), {})).map(([a, z]) => `${a} ${z}`).join(', ')})`,
     `Checkpoints: ${A.checkpoints.length} (${A.checkpoints.map((cp) => `${cp.s} m`).join(', ')})`,
+    `Sprünge: ${(S.sprungZonen || []).length}${(S.sprungZonen || []).length ? ` (${S.sprungZonen.map((z) => `${z.name} Kante ${z.kante} m, Landezone ${z.landeVon}–${z.landeBis} m`).join('; ')})` : ''}`,
     `Abschnitte: ${S.abschnitte.map((a) => `${a.name} ${Math.round(a.von)}–${Math.round(a.bis)}`).join(', ')}`,
   ];
   return { karte, profil, bericht, id: STRECKE.id };

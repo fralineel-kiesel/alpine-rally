@@ -2,12 +2,12 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 10b.2 fertig** (Version 0.10b.2) – **Finnland: Hang, Wasser, Escorta, Rentier-Ton, Schatten**: Der
-Hang zum See bei Meter 969 ist abgeschliffen (flache Schulter, gleichmässiger Hang, man kommt wieder heraus), zu tief ins
-Wasser = Platsch, 3 s schwarz (HUD bleibt, Zeit läuft), zurück auf die Strasse; Escorta auf Schotter stabil und schneller als
-der Imprexa (Tastatur-Testfahrer); Rentiere schnauben leise; Kunst-Schatten mit Einstellung SCHATTEN AN/AUS. Alpen gleich
-(nur der Escorta ist an den Schotterstellen etwas schneller). **Nur Chromium, kein Handy.** **Bitte zuerst die
-Test-Anleitung in `docs/meilensteine/m10b2.md`.** Nächster Schritt: **M10c Sprünge mit Flugphase** (noch kein Prompt).
+Aktuell: **Meilenstein 10c fertig** (Version 0.10c) – **Sprünge mit Flugphase in Finnland**: Die vier Kuppen sind echte
+Sprünge (bei 100 km/h ca. 15 / 24 / 38 / 30 m), echte Wurfbahn, Landung kostet nur bei harter Landung Tempo, filmische
+Sprungkamera (EINSTELLUNGEN → SPRUNGKAMERA), Motor dreht in der Luft frei, Wumms bei der Landung, Schatten bleibt am Boden,
+Pace-Note SPRUNG, Sprung-Zeilen im Zielbildschirm mit Sprungrekord. Finnland-Bestzeiten neu (revision 3). Alpen unverändert
+(Teil E, Sprünge in den Alpen, nicht gebaut). **Nur Chromium, kein Handy.** **Bitte zuerst die Test-Anleitung in
+`docs/meilensteine/m10c.md`.** Nächster Schritt: offen (siehe KONZEPT.md, Fahrplan).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -129,11 +129,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Pace-Notes-Tabelle und Abkürzungs-Daten (seit M10a in `strecken/alpen.js` unter `erzeugt`) und `tools/schneiden-zeiten.json` nicht neu schreiben.
 - Profil `prototyp` bleibt bit-gleich (Referenz für Pace-Notes, Sperren, Testfahrer). Fertige Autos bleiben bit-gleich, wenn der
   Auftrag sie nicht nennt (Aussehen, Fahrgefühl, Ton, Tacho).
-- **Finnland (seit M10b.2):** Länge 4161.6 m, Testfahrer Prototyp 2:55.88 / 2:39.06 / 2:28.61, Hang-Check 0 Stellen über 0.45.
+- **Finnland (seit M10c):** Länge 4161.6 m, Draufsicht/Checkpoints/Untergrund wie 0.10b.2, 4 Sprungzonen (Kante 495 / 1830 /
+  3090 / 3656 m), `revision` 3, Hang-Check 0 Stellen über 0.45. Testfahrer-Zeiten: Tabelle in `docs/meilensteine/m10c.md`.
 - **Limits:** Draw Calls pro Auto ≤ 12, Dreiecke pro Auto ≤ 1800, kein Garbage pro Bild, Ladezeit gleich, Ton ändert nie das Spiel.
 
 ## Werkzeuge und Tests
 
+- `node tools/m10c-test.mjs --alt <ordner 0.10b.2 = ffca7c3> [--nur a,b] [--lang]` – alle Prüfungen von M10c (a … y, Alpen x1–x5,
+  Finnland alt/neu x6, frühere Tests z); `node tools/m10c-bilder.mjs` – Bilder nach `screenshots/m10c/`;
+  `strecke-abfahren.mjs --json <datei>` meldet die Sprünge je Stil (Weite, Zeit, Höhe, Verlust).
 - `node tools/m10b2-test.mjs --alt <ordner 0.10b.1> --vorE <ordner d1eb680>` – alle Prüfungen von M10b.2 (a … x, Alpen x1–x5);
   einzeln `--nur a,x2` (`x1-5` = alle Alpen-Tests); Regression mit `--lang` (0.10b.1: `git worktree add <ordner> a289fad`).
   `node tools/m10b2-bilder.mjs --alt <0.10b.1>` – Bilder nach `screenshots/m10b2/`. `node tools/hang-pruefen.mjs --strecke <id>`
@@ -213,6 +217,12 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
+- **Offen aus M10c:** **Teil E (ein bis zwei Sprünge in den Alpen) nicht gebaut** (Eingriff in die Alpen, eigene Prüfung der
+  Abkürzungen und Bestzeiten nötig). Birkenkuppe liegt wegen Checkpoint 2 (1707 m) bei 1830 statt 1751 m; die alte flache Kuppe
+  bei 1747 m bleibt eine normale Kuppe. Lanza 073 bleibt im Testfahrer unfallträchtig. Ideen: Luftlenkung (von Lino abgelehnt,
+  nur als Idee), Sprungrekord-Anzeige in der Etappenwahl, Wasserbad-Zähler in der Fahrtstatistik, Sprung-Marken auf der
+  Minimap, Zuschauer auch an der Hochwaldkuppe, Landehang je Sprung im Strecken-Editor.
+
 - **Offen aus M10b.2:** Schatten unter Schildern und der Brücke fehlen; zwei Hang-Stellen an der Brücke 0.38/0.42 (Fluss
   liegt schräg nah an der Strasse); der Testfahrer zeigt nicht, dass der Lanza 073 schneller als der Escorta ist (er fliegt
   im Stil „digital“ öfter ab). Ideen: Wasserbad-Zähler in der Fahrtstatistik, Fluss etwas von der Strasse weg legen,
@@ -266,6 +276,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Während der Arbeit: `docs/meilensteine/<name>-arbeitsstand.md` (10 bis 20 Zeilen: erledigt, Werte, offene Fragen) nach jedem Teil nachführen.
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
+
+- **M10c** (0.10c) – **Sprünge mit Flugphase**: neues Modul `js/sprung.js` (Streckenfeld `sprung` mit Zone, Kante, Landezone,
+  `staerke`, `form`; Höhen-Zusatz der Strasse ohne Änderung von Länge/Draufsicht; Abheben nur in Zonen und nur von der Fahrbahn;
+  echte Wurfbahn; Landung: Verlust nur bei hartem Aufprall, Nase voran oder schräg, höchstens 35 %). Finnland: vier Sprünge
+  (100 km/h: 14.5 / 23.8 / 38.0 / 30.3 m), Pace-Note SPRUNG (175 m vor der Kante), keine Schilder in Landezonen, Bestzeiten neu
+  (`finnland-r3`). Sprungkamera (zurück, Landungs-Ruck in ganzen Bildpunkten, Einstellung SPRUNGKAMERA), Ton (Reifen aus, Motor
+  frei, Wumms in drei Stärken, Jubel), Schatten bleibt am Boden und wird heller, Staub, Haptik. Sprung-Statistik im Zielbildschirm,
+  Sprungrekord je Etappe. Alpen bit-gleich (ausser Zeile SPRUNGKAMERA in den Einstellungen). **Nicht gebaut:** Teil E (Alpen).
+  Bericht, Tabellen, Test-Anleitung: `docs/meilensteine/m10c.md`.
 
 - **M10b.2** (0.10b.2) – Finnland nach Linos Test: **Hang** zum See bei 969 m abgeschliffen (Streckenfeld `umgebung.boeschung`:
   Schulter, höchstens 0.3 Gefälle, Ufer weich; vorher sprang das Gelände senkrecht = „Faltenwurf“), Hang-Check-Werkzeug
