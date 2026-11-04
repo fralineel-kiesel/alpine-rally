@@ -66,6 +66,245 @@ async function oeffne(wurzel, adresse = '', { uhr = false, speicher = null, auto
 const bereit = (s) => s.page.waitForFunction(() => window.__alpineRally || window.__fehlerseite, null, { timeout: 120000, polling: 100 });
 const bilder = (s, n) => s.page.evaluate((n) => window.__bild(n, 1000 / 60), n);
 
+const foto = (s) => s.page.evaluate(() => window.__foto());
+
+// ===================================================================== Unveränderlich: Alpen (aus tools/m10c-test.mjs, gegen 0.10c)
+// ===================================================================== (b) Länge und Abkürzungen
+if (teil('x1')) {
+  console.log('(x1) Alpen: Länge und Abkürzungen');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await bereit(s);
+  const l = await s.page.evaluate(() => ({ laenge: window.__alpineRally.strecke.laenge, start: window.__alpineRally.strecke.startS, ziel: window.__alpineRally.strecke.zielS }));
+  await s.schliessen();
+  melde(Math.abs(l.laenge - 3667.587) <= 0.5, `Strecke ${l.laenge.toFixed(3)} m (Ziel 3667.587 ±0.5), Start ${l.start} m, Ziel ${l.ziel.toFixed(2)} m`);
+  const r = werkzeug('abkuerzungen.mjs', ['--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'abkuerzungen.log'), r.text);
+  const n = [...r.text.matchAll(/übrig in Kurve [\d – ]+: (\d+) Linien/g)].map((m) => +m[1]);
+  const durch = +((/Durchkommen in gesperrten Kurven: (\d+)/.exec(r.text) || [])[1]);
+  melde(r.code === 0 && n.join('/') === '127/2/342/84' && durch === 0, `abkuerzungen.mjs --pruefen: ${n.join(' / ')} (Ziel 127 / 2 / 342 / 84), Durchkommen in gesperrten Kurven ${durch}`);
+}
+
+// ===================================================================== (c) Testfahrer
+if (teil('x2')) {
+  console.log('(x2) Alpen-Testfahrer: Prototyp und Autos gleich wie 0.10c (Escorta ab Teil C: nur Schotterstellen)');
+  const zeilen = (t) => t.split('\n').filter((x) => /^\s+(vorsichtig|mittel|flott|Talschleife|Almweg|Wiesenweg)\b/.test(x)).map((x) => x.trim());
+  for (const id of ['prototyp', ...AUTOS]) {
+    const neu = werkzeug('testfahrer.mjs', ['--auto', id]);
+    fs.writeFileSync(path.join(LOG, `testfahrer-${id}.log`), neu.text);
+    const zn = zeilen(neu.text);
+    const zeiten = zn.filter((x) => /^(vorsichtig|mittel|flott)/.test(x)).map((x) => x.split(/\s+/)[1]).join(' / ');
+    if (!ALT) { melde(zn.length >= 3, `${id}: ${zeiten} (ohne --alt kein Vergleich)`); continue; }
+    const alt = werkzeug('testfahrer.mjs', ['--auto', id, '--wurzel', ALT]);
+    const za = zeilen(alt.text);
+    const gleich = za.length >= 3 && JSON.stringify(za) === JSON.stringify(zn);
+    melde(gleich, `${id}: ${zeiten} – ${zn.length} Zeilen (Zeiten, Checkpoints, Aufpralle, Abstände, Gänge, Nebenwege) ${gleich ? 'identisch' : 'ANDERS'} wie 0.10c${id === 'prototyp' ? ' (Referenz 2:59.33 / 2:42.35 / 2:31.92)' : ''}`);
+    if (!gleich) for (let i = 0; i < Math.max(za.length, zn.length); i++) if (za[i] !== zn[i]) { info(`alt: ${za[i]}`); info(`neu: ${zn[i]}`); break; }
+  }
+}
+
+// ===================================================================== (d) Pace-Notes, Checkpoints, Strecke
+// M10c: neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
+const NEU_WERTE = [
+  (c) => { if (c.kollision) delete c.kollision.wand; }, // Teil B: Wand-Strafe (Alpen: nur bei Wandkontakt, siehe x2)
+  (c) => { if (c.menue) { delete c.menue.etappenSeite; } }, // Teil D: kleinere Vorschaukarte (nur Menü ETAPPE)
+  (c) => { if (c.menue) { delete c.menue.autoAufloesung; if (c.menue.standard) { delete c.menue.standard.aufloesungAuto; delete c.menue.standard.autoStufe; } } }, // Teil E
+  (c) => { if (c.version) delete c.version; }, // Teil F
+];
+async function streckenAbdruck(wurzel, strecke = 'alpen') {
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}`);
+  await bereit(s);
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, st = A.strecke;
+    const h = (arr) => { let x = 7; for (let i = 0; i < arr.length; i++) x = (x * 31 + Math.round(arr[i] * 1e4)) % 1000000007; return x; };
+    return {
+      notes: A.paceNotes.notes.map((n) => JSON.stringify(n, (k, v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v))),
+      kacheln: A.paceNotes.kacheln ? A.paceNotes.kacheln.length : null,
+      checkpoints: JSON.stringify(A.checkpoints.map((c) => ({ s: c.s, nummer: c.nummer }))),
+      abschnitte: JSON.stringify(st.abschnitte),
+      punkte: [h(st.px), h(st.py), h(st.pz), h(st.tx), h(st.tz), h(st.wandStaerke), h(st.baumFaktor), h(st.waldAnteil), h(st.nahWald), st.anzahl].join(','),
+      netz: JSON.stringify(Object.keys(A.netz)),
+      start: st.startS, ziel: st.zielS, laenge: st.laenge,
+      config: JSON.stringify(A.CONFIG),
+    };
+  });
+  await s.schliessen();
+  return r;
+}
+if (teil('x3')) {
+  console.log('(x3) Alpen: Pace-Notes, Checkpoints, Abschnitte, Strassenpunkte, CONFIG');
+  const neu = await streckenAbdruck(WURZEL);
+  info(`${neu.notes.length} Pace-Notes, Checkpoints ${neu.checkpoints}`);
+  if (ALT) {
+    const alt = await streckenAbdruck(ALT);
+    const anders = neu.notes.filter((n, i) => n !== alt.notes[i]).length + Math.abs(neu.notes.length - alt.notes.length);
+    melde(anders === 0 && neu.notes.length >= 20, `Pace-Notes: ${neu.notes.length} Ansagen, Symbole/Zusätze/Stellen/Reihenfolge ${anders ? `${anders} anders` : 'identisch'} wie 0.10c`);
+    melde(neu.checkpoints === alt.checkpoints, `Checkpoints gleich (${neu.checkpoints})`);
+    melde(neu.abschnitte === alt.abschnitte, 'Abschnitte gleich (Namen, Bäume, Wald, Felswand, von/bis)');
+    melde(neu.punkte === alt.punkte && neu.laenge === alt.laenge && neu.start === alt.start && neu.ziel === alt.ziel, `Strassenpunkte (1-m-Raster, Richtung, Felswand, Baumdichte) bit-gleich, Länge ${neu.laenge} = ${alt.laenge}`);
+    // CONFIG: gleich bis auf die Reihenfolge innerhalb von "leben" (Seeds kommen aus "seeds") und die Version
+    // (M10b: Fahnen-Art 'kreuz' heisst jetzt 'motiv' = Landesfahne der Strecke; gleiche Wirkung, darum gleichgesetzt)
+    const ordne = (o) => (Array.isArray(o) ? o.map(ordne) : o && typeof o === 'object' ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, ordne(o[k])])) : o === 'motiv' ? 'kreuz' : o);
+    const cn = ordne(JSON.parse(neu.config)), ca = ordne(JSON.parse(alt.config));
+    const NEU_M10B = ['sprung']; // neue Blöcke in M10c (Flugphase: nur in Sprungzonen, Alpen haben keine)
+    // neue Werte innerhalb der Blöcke (M10b.2, für die Alpen wirkungslos): gelaende.boeschung (Alpen null), NEU_WERTE
+    for (const c of [cn, ca]) { if (c.gelaende) delete c.gelaende.boeschung; for (const f of NEU_WERTE) f(c); }
+    const unterschiede = Object.keys({ ...ca, ...cn }).filter((k) => !NEU_M10B.includes(k) && JSON.stringify(ca[k]) !== JSON.stringify(cn[k]));
+    melde(unterschiede.length === 0, `CONFIG (alle Werte, sortiert) gleich wie 0.10c${unterschiede.length ? `; anders: ${unterschiede.join(', ')}` : ''}`);
+    const reihenfolge = Object.keys(JSON.parse(neu.config)).filter((k) => !NEU_M10B.includes(k)).join() === Object.keys(JSON.parse(alt.config)).join();
+    melde(reihenfolge, `CONFIG: Reihenfolge der Blöcke gleich${NEU_M10B.length ? ` (neu dazu: ${NEU_M10B.join(', ')})` : ''}`);
+  }
+}
+
+// ===================================================================== (e) Bildvergleich
+// Feste Punkte: [Name, Streckenmeter]
+const PUNKTE = [['start', null], ['tal', 300], ['talschleife', 860], ['kehren', 1700], ['felswand', 1420], ['alm', 1980], ['pass', 2610], ['weide', 2965], ['abfahrt', 3240], ['ziel', 3585]];
+async function bilderVon(wurzel) {
+  const out = {};
+  const bz = { passstrasse: { rt4: [{ zeit: 151.23, cps: [30.1, 80.2, 120.3], datum: '2026-10-01T10:00:00.000Z', auto: 'rt4', aufpralle: 1, resets: 0, hoechstTempo: 50 }],
+    delto: [{ zeit: 155.5, cps: [31, 82, 123], datum: '2026-10-02T10:00:00.000Z', auto: 'delto', aufpralle: 0, resets: 0, hoechstTempo: 48 }] } };
+  // Titel und Demo-Fahrt (mit Menü)
+  {
+    const s = await oeffne(wurzel, '?ton=aus', { uhr: true, speicher: { 'alpineRally.bestzeiten2': JSON.stringify(bz) } });
+    await bereit(s);
+    await bilder(s, 3); out.titel = await foto(s);
+    await bilder(s, 400); out.demo = await foto(s);
+    // Menüseiten (Menü-Leinwand allein, wie m9a2-test)
+    out.seiten = await s.page.evaluate(() => {
+      const A = window.__alpineRally, c = document.createElement('canvas'); c.width = 320; c.height = 180;
+      const x = c.getContext('2d'), r = {};
+      for (const n of ['haupt', 'auto', 'etappe', 'bestzeiten', 'credits', 'einstellungen']) {
+        A.menue.zeige(A.seiten[n], true); x.clearRect(0, 0, 320, 180); A.menue.zeichne(x, 0, 1); r[n] = c.toDataURL();
+      }
+      return r;
+    });
+    out.fehler = s.fehler.slice();
+    await s.schliessen();
+  }
+  // Rennen: Start, Streckenpunkte, fünf Autos (HUD mit Tachos und Minimap im Bild)
+  for (const id of AUTOS) {
+    const s = await oeffne(wurzel, `?menue=aus&ton=aus&auto=${id}`, { uhr: true, auto: id });
+    await bereit(s);
+    await bilder(s, 2);
+    const nur = id === 'rt4' ? PUNKTE : [['start', null], ['pass', 2610]];
+    for (const [name, sM] of nur) {
+      if (sM != null) await s.page.evaluate((sM) => { const A = window.__alpineRally; A.anhalten = true; A.setzeAuf(sM); A.kameraSofort(); }, sM);
+      await bilder(s, 6);
+      out[`${id}-${name}`] = await foto(s);
+    }
+    out.fehler = (out.fehler || []).concat(s.fehler);
+    await s.schliessen();
+  }
+  return out;
+}
+// Zwei Bilder (base64-PNG oder data-URL) Pixel für Pixel vergleichen; mit bild: Vergleichsbild (alt | neu | Unterschied)
+async function vergleiche(seite, a, b, bild = false) {
+  return seite.evaluate(async ({ a, b, bild }) => {
+    const lade = async (x) => createImageBitmap(await (await fetch(x.startsWith('data:') ? x : `data:image/png;base64,${x}`)).blob());
+    const [ia, ib] = [await lade(a), await lade(b)];
+    const daten = (im) => { const c = new OffscreenCanvas(im.width, im.height), x = c.getContext('2d'); x.drawImage(im, 0, 0); return x.getImageData(0, 0, im.width, im.height); };
+    const da = daten(ia), db = daten(ib);
+    if (da.width !== db.width || da.height !== db.height) return { anders: -1 };
+    let anders = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    const diff = new ImageData(da.width, da.height);
+    for (let i = 0; i < da.data.length; i += 4) {
+      const g = da.data[i] === db.data[i] && da.data[i + 1] === db.data[i + 1] && da.data[i + 2] === db.data[i + 2] && da.data[i + 3] === db.data[i + 3];
+      if (!g) { anders++; const p = i / 4, px = p % da.width, py = Math.floor(p / da.width); x0 = Math.min(x0, px); y0 = Math.min(y0, py); x1 = Math.max(x1, px); y1 = Math.max(y1, py); }
+      diff.data[i] = g ? da.data[i] * 0.3 : 255; diff.data[i + 1] = g ? da.data[i + 1] * 0.3 : 0; diff.data[i + 2] = g ? da.data[i + 2] * 0.3 : 255; diff.data[i + 3] = 255;
+    }
+    let url = null;
+    if (bild) {
+      const c = document.createElement('canvas'); c.width = da.width * 3 + 8; c.height = da.height; const x = c.getContext('2d');
+      x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+      x.putImageData(da, 0, 0); x.putImageData(db, da.width + 4, 0); x.putImageData(diff, 2 * da.width + 8, 0);
+      url = c.toDataURL();
+    }
+    return { anders, pixel: da.width * da.height, url, box: anders ? [x0, y0, x1, y1] : null };
+  }, { a, b, bild });
+}
+if (teil('x4')) {
+  console.log('(x4) Alpen-Bilder gegen 0.10c (eigene Bild-Uhr, gleiche Seeds)');
+  if (!ALT) info('nur mit --alt');
+  else {
+    const neu = await bilderVon(WURZEL), alt = await bilderVon(process.env.M10B_SELBST ? WURZEL : ALT); // (M10B_SELBST=1: Gegenkontrolle neu gegen neu)
+    const s = await starteSpiel({ breite: 320, hoehe: 200 });
+    await s.page.goto(`${s.url}/tools/leer.html`).catch(() => {});
+    const paare = Object.keys(neu).filter((k) => k !== 'seiten' && k !== 'fehler').map((k) => [k, neu[k], alt[k]])
+      .concat(Object.keys(neu.seiten).map((k) => [`menü ${k}`, neu.seiten[k], alt.seiten[k]]));
+    const rot = [], nurVersion = [], neuGestaltet = [];
+    // M10b.1: Seite ETAPPE zeigt die Finnland-Zeile (Länge, Vorschau-Karte) der neuen Strecke – absichtlich anders
+    const NEU_GESTALTET = ['menü einstellungen', 'menü etappe']; // (M10c.1: AUFLÖSUNG AUTO, kleinere Vorschaukarte)
+    // Seit Teil F steht 0.10c statt 0.10c in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
+    // anders sein (Unterschied höchstens 7 Pixel hoch, ganz in der Zeile, in der die Version steht)
+    const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 220 && box[1] >= 168) || k === 'menü credits');
+    for (const [k, n, a] of paare) {
+      const v = await vergleiche(s.page, a, n, k === 'rt4-weide' || k === 'titel');
+      if (v.anders !== 0 && NEU_GESTALTET.includes(k)) neuGestaltet.push(`${k} (${v.anders} Pixel)`);
+      else if (v.anders !== 0 && versionsZeile(k, v.box)) nurVersion.push(`${k} (${v.anders} Pixel in x ${v.box[0]}–${v.box[2]}, y ${v.box[1]}–${v.box[3]})`);
+      else if (v.anders !== 0) rot.push(`${k}: ${v.anders} Pixel (${v.box})`);
+      if (v.url) fs.writeFileSync(path.join(LOG, `vergleich-${k}.png`), Buffer.from(v.url.split(',')[1], 'base64'));
+    }
+    // Gegenprobe: zwei verschiedene Punkte sind verschieden (der Vergleich sieht Unterschiede)
+    const gegen = await vergleiche(s.page, neu['rt4-pass'], neu['rt4-weide']);
+    await s.schliessen();
+    for (const [k, b] of Object.entries(neu)) if (typeof b === 'string') fs.writeFileSync(path.join(LOG, `neu-${k}.png`), Buffer.from(b.split(',')[1], 'base64'));
+    melde(rot.length === 0, `${paare.length} Bilder verglichen: ${paare.length - nurVersion.length - neuGestaltet.length} pixelgleich wie 0.10c, ${nurVersion.length} bis auf die Versionszeile, ${neuGestaltet.length} Menüseite(n) absichtlich neu (AUFLÖSUNG, ETAPPE) (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
+    if (nurVersion.length) info(`nur die Versionszeile anders (0.10c -> 0.10c): ${nurVersion.join(', ')}`);
+    if (neuGestaltet.length) info(`absichtlich anders (M10c.1: AUFLÖSUNG AUTO, kleinere Vorschaukarte): ${neuGestaltet.join(', ')}`);
+    melde(gegen.anders > 1000, `Gegenprobe: Passhöhe und Weide unterscheiden sich in ${gegen.anders} Pixeln (der Vergleich sieht Unterschiede)`);
+    melde(neu.fehler.length === 0 && alt.fehler.length === 0, `Konsole ohne Fehler (neu ${neu.fehler.length}, alt ${alt.fehler.length})`);
+    info(`Bilder: ${LOG}/neu-*.png, Vergleich alt | neu | Unterschied: ${LOG}/vergleich-weide.png`);
+  }
+}
+
+// ===================================================================== (f) Ton
+async function tonAbdruck(wurzel) {
+  const s = await oeffne(wurzel, '?menue=aus');
+  await bereit(s);
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally;
+    const rund = (k, v) => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v);
+    return { quellen: JSON.stringify(A.tonQuellen, rund), audio: JSON.stringify(A.CONFIG.audio) };
+  });
+  await s.schliessen();
+  return r;
+}
+if (teil('x5')) {
+  console.log('(x5) Alpen: Ton gleich');
+  if (!ALT) info('nur mit --alt');
+  else {
+    const neu = await tonAbdruck(WURZEL), alt = await tonAbdruck(ALT);
+    const q = JSON.parse(neu.quellen);
+    melde(neu.quellen === alt.quellen && neu.quellen.length > 1000, `Umgebungs-Quellen gleich: ${q.herden.length} Herden (Kuhglocken), ${q.orte.length} Publikum-Orte, Brunnen ${q.brunnen ? 'ja' : 'nein'}, Vögel je Meter (${q.voegel.namen.length} Abschnitte, fehlend: ${q.voegel.fehlen.length}), Böen auf der Passhöhe ${q.pass ? `${Math.round(q.pass.von)}–${Math.round(q.pass.bis)} m` : 'keine'}`);
+    melde(neu.audio === alt.audio, 'CONFIG.audio identisch (alle Klangwerte, Seeds, Umgebung)');
+    // M10b: js/umgebung.js absichtlich geändert (Glocken nur bei deko.tierKlang 'glocke', mehrere Wasser-Orte);
+    // für die Alpen zählt, dass Quellen (oben) und offline gerechnete Klänge (unten) gleich sind
+    const dateien = ['js/musik.js', 'js/musikstueck.js', 'js/tonfahrt.js']; // (js/audio.js: M10b.2 Platsch, nur bei Wasser; Wirkung unten offline geprüft)
+    const geaendert = dateien.filter((d) => spawnSync('git', ['diff', '--quiet', BASIS, '--', d], { cwd: WURZEL }).status !== 0);
+    melde(geaendert.length === 0, `Ton-Code unverändert seit 0.10c (${dateien.join(', ')}; umgebung.js geändert, Wirkung für die Alpen gleich)${geaendert.length ? `; geändert: ${geaendert.join(', ')}` : ''}`);
+    // Offline gerechnete Klänge (OfflineAudioContext): Messzahlen von ton-umgebung-test in beiden Ständen
+    const zahlen = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x)).map((x) => x.replace(/\d+(\.\d+)? ?ms\b/g, 'X ms').trim());
+    // Diese Zeilen messen in Echtzeit im laufenden Spiel (Tiefpass/Pegel mitten im Übergang, Zeitpunkt des Stopps,
+    // Ton-Labor live): sie schwanken schon zwischen zwei Läufen desselben Stands (gemessen) und werden nur gemeldet.
+    // "Pause: leise Variante" und "aus der Pause zum Hauptmenü" sind darum auch in 0.10c manchmal rot (alte Wackel-Tests aus M7b);
+    // M10b.2: "vom Zielbildschirm zum Hauptmenü" ebenso (einmal rot, im nächsten Lauf desselben Stands grün)
+    const ECHTZEIT = /^(OK|FEHLER)\s+(Pause: Umgebung läuft gedämpft|Weiter: Musik blendet|Ton-Labor: Umgebung mit VORBEIFAHREN|STARTEN: Musik blendet|Pause: leise Variante|aus der Pause zum Hauptmenü: Musik beginnt|vom Zielbildschirm zum Hauptmenü: wieder Menü-Musik)/;
+    const geaendert0 = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+    const tn = werkzeug('ton-umgebung-test.mjs', []), ta = werkzeug('ton-umgebung-test.mjs', [], ALT);
+    // (der alte Test schreibt Spektrogramme und Messtabelle neu: zurücksetzen)
+    const neuGeschrieben = spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter((d) => d && !geaendert0.has(d) && /^(screenshots|tools)\//.test(d) && !/\.mjs$/.test(d));
+    if (neuGeschrieben.length) spawnSync('git', ['checkout', '--', ...neuGeschrieben], { cwd: WURZEL });
+    fs.writeFileSync(path.join(LOG, 'ton-umgebung-neu.log'), tn.text); fs.writeFileSync(path.join(LOG, 'ton-umgebung-alt.log'), ta.text);
+    const zn = zahlen(tn.text), za = zahlen(ta.text);
+    const andersAlle = zn.filter((x, i) => x !== za[i]);
+    const anders = andersAlle.filter((x) => !ECHTZEIT.test(x));
+    if (andersAlle.length > anders.length) info(`Echtzeit-Zeilen anders (schwanken auch neu gegen neu): ${andersAlle.length - anders.length}`);
+    const rotN = zn.filter((x) => x.startsWith('FEHLER') && !ECHTZEIT.test(x)).length;
+    melde(zn.length > 20 && zn.length === za.length && anders.length === 0 && rotN === 0, `ton-umgebung-test (Glocken, Publikum, Vögel, Brunnen, Böen, Musik offline gerechnet): ${zn.length} Messzeilen, ohne die ${zn.filter((x) => ECHTZEIT.test(x)).length} Echtzeit-Zeilen ${anders.length ? `${anders.length} anders` : 'Zahl für Zahl gleich'} wie 0.10c (rot: neu ${zn.filter((x) => x.startsWith('FEHLER')).length}, alt ${za.filter((x) => x.startsWith('FEHLER')).length}, nur Echtzeit-Zeilen)`);
+    if (anders.length) info(`erste Abweichung: ${anders[0].slice(0, 200)}`);
+  }
+}
+
+
 // ===================================================================== Teil A: Sprungkamera
 // Echte Spielschleife (eigene Bild-Uhr): Auto 60 m vor die Kante, 110 km/h, Gas; je Bild Kamera und Auto mitschreiben.
 // Metriken je Sprung: Zoom-Out (waagrechter Abstand Kamera–Auto gegen vorher), Kamera über dem Auto (m), Neigung gegen
@@ -225,6 +464,218 @@ if (teil('f')) {
     info(`Median je Bild (ms): Alpen alt ${m.alpenAlt.toFixed(1)} / neu ${m.alpenNeu.toFixed(1)}; Finnland alt ${m.fiAlt.toFixed(1)} / neu ${m.fiNeu.toFixed(1)}; Bildhöhe ${reihen.fiNeu[0].rh}`);
     melde(reihen.fiNeu.every((x) => x.gesprungen >= 1) && (rel(m.fiNeu, m.fiAlt) <= 1 || bereinigt <= 1), `Bildzeit Finnland ${rel(m.fiNeu, m.fiAlt).toFixed(1)} % gegen 0.10c, gegen die Alpen bereinigt ${bereinigt.toFixed(1)} % (Grenze +1 %)`);
   }
+}
+
+// ===================================================================== Teil B: Wand-Strafe
+// Testfahrer-Läufe (strecke-abfahren.mjs, 5 Stile, --json) je Auto und Strecke, alt (0.10c, mit dessen Streckendatei) und neu.
+// Ergebnis wird in LOG zwischengespeichert (M10C1_NEU=1 erzwingt neue Läufe für "neu").
+const STILE_B = ['vorsichtig', 'mittel', 'flott', 'digital', 'wand'];
+function testfahrerLauf(strecke, auto, wurzel = WURZEL, stand = 'neu') {
+  const datei = path.join(LOG, `fahrt-${stand}-${strecke}-${auto}.json`);
+  if (fs.existsSync(datei) && !(stand === 'neu' && process.env.M10C1_NEU)) return JSON.parse(fs.readFileSync(datei, 'utf8'));
+  const a = [path.join(wurzel, 'strecken', `${strecke}.js`), '--auto', auto, '--stil', STILE_B.join(','), '--json', datei, '--aus', path.join(LOG, `fahrt-${stand}-${strecke}-${auto}.txt`)];
+  if (wurzel !== WURZEL) a.push('--wurzel', wurzel);
+  const r = werkzeug('strecke-abfahren.mjs', a);
+  if (!fs.existsSync(datei)) { console.log(r.text.slice(-2000)); throw new Error(`strecke-abfahren ${strecke} ${auto} ${stand}`); }
+  return JSON.parse(fs.readFileSync(datei, 'utf8'));
+}
+const fmtZ = (t) => (t == null ? 'NICHT IM ZIEL' : `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`);
+// Exploit-Kurven je Auto und Strecke mit tools/wand-kurven.mjs (Wand bringt mehr als 0.3 s gegen die schnellste Fahrt ohne Wand)
+function wandKurven(strecke, auto, wurzel, stand) {
+  const datei = path.join(LOG, `wk-${stand}-${strecke}-${auto}.json`);
+  if (!fs.existsSync(datei) || (stand === 'neu' && process.env.M10C1_NEU)) {
+    const r = werkzeug('wand-kurven.mjs', ['--strecke', strecke, '--auto', auto, '--wurzel', wurzel, '--datei', path.join(wurzel, 'strecken', `${strecke}.js`), '--json', datei]);
+    if (!fs.existsSync(datei)) { console.log(r.text.slice(-1500)); throw new Error(`wand-kurven ${strecke} ${auto} ${stand}`); }
+  }
+  return JSON.parse(fs.readFileSync(datei, 'utf8')).kurven.filter((k) => k.gewinn > 0.3).map((k) => ({ s: k.s, gewinn: k.gewinn }));
+}
+let laufeB = null;
+function alleLaeufeB() {
+  if (laufeB) return laufeB;
+  laufeB = { neu: {}, alt: {} };
+  for (const strecke of ['alpen', 'finnland']) for (const id of AUTOS) {
+    laufeB.neu[`${strecke}-${id}`] = testfahrerLauf(strecke, id);
+    if (ALT) laufeB.alt[`${strecke}-${id}`] = testfahrerLauf(strecke, id, ALT, 'alt');
+  }
+  return laufeB;
+}
+if (teil('g')) {
+  console.log('(g) Testfahrer alt/neu (Autos x Stile x Strecken, Zeit, Wandkontakte, Aufpralle) und Exploit-Kurven');
+  const L = alleLaeufeB();
+  const tab = ['| Strecke | Auto | Stil | Zeit 0.10c (Wand, Aufpr.) | Zeit 0.10c.1 (Wand, Aufpr., Wasser) |', '|---|---|---|---|---|'];
+  const kurven = [];
+  let wandSchneller = [];
+  for (const k of Object.keys(L.neu)) {
+    const [strecke, id] = k.split('-');
+    const n = Object.fromEntries(L.neu[k].stile.map((x) => [x.stil, x])), a = L.alt[k] ? Object.fromEntries(L.alt[k].stile.map((x) => [x.stil, x])) : null;
+    for (const stil of STILE_B) {
+      const x = n[stil], y = a && a[stil];
+      tab.push(`| ${strecke} | ${id} | ${stil} | ${y ? `${fmtZ(y.zeit)} (${(y.wandKontakte || []).length}, ${y.aufpralle})` : '–'} | ${fmtZ(x.zeit)} (${x.wandKontakte.length}, ${x.aufpralle}, ${x.wasserBad || 0}) |`);
+    }
+    const ka = a ? wandKurven(strecke, id, ALT, 'alt') : [], kn = wandKurven(strecke, id, WURZEL, 'neu');
+    kurven.push({ strecke, id, alt: ka, neu: kn });
+    if (n.wand.zeit == null || n.mittel.zeit == null || n.wand.zeit < n.mittel.zeit - 0.3) wandSchneller.push(`${strecke}/${id}: wand ${fmtZ(n.wand.zeit)} gegen mittel ${fmtZ(n.mittel.zeit)}`);
+  }
+  fs.writeFileSync(path.join(LOG, 'testfahrer-tabelle.md'), `${tab.join('\n')}\n`);
+  const kt = kurven.map((k) => `${k.strecke}/${k.id}: alt ${k.alt.map((x) => `${x.s} m (−${x.gewinn.toFixed(2)} s)`).join(', ') || 'keine'} → neu ${k.neu.map((x) => `${x.s} m (−${x.gewinn.toFixed(2)} s)`).join(', ') || 'keine'}`);
+  fs.writeFileSync(path.join(LOG, 'exploit-kurven.txt'), `${kt.join('\n')}\n`);
+  for (const z of kt) info(z);
+  const nAlt = kurven.reduce((n, k) => n + k.alt.length, 0), nNeu = kurven.reduce((n, k) => n + k.neu.length, 0);
+  if (ALT) melde(nAlt > 0, `vorher (0.10c): ${nAlt} Exploit-Kurven (die Wand bringt mehr als 0.3 s gegen die schnellste Fahrt ohne Wand, tools/wand-kurven.mjs) – der Testfahrer zeigt den Exploit`);
+  melde(nNeu === 0, `nachher: ${nNeu} Exploit-Kurven`);
+  melde(wandSchneller.length === 0, `ganze Etappe: Stil wand nirgends schneller als mittel (Toleranz 0.3 s; Achtung: misst auch, dass enge Kurven ohne Wand schneller gehen, als "mittel" plant)${wandSchneller.length ? `: ${wandSchneller.join('; ')}` : ''}; Tabelle ${LOG}/testfahrer-tabelle.md`);
+  // Unfälle vorsichtig/mittel dürfen nicht steigen
+  const mehr = [];
+  if (ALT) for (const k of Object.keys(L.neu)) for (const stil of ['vorsichtig', 'mittel']) {
+    const x = L.neu[k].stile.find((q) => q.stil === stil), y = L.alt[k].stile.find((q) => q.stil === stil);
+    if (x.aufpralle > y.aufpralle) mehr.push(`${k}/${stil} ${y.aufpralle} → ${x.aufpralle}`);
+    if (k === 'finnland-l073' && stil === 'mittel') info(`Lanza 073 Finnland mittel: Aufpralle ${y.aufpralle} → ${x.aufpralle} (${x.aufprallListe.join(', ')})`);
+  }
+  if (ALT) melde(mehr.length === 0, `Unfälle vorsichtig/mittel nicht mehr als in 0.10c${mehr.length ? `: ${mehr.join('; ')}` : ''}`);
+}
+if (teil('l')) {
+  console.log('(l) Läufe ohne Wandkontakt bit-gleich wie 0.10c (beide Strecken; Zeit, Zwischenzeiten, Aufpralle)');
+  if (!ALT) info('nur mit --alt');
+  else {
+    const L = alleLaeufeB();
+    const ohne = [], anders = [], mit = [];
+    for (const k of Object.keys(L.neu)) for (const stil of STILE_B) {
+      const x = L.neu[k].stile.find((q) => q.stil === stil), y = L.alt[k].stile.find((q) => q.stil === stil);
+      const kontakt = (y.wandKontakte || []).length > 0 || x.wandKontakte.length > 0;
+      if (kontakt) { mit.push(`${k}/${stil} ${fmtZ(y.zeit)} → ${fmtZ(x.zeit)} (Wand ${(y.wandKontakte || []).length} → ${x.wandKontakte.length})`); continue; }
+      ohne.push(k);
+      if (x.zeit !== y.zeit || x.aufpralle !== y.aufpralle || JSON.stringify(x.cps) !== JSON.stringify(y.cps) || JSON.stringify(x.aufprallListe) !== JSON.stringify(y.aufprallListe)) anders.push(`${k}/${stil} ${fmtZ(y.zeit)} → ${fmtZ(x.zeit)}`);
+    }
+    melde(anders.length === 0 && ohne.length > 0, `${ohne.length} Läufe ohne Wandkontakt: Zeit, Zwischenzeiten und Aufpralle (Ort, Tempo) gleich${anders.length ? ` – ANDERS: ${anders.join('; ')}` : ''}`);
+    fs.writeFileSync(path.join(LOG, 'laeufe-mit-wand.txt'), `${mit.join('\n')}\n`);
+    info(`${mit.length} Läufe mit Wandkontakt (dürfen sich ändern): ${LOG}/laeufe-mit-wand.txt`);
+  }
+}
+// Synthetische Leitplanke (gerade Reihe Kreise wie js/strassenrand.js, Art 'planke') mit der echten Kollision und Wand-Strafe
+const WAND_LABOR = async ({ winkel, kmh, schritte = 1, schleifen = false }) => {
+  const { baueKollision } = await import('/js/kollision.js');
+  const { baueWand } = await import('/js/wand.js');
+  const A = window.__alpineRally, C = A.CONFIG, pr = C.strassenrand.planke;
+  const hin = []; for (let z = -60; z <= 60; z += pr.kreisAbstand) hin.push({ x: 0, z, r: pr.kreisRadius, rand: 'planke' });
+  const wand = baueWand(), kol = baueKollision(hin, null, wand);
+  const g = winkel * Math.PI / 180, v0 = kmh / 3.6;
+  // Auto links der Planke (x < 0), fährt in +z mit winkel Richtung Planke (+x)
+  const ph = { x: -(C.kollision.autoBreite / 2 + pr.kreisRadius + 0.6), z: 0, richtung: g, drehrate: 0, vx: Math.sin(g) * v0, vz: Math.cos(g) * v0, get tempo() { return Math.hypot(this.vx, this.vz); } };
+  const dt = 1 / 120, w0 = ph.richtung; let kontakte = 0, vor = null;
+  for (let i = 0; i < 2400 && i < schritte + 2400; i++) {
+    wand.anfang(dt);
+    const xa = ph.x, za = ph.z, wa = ph.richtung;
+    if (schleifen) { ph.vx = 0.01; ph.x = -(C.kollision.autoBreite / 2 + pr.kreisRadius) + 0.001; } // ständig ganz leicht an die Planke gelehnt (1 mm, weit unter der Einschlag-Grenze)
+    ph.x += ph.vx * dt; ph.z += ph.vz * dt;
+    const v = ph.tempo;
+    kol.loese(ph, xa, za, wa);
+    wand.ende(ph, dt);
+    if (wand.kontakt) { kontakte++; if (vor == null) vor = v; }
+    if (!schleifen && wand.einschlaege > 0 && kontakte > 0 && !wand.kontakt) break;
+    if (schleifen && i >= 120) break;
+  }
+  return { vor, nach: ph.tempo, strafe: wand.letzter, einschlaege: wand.einschlaege, gier: Math.abs(ph.richtung - w0) * 180 / Math.PI, kontakte, v0 };
+};
+const strafeFormel = (w) => (w <= 15 ? 0.25 : w <= 60 ? 0.25 + (0.35 * (w - 15)) / 45 : w <= 80 ? 0.6 + (0.15 * (w - 60)) / 20 : 0.75);
+if (teil('h') || teil('i') || teil('j')) {
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await bereit(s);
+  if (teil('h')) {
+    console.log('(h) Strafe nach Einschlagwinkel gegen die Formel (±3 %), synthetische Leitplanke, 100 km/h');
+    for (const w of [8, 15, 37.5, 60, 70, 85]) {
+      const r = await s.page.evaluate(WAND_LABOR, { winkel: w, kmh: 100 });
+      const verlust = 1 - r.strafe.nachher / r.strafe.vorher, soll = strafeFormel(r.strafe.winkel);
+      melde(r.einschlaege === 1 && Math.abs(verlust - soll) <= 0.03 && Math.abs(r.strafe.winkel - w) < 3, `${w}°: gemessener Einschlagwinkel ${r.strafe.winkel.toFixed(1)}°, Verlust ${pz(verlust)} (Formel ${pz(soll)}), ${r.einschlaege} Einschlag-Strafe, Tempo danach ${(r.nach * 3.6).toFixed(0)} km/h`);
+    }
+  }
+  if (teil('i')) {
+    console.log('(i) Gier-Änderung durch die Wand je Kontakt höchstens 6° (synthetisch, Lenkung 0)');
+    for (const w of [5, 20, 45, 80]) {
+      const r = await s.page.evaluate(WAND_LABOR, { winkel: w, kmh: 120 });
+      melde(r.gier <= 6, `${w}° mit 120 km/h: Gier-Änderung ${r.gier.toFixed(2)}° in ${r.kontakte} Kontakt-Schritten`);
+    }
+  }
+  if (teil('j')) {
+    console.log('(j) Dauerkontakt kostet Tempo (1 s an der Planke schleifen, ohne Einschlag)');
+    const r = await s.page.evaluate(WAND_LABOR, { winkel: 0, kmh: 80, schleifen: true });
+    melde(r.einschlaege === 0 && r.kontakte > 100 && r.nach / r.v0 < 0.68 && r.nach / r.v0 > 0.58, `${r.kontakte} Schritte an der Planke, nach 1 s Schleifen ${(r.nach * 3.6).toFixed(1)} km/h von ${(r.v0 * 3.6).toFixed(0)} (${pz(1 - r.nach / r.v0)} weniger; Ziel ca. 35 % plus etwas Reibung durch das Anlehnen), Einschläge ${r.einschlaege}`);
+  }
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+// Im Spiel: Auto an eine echte Leitplanke (Alpen) bzw. Felswand stellen
+const AN_DIE_WAND = ({ art, winkel, kmh, gas = 0, bremse = 0, sek = 1.5, lenk = 0, abstand = 0.6 }) => {
+  const A = window.__alpineRally, P = A.physik, S = A.strecke, q = {};
+  A.anhalten = true;
+  let s0 = null, seite = 0, lat = 0;
+  if (art === 'fels') {
+    for (let i = 300; i < S.anzahl - 300 && s0 == null; i += 5) if (S.wandStaerke[i] > 0.95 && S.wandStaerke[i + 30] > 0.95 && S.wandStaerke[i - 30] > 0.95) { s0 = i; seite = S.wandSeite[i]; lat = A.CONFIG.grenze.wandGrenze; }
+  } else {
+    // eine lange gerade Leitplanke: Kreis, dessen Nachbarn 10 m vor und zurück gleich weit neben der Mitte stehen
+    const pl = A.strassenrand.hindernisse.filter((h) => h.rand === 'planke');
+    for (const h of pl) {
+      S.abfrage(h.x, h.z, q); const sh = q.s, la = q.seite;
+      if (sh < 300 || Math.abs(la) > 7) continue;
+      const nah = pl.filter((g) => Math.hypot(g.x - h.x, g.z - h.z) < 12).map((g) => S.abfrage(g.x, g.z, {}));
+      if (nah.length > 25 && nah.every((g) => Math.abs(g.seite - la) < 0.15)) { s0 = sh; seite = Math.sign(la); lat = Math.abs(la) - h.r; break; }
+    }
+  }
+  const p = S.punktBei(s0);
+  A.setzeAuf(s0);
+  const rx = -p.tz, rz = p.tx; // rechts (seite > 0 = rechts)
+  const a = winkel * Math.PI / 180, fx = Math.cos(a) * p.tx + Math.sin(a) * rx * seite, fz = Math.cos(a) * p.tz + Math.sin(a) * rz * seite;
+  const g = Math.atan2(fx, fz);
+  // Auto so hin, dass die vordere Ecke zur Wand hin noch "abstand" Meter Luft hat
+  const L = A.CONFIG.kollision.autoLaenge / 2, Bh = A.CONFIG.kollision.autoBreite / 2;
+  const ecke = L * Math.sin(a) + Bh * Math.cos(a);
+  const d = lat - ecke - abstand;
+  P.reset(p.x + rx * seite * d, p.z + rz * seite * d, g);
+  P.vx = Math.sin(g) * kmh / 3.6; P.vz = Math.cos(g) * kmh / 3.6;
+  const out = { s0, seite, lat, kontakte: 0, w0: P.richtung };
+  const e0 = A.wand.einschlaege; let ersteKontakt = null;
+  for (let t = 0; t < sek; t += A.SCHRITT) {
+    A.physikSchritt(A.SCHRITT, { gas, bremse, lenkung: lenk, handbremse: false, reset: false });
+    if (A.wand.kontakt) { out.kontakte++; if (ersteKontakt == null) ersteKontakt = { t, w: P.richtung }; }
+  }
+  out.strafen = A.wand.einschlaege - e0; out.tempo = P.tempo * 3.6; out.vVor = P.vVor;
+  return out;
+};
+if (teil('k')) {
+  console.log('(k) kein Steckenbleiben: mit 3 km/h an Leitplanke bzw. Felswand, dann rückwärts frei');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await bereit(s);
+  for (const art of ['planke', 'fels']) {
+    const an = await s.page.evaluate(AN_DIE_WAND, { art, winkel: 70, kmh: 3, gas: 0.3, sek: 2, abstand: 0.05 });
+    const zurueck = await s.page.evaluate(() => {
+      const A = window.__alpineRally, P = A.physik, x0 = P.x, z0 = P.z;
+      for (let t = 0; t < 2.5; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { gas: 0, bremse: 1, lenkung: 0, handbremse: false, reset: false });
+      return { weg: Math.hypot(P.x - x0, P.z - z0), vVor: P.vVor, kontakt: A.wand.kontakt };
+    });
+    melde(an.kontakte > 0 && zurueck.weg > 1 && !zurueck.kontakt, `${art} bei ${an.s0.toFixed(0)} m: ${an.kontakte} Kontakt-Schritte; danach 2.5 s Rückwärts: ${zurueck.weg.toFixed(2)} m weg von der Wand (Tempo ${(zurueck.vVor * 3.6).toFixed(1)} km/h), Kontakt am Ende ${zurueck.kontakt}`);
+  }
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('m')) {
+  console.log('(m) Abkürzungs-Prüfung Alpen nicht schlechter (127 / 2 / 342 / 84)');
+  const r = werkzeug('abkuerzungen.mjs', ['--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'abkuerzungen-alpen.log'), r.text);
+  const n = [...r.text.matchAll(/übrig in Kurve [\d – ]+: (\d+) Linien/g)].map((m) => +m[1]);
+  const durch = +((/Durchkommen in gesperrten Kurven: (\d+)/.exec(r.text) || [])[1]);
+  melde(r.code === 0 && n.join('/') === '127/2/342/84' && durch === 0, `abkuerzungen.mjs --pruefen: ${n.join(' / ')}, Durchkommen in gesperrten Kurven ${durch}`);
+}
+if (teil('n')) {
+  console.log('(n) Ton: Einschlag an der Leitplanke meldet einen Aufprall-Ton (Metall) und Haptik nach verlorenem Tempo');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await bereit(s);
+  const r = await s.page.evaluate((code) => {
+    const A = window.__alpineRally; A.tonInfo.wucht = 0;
+    const f = new Function(`return (${code})`)();
+    const out = f({ art: 'planke', winkel: 40, kmh: 90, sek: 0.4, abstand: 0.3 });
+    return { ...out, tonWucht: A.tonInfo.wucht, tonArt: A.CONFIG.audio.aufprall.materialien[A.tonInfo.art], verlust: A.wand.letzter && (A.wand.letzter.vorher - A.wand.letzter.nachher), ab: A.CONFIG.audio.aufprall.ab };
+  }, AN_DIE_WAND.toString());
+  melde(r.strafen >= 1 && r.tonWucht >= r.ab && r.tonArt === 'metall', `Einschlag mit 90 km/h unter 40°: ${r.strafen} Strafe(n), Ton-Wucht ${r.tonWucht.toFixed(1)} m/s (ab ${r.ab}, verlorenes Tempo ${r.verlust == null ? '–' : r.verlust.toFixed(1)} m/s), Material ${r.tonArt}`);
+  await s.schliessen();
 }
 
 console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');

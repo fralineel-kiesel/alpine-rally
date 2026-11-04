@@ -31,12 +31,31 @@ export const PROFILE = {
   // Lenk-Rampe wie das Spiel bei Tastatur (js/input.js: tastaturLenkTempo, tastaturRueckTempo, Lenkempfindlichkeit
   // Standard), Bremsen vor Kurven voll wie "mittel" (gleiche Tempo-Ziele), keine Handbremse, kein Gas-Lupfen im Drift
   digital: { quer: 6, bremsen: 6.5, digital: true, sprung: 115 / 3.6 },
+  // M10c.1: "wand" = das Exploit-Profil: fährt wie "digital" (Tastatur-Lenkung, gleiche Kurventempi), aber in Kurven mit
+  // einer Wand daneben (Leitplanke, Zaun, Geländer, Absperr-Wand, Felswand; bis 8 m neben der Mitte) und enger als 60 m
+  // Radius bremst er kaum: dort
+  // rechnet er mit wandQuer statt quer – er nimmt die Kurve durch Kontakt mit der Wand statt durch Bremsen, Gas fast immer an
+  wand: { quer: 6, bremsen: 6.5, digital: true, sprung: 115 / 3.6, wandQuer: 40, wandRadius: 60 },
 };
 
 // Pfad aus Punktlisten, mit Zieltempo für jeden Punkt
+// M10c.1: Wo steht eine Wand neben der Strasse? (je Streckenmeter, für den Stil "wand")
+function wandMeter(A) {
+  const S = A.strecke, an = new Uint8Array(Math.ceil(S.laenge) + 2), q = {};
+  const arten = (A.CONFIG.kollision.wand && A.CONFIG.kollision.wand.arten) || ['planke', 'zaun', 'absperrung'];
+  for (const h of A.strassenrand.hindernisse) {
+    if (!arten.includes(h.rand)) continue;
+    S.abfrage(h.x, h.z, q);
+    if (Math.abs(q.seite) < 8) an[Math.max(0, Math.min(an.length - 1, Math.round(q.s)))] = 1;
+  }
+  for (let i = 0; i < S.anzahl && i < an.length; i++) if (S.wandStaerke[i] > 0.5) an[i] = 1;
+  return an;
+}
+
 export function bauePfad(A, xs, zs, profil) {
   const n = xs.length, vZiel = new Float64Array(n);
   const q = {};
+  const wandAn = profil.wandQuer ? wandMeter(A) : null;
   for (let i = 0; i < n; i++) {
     const a = Math.max(0, i - 4), b = Math.min(n - 1, i + 4);
     const w1 = Math.atan2(xs[i] - xs[a], zs[i] - zs[a]), w2 = Math.atan2(xs[b] - xs[i], zs[b] - zs[i]);
@@ -48,7 +67,11 @@ export function bauePfad(A, xs, zs, profil) {
     // Bei allen anderen Autos 1 = keine Rechnung (Zeiten bit-gleich wie vorher)
     const sg = A.CONFIG.auto.schotterGrip;
     if (art === 'schotter' && sg && sg !== 1) grip *= sg;
-    vZiel[i] = Math.min(60, Math.sqrt((profil.quer * grip) / Math.max(kappa, 1e-4)));
+    let quer = profil.quer;
+    // (nur in engen Kurven, Radius unter profil.wandRadius: dort würde "digital" bremsen; sonst fährt er wie "digital")
+    // (profil.nurBereich = [von, bis]: nur in diesen Streckenmetern, für tools/wand-kurven.mjs)
+    if (wandAn && kappa > 1 / profil.wandRadius && (!profil.nurBereich || (q.s >= profil.nurBereich[0] && q.s < profil.nurBereich[1]))) { const m = Math.round(q.s); for (let d = -4; d <= 4; d++) if (q.abstand < 8 && wandAn[m + d]) quer = profil.wandQuer; }
+    vZiel[i] = Math.min(60, Math.sqrt((quer * grip) / Math.max(kappa, 1e-4)));
     // M10c: vor einer Absprungkante höchstens profil.sprung (die letzten 25 m vor der Kante)
     const zonen = A.strecke.sprungZonen || [];
     if (profil.sprung && zonen.length) for (const z of zonen) if (q.s > z.kante - 25 && q.s <= z.kante + 1 && q.abstand < 15) vZiel[i] = Math.min(vZiel[i], profil.sprung);

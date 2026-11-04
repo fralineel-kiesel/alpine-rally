@@ -927,6 +927,23 @@ export const CONFIG = {
     drehBremse: 0.5,           // ein Drehen des Autos wird beim Aufprall so stark gebremst (1 = gar nicht)
     zelle: 8,                  // Rastergrösse für die schnelle Suche (Meter)
     pruefSchritt: 0.25,        // Weg wird in so kurzen Stücken geprüft (gegen Durchrutschen)
+    // M10c.1: Wand-Strafe (js/wand.js) – Leitplanken, Zäune, Brückengeländer, Absperr-Wände und Felswand. Vorher behielt das
+    // Auto an der Wand fast sein Tempo und drehte sich in die Wandrichtung (Lino: „Cheat“). Bäume, Steine, Stämme: wie oben.
+    wand: {
+      arten: ['planke', 'zaun', 'absperrung'], // diese Hindernis-Arten sind Wände (Brückengeländer zählen als 'zaun')
+      felsAuch: true,          // Felswand ebenso (false = wie bis 0.10c)
+      streifen: [15, 0.25],    // bis 15° Einschlagwinkel (0° = parallel zur Wand) kostet ein Einschlag 25 % Tempo ...
+      steil: [60, 0.60],       // ... ab 60° 60 % (dazwischen gleichmässig) ...
+      frontal: [80, 0.75],     // ... ab 80° (frontal) 75 %, mehr nie
+      einschlagAb: 2.0,        // ein Einschlag zählt erst ab so viel Tempo Richtung Wand (m/s); darunter nur Schleifen
+      pause: 0.25,             // zwischen zwei Einschlag-Strafen mindestens so lange (s), ein Schlag zählt nur einmal
+      schleifen: 0.35,         // an der Wand schleifen kostet zusätzlich so viel Tempo pro Sekunde (0.35 = 35 %)
+      abprall: 0.15,           // so stark prallt das Auto von der Wand ab (Anteil des Tempos Richtung Wand)
+      reibung: 0.6,            // ohne Einschlag (leichtes Anlehnen): Tempo entlang der Wand sinkt um so viel mal das Tempo
+                               // Richtung Wand (an einer gebogenen Wand entlang rutschen bremst, keine Gratis-Kurve)
+      staubJe: 1.5,            // Pixelstaub beim Einschlag: so viele Wölkchen je m/s verlorenes Tempo ...
+      staubMax: 24,            // ... höchstens so viele
+    },
   },
 
   // --- Abkürzungen (Analyse) -------------------------------------------

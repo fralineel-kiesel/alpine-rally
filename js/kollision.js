@@ -14,17 +14,22 @@ const begrenze = (w, min, max) => (w < min ? min : w > max ? max : w);
 
 // hindernisse: Liste von { x, z, r }
 // artVon (M7a, nur für den Ton): Hindernis -> Material-Nummer (Baum, Stein, Holz, ...). Die Rechnung ändert sich nicht.
-export function baueKollision(hindernisse, artVon = null) {
+// wand (M10c.1, optional): Wand-Strafe aus js/wand.js für Leitplanken, Zäune, Geländer und Absperr-Wände
+// (Arten in kollision.wand.arten); fehlt sie, gleiten auch Wände wie bisher (Rechnung wie 0.10c)
+export function baueKollision(hindernisse, artVon = null, wand = null) {
   const k = CONFIG.kollision;
   const Z = k.zelle;
   const anzahl = hindernisse.length;
   // Float64, damit die Rasterzelle genau gleich gerechnet wird wie minX/minZ
   const hx = new Float64Array(anzahl), hz = new Float64Array(anzahl), hr = new Float64Array(anzahl);
   const art = new Uint8Array(anzahl); // M7a: Material je Hindernis, nur für den Aufprallton
+  const istWand = new Uint8Array(anzahl); // M10c.1: 1 = Wand (Leitplanke, Zaun, Geländer, Absperr-Wand)
+  const wandArten = new Set((k.wand && k.wand.arten) || []);
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, maxR = 0;
   hindernisse.forEach((h, i) => {
     hx[i] = h.x; hz[i] = h.z; hr[i] = h.r;
     if (artVon) art[i] = artVon(h);
+    if (wand && wandArten.has(h.rand)) istWand[i] = 1;
     minX = Math.min(minX, h.x); maxX = Math.max(maxX, h.x);
     minZ = Math.min(minZ, h.z); maxZ = Math.max(maxZ, h.z);
     maxR = Math.max(maxR, h.r);
@@ -122,6 +127,26 @@ export function baueKollision(hindernisse, artVon = null) {
     return kontakt;
   }
 
+  // M10c.1: Normale einer Wand am Kreis i (Hauptrichtung der Wandkreise bis 1.5 m daneben), zum Auto hin wie (gx, gz)
+  const wn = { nx: 0, nz: 0 };
+  function wandNormale(i, gx, gz) {
+    let n = 0, sx = 0, sz = 0, sxx = 0, szz = 0, sxz = 0;
+    inDerNaehe(hx[i], hz[i], 1.5, (j) => {
+      if (!istWand[j]) return;
+      const dx = hx[j] - hx[i], dz = hz[j] - hz[i];
+      if (dx * dx + dz * dz > 2.25) return;
+      n++; sx += dx; sz += dz; sxx += dx * dx; szz += dz * dz; sxz += dx * dz;
+    });
+    if (n < 3) { wn.nx = gx; wn.nz = gz; return wn; }
+    const cxx = sxx / n - (sx / n) ** 2, czz = szz / n - (sz / n) ** 2, cxz = sxz / n - (sx / n) * (sz / n);
+    const a = 0.5 * Math.atan2(2 * cxz, cxx - czz); // Richtung der Wand (Winkel in x/z)
+    let nx = -Math.sin(a), nz = Math.cos(a);
+    if (nx * gx + nz * gz < 0) { nx = -nx; nz = -nz; }
+    if (nx * gx + nz * gz < 0.3) { nx = gx; nz = gz; } // (Wandende, Ecke: lieber die Kontakt-Richtung)
+    wn.nx = nx; wn.nz = nz;
+    return wn;
+  }
+
   const kol = {
     anzahl,
     letzterAufprall: null, // { vorher, nachher } in m/s
@@ -183,6 +208,14 @@ export function baueKollision(hindernisse, artVon = null) {
       // 1. aus dem Hindernis schieben (ein Hauch mehr, damit nichts klebt)
       physik.x += c.nx * (c.tiefe + 0.002);
       physik.z += c.nz * (c.tiefe + 0.002);
+      // M10c.1: Wand = echte Strafe statt Entlanggleiten, keine Ausrichtung (js/wand.js). Richtung: senkrecht zur Wand
+      // (aus den Nachbarkreisen), nicht vom Kreis zur Auto-Ecke – sonst wirkt ein flacher Streifer an der Ecke steil
+      if (istWand[c.i]) {
+        const n = wandNormale(c.i, c.nx, c.nz);
+        const vor = physik.tempo, vn = physik.vx * n.nx + physik.vz * n.nz;
+        const w = wand.stoss(physik, n.nx, n.nz);
+        return { wucht: w, winkel: w > 0 && vor > 0 ? Math.acos(Math.min(1, -vn / vor)) * 180 / Math.PI : 90 };
+      }
 
       const vn = physik.vx * c.nx + physik.vz * c.nz; // < 0 = fährt aufs Hindernis zu
       if (vn >= 0) return { wucht: 0, winkel: 90 };

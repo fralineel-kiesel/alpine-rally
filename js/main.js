@@ -48,6 +48,7 @@ import { baueHud, formatZeit } from './hud.js';
 import { baueTachos } from './tacho.js';
 import { pixelText } from './pixel.js';
 import { baueKollision } from './kollision.js';
+import { baueWand } from './wand.js'; // M10c.1
 import { baueCheckpointTore } from './checkpoints.js';
 import { baueStrassenrand } from './strassenrand.js';
 import { baueKuehe } from './kuehe.js';
@@ -203,7 +204,9 @@ strassenrand.hindernisse.push(...wasser.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
 // (materialVon, M7a: Material je Hindernis nur für den Aufprallton; die Kollisionsrechnung bleibt gleich)
-const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse], materialVon);
+// M10c.1: Wand-Strafe (js/wand.js) für Leitplanken, Zäune, Geländer, Absperr-Wände und die Felswand
+const wand = baueWand();
+const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse], materialVon, wand);
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
 const staub = baueStaub(szene); // Staub auf Schotter (M3a) und Wiesenweg (M3b)
 const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false, belag: null, hinten: 1.3, seite: 0.75 };
@@ -317,6 +320,7 @@ const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken 
 const wasserBad = { aktiv: false, t: 0, versetzt: false, sicherS: 0, plaetscher: 0, anzahl: 0, nass: false, spritzer: 0 };
 function setzeAuf(s, seite = 0) {
   rueck.rest = 0; // ein laufender R-Countdown ist damit erledigt
+  wand.reset(); // M10c.1
   wasserBad.aktiv = false; wasserBad.sicherS = s; // M10b.2: Neustart/Setzen beendet ein Schwarzbild
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
@@ -409,7 +413,15 @@ function bodenHoehe(x, z) {
 }
 
 // nurFahren (M5a, Demo-Fahrt): nur Fahren und Kollisionen, keine Zeitmessung, nichts im Rennstand
+// M10c.1: Felswand (nx/nz zeigt in die Wand, ueber = wie weit drin): aus der Wand schieben, Wand-Strafe wie bei Leitplanken,
+// keine Drehung in die Wandrichtung mehr (vorher physik.anGrenze: drehte bis 0.7° je Schritt mit)
+function felsWand(nx, nz, ueber) {
+  if (!CONFIG.kollision.wand.felsAuch) { physik.anGrenze(nx, nz, ueber); return; }
+  physik.x -= nx * ueber; physik.z -= nz * ueber;
+  wand.stoss(physik, -nx, -nz);
+}
 function physikSchritt(dt, e, nurFahren = false) {
+  wand.anfang(dt); // M10c.1
   const q = strecke.abfrage(physik.x, physik.z, qAuto);
   const boden = welt.bodenBei(physik.x, physik.z, q);
   untergrund = boden.art;
@@ -500,13 +512,19 @@ function physikSchritt(dt, e, nurFahren = false) {
     wucht = Math.max(wucht, gw);
     if (gw > tonW) { tonW = gw; tonArt = FELS; } // M7a: Wand = Felswand-Ton
     tonKontakt = FELS;
-    physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
+    felsWand(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
   } else if (wk.fels > 0) {
     const gw = grenzWucht(wk.nx, wk.nz);
     wucht = Math.max(wucht, gw);
     if (gw > tonW) { tonW = gw; tonArt = FELS; }
     tonKontakt = FELS;
-    physik.anGrenze(wk.nx, wk.nz, wk.fels);
+    felsWand(wk.nx, wk.nz, wk.fels);
+  }
+  // M10c.1: Schleifen an der Wand kostet Tempo; Ton, Haptik und Staub nach dem verlorenen Tempo
+  wand.ende(physik, dt);
+  if (wand.strafe) {
+    tonW = Math.max(tonW, wand.verlust);
+    if (!nurFahren) staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(Math.min(CONFIG.kollision.wand.staubMax, wand.verlust * CONFIG.kollision.wand.staubJe)), 0.3 + Math.min(0.7, wand.verlust / 20), untergrund);
   }
   if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
     // Abhang auf der anderen Seite
@@ -1502,7 +1520,7 @@ if (fahrlaborAn) {
 // start(): am Menü vorbei ins Rennen wie "STARTEN" (mit Countdown); start({ countdown: false }): ohne Countdown wie vor M5b
 // rennSchritt(dt, e): ein fester Schritt wie in der Spielschleife (Countdown oder Physik), lauf/stat: Rennablauf, Statistik
 window.__alpineRally = {
-  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
+  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision, wand,
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
   ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,
