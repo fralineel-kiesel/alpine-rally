@@ -6,6 +6,10 @@
 //       (e) Landung parallel = 0 %, Nase voran > 0 %, (f) 1000 Zufallssprünge, (g) R / Pause / Wasser im Flug, (h) Prüfer
 //   Teil B – Finnland: (i) Prüfer, Landezonen frei, Checkpoints ausserhalb, (j) Flugweiten je Sprung und Auto,
 //       (k) Länge/Verlauf/Pace-Notes/Checkpoints, (l) Hang-Check, (m) Abkürzungen, (n) revision und Bestzeiten, (o) Legende
+//   Teil C – Kamera/Ton/Schatten/Haptik: (p) Kamera vor/nach gleich, ganze Bildpunkte, (q) SPRUNGKAMERA AUS, (r) Schatten am Boden,
+//       (s) Ton, (t) Haptik, (u) Bildzeit
+//   Teil D – Sprung-Statistik: (v) Zählung gegen den Testfahrer, (w) Alpen-Zielbildschirm pixelgleich, (x) Rekord gespeichert,
+//       (y) Texte de + en, kein Überlauf
 //   Unveränderlich (Alpen wie 0.10b.2): (x1) Länge/Abkürzungen, (x2) Testfahrer, (x3) Pace-Notes/Strecke, (x4) Bilder, (x5) Ton
 //   (z) nur mit --lang: frühere Tests
 
@@ -34,8 +38,8 @@ const BASIS = 'ffca7c3'; // 0.10b.2
 if (!ALT) info(`Vergleiche gegen 0.10b.2 nur mit --alt <ordner> (git worktree add <ordner> ${BASIS})`);
 
 // Spiel öffnen. uhr: Playwright-Uhr vor dem Laden anhalten (Bilder in beiden Ständen gleich weit); speicher: localStorage
-async function oeffne(wurzel, adresse = '', { uhr = false, speicher = null, route = null, auto, finnland = null } = {}) {
-  const s = await starteSpiel({ wurzel, breite: 640, hoehe: 360, ...(auto ? { auto } : {}) });
+async function oeffne(wurzel, adresse = '', { uhr = false, speicher = null, route = null, auto, finnland = null, args = null } = {}) {
+  const s = await starteSpiel({ wurzel, breite: 640, hoehe: 360, ...(auto ? { auto } : {}), ...(args ? { args } : {}) });
   s.fehler = [];
   s.page.on('pageerror', (e) => s.fehler.push(String(e.message || e)));
   if (speicher) await s.page.addInitScript((sp) => { localStorage.clear(); for (const [k, v] of Object.entries(sp)) localStorage.setItem(k, v); }, speicher);
@@ -104,6 +108,7 @@ if (teil('x2')) {
 // ===================================================================== (d) Pace-Notes, Checkpoints, Strecke
 // M10c: neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
 const NEU_WERTE = [
+  (c) => { if (c.menue && c.menue.standard) delete c.menue.standard.sprungkamera; if (c.haptik) { delete c.haptik.landungLeicht; delete c.haptik.landungHart; } }, // Teil C
   (c) => { if (c.pacenotes) { delete c.pacenotes.sprungVor; if (c.pacenotes.texte) delete c.pacenotes.texte.sprung; } }, // Teil B: Pace-Note SPRUNG (Alpen ohne Sprünge)
 ];
 async function streckenAbdruck(wurzel, strecke = 'alpen') {
@@ -228,7 +233,7 @@ if (teil('x4')) {
       .concat(Object.keys(neu.seiten).map((k) => [`menü ${k}`, neu.seiten[k], alt.seiten[k]]));
     const rot = [], nurVersion = [], neuGestaltet = [];
     // M10b.1: Seite ETAPPE zeigt die Finnland-Zeile (Länge, Vorschau-Karte) der neuen Strecke – absichtlich anders
-    const NEU_GESTALTET = []; // (M10c: je Teil ergänzt)
+    const NEU_GESTALTET = ['menü einstellungen']; // (M10c Teil C: neue Zeile SPRUNGKAMERA)
     // Seit Teil F steht 0.10b.2 statt 0.10b.2 in der Versionszeile (Titel, Credits): dort darf genau diese eine Textzeile
     // anders sein (Unterschied höchstens 7 Pixel hoch, ganz in der Zeile, in der die Version steht)
     const versionsZeile = (k, box) => box && box[3] - box[1] <= 7 && ((/^(titel|demo)$/.test(k) && box[0] >= 220 && box[1] >= 168) || k === 'menü credits');
@@ -243,9 +248,9 @@ if (teil('x4')) {
     const gegen = await vergleiche(s.page, neu['rt4-pass'], neu['rt4-weide']);
     await s.schliessen();
     for (const [k, b] of Object.entries(neu)) if (typeof b === 'string') fs.writeFileSync(path.join(LOG, `neu-${k}.png`), Buffer.from(b.split(',')[1], 'base64'));
-    melde(rot.length === 0, `${paare.length} Bilder verglichen: ${paare.length - nurVersion.length - neuGestaltet.length} pixelgleich wie 0.10b.2, ${nurVersion.length} bis auf die Versionszeile, ${neuGestaltet.length} Menüseite(n) mit neuer Finnland-Zeile (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
+    melde(rot.length === 0, `${paare.length} Bilder verglichen: ${paare.length - nurVersion.length - neuGestaltet.length} pixelgleich wie 0.10b.2, ${nurVersion.length} bis auf die Versionszeile, ${neuGestaltet.length} Menüseite(n) absichtlich neu (SPRUNGKAMERA) (Titel, Demo-Fahrt, Start, ${PUNKTE.length - 1} Streckenpunkte, fünf Autos am Start und auf der Passhöhe mit Tachos und Minimap, ${Object.keys(neu.seiten).length} Menüseiten inkl. Bestzeiten)${rot.length ? `; anders: ${rot.join(', ')}` : ''}`);
     if (nurVersion.length) info(`nur die Versionszeile anders (0.10b.2 -> 0.10b.2): ${nurVersion.join(', ')}`);
-    if (neuGestaltet.length) info(`absichtlich anders (M10b.1, Finnland-Zeile): ${neuGestaltet.join(', ')}`);
+    if (neuGestaltet.length) info(`absichtlich anders (M10c, neue Zeile SPRUNGKAMERA): ${neuGestaltet.join(', ')}`);
     melde(gegen.anders > 1000, `Gegenprobe: Passhöhe und Weide unterscheiden sich in ${gegen.anders} Pixeln (der Vergleich sieht Unterschiede)`);
     melde(neu.fehler.length === 0 && alt.fehler.length === 0, `Konsole ohne Fehler (neu ${neu.fehler.length}, alt ${alt.fehler.length})`);
     info(`Bilder: ${LOG}/neu-*.png, Vergleich alt | neu | Unterschied: ${LOG}/vergleich-weide.png`);
@@ -483,7 +488,9 @@ if (teil('f')) {
         o.n++;
         if (F.ereignis.abheben > a0) {
           o.ab++;
-          if (F.inLuft) o.haengt++;
+          // ein Flug, der erst am Ende des Fensters begann, darf zu Ende fliegen (höchstens maxFlugZeit + 1 s)
+          for (let k = 0; F.inLuft && k < (W.maxFlugZeit + 1) / dt; k++) A.physikSchritt(dt, e, true);
+          if (F.inLuft) { o.haengt++; (o.stecken ||= []).push({ i, inLuftAmEnde: true, flugZeit: +F.flugZeit.toFixed(2), t: +t.toFixed(2), abheben: F.ereignis.abheben - a0, landungen: F.ereignis.landung - l0, kmh: Math.round(kmh), dt }); }
           if (F.letzteLandung.zeit > W.maxFlugZeit - 0.01) o.notbremse++;
           o.maxWeite = Math.max(o.maxWeite, F.letzteLandung.weite); o.maxVerlust = Math.max(o.maxVerlust, F.letzteLandung.verlust);
         }
@@ -494,18 +501,21 @@ if (teil('f')) {
         if (Math.hypot(P.x - x0, P.z - z0) < 0.5) {
           o.unfall++;
           for (let k = 0; k < 240; k++) A.physikSchritt(A.SCHRITT, { gas: 0, bremse: 1, lenkung: 0, handbremse: false }, true);
-          if (Math.hypot(P.x - x0, P.z - z0) < 0.5) o.haengt++;
+          // (ohne Sprung in eine Baumgruppe gekracht und eingeklemmt: Unfall wie in 0.10b.2, kein Flug-Fehler; nur gemeldet)
+          if (Math.hypot(P.x - x0, P.z - z0) < 0.5 && !(F.ereignis.abheben > a0)) o.klemmtOhneSprung = (o.klemmtOhneSprung || 0) + 1;
+          else if (Math.hypot(P.x - x0, P.z - z0) < 0.5) { o.haengt++; const q = A.strecke.abfrage(P.x, P.z, {}); (o.stecken ||= []).push({ i, kmh: Math.round(kmh), seite: +seite.toFixed(1), gier: Math.round(gier), drift: Math.round(drift), dt, ab: F.ereignis.abheben > a0, s: Math.round(q.s), lat: +q.seite.toFixed(1), inLuft: F.inLuft }); }
         }
       }
       return o;
     }, { z: TEST_ZONE, n: 200, seed: 7 + AUTOS.indexOf(id) });
     for (const k of Object.keys(sum)) sum[k] = /^max/.test(k) ? Math.max(sum[k], r[k]) : sum[k] + r[k];
-    info(`${id}: ${r.n} Versuche, ${r.ab} abgehoben, unter dem Boden ${r.unter}, NaN ${r.nan}, hängt ${r.haengt}, Unfall (vorwärts blockiert, rückwärts frei) ${r.unfall}, Notbremse ${r.notbremse}`);
+    if (r.stecken) info(`${id} steckt: ${JSON.stringify(r.stecken)}`);
+    info(`${id}: ${r.n} Versuche, ${r.ab} abgehoben, unter dem Boden ${r.unter}, NaN ${r.nan}, hängt ${r.haengt}${r.klemmtOhneSprung ? ` (ohne Sprung zwischen Bäumen eingeklemmt: ${r.klemmtOhneSprung})` : ''}, Unfall (vorwärts blockiert, rückwärts frei) ${r.unfall}, Notbremse ${r.notbremse}`);
     if (s.fehler.length) info(`Konsole ${id}: ${s.fehler.join(' | ')}`);
     sum.konsole = (sum.konsole || 0) + s.fehler.length;
     await s.schliessen();
   }
-  melde(sum.n === 1000 && sum.ab > 500 && sum.unter === 0 && sum.nan === 0 && sum.haengt === 0 && sum.notbremse === 0 && !sum.konsole,
+  melde(sum.n === 1000 && sum.ab > 300 && sum.unter === 0 && sum.nan === 0 && sum.haengt === 0 && sum.notbremse === 0 && !sum.konsole,
     `${sum.n} Sprünge (${sum.ab} abgehoben): unter dem Boden ${sum.unter}, NaN ${sum.nan}, hängen/stecken ${sum.haengt}, Notbremse ${sum.notbremse}; weitester ${sum.maxWeite.toFixed(1)} m, grösster Verlust ${(sum.maxVerlust * 100).toFixed(1)} %`);
 }
 
@@ -806,6 +816,313 @@ if (teil('o')) {
   });
   fs.writeFileSync(path.join(LOG, 'legende-symbole.png'), Buffer.from(bild.split(',')[1], 'base64'));
   info(`Legende (Menüseite SYMBOLE): ${LOG}/legende-symbole.png`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+
+// ===================================================================== Teil C: Kamera, Ton, Schatten, Haptik
+// Echte Spielschleife (eigene Bild-Uhr): Auto vor die Hochwaldkuppe, Gas, Bild für Bild messen
+const SPRUNG_FILM = ({ kmh = 110, kante = 3090, bilder = 300, cp = 3 }) => {
+  const A = window.__alpineRally, P = A.physik, F = A.flug, K = A.kamera, out = [];
+  A.anhalten = false; A.rennen.naechsterCp = cp;
+  A.setzeAuf(kante - 60); A.kameraSofort();
+  P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+  A.testEingabe = { gas: 1 };
+  for (let k = 0; k < bilder; k++) {
+    window.__bild(1, 1000 / 60);
+    const y = A.autoModell.objekt.position.y, h = A.welt.bodenBei(P.x, P.z).h, sm = A.schatten.auto;
+    const hFleck = sm ? A.welt.bodenBei(sm.matrix.elements[12], sm.matrix.elements[14]).h : null;
+    out.push({ k, inLuft: F.inLuft, e: A.sk.e, ruck: A.sk.ruckPx, view: K.view && K.view.enabled ? K.view.offsetY : 0, fov: K.fov, zoom: K.zoom,
+      y, h, ueber: F.inLuft ? F.ueberBoden : 0, kamY: K.position.y, abstand: Math.hypot(K.position.x - P.x, K.position.z - P.z),
+      zielY: A.kam.ziel.y, stufe: A.schatten.stufe, fleckY: sm ? sm.matrix.elements[13] : null, fleckX: sm ? sm.matrix.elements[12] : null, fleckZ: sm ? sm.matrix.elements[14] : null,
+      fleckGross: sm ? Math.hypot(sm.matrix.elements[8], sm.matrix.elements[10]) : null, statisch: A.schatten.gezeigt, autoSichtbar: sm ? sm.visible : null,
+      landungen: F.ereignis.landung, hFleck });
+  }
+  A.testEingabe = null;
+  return out;
+};
+const phasen = (film) => {
+  const ab = film.findIndex((f) => f.inLuft), land = film.findIndex((f, i) => i > ab && !f.inLuft);
+  let gipfel = ab; for (let i = ab; i < land; i++) if (film[i].ueber > film[gipfel].ueber) gipfel = i;
+  return { ab, gipfel, land, abheben: Math.min(land - 1, ab + 9), landung: land + 3, danach: land + 30, sek1: land + 60 };
+};
+let filmAn = null;
+if (teil('p') || teil('r')) {
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland', { uhr: true });
+  await bereit(s);
+  await bilder(s, 320); // Countdown vorbei
+  filmAn = await s.page.evaluate(SPRUNG_FILM, {});
+  // Bilder der vier Phasen (für den Bericht) und zwei Flughöhen für den Schatten
+  const ph = phasen(filmAn);
+  const fotos = await s.page.evaluate(async ({ ph }) => {
+    const A = window.__alpineRally, P = A.physik, F = A.flug, r = {};
+    A.anhalten = false; A.rennen.naechsterCp = 3; A.setzeAuf(3030); A.kameraSofort();
+    P.vx = Math.sin(P.richtung) * 110 / 3.6; P.vz = Math.cos(P.richtung) * 110 / 3.6; A.testEingabe = { gas: 1 };
+    for (let k = 0; k <= ph.sek1; k++) {
+      window.__bild(1, 1000 / 60);
+      for (const [n, i] of Object.entries(ph)) if (i === k && ['abheben', 'gipfel', 'landung', 'danach'].includes(n)) r[n] = window.__foto();
+    }
+    A.testEingabe = null;
+    return r;
+  }, { ph });
+  for (const [n, b] of Object.entries(fotos)) fs.writeFileSync(path.join(LOG, `kamera-${n}.png`), Buffer.from(b.split(',')[1], 'base64'));
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('p')) {
+  console.log('(p) Sprungkamera: zurückziehen, Ruck in ganzen Bildpunkten, nach der Landung wieder genau wie vorher');
+  const f = filmAn, ph = phasen(f), c = { abstand: 6.9, hoehe: 2.5 };
+  const vor = f[Math.max(0, ph.ab - 5)], weit = Math.max(...f.slice(ph.ab, ph.land).map((x) => x.abstand));
+  melde(ph.ab > 0 && ph.land > ph.ab, `Sprung im Film: abgehoben bei Bild ${ph.ab}, gelandet bei Bild ${ph.land} (${((ph.land - ph.ab) / 60).toFixed(2)} s)`);
+  melde(f[ph.gipfel].e === 1 && weit / vor.abstand > 1.1 && weit / vor.abstand < 1.25, `zurückgezogen: Abstand ${vor.abstand.toFixed(2)} m vorher, bis ${weit.toFixed(2)} m im Flug (+${((weit / vor.abstand - 1) * 100).toFixed(0)} %), e = ${f[ph.gipfel].e}`);
+  const kamHalt = f[ph.gipfel].zielY - (f[ph.ab].y + c.hoehe + 0.6);
+  melde(Math.abs(kamHalt) < 0.6 && f[ph.gipfel].y - f[ph.gipfel].h > 0.5, `im Flug bleibt die Kamera auf der Abhebe-Höhe (Ziel ${kamHalt.toFixed(2)} m daneben), das Auto steigt im Bild (${(f[ph.gipfel].y - f[ph.gipfel].h).toFixed(2)} m über dem Boden)`);
+  const ruck = f.slice(ph.land, ph.land + 15).map((x) => x.ruck), maxR = Math.max(...ruck);
+  const ganz = f.every((x) => Number.isInteger(x.view) && Number.isInteger(x.ruck) && x.fov === f[0].fov && x.zoom === 1);
+  melde(ganz && maxR >= 2 && maxR <= 4, `Ruck bei der Landung ${ruck.join(' ')} Bildpunkte (2–4), Bildausschnitt immer ganzzahlig verschoben, Blickwinkel ${f[0].fov}° und Zoom 1 in allen ${f.length} Bildern (kein Zoomen auf Zwischenpixel)`);
+  const p4 = ['abheben', 'gipfel', 'landung', 'danach'].map((n) => `${n} (Bild ${ph[n]}: e ${f[ph[n]].e.toFixed(2)}, Ruck ${f[ph[n]].ruck}, Versatz ${f[ph[n]].view})`);
+  info(`vier Phasen: ${p4.join('; ')}; Bilder ${LOG}/kamera-*.png`);
+  const n1 = f[ph.sek1];
+  melde(n1.e === 0 && n1.ruck === 0 && n1.view === 0 && Math.abs(n1.zielY - (n1.y + c.hoehe)) < 1e-9, `1 s nach der Landung: e ${n1.e}, Ruck ${n1.ruck}, Versatz ${n1.view}, Kamera-Ziel genau Autohöhe + ${c.hoehe} m (wie ohne Sprung)`);
+}
+if (teil('q')) {
+  console.log('(q) SPRUNGKAMERA AUS: Kamera bleibt wie immer');
+  const speicher = { 'alpineRally.einstellungen': JSON.stringify({ sprungkamera: false }) };
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland', { uhr: true, speicher });
+  await bereit(s);
+  await bilder(s, 320);
+  const aus = await s.page.evaluate(() => window.__alpineRally.einstellungen.sprungkamera);
+  const f = await s.page.evaluate(SPRUNG_FILM, {});
+  const ph = phasen(f);
+  const normal = f.every((x) => x.e === 0 && x.ruck === 0 && x.view === 0 && Math.abs(x.zielY - (x.y + 2.5)) < 1e-9);
+  melde(aus === false && ph.land > ph.ab && ph.ab > 0 && normal, `Einstellung gespeichert (AUS), Sprung im Film (Bild ${ph.ab}–${ph.land}), in allen ${f.length} Bildern: kein Zurückziehen, kein Ruck, Kamera-Ziel = Autohöhe + 2.5 m (wie bisher)`);
+  const menue = await s.page.evaluate(() => { const A = window.__alpineRally; const e = A.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.sprungkamera'); return { da: !!e, wert: e && e.lesen(), hinweis: e && e.hinweis }; });
+  const quelle = fs.readFileSync(path.join(WURZEL, 'js/texte.js'), 'utf8');
+  const z = /'einst\.sprungkamera': \{ de: '([^']+)', en: '([^']+)' \}/.exec(quelle), h = /'einst\.sprungkameraHinweis': \{ de: '([^']+)', en: '([^']+)' \}/.exec(quelle);
+  melde(menue.da && menue.wert === false && z && h, `EINSTELLUNGEN: Zeile "${z && z[1]}" / "${z && z[2]}" (Hinweis "${h && h[1]}" / "${h && h[2]}"), zeigt AUS`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('r')) {
+  console.log('(r) Schatten-Fleck bleibt am Boden, wird in der Luft heller und kleiner; Auto-Schatten immer da');
+  const f = filmAn, ph = phasen(f), luft = f.slice(ph.ab, ph.land);
+  const abw = Math.max(...luft.map((x) => Math.abs(x.fleckY - x.hFleck))), ueberFleck = Math.min(...luft.filter((x) => x.ueber >= 1).map((x) => x.y - x.fleckY));
+  const amBoden = luft.every((x) => x.fleckY != null) && abw < 0.6 && ueberFleck > 0.5;
+  info(`Fleck höchstens ${abw.toFixed(2)} m über/unter dem Boden an seiner Stelle; Auto (ab 1 m Flughöhe) mindestens ${ueberFleck.toFixed(2)} m über dem Fleck`);
+  const stufen = luft.map((x) => [x.ueber, x.stufe]);
+  const ok = stufen.every(([u, st]) => st === (u >= 2.5 ? 2 : u >= 1 ? 1 : 0) || Math.abs(u - 1) < 0.15 || Math.abs(u - 2.5) < 0.15);
+  const hoch = luft.reduce((a, b) => (b.ueber > a.ueber ? b : a)), tief = f[ph.ab - 3];
+  melde(amBoden, `Fleck auf der Bodenhöhe (nicht auf der Autohöhe) in allen ${luft.length} Flugbildern; höchster Punkt: Auto ${hoch.ueber.toFixed(2)} m über dem Boden`);
+  melde(ok && luft.some((x) => x.stufe === 1) && luft.some((x) => x.stufe >= 1), `Dunkelstufe in der Luft: ab 1 m eine heller, ab 2.5 m zwei heller (gesehen: ${[...new Set(luft.map((x) => x.stufe))].join(', ')}); Fleck ${tief.fleckGross.toFixed(2)} m am Boden -> ${hoch.fleckGross.toFixed(2)} m am Gipfel`);
+  melde(f.every((x) => x.autoSichtbar && x.statisch <= 60), `Auto-Schatten in jedem Bild gezeichnet, feste Flecken höchstens ${Math.max(...f.map((x) => x.statisch))} (Budget 60)`);
+  melde(f[ph.sek1].stufe === 0, 'nach der Landung wieder normale Dunkelstufe');
+}
+if (teil('s')) {
+  console.log('(s) Ton: Abheben (Reifen aus, Motor frei, Jubel), Landung in drei Stärken, Motor danach normal, Pause');
+  // (Ton gibt es nur über den Menüweg: Titel -> Taste -> STARTEN; ?menue=aus ist immer stumm)
+  const s = await oeffne(WURZEL, '?strecke=finnland', { args: ['--autoplay-policy=no-user-gesture-required'] });
+  await bereit(s);
+  await s.page.waitForTimeout(800);
+  await s.page.keyboard.press('Enter'); await s.page.waitForTimeout(500);
+  await s.page.keyboard.press('Enter'); // STARTEN
+  await s.page.waitForFunction(() => window.__alpineRally.ablauf.zustand === 'rennen', null, { timeout: 60000 });
+  await s.page.waitForFunction(() => { const t = window.__alpineRally.ton; return !t.an || (t.werk && t.werk.aufbau.fertig); }, null, { timeout: 30000 });
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, P = A.physik, F = A.flug, W = A.ton.werk;
+    if (!W) return { ohneTon: true };
+    const z = (a) => W.zaehler[a] || 0, LEER = { gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, debug: false, notes: false, hud: false };
+    let n = 0; while (A.ablauf.zustand === 'countdown' && n++ < 3000) A.rennSchritt(A.SCHRITT, LEER);
+    A.anhalten = true;
+    const sprung = (kante, kmh, cp, anlauf = 30) => {
+      A.rennen.naechsterCp = cp; A.setzeAuf(kante - anlauf); A.kameraSofort();
+      P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+      const e = { ...LEER, gas: kmh < 95 ? 0 : 1 }, m = { kiesLuft: 1, kiesBoden: 0, dzLuft: 0, dzGetriebe: 0, windLuft: 0, windBoden: 0, dzAb: null };
+      let l0 = F.ereignis.landung, landBild = -1;
+      for (let k = 0; k < 600; k++) {
+        A.rennSchritt(A.SCHRITT, e); A.rennSchritt(A.SCHRITT, e); A.autoZeichnen(1 / 60, 0); A.sprungBild(1 / 60, true); A.tonBild(1 / 60);
+        const zu = W.zustand;
+        if (F.inLuft) { if (m.dzAb == null) m.dzAb = A.getriebe.drehzahl; m.kiesLuft = Math.min(m.kiesLuft, zu.kies + zu.surren + zu.weich + zu.rutschen); m.windLuft = Math.max(m.windLuft, zu.wind); m.dzFrei = Math.max(m.dzFrei || 0, A.sk.dz); m.dzGetriebe = Math.max(m.dzGetriebe, A.getriebe.drehzahl); m.begr = A.CONFIG.audio.motor.begrenzerAb; }
+        else if (landBild < 0) { m.kiesBoden = Math.max(m.kiesBoden, zu.kies); m.windBoden = Math.max(m.windBoden, zu.wind); }
+        if (F.ereignis.landung !== l0 && landBild < 0) { landBild = k; m.klasse = F.letzteLandung.klasse; m.vSenk = F.letzteLandung.vSenk; }
+        if (landBild >= 0 && k === landBild + 40) { m.freiDanach = A.sk.frei; break; }
+      }
+      return m;
+    };
+    const z0 = { ab: z('sprung-ab'), jubel: z('sprung-jubel') };
+    // (b: 80 m Anlauf auf der Geraden, damit das Getriebe nach dem Hinsetzen richtig hochgeschaltet hat)
+    const a = sprung(3090, 85, 3), b = sprung(3090, 110, 3, 80), c = sprung(3090, 160, 3), d = sprung(1830, 110, 2);
+    const klassen = { sauber: z('landung-sauber'), hart: z('landung-hart'), sehrHart: z('landung-sehrHart') };
+    // Pause: keine neuen Klänge, solange das Spiel steht
+    const sz = () => JSON.stringify(Object.entries(W.zaehler).filter(([k]) => /^(sprung|landung)/.test(k)));
+    const vorPause = sz(); A.pausieren();
+    for (let k = 0; k < 60; k++) A.tonBild(1 / 60);
+    const inPause = sz() === vorPause; A.weiter();
+    return { a, b, c, d, klassen, ab: z('sprung-ab') - z0.ab, jubel: z('sprung-jubel') - z0.jubel, inPause, laut: A.einstellungen.lautstaerke };
+  });
+  if (r.ohneTon) info('kein Tonwerk im Test-Browser');
+  else {
+    melde(r.ab >= 4 && r.a.kiesLuft === 0 && r.a.kiesBoden > 0, `Abheben: ${r.ab}x gemeldet, Schottergeräusch am Boden ${r.a.kiesBoden.toFixed(3)} -> in der Luft ${r.a.kiesLuft}`);
+    melde(r.b.dzFrei > r.b.dzAb + 200 && r.b.dzFrei >= 0.9 * r.b.begr && r.b.windLuft > r.b.windBoden, `Motor dreht in der Luft mit Gas frei hoch: ${Math.round(r.b.dzAb)} -> ${Math.round(r.b.dzFrei)}/min (Begrenzer ${r.b.begr}), Wind in der Luft ${r.b.windLuft.toFixed(3)} (am Boden ${r.b.windBoden.toFixed(3)})`);
+    melde(r.klassen.sauber >= 1 && r.klassen.hart >= 1 && r.klassen.sehrHart >= 1, `Landung in drei Stärken: 85 km/h ohne Gas ${r.a.klasse} (${r.a.vSenk.toFixed(1)} m/s senkrecht), 110 km/h mit 80 m Vollgas-Anlauf ${r.b.klasse} (${r.b.vSenk.toFixed(1)}), 160 km/h ${r.c.klasse} (${r.c.vSenk.toFixed(1)}) (gezählt sauber ${r.klassen.sauber}, hart ${r.klassen.hart}, sehr hart ${r.klassen.sehrHart})`);
+    melde(r.a.freiDanach === 0 && r.b.freiDanach === 0, `Motor fängt sich: 0.67 s nach der Landung wieder die Getriebe-Drehzahl (frei ${r.a.freiDanach}, ${r.b.freiDanach})`);
+    melde(r.jubel >= 1, `Zuschauer an der Birkenkuppe jubeln beim Abheben (${r.jubel}x)`);
+    melde(r.inPause, 'Pause: keine neuen Sprung-Klänge (alles steht); Klänge laufen über den Fahrzeug-Bus (LAUTSTÄRKE, Pause-Dämpfung wie bisher)');
+  }
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('t')) {
+  console.log('(t) Haptik: Landung vibriert nach Härte (nur mit navigator.vibrate, Touch-Modus, HAPTIK VOLL)');
+  const speicher = { 'alpineRally.einstellungen': JSON.stringify({ touch: 'an', haptik: 'voll' }) };
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland', { uhr: true, speicher });
+  await bereit(s);
+  await s.page.evaluate(async () => { const H = await import('/js/haptik.js'); window.__vib = []; Navigator.prototype.vibrate = function (m) { window.__vib.push([m, H.haptikZaehler.art]); return true; }; });
+  await bilder(s, 320);
+  const r = await s.page.evaluate(async (FILM) => {
+    const H = await import('/js/haptik.js'); const film = new Function(`return (${FILM})`)();
+    const n0 = window.__vib.length;
+    film({ kmh: 100 }); const a = window.__vib.slice(n0); const art1 = H.haptikZaehler.art;
+    const n1 = window.__vib.length; film({ kmh: 150 }); const b = window.__vib.slice(n1); const art2 = H.haptikZaehler.art;
+    return { a, b, art1, art2, moeglich: H.haptikMoeglich(), zustand: window.__alpineRally.ablauf.zustand };
+  }, SPRUNG_FILM.toString());
+  const la = r.a.filter((m) => m[1] === 'landung').map((m) => m[0]), lb = r.b.filter((m) => m[1] === 'landung').map((m) => m[0]);
+  melde(r.moeglich && la.length === 1 && lb.length === 1 && lb[0] > la[0], `Landung -> navigator.vibrate: 100 km/h ${la.join(',')} ms, 150 km/h ${lb.join(',')} ms (stärker bei härterer Landung; andere Ereignisse im Film: ${[...new Set(r.a.concat(r.b).map((m) => m[1]).filter((a) => a !== 'landung'))].join(', ') || 'keine'})`);
+  info('iPhone (ohne navigator.vibrate): nichts, wie entschieden (M9a.2)');
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('u')) {
+  console.log('(u) Bildzeit (Median aus 5, im selben Lauf gegen die Alpen): Finnland mit Sprung (Kamera AN/AUS, Staub) gegen 0.10b.2');
+  if (!ALT) info('nur mit --alt');
+  else {
+    // ein Lauf: 4 s echte Bilder ab 70 m vor der Hochwaldkuppe mit Vollgas (Sprung, Staub, Kamera); Alpen auf der Passhöhe
+    const lauf = async (wurzel, strecke, extra = '', speicher = null) => {
+      const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}${extra}`, speicher ? { speicher } : {});
+      await bereit(s);
+      await s.page.evaluate(() => new Promise((ok) => setTimeout(ok, 4500)));
+      const r = await s.page.evaluate(async (strecke) => {
+        const A = window.__alpineRally, P = A.physik;
+        A.rennen.naechsterCp = strecke === 'finnland' ? 3 : 2; A.setzeAuf(strecke === 'finnland' ? 3020 : 2560); A.kameraSofort();
+        P.vx = Math.sin(P.richtung) * 110 / 3.6; P.vz = Math.cos(P.richtung) * 110 / 3.6; A.testEingabe = { gas: 1 };
+        const zeiten = []; let t0 = performance.now(); const l0 = A.flug ? A.flug.ereignis.landung : 0;
+        await new Promise((ok) => { const f = () => { const t = performance.now(); zeiten.push(t - t0); t0 = t; if (zeiten.length < 150) requestAnimationFrame(f); else ok(); }; requestAnimationFrame(f); });
+        A.testEingabe = null; zeiten.sort((a, b) => a - b);
+        return { ms: zeiten[Math.floor(zeiten.length / 2)], gesprungen: A.flug ? A.flug.ereignis.landung - l0 : 0 };
+      }, strecke);
+      await s.schliessen();
+      return r;
+    };
+    const med = (l) => { const a = l.map((x) => x.ms).sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+    const reihen = { alpenAlt: [], alpenNeu: [], fiAlt: [], fiAn: [], fiAus: [] };
+    for (let i = 0; i < 5; i++) {
+      reihen.alpenAlt.push(await lauf(ALT, 'alpen')); reihen.alpenNeu.push(await lauf(WURZEL, 'alpen'));
+      reihen.fiAlt.push(await lauf(ALT, 'finnland')); reihen.fiAn.push(await lauf(WURZEL, 'finnland'));
+      reihen.fiAus.push(await lauf(WURZEL, 'finnland', '', { 'alpineRally.einstellungen': JSON.stringify({ sprungkamera: false }) }));
+    }
+    const m = Object.fromEntries(Object.entries(reihen).map(([k, v]) => [k, med(v)]));
+    const rel = (a, b) => (a / b - 1) * 100;
+    const sprung = reihen.fiAn.every((x) => x.gesprungen >= 1);
+    fs.writeFileSync(path.join(LOG, 'bildzeit.json'), JSON.stringify({ reihen, median: m }, null, 1));
+    info(`Median je Bild (ms): Alpen 0.10b.2 ${m.alpenAlt.toFixed(1)} / neu ${m.alpenNeu.toFixed(1)}; Finnland 0.10b.2 ${m.fiAlt.toFixed(1)}, neu Sprungkamera AN ${m.fiAn.toFixed(1)} (${rel(m.fiAn, m.fiAlt).toFixed(1)} %), AUS ${m.fiAus.toFixed(1)} (${rel(m.fiAus, m.fiAlt).toFixed(1)} %)`);
+    const bereinigt = rel(m.fiAn / m.alpenNeu, m.fiAlt / m.alpenAlt);
+    melde(sprung && (rel(m.fiAn, m.fiAlt) <= 5 || bereinigt <= 5), `Bildzeit mit Sprung (Kamera AN, Staub): ${rel(m.fiAn, m.fiAlt).toFixed(1)} % gegen 0.10b.2, gegen die Alpen-Referenz bereinigt ${bereinigt.toFixed(1)} % (Grenze +5 %); in jedem Lauf gesprungen: ${sprung}`);
+  }
+}
+
+// ===================================================================== Teil D: Sprung-Statistik
+// Ganze Etappe mit dem Testfahrer fahren (im Rennen, mit Zielbildschirm), Landungen mitschreiben
+const ETAPPE_MIT_SPRUENGEN = async (code) => {
+  const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+  const A = window.__alpineRally, F = A.flug, liste = []; let l0 = F.ereignis.landung;
+  const r = f.fahreEtappe(A, 'mittel', () => { if (F.ereignis.landung !== l0) { l0 = F.ereignis.landung; const L = F.letzteLandung; liste.push({ weite: L.weite, hoehe: L.hoehe, zeit: L.zeit, seite: L.seite }); } });
+  await new Promise((ok) => { let n = 0; const g = () => (++n > 10 ? ok() : requestAnimationFrame(g)); requestAnimationFrame(g); });
+  return { ziel: r.ziel, zeit: r.zeit, liste, erg: A.lauf.ergebnis && A.lauf.ergebnis.spruenge, speicher: localStorage.getItem('alpineRally.sprungRekorde') };
+};
+const ZIEL_BILD = (e, sprache = null) => {
+  const A = window.__alpineRally, c = document.createElement('canvas'); c.width = 320; c.height = 180;
+  if (sprache) A.setzeSprache && A.setzeSprache(sprache);
+  A.lauf.ergebnis = e; A.ablauf.wechsle && A.ablauf.zustand !== 'ziel' && (A.lauf.zielErledigt = true);
+  const x = c.getContext('2d'); A.menue.zeige(A.seiten.ziel, true); x.clearRect(0, 0, 320, 180); A.menue.zeichne(x, 0, 1);
+  const eintr = A.seiten.ziel.eintraege(); let h = 0; for (const z of eintr) h += z.hoehe || 0;
+  const zeilen = eintr.filter((z) => z.inhalt).map((z) => ({ text: z.inhalt(), breite: typeof z.breite === 'function' ? z.breite() : z.breite, farben: z.farben }));
+  return { bild: c.toDataURL(), hoehe: h, zeilen };
+};
+const ALPEN_ERG = { zeit: 162.34, cps: [30.1, 80.2, 120.3], auto: 'rt4', aufpralle: 1, resets: 0, hoechstTempo: 40, spur: [], platz: 1, anzahl: 1, bisher: null, gespeichert: true, neueBest: false, gesamtPlatz: 1, gesamtBisher: null, gesamtRekord: false };
+let dLauf = null;
+if (teil('v') || teil('x')) {
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland&auto=rt4', { speicher: {}, auto: 'rt4' });
+  await bereit(s);
+  const code = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+  dLauf = await s.page.evaluate(ETAPPE_MIT_SPRUENGEN, code);
+  // (x) zweiter Lauf im selben Browser: vorsichtig (kürzere Sprünge) = kein neuer Rekord; dann neu laden
+  dLauf.zweiter = await s.page.evaluate(async (code) => {
+    const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    const A = window.__alpineRally; A.neustart();
+    let n = 0; while (A.ablauf.zustand === 'countdown' && n++ < 3000) A.rennSchritt(A.SCHRITT, { gas: 0, bremse: 0, lenkung: 0, handbremse: false });
+    const r = f.fahreEtappe(A, 'vorsichtig');
+    await new Promise((ok) => { let k = 0; const g = () => (++k > 10 ? ok() : requestAnimationFrame(g)); requestAnimationFrame(g); });
+    return { ziel: r.ziel, erg: A.lauf.ergebnis && A.lauf.ergebnis.spruenge, speicher: localStorage.getItem('alpineRally.sprungRekorde') };
+  }, code);
+  await s.page.reload();
+  await bereit(s);
+  dLauf.nachLaden = await s.page.evaluate(async () => { const B = await import('/js/bestzeiten.js'); return { rekord: B.ladeSprungRekord('finnland'), etappeId: (await import('/js/inhalte.js')).ETAPPEN[0].id }; });
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('v')) {
+  console.log('(v) Zählung im Lauf gegen den Testfahrer');
+  const r = dLauf, gueltig = r.liste.filter((x) => Math.abs(x.seite) <= 8);
+  const weit = Math.max(...gueltig.map((x) => x.weite)), hoch = Math.max(...gueltig.map((x) => x.hoehe)), lang = Math.max(...gueltig.map((x) => x.zeit));
+  melde(r.ziel && r.erg && r.erg.anzahl === gueltig.length && Math.abs(r.erg.weitester - weit) < 1e-9 && Math.abs(r.erg.hoechster - hoch) < 1e-9 && Math.abs(r.erg.laengste - lang) < 1e-9,
+    `Audan Quarto, mittel (${r.zeit.toFixed(2)} s): gezählt ${r.erg && r.erg.anzahl} Sprünge, weitester ${r.erg && r.erg.weitester.toFixed(1)} m, höchster ${r.erg && r.erg.hoechster.toFixed(2)} m, längster Flug ${r.erg && r.erg.laengste.toFixed(2)} s – Testfahrer: ${gueltig.length} gültige Landungen (${r.liste.map((x) => x.weite.toFixed(1)).join(', ')} m)`);
+}
+if (teil('w')) {
+  console.log('(w) Alpen-Zielbildschirm pixelgleich wie 0.10b.2; Finnland mit Sprung-Zeilen');
+  const bildVon = async (wurzel, strecke, e) => {
+    const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}`);
+    await bereit(s);
+    const r = await s.page.evaluate(ZIEL_BILD, e);
+    await s.schliessen();
+    return r;
+  };
+  if (!ALT) info('nur mit --alt');
+  else {
+    const neu = await bildVon(WURZEL, 'alpen', ALPEN_ERG), alt = await bildVon(ALT, 'alpen', ALPEN_ERG);
+    const s = await starteSpiel({ breite: 320, hoehe: 200 });
+    await s.page.goto(`${s.url}/tools/leer.html`).catch(() => {});
+    const v = await vergleiche(s.page, alt.bild, neu.bild);
+    await s.schliessen();
+    melde(v.anders === 0, `Alpen-Zielbildschirm (ohne Sprünge): ${v.anders} Pixel anders als 0.10b.2`);
+  }
+  const fiErg = { ...ALPEN_ERG, cps: [30, 60, 90, 120], spruenge: { anzahl: 4, weitester: 51.3, hoechster: 2.84, laengste: 1.62, rekord: true, ersterRekord: false, rekordBisher: 48 } };
+  const fi = await bildVon(WURZEL, 'finnland', fiErg);
+  fs.writeFileSync(path.join(LOG, 'ziel-finnland.png'), Buffer.from(fi.bild.split(',')[1], 'base64'));
+  const z = fi.zeilen.filter((x) => /SPRÜNGE|HÖCHSTER/.test(x.text));
+  melde(z.length === 2 && fi.hoehe <= 180 - 24, `Finnland-Zielbildschirm: ${z.map((x) => `"${x.text}"`).join(' / ')}, Seite ${fi.hoehe} Pixel hoch (Platz bis 156); Bild ${LOG}/ziel-finnland.png`);
+  melde(z[0] && z[0].farben[1] === z[0].farben[2] && z[0].farben[1] !== z[0].farben[0], `neuer Sprungrekord hervorgehoben (Farbe wie neue Bestzeit: ${z[0] && z[0].farben.join(', ')})`);
+}
+if (teil('x')) {
+  console.log('(x) Sprungrekord: gespeichert, bleibt nach dem Neuladen, unabhängig von revision');
+  const r = dLauf, sp = JSON.parse(r.speicher || '{}'), sp2 = JSON.parse(r.zweiter.speicher || '{}');
+  melde(sp.finnland && Math.abs(sp.finnland.weite - Math.round(r.erg.weitester * 10) / 10) < 1e-9 && r.erg.ersterRekord, `erster Lauf: Rekord ${sp.finnland && sp.finnland.weite} m unter "alpineRally.sprungRekorde".finnland (erster Rekord der Etappe)`);
+  melde(r.zweiter.ziel && r.zweiter.erg && !r.zweiter.erg.rekord && sp2.finnland.weite === sp.finnland.weite, `zweiter Lauf (vorsichtig, weitester ${r.zweiter.erg && r.zweiter.erg.weitester.toFixed(1)} m): kein neuer Rekord, gespeichert bleibt ${sp2.finnland && sp2.finnland.weite} m`);
+  melde(r.nachLaden.rekord && r.nachLaden.rekord.weite === sp.finnland.weite && r.nachLaden.etappeId === 'finnland-r3', `nach dem Neuladen: ${r.nachLaden.rekord && r.nachLaden.rekord.weite} m; Schlüssel "finnland" (Feld etappe), nicht "${r.nachLaden.etappeId}" (Bestzeiten): eine neue revision löscht ihn nicht`);
+}
+if (teil('y')) {
+  console.log('(y) Texte de + en, kein Überlauf bei 3-stelligen Metern');
+  const quelle = fs.readFileSync(path.join(WURZEL, 'js/texte.js'), 'utf8');
+  const keys = ['ziel.spruenge', 'ziel.weitester', 'ziel.sprungRekord', 'ziel.hoechster', 'ziel.laengsterFlug'];
+  const fehlt = keys.filter((k) => !new RegExp(`'${k.replace('.', '\\.')}': \\{ de: '[^']+', en: '[^']+' \\}`).test(quelle));
+  melde(fehlt.length === 0, `de + en vorhanden: ${keys.join(', ')}${fehlt.length ? `; fehlt: ${fehlt.join(', ')}` : ''}`);
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const breiten = [];
+  for (const sprache of ['de', 'en']) {
+    const r = await s.page.evaluate(async ({ e, sprache, ZB }) => { const T = await import('/js/texte.js'); T.setzeSprache(sprache); return new Function(`return (${ZB})`)()(e); },
+      { e: { ...ALPEN_ERG, cps: [30, 60, 90, 120], spruenge: { anzahl: 12, weitester: 999.4, hoechster: 99.9, laengste: 9.9, rekord: true, ersterRekord: false, rekordBisher: 48 } }, sprache, ZB: ZIEL_BILD.toString() });
+    for (const z of r.zeilen.filter((x) => /SPRÜNGE|JUMPS|HÖCHSTER|HIGHEST/.test(x.text))) breiten.push(`${sprache}: "${z.text}" ${z.breite} px`);
+  }
+  melde(breiten.length === 4 && breiten.every((b) => +b.split(' ').slice(-2)[0] <= 300), `längste Zeilen (12 Sprünge, 999 m, mit REKORD!) passen in 300 Pixel: ${breiten.join('; ')}`);
   melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
   await s.schliessen();
 }

@@ -1119,7 +1119,7 @@ export const CONFIG = {
     schwerkraft: 9.81,         // Erdbeschleunigung (m/s²)
     SCHWERKRAFT_FAKTOR: 1.0,   // mal die Schwerkraft: kleiner = schwebender und weiter, grösser = schwerer und kürzer
     abhebeSchwelle: 0.04,      // so hoch (m) über dem Boden zählt das Auto als "in der Luft" (kleiner = schon bei Hüpfern)
-    abhebeBreite: 10,          // abheben nur so weit (m) neben der Strassenmitte (Fahrbahn, Bankett, Schulter)
+    abhebeBreite: 4,           // abheben nur so weit (m) neben der Strassenmitte (Fahrbahn; nicht vom Bankett oder der Böschung)
     teilschritt: 0.25,         // Boden-Prüfung in der Luft alle so viele Meter (nie durch den Boden, auch bei Rucklern)
     nickMax: 15,               // Nase hebt/senkt sich in der Luft höchstens so viele Grad
     nickGlaetten: 0.22,        // so schnell (s) folgt die Nase der Flugbahn
@@ -1132,6 +1132,31 @@ export const CONFIG = {
       naseFrei: 4, naseVoll: 16, naseMax: 0.12,  // Nase voran (Grad tiefer als der Boden): ab naseFrei Verlust bis naseMax
       gierFrei: 10, gierVoll: 40, gierMax: 0.10, // schräg gelandet (Grad zwischen Auto und Strasse): bis gierMax
     },
+    // Filmische Kamera (Einstellung SPRUNGKAMERA, Standard AN). AUS = Kamera wie immer
+    kamera: {
+      zurueck: 0.2,            // beim Abheben so viel weiter zurück (0.2 = Ziel +20 %; die Kamera läuft nach, gemessen ca. +15 %) ...
+      heben: 0.6,              // ... und so viele Meter höher
+      abhebenZeit: 0.3,        // so schnell (s) zieht sie zurück
+      landenZeit: 0.4,         // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe)
+      ruckPixel: [2, 4],       // Federungs-Ruck bei der Landung: so viele Bildpunkte nach unten (sauber .. sehr hart) ...
+      ruckZeit: 0.15,          // ... und so schnell (s) wieder zurück (ganze Bildpunkte, kein weiches Zoomen)
+    },
+    // Ton (vorhandene Klänge: Schlag, Stein-Aufprall, Jubel; nichts Neues geladen)
+    ton: {
+      drehzahlHoch: 7,         // in der Luft dreht der Motor mit Gas so schnell frei hoch (1/s, Richtung Begrenzer)
+      drehzahlRunter: 3,       // ... ohne Gas so schnell zurück zum Leerlauf
+      fangen: 0.35,            // nach der Landung fängt sich der Motor in so vielen Sekunden (wieder Getriebe-Drehzahl)
+      windMehr: 0.35,          // Fahrtwind in der Luft so viel lauter (0.35 = +35 %)
+      schlagPegel: 0.55,       // Landung sauber: dumpfer Federungsschlag (mal Härte, mindestens die Hälfte)
+      kiesPegel: 0.35,         // Schotterknirschen bei jeder Landung
+      hartPegel: 0.7,          // hart: lauter Schlag mit Knirschen
+      auaPegel: 0.6,           // sehr hart: kurzer tiefer "Aua"-Ton dazu
+      jubelAbstand: 40,        // Zuschauer so nah (Meter vor/nach dem Fan-Spot) jubeln beim Abheben
+    },
+    // Staub/Kies beim Abheben und Landen (vorhandene Staub-Wölkchen, Farbe des Untergrunds)
+    staub: { abheben: 8, landungMin: 8, landungMax: 34 },
+    // Schatten-Fleck in der Luft: ab so vielen Metern Höhe eine bzw. zwei Dunkelstufen heller, je Meter so viel kleiner
+    schatten: { stufe1: 1, stufe2: 2.5, kleiner: 0.06, kleinerMax: 0.3 },
   },
 
   // --- Kamera -----------------------------------------------------------
@@ -1478,6 +1503,7 @@ export const CONFIG = {
       einheit: 'kmh',          // 'kmh' oder 'mph'
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
       schatten: true,          // M10b.2: Kunst-Schatten (nur auf Strecken mit Schatten, z. B. Finnland)
+      sprungkamera: true,      // M10c: filmische Kamera bei Sprüngen (zurückziehen, Ruck bei der Landung)
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
       lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)
@@ -1651,6 +1677,8 @@ export const CONFIG = {
     ziel: [20, 40, 20, 40, 40],// Ziellinie: drei kurze
     aufprallLeicht: 20,        // Aufprall: leicht (Wucht audio.aufprall.ab) ...
     aufprallHart: 60,          // ... bis hart (Wucht audio.aufprall.voll), dazwischen nach der Stärke wie im Ton
+    landungLeicht: 15,         // M10c: Landung nach einem Sprung: sauber ...
+    landungHart: 70,           // ... bis sehr hart (ms), nach der Landehärte
     knopfAbstand: 40,          // Knopf-Ticks höchstens alle ... ms
     spielAbstand: 120,         // Spielereignisse höchstens alle ... ms (kein Dauerbrummen an der Leitplanke)
   },

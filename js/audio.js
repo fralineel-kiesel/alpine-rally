@@ -822,7 +822,8 @@ export function baueKlangwerk(ctx) {
     setze(W_HEULHZ, heulen.frequency, zu.heulenHz);
 
     // --- Reifen und Untergrund (nur wenn das Auto fährt) ---
-    const v = faehrt ? z.tempo : 0;
+    // (M10c: in der Luft rollen keine Reifen: Reifen- und Schottergeräusch brechen ab, der Wind bleibt)
+    const v = faehrt && !z.inLuft ? z.tempo : 0;
     const b = R.belaege[z.untergrund] || R.belaege.asphalt;
     const st = begr(v / R.bezugTempo, 0, 1.3) ** 0.85 * begr(v / 0.8, 0, 1);
     zu.surren = b.art === 'surren' ? b.pegel * st : 0;
@@ -850,9 +851,11 @@ export function baueKlangwerk(ctx) {
     if (faehrt && z.handbremse && !zu.hbVorher) { merke('ratsch'); spiele('ratsch', 'ratsch', fahrzeug, R.ratschPegel); }
     zu.hbVorher = !!z.handbremse;
     // --- Wind (umgebung): mit dem Quadrat des Tempos, ab hellAb heller ---
-    zu.wind = Math.min(1.6, (v / WI.bezugTempo) ** 2) * WI.pegel;
+    // (M10c: in der Luft mit dem echten Tempo und etwas lauter)
+    const vw = z.inLuft && faehrt ? z.tempo : v;
+    zu.wind = Math.min(1.6, (vw / WI.bezugTempo) ** 2) * WI.pegel * (z.inLuft ? 1 + CONFIG.sprung.ton.windMehr : 1);
     setze(W_WIND, windGain.gain, zu.wind, 0.1);
-    setze(W_WINDLP, windLp.frequency, WI.grenze + Math.max(0, v - WI.hellAb) * WI.hellProMs, 0.1);
+    setze(W_WINDLP, windLp.frequency, WI.grenze + Math.max(0, vw - WI.hellAb) * WI.hellProMs, 0.1);
     // --- Aufprall und Schleifen ---
     if (faehrt && z.aufprall >= AU.ab) aufprall(z.aufprall, z.aufprallArt);
     const schl = faehrt && z.kontaktArt >= 0 && z.kontaktTempo > AU.schleifenAb
@@ -934,6 +937,24 @@ export function baueKlangwerk(ctx) {
     if (wucht >= AU.schlagAb && sm > 0) spiele('schlag', 'schlag', fahrzeug, AU.schlagPegel * st * sm, 0, 0.9 + 0.2 * rnd());
     if (wucht >= AU.duckAb) ducke(AU.duckDb, AU.duckDauer, AU.duckZurueck, true);
     return true;
+  }
+  // M10c: Sprung. art 'ab' (Abheben: Zuschauer in der Nähe jubeln) oder 'landung' (Wumms in drei Stärken: sauber = dumpfer
+  // Federungsschlag, hart = lauter Schlag mit Knirschen, sehr hart = dazu ein kurzer tiefer "Aua"-Ton; immer Schotterknirschen).
+  // info = { haerte 0..1, klasse 'sauber'|'hart'|'sehrHart', s Streckenmeter }. Nur vorhandene Klänge, nichts Neues geladen
+  function sprung(art, info) {
+    const T = CONFIG.sprung.ton;
+    if (art === 'ab') {
+      merke('sprung-ab');
+      const Q = umgebungWerk.quellen;
+      if (Q) for (const o of Q.orte) if (o.fan && info.s >= o.sVon - T.jubelAbstand && info.s <= o.sBis + T.jubelAbstand) { umgebungWerk.jubel(o.name, 'kurz'); merke('sprung-jubel'); break; }
+      return;
+    }
+    const h = begr(info.haerte, 0, 1);
+    merke(`landung-${info.klasse}`, h);
+    spiele('schlag', 'schlag', fahrzeug, T.schlagPegel * (0.5 + 0.5 * h), 0, 0.7 + 0.1 * rnd());
+    spiele('aufprall', 'aufprall-stein', fahrzeug, T.kiesPegel * (0.4 + 0.6 * h), 0, 1.15 + 0.2 * rnd(), 2600);
+    if (info.klasse !== 'sauber') spiele('aufprall', 'aufprall-stein', fahrzeug, T.hartPegel * h, 0, 0.9 + 0.1 * rnd());
+    if (info.klasse === 'sehrHart') { spiele('schlag', 'schlag', fahrzeug, T.auaPegel, 0.04, 0.45); ducke(AU.duckDb, AU.duckDauer, AU.duckZurueck, true); }
   }
   // M10b.2: Platsch ins Wasser (staerke 1 = tief hinein, klein = Plätschern im flachen Wasser)
   function platsch(staerke = 1) {
@@ -1032,7 +1053,7 @@ export function baueKlangwerk(ctx) {
     stimmenListe: stimmen,
     puffernStarten, puffernSofort, neuBauen, motorNeu, motorWechsel, aktualisiere, allesAus, lautstaerke, signalLautstaerke, musikLautstaerke, spitzen,
     musik: musikWerk, umgebung: umgebungWerk, setzeQuellen: (q) => umgebungWerk.setzeQuellen(q), // M7b
-    blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote, platsch,
+    blowOff, knall, salve, aufprall, menue, pauseTon, countdown, go, checkpoint, verpasst, fanfare, paceNote, platsch, sprung,
     setzeKnallHoerer: (f) => { knallHoerer = f; }, // M8e
   };
 }
@@ -1083,7 +1104,7 @@ export function baueTon({ an = true } = {}) {
     musikStatus() { return werk ? werk.musik.status() : { laeuft: false, art: '', pegel: 0 }; },
   };
   // Alle Ereignisse: ohne Ton leer, Fehler im Ton stören das Spiel nie
-  for (const name of ['aktualisiere', 'allesAus', 'blowOff', 'knall', 'aufprall', 'menue', 'pauseTon', 'countdown', 'go', 'checkpoint', 'verpasst', 'fanfare', 'paceNote', 'platsch']) {
+  for (const name of ['aktualisiere', 'allesAus', 'blowOff', 'knall', 'aufprall', 'menue', 'pauseTon', 'countdown', 'go', 'checkpoint', 'verpasst', 'fanfare', 'paceNote', 'platsch', 'sprung']) {
     ton[name] = (a, b) => { if (!werk) return; try { werk[name](a, b); } catch { /* Ton ist nie wichtiger als das Spiel */ } };
   }
   if (ton.an) {

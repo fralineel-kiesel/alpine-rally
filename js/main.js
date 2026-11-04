@@ -295,6 +295,11 @@ const tonEingabe = { gas: 0, bremse: 0, handbremse: false };
 let pnStand = 0; // so viele Pace-Notes-Kacheln sind schon erschienen (für das Signal)
 
 const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
+// M10c: Sprungkamera und Sprung-Ereignisse. e = wie weit zurückgezogen (0..1), yAb = Autohöhe beim Abheben (die Kamera
+// bleibt im Flug auf ihrer Höhe), land = Zeit seit der Landung, ruck = Federungs-Ruck (ganze Bildpunkte), frei = Gewicht
+// der frei drehenden Motordrehzahl (1 in der Luft, nach der Landung zurück auf 0), dz = diese Drehzahl
+const sk = { e: 0, yAb: 0, land: 99, ruckT: 99, ruckAmp: 0, ruckPx: 0, ruckAktiv: 0, ab: 0, landung: 0, frei: 0, dz: 0 };
+const sprungTonInfo = { haerte: 0, klasse: 'sauber', s: 0 };
 const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken und Rollen in js/federung.js)
 
 // M10b.2: Wasserbad (zu tief ins Wasser): aktiv = Schwarzbild läuft, t = Zeit seitdem, sicherS = letzte sichere Stelle
@@ -791,11 +796,20 @@ function dreckSchritt(dt) {
 // --- Verfolgerkamera ---
 function kameraZiel() {
   const c = CONFIG.kamera;
-  const y = auto.objekt.position.y;
+  let y = auto.objekt.position.y;
+  if (sk.e > 0 || (flug.inLuft && einstellungen.sprungkamera !== false)) {
+    // M10c: Sprungkamera – im Flug auf der Höhe beim Abheben, nach der Landung weich zurück zum Auto
+    const K = CONFIG.sprung.kamera, u = flug.inLuft ? 0 : Math.min(1, sk.land / K.landenZeit), w = u * u * (3 - 2 * u);
+    y = sk.yAb + (y - sk.yAb) * w;
+    const abstand = c.abstand * (1 + K.zurueck * sk.e);
+    kam.ziel.set(physik.x - Math.sin(kam.yaw) * abstand, y + c.hoehe + K.heben * sk.e, physik.z - Math.cos(kam.yaw) * abstand);
+    return;
+  }
   kam.ziel.set(physik.x - Math.sin(kam.yaw) * c.abstand, y + c.hoehe, physik.z - Math.cos(kam.yaw) * c.abstand);
 }
 function kameraSofort() {
   flug.reset(); // M10c: neu hingesetzt = am Boden
+  sk.e = 0; sk.land = 99; sk.ruckT = 99; sk.frei = 0; sk.ab = flug.ereignis.abheben; sk.landung = flug.ereignis.landung; ruckSetzen(0);
   kam.yaw = physik.richtung;
   federung.reset(); // M8a: neu hingesetzt = Karosserie in Ruhe
   autoZeichnen(0, 0);
@@ -818,6 +832,7 @@ function kameraFuehren(dt) {
   kameraKorrektur(kam.pos);
   kamera.position.copy(kam.pos);
   const y = auto.objekt.position.y;
+  ruckSetzen(sk.ruckPx); // M10c: Federungs-Ruck bei der Landung (ganze Bildpunkte, sonst 0 = nichts)
   kamera.lookAt(
     physik.x + Math.sin(kam.yaw) * c.blickVoraus, y + c.blickHoehe, physik.z + Math.cos(kam.yaw) * c.blickVoraus,
   );
@@ -829,6 +844,49 @@ function kameraFuehren(dt) {
   }
   welt.himmel.position.copy(kamera.position);
 }
+
+// M10c: Ruck = das Bild rückt um ganze Bildpunkte nach unten (Bildausschnitt verschoben, kein Zoomen auf Zwischenpixel)
+function ruckSetzen(px) {
+  if (px === sk.ruckAktiv) return;
+  sk.ruckAktiv = px;
+  const rb = renderer.domElement.width, rh = renderer.domElement.height;
+  if (px) kamera.setViewOffset(rb, rh, 0, -Math.round(px * rh / H), rb, rh); else kamera.clearViewOffset();
+}
+// M10c: Sprung-Ereignisse je Bild (aus den Zählern der Flugphase): Kamera, Ton, Staub, Haptik, Motor
+function sprungBild(dt, imRennen) {
+  const K = CONFIG.sprung.kamera, T = CONFIG.sprung.ton, ST = CONFIG.sprung.staub;
+  const an = einstellungen.sprungkamera !== false;
+  if (flug.ereignis.abheben !== sk.ab) {
+    sk.ab = flug.ereignis.abheben;
+    sk.yAb = auto.objekt.position.y; sk.dz = getriebe.drehzahl;
+    sprungTonInfo.s = rennen.letztesS;
+    if (imRennen) ton.sprung('ab', sprungTonInfo);
+    staub.stoss(physik.x, flug.y - 0.2, physik.z, ST.abheben, 0.5, untergrund);
+  }
+  if (flug.ereignis.landung !== sk.landung) {
+    sk.landung = flug.ereignis.landung;
+    const L = flug.letzteLandung;
+    sk.land = 0;
+    sk.ruckT = 0; sk.ruckAmp = an ? Math.round(K.ruckPixel[0] + (K.ruckPixel[1] - K.ruckPixel[0]) * L.haerte) : 0;
+    sprungTonInfo.haerte = L.haerte; sprungTonInfo.klasse = L.klasse; sprungTonInfo.s = rennen.letztesS;
+    if (imRennen) { ton.sprung('landung', sprungTonInfo); spielTick('landung', L.haerte); }
+    staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(ST.landungMin + (ST.landungMax - ST.landungMin) * L.haerte), 0.4 + 0.6 * L.haerte, untergrund);
+  }
+  // Kamera: zurückziehen beim Abheben, nach der Landung wieder normal; Ruck als ganze Bildpunkte
+  if (flug.inLuft && an) sk.e = Math.min(1, sk.e + dt / K.abhebenZeit);
+  else if (sk.e > 0) { sk.land += dt; const u = Math.min(1, sk.land / K.landenZeit); sk.e = Math.min(sk.e, 1 - u * u * (3 - 2 * u)); if (u >= 1) sk.e = 0; }
+  else sk.land += dt;
+  if (sk.ruckT < K.ruckZeit) { sk.ruckT += dt; sk.ruckPx = sk.ruckT < K.ruckZeit ? Math.round(sk.ruckAmp * Math.sin(Math.PI * sk.ruckT / K.ruckZeit)) : 0; }
+  else sk.ruckPx = 0;
+  // Motor: in der Luft dreht er frei (Gas = Richtung Begrenzer), nach der Landung fängt er sich
+  if (flug.inLuft) {
+    const ziel = tonEingabe.gas > 0.1 ? CONFIG.audio.motor.begrenzerAb * (0.94 + 0.06 * tonEingabe.gas) : CONFIG.getriebe.leerlauf * 1.5;
+    sk.dz += (ziel - sk.dz) * (1 - Math.exp(-(ziel > sk.dz ? T.drehzahlHoch : T.drehzahlRunter) * dt));
+    sk.frei = 1;
+  } else if (sk.frei > 0) sk.frei = Math.max(0, sk.frei - dt / T.fangen);
+}
+// Drehzahl für Ton und Tacho (M10c: in der Luft und kurz nach der Landung die frei drehende, sonst die des Getriebes)
+function anzeigeDrehzahl() { return sk.frei > 0 ? getriebe.drehzahl + (sk.dz - getriebe.drehzahl) * sk.frei : getriebe.drehzahl; }
 
 // Kamera nicht in die Felswand, nicht ins Stroh an Start/Ziel, nicht unter das Gelände
 // (seit M5a eigene Funktion: auch für die Kameras der Demo-Fahrt)
@@ -1228,6 +1286,7 @@ function schleife(jetzt) {
   if (dtWelt > 0) {
     const weg = Math.hypot(physik.x - xVor, physik.z - zVor) * Math.sign(physik.vVor || 1);
     autoZeichnen(dt, weg);
+    if (flug.zonen.length) sprungBild(dt, def.welt === 'rennen' && ablauf.zustand === 'rennen'); // M10c
     dreckSchritt(dt); // M8a
     // Staub (nur auf Schotter und Wiesenweg): Werte ohne neue Objekte übergeben
     const ea = def.welt === 'demo' ? demo.eingabe : e;
@@ -1235,7 +1294,7 @@ function schleife(jetzt) {
     staubAuto.richtung = physik.richtung; staubAuto.vx = physik.vx; staubAuto.vz = physik.vz;
     staubAuto.tempo = physik.tempo; staubAuto.drift = physik.driftWinkel;
     staubAuto.gas = ea.gas; staubAuto.handbremse = ea.handbremse; staubAuto.belag = untergrund;
-    staubAuto.schotter = !!(CONFIG.staub.belaege && CONFIG.staub.belaege[untergrund]);
+    staubAuto.schotter = !!(CONFIG.staub.belaege && CONFIG.staub.belaege[untergrund]) && !flug.inLuft; // (M10c: in der Luft kein Reifenstaub)
     staub.aktualisiere(dt, staubAuto);
   }
   let schwarz = 0;
@@ -1249,7 +1308,7 @@ function schleife(jetzt) {
   startZiel.aktualisiere(dtWelt, kamera.position);
   leben.aktualisiere(dtWelt, kamera.position);
   nebenwegSperrenZeigen(kamera.position);
-  schatten.aktualisiere(physik.x, physik.z, physik.richtung); // M10b.2 (nur Strecken mit Schatten)
+  schatten.aktualisiere(physik.x, physik.z, physik.richtung, flug.inLuft ? flug.ueberBoden : 0); // M10b.2 (M10c: Flughöhe)
   renderer.render(szene, kamera);
   szeneInfo.calls = renderer.info.render.calls; szeneInfo.dreiecke = renderer.info.render.triangles; // M8c: nur die Szene
   // M8c: Garage – das drehende Modell in den Vorschau-Rahmen (nur solange die Seite AUTO zu sehen ist)
@@ -1271,7 +1330,7 @@ function schleife(jetzt) {
       notes,
       zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
       dt: dtWelt, kmh: physik.tempo * 3.6, debug: debugAn, fps, countdown: rueck.rest,
-      gang: getriebe.anzeige, drehzahl: getriebe.drehzahl, schaltet: getriebe.schaltet,
+      gang: getriebe.anzeige, drehzahl: anzeigeDrehzahl(), schaltet: getriebe.schaltet, // (M10c: Drehzahl frei in der Luft)
       ladedruck: getriebe.ladedruck, gas: tonEingabe.gas, turboAn: !!CONFIG.getriebe.turbo.an, // M8g: Ladedruck-/Lader-Anzeige
       meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
       untergrund, zielSchirm: ablauf.zustand === 'ziel',
@@ -1356,7 +1415,7 @@ function tonBild(dt) {
   tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm (nur Musik)
   tonZ.musikModus = MUSIK_MODUS[ablauf.zustand] || 'aus';
   tonZ.hx = kam.pos.x; tonZ.hz = kam.pos.z; tonZ.hyaw = kam.yaw; tonZ.s = rennen.letztesS;
-  tonZ.drehzahl = getriebe.drehzahl; tonZ.gang = getriebe.gang; tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
+  tonZ.drehzahl = anzeigeDrehzahl(); tonZ.inLuft = flug.inLuft; tonZ.gang = getriebe.gang; // (M10c: frei drehend in der Luft) tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
   tonZ.ladedruck = getriebe.ladedruck; tonZ.turboAn = !!CONFIG.getriebe.turbo.an; // M8b
@@ -1439,5 +1498,5 @@ window.__alpineRally = {
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
-  flug, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis)
+  flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };

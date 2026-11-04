@@ -5,7 +5,7 @@ Vergleichsstand 0.10b.2: `git worktree add <ordner> ffca7c3`. Tests: `node tools
 ## Teil A – Flugphase (fertig)
 - `js/sprung.js`: Sprungzonen aus `sprung` (von/bis/kante/landeVon/landeBis/staerke/form), Höhen-Zusatz auf die Strasse
   (track.js, nach dem Spline: Länge/Draufsicht/Streckenmeter gleich), Prüfer-Regeln, Klasse `Flugphase`.
-- Abheben nur in der Abhebe-Strecke einer Zone (Kante −3 m bis landeBis, ±10 m): „angedrückter Körper“, frei, sobald der
+- Abheben nur in der Abhebe-Strecke einer Zone (Kante −3 m bis landeBis, ±4 m: nur von der Fahrbahn): „angedrückter Körper“, frei, sobald der
   Boden schneller fällt als die Parabel, ab 4 cm Abstand = in der Luft. Luft: `physics.luftSchritt` (Tempo, Gier bleiben).
 - Landung: Verlust aus Aufprall senkrecht (frei bis 6.5 m/s, hart 25 % bei 11 m/s, max 35 %), Nase voran (bis 12 %), Gier (bis 10 %).
 - Testfahrer `strecke-abfahren.mjs`: Sprünge je Stil (Weite, Zeit, Höhe, Verlust), `--json`, Tempo an Kuppen/Kanten.
@@ -20,5 +20,15 @@ Vergleichsstand 0.10b.2: `git worktree add <ordner> ffca7c3`. Tests: `node tools
 - Pace-Note SPRUNG (eigene Ansage, 164–175 m vor der Kante), Legende de/en; km-Tafel 0.5 aus der Landezone gerückt.
 - Tests i–o, a, x1–x5 grün.
 
+## Teil C – Kamera, Ton, Schatten, Haptik (fertig)
+- Sprungkamera (EINSTELLUNGEN → SPRUNGKAMERA, Standard AN): zieht zurück (gemessen +14 %, Ziel 0.2) und hebt sich 0.6 m, bleibt im
+  Flug auf der Abhebe-Höhe, Ruck bei der Landung 2–4 Bildpunkte als ganzzahliger Bildausschnitt (kein Zoom), nach 0.4 s normal.
+- Ton (nur vorhandene Klänge): Reifen/Schotter aus, Motor dreht frei bis zum Begrenzer, Wind +35 %; Landung sauber/hart/sehr hart
+  (Schlag, Stein-Knirschen, tiefer Schlag), Jubel der Fans an der Birkenkuppe beim Abheben.
+- Schatten-Fleck bleibt am Boden, ab 1 m / 2.5 m eine / zwei Dunkelstufen heller, bis 30 % kleiner. Staubstoss beim Abheben und
+  Landen (vorhandener Staub-Vorrat). Haptik 'landung' (15–70 ms nach Härte).
+- Abheben nur noch von der Fahrbahn (±4 m): vorher hob ein Auto schräg über Bankett/Böschung der erhöhten Rampe ab.
+- Tests p–u grün (Bildzeit Median aus 5: AN −0.9 %, AUS +2.0 % gegen 0.10b.2); Alpen x1–x5 grün (nur EINSTELLUNGEN neu).
+
 ## Offen
-- Teil C (Kamera/Ton/Schatten/Haptik), D (Statistik), E (optional), F.
+- Teil D (Statistik, Skript liegt bereit), E (optional), F.

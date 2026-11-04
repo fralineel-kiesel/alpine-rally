@@ -145,6 +145,8 @@ export const TEXTE = {
   'einst.fps': { de: 'FPS-ANZEIGE (F3)', en: 'FPS DISPLAY (F3)' },
   'einst.schatten': { de: 'SCHATTEN', en: 'SHADOWS' }, // M10b.2
   'einst.schattenHinweis': { de: 'NUR AUF STRECKEN MIT SCHATTEN', en: 'ONLY ON STAGES WITH SHADOWS' },
+  'einst.sprungkamera': { de: 'SPRUNGKAMERA', en: 'JUMP CAMERA' }, // M10c
+  'einst.sprungkameraHinweis': { de: 'FILMISCHE KAMERA BEI SPRÜNGEN', en: 'CINEMATIC CAMERA ON JUMPS' },
   'einst.steuerung': { de: 'STEUERUNG', en: 'CONTROLS' },
   'einst.tasten': { de: 'TASTEN BELEGEN', en: 'KEY BINDINGS' },
   'einst.lenk': { de: 'LENKEMPFINDLICHKEIT', en: 'STEERING SENSITIVITY' },
