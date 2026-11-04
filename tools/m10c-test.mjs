@@ -4,6 +4,8 @@
 //   Teil A – Flugphase: (a) nie Flug ausserhalb einer Zone (Testfahrer, 5 Autos x 4 Stile, Alpen und Finnland),
 //       (b) Alpen bit-gleich (siehe x1–x5), (c) Ballistik gegen Formel, (d) zu langsam bleibt am Boden,
 //       (e) Landung parallel = 0 %, Nase voran > 0 %, (f) 1000 Zufallssprünge, (g) R / Pause / Wasser im Flug, (h) Prüfer
+//   Teil B – Finnland: (i) Prüfer, Landezonen frei, Checkpoints ausserhalb, (j) Flugweiten je Sprung und Auto,
+//       (k) Länge/Verlauf/Pace-Notes/Checkpoints, (l) Hang-Check, (m) Abkürzungen, (n) revision und Bestzeiten, (o) Legende
 //   Unveränderlich (Alpen wie 0.10b.2): (x1) Länge/Abkürzungen, (x2) Testfahrer, (x3) Pace-Notes/Strecke, (x4) Bilder, (x5) Ton
 //   (z) nur mit --lang: frühere Tests
 
@@ -101,7 +103,9 @@ if (teil('x2')) {
 
 // ===================================================================== (d) Pace-Notes, Checkpoints, Strecke
 // M10c: neue CONFIG-Werte, die für die Alpen nichts ändern (je Teil ergänzt)
-const NEU_WERTE = [];
+const NEU_WERTE = [
+  (c) => { if (c.pacenotes) { delete c.pacenotes.sprungVor; if (c.pacenotes.texte) delete c.pacenotes.texte.sprung; } }, // Teil B: Pace-Note SPRUNG (Alpen ohne Sprünge)
+];
 async function streckenAbdruck(wurzel, strecke = 'alpen') {
   const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}`);
   await bereit(s);
@@ -603,4 +607,205 @@ if (teil('a')) {
     const zonen = strecke === 'alpen' ? 0 : (await import(`${pathToFileURL(FI_DATEI).href}?a=${Date.now()}`)).default.sprung.filter((z) => z.von != null).length;
     melde(laeufe === AUTOS.length * 4 && aussen === 0 && (zonen > 0 || luft === 0), `${strecke}: ${laeufe} Läufe, ${zonen} Sprungzonen, ${spruenge} Sprünge, Flugschritte ausserhalb einer Zone ${aussen}${zonen ? '' : `, Flugschritte überhaupt ${luft}`} (${zeilen.join('; ')})`);
   }
+}
+
+// ===================================================================== Teil B: Finnland-Sprünge
+const FI_NEU = (await import(`${pathToFileURL(FI_DATEI).href}?b=${Date.now()}`)).default;
+const ZIELE = { KIEFERNKUPPE: [12, 18], BIRKENKUPPE: [22, 28], HOCHWALDKUPPE: [35, 42], SEEKUPPE: [25, 32] }; // Flugweite bei 100 km/h
+// Flugweiten im Spiel bei festem Absprungtempo (Auto 6 m vor der Kante auf Tempo gesetzt, Gas 0.4)
+const WEITEN = (kmhs) => {
+  const A = window.__alpineRally, P = A.physik, F = A.flug; A.anhalten = true; const out = {};
+  for (const z of A.strecke.sprungZonen) {
+    out[z.name] = [];
+    for (const kmh of kmhs) {
+      A.setzeAuf(z.kante - 6); P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+      const n0 = F.ereignis.landung, a0 = F.ereignis.abheben;
+      for (let t = 0; t < 6 && F.ereignis.landung === n0; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { gas: 0.4, bremse: 0, lenkung: 0, handbremse: false }, true);
+      const L = F.letzteLandung;
+      out[z.name].push(F.ereignis.abheben === a0 ? { kmh, ab: false } : { kmh, ab: true, abKmh: L.abTempo * 3.6, weite: L.weite, hoehe: L.hoehe, zeit: L.zeit, verlust: L.verlust, s: L.s, lz: L.s >= z.landeVon && L.s <= z.landeBis, vorLZ: L.s < z.landeVon, landeBis: z.landeBis });
+    }
+  }
+  return out;
+};
+if (teil('i')) {
+  console.log('(i) Finnland: Prüfer, Landezonen frei, Checkpoints ausserhalb, kein Untergrundwechsel in den Zonen');
+  const r = werkzeug('strecke-pruefen.mjs', [FI_DATEI]);
+  melde(r.code === 0, `strecke-pruefen.mjs strecken/finnland.js: ${r.text.trim().split('\n').pop()}`);
+  const zonen = FI_NEU.sprung.filter((z) => z.von != null);
+  melde(zonen.length === 4, `4 Sprungzonen: ${zonen.map((z) => `${z.name} Kante ${z.kante} m (Zone ${z.von}–${z.bis}, Landezone ${z.landeVon}–${z.landeBis})`).join('; ')}`);
+  const cpNah = FI_NEU.checkpoints.filter((c) => zonen.some((z) => c > z.von - 60 && c < z.bis + 60));
+  const wechsel = FI_NEU.nebenwege.flatMap((w) => [w.abzweig, w.einmuendung]).filter((m) => zonen.some((z) => m > z.von - 10 && m < z.bis + 10));
+  melde(cpNah.length === 0 && wechsel.length === 0, `Checkpoints ${FI_NEU.checkpoints.join(', ')} mindestens 60 m von jeder Zone; Abzweige/Einmündungen (Untergrundwechsel) ausserhalb: ${wechsel.length ? wechsel.join(', ') : 'ja'}`);
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const lz = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, q = {}, funde = [], gesehen = new Set(); let objekte = 0;
+    const pruefe = (name, liste) => {
+      if (!Array.isArray(liste) || gesehen.has(liste)) return; gesehen.add(liste);
+      for (const o of liste) {
+        if (!o || typeof o.x !== 'number' || typeof o.z !== 'number') continue;
+        objekte++; S.abfrage(o.x, o.z, q);
+        for (const z of S.sprungZonen) if (q.s >= z.landeVon - 2 && q.s <= z.landeBis + 2 && Math.abs(q.seite) <= 8 && q.abstand < 12) funde.push(`${z.name}: ${name} bei ${q.s.toFixed(0)} m, ${q.seite.toFixed(1)} m`);
+      }
+    };
+    for (const [n, m] of Object.entries({ pflanzen: A.pflanzen, strassenrand: A.strassenrand, kuehe: A.kuehe, leben: A.leben })) if (m) for (const [k, v] of Object.entries(m)) {
+      if (Array.isArray(v)) pruefe(`${n}.${k}`, v); else if (v && typeof v === 'object') for (const [k2, v2] of Object.entries(v)) if (Array.isArray(v2)) pruefe(`${n}.${k}.${k2}`, v2);
+    }
+    // Belag in den Zonen: überall Schotter (kein Wechsel)
+    const belaege = S.sprungZonen.map((z) => { const b = new Set(); for (let i = Math.ceil(z.von); i < z.bis; i++) b.add(A.netz.belag[i]); return [...b].join('+'); });
+    return { funde, listen: gesehen.size, objekte, belaege };
+  });
+  melde(lz.funde.length === 0 && lz.listen > 20, `Landezonen (Strasse ±8 m) frei von Bäumen, Steinen, Schildern, Zäunen, Tieren, Deko: ${lz.objekte} Objekte in ${lz.listen} Listen geprüft${lz.funde.length ? `; im Weg: ${lz.funde.join('; ')}` : ''}`);
+  melde(lz.belaege.every((b) => b === 'schotter'), `Belag in den Zonen: ${lz.belaege.join(', ')}`);
+  await s.schliessen();
+}
+if (teil('j')) {
+  console.log('(j) Flugweiten je Sprung (Absprungtempo 70/100/120 km/h) und je Auto (Testfahrer, 4 Stile)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const w = await s.page.evaluate(WEITEN, [50, 70, 100, 120]);
+  await s.schliessen();
+  fs.writeFileSync(path.join(LOG, 'weiten.json'), JSON.stringify(w, null, 1));
+  for (const [name, r] of Object.entries(w)) {
+    const [r50, r70, r100, r120] = r, [a, b] = ZIELE[name];
+    melde(r100.ab && r100.weite >= a && r100.weite <= b && r70.ab && r70.lz && r120.ab && r120.s <= r120.landeBis && r100.lz,
+      `${name}: 100 km/h ${r100.weite.toFixed(1)} m (Ziel ${a}–${b}, Höhe ${r100.hoehe.toFixed(1)} m, ${r100.zeit.toFixed(2)} s, Verlust ${(r100.verlust * 100).toFixed(0)} %); 70 km/h ${r70.weite.toFixed(1)} m (${r70.lz ? 'im Landehang' : 'AUSSERHALB'}); 120 km/h ${r120.weite.toFixed(1)} m bis ${r120.s.toFixed(0)} m (Landezone bis ${r120.landeBis}, Verlust ${(r120.verlust * 100).toFixed(0)} %); 50 km/h ${r50.ab ? `${r50.weite.toFixed(1)} m` : 'am Boden'}`);
+  }
+  // Testfahrer: alle 5 Autos x 4 Stile
+  const tab = [];
+  let mittelMax = 0, neben = 0, unfaelle = [], n = 0;
+  for (const id of AUTOS) {
+    const r = sprungLauf('finnland', id);
+    for (const st of r.stile) {
+      for (const j of st.spruenge) { n++; if (!j.aufStrasse) neben++; if (st.stil === 'mittel') mittelMax = Math.max(mittelMax, j.verlust); }
+      if (st.stil !== 'flott' && st.aufpralle > 0) unfaelle.push(`${id}/${st.stil} ${st.aufpralle}`);
+      tab.push(`${id.padEnd(8)} ${st.stil.padEnd(10)} ${st.spruenge.map((j) => `${j.name.slice(0, 5)} ${Math.round(j.abTempo)} km/h ${j.weite.toFixed(0)} m ${(j.verlust * 100).toFixed(0)} %`).join(' | ')}`);
+    }
+  }
+  fs.writeFileSync(path.join(LOG, 'testfahrer-spruenge.txt'), `${tab.join('\n')}\n`);
+  melde(neben === 0 && n >= 70, `Testfahrer: ${n} Sprünge, alle gelandet auf Strasse oder Schulter (neben der Strasse: ${neben}); Tabelle ${LOG}/testfahrer-spruenge.txt`);
+  melde(mittelMax <= 0.25, `Stil mittel: grösster Tempoverlust bei der Landung ${(mittelMax * 100).toFixed(1)} % (Grenze ca. 25 %)`);
+  const ohneL073 = unfaelle.filter((u) => !u.startsWith('l073'));
+  melde(ohneL073.length === 0, `vorsichtig/mittel/digital ohne Unfall (ausser Lanza 073: ${unfaelle.filter((u) => u.startsWith('l073')).join(', ') || 'keine'}; in 0.10b.2 hatte er mittel 1, digital 12)`);
+  for (const z of tab) info(z);
+}
+if (teil('k')) {
+  console.log('(k) Finnland: Länge, Verlauf (Draufsicht), Checkpoints, Belag, Pace-Notes (ausser Sprung) gleich wie 0.10b.2');
+  if (!ALT) info('nur mit --alt');
+  else {
+    const ZN = FI_NEU.sprung.filter((z) => z.von != null).map((z) => ({ von: z.von, bis: z.bis }));
+    const abdruck = async (wurzel) => {
+      const s = await oeffne(wurzel, '?menue=aus&ton=aus&strecke=finnland');
+      await bereit(s);
+      const r = await s.page.evaluate((Z) => {
+        const A = window.__alpineRally, st = A.strecke;
+        const h = (arr, nur) => { let x = 7; for (let i = 0; i < arr.length; i++) if (!nur || nur(i)) x = (x * 31 + Math.round(arr[i] * 1e4)) % 1000000007; return x; };
+        const ausserhalb = (i) => !Z.some((z) => i >= z.von - 1 && i <= z.bis + 1);
+        return { laenge: st.laenge, start: st.startS, ziel: st.zielS, anzahl: st.anzahl,
+          draufsicht: [h(st.px), h(st.pz), h(st.tx), h(st.tz)].join(','), hoeheAussen: h(st.py, ausserhalb), hoehe: h(st.py),
+          checkpoints: JSON.stringify(A.checkpoints.map((c) => c.s)), belag: h(Array.from(A.netz.belag, (b) => b.length)),
+          notes: A.paceNotes.notes.map((n) => ({ s: Math.round(n.s), t: n.teile.map((t) => `${t.art}${t.stufe ?? ''}${t.richtung ?? ''}${t.form ?? ''}${t.schneiden ?? ''}`).join('+') })) };
+      }, ZN);
+      await s.schliessen();
+      return r;
+    };
+    const neu = await abdruck(WURZEL), alt = await abdruck(ALT);
+    melde(Math.abs(neu.laenge - 4161.6) <= 0.5 && neu.laenge === alt.laenge && neu.anzahl === alt.anzahl && neu.start === alt.start && neu.ziel === alt.ziel, `Länge ${neu.laenge.toFixed(3)} m = 0.10b.2 (4161.6 ±0.5), Start/Ziel gleich`);
+    melde(neu.draufsicht === alt.draufsicht, 'Verlauf in der Draufsicht (x, z, Richtung im 1-m-Raster) bit-gleich');
+    melde(neu.hoeheAussen === alt.hoeheAussen && neu.hoehe !== alt.hoehe, 'Höhe ausserhalb der vier Sprungzonen bit-gleich, in den Zonen neu');
+    melde(neu.checkpoints === alt.checkpoints && neu.belag === alt.belag, `Checkpoints ${neu.checkpoints} und Untergrund je Meter gleich`);
+    const zonen = FI_NEU.sprung.filter((z) => z.von != null);
+    const inZone = (sM) => zonen.some((z) => sM >= z.von && sM <= z.bis);
+    const ohne = (l) => l.map((n) => ({ s: n.s, t: n.t.split('+').filter((x) => !/^(sprung|kuppe|senke)/.test(x) || !inZone(n.s)).join('+') })).filter((n) => n.t).map((n) => `${n.s} ${n.t}`);
+    const a = ohne(alt.notes), b = ohne(neu.notes);
+    const anders = a.filter((x, i) => x !== b[i]).length + Math.abs(a.length - b.length);
+    const spr = neu.notes.filter((n) => n.t.includes('sprung')).map((n) => `${n.s} ${n.t}`);
+    const weg = alt.notes.filter((n) => /kuppe|senke/.test(n.t) && inZone(n.s)).map((n) => `${n.s} ${n.t}`);
+    melde(anders === 0 && spr.length === 4, `Pace-Notes ausser in den Sprungzonen identisch (${a.length} Ansagen); neu SPRUNG: ${spr.join(', ')}; ersetzt: ${weg.join(', ')}`);
+  }
+}
+if (teil('l')) {
+  console.log('(l) Hang-Check Finnland');
+  const r = werkzeug('hang-pruefen.mjs', ['--strecke', 'finnland', '--pruefen', '--aus', path.join(LOG, 'hang-finnland.txt')]);
+  const z = (/Stellen über 0.45: (\d+)/.exec(r.text) || [])[1];
+  melde(r.code === 0 && z === '0', `hang-pruefen --pruefen: Stellen über 0.45 ohne Absicht ${z} (${(/grösste Steigung ohne Absicht: [\d.]+/.exec(r.text) || [''])[0]})`);
+}
+if (teil('m')) {
+  console.log('(m) Abkürzungen Finnland nicht schlechter als 0.10b.2');
+  const zahlen = (t) => ({ linien: ((/übrige Linien je Kurve ([\d/]+)/.exec(t) || [])[1] || ''), durch: +((/Durchkommen in gesperrten Kurven: (\d+)/.exec(t) || [])[1] || 0),
+    gewinn: [...t.matchAll(/übrig in Kurve ([\d – ]+): \d+ Linien, Gewinn bis ([\d.]+) m/g)].map((m) => +m[2]),
+    eintraege: ((/Einträge "nicht schneiden": (\d+), "schneiden": (\d+)/.exec(t) || []).slice(1).join('/')), gesamt: ((/Abkürzungen \(Linien\) mit Gewinn >= 3 m: (.*)$/m.exec(t) || [])[1] || '') });
+  const an = zahlen(werkzeug('abkuerzungen.mjs', ['--strecke', 'finnland']).text);
+  const aa = ALT ? zahlen(werkzeug('abkuerzungen.mjs', ['--strecke', 'finnland'], ALT).text) : null;
+  melde(!aa || (an.linien === aa.linien && an.eintraege === aa.eintraege && an.gesamt === aa.gesamt && an.durch <= aa.durch), `übrige Linien je Kurve ${an.linien}, Linien gesamt ${an.gesamt}, Einträge ${an.eintraege}${aa ? ` (0.10b.2: ${aa.linien}, ${aa.gesamt}, ${aa.eintraege})` : ''}`);
+  const d = spawnSync('git', ['diff', '--quiet', BASIS, '--', 'strecken/finnland.js'], { cwd: WURZEL });
+  const t = spawnSync('git', ['diff', BASIS, '--', 'strecken/finnland.js'], { cwd: WURZEL, encoding: 'utf8' }).stdout;
+  const iE = t.indexOf('erzeugt');
+  melde(d.status !== 0 && !/^[+-].*(sperren|nichtSchneiden|kurvenTempo)/m.test(t), 'erzeugte Daten (Abkürzungen, Kurventempo) in strecken/finnland.js nicht neu geschrieben');
+}
+if (teil('n')) {
+  console.log('(n) Bestzeiten: revision 3, Alpen bleiben, Finnland-Liste leer, neuer Lauf schreibt finnland-r3');
+  const alt = { zeit: 151.5, cps: [27, 59, 94, 120], datum: '2026-10-30T10:00:00.000Z', auto: 'rt4', aufpralle: 0, resets: 0, hoechstTempo: 40, spur: [] };
+  const alpenZeit = { ...alt, zeit: 162.3, cps: [30, 80, 120], datum: '2026-10-21T10:00:00.000Z' };
+  const speicher = {
+    'alpineRally.bestzeiten2': JSON.stringify({ passstrasse: { rt4: [alpenZeit] }, 'finnland-r2': { rt4: [alt] } }),
+    'alpineRally.letzterLauf': JSON.stringify({ 'finnland-r2': { zeit: 151.5, cps: [27, 59, 94, 120], spur: [], datum: '2026-10-30T10:00:00.000Z' } }),
+  };
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland&auto=rt4', { speicher, auto: 'rt4' });
+  await bereit(s);
+  const vor = await s.page.evaluate(async () => {
+    const B = await import('/js/bestzeiten.js'), I = await import('/js/inhalte.js'), W = await import('/js/etappenwahl.js');
+    await W.ladeAlleInfos();
+    return { etappe: I.ETAPPEN[0].id, fi: B.ladeBestzeiten(I.ETAPPEN[0].id, 'rt4').length, gesamt: B.ladeGesamtTop(I.ETAPPEN[0].id).length,
+      alpen: B.ladeBestzeiten('passstrasse', 'rt4').map((x) => x.zeit), letzter: B.ladeLetztenLauf(I.ETAPPEN[0].id), infos: W.ETAPPEN_INFO.map((i) => `${i.id}:${i.etappe}`) };
+  });
+  melde(vor.etappe === 'finnland-r3' && vor.fi === 0 && vor.gesamt === 0 && vor.letzter == null, `Finnland: Schlüssel "${vor.etappe}", Bestzeiten ${vor.fi}, Gesamt ${vor.gesamt}, letzter Lauf ${vor.letzter ? 'da' : 'leer'} (alte r2-Zeiten nicht gezeigt)`);
+  melde(vor.alpen.join() === '162.3' && vor.infos.join() === 'alpen:passstrasse,finnland:finnland-r3', `Alpen-Bestzeit bleibt (${vor.alpen.join()}), Schlüssel ${vor.infos.join(', ')}`);
+  const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+  const lauf = await s.page.evaluate(async (code) => {
+    const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    const r = f.fahreEtappe(window.__alpineRally, 'mittel');
+    await new Promise((ok) => { let n = 0; const g = () => (++n > 10 ? ok() : requestAnimationFrame(g)); requestAnimationFrame(g); });
+    return { zeit: r.zeit, ziel: r.ziel, speicher: JSON.parse(localStorage.getItem('alpineRally.bestzeiten2')) };
+  }, fahrerCode);
+  const sp = lauf.speicher;
+  melde(lauf.ziel && sp['finnland-r3'] && Math.abs(sp['finnland-r3'].rt4[0].zeit - lauf.zeit) < 0.01 && sp['finnland-r2'].rt4[0].zeit === 151.5 && sp.passstrasse.rt4[0].zeit === 162.3,
+    `neuer Lauf (${lauf.zeit.toFixed(2)} s) unter "finnland-r3"; alte Zeit bleibt unter "finnland-r2" liegen; Alpen unverändert (Schlüssel: ${Object.keys(sp).join(', ')})`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+if (teil('o')) {
+  console.log('(o) Pace-Note SPRUNG: Legende de + en, Symbol, Ansage 150–200 m vor der Kante mit Signal');
+  const T = (await import(pathToFileURL(path.join(WURZEL, 'js/texte.js')).href).catch(() => null));
+  const quelle = fs.readFileSync(path.join(WURZEL, 'js/texte.js'), 'utf8');
+  const z = /'legende\.sprung': \{ de: '([^']+)', en: '([^']+)' \}/.exec(quelle);
+  melde(!!z && z[1] === z[1].toUpperCase() && z[2] === z[2].toUpperCase(), `Legende: de "${z && z[1]}", en "${z && z[2]}" (Grossbuchstaben)`);
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const r = await s.page.evaluate(async (code) => {
+    const A = window.__alpineRally, PN = A.paceNotes, zonen = A.strecke.sprungZonen;
+    // Legende auf der Seite STEUERUNG -> SYMBOLE (Menüleinwand)
+    const leg = A.seiten.symbole ? A.seiten.symbole.eintraege.length : null;
+    // Fahrt mit dem Testfahrer: wann erscheint die Kachel SPRUNG (Streckenmeter), Signal-Zähler
+    const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    PN.zuruecksetzen();
+    const erste = {};
+    f.fahreEtappe(A, 'mittel', () => {
+      const s = A.rennen.letztesS, an = PN.aktualisiere(A.SCHRITT, s, A.physik.tempo, A.rennen.zustand);
+      for (let i = 0; i < an.anzahl; i++) { const k = PN.kacheln[an.kacheln[i].nr]; if (k.symbol === 'sprung' && erste[k.s] == null) erste[k.s] = s; }
+    });
+    return { leg, vor: zonen.map((z) => ({ name: z.name, kante: z.kante, ab: erste[z.kante] })) };
+  }, fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8'));
+  const ok = r.vor.every((v) => v.ab != null && v.kante - v.ab >= 140 && v.kante - v.ab <= 210);
+  melde(ok, `Kachel SPRUNG erscheint vor der Kante: ${r.vor.map((v) => `${v.name} ${v.ab == null ? 'NIE' : `${(v.kante - v.ab).toFixed(0)} m`}`).join(', ')} (Ziel ca. 150–200 m); Signal wie alle Ansagen (neue Kachel = Signalton)`);
+  // Symbol gezeichnet (Menü-Legende auf der Leinwand): Seite SYMBOLE zeigen und Pixel im Kachelfeld zählen
+  const bild = await s.page.evaluate(() => {
+    const A = window.__alpineRally, c = document.createElement('canvas'); c.width = 320; c.height = 180;
+    const x = c.getContext('2d'); A.menue.zeige(A.seiten.symbole, true); x.clearRect(0, 0, 320, 180); A.menue.zeichne(x, 0, 1);
+    return c.toDataURL();
+  });
+  fs.writeFileSync(path.join(LOG, 'legende-symbole.png'), Buffer.from(bild.split(',')[1], 'base64'));
+  info(`Legende (Menüseite SYMBOLE): ${LOG}/legende-symbole.png`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
 }

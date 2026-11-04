@@ -266,11 +266,18 @@ export function berechnePaceNotes(strecke, netz, P = CONFIG.pacenotes) {
     }
   }
 
-  // 5. Kuppen und Senken
+  // 5. Kuppen und Senken (M10c: in einer Sprungzone keine, dafür eine Ansage SPRUNG an der Kante)
+  const zonen = strecke.sprungZonen || [];
   for (const kn of findeKnicke(strecke, P)) {
     if (!imRennen(kn.s)) continue;
+    if (zonen.some((z) => kn.s >= z.von && kn.s <= z.bis)) continue;
     // kürzeste Variante '' = nur das Zeichen (wenn die Zeile sonst zu lang wird)
     teile.push({ art: kn.art, s: kn.s, sEnde: kn.s, symbol: kn.art, farbe: 'weiss', varianten: [T[kn.art], ''] });
+  }
+
+  for (const z of zonen) {
+    if (!imRennen(z.kante)) continue;
+    teile.push({ art: 'sprung', s: z.kante, sEnde: z.kante, symbol: 'sprung', farbe: 'weiss', varianten: [T.sprung, ''], vorlauf: P.sprungVor });
   }
 
   // 6. Felswand: nur wo eine Kurve im Felswand-Stück die Wand aussen hat
@@ -372,7 +379,8 @@ export function berechnePaceNotes(strecke, netz, P = CONFIG.pacenotes) {
   const notes = [];
   for (const t of teile) {
     const letzte = notes[notes.length - 1];
-    if (letzte && t.s - letzte.teile[letzte.teile.length - 1].s < P.zusammen) letzte.teile.push(t);
+    // (M10c: SPRUNG bleibt eine eigene Ansage, damit sie mit ihrem festen Vorlauf vor der Kante kommt)
+    if (letzte && t.art !== 'sprung' && letzte.teile[0].art !== 'sprung' && t.s - letzte.teile[letzte.teile.length - 1].s < P.zusammen) letzte.teile.push(t);
     else notes.push({ s: t.s, teile: [t] });
   }
   for (const nt of notes) fertigeNote(nt, P);
@@ -417,7 +425,7 @@ function fertigeNote(nt, P) {
 // config.pacenotes.anzeigen. Ergebnis je Kachel: was zeichneKachel() braucht, dazu s (Anfang) und
 // mitte (beim Passieren dieser Stelle blendet die Kachel aus).
 export function kachelnAusNote(nt, P = CONFIG.pacenotes) {
-  const SYMBOL = { kuppe: 'kuppe', ziel: 'ziel', senke: 'senke', gerade: 'gerade', felswand: 'gefahr', belag: 'belag' };
+  const SYMBOL = { kuppe: 'kuppe', sprung: 'sprung', ziel: 'ziel', senke: 'senke', gerade: 'gerade', felswand: 'gefahr', belag: 'belag' };
   const aus = [];
   for (const t of nt.teile) {
     if (P.anzeigen[t.art] === false) continue;
@@ -469,11 +477,23 @@ export function bauePaceNotes(strecke, netz) {
     if (g && g.bis - g.von + 1 < P.maxKacheln && k.s - kacheln[g.bis].s < P.gruppeAbstand) g.bis = i;
     else gruppen.push({ von: i, bis: i });
   }
+  // M10c: SPRUNG zuerst in seiner Gruppe (wichtiger als eine Kurve davor; ist nur ein Platz frei, kommt er zuerst)
+  for (const g of gruppen) {
+    for (let i = g.von + 1; i <= g.bis; i++) {
+      if (kacheln[i].art !== 'sprung') continue;
+      const k = kacheln[i];
+      for (let j = i; j > g.von; j--) kacheln[j] = kacheln[j - 1];
+      kacheln[g.von] = k;
+    }
+  }
   for (const g of gruppen) {
     g.anker = kacheln[g.bis].s; // Zeitfenster: die hinterste Kachel der Gruppe muss im Fenster sein
+    if (kacheln[g.von].art === 'sprung') g.anker = Math.max(...kacheln.slice(g.von, g.bis + 1).map((k) => k.s)); // (M10c)
     g.letzteMitte = Math.max(...kacheln.slice(g.von, g.bis + 1).map((k) => k.mitte));
     g.bremsen = kacheln.slice(g.von, g.bis + 1).some((k) => k.art === 'kehre' || k.art === 'abzweig' || k.art === 'einmuendung');
     g.vorlauf = notes[kacheln[g.von].note].vorlauf; // fester Vorlauf (nur wenn zielVor gesetzt)
+    // M10c: steht SPRUNG in der Gruppe, gilt dessen fester Vorlauf (vor der Kante, auch wenn eine Kurve davor liegt)
+    for (let i = g.von; i <= g.bis; i++) if (kacheln[i].art === 'sprung') g.vorlauf = Math.max(g.vorlauf || 0, notes[kacheln[i].note].vorlauf || 0) || null;
   }
   const G = gruppen.length;
   // Ende jeder Ansage (für die F3-Liste "nächste Ansagen")

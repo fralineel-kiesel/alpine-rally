@@ -263,6 +263,7 @@ export const TEXTE = {
   'legende.kehre': { de: 'KEHRE, NUMMER IN DER FOLGE (1/4)', en: 'HAIRPIN, NUMBER IN THE SERIES (1/4)' },
   'legende.schikane': { de: 'SCHIKANE (RICHTUNG = ERSTE KURVE)', en: 'CHICANE (DIRECTION = FIRST CURVE)' },
   'legende.kuppe': { de: 'KUPPE: DAHINTER SIEHT MAN NICHTS', en: 'CREST: YOU CANNOT SEE BEYOND' },
+  'legende.sprung': { de: 'SPRUNG: HIER HEBT DAS AUTO AB', en: 'JUMP: THE CAR TAKES OFF HERE' }, // M10c
   'legende.abzweig': { de: 'ABZWEIG: GERADEAUS IST GESPERRT', en: 'TURN-OFF: STRAIGHT ON IS CLOSED' },
   'legende.einmuendung': { de: 'EINMÜNDUNG: DIE ANDERE SEITE IST ZU', en: 'T-JUNCTION: THE OTHER WAY IS CLOSED' },
   'legende.ziel': { de: 'ZIEL', en: 'FINISH' },

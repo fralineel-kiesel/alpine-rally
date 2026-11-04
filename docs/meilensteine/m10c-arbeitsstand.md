@@ -11,10 +11,14 @@ Vergleichsstand 0.10b.2: `git worktree add <ordner> ffca7c3`. Tests: `node tools
 - Testfahrer `strecke-abfahren.mjs`: Sprünge je Stil (Weite, Zeit, Höhe, Verlust), `--json`, Tempo an Kuppen/Kanten.
 - Tests a, c–h grün (Ballistik −0.7…−3.7 %, 1000 Zufallssprünge sauber); Alpen x1–x5 grün (Zeiten, 26 Bilder, Ton bit-gleich).
 
-## Messwerte für Teil B
-- Testfahrer-Tempo an den markierten Kuppen (0.10b.2): 113–141 km/h (Audan mittel: 129 / 115 / 141 / 119).
-- Checkpoint 2 bei 1707 m liegt 44 m vor der Birkenkuppe (1751 m): Kante muss wegen der 60-m-Regel auf ca. 1840 m.
-- Entwurf (Node-Simulation): Hochwald rampe 0.12 / gefaelle 0.10: 100 km/h 42 m, 120 km/h 63 m, 70 km/h 16.5 m.
+## Teil B – Finnland (fertig)
+- 4 Zonen in `strecken/finnland.js` (Kante 495 / 1830 / 3090 / 3656 m), `revision` 3 (Bestzeiten `finnland-r3`).
+- Flugweite bei 100 km/h: 14.5 / 23.8 / 38.0 / 30.3 m; 70 km/h alle im Landehang; 120 km/h Hochwald 57 m (Landezone bis 3160).
+- BIRKENKUPPE: Kante 1830 statt 1751 m (Checkpoint 2 bei 1707 m, 60-m-Regel); Fans dort mit der Kante um 60 m verschoben.
+- Testfahrer: vor der Kante höchstens 95 (vorsichtig) / 115 km/h (mittel, digital), flott voll. 80 Sprünge, alle auf
+  Strasse/Schulter, mittel höchstens 9 % Verlust. Lanza 073 bleibt unfallträchtig (mittel 3, digital 10; 0.10b.2: 1 / 12).
+- Pace-Note SPRUNG (eigene Ansage, 164–175 m vor der Kante), Legende de/en; km-Tafel 0.5 aus der Landezone gerückt.
+- Tests i–o, a, x1–x5 grün.
 
 ## Offen
-- Teil B (Finnland-Profil, Pace-Note), C (Kamera/Ton/Schatten/Haptik), D (Statistik), E (optional), F.
+- Teil C (Kamera/Ton/Schatten/Haptik), D (Statistik), E (optional), F.

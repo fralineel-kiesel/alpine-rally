@@ -1394,6 +1394,8 @@ export const CONFIG = {
 
     // --- Ziel ---
     zielVor: null,             // "ZIEL" so viele Meter vorher (null = wie alle anderen Ansagen, nach Vorlaufzeit)
+    // --- Sprung (M10c) ---
+    sprungVor: 175,            // "SPRUNG" so viele Meter vor der Absprungkante (Kuppen/Senken in der Sprungzone ersetzt er)
 
     // --- Zusammenfassen ---
     zusammen: 28,              // Ansagen näher beisammen (Meter) werden intern eine Ansage (Text mit "UND")
@@ -1442,7 +1444,7 @@ export const CONFIG = {
       links: 'LINKS', rechts: 'RECHTS', und: 'UND', kehre: 'KEHRE', schikane: 'SCHIKANE',
       gerade: 'GERADE', kuppe: 'KUPPE', senke: 'SENKE', abzweig: 'ABZWEIG', einmuendung: 'EINMÜNDUNG',
       schotter: 'SCHOTTER', wiesenweg: 'WIESENWEG', felswand: 'FELSWAND', ziel: 'ZIEL',
-      schneiden: 'SCHNEIDEN', nichtSchneiden: 'NICHT SCHNEIDEN',
+      schneiden: 'SCHNEIDEN', nichtSchneiden: 'NICHT SCHNEIDEN', sprung: 'SPRUNG',
       eng: 'ENG', weit: 'WEIT', lang: 'LANG', oeffnet: 'ÖFFNET', ziehtZu: 'ZIEHT ZU',
     },
   },

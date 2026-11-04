@@ -8,7 +8,7 @@ export default {
   format: 1,
   id: 'finnland',
   etappe: 'finnland',          // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
-  revision: 2,                 // Verlauf-Stand (seit M10b.1): neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
+  revision: 3,                 // Verlauf-Stand (seit M10b.1): neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr (M10c: 3, Sprünge)
   name: { de: 'FINNLAND-SCHOTTER', en: 'FINLAND GRAVEL' },
   beschreibung: { de: 'SCHOTTER, KUPPEN, SEEN', en: 'GRAVEL, CRESTS, LAKES' },
   untergrundInfo: { de: 'SCHOTTER', en: 'GRAVEL' },
@@ -27,12 +27,19 @@ export default {
     tierschild: 'elch',        // M10b.1: Warnschild mit Elch statt der allgemeinen Tier-Silhouette
   },
 
-  // Markierte Kuppen: hier wird die Strecke in M10c abheben (heute ohne Wirkung, normale Kuppen)
+  // Sprünge (M10c, Format docs/strecken-format.md "Sprünge"): s = kante = Absprungkante, von/bis = Sprungzone (nur dort kann
+  // das Auto abheben), landeVon/landeBis = Landezone (Landehang), form = Rampe/Landehang (Steigungen als Verhältnis).
+  // Richtwerte bei 100 km/h Absprungtempo: 1 klein 12–18 m, 2 mittel 22–28 m, 3 gross 35–42 m, 4 mittel bis gross 25–32 m.
+  // BIRKENKUPPE: Kante 1830 statt 1751 m – Checkpoint 2 (1707 m) braucht 60 m Abstand zur Zone.
   sprung: [
-    { s: 487, name: 'KIEFERNKUPPE' },
-    { s: 1751, name: 'BIRKENKUPPE' },
-    { s: 3108, name: 'HOCHWALDKUPPE' },
-    { s: 3656, name: 'SEEKUPPE' },
+    { s: 495, name: 'KIEFERNKUPPE', von: 330, bis: 650, kante: 495, landeVon: 498, landeBis: 530, staerke: 1.0,
+      form: { anlauf: 40, rampe: 0.04, kante: 2, gefaelle: 0.05, auslauf: 30 } },
+    { s: 1830, name: 'BIRKENKUPPE', von: 1768, bis: 1990, kante: 1830, landeVon: 1836, landeBis: 1880, staerke: 1.1,
+      form: { anlauf: 30, rampe: 0.08, kante: 4, gefaelle: 0.08, auslauf: 25, weich: 10 } },
+    { s: 3090, name: 'HOCHWALDKUPPE', von: 2890, bis: 3245, kante: 3090, landeVon: 3100, landeBis: 3160, staerke: 1.0,
+      form: { anlauf: 40, rampe: 0.11, kante: 4, gefaelle: 0.10, auslauf: 30 } },
+    { s: 3656, name: 'SEEKUPPE', von: 3480, bis: 3820, kante: 3656, landeVon: 3662, landeBis: 3710, staerke: 1.0,
+      form: { anlauf: 40, rampe: 0.07, kante: 4, gefaelle: 0.08, auslauf: 30 } },
   ],
 
   // --- Zufallszahlen (gleiche Zahl = gleiche Welt) ---
@@ -499,10 +506,10 @@ export default {
           stuehle: 3,
         },
         {
-          name: 'kuppe', s: [1737, 1767], seite: 1, lat: [8, 15], anzahl: 22, blickS: null, // an der Birkenkuppe
-          band: [[1734, 1770, 7.4]],
-          banner: [[1751, 9.4, 'hyppy']],
-          fahnen: [[1741, 11, 'motiv'], [1763, 12, 'motiv']],
+          name: 'kuppe', s: [1797, 1827], seite: 1, lat: [8, 15], anzahl: 22, blickS: null, // an der Birkenkuppe (M10c: mit der Kante 1830 m um 60 m nach hinten)
+          band: [[1794, 1830, 7.4]],
+          banner: [[1811, 9.4, 'hyppy']],
+          fahnen: [[1801, 11, 'motiv'], [1823, 12, 'motiv']],
           stuehle: 3,
         },
       ],

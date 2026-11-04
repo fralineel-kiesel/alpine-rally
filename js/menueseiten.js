@@ -493,6 +493,7 @@ export function baueSeiten(api) {
     [{ symbol: 'kehre', richtung: -1, farbe: 'rot', kehrenNr: 1, kehrenAnzahl: 4 }, 'legende.kehre'],
     [{ symbol: 'schikane', richtung: 1, farbe: 'gelb', stufe: 3 }, 'legende.schikane'],
     [{ symbol: 'kuppe', richtung: 1, farbe: 'weiss' }, 'legende.kuppe'],
+    [{ symbol: 'sprung', richtung: 1, farbe: 'weiss' }, 'legende.sprung'], // M10c
     [{ symbol: 'abzweig', richtung: 1, farbe: 'gelb', stufe: 3 }, 'legende.abzweig'],
     [{ symbol: 'einmuendung', richtung: 1, farbe: 'gelb', stufe: 4 }, 'legende.einmuendung'],
     [{ symbol: 'ziel', richtung: 1, farbe: 'weiss' }, 'legende.ziel'],
