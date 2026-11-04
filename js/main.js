@@ -809,9 +809,9 @@ function kameraZiel() {
   const c = CONFIG.kamera;
   let y = auto.objekt.position.y;
   if (sk.e > 0 || (flug.inLuft && einstellungen.sprungkamera !== false)) {
-    // M10c: Sprungkamera – im Flug auf der Höhe beim Abheben, nach der Landung weich zurück zum Auto
-    const K = CONFIG.sprung.kamera, u = flug.inLuft ? 0 : Math.min(1, sk.land / K.landenZeit), w = u * u * (3 - 2 * u);
-    y = sk.yAb + (y - sk.yAb) * w;
+    // M10c: Sprungkamera. M10c.1: steifer – sie folgt dem Auto auch in der Luft in der Höhe (kein Halten auf der
+    // Abhebe-Höhe mehr, sonst schaut sie bei der Landung steil von oben), zieht nur wenig zurück und hebt sich wenig
+    const K = CONFIG.sprung.kamera;
     const abstand = c.abstand * (1 + K.zurueck * sk.e);
     kam.ziel.set(physik.x - Math.sin(kam.yaw) * abstand, y + c.hoehe + K.heben * sk.e, physik.z - Math.cos(kam.yaw) * abstand);
     return;
@@ -839,11 +839,14 @@ function kameraFuehren(dt) {
   }
   kam.yaw += winkelNorm(ziel - kam.yaw) * (1 - Math.exp(-c.nachfuehren * dt));
   kameraZiel();
+  const yAlt = kam.pos.y;
   kam.pos.lerp(kam.ziel, 1 - Math.exp(-c.positionGlaetten * dt));
+  // M10c.1: rund um einen Sprung folgt die Kamera der Höhe des Autos fester (weniger Nachlaufen beim Fallen)
+  if (sk.e > 0) kam.pos.y = yAlt + (kam.ziel.y - yAlt) * (1 - Math.exp(-CONFIG.sprung.kamera.folgenHoehe * dt));
   kameraKorrektur(kam.pos);
   kamera.position.copy(kam.pos);
   const y = auto.objekt.position.y;
-  ruckSetzen(sk.ruckPx); // M10c: Federungs-Ruck bei der Landung (ganze Bildpunkte, sonst 0 = nichts)
+  ruckSetzen(sk.ruckPx); // M10c: Federungs-Ruck bei der Landung (ganze Bildpunkte der Zeichenfläche, sonst 0 = nichts)
   kamera.lookAt(
     physik.x + Math.sin(kam.yaw) * c.blickVoraus, y + c.blickHoehe, physik.z + Math.cos(kam.yaw) * c.blickVoraus,
   );
@@ -857,11 +860,12 @@ function kameraFuehren(dt) {
 }
 
 // M10c: Ruck = das Bild rückt um ganze Bildpunkte nach unten (Bildausschnitt verschoben, kein Zoomen auf Zwischenpixel)
+// M10c.1: px sind Bildpunkte der Zeichenfläche (aus einem Anteil der Bildhöhe gerechnet, in sprungBild)
 function ruckSetzen(px) {
   if (px === sk.ruckAktiv) return;
   sk.ruckAktiv = px;
   const rb = renderer.domElement.width, rh = renderer.domElement.height;
-  if (px) kamera.setViewOffset(rb, rh, 0, -Math.round(px * rh / H), rb, rh); else kamera.clearViewOffset();
+  if (px) kamera.setViewOffset(rb, rh, 0, -px, rb, rh); else kamera.clearViewOffset();
 }
 // M10c: Sprung-Ereignisse je Bild (aus den Zählern der Flugphase): Kamera, Ton, Staub, Haptik, Motor
 function sprungBild(dt, imRennen) {
@@ -878,7 +882,8 @@ function sprungBild(dt, imRennen) {
     sk.landung = flug.ereignis.landung;
     const L = flug.letzteLandung;
     sk.land = 0;
-    sk.ruckT = 0; sk.ruckAmp = an ? Math.round(K.ruckPixel[0] + (K.ruckPixel[1] - K.ruckPixel[0]) * L.haerte) : 0;
+    // M10c.1: Ruck als Anteil der Bildhöhe (bleibt gleich gross, egal welche Auflösung), mindestens 1 Bildpunkt
+    sk.ruckT = 0; sk.ruckAmp = an ? Math.max(1, (K.ruckAnteil[0] + (K.ruckAnteil[1] - K.ruckAnteil[0]) * L.haerte) * renderer.domElement.height) : 0;
     sprungTonInfo.haerte = L.haerte; sprungTonInfo.klasse = L.klasse; sprungTonInfo.s = rennen.letztesS;
     if (imRennen) { ton.sprung('landung', sprungTonInfo); spielTick('landung', L.haerte); }
     staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(ST.landungMin + (ST.landungMax - ST.landungMin) * L.haerte), 0.4 + 0.6 * L.haerte, untergrund);

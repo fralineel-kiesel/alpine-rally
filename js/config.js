@@ -1134,12 +1134,14 @@ export const CONFIG = {
     },
     // Filmische Kamera (Einstellung SPRUNGKAMERA, Standard AN). AUS = Kamera wie immer
     kamera: {
-      zurueck: 0.2,            // beim Abheben so viel weiter zurück (0.2 = Ziel +20 %; die Kamera läuft nach, gemessen ca. +15 %) ...
-      heben: 0.6,              // ... und so viele Meter höher
+      // M10c.1 (Lino: „etwas zu beweglich“): steifer. Vorher 0.2 / 0.6 m / 0.4 s / 2–4 Bildpunkte / 0.15 s
+      zurueck: 0.05,           // beim Abheben so viel weiter zurück (0.05 = +5 %) ...
+      heben: 0.24,             // ... und so viele Meter höher (40 % von früher)
       abhebenZeit: 0.3,        // so schnell (s) zieht sie zurück
-      landenZeit: 0.4,         // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe)
-      ruckPixel: [2, 4],       // Federungs-Ruck bei der Landung: so viele Bildpunkte nach unten (sauber .. sehr hart) ...
-      ruckZeit: 0.15,          // ... und so schnell (s) wieder zurück (ganze Bildpunkte, kein weiches Zoomen)
+      landenZeit: 0.25,        // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe, ohne Überschwingen)
+      folgenHoehe: 25,         // rund um den Sprung folgt die Kamera der Autohöhe so fest (1/s; normal 12, höher = direkter)
+      ruckAnteil: [0.004, 0.006], // Federungs-Ruck bei der Landung: Anteil der Bildhöhe nach unten (sauber .. sehr hart, ganze Bildpunkte, mind. 1) ...
+      ruckZeit: 0.1,           // ... und so schnell (s) wieder zurück (kein weiches Zoomen)
     },
     // Ton (vorhandene Klänge: Schlag, Stein-Aufprall, Jubel; nichts Neues geladen)
     ton: {
