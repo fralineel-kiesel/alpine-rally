@@ -108,6 +108,7 @@ export const TEXTE = {
   'einst.grafik': { de: 'GRAFIK', en: 'GRAPHICS' },
   'einst.vollbild': { de: 'VOLLBILD', en: 'FULLSCREEN' },
   'einst.aufloesung': { de: 'PIXELGRÖSSE', en: 'PIXEL SIZE' },
+  'meldung.aufloesung': { de: 'AUFLÖSUNG AUTOMATISCH GESENKT', en: 'RESOLUTION LOWERED AUTOMATICALLY' }, // M10c.1
   'einst.aufloesungHinweis': { de: 'SCHÄRFER = WENIGER RETRO UND MEHR LAST', en: 'SHARPER = LESS RETRO AND MORE LOAD' },
   'einst.paceNotes': { de: 'PACE-NOTES', en: 'PACE NOTES' },
   'einst.paceNotesHinweis': { de: 'GLEICH WIE TASTE {taste}', en: 'SAME AS KEY {taste}' },

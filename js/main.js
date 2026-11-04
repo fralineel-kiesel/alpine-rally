@@ -49,6 +49,7 @@ import { baueTachos } from './tacho.js';
 import { pixelText } from './pixel.js';
 import { baueKollision } from './kollision.js';
 import { baueWand } from './wand.js'; // M10c.1
+import { baueAutoAufloesung } from './aufloesung.js'; // M10c.1
 import { baueCheckpointTore } from './checkpoints.js';
 import { baueStrassenrand } from './strassenrand.js';
 import { baueKuehe } from './kuehe.js';
@@ -108,9 +109,19 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(1);
 // Pixelgrösse (M5a): nur das 3D-Bild wird feiner, HUD und Menü bleiben im 320x180-Raster
+// M10c.1: AUTO (js/aufloesung.js). ?aufloesung=320x180 (nur Werkzeuge/Tests): feste Stufe für diese Sitzung, nicht gespeichert
+const autoAuf = baueAutoAufloesung(einstellungen, setze);
+{
+  const w = new URLSearchParams(window.location.search).get('aufloesung');
+  const i = w ? CONFIG.menue.aufloesungen.findIndex(([b, h]) => `${b}x${h}` === w) : -1;
+  if (i >= 0 && einstellungen.aufloesungAuto !== false) autoAuf.test = i;
+}
 function aufloesungSetzen() {
-  const [rb, rh] = CONFIG.menue.aufloesungen[einstellungen.aufloesung] || [B, H];
+  const [rb, rh] = CONFIG.menue.aufloesungen[autoAuf.stufe()] || [B, H];
+  if (renderer.domElement.width === rb && renderer.domElement.height === rh) return;
+  const t0 = performance.now();
   renderer.setSize(rb, rh, false);
+  autoAuf.wechselMs = performance.now() - t0; // (Tests: so lange dauert das Neuaufbauen der Zeichenfläche)
 }
 aufloesungSetzen();
 
@@ -1179,7 +1190,11 @@ ablauf.registriere('ziel', {
 
 // Einstellungen wirken sofort
 beiAenderung((name, wert) => {
-  if (name === 'aufloesung') { aufloesungSetzen(); auto.detail(renderer.domElement.width); } // M8a: Schrift am Auto je Pixelgrösse
+  // M8a: Schrift am Auto je Pixelgrösse. M10c.1: auch AUTO und die automatisch gewählte Stufe; Messung neu beginnen
+  if (name === 'aufloesung' || name === 'aufloesungAuto' || name === 'autoStufe') {
+    if (name !== 'autoStufe') autoAuf.test = null;
+    aufloesungSetzen(); auto.detail(renderer.domElement.width); autoAuf.ruhig();
+  }
   if (name === 'fps') debugAn = wert;
   if (name === 'schatten') schatten.setzeAn(wert); // M10b.2
   if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
@@ -1294,6 +1309,10 @@ function schleife(jetzt) {
   if (ablauf.zustand === 'ziel' && rennen.zustand !== 'ziel') ablauf.wechsle('rennen');
   const def = ablauf.def;
   const anhalten = window.__alpineRally && window.__alpineRally.anhalten; // nur für Tests: Physik von aussen gesteuert
+  // M10c.1: AUTO-Auflösung misst nur im laufenden Rennen (nicht Menü, Pause, Countdown, Zielbildschirm, Schwarzbild)
+  if (autoAuf.bild(dt, def.welt === 'rennen' && ablauf.zustand === 'rennen' && rennen.zustand === 'laeuft' && !wasserBad.aktiv && !anhalten)) {
+    rennen.meldung = { text: t('meldung.aufloesung'), farbe: CONFIG.menue.farbeHinweis, bis: rennen.uhr + CONFIG.menue.autoAufloesung.meldungDauer, verpasstCp: -1 };
+  }
   const xVor = physik.x, zVor = physik.z;
   let dtWelt = dt; // 0 = eingefroren (Pause)
   if (def.welt === 'rennen') {
@@ -1541,5 +1560,6 @@ window.__alpineRally = {
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
+  autoAuf, // M10c.1 (Tests): AUTO-Auflösung
   flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };

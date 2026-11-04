@@ -25,6 +25,11 @@ function uebernimm(d) {
   const ganz = (w, n) => Number.isInteger(w) && w >= 0 && w < n;
   if (typeof d.vollbild === 'boolean') einstellungen.vollbild = d.vollbild;
   if (ganz(d.aufloesung, M.aufloesungen.length)) einstellungen.aufloesung = d.aufloesung;
+  // M10c.1: AUTO. Alte Speicherstände ohne aufloesungAuto: 320x180 (der alte Standard) wird einmalig zu AUTO,
+  // 480x270 und 640x360 bleiben fest eingestellt
+  if (typeof d.aufloesungAuto === 'boolean') einstellungen.aufloesungAuto = d.aufloesungAuto;
+  else if (ganz(d.aufloesung, M.aufloesungen.length)) { einstellungen.aufloesungAuto = d.aufloesung === 0; einstellungen.migriert = d.aufloesung === 0; }
+  if (ganz(d.autoStufe, M.aufloesungen.length)) einstellungen.autoStufe = d.autoStufe;
   if (d.einheit === 'kmh' || d.einheit === 'mph') einstellungen.einheit = d.einheit;
   if (d.tacho === 'auto' || d.tacho === 'klassisch') einstellungen.tacho = d.tacho; // M8g (fehlt = auto)
   if (d.touch === 'auto' || d.touch === 'an' || d.touch === 'aus') einstellungen.touch = d.touch; // M9a (fehlt = auto)
@@ -100,7 +105,10 @@ export function speichere() {
 
 // Einen Wert ändern, speichern und melden
 export function setze(name, wert) {
-  if (einstellungen[name] === wert && name !== 'tasten' && name !== 'lacke') return;
+  // M10c.1: eine feste Pixelgrösse wählen schaltet AUTO aus
+  const ausAuto = name === 'aufloesung' && einstellungen.aufloesungAuto !== false;
+  if (einstellungen[name] === wert && name !== 'tasten' && name !== 'lacke' && !ausAuto) return;
+  if (ausAuto) einstellungen.aufloesungAuto = false;
   einstellungen[name] = wert;
   speichere();
   for (const f of beobachter) f(name, wert);

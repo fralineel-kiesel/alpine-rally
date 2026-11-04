@@ -17,4 +17,6 @@ Referenz: 0.10c = 612cc62 (Worktree im Scratchpad), Bilder/Zeiten bei 320x180. T
   `pegel` −6.15, `nah`: Ufer 0.15, Grund 0.4, Böschung nach dem See), Ufer 1.5–7 m (Strasse steigt), zu tief nach 2.3–3.3 m,
   Wasserbad zurück auf 3270 m, 9 Zuschauer aussen vor der Kehre, 3 Findlinge. Hang 0, Verlauf/CPs/Notes/Abkürzungen gleich.
 - **D:** Karte 74x62 statt 124x104 (60 %), Liste 212 px breit, Sprungrekord in der Zeile; Text nie unter der Karte (de/en).
-- Nächste: E (`teil-e.py`, `js/aufloesung.js`), F.
+- **E:** `js/aufloesung.js`: AUTO (Standard, 640x360, 2 Fenster à 4 s unter 50 FPS = eine Stufe tiefer, gemerkt `autoStufe`),
+  Migration 320x180 → AUTO; Werkzeuge hängen `?aufloesung=320x180` an (`--aufloesung`). HUD bleibt 320x180 (pixelgleich). y–ae grün.
+- Nächste: F (Bildzeit-Tabelle `--nur bz`, Bilder, Bericht, Version, volle Regression).

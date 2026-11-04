@@ -364,8 +364,10 @@ export function baueSeiten(api) {
       vollbildEintrag,
       {
         typ: 'auswahl', text: 'einst.aufloesung', hinweis: 'einst.aufloesungHinweis',
-        optionen: () => R.map((r, i) => ({ wert: i, text: () => `${r[0]}X${r[1]}` })),
-        lesen: () => einstellungen.aufloesung, setzen: (w) => setze('aufloesung', w),
+        // M10c.1: AUTO (Standard), dann fest von gross nach klein; AUTO wählen beginnt wieder bei 640x360
+        optionen: () => [{ wert: 'auto', text: () => t('wert.auto') }, ...R.map((r, i) => ({ wert: i, text: () => `${r[0]}X${r[1]}` })).reverse()],
+        lesen: () => (einstellungen.aufloesungAuto !== false ? 'auto' : einstellungen.aufloesung),
+        setzen: (w) => { if (w === 'auto') { setze('autoStufe', R.length - 1); setze('aufloesungAuto', true); } else setze('aufloesung', w); },
       },
       {
         typ: 'umschalter', text: 'einst.paceNotes',

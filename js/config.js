@@ -1522,7 +1522,9 @@ export const CONFIG = {
     // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
     standard: {
       vollbild: false,         // Vollbild an/aus (wird beim ersten Tastendruck auf dem Titel wieder eingeschaltet)
-      aufloesung: 0,           // Pixelgrösse: Nummer in "aufloesungen" (0 = 320x180, Original-Look)
+      aufloesung: 0,           // Pixelgrösse fest: Nummer in "aufloesungen" (0 = 320x180, Original-Look); gilt nur ohne AUTO
+      aufloesungAuto: true,    // M10c.1: Pixelgrösse AUTO (Standard): 640x360, bei Ruckeln eine Stufe tiefer (autoAufloesung)
+      autoStufe: 2,            // M10c.1: von AUTO zuletzt gewählte Stufe (2 = 640x360), gemerkt
       einheit: 'kmh',          // 'kmh' oder 'mph'
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
       schatten: true,          // M10b.2: Kunst-Schatten (nur auf Strecken mit Schatten, z. B. Finnland)
@@ -1560,6 +1562,17 @@ export const CONFIG = {
       hudGroesse: 'mittel',    // M9a.2: HUD-GRÖSSE (alle Geräte) 'klein', 'mittel' (wie bisher), 'gross' (Faktoren: hud.groesse)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
+    // M10c.1: AUTO schaltet eine Stufe herunter, wenn im Rennen der Median der Bildrate in "fenster" Sekunden unter "grenze"
+    // liegt, und das in "fensterNacheinander" Fenstern nacheinander. Nie automatisch hoch (in derselben Sitzung).
+    autoAufloesung: {
+      fenster: 4,              // Messfenster (s)
+      grenze: 50,              // Bilder pro Sekunde (Anzeige mit 60 Hz)
+      grenze120: 85,           // ... bei einer Anzeige mit 120 Hz (erkannt, wenn die Bildrate einmal über hz120Ab lag)
+      hz120Ab: 100,
+      fensterNacheinander: 2,  // so viele schlechte Fenster nacheinander
+      ruheNachStart: 3,        // die ersten so vielen Sekunden Rennen nach dem Laden oder einem Wechsel zählen nicht
+      meldungDauer: 2,         // Meldung „AUFLÖSUNG AUTOMATISCH GESENKT“ so lange (s)
+    },
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
     totzonen: [0.04, 0.08, 0.12, 0.18, 0.25], // Gamepad-Totzone je Stufe (Mitte = steuerung.totzone von früher)
     lautSchritt: 5,            // Regler LAUTSTÄRKE, SIGNALTÖNE und MUSIK in Schritten von ... Prozent

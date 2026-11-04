@@ -867,5 +867,112 @@ if (teil('v') || teil('w')) {
   }
 }
 
+// ===================================================================== Teil E: Auflösung AUTO
+const AUF = (s) => s.page.evaluate(() => { const A = window.__alpineRally, c = document.getElementById('spiel'); return { b: c.width, h: c.height, auto: A.einstellungen.aufloesungAuto, stufe: A.einstellungen.autoStufe, fest: A.einstellungen.aufloesung, gesenkt: A.autoAuf.gesenkt, meldung: A.hudMeldung(), speicher: localStorage.getItem('alpineRally.einstellungen') }; });
+// Rennen fahren (Gas) mit fester Bildzeit dt (ms) für sek Sekunden
+const FAHRE = (s, sek, dtMs) => s.page.evaluate(([sek, dtMs]) => { const A = window.__alpineRally; A.testEingabe = { gas: 0.6 }; window.__bild(Math.round(sek * 1000 / dtMs), dtMs); A.testEingabe = null; return A.rennen.zustand; }, [sek, dtMs]);
+if (teil('y') || teil('z') || teil('aa')) {
+  console.log('(y) Standard: PIXELGRÖSSE = AUTO, Start mit 640x360');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&aufloesung=auto', { uhr: true, speicher: {} });
+  await bereit(s);
+  const a0 = await AUF(s);
+  const menue = await s.page.evaluate(() => { const A = window.__alpineRally, e = A.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.aufloesung'); return { wert: e.lesen(), optionen: e.optionen().map((o) => (typeof o.text === 'function' ? o.text() : o.text)) }; });
+  melde(a0.auto === true && a0.stufe === 2 && a0.b === 640 && a0.h === 360 && menue.wert === 'auto', `ohne Speicher: AUTO ${a0.auto}, Stufe ${a0.stufe}, Zeichenfläche ${a0.b}x${a0.h}; Menü zeigt "${menue.wert}", Werte ${menue.optionen.join(' / ')}`);
+  if (teil('z')) {
+    console.log('(z) Runterschalten: 30 Bilder/s im Rennen = genau eine Stufe; kurzer Ruckler, Menü, Pause: nichts');
+    await bilder(s, 330); // Countdown
+    await FAHRE(s, 2, 1000 / 60);
+    const st = await FAHRE(s, 18, 1000 / 30);
+    const a1 = await AUF(s);
+    melde(st === 'laeuft' && a1.gesenkt === 1 && a1.stufe === 1 && a1.b === 480 && a1.h === 270, `18 s mit 30 Bildern/s: ${a1.gesenkt}x gesenkt, Stufe ${a1.stufe}, Zeichenfläche ${a1.b}x${a1.h}`);
+    const ms = await s.page.evaluate(() => window.__alpineRally.autoAuf.wechselMs);
+    info(`Neuaufbau der Zeichenfläche: ${ms.toFixed(1)} ms (Test-Uhr steht: gemessen mit der eigenen Uhr der Seite = 0; echt siehe Bericht)`);
+    const sp = JSON.parse(a1.speicher || '{}');
+    if (teil('aa')) {
+      console.log('(aa) Merken über Neuladen, AUTO wählen setzt zurück auf 640x360');
+      melde(sp.autoStufe === 1 && sp.aufloesungAuto !== false, `gespeichert: autoStufe ${sp.autoStufe}, aufloesungAuto ${sp.aufloesungAuto}`);
+    }
+  }
+  await s.schliessen();
+  if (teil('z')) {
+    // kurzer Ruckler (1 s mit 20 Bildern/s) = nichts
+    const s2 = await oeffne(WURZEL, '?menue=aus&ton=aus&aufloesung=auto', { uhr: true, speicher: {} }); await bereit(s2);
+    await bilder(s2, 330); await FAHRE(s2, 6, 1000 / 60); await FAHRE(s2, 1, 50); await FAHRE(s2, 12, 1000 / 60);
+    const r2 = await AUF(s2); await s2.schliessen();
+    melde(r2.gesenkt === 0 && r2.b === 640, `1 s Ruckler mit 20 Bildern/s im Rennen: ${r2.gesenkt}x gesenkt (${r2.b}x${r2.h})`);
+    // Menü (Titel/Hauptmenü mit Demo-Fahrt) mit 20 Bildern/s, 20 s = nichts
+    const s3 = await oeffne(WURZEL, '?ton=aus&aufloesung=auto', { uhr: true, speicher: {} }); await bereit(s3);
+    await s3.page.evaluate(() => window.__bild(400, 50));
+    const r3 = await AUF(s3); await s3.schliessen();
+    melde(r3.gesenkt === 0 && r3.b === 640, `Menü mit Demo-Fahrt, 20 s mit 20 Bildern/s: ${r3.gesenkt}x gesenkt`);
+    // Pause, 20 s mit 20 Bildern/s = nichts; erste 3 s Rennen mit 20 Bildern/s, dann flüssig = nichts
+    const s4 = await oeffne(WURZEL, '?menue=aus&ton=aus&aufloesung=auto', { uhr: true, speicher: {} }); await bereit(s4);
+    await bilder(s4, 330); await FAHRE(s4, 2.9, 50); await FAHRE(s4, 12, 1000 / 60);
+    const r4a = await AUF(s4);
+    await s4.page.evaluate(() => window.__alpineRally.pausieren()); await s4.page.evaluate(() => window.__bild(400, 50));
+    const r4 = await AUF(s4); await s4.schliessen();
+    melde(r4a.gesenkt === 0 && r4.gesenkt === 0 && r4.b === 640, `erste 2.9 s Rennen mit 20 Bildern/s, dann flüssig: ${r4a.gesenkt}x; danach 20 s Pause mit 20 Bildern/s: ${r4.gesenkt}x gesenkt`);
+  }
+  if (teil('aa')) {
+    const s5 = await oeffne(WURZEL, '?menue=aus&ton=aus&aufloesung=auto', { uhr: true, speicher: { 'alpineRally.einstellungen': JSON.stringify({ aufloesungAuto: true, autoStufe: 1 }) } });
+    await bereit(s5);
+    const r5 = await AUF(s5);
+    await s5.page.evaluate(() => { const e = window.__alpineRally.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.aufloesung'); e.setzen('auto'); });
+    const r6 = await AUF(s5);
+    await s5.page.evaluate(() => { const e = window.__alpineRally.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.aufloesung'); e.setzen(0); });
+    const r7 = await AUF(s5);
+    await s5.schliessen();
+    melde(r5.b === 480 && r6.b === 640 && r6.stufe === 2 && r7.b === 320 && r7.auto === false, `gemerkte Stufe 1 beim Laden: ${r5.b}x${r5.h}; AUTO gewählt: ${r6.b}x${r6.h} (Stufe ${r6.stufe}); 320x180 fest gewählt: ${r7.b}x${r7.h}, AUTO ${r7.auto}`);
+  }
+}
+if (teil('ab')) {
+  console.log('(ab) Migration: gespeichert 320x180 (alter Standard) wird AUTO, 480x270 und 640x360 bleiben fest');
+  for (const [alt, soll] of [[0, [640, true]], [1, [480, false]], [2, [640, false]]]) {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus&aufloesung=auto', { uhr: true, speicher: { 'alpineRally.einstellungen': JSON.stringify({ aufloesung: alt }) } });
+    await bereit(s);
+    const r = await AUF(s); await s.schliessen();
+    melde(r.b === soll[0] && r.auto === soll[1], `gespeichert aufloesung ${alt}: jetzt ${r.b}x${r.h}, AUTO ${r.auto}`);
+  }
+}
+if (teil('ad')) {
+  console.log('(ad) HUD in 320x180 / 480x270 / 640x360: HUD-Leinwand immer 320x180 und Bild für Bild gleich (gleich gross im Bild)');
+  const huds = {};
+  for (const a of ['320x180', '480x270', '640x360']) {
+    const s = await oeffne(WURZEL, `?menue=aus&ton=aus&aufloesung=${a}`, { uhr: true });
+    await bereit(s); await bilder(s, 400);
+    await s.page.evaluate(() => { const A = window.__alpineRally; A.anhalten = true; A.setzeAuf(1200); A.kameraSofort(); });
+    await bilder(s, 6);
+    huds[a] = await s.page.evaluate(() => { const h = document.getElementById('hud'), c = document.getElementById('spiel'); return { b: h.width, h: h.height, url: h.toDataURL(), sb: c.width, sh: c.height, buehne: document.getElementById('buehne').getBoundingClientRect().width }; });
+    if (a === '640x360') { const img = await s.page.screenshot(); fs.writeFileSync(path.join(LOG, 'hud-640.png'), img); }
+    await s.schliessen();
+  }
+  const s = await starteSpiel({ breite: 320, hoehe: 200 }); await s.page.goto(`${s.url}/tools/leer.html`).catch(() => {});
+  const v1 = await vergleiche(s.page, huds['320x180'].url, huds['480x270'].url), v2 = await vergleiche(s.page, huds['320x180'].url, huds['640x360'].url);
+  await s.schliessen();
+  melde(Object.values(huds).every((h) => h.b === 320 && h.h === 180) && v1.anders === 0 && v2.anders === 0, `HUD-Leinwand ${Object.values(huds).map((h) => `${h.b}x${h.h}`).join(' / ')}, 3D-Bild ${Object.values(huds).map((h) => `${h.sb}x${h.sh}`).join(' / ')}, Bühne ${Object.values(huds).map((h) => Math.round(h.buehne)).join(' / ')} px breit; HUD-Pixel anders 480: ${v1.anders}, 640: ${v2.anders}`);
+}
+if (teil('ae')) {
+  console.log('(ae) Physik und Ton unabhängig von der Auflösung (Testfahrer 320x180 gegen 640x360)');
+  const zeilen = (t) => t.split('\n').filter((x) => /^(vorsichtig|mittel|flott)\s/.test(x)).join('\n');
+  const a = werkzeug('strecke-abfahren.mjs', ['--strecke', 'finnland', '--auto', 'rt4', '--aus', path.join(LOG, 'ae-320.txt')]);
+  const b = werkzeug('strecke-abfahren.mjs', ['--strecke', 'finnland', '--auto', 'rt4', '--aufloesung', '640x360', '--aus', path.join(LOG, 'ae-640.txt')]);
+  melde(zeilen(a.text).length > 50 && zeilen(a.text) === zeilen(b.text), `Finnland rt4 vorsichtig/mittel/flott: ${zeilen(a.text).split('\n').map((z) => z.split(/\s+/).slice(0, 2).join(' ')).join(', ')} – bei 640x360 ${zeilen(a.text) === zeilen(b.text) ? 'identisch' : 'ANDERS'}`);
+  const ton = async (auf) => { const s = await oeffne(WURZEL, `?menue=aus&aufloesung=${auf}`); await bereit(s); const r = await s.page.evaluate(() => JSON.stringify(window.__alpineRally.tonQuellen)); await s.schliessen(); return r; };
+  const t1 = await ton('320x180'), t2 = await ton('640x360');
+  melde(t1 === t2 && t1.length > 500, `Ton-Quellen (Umgebung) bei 320x180 und 640x360 ${t1 === t2 ? 'gleich' : 'ANDERS'}`);
+}
+if (teil('bz')) {
+  console.log('(bz) Bildzeit je Auflösung (Median aus 5 Läufen je Strecke und Auflösung)');
+  const reihen = {};
+  for (let i = 0; i < 5; i++) for (const st of ['alpen', 'finnland']) for (const a of ['320x180', '480x270', '640x360']) (reihen[`${st} ${a}`] ||= []).push(await bildzeitLauf(WURZEL, st, `&aufloesung=${a}`));
+  const m = Object.fromEntries(Object.entries(reihen).map(([k, v]) => [k, med(v.map((x) => x.ms))]));
+  fs.writeFileSync(path.join(LOG, 'bildzeit-e.json'), JSON.stringify({ reihen, median: m }, null, 1));
+  for (const st of ['alpen', 'finnland']) {
+    const b = m[`${st} 320x180`];
+    info(`${st}: 320x180 ${b.toFixed(1)} ms, 480x270 ${m[`${st} 480x270`].toFixed(1)} ms (${(m[`${st} 480x270`] / b).toFixed(2)}x), 640x360 ${m[`${st} 640x360`].toFixed(1)} ms (${(m[`${st} 640x360`] / b).toFixed(2)}x)`);
+    if (m[`${st} 640x360`] / b > 2.5) info(`ACHTUNG ${st}: 640x360 braucht im Test-Browser mehr als 2.5x so lange wie 320x180 (Software-Grafik)`);
+  }
+}
+
 console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');
 process.exit(fehler ? 1 : 0);
