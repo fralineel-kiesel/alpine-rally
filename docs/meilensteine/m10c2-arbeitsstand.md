@@ -10,4 +10,5 @@
 - Gefunden, nicht behoben: main.js tonZ.schaltet/zielGang auskommentiert seit M10c (Schalt-Ton im Rennen).
 - Teil C fertig (Commit 2): Wums im Mix sauber +2.0 / hart +6.7 / sehr hart +10.3 dB (alt −2.9/−0.3/+4.9), Spitze ≤ −1.03 dBFS,
   Ducking −5.5 dB. Verhältnis vor dem Limiter gemessen (Fahrt läuft schon bei −11 dBFS RMS am Limiter). sehrHart 0.85 wegen Spitze.
-- Als Nächstes: B (Kamera), D (Bericht). Worktrees scratchpad/alt (0.10c.1), scratchpad/alt10c (0.10c).
+- Teil B fertig (Commit 3): SPRUNGKAMERA AUS/RUHIG/NORMAL, NORMAL Zoom 7.0 %, Neigung Sprung 3 8.6°, Ruck 1.1 %, 0.32 s,
+  Nachlaufen 0.15–0.18 s; RUHIG bit-gleich; Bildzeit Fi −2.5 %. Als Nächstes: D (Bilder, --lang, Bericht, PR). Worktrees scratchpad/alt (0.10c.1), scratchpad/alt10c (0.10c).

@@ -64,7 +64,7 @@ const bilder = (s, n) => s.page.evaluate((n) => window.__bild(n, 1000 / 60), n);
 
 const foto = (s) => s.page.evaluate(() => window.__foto());
 
-// ===================================================================== Unveränderlich: Alpen (aus tools/m10c-test.mjs, gegen 0.10c)
+// ===================================================================== Bausteine (aus tools/m10c1-test.mjs)
 const STILE_B = ['vorsichtig', 'mittel', 'flott', 'digital', 'wand'];
 function testfahrerLauf(strecke, auto, wurzel = WURZEL, stand = "neu", extra = []) {
   const datei = path.join(LOG, `fahrt-${stand}-${strecke}-${auto}${extra.length ? `-${extra.join("")}` : ""}.json`);
@@ -646,3 +646,240 @@ if (teil('z')) {
   const n = zeile(WURZEL), a = ALT ? zeile(ALT) : null;
   melde(n && (!a || n.trim() === a.trim()), `Aufruf: ${n ? n.trim().slice(0, 120) : 'FEHLT'}${a ? (n.trim() === a.trim() ? ' (gleich wie 0.10c.1)' : ' (ANDERS als 0.10c.1)') : ''}`);
 }
+
+// ===================================================================== Teil B: Sprungkamera-Stufen (Messung wie tools/m10c1-test.mjs)
+const KAMERA_FILM = ({ kmh = 110, kante, cp, bilder = 260 }) => {
+  const A = window.__alpineRally, P = A.physik, F = A.flug, K = A.kamera, c = A.CONFIG.kamera, out = [];
+  A.anhalten = false; A.rennen.naechsterCp = cp;
+  A.setzeAuf(kante - 60); A.kameraSofort();
+  P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+  A.testEingabe = { gas: 1 };
+  const rh = A.renderer ? A.renderer.domElement.height : document.getElementById('spiel').height;
+  for (let k = 0; k < bilder; k++) {
+    window.__bild(1, 1000 / 60);
+    const y = A.autoModell.objekt.position.y, yaw = A.kam.yaw;
+    const bx = P.x + Math.sin(yaw) * c.blickVoraus, bz = P.z + Math.cos(yaw) * c.blickVoraus, by = y + c.blickHoehe;
+    const neig = Math.atan2(K.position.y - by, Math.hypot(K.position.x - bx, K.position.z - bz)) * 180 / Math.PI;
+    out.push({ k, inLuft: F.inLuft, e: A.sk.e, ruck: A.sk.ruckPx, view: K.view && K.view.enabled ? Math.abs(K.view.offsetY) : 0, anheb: A.kam.ziel.y - y - c.hoehe, fov: K.fov, zoom: K.zoom, rh,
+      y, kamY: K.position.y, zielY: A.kam.ziel.y, abstand: Math.hypot(K.position.x - P.x, K.position.z - P.z), neig });
+  }
+  A.testEingabe = null;
+  return out;
+};
+const KAMERA_NORMAL = { abstand: 6.9, hoehe: 2.5, blickHoehe: 1.2, blickVoraus: 4 };
+const neigNormal = Math.atan2(KAMERA_NORMAL.hoehe - KAMERA_NORMAL.blickHoehe, KAMERA_NORMAL.abstand + KAMERA_NORMAL.blickVoraus) * 180 / Math.PI;
+function kameraMetriken(f) {
+  const ab = f.findIndex((x) => x.inLuft), land = f.findIndex((x, i) => i > ab && !x.inLuft);
+  if (ab < 0 || land < 0) return null;
+  const vor = f[Math.max(0, ab - 5)], fenster = f.slice(ab, Math.min(f.length, land + 40));
+  const zoom = Math.max(...fenster.map((x) => x.abstand)) / vor.abstand - 1;
+  const ueber = Math.max(...fenster.map((x) => x.kamY - x.y));
+  const anheb = Math.max(...fenster.map((x) => x.anheb)); // Anhebung des Kamera-Ziels über die normale Höhe (ohne Nachlaufen)
+  const neig = Math.max(...fenster.map((x) => Math.abs(x.neig - neigNormal)));
+  const neigVor = Math.abs(vor.neig - neigNormal);
+  const ruck = Math.max(...f.slice(land, land + 20).map((x) => x.view)) / f[0].rh;
+  let normal = f.findIndex((x, i) => i >= land && x.e === 0 && x.ruck === 0 && x.view === 0);
+  const zeitNormal = normal < 0 ? Infinity : (normal - land) / 60;
+  // Nachlaufen: um wie viele Bilder hinkt die Kamerahöhe ihrem Ziel hinterher (bester Verzug im Flug)
+  let best = 0, bestF = Infinity;
+  for (let d = 0; d <= 30; d++) {
+    let q = 0;
+    for (let i = ab + d; i < land + 10 && i < f.length; i++) q += (f[i].kamY - f[i - d].zielY) ** 2;
+    if (q < bestF) { bestF = q; best = d; }
+  }
+  // Überschwingen: nach dem Normalzustand tiefer als die normale Höhe über dem Auto
+  const unter = Math.max(0, ...f.slice(land, Math.min(f.length, land + 60)).map((x) => KAMERA_NORMAL.hoehe - (x.kamY - x.y)));
+  const nach = f[Math.min(f.length - 1, land + 60)];
+  return { ab, land, flug: (land - ab) / 60, zoom, ueber, anheb, ueberMehr: ueber - (vor.kamY - vor.y), neig, neigVor, ruck, ruckPx: Math.max(...f.slice(land, land + 20).map((x) => x.view)), zeitNormal,
+    nachlauf: best / 60, unter, nach, ganz: f.every((x) => Number.isInteger(x.view) && Number.isInteger(x.ruck) && x.fov === f[0].fov && x.zoom === 1) };
+}
+const SPRUENGE = [{ name: 'KIEFERNKUPPE', kante: 495, cp: 0 }, { name: 'BIRKENKUPPE', kante: 1830, cp: 2 }, { name: 'HOCHWALDKUPPE', kante: 3090, cp: 3 }, { name: 'SEEKUPPE', kante: 3656, cp: 4 }];
+const WEITEN = (kmhs) => {
+  const A = window.__alpineRally, P = A.physik, F = A.flug; A.anhalten = true; const out = {};
+  for (const z of A.strecke.sprungZonen) {
+    out[z.name] = [];
+    for (const kmh of kmhs) {
+      A.setzeAuf(z.kante - 6); P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+      const n0 = F.ereignis.landung, a0 = F.ereignis.abheben;
+      for (let t = 0; t < 6 && F.ereignis.landung === n0; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { gas: 0.4, bremse: 0, lenkung: 0, handbremse: false }, true);
+      const L = F.letzteLandung;
+      out[z.name].push(F.ereignis.abheben === a0 ? { kmh, ab: false } : { kmh, ab: true, weite: L.weite, hoehe: L.hoehe, zeit: L.zeit, verlust: L.verlust });
+    }
+  }
+  return out;
+};
+const WEITEN_010C = { KIEFERNKUPPE: 14.5, BIRKENKUPPE: 23.8, HOCHWALDKUPPE: 38.0, SEEKUPPE: 30.3 };
+// werte: NORMAL-Werte vor dem Filmen überschreiben (nur zum Abstimmen)
+async function kameraMessung(wurzel, stufe = null, extra = '', werte = null) {
+  const speicher = stufe == null ? null : { 'alpineRally.einstellungen': JSON.stringify({ sprungkamera: stufe }) };
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=finnland${extra}`, { uhr: true, ...(speicher ? { speicher } : {}) });
+  await bereit(s);
+  if (werte) await s.page.evaluate((w) => Object.assign(window.__alpineRally.CONFIG.sprung.SPRUNGKAMERA_STUFEN.normal, w), werte);
+  await bilder(s, 320);
+  const r = [];
+  for (const j of SPRUENGE) r.push({ ...j, film: await s.page.evaluate(KAMERA_FILM, { kante: j.kante, cp: j.cp }) });
+  const fehlerS = s.fehler.slice();
+  const einst = await s.page.evaluate(() => window.__alpineRally.einstellungen.sprungkamera);
+  await s.schliessen();
+  return { r, fehler: fehlerS, einst };
+}
+const pz1 = (x) => `${(x * 100).toFixed(1)} %`;
+const kamZeile = (m) => (m ? `Zoom-Out ${pz1(m.zoom)}, Anhebung ${m.anheb.toFixed(2)} m, Neigung ${m.neig.toFixed(1)}°, Ruck ${pz1(m.ruck)} (${m.ruckPx} px), normal nach ${m.zeitNormal.toFixed(2)} s, Nachlaufen ${m.nachlauf.toFixed(3)} s, Überschwingen ${m.unter.toFixed(3)} m` : 'KEIN SPRUNG');
+if (['n', 'o', 'r'].some(teil)) {
+  const KW = process.env.M10C2_KAMERA ? JSON.parse(process.env.M10C2_KAMERA) : null; // (Abstimmen: NORMAL-Werte probieren)
+  const normal = await kameraMessung(WURZEL, 'normal', '', KW);
+  const mN = normal.r.map((j) => kameraMetriken(j.film));
+  const tab = ['| Sprung | 0.10c | RUHIG (= 0.10c.1) | NORMAL |', '|---|---|---|---|'];
+  let mR = null, mA = null, ruhig = null, alt = null;
+  if (teil('o') || teil('n')) {
+    ruhig = await kameraMessung(WURZEL, 'ruhig'); mR = ruhig.r.map((j) => kameraMetriken(j.film));
+    if (ALT10C) { const a10 = await kameraMessung(ALT10C); mA = a10.r.map((j) => kameraMetriken(j.film)); }
+  }
+  SPRUENGE.forEach((j, i) => tab.push(`| ${j.name} | ${mA ? kamZeile(mA[i]) : '–'} | ${mR ? kamZeile(mR[i]) : '–'} | ${kamZeile(mN[i])} |`));
+  fs.writeFileSync(path.join(LOG, 'kamera-tabelle.md'), `${tab.join('\n')}\n`);
+  if (teil('n')) {
+    console.log('(n) NORMAL: Zoom-Out 6–8 %, Neigung höchstens 10° (Sprung 3 6–10°), Ruck 0.8–1.2 % der Bildhöhe, normal nach 0.25–0.35 s, kein Überschwingen');
+    SPRUENGE.forEach((j, i) => {
+      const m = mN[i];
+      const neigOk = m && m.neig <= 10 && (j.name !== 'HOCHWALDKUPPE' || m.neig >= 6);
+      melde(m && m.zoom >= 0.06 && m.zoom <= 0.08 && neigOk && m.ruck >= 0.008 && m.ruck <= 0.012 && m.zeitNormal >= 0.25 && m.zeitNormal <= 0.35 && m.unter < 0.05, `${j.name}: ${kamZeile(m)}`);
+    });
+    info(`Tabelle 0.10c / RUHIG / NORMAL: ${LOG}/kamera-tabelle.md`);
+    melde(normal.einst === 'normal' && normal.fehler.length === 0, `Einstellung ${normal.einst}, Konsole ohne Fehler (${normal.fehler.length})`);
+  }
+  if (teil('o')) {
+    console.log('(o) RUHIG bit-gleich zu 0.10c.1 (jedes Bild: Kamera, Ziel, Ruck, Zoom)');
+    if (!ALT) info('nur mit --alt');
+    else {
+      alt = await kameraMessung(ALT);
+      const gleich = alt.r.every((j, i) => JSON.stringify(j.film) === JSON.stringify(ruhig.r[i].film));
+      melde(gleich, `4 Sprünge, ${ruhig.r.reduce((n, j) => n + j.film.length, 0)} Bilder: ${gleich ? 'Zahl für Zahl gleich wie 0.10c.1 (Standard AN)' : 'ANDERS'}`);
+    }
+  }
+  if (teil('r')) {
+    console.log('(r) NORMAL ganzzahlig im Pixelraster in 320x180 / 480x270 / 640x360 (Versatz ganze Bildpunkte, Blickwinkel fest, Zoom 1; Ruck ca. 1 %)');
+    for (const a of ['320x180', '480x270', '640x360']) {
+      const k = await kameraMessung(WURZEL, 'normal', `&aufloesung=${a}`);
+      const m = k.r.map((j) => kameraMetriken(j.film));
+      melde(m.every((x) => x && x.ganz && x.ruck >= 0.008 && x.ruck <= 0.012), `${a}: ganzzahlig ${m.map((x) => x && x.ganz).join('/')}, Ruck ${m.map((x) => `${x.ruckPx} px = ${pz1(x.ruck)}`).join(', ')}`);
+    }
+  }
+}
+if (teil('p')) {
+  console.log('(p) SPRUNGKAMERA AUS: Kamera bewegt sich bei Sprüngen nicht');
+  const { r, fehler: fe } = await kameraMessung(WURZEL, 'aus');
+  for (const j of r) {
+    const ab = j.film.findIndex((x) => x.inLuft);
+    const normal = j.film.every((x) => x.e === 0 && x.ruck === 0 && x.view === 0 && Math.abs(x.zielY - (x.y + KAMERA_NORMAL.hoehe)) < 1e-9);
+    melde(ab > 0 && normal, `${j.name}: gesprungen (Bild ${ab}), in allen ${j.film.length} Bildern kein Zurückziehen, kein Ruck, Kamera-Ziel = Autohöhe + 2.5 m`);
+  }
+  melde(fe.length === 0, `Konsole ohne Fehler (${fe.length})`);
+}
+if (teil('q')) {
+  console.log('(q) Migration: gespeichert AN → NORMAL, AUS → AUS, ohne Eintrag → NORMAL; Menü mit drei Werten (de/en)');
+  for (const [gesp, soll] of [[true, 'normal'], [false, 'aus'], [undefined, 'normal'], ['ruhig', 'ruhig']]) {
+    const sp = { 'alpineRally.einstellungen': JSON.stringify(gesp === undefined ? { lautstaerke: 80 } : { sprungkamera: gesp }) };
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus', { speicher: sp });
+    await bereit(s);
+    const r = await s.page.evaluate(() => { const A = window.__alpineRally; const e = A.seiten.einstellungen.eintraege.find((x) => x.text === 'einst.sprungkamera'); return { wert: A.einstellungen.sprungkamera, menue: e && e.lesen(), optionen: e && e.optionen ? e.optionen().map((o) => o.wert).join('/') : null }; });
+    await s.schliessen();
+    melde(r.wert === soll && r.menue === soll && r.optionen === 'aus/ruhig/normal', `gespeichert ${JSON.stringify(gesp)} → ${r.wert} (Menü ${r.menue}, Werte ${r.optionen})`);
+  }
+  const q = fs.readFileSync(path.join(WURZEL, 'js/texte.js'), 'utf8');
+  const t = /'wert\.ruhig': \{ de: '([^']+)', en: '([^']+)' \}/.exec(q);
+  melde(t && /^[A-ZÄÖÜ ]+$/.test(t[1]) && /^[A-Z ]+$/.test(t[2]), `Text RUHIG: de ${t && t[1]}, en ${t && t[2]} (Pixelschrift: nur Grossbuchstaben)`);
+}
+if (teil('s')) {
+  console.log('(s) Flugweiten bei 100 km/h unverändert (±0.5 m: 14.5 / 23.8 / 38.0 / 30.3 m)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const w = await s.page.evaluate(WEITEN, [100]);
+  await s.schliessen();
+  for (const [name, [r]] of Object.entries(w)) melde(r.ab && Math.abs(r.weite - WEITEN_010C[name]) <= 0.5, `${name}: ${r.weite.toFixed(2)} m (0.10c ${WEITEN_010C[name]} m), Höhe ${r.hoehe.toFixed(2)} m, ${r.zeit.toFixed(2)} s`);
+}
+async function bildzeitLauf(wurzel, strecke, extra = '', speicher = null) {
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}${extra}`, speicher ? { speicher } : {});
+  await bereit(s);
+  await s.page.evaluate(() => new Promise((ok) => setTimeout(ok, 4500)));
+  const r = await s.page.evaluate(async (strecke) => {
+    const A = window.__alpineRally, P = A.physik;
+    A.rennen.naechsterCp = strecke === 'finnland' ? 3 : 2; A.setzeAuf(strecke === 'finnland' ? 3020 : 2560); A.kameraSofort();
+    P.vx = Math.sin(P.richtung) * 110 / 3.6; P.vz = Math.cos(P.richtung) * 110 / 3.6; A.testEingabe = { gas: 1 };
+    const zeiten = []; let t0 = performance.now(); const l0 = A.flug ? A.flug.ereignis.landung : 0;
+    await new Promise((ok) => { const f = () => { const t = performance.now(); zeiten.push(t - t0); t0 = t; if (zeiten.length < 150) requestAnimationFrame(f); else ok(); }; requestAnimationFrame(f); });
+    A.testEingabe = null; zeiten.sort((a, b) => a - b);
+    return { ms: zeiten[Math.floor(zeiten.length / 2)], gesprungen: A.flug ? A.flug.ereignis.landung - l0 : 0, rh: document.getElementById('spiel').height };
+  }, strecke);
+  await s.schliessen();
+  return r;
+}
+if (teil('t')) {
+  console.log('(t) Bildzeit Finnland mit Sprung (SPRUNGKAMERA NORMAL, Median aus 5, im selben Lauf gegen die Alpen) gegen 0.10c.1, 320x180');
+  if (!ALT) info('nur mit --alt');
+  else {
+    const reihen = { alpenAlt: [], alpenNeu: [], fiAlt: [], fiNeu: [] };
+    for (let i = 0; i < 5; i++) {
+      reihen.alpenAlt.push(await bildzeitLauf(ALT, 'alpen')); reihen.alpenNeu.push(await bildzeitLauf(WURZEL, 'alpen'));
+      reihen.fiAlt.push(await bildzeitLauf(ALT, 'finnland')); reihen.fiNeu.push(await bildzeitLauf(WURZEL, 'finnland'));
+    }
+    const m = Object.fromEntries(Object.entries(reihen).map(([k, v]) => [k, med(v.map((x) => x.ms))]));
+    const rel = (a, b) => (a / b - 1) * 100;
+    const bereinigt = rel(m.fiNeu / m.alpenNeu, m.fiAlt / m.alpenAlt);
+    fs.writeFileSync(path.join(LOG, 'bildzeit.json'), JSON.stringify({ reihen, median: m }, null, 1));
+    info(`Median je Bild (ms): Alpen alt ${m.alpenAlt.toFixed(1)} / neu ${m.alpenNeu.toFixed(1)}; Finnland alt ${m.fiAlt.toFixed(1)} / neu ${m.fiNeu.toFixed(1)}`);
+    melde(reihen.fiNeu.every((x) => x.gesprungen >= 1) && (rel(m.fiNeu, m.fiAlt) <= 1 || bereinigt <= 1), `Bildzeit Finnland ${rel(m.fiNeu, m.fiAlt).toFixed(1)} % gegen 0.10c.1, gegen die Alpen bereinigt ${bereinigt.toFixed(1)} % (Grenze +1 %)`);
+  }
+}
+
+// ===================================================================== Unveränderlich
+if (teil('x1')) {
+  console.log('(x1) Längen: Alpen 3667.587 m, Finnland 4161.6 m (±0.5), Sprungzonen und Checkpoints gleich wie 0.10c.1');
+  const info1 = async (w, st) => { const s = await oeffne(w, `?menue=aus&ton=aus&strecke=${st}`); await bereit(s); const r = await s.page.evaluate(() => { const A = window.__alpineRally; return { laenge: A.strecke.laenge, cps: A.CONFIG.checkpoints.beiMeter, zonen: A.strecke.sprungZonen.map((z) => [z.kante, z.landeVon, z.landeBis]) }; }); await s.schliessen(); return r; };
+  for (const [st, soll] of [['alpen', 3667.587], ['finnland', 4161.6]]) {
+    const n = await info1(WURZEL, st), a = ALT ? await info1(ALT, st) : null;
+    melde(Math.abs(n.laenge - soll) <= 0.5 && (!a || JSON.stringify(a) === JSON.stringify(n)), `${st}: ${n.laenge.toFixed(3)} m, Checkpoints ${n.cps.join('/')}, Sprungzonen ${n.zonen.length}${a ? ` – ${JSON.stringify(a) === JSON.stringify(n) ? 'gleich' : 'ANDERS'} wie 0.10c.1` : ''}`);
+  }
+}
+if (teil('x2')) {
+  console.log('(x2) Alpen-Testfahrer Prototyp (Referenz 2:59.33 / 2:42.35 / 2:31.92) gleich wie 0.10c.1');
+  const zeilen = (t) => t.split('\n').filter((x) => /^\s+(vorsichtig|mittel|flott|Talschleife|Almweg|Wiesenweg)\b/.test(x)).map((x) => x.trim());
+  const neu = werkzeug('testfahrer.mjs', ['--auto', 'prototyp']);
+  fs.writeFileSync(path.join(LOG, 'testfahrer-prototyp.log'), neu.text);
+  const zn = zeilen(neu.text), zeiten = zn.filter((x) => /^(vorsichtig|mittel|flott)/.test(x)).map((x) => x.split(/\s+/)[1]).join(' / ');
+  const za = ALT ? zeilen(werkzeug('testfahrer.mjs', ['--auto', 'prototyp', '--wurzel', ALT]).text) : null;
+  melde(zeiten === '2:59.33 / 2:42.35 / 2:31.92' && (!za || JSON.stringify(za) === JSON.stringify(zn)), `prototyp: ${zeiten} – ${zn.length} Zeilen${za ? (JSON.stringify(za) === JSON.stringify(zn) ? ' identisch wie 0.10c.1' : ' ANDERS') : ''}`);
+}
+if (teil('zz') && process.argv.includes('--lang')) {
+  console.log('(zz) Frühere Tests (Teile, die nicht am alten Quelltext hängen)');
+  const laeufe = [
+    ['pacenotes-test.mjs', []], ['leben-test.mjs', []], ['kuh-test.mjs', []], ['startziel-test.mjs', []], ['strassenrand-test.mjs', []],
+    ['nebenweg-test.mjs', []], ['felswand-test.mjs', []], ['belag-test.mjs', []], ['rennablauf-test.mjs', []], ['menue-test.mjs', []],
+    ['overlay-test.mjs', []], ['m9a2-test.mjs', ['--nur', 'a,c,e,f,g,h,k,l,m']], ['m9a1-test.mjs', ['--nur', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']],
+    ['m8h-test.mjs', []], ['m10c-test.mjs', ['--nur', 'c,d,e,f,g,h,i,l,m,o,r,s,t,v,x,y']],
+    ['m10c1-test.mjs', ['--nur', 'h,i,j,k,n,o,p,q,s,t,v,w,y,z,aa,ab,ad']], // (M10c.2: Teile, die nicht an Kamera-Werten hängen)
+  ];
+  const vorher = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+  for (const [datei, a] of laeufe) {
+    if (!fs.existsSync(path.join(WURZEL, 'tools', datei))) continue;
+    const r = werkzeug(datei, a);
+    fs.writeFileSync(path.join(LOG, datei.replace('.mjs', '.log')), r.text);
+    const zeilenVon = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x));
+    const z = zeilenVon(r.text);
+    const rot = z.filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim());
+    // Rot? Dann denselben Test in 0.10c.1: sind genau diese Zeilen dort auch rot, ist es nicht durch M10c.2 gekommen
+    let vorher = false;
+    if (r.code !== 0 && ALT && fs.existsSync(path.join(ALT, 'tools', datei))) {
+      const ra = werkzeug(datei, a, ALT);
+      const rotAlt = new Set(zeilenVon(ra.text).filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim()));
+      vorher = rot.length > 0 && rot.every((x) => rotAlt.has(x));
+    }
+    melde(r.code === 0 || vorher, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok, ${rot.length} rot${vorher ? ' (genau diese Zeilen sind schon in 0.10c.1 rot)' : ''}${rot.length ? ` – ${rot.slice(0, 2).map((x) => x.slice(0, 150)).join(' | ')}` : ''}`);
+  }
+  // Messdateien, die alte Tests neu schreiben, zurücksetzen
+  const neu = spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter((d) => d && !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+  if (neu.length) spawnSync('git', ['checkout', '--', ...neu], { cwd: WURZEL });
+  info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neu.length}`);
+}
+
+console.log(fehler ? `\n${fehler} FEHLER` : '\nalles ok');
+process.exit(fehler ? 1 : 0);

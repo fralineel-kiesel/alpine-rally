@@ -127,6 +127,7 @@ export const TEXTE = {
   'einst.touchLayoutHinweis': { de: 'GESPIEGELT = D-PAD RECHTS (LINKSHÄNDER)', en: 'MIRRORED = D-PAD ON THE RIGHT (LEFT-HANDED)' },
   'wert.klein': { de: 'KLEIN', en: 'SMALL' },
   'wert.normal': { de: 'NORMAL', en: 'NORMAL' },
+  'wert.ruhig': { de: 'RUHIG', en: 'CALM' }, // M10c.2: Sprungkamera-Stufe
   'wert.gross': { de: 'GROSS', en: 'LARGE' },
   'wert.gespiegelt': { de: 'GESPIEGELT', en: 'MIRRORED' },
   // M9a.1: nur im Touch-Modus

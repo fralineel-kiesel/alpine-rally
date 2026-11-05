@@ -844,10 +844,10 @@ function dreckSchritt(dt) {
 function kameraZiel() {
   const c = CONFIG.kamera;
   let y = auto.objekt.position.y;
-  if (sk.e > 0 || (flug.inLuft && einstellungen.sprungkamera !== false)) {
+  if (sk.e > 0 || (flug.inLuft && einstellungen.sprungkamera !== 'aus')) {
     // M10c: Sprungkamera. M10c.1: steifer – sie folgt dem Auto auch in der Luft in der Höhe (kein Halten auf der
     // Abhebe-Höhe mehr, sonst schaut sie bei der Landung steil von oben), zieht nur wenig zurück und hebt sich wenig
-    const K = CONFIG.sprung.kamera;
+    const K = skWerte(); // M10c.2: Stufe RUHIG oder NORMAL
     const abstand = c.abstand * (1 + K.zurueck * sk.e);
     kam.ziel.set(physik.x - Math.sin(kam.yaw) * abstand, y + c.hoehe + K.heben * sk.e, physik.z - Math.cos(kam.yaw) * abstand);
     return;
@@ -878,7 +878,7 @@ function kameraFuehren(dt) {
   const yAlt = kam.pos.y;
   kam.pos.lerp(kam.ziel, 1 - Math.exp(-c.positionGlaetten * dt));
   // M10c.1: rund um einen Sprung folgt die Kamera der Höhe des Autos fester (weniger Nachlaufen beim Fallen)
-  if (sk.e > 0) kam.pos.y = yAlt + (kam.ziel.y - yAlt) * (1 - Math.exp(-CONFIG.sprung.kamera.folgenHoehe * dt));
+  if (sk.e > 0) kam.pos.y = yAlt + (kam.ziel.y - yAlt) * (1 - Math.exp(-skWerte().folgenHoehe * dt));
   kameraKorrektur(kam.pos);
   kamera.position.copy(kam.pos);
   const y = auto.objekt.position.y;
@@ -904,9 +904,11 @@ function ruckSetzen(px) {
   if (px) kamera.setViewOffset(rb, rh, 0, -px, rb, rh); else kamera.clearViewOffset();
 }
 // M10c: Sprung-Ereignisse je Bild (aus den Zählern der Flugphase): Kamera, Ton, Staub, Haptik, Motor
+// M10c.2: Werte der eingestellten Stufe (AUS: die von RUHIG, nur fürs Ausklingen eines laufenden Sprungs)
+function skWerte() { const S = CONFIG.sprung.SPRUNGKAMERA_STUFEN; return S[einstellungen.sprungkamera] || S.ruhig; }
 function sprungBild(dt, imRennen) {
-  const K = CONFIG.sprung.kamera, T = CONFIG.sprung.ton, ST = CONFIG.sprung.staub;
-  const an = einstellungen.sprungkamera !== false;
+  const K = skWerte(), T = CONFIG.sprung.ton, ST = CONFIG.sprung.staub;
+  const an = einstellungen.sprungkamera !== 'aus';
   if (flug.ereignis.abheben !== sk.ab) {
     sk.ab = flug.ereignis.abheben;
     sk.yAb = auto.objekt.position.y; sk.dz = getriebe.drehzahl;

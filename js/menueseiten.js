@@ -388,7 +388,9 @@ export function baueSeiten(api) {
       // M10b.2: Kunst-Schatten an/aus (wirkt nur auf Strecken mit Schatten; schwächere Handys schalten ihn ab)
       { typ: 'umschalter', text: 'einst.schatten', hinweis: 'einst.schattenHinweis', lesen: () => einstellungen.schatten, setzen: (b) => setze('schatten', b) },
       // M10c: filmische Kamera bei Sprüngen an/aus
-      { typ: 'umschalter', text: 'einst.sprungkamera', hinweis: 'einst.sprungkameraHinweis', lesen: () => einstellungen.sprungkamera !== false, setzen: (b) => setze('sprungkamera', b) },
+      { typ: 'auswahl', text: 'einst.sprungkamera', hinweis: 'einst.sprungkameraHinweis', // M10c.2: drei Stufen
+        optionen: () => [{ wert: 'aus', text: 'wert.aus' }, { wert: 'ruhig', text: 'wert.ruhig' }, { wert: 'normal', text: 'wert.normal' }],
+        lesen: () => einstellungen.sprungkamera, setzen: (w) => setze('sprungkamera', w) },
       { typ: 'umschalter', text: 'einst.fps', lesen: () => einstellungen.fps, setzen: (b) => setze('fps', b) },
       // M6: Minimap und Live-Vergleich (sofort wirksam)
       { typ: 'gruppe', text: 'einst.anzeige' },

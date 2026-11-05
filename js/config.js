@@ -1175,16 +1175,29 @@ export const CONFIG = {
       naseFrei: 4, naseVoll: 16, naseMax: 0.12,  // Nase voran (Grad tiefer als der Boden): ab naseFrei Verlust bis naseMax
       gierFrei: 10, gierVoll: 40, gierMax: 0.10, // schräg gelandet (Grad zwischen Auto und Strasse): bis gierMax
     },
-    // Filmische Kamera (Einstellung SPRUNGKAMERA, Standard AN). AUS = Kamera wie immer
-    kamera: {
-      // M10c.1 (Lino: „etwas zu beweglich“): steifer. Vorher 0.2 / 0.6 m / 0.4 s / 2–4 Bildpunkte / 0.15 s
-      zurueck: 0.05,           // beim Abheben so viel weiter zurück (0.05 = +5 %) ...
-      heben: 0.24,             // ... und so viele Meter höher (40 % von früher)
-      abhebenZeit: 0.3,        // so schnell (s) zieht sie zurück
-      landenZeit: 0.25,        // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe, ohne Überschwingen)
-      folgenHoehe: 25,         // rund um den Sprung folgt die Kamera der Autohöhe so fest (1/s; normal 12, höher = direkter)
-      ruckAnteil: [0.004, 0.006], // Federungs-Ruck bei der Landung: Anteil der Bildhöhe nach unten (sauber .. sehr hart, ganze Bildpunkte, mind. 1) ...
-      ruckZeit: 0.1,           // ... und so schnell (s) wieder zurück (kein weiches Zoomen)
+    // M10c.2: Sprungkamera in Stufen (Einstellung SPRUNGKAMERA = AUS / RUHIG / NORMAL, Standard NORMAL). AUS = Kamera wie immer.
+    // RUHIG = genau die Kamera von 0.10c.1 (Lino: „zu steif“), NORMAL = die Mitte zwischen 0.10c (zu beweglich) und 0.10c.1.
+    // Zum Nachstellen: zurueck (Zoom-Out), heben (Meter), folgenHoehe (kleiner = Kamera hängt der Höhe mehr nach, mehr
+    // Blick von oben bei der Landung), ruckAnteil (Ruck in Anteil der Bildhöhe), landenZeit (zurück in den Normalzustand)
+    SPRUNGKAMERA_STUFEN: {
+      ruhig: {
+        zurueck: 0.05,           // beim Abheben so viel weiter zurück (0.05 = +5 %) ...
+        heben: 0.24,             // ... und so viele Meter höher
+        abhebenZeit: 0.3,        // so schnell (s) zieht sie zurück
+        landenZeit: 0.25,        // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe, ohne Überschwingen)
+        folgenHoehe: 25,         // rund um den Sprung folgt die Kamera der Autohöhe so fest (1/s; normal 12, höher = direkter)
+        ruckAnteil: [0.004, 0.006], // Federungs-Ruck bei der Landung: Anteil der Bildhöhe nach unten (sauber .. sehr hart, ganze Bildpunkte, mind. 1) ...
+        ruckZeit: 0.1,           // ... und so schnell (s) wieder zurück (kein weiches Zoomen)
+      },
+      normal: {
+        zurueck: 0.10,           // Zoom-Out ca. 7 % (0.10c: 0.2 = 14 %, RUHIG: 0.05 = 3 %)
+        heben: 0.39,             // 65 % von 0.10c (0.6 m)
+        abhebenZeit: 0.3,
+        landenZeit: 0.32,        // zurück in ca. 0.3 s, ohne Überschwingen
+        folgenHoehe: 5,          // hängt der Höhe etwas nach (Nachlaufen ca. 0.15 s, Blick bei der Landung höchstens ca. 8–9° von oben)
+        ruckAnteil: [0.0095, 0.011], // ca. 1 % der Bildhöhe (180: 2, 270: 3, 360: 4 Bildpunkte)
+        ruckZeit: 0.12,
+      },
     },
     // Ton (vorhandene Klänge: Schlag, Stein-Aufprall, Jubel; nichts Neues geladen)
     ton: {
@@ -1564,7 +1577,7 @@ export const CONFIG = {
       einheit: 'kmh',          // 'kmh' oder 'mph'
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
       schatten: true,          // M10b.2: Kunst-Schatten (nur auf Strecken mit Schatten, z. B. Finnland)
-      sprungkamera: true,      // M10c: filmische Kamera bei Sprüngen (zurückziehen, Ruck bei der Landung)
+      sprungkamera: 'normal',  // M10c: filmische Kamera bei Sprüngen; M10c.2: 'aus' / 'ruhig' / 'normal' (sprung.SPRUNGKAMERA_STUFEN)
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
       lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)
