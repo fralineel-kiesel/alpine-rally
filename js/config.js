@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10c.1';
+export const VERSION = '0.10c.2';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -944,6 +944,30 @@ export const CONFIG = {
       staubJe: 1.5,            // Pixelstaub beim Einschlag: so viele Wölkchen je m/s verlorenes Tempo ...
       staubMax: 24,            // ... höchstens so viele
     },
+    // M10c.2: Motor-Strafe nach einem Wand-Treffer („Motor sammelt sich“): gilt für alle Wände oben (Leitplanke, Zaun,
+    // Geländer, Absperr-Wand, Felswand), nicht für Bäume, Steine, Sprung-Landungen oder Wasser.
+    wandStrafe: {
+      an: true,                // false = keine Motor-Strafe (wie 0.10c.1)
+      WAND_STRAFE_MIN: 10,     // ab so viel Tempoverlust (km/h) im Kontakt gibt es eine Strafe; ein kleiner Streifer nicht
+      hartAb: 50,              // ab so viel Verlust (km/h) ist es ein harter Treffer (volle Dauer)
+      dauerMin: 2.0,           // Dauer (s) beim leichten Treffer (WAND_STRAFE_MIN) ...
+      dauerMax: 4.0,           // ... beim harten (hartAb oder frontal), dazwischen gleichmässig
+      frontalAb: 80,           // Einschlag ab so viel Grad (90 = frontal) = immer volle Dauer
+      gesamtMax: 6.0,          // mehrere Treffer: Restzeit + neue Dauer, aber höchstens so viel (s)
+      trennung: 0.3,           // so lange (s) ohne Kontakt, dann ist der nächste Kontakt ein neuer Treffer
+      leistungStart: 0.25,     // Motorleistung direkt nach dem Treffer (Anteil), steigt glatt auf 1 bis zum Ende
+      schaltFaktor: 2,         // Gangwechsel dauern während der Strafe so viel mal länger
+      drehzahlTief: 0.4,       // Drehzahl (Tacho, Ton) sackt beim Treffer auf diesen Anteil ...
+      drehzahlZeit: 0.3,       // ... für so lange (s) ...
+      drehzahlZurueck: 0.4,    // ... und kommt in so vielen Sekunden glatt zurück
+      // Motor-Ton: Aussetzer (Zünd-Unterbrechungen mit Knall) direkt nach dem Treffer
+      aussetzer: [0.05, 0.2, 0.38], // Zeitpunkte (s nach dem Treffer)
+      aussetzerDauer: 0.07,    // so lange (s) setzt der Motor jeweils aus
+      aussetzerTief: 0.12,     // Motor-Pegel während eines Aussetzers (Anteil)
+      aussetzerKnall: 0.5,     // Pegel des Knalls bei jedem Aussetzer (Anteil eines normalen Popps)
+      blinken: 1.2,            // MOTOR-Leuchte im HUD: so viele Sekunden je An/Aus-Runde (langsam)
+      blinkenAn: 0.65,         // davon so ein Anteil an
+    },
   },
 
   // --- Abkürzungen (Analyse) -------------------------------------------
@@ -1151,16 +1175,29 @@ export const CONFIG = {
       naseFrei: 4, naseVoll: 16, naseMax: 0.12,  // Nase voran (Grad tiefer als der Boden): ab naseFrei Verlust bis naseMax
       gierFrei: 10, gierVoll: 40, gierMax: 0.10, // schräg gelandet (Grad zwischen Auto und Strasse): bis gierMax
     },
-    // Filmische Kamera (Einstellung SPRUNGKAMERA, Standard AN). AUS = Kamera wie immer
-    kamera: {
-      // M10c.1 (Lino: „etwas zu beweglich“): steifer. Vorher 0.2 / 0.6 m / 0.4 s / 2–4 Bildpunkte / 0.15 s
-      zurueck: 0.05,           // beim Abheben so viel weiter zurück (0.05 = +5 %) ...
-      heben: 0.24,             // ... und so viele Meter höher (40 % von früher)
-      abhebenZeit: 0.3,        // so schnell (s) zieht sie zurück
-      landenZeit: 0.25,        // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe, ohne Überschwingen)
-      folgenHoehe: 25,         // rund um den Sprung folgt die Kamera der Autohöhe so fest (1/s; normal 12, höher = direkter)
-      ruckAnteil: [0.004, 0.006], // Federungs-Ruck bei der Landung: Anteil der Bildhöhe nach unten (sauber .. sehr hart, ganze Bildpunkte, mind. 1) ...
-      ruckZeit: 0.1,           // ... und so schnell (s) wieder zurück (kein weiches Zoomen)
+    // M10c.2: Sprungkamera in Stufen (Einstellung SPRUNGKAMERA = AUS / RUHIG / NORMAL, Standard NORMAL). AUS = Kamera wie immer.
+    // RUHIG = genau die Kamera von 0.10c.1 (Lino: „zu steif“), NORMAL = die Mitte zwischen 0.10c (zu beweglich) und 0.10c.1.
+    // Zum Nachstellen: zurueck (Zoom-Out), heben (Meter), folgenHoehe (kleiner = Kamera hängt der Höhe mehr nach, mehr
+    // Blick von oben bei der Landung), ruckAnteil (Ruck in Anteil der Bildhöhe), landenZeit (zurück in den Normalzustand)
+    SPRUNGKAMERA_STUFEN: {
+      ruhig: {
+        zurueck: 0.05,           // beim Abheben so viel weiter zurück (0.05 = +5 %) ...
+        heben: 0.24,             // ... und so viele Meter höher
+        abhebenZeit: 0.3,        // so schnell (s) zieht sie zurück
+        landenZeit: 0.25,        // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe, ohne Überschwingen)
+        folgenHoehe: 25,         // rund um den Sprung folgt die Kamera der Autohöhe so fest (1/s; normal 12, höher = direkter)
+        ruckAnteil: [0.004, 0.006], // Federungs-Ruck bei der Landung: Anteil der Bildhöhe nach unten (sauber .. sehr hart, ganze Bildpunkte, mind. 1) ...
+        ruckZeit: 0.1,           // ... und so schnell (s) wieder zurück (kein weiches Zoomen)
+      },
+      normal: {
+        zurueck: 0.10,           // Zoom-Out ca. 7 % (0.10c: 0.2 = 14 %, RUHIG: 0.05 = 3 %)
+        heben: 0.39,             // 65 % von 0.10c (0.6 m)
+        abhebenZeit: 0.3,
+        landenZeit: 0.32,        // zurück in ca. 0.3 s, ohne Überschwingen
+        folgenHoehe: 5,          // hängt der Höhe etwas nach (Nachlaufen ca. 0.15 s, Blick bei der Landung höchstens ca. 8–9° von oben)
+        ruckAnteil: [0.0095, 0.011], // ca. 1 % der Bildhöhe (180: 2, 270: 3, 360: 4 Bildpunkte)
+        ruckZeit: 0.12,
+      },
     },
     // Ton (vorhandene Klänge: Schlag, Stein-Aufprall, Jubel; nichts Neues geladen)
     ton: {
@@ -1168,10 +1205,20 @@ export const CONFIG = {
       drehzahlRunter: 3,       // ... ohne Gas so schnell zurück zum Leerlauf
       fangen: 0.35,            // nach der Landung fängt sich der Motor in so vielen Sekunden (wieder Getriebe-Drehzahl)
       windMehr: 0.35,          // Fahrtwind in der Luft so viel lauter (0.35 = +35 %)
-      schlagPegel: 0.55,       // Landung sauber: dumpfer Federungsschlag (mal Härte, mindestens die Hälfte)
+      schlagPegel: 0.55,       // (bis 0.10c.1: dumpfer Federungsschlag; seit M10c.2 ersetzt durch wumms.bass)
       kiesPegel: 0.35,         // Schotterknirschen bei jeder Landung
       hartPegel: 0.7,          // hart: lauter Schlag mit Knirschen
       auaPegel: 0.6,           // sehr hart: kurzer tiefer "Aua"-Ton dazu
+      // M10c.2: Landungs-Wums (Lino: „viel zu leise“). Mit dieser einen Zahl lässt sich der ganze Wums lauter/leiser stellen
+      LANDUNG_WUMMS_LAUTSTAERKE: 1.0,
+      wumms: {
+        stufen: { sauber: 0.4, hart: 0.7, sehrHart: 0.85 }, // Stärke je Landehärte (sehr hart: mehr ginge über −1 dBFS)
+        bass: { pegel: 1.6, von: 90, bis: 40, zeit: 0.1, dauer: 0.4, anstieg: 0.012 }, // tiefer Bass-Schlag: Sinus 90 → 40 Hz in 0.1 s
+        rauschen: { pegel: 1.2, grenze: 600, dauer: 0.12 },                // gedämpfter Rausch-Stoss (Tiefpass 600 Hz)
+        klackPegel: 0.5, klackTempo: 1.3,                                  // Federungs-Klack (helle Transiente)
+        aua: { pegel: 1.0, von: 60, bis: 32, zeit: 0.18, dauer: 0.6, wann: 0.05, anstieg: 0.02 }, // sehr hart: tiefes „Aua“
+        duckDb: -6, duckDauer: 0.25, duckZurueck: 0.05,                    // Motor kurz leiser (dB, s, Zeitkonstante zurück)
+      },
       jubelAbstand: 40,        // Zuschauer so nah (Meter vor/nach dem Fan-Spot) jubeln beim Abheben
     },
     // Staub/Kies beim Abheben und Landen (vorhandene Staub-Wölkchen, Farbe des Untergrunds)
@@ -1204,6 +1251,8 @@ export const CONFIG = {
   // --- Anzeigen (HUD) ----------------------------------------------------
   // Masse in Pixeln des 320x180-Bildes.
   hud: {
+    // M10c.2: MOTOR-Warnleuchte (Motor-Strafe nach Wand-Treffer) links neben dem Drehzahlmesser; blinken: kollision.wandStrafe
+    motorLeuchte: { abstand: 3, rand: '#101418', tafel: '#2a1a14', farbeAn: '#ff8a1e', farbeAus: '#6a2a18' },
     // M9a.2: Einstellung HUD-GRÖSSE: Faktor je HUD-Teil (zeit = Zeit-Tafel, Live-Vergleich und Meldung; notes = Pace-Notes
     // mit R-Countdown; karte = Minimap; tacho = Tachos). MITTEL = 1 = wie bisher. Ein Teil mit Faktor f malt auf eine
     // Leinwand von 320/f x 180/f Pixeln (ganze Pixel); sauber sind nur Faktoren, bei denen beides ganz aufgeht oder fast:
@@ -1528,7 +1577,7 @@ export const CONFIG = {
       einheit: 'kmh',          // 'kmh' oder 'mph'
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
       schatten: true,          // M10b.2: Kunst-Schatten (nur auf Strecken mit Schatten, z. B. Finnland)
-      sprungkamera: true,      // M10c: filmische Kamera bei Sprüngen (zurückziehen, Ruck bei der Landung)
+      sprungkamera: 'normal',  // M10c: filmische Kamera bei Sprüngen; M10c.2: 'aus' / 'ruhig' / 'normal' (sprung.SPRUNGKAMERA_STUFEN)
       lenkStufe: 2,            // Lenkempfindlichkeit: Nummer in "lenkStufen" (2 = Mitte = wie bisher)
       totzoneStufe: 2,         // Gamepad-Totzone: Nummer in "totzonen" (2 = Mitte = wie bisher)
       lautstaerke: 70,         // Lautstärke in Prozent (seit M7a für den ganzen Ton; wirkt quadratisch, siehe audio.lautKurve)

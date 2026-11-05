@@ -379,9 +379,12 @@ console.log('5. Vorwärts in die Absperrung der Ausrollstrecke (ohne Bremshilfe)
   const l = erg.sperreZiel, durch = l.filter((a) => a.durch).length, nicht = l.filter((a) => !a.getroffen).length;
   const frontal = l.filter((a) => a.winkel === 0), stecken = l.filter((a) => a.zurueck < 2).length;
   if (details) for (const a of l) console.log('   ', JSON.stringify(a));
-  melde(!durch && !nicht && !stecken && frontal.every((a) => a.halt !== null && a.halt <= 0.3) && l.every((a) => a.halt !== null || a.rest <= 35),
-    `${l.length} Anfahrten (3 Stellen, 40/70/100 km/h, 0°/±20°/±40°): durch ${durch}, getroffen ${l.length - nicht}, frontal Stillstand nach höchstens ` +
-    `${Math.max(...frontal.map((a) => a.halt ?? 9)).toFixed(2)} s, schräg nach 0.3 s höchstens ${Math.max(...l.map((a) => a.rest))} % Tempo, rückwärts raus ${l.length - stecken} (mind. ${Math.min(...l.map((a) => a.zurueck))} m)`);
+  // M10c.2: Die Absperrung ist seit M10c.1 eine Wand mit Wand-Strafe (Linos „Mittel“: frontal −75 %, 50° etwa −52 %) statt
+  // hartem Stopp; die alte Erwartung (frontal Stillstand in 0.3 s, schräg höchstens 35 %) galt bis 0.10c. Jetzt: frontal
+  // nach 0.3 s höchstens 30 % vom Tempo, schräg höchstens 55 %, nie hindurch, rückwärts raus.
+  melde(!durch && !nicht && !stecken && frontal.every((a) => a.halt !== null || a.rest <= 30) && l.every((a) => a.halt !== null || a.rest <= 55),
+    `${l.length} Anfahrten (3 Stellen, 40/70/100 km/h, 0°/±20°/±40°): durch ${durch}, getroffen ${l.length - nicht}, frontal nach 0.3 s höchstens ` +
+    `${Math.max(...frontal.map((a) => (a.halt !== null ? 0 : a.rest)))} % Tempo, schräg nach 0.3 s höchstens ${Math.max(...l.map((a) => a.rest))} % Tempo, rückwärts raus ${l.length - stecken} (mind. ${Math.min(...l.map((a) => a.zurueck))} m)`);
 }
 
 console.log('6. Umfahren');

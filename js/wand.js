@@ -5,7 +5,9 @@
 //              das Auto prallt leicht ab (der Rest des Tempos zeigt entlang der Wand und etwas von ihr weg).
 //   Dauerkontakt: solange es an der Wand schleift, zusätzlich ein fester Anteil pro Sekunde.
 //   Keine Ausrichtung: die Wand dreht das Auto nicht in ihre Richtung (nur aus der Wand geschoben).
-// Werte: config.js, Block kollision.wand. Diese Datei kennt kein Three.js.
+// M10c.2: Motor-Strafe („Motor sammelt sich“): ein spürbarer Treffer (ab WAND_STRAFE_MIN km/h Tempoverlust im Kontakt)
+// drosselt den Motor für 2 bis 4 s (25 % → 100 %, glatt), Schalten dauert länger, Drehzahl sackt kurz ein, MOTOR-Leuchte.
+// Werte: config.js, Blöcke kollision.wand und kollision.wandStrafe. Diese Datei kennt kein Three.js.
 
 import { CONFIG } from './config.js';
 
@@ -21,6 +23,16 @@ export function wandStrafe(winkel) {
   return p2;
 }
 
+// M10c.2: Dauer der Motor-Strafe (s) für einen Treffer mit so viel Tempoverlust (km/h); 0 = keine Strafe.
+// frontal = ein Einschlag ab wandStrafe.frontalAb Grad: immer die volle Dauer
+export function strafeDauer(verlustKmh, frontal = false) {
+  const T = CONFIG.kollision.wandStrafe;
+  if (verlustKmh < T.WAND_STRAFE_MIN) return 0;
+  if (frontal) return T.dauerMax;
+  const d = T.dauerMin + ((verlustKmh - T.WAND_STRAFE_MIN) / (T.hartAb - T.WAND_STRAFE_MIN)) * (T.dauerMax - T.dauerMin);
+  return Math.max(T.dauerMin, Math.min(T.dauerMax, d));
+}
+
 export function baueWand() {
   const w = {
     uhr: 0,              // eigene Uhr (Sekunden, läuft mit jedem Physik-Schritt)
@@ -31,9 +43,40 @@ export function baueWand() {
     einschlaege: 0,      // Zähler (Werkzeuge, Tests): Einschlag-Strafen seit dem Laden
     kontaktSchritte: 0,  // Zähler: Schritte mit Wandkontakt
     letzter: null,       // letzter Einschlag { winkel, vorher, nachher, strafe } (Werkzeuge, Tests)
+    // M10c.2: Motor-Strafe
+    schrittVerlust: 0,   // in diesem Schritt durch die Wand verlorenes Tempo (m/s, Einschlag, Reibung und Schleifen)
+    epVerlust: 0,        // Treffer = zusammenhängender Kontakt: so viel Tempo (km/h) hat er bisher gekostet
+    epLetzt: -99,        // letzter Schritt mit Kontakt (Uhr)
+    epDauer: 0,          // Strafe (s), die dieser Treffer schon ausgelöst hat
+    epFrontal: false,    // in diesem Treffer ein frontaler Einschlag
+    strafeRest: 0,       // so lange (s) läuft die Motor-Strafe noch (0 = keine)
+    strafeGesamt: 0,     // so lang war sie ab dem letzten Auslösen (für die Leistungskurve)
+    strafeSeit: 99,      // so lange (s) ist das letzte Auslösen her (Drehzahl-Einbruch)
+    strafen: 0,          // Zähler: Treffer mit Strafe seit dem Laden (Ton: Aussetzer bei jedem neuen; Werkzeuge, Tests)
+    strafeLetzte: null,  // letzter Treffer mit Strafe { verlust (km/h), dauer, frontal } (Werkzeuge, Tests)
+
+    // Anteil der Motorleistung (0.25 direkt nach dem Treffer, glatt zurück auf 1 am Ende der Strafe)
+    leistung() {
+      if (w.strafeRest <= 0) return 1;
+      const T = CONFIG.kollision.wandStrafe, p = 1 - w.strafeRest / w.strafeGesamt;
+      return T.leistungStart + (1 - T.leistungStart) * p * p * (3 - 2 * p);
+    },
+    // Anteil der angezeigten Drehzahl (Tacho, Ton): sackt beim Treffer kurz auf drehzahlTief und kommt glatt zurück
+    drehzahlFaktor() {
+      const T = CONFIG.kollision.wandStrafe;
+      if (w.strafeRest <= 0 || w.strafeSeit >= T.drehzahlZeit + T.drehzahlZurueck) return 1;
+      if (w.strafeSeit < T.drehzahlZeit) return T.drehzahlTief;
+      const p = (w.strafeSeit - T.drehzahlZeit) / T.drehzahlZurueck;
+      return T.drehzahlTief + (1 - T.drehzahlTief) * p * p * (3 - 2 * p);
+    },
+    // Strafe sofort beenden (Taste R, Wasser, Neustart, Menü, Countdown)
+    strafeAus() { w.strafeRest = 0; w.strafeGesamt = 0; w.strafeSeit = 99; w.epVerlust = 0; w.epDauer = 0; w.epFrontal = false; w.epLetzt = -99; },
 
     // Am Anfang jedes Physik-Schritts
-    anfang(dt) { w.uhr += dt; w.kontakt = false; w.strafe = false; w.verlust = 0; },
+    anfang(dt) {
+      w.uhr += dt; w.kontakt = false; w.strafe = false; w.verlust = 0; w.schrittVerlust = 0;
+      if (w.strafeRest > 0) { w.strafeRest = Math.max(0, w.strafeRest - dt); w.strafeSeit += dt; } // M10c.2 (Pause: keine Schritte = eingefroren)
+    },
 
     // Kontakt mit einer Wand: nx/nz zeigt von der Wand zum Auto (Einheitsvektor). Das Auto ist schon aus der Wand
     // geschoben. Ergebnis: Tempo Richtung Wand (m/s, wie die Wucht bei Bäumen; 0 = fährt nicht hinein)
@@ -61,6 +104,7 @@ export function baueWand() {
         w.letzter = { winkel, vorher: v, nachher: soll, strafe: p };
       }
       physik.vx = rx; physik.vz = rz;
+      w.schrittVerlust += Math.max(0, v - Math.hypot(rx, rz)); // M10c.2
       physik.drehrate *= CONFIG.kollision.drehBremse;
       return stossTempo;
     },
@@ -69,12 +113,38 @@ export function baueWand() {
     ende(physik, dt) {
       if (!w.kontakt) return;
       w.kontaktSchritte++;
-      if (w.strafe) return; // in diesem Schritt schon der Einschlag
-      const f = (1 - CONFIG.kollision.wand.schleifen) ** dt;
-      physik.vx *= f; physik.vz *= f;
+      if (!w.strafe) {
+        const f = (1 - CONFIG.kollision.wand.schleifen) ** dt;
+        w.schrittVerlust += Math.hypot(physik.vx, physik.vz) * (1 - f); // M10c.2
+        physik.vx *= f; physik.vz *= f;
+      }
+      w.treffer();
     },
 
-    reset() { w.letzteStrafe = -99; w.kontakt = false; w.strafe = false; w.verlust = 0; },
+    // M10c.2: Treffer zählen und die Motor-Strafe auslösen bzw. verlängern (am Ende jedes Schritts mit Kontakt)
+    treffer() {
+      const T = CONFIG.kollision.wandStrafe;
+      if (!T.an) return;
+      if (w.uhr - w.epLetzt > T.trennung) { w.epVerlust = 0; w.epDauer = 0; w.epFrontal = false; } // neuer Treffer
+      w.epLetzt = w.uhr;
+      w.epVerlust += w.schrittVerlust * 3.6;
+      if (w.strafe && w.letzter.winkel >= T.frontalAb) w.epFrontal = true;
+      const d = strafeDauer(w.epVerlust, w.epFrontal);
+      if (d <= w.epDauer) return;
+      if (w.epDauer === 0) {
+        // neuer Treffer: Dauer zur Restzeit dazu (höchstens gesamtMax), Leistung fällt wieder auf den Anfang
+        w.strafeRest = Math.min(T.gesamtMax, w.strafeRest + d);
+        w.strafeGesamt = w.strafeRest; w.strafeSeit = 0; w.strafen++;
+      } else {
+        // derselbe Treffer kostet weiter Tempo (Schleifen): Strafe wächst mit
+        const plus = Math.min(T.gesamtMax, w.strafeRest + d - w.epDauer) - w.strafeRest;
+        w.strafeRest += plus; w.strafeGesamt += plus;
+      }
+      w.epDauer = d;
+      w.strafeLetzte = { verlust: w.epVerlust, dauer: d, frontal: w.epFrontal };
+    },
+
+    reset() { w.letzteStrafe = -99; w.kontakt = false; w.strafe = false; w.verlust = 0; w.strafeAus(); },
   };
   return w;
 }

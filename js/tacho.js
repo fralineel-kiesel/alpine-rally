@@ -44,6 +44,7 @@ export const MINI = {
   'R': ['##.', '#.#', '##.', '#.#', '#.#'],
   'W': ['#.#', '#.#', '###', '###', '#.#'],
   '/': ['..#', '..#', '.#.', '#..', '#..'],
+  'G': ['.##', '#..', '#.#', '#.#', '.##'], // M10c.2 (ENGINE)
   ' ': ['...', '...', '...', '...', '...'],
 };
 
@@ -338,7 +339,8 @@ export function baueTachos(ctx, text) {
     const L = stil.schaltlicht, S = skala.schaltlicht;
     const garage = extra && extra.lichtDrehzahl != null;
     const rpm = garage ? extra.lichtDrehzahl : anzeige.drehzahl;
-    const aus = !garage && (gang === 'N' || gang === 'R' || !!(extra && extra.schaltet));
+    // (M10c.2: auch während der Motor-Strafe nach einem Wand-Treffer aus)
+    const aus = !garage && (gang === 'N' || gang === 'R' || !!(extra && (extra.schaltet || extra.motorWarnung)));
     const blinkt = !aus && rpm >= S.blinken, hell = !blinkt || Math.floor(anzeige.uhr * L.hz * 2) % 2 === 0;
     const cx = dreh.cx, y0 = dreh.cy + L.y;
     if (L.form === 'reihe') {
@@ -376,6 +378,20 @@ export function baueTachos(ctx, text) {
       ctx.fillStyle = A.farbeLeer; ctx.fillRect(bx, y + 2, bb, 5);
       ctx.fillStyle = A.farbe; ctx.fillRect(bx, y + 2, w, 5);
     }
+  }
+  // M10c.2: MOTOR-Warnleuchte (Motor-Strafe nach Wand-Treffer) links unten neben dem Drehzahlmesser, blinkt langsam:
+  // Motor-Symbol und Beschriftung auf dunkler Tafel, in der Aus-Phase dunkelrot statt orange (bleibt lesbar)
+  const MOTOR_SYMBOL = ['..####...', '...##....', '#######.#', '#.....###', '#.....#.#', '#######..'];
+  function zeichneMotorLeuchte(seit) {
+    const L = CONFIG.hud.motorLeuchte, W = CONFIG.kollision.wandStrafe;
+    const an = (seit % W.blinken) < W.blinken * W.blinkenAn;
+    const wort = tx('tacho.motor'), b = 2 + 9 + 2 + miniBreite(wort) + 2, h = 10;
+    const x = dreh.cx - dreh.r - L.abstand - b, y = dreh.cy + dreh.r - h + 1;
+    ctx.fillStyle = L.rand; ctx.fillRect(x, y, b, h);
+    ctx.fillStyle = L.tafel; ctx.fillRect(x + 1, y + 1, b - 2, h - 2);
+    ctx.fillStyle = an ? L.farbeAn : L.farbeAus;
+    for (let yy = 0; yy < 6; yy++) for (let xx = 0; xx < 9; xx++) if (MOTOR_SYMBOL[yy][xx] === '#') ctx.fillRect(x + 2 + xx, y + 2 + yy, 1, 1);
+    miniText(ctx, wort, x + 13, y + 3, an ? L.farbeAn : L.farbeAus);
   }
   // M8g: Nadel je Stil (Breite, Länge, Schatten, andersfarbige Spitze)
   function nadel(d, f) {
@@ -465,6 +481,7 @@ export function baueTachos(ctx, text) {
       if (stil.digitalFenster) { ctx.fillStyle = stil.digitalFenster; ctx.fillRect(tempo.cx - 10, tempo.cy + 9, 20, 9); }
       text(zahl, tempo.cx + 9 - zahl.length * 6, tempo.cy + 10, 1, stil.farbeDigital);
       drehTeil(dt, gang, extra);
+      if (extra && extra.motorWarnung) zeichneMotorLeuchte(extra.motorStrafeSeit || 0); // M10c.2
 
       nadel(tempo, anzeige.kmh / skalaMax);
       nadel(dreh, anzeige.drehzahl / (skala.drehzahlMax * 1000));

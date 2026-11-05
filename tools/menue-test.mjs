@@ -145,7 +145,7 @@ console.log('(b) Einstellungen speichern und nach Neuladen wiederfinden');
   await taste(p, 'Enter');
   await oeffne(p, 4);
   const stelle = async (schluessel, r = 1, n = 1) => { await zu(p, await nrVon(p, schluessel)); await taste(p, r > 0 ? 'ArrowRight' : 'ArrowLeft', n); };
-  await stelle('einst.aufloesung', 1);       // 480x270
+  await stelle('einst.aufloesung', 1);       // (seit M10c.1 steht AUTO vorne: ein Schritt = 640x360 fest, AUTO aus)
   await stelle('einst.paceNotes', 1);        // aus
   await stelle('einst.einheiten', 1);        // mph
   await stelle('einst.fps', 1);              // an
@@ -160,7 +160,9 @@ console.log('(b) Einstellungen speichern und nach Neuladen wiederfinden');
   const nachher = await A(p, () => { const A = window.__alpineRally; return JSON.stringify({ ...A.einstellungen, notes: A.paceNotes.anzeige.an, b: A.renderer.domElement.width }); });
   const n = JSON.parse(nachher);
   const sprache = await A(p, async () => (await import('/js/texte.js')).aktuelleSprache());
-  pruefe(vorher === nachher && n.aufloesung === 1 && n.b === 480 && n.notes === false && n.einheit === 'mph' && n.fps === true
+  // M10c.2: Erwartung angepasst – seit M10c.1 (Pixelgrösse AUTO) ist ein Schritt nach rechts 640x360 fest (Index 2, Breite 640,
+  // aufloesungAuto false) statt 480x270; seit M10c.2 ist SPRUNGKAMERA ein Wert aus aus/ruhig/normal (Standard normal)
+  pruefe(vorher === nachher && n.aufloesung === 2 && n.aufloesungAuto === false && n.b === 640 && n.sprungkamera === 'normal' && n.notes === false && n.einheit === 'mph' && n.fps === true
     && n.lenkStufe === 3 && n.totzoneStufe === 1 && n.lautstaerke === 50 && n.sprache === 'en' && sprache === 'en',
   'alle Werte nach Neuladen gleich', nachher);
   pruefe(spiel.fehler.length === 0, 'keine Fehler in der Konsole', spiel.fehler.join(' | '));

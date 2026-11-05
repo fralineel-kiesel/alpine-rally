@@ -1,4 +1,5 @@
 // Strecke mit dem Testfahrer abfahren (M10a):  node tools/strecke-abfahren.mjs [<datei> | --strecke <id>] [--auto <id>] [--aus <datei.txt>] [--stil digital]
+// M10c.2: --ohne-strafe (Motor-Strafe aus), --kurven-vergleich (je Kehre: beste kontaktfreie Fahrt gegen Stil "wand").
 // M10c: --json <datei> schreibt die Sprünge je Stil (Flugweite, Zeit, Höhe, Verlust, Tempo an Kuppen/Kanten) als JSON.
 // Lädt das Spiel im Headless-Chromium mit dieser Streckendatei (statt strecken/alpen.js) und lässt den vorhandenen
 // Testfahrer (tools/testfahrer-browser.js, fahreEtappe – nicht neu geschrieben) die Etappe in der echten Physik fahren,
@@ -34,6 +35,82 @@ const fs0 = await spiel.page.evaluate(() => window.__fehlerseite || null);
 if (fs0) { console.log(`FEHLER: Strecke lässt sich nicht laden (${fs0.grund}): ${fs0.mehr}`); await spiel.schliessen(); process.exit(1); }
 const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
 await spiel.page.evaluate((code) => { window.__fahrerUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); }, fahrerCode);
+// M10c.2: --ohne-strafe: Motor-Strafe nach Wand-Treffern aus (Vergleich mit/ohne Strafe)
+if (process.argv.includes('--ohne-strafe')) await spiel.page.evaluate(() => { const W = window.__alpineRally.CONFIG.kollision.wandStrafe; if (W) W.an = false; });
+// (Untersuchung: --strafe-werte '{"schaltFaktor":1}' überschreibt einzelne Werte der Motor-Strafe)
+if (arg('--strafe-werte')) await spiel.page.evaluate((w) => Object.assign(window.__alpineRally.CONFIG.kollision.wandStrafe, JSON.parse(w)), arg('--strafe-werte'));
+
+// M10c.2: --kurven-vergleich: jede Kehre bzw. 180-Grad-Kurve (Pace-Notes-Analyse: Kehre oder Richtungswechsel ab 150°) im
+// Fenster 100 m davor bis 100 m danach in zwei Varianten fahren: (1) beste kontaktfreie Fahrt der Stile flott/digital (beide
+// mit Kontakt: mittel als Ersatz, markiert), (2) Stil "wand" (in dieser Kurve kaum Bremsen, Vollgas an die Aussenseite).
+// Alle Fahrten starten mit demselben Tempo (Zieltempo des Stils "digital" am Fensteranfang). Ergebnis: "wand" minus beste.
+if (process.argv.includes('--kurven-vergleich')) {
+  const r = await spiel.page.evaluate(async () => {
+    const f = await import(window.__fahrerUrl);
+    const { berechnePaceNotes } = await import('/js/pacenotes.js');
+    const A = window.__alpineRally, S = A.strecke;
+    A.anhalten = true;
+    const an = berechnePaceNotes(S, A.netz).kurven.filter((c) => c.kehre || c.winkel >= 150);
+    const voll = {};
+    for (const st of ['flott', 'digital', 'mittel']) voll[st] = f.bauePfad(A, Array.from(S.px), Array.from(S.pz), f.PROFILE[st]);
+    // sanftAb (Meter): ab dort Gas höchstens wie die Leistungskurve der Motor-Strafe (0.25 → 1 in sanftDauer s, smoothstep)
+    const lauf = (vZ, a, b, v0, gasMax = 1, sanftAb = null, sanftDauer = 3.5) => {
+      const xs = Array.from(S.px.slice(a, b)), zs = Array.from(S.pz.slice(a, b));
+      const p = f.bauePfad(A, xs, zs, f.PROFILE.digital);
+      for (let i = 0; i < p.n; i++) p.vZiel[i] = vZ[a + i];
+      p.vZiel[0] = v0;
+      p.digital = true;
+      let kontakt = 0, baum = false; const s0 = A.wand.strafen ?? 0;
+      let strafeZeit = 0;
+      const schritt = A.physikSchritt;
+      let sanftT = -1; const qs = {};
+      A.physikSchritt = (dt, e, nf) => {
+        const l0 = A.kollision.letzterAufprall;
+        let gm = gasMax;
+        if (sanftAb != null) {
+          if (sanftT < 0 && S.abfrage(A.physik.x, A.physik.z, qs).s >= sanftAb) sanftT = 0;
+          if (sanftT >= 0) { const p = Math.min(1, sanftT / sanftDauer); gm = Math.min(gm, 0.25 + 0.75 * p * p * (3 - 2 * p)); sanftT += dt; }
+        }
+        schritt(dt, gm < 1 && e.gas > gm ? { ...e, gas: gm } : e, nf);
+        if (A.wand.kontakt) kontakt++;
+        else if (A.kollision.letzterAufprall !== l0) baum = true;
+        if (A.wand.strafeRest > 0) strafeZeit += dt;
+      };
+      let e;
+      try { e = f.fahreStueck(A, p, p.n - 5); } finally { A.physikSchritt = schritt; }
+      return { zeit: e.zeit, fertig: e.fertig, kontakt: kontakt * A.SCHRITT, baum, strafen: A.wand.strafen != null ? A.wand.strafen - s0 : null, strafeZeit, verlust: A.wand.strafeLetzte && A.wand.strafen > s0 ? Math.round(A.wand.strafeLetzte.verlust) : null };
+    };
+    const out = [];
+    for (const c of an) {
+      const a = Math.max(1, c.von - 100), b = Math.min(S.anzahl - 2, c.bis + 100), v0 = voll.digital.vZiel[a];
+      const ohne = [];
+      for (const st of ['flott', 'digital']) ohne.push({ stil: st, ...lauf(voll[st].vZiel, a, b, v0) });
+      let frei = ohne.filter((x) => x.fertig && !x.kontakt && !x.baum), ersatz = false;
+      if (!frei.length) { const m = { stil: 'mittel', ...lauf(voll.mittel.vZiel, a, b, v0) }; ohne.push(m); if (m.fertig && !m.kontakt && !m.baum) frei = [m]; ersatz = true; }
+      const best = frei.reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
+      // Gegenprobe (nur Bericht): kontaktfrei, aber ab einem Punkt in der Kehre (30/50/70 % des Bogens) Gas höchstens wie die
+      // Leistungskurve der Strafe – zeigt, ob sanftes Herausbeschleunigen (statt Vollgas, durchdrehende Räder) schon die Zeit
+      // bringt, die „wand“ gewinnt (dann bringt die Wand nichts, sondern nur die Drossel als Traktionshilfe)
+      const dosiert = [];
+      for (const st of ['flott', 'digital']) for (const anteil of [0.3, 0.5, 0.7]) {
+        const x = { stil: `${st} sanft ab ${Math.round(anteil * 100)} %`, ...lauf(voll[st].vZiel, a, b, v0, 1, c.von + (c.bis - c.von) * anteil) };
+        if (x.fertig && !x.kontakt && !x.baum) dosiert.push(x);
+      }
+      const bestDosiert = dosiert.reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
+      const vw = f.bauePfad(A, Array.from(S.px), Array.from(S.pz), { ...f.PROFILE.wand, nurBereich: [c.von - 10, c.bis + 10] }).vZiel;
+      const w = lauf(vw, a, b, v0);
+      out.push({ von: c.von, bis: c.bis, winkel: Math.round(c.winkel), kehre: c.kehre, kmh: Math.round(v0 * 3.6), ohne, best, ersatz, bestDosiert, wand: w, diff: best && w.fertig ? w.zeit - best.zeit : null });
+    }
+    return out;
+  });
+  const zz = (x) => `${x.zeit.toFixed(2)} s${x.fertig ? '' : ' (nicht fertig)'}${x.kontakt ? `, Wand ${x.kontakt.toFixed(2)} s` : ''}${x.strafen ? `, ${x.strafen} Strafe${x.strafen > 1 ? 'n' : ''} (${x.verlust} km/h, ${x.strafeZeit.toFixed(1)} s)` : ''}${x.baum ? ', Aufprall' : ''}`;
+  const zl = r.map((k) => `${String(k.von).padStart(5)}–${String(k.bis).padEnd(5)} m (${k.winkel}°${k.kehre ? ', Kehre' : ''}, Start ${k.kmh} km/h): beste ohne Kontakt ${k.best ? `${k.best.stil} ${zz(k.best)}` : '–'}${k.ersatz ? ' [Ersatz mittel]' : ''}${k.bestDosiert ? ` (sanft: ${k.bestDosiert.stil} ${k.bestDosiert.zeit.toFixed(2)} s)` : ''} | wand ${zz(k.wand)} -> ${k.diff == null ? '–' : `${k.diff >= 0 ? '+' : ''}${k.diff.toFixed(2)} s`}${k.diff != null && k.diff < -0.1 ? (k.wand.kontakt ? '  WAND SCHNELLER' : '  (wand ohne Kontakt schneller)') : ''}`);
+  console.log(`Kurven-Vergleich ${id} ${AUTO}: ${r.length} Kehren/180-Grad-Kurven`);
+  console.log(zl.join('\n'));
+  if (arg('--json')) fs.writeFileSync(arg('--json'), JSON.stringify(r, null, 1));
+  await spiel.schliessen();
+  process.exit(0);
+}
 
 const zeilen = [`Strecke ${id} (${datei}), Fahrprofil ${AUTO}`];
 // M10c: markierte Kuppen (Feld sprung, s) aus der Datei – Tempo dort wird gemeldet (auch ohne Sprungzone)
@@ -66,6 +143,8 @@ for (const profil of STILE) {
     const MAT = (C.audio && C.audio.aufprall && C.audio.aufprall.materialien) || [];
     const wandMat = new Set(['metall', 'holz'].map((m) => MAT.indexOf(m)));
     const wandKontakte = []; let wandLetzt = -99, wandEp = null;
+    // M10c.2: Motor-Strafen (Wand-Treffer mit Motor-Drossel): Ort, Verlust, Dauer; Zeit mit Strafe
+    const motorStrafen = []; let msVor = A.wand && A.wand.strafen != null ? A.wand.strafen : 0, strafeZeit = 0;
     const zeitBei = new Float64Array(Math.ceil(S.laenge / 10) + 2).fill(-1);
     // je Schritt nur lesen (die Physik merkt nichts davon)
     const proSchritt = () => {
@@ -91,6 +170,10 @@ for (const profil of STILE) {
         if (A.rennen.uhr - wandLetzt > 0.25) { wandEp = { s: Math.round(s), kmh: Math.round(p.tempo * 3.6), strafen: 0 }; wandKontakte.push(wandEp); }
         if (A.wand && A.wand.strafe) wandEp.strafen++;
         wandLetzt = A.rennen.uhr;
+      }
+      if (A.wand && A.wand.strafen != null) {
+        if (A.wand.strafen !== msVor) { msVor = A.wand.strafen; const l = A.wand.strafeLetzte; motorStrafen.push({ s: Math.round(s), verlust: Math.round(l.verlust), dauer: +l.dauer.toFixed(2), frontal: l.frontal }); }
+        if (A.wand.strafeRest > 0) strafeZeit += A.SCHRITT;
       }
       if (anWand) { if (wandAn == null) wandAn = s; } else if (wandAn != null) { wand.push([wandAn, s]); wandAn = null; }
       if (F) {
@@ -124,10 +207,10 @@ for (const profil of STILE) {
     }
     const tempoMarken = MARKEN.map((m) => ({ ...m, kmh: tempo[Math.round(m.s)] || 0 }));
     const tempoKanten = Z.map((z) => ({ name: z.name, s: z.kante, kmh: Math.max(...[-3, -2, -1, 0].map((d) => tempo[Math.round(z.kante) + d] || 0)) }));
-    return { ...e, ab, gras, wand, stand, wandKontakte, wasserBad, zeitBei: Array.from(zeitBei), stellen, spruenge, ausserhalb, luftSchritte, tempoMarken, tempoKanten, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
+    return { ...e, ab, gras, wand, stand, wandKontakte, wasserBad, motorStrafen, strafeZeit, zeitBei: Array.from(zeitBei), stellen, spruenge, ausserhalb, luftSchritte, tempoMarken, tempoKanten, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
       tempoProfil: { vMax, nahAnteil: n ? nah / n : 0, gefahren: sZ - sA, profil100, zeit100 } };
   }, [profil, MARKEN]);
-  sprungStat.push({ stil: profil, zeit: r.ziel ? r.zeit : null, cps: r.cps, aufpralle: r.aufpralle.length, aufprallListe: r.aufpralle, wandKontakte: r.wandKontakte, zeitBei: r.zeitBei, wasserBad: r.wasserBad, gras: r.gras, spruenge: r.spruenge, ausserhalb: r.ausserhalb, luftSchritte: r.luftSchritte, tempoMarken: r.tempoMarken, tempoKanten: r.tempoKanten });
+  sprungStat.push({ stil: profil, zeit: r.ziel ? r.zeit : null, cps: r.cps, aufpralle: r.aufpralle.length, aufprallListe: r.aufpralle, wandKontakte: r.wandKontakte, motorStrafen: r.motorStrafen, strafeZeit: r.strafeZeit, zeitBei: r.zeitBei, wasserBad: r.wasserBad, gras: r.gras, spruenge: r.spruenge, ausserhalb: r.ausserhalb, luftSchritte: r.luftSchritte, tempoMarken: r.tempoMarken, tempoKanten: r.tempoKanten });
   zeiten.push(r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL');
   const m = (l) => l.map(([a, b]) => `${Math.round(a)}–${Math.round(b)} m`).join(', ') || 'keine';
   zeilen.push('', `${profil}: ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}`,

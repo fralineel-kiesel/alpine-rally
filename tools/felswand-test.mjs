@@ -197,7 +197,10 @@ for (const s0 of STELLEN) {
         `steckt max. ${cm(Math.max(0, r.maxE)).padStart(6)}, rückwärts ${r.weg.toFixed(1)} m`);
       if (r.maxE > maxEin) { maxEin = r.maxE; maxEinText = `${s0} m, ${v} km/h, ${winkel}°`; }
       if (neu) {
-        if (!r.kontakt || r.weg < 1 || (winkel >= 60 && r.nach02 > 15)) {
+        // M10c.2: seit M10c.1 gilt an der Felswand die Wand-Strafe (60° −60 %, frontal −75 %, Linos „Mittel“) statt hartem
+        // Halt; die alte Erwartung (nach 0.2 s unter 15 km/h) galt bis 0.10c. Jetzt: ab 60° nach 0.2 s höchstens 45 % vom
+        // Tempo (Strafe plus Schleifen, Vollgas läuft weiter) bzw. unter 15 km/h
+        if (!r.kontakt || r.weg < 1 || (winkel >= 60 && r.nach02 > Math.max(15, 0.45 * v))) {
           pruefe(false, `${s0} m, ${v} km/h, ${winkel}°: ${!r.kontakt ? 'kein Kontakt' : r.weg < 1 ? 'kommt rückwärts nicht raus' : 'kein harter Halt'}`);
         }
       }
@@ -208,7 +211,7 @@ for (const s0 of STELLEN) {
 console.log(`  am tiefsten: ${cm(Math.max(0, maxEin))} (${maxEinText})`);
 if (neu) {
   pruefe(maxEin < 0.06, 'Karosserie steckt nirgends mehr als ein paar cm (unter 6 cm) in der sichtbaren Wand');
-  pruefe(true, 'alle Aufpralle mit Kontakt, harter Halt ab 60°, rückwärts wieder raus (sonst oben als FEHLER)');
+  pruefe(true, 'alle Aufpralle mit Kontakt, ab 60° stark gebremst (Wand-Strafe, M10c.1), rückwärts wieder raus (sonst oben als FEHLER)');
 }
 
 // --- 3. Kamera ---------------------------------------------------------------------------------
