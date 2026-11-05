@@ -971,10 +971,40 @@ export function baueKlangwerk(ctx) {
     }
     const h = begr(info.haerte, 0, 1);
     merke(`landung-${info.klasse}`, h);
-    spiele('schlag', 'schlag', fahrzeug, T.schlagPegel * (0.5 + 0.5 * h), 0, 0.7 + 0.1 * rnd());
-    spiele('aufprall', 'aufprall-stein', fahrzeug, T.kiesPegel * (0.4 + 0.6 * h), 0, 1.15 + 0.2 * rnd(), 2600);
-    if (info.klasse !== 'sauber') spiele('aufprall', 'aufprall-stein', fahrzeug, T.hartPegel * h, 0, 0.9 + 0.1 * rnd());
-    if (info.klasse === 'sehrHart') { spiele('schlag', 'schlag', fahrzeug, T.auaPegel, 0.04, 0.45); ducke(AU.duckDb, AU.duckDauer, AU.duckZurueck, true); }
+    // M10c.2: richtiger „Wums“ (Lino: viel zu leise): tiefer Bass-Schlag, gedämpfter Rausch-Stoss, Federungs-Klack,
+    // Schotterknirschen wie bisher; sehr hart dazu ein tiefer „Aua“-Ton. Alles mal LANDUNG_WUMMS_LAUTSTAERKE und Stärke je
+    // Landehärte. Der Motor tritt kurz zurück (Ducking). (Zufallszahlen in derselben Reihenfolge wie bis 0.10c.1)
+    const W = T.wumms, L = T.LANDUNG_WUMMS_LAUTSTAERKE * (W.stufen[info.klasse] ?? 1);
+    const r1 = rnd();
+    wummsTon('landung', W.bass, L * W.bass.pegel * (1 + 0.04 * (r1 - 0.5)));
+    wummsRauschen('landung', W.rauschen, L * W.rauschen.pegel);
+    spiele('landung', 'klack', fahrzeug, L * W.klackPegel, 0, W.klackTempo);
+    spiele('aufprall', 'aufprall-stein', fahrzeug, T.LANDUNG_WUMMS_LAUTSTAERKE * T.kiesPegel * (0.4 + 0.6 * h), 0, 1.15 + 0.2 * rnd(), 2600);
+    if (info.klasse !== 'sauber') spiele('aufprall', 'aufprall-stein', fahrzeug, L * T.hartPegel * h, 0, 0.9 + 0.1 * rnd());
+    if (info.klasse === 'sehrHart') { wummsTon('landung', W.aua, L * W.aua.pegel); spiele('schlag', 'schlag', fahrzeug, L * T.auaPegel, 0.04, 0.45); }
+    ducke(W.duckDb, W.duckDauer, W.duckZurueck, false);
+  }
+  // M10c.2: tiefer Sinus-Schlag (Tonhöhe fällt von "von" auf "bis" Hz in "zeit" s, klingt in "dauer" s aus), mittig
+  function wummsTon(art, B, pegel) {
+    if (!(pegel > 0)) return;
+    const t = ctx.currentTime + (B.wann || 0);
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(B.von, t); o.frequency.exponentialRampToValueAtTime(B.bis, t + B.zeit);
+    const g = gain(0, fahrzeug);
+    const an = B.anstieg || 0.004; // (weicher Anstieg: der Limiter fängt ihn ab, keine Spitze über −1 dBFS)
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pegel, t + an); g.gain.setTargetAtTime(0, t + an, B.dauer / 4);
+    o.connect(g); o.start(t); o.stop(t + B.dauer);
+    belege(art, o, g, null, B.wann || 0);
+  }
+  // M10c.2: gedämpfter Rausch-Stoss (vorhandenes Rauschen, Tiefpass), kurz
+  function wummsRauschen(art, R, pegel) {
+    if (!(pegel > 0) || !puffer.rauschen) return;
+    const t = ctx.currentTime;
+    const q = ctx.createBufferSource(); q.buffer = puffer.rauschen;
+    const g = gain(0, fahrzeug), f = filter('lowpass', R.grenze, 0.7, g);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pegel, t + 0.003); g.gain.setTargetAtTime(0, t + 0.003, R.dauer / 3);
+    q.connect(f); q.start(t, 0.3); q.stop(t + R.dauer * 2);
+    belege(art, q, g, f, 0);
   }
   // M10b.2: Platsch ins Wasser (staerke 1 = tief hinein, klein = Plätschern im flachen Wasser)
   function platsch(staerke = 1) {

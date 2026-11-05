@@ -8,4 +8,6 @@
   Rot: escorta alle 4 (Traktion: Drossel = Traktionshilfe für Vollgas-Testfahrer; mit sanftem Gas −0.42/−0.08/−0.07/+0.10),
   l073 1353 −0.15 / 1645 −0.18, imprexa 1792 −0.58 (je 1 Treffer: weniger Schleifen). Vorschläge V1/V2 in /tmp/m10c2/kvV*.
 - Gefunden, nicht behoben: main.js tonZ.schaltet/zielGang auskommentiert seit M10c (Schalt-Ton im Rennen).
-- Als Nächstes: Teil C (Wums), dann B (Kamera), D (Bericht). Worktrees scratchpad/alt (0.10c.1), scratchpad/alt10c (0.10c).
+- Teil C fertig (Commit 2): Wums im Mix sauber +2.0 / hart +6.7 / sehr hart +10.3 dB (alt −2.9/−0.3/+4.9), Spitze ≤ −1.03 dBFS,
+  Ducking −5.5 dB. Verhältnis vor dem Limiter gemessen (Fahrt läuft schon bei −11 dBFS RMS am Limiter). sehrHart 0.85 wegen Spitze.
+- Als Nächstes: B (Kamera), D (Bericht). Worktrees scratchpad/alt (0.10c.1), scratchpad/alt10c (0.10c).

@@ -528,3 +528,121 @@ if (teil('m')) {
   melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
   await s.schliessen();
 }
+
+// ===================================================================== Teil C: Landungs-Wums (offline gerechnet, js/audio.js)
+// Bezug: Fahrgeräusch bei 100 km/h mit Gas (Motor, Reifen, Wind; Drehzahl und Gang aus dem echten Getriebe), Fenster 150 ms.
+// Landung allein: RMS und Spitze in den ersten 150 ms. Alles über die ganze Kette (Limiter, Decke), LAUTSTÄRKE 100 %.
+const MESSE_WUMS = async ({ lautstaerke = 1 } = {}) => {
+  const A = window.__alpineRally, T = await import('/tools/ton-pruefung.js'), C = A.CONFIG;
+  A.anhalten = true; A.setzeAuf(2200);
+  const P = A.physik, G = { gas: 1, bremse: 0, lenkung: 0, handbremse: false, reset: false };
+  P.vx = Math.sin(P.richtung) * 27.8; P.vz = Math.cos(P.richtung) * 27.8; P.vVor = 27.8;
+  for (let i = 0; i < 240; i++) { A.physikSchritt(A.SCHRITT, G); if (P.vVor > 27.8) { P.vx *= 27.8 / P.vVor; P.vz *= 27.8 / P.vVor; } }
+  const z = T.zustand({ drehzahl: A.getriebe.drehzahl, gang: A.getriebe.gang, zielGang: A.getriebe.gang, gas: 1, tempo: 27.8, vVor: 27.8, untergrund: 'schotter', motorStrafen: 0 });
+  const rms = (d, a, b) => { let x = 0; const i0 = Math.round(a * T.RATE), i1 = Math.round(b * T.RATE); for (let i = i0; i < i1; i++) x += d[i] * d[i]; return Math.sqrt(x / (i1 - i0)); };
+  const spitze = (d, a = 0, b = d.length / T.RATE) => { let m = 0; for (let i = Math.round(a * T.RATE); i < Math.round(b * T.RATE); i++) m = Math.max(m, Math.abs(d[i])); return m; };
+  const db = (x) => 20 * Math.log10(Math.max(1e-9, x));
+  const LAND = { sauber: 0.25, hart: 0.6, sehrHart: 1.0 };
+  const fahrt = (landung, limiter = true, dauer = 2.2) => T.rendereVerlauf((w, t) => {
+    w.aktualisiere(1 / 60, z);
+    if (landung && t >= 1.0 && !w.__gelandet) { w.__gelandet = true; w.sprung('landung', { haerte: LAND[landung], klasse: landung, s: 0 }); }
+  }, dauer, { limiter, vorher: (w) => { w.busse.master.gain.value = lautstaerke; } });
+  // Verhältnis Wums : Fahrgeräusch VOR dem Limiter (der Limiter regelt die Summe mit einer Verstärkung: so steht es im Mix),
+  // Spitzen und Pegel NACH der ganzen Kette (Limiter, Decke)
+  const motor = await fahrt(null), motorV = await fahrt(null, false);
+  const mRms = rms(motor.daten, 1.0, 1.15), mVor = rms(motor.daten, 0.6, 0.95), mRmsV = rms(motorV.daten, 1.0, 1.15);
+  const out = { drehzahl: Math.round(A.getriebe.drehzahl), gang: A.getriebe.gang, motorRms: db(mRms), motorRmsVor: db(mRmsV), stufen: {} };
+  const T0 = C.sprung.ton, alt = { ...T0 };
+  for (const k of Object.keys(LAND)) {
+    const allein = await T.rendere((w) => { w.busse.master.gain.value = lautstaerke; w.sprung('landung', { haerte: LAND[k], klasse: k, s: 0 }); }, 0.6);
+    const alleinV = await T.rendere((w) => { w.busse.master.gain.value = lautstaerke; w.sprung('landung', { haerte: LAND[k], klasse: k, s: 0 }); }, 0.6, { limiter: false });
+    const mit = await fahrt(k);
+    // Ducking: dieselbe Fahrt, Landungs-Klänge stumm (alle Pegel 0) – übrig bleibt nur die Wirkung auf das Fahrgeräusch
+    for (const key of Object.keys(T0)) if (/Pegel$|^LANDUNG_WUMMS_LAUTSTAERKE$/.test(key)) T0[key] = 0;
+    const duck = await fahrt(k);
+    Object.assign(T0, alt);
+    out.stufen[k] = {
+      rms: db(rms(allein.daten, 0, 0.15)), spitze: db(spitze(allein.daten, 0, 0.6)), rmsRel: db(rms(alleinV.daten, 0, 0.15) / mRmsV), rmsRelNach: db(rms(allein.daten, 0, 0.15) / mRms),
+      spitzeMit: db(spitze(mit.daten, 0.95, 1.6)),
+      duckMitte: db(rms(duck.daten, 1.05, 1.2) / mVor), duckNach: db(rms(duck.daten, 1.5, 1.7) / mVor),
+    };
+  }
+  return out;
+};
+let wumsAlt = null, wumsNeu = null;
+async function wumsMessung(wurzel, extra = {}) {
+  const s = await oeffne(wurzel, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const r = await s.page.evaluate(MESSE_WUMS, extra);
+  await s.schliessen();
+  return r;
+}
+if (['u', 'v', 'w'].some(teil)) {
+  wumsNeu = await wumsMessung(WURZEL);
+  if (ALT) wumsAlt = await wumsMessung(ALT);
+  const f = (x) => `${x >= 0 ? '+' : ''}${x.toFixed(1)} dB`;
+  const tab = ['| Landung | alt: gegen Fahrt im Mix (vor Limiter) / nach Kette | neu: gegen Fahrt im Mix / nach Kette | Ziel (im Mix) | Spitze alt (allein / mit Fahrt) | Spitze neu (allein / mit Fahrt) |', '|---|---|---|---|---|---|'];
+  const ziel = { sauber: -3, hart: 6, sehrHart: 10 };
+  for (const k of Object.keys(ziel)) {
+    const a = wumsAlt && wumsAlt.stufen[k], n = wumsNeu.stufen[k];
+    tab.push(`| ${k} | ${a ? `${f(a.rmsRel)} / ${f(a.rmsRelNach)}` : '–'} | ${f(n.rmsRel)} / ${f(n.rmsRelNach)} | ≥ ${f(ziel[k])} | ${a ? `${a.spitze.toFixed(1)} / ${a.spitzeMit.toFixed(1)} dBFS` : '–'} | ${n.spitze.toFixed(1)} / ${n.spitzeMit.toFixed(1)} dBFS |`);
+  }
+  fs.writeFileSync(path.join(LOG, 'wums-pegel.md'), `Fahrgeräusch 100 km/h, Gas, ${wumsNeu.gang}. Gang, ${wumsNeu.drehzahl}/min: RMS ${wumsNeu.motorRms.toFixed(1)} dBFS nach der Kette, ${wumsNeu.motorRmsVor.toFixed(1)} dBFS vor dem Limiter\n\n${tab.join('\n')}\n`);
+  for (const z of tab) info(z);
+  if (teil('u')) {
+    console.log('(u) Wums-Pegel (RMS der ersten 150 ms gegen das Fahrgeräusch bei 100 km/h mit Gas, im Mix = vor dem Limiter): sauber ≥ −3 dB, hart ≥ +6 dB, sehr hart ≥ +10 dB');
+    for (const k of Object.keys(ziel)) melde(wumsNeu.stufen[k].rmsRel >= ziel[k], `${k}: ${f(wumsNeu.stufen[k].rmsRel)} (Ziel ≥ ${f(ziel[k])}${wumsAlt ? `, alt ${f(wumsAlt.stufen[k].rmsRel)}` : ''})`);
+  }
+  if (teil('v')) {
+    console.log('(v) Spitzenpegel nie über −1 dBFS (Landung allein und mit Fahrgeräusch, LAUTSTÄRKE 100 %)');
+    for (const k of Object.keys(ziel)) melde(wumsNeu.stufen[k].spitze <= -1 && wumsNeu.stufen[k].spitzeMit <= -1, `${k}: allein ${wumsNeu.stufen[k].spitze.toFixed(2)} dBFS, mit Fahrt ${wumsNeu.stufen[k].spitzeMit.toFixed(2)} dBFS`);
+  }
+  if (teil('w')) {
+    console.log('(w) Ducking: Fahrgeräusch während des Wums ca. −6 dB, 0.5 s danach wieder wie vorher (±1 dB)');
+    for (const k of Object.keys(ziel)) { const n = wumsNeu.stufen[k]; melde(n.duckMitte <= -4.5 && n.duckMitte >= -7.5 && Math.abs(n.duckNach) <= 1, `${k}: während ${f(n.duckMitte)}, 0.5 s danach ${f(n.duckNach)}${wumsAlt ? ` (alt: ${f(wumsAlt.stufen[k].duckMitte)} / ${f(wumsAlt.stufen[k].duckNach)})` : ''}`); }
+  }
+}
+if (teil('x')) {
+  console.log('(x) Pause stumm, LAUTSTÄRKE wirkt (Wums bei 50 % genau −6 dB gegen 100 %, offline, vor dem Limiter)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  await bereit(s);
+  const r = await s.page.evaluate(async () => {
+    const T = await import('/tools/ton-pruefung.js');
+    const rms = (d, a, b) => { let x = 0; const i0 = Math.round(a * T.RATE), i1 = Math.round(b * T.RATE); for (let i = i0; i < i1; i++) x += d[i] * d[i]; return Math.sqrt(x / (i1 - i0)); };
+    const land = (laut, pause) => T.rendereVerlauf((w, t) => {
+      w.aktualisiere(1 / 60, T.zustand({ modus: pause && t >= 0.5 ? 'pause' : 'rennen', drehzahl: 900, gas: 0 }));
+      if (t >= 0.5 && !w.__l) { w.__l = true; if (!pause) w.sprung('landung', { haerte: 1, klasse: 'sehrHart', s: 0 }); }
+    }, 1.2, { limiter: false, vorher: (w) => { w.busse.master.gain.value = laut; } });
+    const v = await land(1, false), h = await land(0.5, false), p = await land(1, true);
+    return { voll: rms(v.daten, 0.5, 0.65), halb: rms(h.daten, 0.5, 0.65), pause: rms(p.daten, 0.6, 1.2), vor: rms(v.daten, 0.2, 0.45) };
+  });
+  const db = (x) => 20 * Math.log10(x);
+  melde(Math.abs(db(r.halb / r.voll) + 6.02) < 0.3, `Wums bei LAUTSTÄRKE 50 % (master.gain 0.5): ${db(r.halb / r.voll).toFixed(2)} dB gegen 100 %`);
+  melde(r.pause < r.vor * 0.5, `Pause: keine Landung ausgelöst (die Welt steht), Pegel ${db(r.pause / r.vor).toFixed(1)} dB gegen Leerlauf vorher`);
+  await s.schliessen();
+}
+if (teil('y')) {
+  console.log('(y) Alpen: keine Sprünge, kein Wums (Ton der Alpen gleich wie 0.10c.1: Klangpuffer, Testfahrer-Ton)');
+  const r1 = await (async () => {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+    await bereit(s);
+    const r = await s.page.evaluate(async () => {
+      const A = window.__alpineRally, T = await import('/tools/ton-pruefung.js');
+      const { daten, werk } = await T.rendere(() => {}, 0.1);
+      const sum = {}; for (const [k, b] of Object.entries(werk.puffer)) { const d = b.getChannelData(0); let x = 0; for (let i = 0; i < d.length; i += 7) x += d[i] * (i % 13 + 1); sum[k] = `${d.length}:${x.toFixed(6)}`; }
+      return { zonen: A.strecke.sprungZonen.length, sum };
+    });
+    await s.schliessen();
+    return r;
+  })();
+  let r0 = null;
+  if (ALT) { const s = await oeffne(ALT, '?menue=aus&ton=aus'); await bereit(s); r0 = await s.page.evaluate(async () => { const T = await import('/tools/ton-pruefung.js'); const { werk } = await T.rendere(() => {}, 0.1); const sum = {}; for (const [k, b] of Object.entries(werk.puffer)) { const d = b.getChannelData(0); let x = 0; for (let i = 0; i < d.length; i += 7) x += d[i] * (i % 13 + 1); sum[k] = `${d.length}:${x.toFixed(6)}`; } return { sum }; }); await s.schliessen(); }
+  const anders = r0 ? Object.keys(r0.sum).filter((k) => r0.sum[k] !== r1.sum[k]) : [];
+  melde(r1.zonen === 0 && anders.length === 0, `Alpen: ${r1.zonen} Sprungzonen (kein Wums möglich); Klangpuffer gleich wie 0.10c.1: ${r0 ? (anders.length ? `ANDERS: ${anders.join(', ')}` : `alle ${Object.keys(r0.sum).length} gleich`) : 'nur mit --alt'}; neue Puffer: ${Object.keys(r1.sum).filter((k) => !r0 || !(k in r0.sum)).join(', ') || 'keine'}`);
+}
+if (teil('z')) {
+  console.log('(z) Haptik-Ereignis „Landung“ unverändert (main.js: spielTick(\'landung\', Härte) wie in 0.10c.1)');
+  const zeile = (w) => fs.readFileSync(path.join(w, 'js/main.js'), 'utf8').split('\n').find((z) => z.includes("spielTick('landung'"));
+  const n = zeile(WURZEL), a = ALT ? zeile(ALT) : null;
+  melde(n && (!a || n.trim() === a.trim()), `Aufruf: ${n ? n.trim().slice(0, 120) : 'FEHLT'}${a ? (n.trim() === a.trim() ? ' (gleich wie 0.10c.1)' : ' (ANDERS als 0.10c.1)') : ''}`);
+}

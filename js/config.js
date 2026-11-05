@@ -1192,10 +1192,20 @@ export const CONFIG = {
       drehzahlRunter: 3,       // ... ohne Gas so schnell zurück zum Leerlauf
       fangen: 0.35,            // nach der Landung fängt sich der Motor in so vielen Sekunden (wieder Getriebe-Drehzahl)
       windMehr: 0.35,          // Fahrtwind in der Luft so viel lauter (0.35 = +35 %)
-      schlagPegel: 0.55,       // Landung sauber: dumpfer Federungsschlag (mal Härte, mindestens die Hälfte)
+      schlagPegel: 0.55,       // (bis 0.10c.1: dumpfer Federungsschlag; seit M10c.2 ersetzt durch wumms.bass)
       kiesPegel: 0.35,         // Schotterknirschen bei jeder Landung
       hartPegel: 0.7,          // hart: lauter Schlag mit Knirschen
       auaPegel: 0.6,           // sehr hart: kurzer tiefer "Aua"-Ton dazu
+      // M10c.2: Landungs-Wums (Lino: „viel zu leise“). Mit dieser einen Zahl lässt sich der ganze Wums lauter/leiser stellen
+      LANDUNG_WUMMS_LAUTSTAERKE: 1.0,
+      wumms: {
+        stufen: { sauber: 0.4, hart: 0.7, sehrHart: 0.85 }, // Stärke je Landehärte (sehr hart: mehr ginge über −1 dBFS)
+        bass: { pegel: 1.6, von: 90, bis: 40, zeit: 0.1, dauer: 0.4, anstieg: 0.012 }, // tiefer Bass-Schlag: Sinus 90 → 40 Hz in 0.1 s
+        rauschen: { pegel: 1.2, grenze: 600, dauer: 0.12 },                // gedämpfter Rausch-Stoss (Tiefpass 600 Hz)
+        klackPegel: 0.5, klackTempo: 1.3,                                  // Federungs-Klack (helle Transiente)
+        aua: { pegel: 1.0, von: 60, bis: 32, zeit: 0.18, dauer: 0.6, wann: 0.05, anstieg: 0.02 }, // sehr hart: tiefes „Aua“
+        duckDb: -6, duckDauer: 0.25, duckZurueck: 0.05,                    // Motor kurz leiser (dB, s, Zeitkonstante zurück)
+      },
       jubelAbstand: 40,        // Zuschauer so nah (Meter vor/nach dem Fan-Spot) jubeln beim Abheben
     },
     // Staub/Kies beim Abheben und Landen (vorhandene Staub-Wölkchen, Farbe des Untergrunds)
