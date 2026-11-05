@@ -2,12 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 10c fertig** (Version 0.10c) – **Sprünge mit Flugphase in Finnland**: Die vier Kuppen sind echte
-Sprünge (bei 100 km/h ca. 15 / 24 / 38 / 30 m), echte Wurfbahn, Landung kostet nur bei harter Landung Tempo, filmische
-Sprungkamera (EINSTELLUNGEN → SPRUNGKAMERA), Motor dreht in der Luft frei, Wumms bei der Landung, Schatten bleibt am Boden,
-Pace-Note SPRUNG, Sprung-Zeilen im Zielbildschirm mit Sprungrekord. Finnland-Bestzeiten neu (revision 3). Alpen unverändert
-(Teil E, Sprünge in den Alpen, nicht gebaut). **Nur Chromium, kein Handy.** **Bitte zuerst die Test-Anleitung in
-`docs/meilensteine/m10c.md`.** Nächster Schritt: offen (siehe KONZEPT.md, Fahrplan).
+Aktuell: **Meilenstein 10c.1 fertig** (Version 0.10c.1) – nach Linos Review zu M10c: **Sprungkamera steifer** (Zoom-Out 14 → 3 %,
+kein steiler Blick von oben mehr), **Wand-Kollision mit echter Strafe** (Streifen 25 %, steil 60 %, frontal 75 %, keine Drehung
+mehr durch die Wand), **Seekehre bei 3314 m** in Finnland (Leitplanke weg, Ufer, See), **kleinere Vorschaukarte**, **Pixelgrösse
+AUTO** (640x360, senkt bei Ruckeln selbst). **Nur Chromium, kein Handy, kein Gamepad.** **Bitte zuerst die Test-Anleitung in
+`docs/meilensteine/m10c1.md`.** Nächster Schritt: M10d (Alpen mit Sprüngen und Schatten, siehe KONZEPT.md, Fahrplan).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -130,11 +129,16 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - Profil `prototyp` bleibt bit-gleich (Referenz für Pace-Notes, Sperren, Testfahrer). Fertige Autos bleiben bit-gleich, wenn der
   Auftrag sie nicht nennt (Aussehen, Fahrgefühl, Ton, Tacho).
 - **Finnland (seit M10c):** Länge 4161.6 m, Draufsicht/Checkpoints/Untergrund wie 0.10b.2, 4 Sprungzonen (Kante 495 / 1830 /
-  3090 / 3656 m), `revision` 3, Hang-Check 0 Stellen über 0.45. Testfahrer-Zeiten: Tabelle in `docs/meilensteine/m10c.md`.
+  3090 / 3656 m), `revision` 3, Hang-Check 0 Stellen über 0.45. Seit M10c.1: Seekehre (keine Planke aussen 3260–3400 m, See).
+  Testfahrer-Zeiten: Tabelle in `docs/meilensteine/m10c1.md`.
 - **Limits:** Draw Calls pro Auto ≤ 12, Dreiecke pro Auto ≤ 1800, kein Garbage pro Bild, Ladezeit gleich, Ton ändert nie das Spiel.
 
 ## Werkzeuge und Tests
 
+- `node tools/m10c1-test.mjs --alt <ordner 0.10c = 612cc62> [--nur a,b] [--lang]` – alle Prüfungen von M10c.1 (a … ae, bz =
+  Bildzeit je Auflösung, x1–x5 Alpen, zz = frühere Tests mit `--lang`); `node tools/m10c1-bilder.mjs` – Bilder nach
+  `screenshots/m10c1/`; `node tools/wand-kurven.mjs --strecke <id> --auto <id>` – Wert der Wand je Kurve; Stil `--stil wand`.
+  **Alle Werkzeuge laufen jetzt fest mit 320x180** (`?aufloesung=320x180`), anders mit `--aufloesung 640x360` oder `auto`.
 - `node tools/m10c-test.mjs --alt <ordner 0.10b.2 = ffca7c3> [--nur a,b] [--lang]` – alle Prüfungen von M10c (a … y, Alpen x1–x5,
   Finnland alt/neu x6, frühere Tests z); `node tools/m10c-bilder.mjs` – Bilder nach `screenshots/m10c/`;
   `strecke-abfahren.mjs --json <datei>` meldet die Sprünge je Stil (Weite, Zeit, Höhe, Verlust).
@@ -217,6 +221,11 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
+- **Offen aus M10c.1:** In den vier Alpen-Kehren bringt Vollgas in die Planke noch +0.3–0.9 s (Stufe „Mittel“); Idee: Stufe
+  „Streng“ oder `kollision.wand.steil`/`frontal` höher, wenn Lino das will. Seekehre: Ufer 2–7 m statt 3–4 m (ein See = ein
+  Wasserspiegel, die Strasse steigt), Zuschauer nur aussen (innen verbietet die Abkürzungs-Regel). Ideen: Wand-Strafe als
+  Einstellung (MILD / MITTEL / STRENG), Delle oder Kratzer am Auto nach Einschlägen, Wasserbad-Zähler in der Statistik.
+
 - **Offen aus M10c:** **Teil E (ein bis zwei Sprünge in den Alpen) nicht gebaut** (Eingriff in die Alpen, eigene Prüfung der
   Abkürzungen und Bestzeiten nötig). Birkenkuppe liegt wegen Checkpoint 2 (1707 m) bei 1830 statt 1751 m; die alte flache Kuppe
   bei 1747 m bleibt eine normale Kuppe. Lanza 073 bleibt im Testfahrer unfallträchtig. Ideen: Luftlenkung (von Lino abgelehnt,
@@ -277,6 +286,14 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
 
+- **M10c.1** (0.10c.1) – Review M10c: **Sprungkamera** steifer (`sprung.kamera`: zurück 0.05, heben 0.24 m, folgt in der Luft
+  der Autohöhe, Ruck 0.4–0.6 % der Bildhöhe, 0.25 s). **Wand-Strafe** `js/wand.js` für Leitplanke, Zaun, Geländer, Absperr-Wand,
+  Felswand (Winkel zur Wand: 25/60/75 %, Schleifen 35 %/s, keine Ausrichtung); Testfahrer-Stil `wand`, `tools/wand-kurven.mjs`:
+  Exploit-Kurven 25 → 16 (Finnland 0, **Alpen-Kehren 1–4 noch +0.3–0.9 s**). Läufe ohne Wandkontakt bit-gleich, keine neue
+  `revision`. **Seekehre** Finnland 3284–3376 m: Planke weg (`strassenrand.ohnePlanke`), naher See (neue Seefelder `nah`, `pegel`,
+  `ufer` …, Ufer 2–7 m), Wasserbad zurück auf 3270 m, Zuschauer und Findlinge. **ETAPPE**: Karte 74x62 (60 %), Sprungrekord in
+  der Liste. **PIXELGRÖSSE AUTO** (`js/aufloesung.js`, Standard, 640x360, zwei 4-s-Fenster unter 50 FPS = eine Stufe tiefer,
+  gemerkt; altes 320x180 wird AUTO). Werkzeuge laufen fest mit 320x180 (`--aufloesung`). Bericht: `docs/meilensteine/m10c1.md`.
 - **M10c** (0.10c) – **Sprünge mit Flugphase**: neues Modul `js/sprung.js` (Streckenfeld `sprung` mit Zone, Kante, Landezone,
   `staerke`, `form`; Höhen-Zusatz der Strasse ohne Änderung von Länge/Draufsicht; Abheben nur in Zonen und nur von der Fahrbahn;
   echte Wurfbahn; Landung: Verlust nur bei hartem Aufprall, Nase voran oder schräg, höchstens 35 %). Finnland: vier Sprünge

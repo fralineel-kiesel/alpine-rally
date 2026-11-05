@@ -303,6 +303,8 @@ export default {
   ],
 
   strasse: { startBeiMeter: 25, zielVorEnde: 45, spawnBeiMeter: 10 },
+  // M10c.1: keine Leitplanke an der Aussenseite der Seekehre (Lino: man konnte sie zum schnelleren Durchfahren nutzen)
+  strassenrand: { ohnePlanke: [[3260, 3400, -1]] },
   checkpoints: [1000, 1707, 2614, 3419],
   // --- Nebenwege wie in den Alpen (seit M10b.1): Start, Dorf und Ziel liegen an einer Asphaltstrasse. Die Etappe biegt
   //     an jedem Untergrundwechsel ab (Abzweig) oder ein (Einmündung); die Asphaltstrasse läuft dort als abgesperrter
@@ -352,6 +354,16 @@ export default {
     seen: [
       { s: 1090, seite: -1, lat: 70, rx: 46, rz: 105, drehung: 0, tiefe: 2.2 },  // Seeufer: See links, innen in der Kurve
       { s: 4093, seite: 1, lat: 56, rx: 38, rz: 90, drehung: 0, tiefe: 2.0 },   // Zielgerade am See (rechts)
+      // M10c.1: Seekehre (Hochwaldkehre, rechts 174°): See an der Aussenseite, fast direkt am Strassenrand (Schulter 1.5 m,
+      // flaches Ufer, dann Wasser; Grund fällt im Wasser mit 0.4: nach ca. 2–3 m zu tief). Sechs kleine Kreise entlang des
+      // Bogens (das Ufer folgt der Kehre) und der Seekörper dahinter, gleicher Spiegel (pegel). Wasserbad: zurück vor die Kehre (zurueck). Die Leitplanke dort ist weg (strassenrand.ohnePlanke)
+      { s: 3292, seite: -1, lat: 19.9, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3302, seite: -1, lat: 19.8, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3312, seite: -1, lat: 20.1, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3322, seite: -1, lat: 20.9, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3332, seite: -1, lat: 22.3, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3342, seite: -1, lat: 24.0, rx: 10, rz: 10, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 },
+      { s: 3318, seite: -1, lat: 38, rx: 22, rz: 28, drehung: 0, tiefe: 0, pegel: -6.15, nah: true, ufer: 8, uferSteigung: 0.15, innenSteigung: 0.4, schulter: 1.5, zurueck: 3270 }, // Seekörper
     ],
     fluesse: [
       { s: 1477, breite: 9, laenge: 420, winkel: 8, tiefe: 2.5 },             // Fluss mit Holzbrücke (im Dorf; M10b.2: 2.5 statt 3.0 m tief, sonst wird die Böschung neben der Brücke zu steil)
@@ -491,6 +503,7 @@ export default {
         { s: 1456, seite: -1, lat: 13, drehung: 0, farbe: '#4a6a8c' }, { s: 1514, seite: 1, lat: 22, drehung: 80, farbe: '#c8c0a8' },
       ],
       heurollen: [[1438, 1, 36], [1444, 1, 38], [1450, 1, 35]],
+      findlinge: [[3288, -1, 9.5, 0.7], [3347, -1, 11.5, 0.8], [3353, -1, 13, 0.6]], // M10c.1: am Ufer der Seekehre (nur wo es breit ist)
       brunnen: { s: 1426, seite: -1, lat: 13, drehung: 0 },
     },
     fans: {
@@ -511,6 +524,13 @@ export default {
           banner: [[1811, 9.4, 'hyppy']],
           fahnen: [[1801, 11, 'motiv'], [1823, 12, 'motiv']],
           stuehle: 3,
+        },
+        {
+          name: 'kehre', s: [3240, 3262], seite: -1, lat: [8, 12], anzahl: 9, blickS: 3320, // M10c.1: vor der Seekehre aussen, Blick in die Kehre (innen verbietet die Abkürzungs-Regel Zuschauer)
+          band: [[3234, 3262, 7.4]],
+          banner: [],
+          fahnen: [[3248, 11, 'motiv']],
+          stuehle: 1,
         },
       ],
     },
@@ -536,7 +556,7 @@ export default {
     publikumOrte: {
       start: { staerke: 1.0, von: -70, bis: 70 },
       ziel: { staerke: 1.0, von: -70, bis: 350 },
-      dorf: { staerke: 0.7 }, kuppe: { staerke: 0.8 },
+      dorf: { staerke: 0.7 }, kuppe: { staerke: 0.8 }, kehre: { staerke: 0.5 }, // M10c.1: kehre = Zuschauer an der Seekehre
     },
     boeenAbschnitt: null,      // keine Böen (Wind in den Kiefern über die Vögel/den Fahrtwind)
     wasser: [[1090, -22], [1477, 0], [4093, 22]], // Wasser-Klang (Brunnen-Klang) an See, Fluss und See

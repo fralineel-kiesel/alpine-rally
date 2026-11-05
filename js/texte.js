@@ -84,6 +84,7 @@ export const TEXTE = {
   'etappe.spaeter': { de: 'WEITERE ETAPPEN FOLGEN', en: 'MORE STAGES TO COME' },
   // M10b: Etappenwahl (Liste mit Vorschau-Karte)
   'etappe.zeile': { de: '{km} KM  BESTZEIT {zeit}', en: '{km} KM  BEST {zeit}' },
+  'etappe.sprung': { de: 'SPRUNG {weite} M', en: 'JUMP {weite} M' }, // M10c.1: Sprungrekord in der Etappen-Liste
   'etappe.keineZeit': { de: '-:--.--', en: '-:--.--' },
   'etappe.laedt': { de: 'LÄDT ...', en: 'LOADING ...' },
   'etappe.kaputt': { de: 'DATEI KAPUTT', en: 'FILE BROKEN' },
@@ -107,6 +108,7 @@ export const TEXTE = {
   'einst.grafik': { de: 'GRAFIK', en: 'GRAPHICS' },
   'einst.vollbild': { de: 'VOLLBILD', en: 'FULLSCREEN' },
   'einst.aufloesung': { de: 'PIXELGRÖSSE', en: 'PIXEL SIZE' },
+  'meldung.aufloesung': { de: 'AUFLÖSUNG AUTOMATISCH GESENKT', en: 'RESOLUTION LOWERED AUTOMATICALLY' }, // M10c.1
   'einst.aufloesungHinweis': { de: 'SCHÄRFER = WENIGER RETRO UND MEHR LAST', en: 'SHARPER = LESS RETRO AND MORE LOAD' },
   'einst.paceNotes': { de: 'PACE-NOTES', en: 'PACE NOTES' },
   'einst.paceNotesHinweis': { de: 'GLEICH WIE TASTE {taste}', en: 'SAME AS KEY {taste}' },

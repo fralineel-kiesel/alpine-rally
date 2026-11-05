@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10c';
+export const VERSION = '0.10c.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -927,6 +927,23 @@ export const CONFIG = {
     drehBremse: 0.5,           // ein Drehen des Autos wird beim Aufprall so stark gebremst (1 = gar nicht)
     zelle: 8,                  // Rastergrösse für die schnelle Suche (Meter)
     pruefSchritt: 0.25,        // Weg wird in so kurzen Stücken geprüft (gegen Durchrutschen)
+    // M10c.1: Wand-Strafe (js/wand.js) – Leitplanken, Zäune, Brückengeländer, Absperr-Wände und Felswand. Vorher behielt das
+    // Auto an der Wand fast sein Tempo und drehte sich in die Wandrichtung (Lino: „Cheat“). Bäume, Steine, Stämme: wie oben.
+    wand: {
+      arten: ['planke', 'zaun', 'absperrung'], // diese Hindernis-Arten sind Wände (Brückengeländer zählen als 'zaun')
+      felsAuch: true,          // Felswand ebenso (false = wie bis 0.10c)
+      streifen: [15, 0.25],    // bis 15° Einschlagwinkel (0° = parallel zur Wand) kostet ein Einschlag 25 % Tempo ...
+      steil: [60, 0.60],       // ... ab 60° 60 % (dazwischen gleichmässig) ...
+      frontal: [80, 0.75],     // ... ab 80° (frontal) 75 %, mehr nie
+      einschlagAb: 2.0,        // ein Einschlag zählt erst ab so viel Tempo Richtung Wand (m/s); darunter nur Schleifen
+      pause: 0.25,             // zwischen zwei Einschlag-Strafen mindestens so lange (s), ein Schlag zählt nur einmal
+      schleifen: 0.35,         // an der Wand schleifen kostet zusätzlich so viel Tempo pro Sekunde (0.35 = 35 %)
+      abprall: 0.15,           // so stark prallt das Auto von der Wand ab (Anteil des Tempos Richtung Wand)
+      reibung: 0.6,            // ohne Einschlag (leichtes Anlehnen): Tempo entlang der Wand sinkt um so viel mal das Tempo
+                               // Richtung Wand (an einer gebogenen Wand entlang rutschen bremst, keine Gratis-Kurve)
+      staubJe: 1.5,            // Pixelstaub beim Einschlag: so viele Wölkchen je m/s verlorenes Tempo ...
+      staubMax: 24,            // ... höchstens so viele
+    },
   },
 
   // --- Abkürzungen (Analyse) -------------------------------------------
@@ -1023,6 +1040,8 @@ export const CONFIG = {
 
     planke: {
       an: true,                // false = keine Leitplanken
+      // M10c.1: hier keine Leitplanke (Streckendatei strassenrand.ohnePlanke: [[von, bis, seite], ...], Finnland: Seekehre)
+      ohne: (S.strassenrand && S.strassenrand.ohnePlanke) || [],
       hoehe: 0.75,             // Oberkante der Planke über dem Boden
       profil: 0.32,            // Höhe des Wellprofils (Blech)
       pfostenAbstand: 4,       // Abstand der Pfosten (Meter)
@@ -1134,12 +1153,14 @@ export const CONFIG = {
     },
     // Filmische Kamera (Einstellung SPRUNGKAMERA, Standard AN). AUS = Kamera wie immer
     kamera: {
-      zurueck: 0.2,            // beim Abheben so viel weiter zurück (0.2 = Ziel +20 %; die Kamera läuft nach, gemessen ca. +15 %) ...
-      heben: 0.6,              // ... und so viele Meter höher
+      // M10c.1 (Lino: „etwas zu beweglich“): steifer. Vorher 0.2 / 0.6 m / 0.4 s / 2–4 Bildpunkte / 0.15 s
+      zurueck: 0.05,           // beim Abheben so viel weiter zurück (0.05 = +5 %) ...
+      heben: 0.24,             // ... und so viele Meter höher (40 % von früher)
       abhebenZeit: 0.3,        // so schnell (s) zieht sie zurück
-      landenZeit: 0.4,         // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe)
-      ruckPixel: [2, 4],       // Federungs-Ruck bei der Landung: so viele Bildpunkte nach unten (sauber .. sehr hart) ...
-      ruckZeit: 0.15,          // ... und so schnell (s) wieder zurück (ganze Bildpunkte, kein weiches Zoomen)
+      landenZeit: 0.25,        // nach der Landung in so vielen Sekunden wieder normal (Abstand und Höhe, ohne Überschwingen)
+      folgenHoehe: 25,         // rund um den Sprung folgt die Kamera der Autohöhe so fest (1/s; normal 12, höher = direkter)
+      ruckAnteil: [0.004, 0.006], // Federungs-Ruck bei der Landung: Anteil der Bildhöhe nach unten (sauber .. sehr hart, ganze Bildpunkte, mind. 1) ...
+      ruckZeit: 0.1,           // ... und so schnell (s) wieder zurück (kein weiches Zoomen)
     },
     // Ton (vorhandene Klänge: Schlag, Stein-Aufprall, Jubel; nichts Neues geladen)
     ton: {
@@ -1494,12 +1515,16 @@ export const CONFIG = {
     bestzeitenNameV2: 'alpineRally.bestzeiten2', // Bestzeiten seit M8h: Top 10 je Etappe und Auto (mit Fahrspur)
     letzterLaufName: 'alpineRally.letzterLauf', // der letzte fertige Lauf je Etappe (M6, für den Live-Vergleich)
     // M10b: Etappenwahl (Seite ETAPPE): links die Liste, rechts die Vorschau-Karte (Draufsicht der Strecke)
-    etappenSeite: { breite: 312, spalte: 178, kartenHoehe: 104 }, // Tafel, Breite der Liste, Höhe der Karte (Pixel)
+    // Tafel, Breite der Liste, Höhe der Karte (Pixel). M10c.1: Karte kleiner (Lino: „viel zu gross“): 74x62 statt 124x104
+    // (60 % der Kantenlänge); die Liste bekommt den Platz (spalte 228 statt 178)
+    etappenSeite: { breite: 312, spalte: 228, kartenHoehe: 62 },
     etappenKarte: { grund: '#141a20', rand: 6, strasse: '#e8d8a8', schatten: '#05080a', start: '#4cd060', ziel: '#f2f0e8' },
     // Standardwerte der Einstellungen (gelten beim ersten Start und mit "STANDARD")
     standard: {
       vollbild: false,         // Vollbild an/aus (wird beim ersten Tastendruck auf dem Titel wieder eingeschaltet)
-      aufloesung: 0,           // Pixelgrösse: Nummer in "aufloesungen" (0 = 320x180, Original-Look)
+      aufloesung: 0,           // Pixelgrösse fest: Nummer in "aufloesungen" (0 = 320x180, Original-Look); gilt nur ohne AUTO
+      aufloesungAuto: true,    // M10c.1: Pixelgrösse AUTO (Standard): 640x360, bei Ruckeln eine Stufe tiefer (autoAufloesung)
+      autoStufe: 2,            // M10c.1: von AUTO zuletzt gewählte Stufe (2 = 640x360), gemerkt
       einheit: 'kmh',          // 'kmh' oder 'mph'
       fps: false,              // FPS-/Debug-Anzeige (wie Taste F3)
       schatten: true,          // M10b.2: Kunst-Schatten (nur auf Strecken mit Schatten, z. B. Finnland)
@@ -1537,6 +1562,17 @@ export const CONFIG = {
       hudGroesse: 'mittel',    // M9a.2: HUD-GRÖSSE (alle Geräte) 'klein', 'mittel' (wie bisher), 'gross' (Faktoren: hud.groesse)
     },
     aufloesungen: [[320, 180], [480, 270], [640, 360]], // 3D-Bild; HUD und Menü bleiben 320x180
+    // M10c.1: AUTO schaltet eine Stufe herunter, wenn im Rennen der Median der Bildrate in "fenster" Sekunden unter "grenze"
+    // liegt, und das in "fensterNacheinander" Fenstern nacheinander. Nie automatisch hoch (in derselben Sitzung).
+    autoAufloesung: {
+      fenster: 4,              // Messfenster (s)
+      grenze: 50,              // Bilder pro Sekunde (Anzeige mit 60 Hz)
+      grenze120: 85,           // ... bei einer Anzeige mit 120 Hz (erkannt, wenn die Bildrate einmal über hz120Ab lag)
+      hz120Ab: 100,
+      fensterNacheinander: 2,  // so viele schlechte Fenster nacheinander
+      ruheNachStart: 3,        // die ersten so vielen Sekunden Rennen nach dem Laden oder einem Wechsel zählen nicht
+      meldungDauer: 2,         // Meldung „AUFLÖSUNG AUTOMATISCH GESENKT“ so lange (s)
+    },
     lenkStufen: [0.6, 0.8, 1, 1.25, 1.5], // Lenkempfindlichkeit: Faktor fürs Einlenken (Tastatur) und den Stick
     totzonen: [0.04, 0.08, 0.12, 0.18, 0.25], // Gamepad-Totzone je Stufe (Mitte = steuerung.totzone von früher)
     lautSchritt: 5,            // Regler LAUTSTÄRKE, SIGNALTÖNE und MUSIK in Schritten von ... Prozent

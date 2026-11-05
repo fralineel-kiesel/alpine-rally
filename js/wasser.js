@@ -23,7 +23,11 @@ export function wasserFlaechen(daten, strecke, netz) {
   const seen = (W.seen || []).map((w) => {
     const p = punkt(w.s), lat = w.seite * w.lat;
     const ach = Math.atan2(p.tx, p.tz) + (w.drehung || 0) * GRAD; // Richtung der Längsachse (rz)
-    return { art: 'see', x: p.x - p.tz * lat, z: p.z + p.tx * lat, rx: w.rx, rz: w.rz, ux: Math.sin(ach), uz: Math.cos(ach), h: hBei(w.s) - w.tiefe };
+    // M10c.1: freiwillig je See: ufer (Breite des flachen Ufers, m), uferSteigung, innenSteigung (Grund fällt im Wasser so
+    // steil ab), nah (Böschung am Ufer nach dem See statt nach der Strasse), zurueck (Wasserbad: zurück an diesen Streckenmeter);
+    // pegel: Wasserspiegel als feste Höhe (statt Strasse bei s minus tiefe), damit mehrere Ellipsen eines Sees gleich hoch sind
+    const nah = w.nah ? { ufer: w.ufer, steigung: w.uferSteigung, innen: w.innenSteigung, schulter: w.schulter } : null;
+    return { art: 'see', x: p.x - p.tz * lat, z: p.z + p.tx * lat, rx: w.rx, rz: w.rz, ux: Math.sin(ach), uz: Math.cos(ach), h: w.pegel != null ? w.pegel : hBei(w.s) - w.tiefe, nah, zurueck: w.zurueck };
   });
   const fluesse = (W.fluesse || []).map((w) => {
     const p = punkt(w.s);
@@ -53,12 +57,14 @@ export function wasserSchnitt(plan, x, z, h) {
   for (const f of plan.alle) {
     const d = randAbstand(f, x, z);
     const B = CONFIG.gelaende.boeschung;
-    if (d > C.ufer && !B) continue;
-    const k0 = (C.tiefeRand + C.uferHoehe) / C.ufer; // Steigung des flachen Ufers
-    let ziel = d < 0 ? f.h - C.tiefeRand - Math.min(C.tiefeMehr, -d * 0.15) : f.h - C.tiefeRand + Math.min(d, C.ufer) * k0;
+    // M10c.1: naher See (Seekehre): Grund am Wasserrand auf Spiegelhöhe, im Wasser steiler, Ufer schmal und flach
+    const N = f.nah, ufer = N ? N.ufer : C.ufer, rand = N ? 0 : C.tiefeRand;
+    if (d > ufer && !B) continue;
+    const k0 = N ? N.steigung : (C.tiefeRand + C.uferHoehe) / C.ufer; // Steigung des flachen Ufers
+    let ziel = d < 0 ? f.h - rand - Math.min(C.tiefeMehr, -d * (N ? N.innen : 0.15)) : f.h - rand + Math.min(d, ufer) * k0;
     // M10b.2 (Böschung): hinter dem flachen Ufer steigt das Gelände gleichmässig an (höchstens B.steigung, weich
     // angesetzt) statt am Rand der Uferzone senkrecht auf die alte Höhe zu springen (das war der "Faltenwurf")
-    if (B && d > C.ufer) ziel += uferAnstieg(d - C.ufer, k0, B);
+    if (B && d > ufer) ziel += uferAnstieg(d - ufer, k0, B);
     if (ziel < h) h = ziel;
   }
   return h;
@@ -68,6 +74,13 @@ export function wasserSchnitt(plan, x, z, h) {
 export function uferAnstieg(e, k0, B) {
   const w = Math.max(0.01, B.weich), st = B.steigung;
   return k0 * e + (st - k0) * (e < w ? (e * e) / (2 * w) : e - w / 2);
+}
+
+// M10c.1: nächster naher See (Feld nah): Abstand zum Rand (negativ = im Wasser) und der See; null = keiner
+export function nahSee(plan, x, z) {
+  let d = Infinity, see = null;
+  for (const f of plan.seen) if (f.nah) { const e = randAbstand(f, x, z); if (e < d) { d = e; see = f; } }
+  return see ? { d, see } : null;
 }
 
 // M10b.2: kleinster Abstand zum Rand eines Flusses (negativ = im Fluss, Infinity = kein Fluss nahe)

@@ -60,6 +60,13 @@ for (const profil of STILE) {
     const F = A.flug, Z = S.sprungZonen || [], spruenge = [];
     let landLetzt = F ? F.ereignis.landung : 0, ausserhalb = 0, luftSchritte = 0;
     const inZone = (s) => Z.some((z) => s >= z.von && s <= z.bis);
+    // M10c.1: Wandkontakte (Leitplanke, Zaun, Geländer, Absperr-Wand, Felswand) als Episoden (neu, wenn 0.25 s keiner war):
+    // ab 0.10c.1 aus A.wand, in älteren Ständen aus dem Material des Kontakts (Metall/Holz) und der Felswand-Nähe.
+    // zeitBei: Rennuhr beim ersten Erreichen jedes 10. Meters (für den Zeitvergleich je Kurve)
+    const MAT = (C.audio && C.audio.aufprall && C.audio.aufprall.materialien) || [];
+    const wandMat = new Set(['metall', 'holz'].map((m) => MAT.indexOf(m)));
+    const wandKontakte = []; let wandLetzt = -99, wandEp = null;
+    const zeitBei = new Float64Array(Math.ceil(S.laenge / 10) + 2).fill(-1);
     // je Schritt nur lesen (die Physik merkt nichts davon)
     const proSchritt = () => {
       if (A.rennen.zustand !== 'laeuft') return;
@@ -78,6 +85,13 @@ for (const profil of STILE) {
       const art = A.welt.bodenBei(p.x, p.z, q).art; // (q: Ergebnis der Streckenabfrage, wie im Testfahrer)
       if (art === 'gras') { if (grasAn == null) grasAn = s; } else if (grasAn != null) { gras.push([grasAn, s]); grasAn = null; }
       const anWand = q.wandSeite !== 0 && q.wandStaerke > 0.5 && Math.sign(q.seite) === q.wandSeite && Math.abs(q.seite) > C.grenze.wandGrenze - 0.3;
+      const iz = Math.floor(s / 10); if (iz >= 0 && iz < zeitBei.length && zeitBei[iz] < 0) zeitBei[iz] = A.rennen.uhr;
+      const wk = A.wand ? A.wand.kontakt : (wandMat.has(A.kollision.kontaktArt) || anWand);
+      if (wk) {
+        if (A.rennen.uhr - wandLetzt > 0.25) { wandEp = { s: Math.round(s), kmh: Math.round(p.tempo * 3.6), strafen: 0 }; wandKontakte.push(wandEp); }
+        if (A.wand && A.wand.strafe) wandEp.strafen++;
+        wandLetzt = A.rennen.uhr;
+      }
       if (anWand) { if (wandAn == null) wandAn = s; } else if (wandAn != null) { wand.push([wandAn, s]); wandAn = null; }
       if (F) {
         if (F.inLuft) { luftSchritte++; if (!inZone(F.startS)) ausserhalb++; }
@@ -91,7 +105,9 @@ for (const profil of STILE) {
       }
       if (p.tempo < 0.5) { standT += A.SCHRITT; if (standS == null) standS = s; } else { if (standT > 1 && standS != null) stand.push([standS, standT]); standT = 0; standS = null; }
     };
+    const wb0 = A.wasserBad ? A.wasserBad.anzahl : 0; // M10c.1: Wasserbäder in diesem Lauf
     const e = f.fahreEtappe(A, profil, proSchritt);
+    const wasserBad = A.wasserBad ? A.wasserBad.anzahl - wb0 : 0;
     if (grasAn != null) gras.push([grasAn, A.rennen.letztesS]);
     if (wandAn != null) wand.push([wandAn, A.rennen.letztesS]);
     // Tempoprofil: Anteil der gefahrenen Meter (Start bis Ziel) nahe dem Höchsttempo des Laufs (ab 90 %), Schnitt
@@ -108,16 +124,17 @@ for (const profil of STILE) {
     }
     const tempoMarken = MARKEN.map((m) => ({ ...m, kmh: tempo[Math.round(m.s)] || 0 }));
     const tempoKanten = Z.map((z) => ({ name: z.name, s: z.kante, kmh: Math.max(...[-3, -2, -1, 0].map((d) => tempo[Math.round(z.kante) + d] || 0)) }));
-    return { ...e, ab, gras, wand, stand, stellen, spruenge, ausserhalb, luftSchritte, tempoMarken, tempoKanten, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
+    return { ...e, ab, gras, wand, stand, wandKontakte, wasserBad, zeitBei: Array.from(zeitBei), stellen, spruenge, ausserhalb, luftSchritte, tempoMarken, tempoKanten, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
       tempoProfil: { vMax, nahAnteil: n ? nah / n : 0, gefahren: sZ - sA, profil100, zeit100 } };
   }, [profil, MARKEN]);
-  sprungStat.push({ stil: profil, zeit: r.ziel ? r.zeit : null, aufpralle: r.aufpralle.length, gras: r.gras, spruenge: r.spruenge, ausserhalb: r.ausserhalb, luftSchritte: r.luftSchritte, tempoMarken: r.tempoMarken, tempoKanten: r.tempoKanten });
+  sprungStat.push({ stil: profil, zeit: r.ziel ? r.zeit : null, cps: r.cps, aufpralle: r.aufpralle.length, aufprallListe: r.aufpralle, wandKontakte: r.wandKontakte, zeitBei: r.zeitBei, wasserBad: r.wasserBad, gras: r.gras, spruenge: r.spruenge, ausserhalb: r.ausserhalb, luftSchritte: r.luftSchritte, tempoMarken: r.tempoMarken, tempoKanten: r.tempoKanten });
   zeiten.push(r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL');
   const m = (l) => l.map(([a, b]) => `${Math.round(a)}–${Math.round(b)} m`).join(', ') || 'keine';
   zeilen.push('', `${profil}: ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}`,
     `  Zwischenzeiten: ${r.cps.map((t, i) => `CP${i + 1} (${r.checkpoints[i]} m) ${fmt(t)}`).join(', ')}`,
     `  Aufpralle: ${r.aufpralle.length ? r.aufpralle.join(', ') : 'keine'}; hängen geblieben: ${r.haenger}; max. ${r.maxAbstand.toFixed(1)} m neben der Mitte`,
     `  Aufprall-Stellen: ${r.stellen.join(', ') || 'keine'}`,
+    `  Wandkontakte (M10c.1): ${r.wandKontakte.length}${r.wandKontakte.length ? ` – ${r.wandKontakte.map((k) => `${k.s} m (${k.kmh} km/h${k.strafen ? `, ${k.strafen} Strafe${k.strafen > 1 ? 'n' : ''}` : ''})`).join(', ')}` : ''}`,
     `  Abkommen (Gras): ${m(r.gras)}`,
     `  Wandnähe (Felswand: Automitte mehr als ${(r.wandGrenze - 0.3).toFixed(1)} m neben der Mitte auf der Wandseite): ${m(r.wand)}`,
     `  Stillstand über 1 s: ${r.stand.map(([s, t]) => `${Math.round(s)} m (${t.toFixed(1)} s)`).join(', ') || 'keiner'}`,
@@ -133,7 +150,7 @@ for (const profil of STILE) {
   for (const j of r.spruenge) zeilen.push(`    ${j.name.padEnd(14)} ab ${Math.round(j.startS)} m mit ${Math.round(j.abTempo)} km/h: Weite ${j.weite.toFixed(1)} m, Zeit ${j.zeit.toFixed(2)} s, Höhe ${j.hoehe.toFixed(2)} m, gelandet ${Math.round(j.s)} m (${j.inLandezone ? 'Landezone' : 'AUSSERHALB'}, ${j.seite.toFixed(1)} m neben der Mitte), Verlust ${(j.verlust * 100).toFixed(1)} % (${j.klasse}, senkrecht ${j.vSenk.toFixed(1)} m/s, Nase ${j.nase.toFixed(1)}°, Gier ${j.gier.toFixed(1)}°)`);
   for (const w of r.wege || []) zeilen.push(`  Nebenweg ${w.name} (${w.belag}): ${w.zeit.toFixed(2)} s, max. ${w.maxAbstand.toFixed(1)} m neben der Mitte, neben dem Weg ${w.daneben.toFixed(2)} s`);
   if (!r.ziel) probleme++;
-  console.log(`${profil.padEnd(10)} ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}  CPs ${r.cps.map(fmt).join(' / ')}  Aufpralle ${r.aufpralle.length}, Gras ${r.gras.length}x, Wandnähe ${r.wand.length}x, Stillstand ${r.stand.length}x${r.spruenge.length ? `, Sprünge ${r.spruenge.map((j) => `${j.weite.toFixed(0)} m/${(j.verlust * 100).toFixed(0)} %`).join(' ')}` : ''}${r.ausserhalb ? ' FLUG AUSSERHALB!' : ''}`);
+  console.log(`${profil.padEnd(10)} ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}  CPs ${r.cps.map(fmt).join(' / ')}  Aufpralle ${r.aufpralle.length}, Wand ${r.wandKontakte.length}x, Wasser ${r.wasserBad}x, Gras ${r.gras.length}x, Wandnähe ${r.wand.length}x, Stillstand ${r.stand.length}x${r.spruenge.length ? `, Sprünge ${r.spruenge.map((j) => `${j.weite.toFixed(0)} m/${(j.verlust * 100).toFixed(0)} %`).join(' ')}` : ''}${r.ausserhalb ? ' FLUG AUSSERHALB!' : ''}`);
   if (process.argv.includes('--tempo')) console.log(`           Schnitt ${r.ziel ? ((r.tempoProfil.gefahren / r.zeit) * 3.6).toFixed(1) : '--'} km/h, nahe Höchsttempo ${(r.tempoProfil.nahAnteil * 100).toFixed(1)} % (Höchsttempo ${Math.round(r.tempoProfil.vMax)} km/h)`);
 }
 if (fehlerSeite.length) zeilen.push('', `Konsole: ${fehlerSeite.join(' | ')}`);

@@ -18,11 +18,16 @@ export const AUTO = (() => { const i = process.argv.indexOf('--auto'); return i 
 export function mitAuto(adresse, auto = AUTO) {
   const u = new URL(adresse, 'http://x');
   if (!/(^|\/)index\.html$/.test(u.pathname)) return adresse;
+  const hatAuf = u.searchParams.has('aufloesung'), hatAuto = u.searchParams.has('auto'); // (vor dem Anhängen lesen)
   // M10b: --strecke <id> auf der Kommandozeile: jede Spiel-Adresse lädt diese Strecke (?strecke=, js/strecken.js)
   if (STRECKE_ARG && !u.searchParams.has('strecke')) { adresse = `${adresse}${u.search ? '&' : '?'}strecke=${encodeURIComponent(STRECKE_ARG)}`; u.search = '?x'; }
-  if (!auto || u.searchParams.has('auto')) return adresse; // (auto '' = nichts anhängen)
+  // M10c.1: Pixelgrösse fest 320x180 (Referenz aller Bild- und Zeitvergleiche), ausser --aufloesung <WxH|auto>
+  if (AUFLOESUNG_ARG !== 'auto' && !hatAuf) { adresse = `${adresse}${u.search ? '&' : '?'}aufloesung=${AUFLOESUNG_ARG}`; u.search = '?x'; }
+  if (!auto || hatAuto) return adresse; // (auto '' = nichts anhängen)
   return `${adresse}${u.search ? '&' : '?'}auto=${encodeURIComponent(auto)}`;
 }
+// M10c.1: --aufloesung <320x180|480x270|640x360|auto> (Standard 320x180; auto = wie im Spiel, AUTO bzw. gespeichert)
+export const AUFLOESUNG_ARG = (() => { const i = process.argv.indexOf('--aufloesung'); const w = i > 0 ? process.argv[i + 1] : null; return w && /^(\d+x\d+|auto)$/.test(w) ? w : '320x180'; })();
 // M10b: Strecke aus der Kommandozeile (nur Id; eine Datei laden strecke-karte/strecke-abfahren über __streckeAdresse)
 export const STRECKE_ARG = (() => { const i = process.argv.indexOf('--strecke'); const w = i > 0 ? process.argv[i + 1] : null; return w && /^[a-z0-9-]+$/.test(w) ? w : null; })();
 

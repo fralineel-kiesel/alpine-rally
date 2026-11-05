@@ -48,6 +48,8 @@ import { baueHud, formatZeit } from './hud.js';
 import { baueTachos } from './tacho.js';
 import { pixelText } from './pixel.js';
 import { baueKollision } from './kollision.js';
+import { baueWand } from './wand.js'; // M10c.1
+import { baueAutoAufloesung } from './aufloesung.js'; // M10c.1
 import { baueCheckpointTore } from './checkpoints.js';
 import { baueStrassenrand } from './strassenrand.js';
 import { baueKuehe } from './kuehe.js';
@@ -59,7 +61,7 @@ import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
-import { baueWasser, wasserTiefe } from './wasser.js';
+import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
 import { baueSchatten } from './schatten.js';
 import { STRECKE } from './streckenlader.js';
 import { umgebungsQuellen } from './umgebung.js';
@@ -107,9 +109,19 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(1);
 // Pixelgrösse (M5a): nur das 3D-Bild wird feiner, HUD und Menü bleiben im 320x180-Raster
+// M10c.1: AUTO (js/aufloesung.js). ?aufloesung=320x180 (nur Werkzeuge/Tests): feste Stufe für diese Sitzung, nicht gespeichert
+const autoAuf = baueAutoAufloesung(einstellungen, setze);
+{
+  const w = new URLSearchParams(window.location.search).get('aufloesung');
+  const i = w ? CONFIG.menue.aufloesungen.findIndex(([b, h]) => `${b}x${h}` === w) : -1;
+  if (i >= 0 && einstellungen.aufloesungAuto !== false) autoAuf.test = i;
+}
 function aufloesungSetzen() {
-  const [rb, rh] = CONFIG.menue.aufloesungen[einstellungen.aufloesung] || [B, H];
+  const [rb, rh] = CONFIG.menue.aufloesungen[autoAuf.stufe()] || [B, H];
+  if (renderer.domElement.width === rb && renderer.domElement.height === rh) return;
+  const t0 = performance.now();
   renderer.setSize(rb, rh, false);
+  autoAuf.wechselMs = performance.now() - t0; // (Tests: so lange dauert das Neuaufbauen der Zeichenfläche)
 }
 aufloesungSetzen();
 
@@ -203,7 +215,9 @@ strassenrand.hindernisse.push(...wasser.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
 // (materialVon, M7a: Material je Hindernis nur für den Aufprallton; die Kollisionsrechnung bleibt gleich)
-const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse], materialVon);
+// M10c.1: Wand-Strafe (js/wand.js) für Leitplanken, Zäune, Geländer, Absperr-Wände und die Felswand
+const wand = baueWand();
+const kollision = baueKollision([...pflanzen.hindernisse, ...strassenrand.hindernisse, ...kuehe.hindernisse], materialVon, wand);
 const checkpoints = baueCheckpointTore(szene, strecke, netz);
 const staub = baueStaub(szene); // Staub auf Schotter (M3a) und Wiesenweg (M3b)
 const staubAuto = { x: 0, y: 0, z: 0, richtung: 0, vx: 0, vz: 0, tempo: 0, drift: 0, gas: 0, handbremse: false, schotter: false, belag: null, hinten: 1.3, seite: 0.75 };
@@ -317,6 +331,7 @@ const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken 
 const wasserBad = { aktiv: false, t: 0, versetzt: false, sicherS: 0, plaetscher: 0, anzahl: 0, nass: false, spritzer: 0 };
 function setzeAuf(s, seite = 0) {
   rueck.rest = 0; // ein laufender R-Countdown ist damit erledigt
+  wand.reset(); // M10c.1
   wasserBad.aktiv = false; wasserBad.sicherS = s; // M10b.2: Neustart/Setzen beendet ein Schwarzbild
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
@@ -409,7 +424,15 @@ function bodenHoehe(x, z) {
 }
 
 // nurFahren (M5a, Demo-Fahrt): nur Fahren und Kollisionen, keine Zeitmessung, nichts im Rennstand
+// M10c.1: Felswand (nx/nz zeigt in die Wand, ueber = wie weit drin): aus der Wand schieben, Wand-Strafe wie bei Leitplanken,
+// keine Drehung in die Wandrichtung mehr (vorher physik.anGrenze: drehte bis 0.7° je Schritt mit)
+function felsWand(nx, nz, ueber) {
+  if (!CONFIG.kollision.wand.felsAuch) { physik.anGrenze(nx, nz, ueber); return; }
+  physik.x -= nx * ueber; physik.z -= nz * ueber;
+  wand.stoss(physik, -nx, -nz);
+}
 function physikSchritt(dt, e, nurFahren = false) {
+  wand.anfang(dt); // M10c.1
   const q = strecke.abfrage(physik.x, physik.z, qAuto);
   const boden = welt.bodenBei(physik.x, physik.z, q);
   untergrund = boden.art;
@@ -500,13 +523,19 @@ function physikSchritt(dt, e, nurFahren = false) {
     wucht = Math.max(wucht, gw);
     if (gw > tonW) { tonW = gw; tonArt = FELS; } // M7a: Wand = Felswand-Ton
     tonKontakt = FELS;
-    physik.anGrenze(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
+    felsWand(rx * q2.wandSeite, rz * q2.wandSeite, wk.strasse);
   } else if (wk.fels > 0) {
     const gw = grenzWucht(wk.nx, wk.nz);
     wucht = Math.max(wucht, gw);
     if (gw > tonW) { tonW = gw; tonArt = FELS; }
     tonKontakt = FELS;
-    physik.anGrenze(wk.nx, wk.nz, wk.fels);
+    felsWand(wk.nx, wk.nz, wk.fels);
+  }
+  // M10c.1: Schleifen an der Wand kostet Tempo; Ton, Haptik und Staub nach dem verlorenen Tempo
+  wand.ende(physik, dt);
+  if (wand.strafe) {
+    tonW = Math.max(tonW, wand.verlust);
+    if (!nurFahren) staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(Math.min(CONFIG.kollision.wand.staubMax, wand.verlust * CONFIG.kollision.wand.staubJe)), 0.3 + Math.min(0.7, wand.verlust / 20), untergrund);
   }
   if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
     // Abhang auf der anderen Seite
@@ -633,6 +662,9 @@ function wasserSchritt(dt, q) {
   const tiefe = b.art === 'gras' ? wasserTiefe(welt.wasser, physik.x, physik.z, b.h) : -Infinity;
   if (tiefe > W.tiefe) {
     wasserBad.aktiv = true; wasserBad.t = 0; wasserBad.versetzt = false; wasserBad.anzahl++;
+    // M10c.1: See mit "zurueck" (Seekehre): zurück vor die Kehre, nicht mitten in die Kurve
+    const ns = nahSee(welt.wasser, physik.x, physik.z);
+    if (ns && ns.see.zurueck != null && ns.d < 2 && wasserBad.sicherS > ns.see.zurueck && wasserBad.sicherS < ns.see.zurueck + 250) wasserBad.sicherS = ns.see.zurueck;
     rueck.rest = 0; // ein laufender R-Countdown ist erledigt
     ton.platsch(1);
     staub.spritzer(physik.x, b.h + tiefe, physik.z, W.spritzer, 1);
@@ -809,9 +841,9 @@ function kameraZiel() {
   const c = CONFIG.kamera;
   let y = auto.objekt.position.y;
   if (sk.e > 0 || (flug.inLuft && einstellungen.sprungkamera !== false)) {
-    // M10c: Sprungkamera – im Flug auf der Höhe beim Abheben, nach der Landung weich zurück zum Auto
-    const K = CONFIG.sprung.kamera, u = flug.inLuft ? 0 : Math.min(1, sk.land / K.landenZeit), w = u * u * (3 - 2 * u);
-    y = sk.yAb + (y - sk.yAb) * w;
+    // M10c: Sprungkamera. M10c.1: steifer – sie folgt dem Auto auch in der Luft in der Höhe (kein Halten auf der
+    // Abhebe-Höhe mehr, sonst schaut sie bei der Landung steil von oben), zieht nur wenig zurück und hebt sich wenig
+    const K = CONFIG.sprung.kamera;
     const abstand = c.abstand * (1 + K.zurueck * sk.e);
     kam.ziel.set(physik.x - Math.sin(kam.yaw) * abstand, y + c.hoehe + K.heben * sk.e, physik.z - Math.cos(kam.yaw) * abstand);
     return;
@@ -839,11 +871,14 @@ function kameraFuehren(dt) {
   }
   kam.yaw += winkelNorm(ziel - kam.yaw) * (1 - Math.exp(-c.nachfuehren * dt));
   kameraZiel();
+  const yAlt = kam.pos.y;
   kam.pos.lerp(kam.ziel, 1 - Math.exp(-c.positionGlaetten * dt));
+  // M10c.1: rund um einen Sprung folgt die Kamera der Höhe des Autos fester (weniger Nachlaufen beim Fallen)
+  if (sk.e > 0) kam.pos.y = yAlt + (kam.ziel.y - yAlt) * (1 - Math.exp(-CONFIG.sprung.kamera.folgenHoehe * dt));
   kameraKorrektur(kam.pos);
   kamera.position.copy(kam.pos);
   const y = auto.objekt.position.y;
-  ruckSetzen(sk.ruckPx); // M10c: Federungs-Ruck bei der Landung (ganze Bildpunkte, sonst 0 = nichts)
+  ruckSetzen(sk.ruckPx); // M10c: Federungs-Ruck bei der Landung (ganze Bildpunkte der Zeichenfläche, sonst 0 = nichts)
   kamera.lookAt(
     physik.x + Math.sin(kam.yaw) * c.blickVoraus, y + c.blickHoehe, physik.z + Math.cos(kam.yaw) * c.blickVoraus,
   );
@@ -857,11 +892,12 @@ function kameraFuehren(dt) {
 }
 
 // M10c: Ruck = das Bild rückt um ganze Bildpunkte nach unten (Bildausschnitt verschoben, kein Zoomen auf Zwischenpixel)
+// M10c.1: px sind Bildpunkte der Zeichenfläche (aus einem Anteil der Bildhöhe gerechnet, in sprungBild)
 function ruckSetzen(px) {
   if (px === sk.ruckAktiv) return;
   sk.ruckAktiv = px;
   const rb = renderer.domElement.width, rh = renderer.domElement.height;
-  if (px) kamera.setViewOffset(rb, rh, 0, -Math.round(px * rh / H), rb, rh); else kamera.clearViewOffset();
+  if (px) kamera.setViewOffset(rb, rh, 0, -px, rb, rh); else kamera.clearViewOffset();
 }
 // M10c: Sprung-Ereignisse je Bild (aus den Zählern der Flugphase): Kamera, Ton, Staub, Haptik, Motor
 function sprungBild(dt, imRennen) {
@@ -878,7 +914,8 @@ function sprungBild(dt, imRennen) {
     sk.landung = flug.ereignis.landung;
     const L = flug.letzteLandung;
     sk.land = 0;
-    sk.ruckT = 0; sk.ruckAmp = an ? Math.round(K.ruckPixel[0] + (K.ruckPixel[1] - K.ruckPixel[0]) * L.haerte) : 0;
+    // M10c.1: Ruck als Anteil der Bildhöhe (bleibt gleich gross, egal welche Auflösung), mindestens 1 Bildpunkt
+    sk.ruckT = 0; sk.ruckAmp = an ? Math.max(1, (K.ruckAnteil[0] + (K.ruckAnteil[1] - K.ruckAnteil[0]) * L.haerte) * renderer.domElement.height) : 0;
     sprungTonInfo.haerte = L.haerte; sprungTonInfo.klasse = L.klasse; sprungTonInfo.s = rennen.letztesS;
     if (imRennen) { ton.sprung('landung', sprungTonInfo); spielTick('landung', L.haerte); }
     staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(ST.landungMin + (ST.landungMax - ST.landungMin) * L.haerte), 0.4 + 0.6 * L.haerte, untergrund);
@@ -1153,7 +1190,11 @@ ablauf.registriere('ziel', {
 
 // Einstellungen wirken sofort
 beiAenderung((name, wert) => {
-  if (name === 'aufloesung') { aufloesungSetzen(); auto.detail(renderer.domElement.width); } // M8a: Schrift am Auto je Pixelgrösse
+  // M8a: Schrift am Auto je Pixelgrösse. M10c.1: auch AUTO und die automatisch gewählte Stufe; Messung neu beginnen
+  if (name === 'aufloesung' || name === 'aufloesungAuto' || name === 'autoStufe') {
+    if (name !== 'autoStufe') autoAuf.test = null;
+    aufloesungSetzen(); auto.detail(renderer.domElement.width); autoAuf.ruhig();
+  }
   if (name === 'fps') debugAn = wert;
   if (name === 'schatten') schatten.setzeAn(wert); // M10b.2
   if (name === 'vergleichMit') referenzLaden(); // M6: neue Referenz sofort (sonst beim nächsten Start)
@@ -1268,6 +1309,10 @@ function schleife(jetzt) {
   if (ablauf.zustand === 'ziel' && rennen.zustand !== 'ziel') ablauf.wechsle('rennen');
   const def = ablauf.def;
   const anhalten = window.__alpineRally && window.__alpineRally.anhalten; // nur für Tests: Physik von aussen gesteuert
+  // M10c.1: AUTO-Auflösung misst nur im laufenden Rennen (nicht Menü, Pause, Countdown, Zielbildschirm, Schwarzbild)
+  if (autoAuf.bild(dt, def.welt === 'rennen' && ablauf.zustand === 'rennen' && rennen.zustand === 'laeuft' && !wasserBad.aktiv && !anhalten)) {
+    rennen.meldung = { text: t('meldung.aufloesung'), farbe: CONFIG.menue.farbeHinweis, bis: rennen.uhr + CONFIG.menue.autoAufloesung.meldungDauer, verpasstCp: -1 };
+  }
   const xVor = physik.x, zVor = physik.z;
   let dtWelt = dt; // 0 = eingefroren (Pause)
   if (def.welt === 'rennen') {
@@ -1497,7 +1542,7 @@ if (fahrlaborAn) {
 // start(): am Menü vorbei ins Rennen wie "STARTEN" (mit Countdown); start({ countdown: false }): ohne Countdown wie vor M5b
 // rennSchritt(dt, e): ein fester Schritt wie in der Spielschleife (Countdown oder Physik), lauf/stat: Rennablauf, Statistik
 window.__alpineRally = {
-  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision,
+  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision, wand,
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
   ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,
@@ -1515,5 +1560,6 @@ window.__alpineRally = {
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
+  autoAuf, // M10c.1 (Tests): AUTO-Auflösung
   flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };

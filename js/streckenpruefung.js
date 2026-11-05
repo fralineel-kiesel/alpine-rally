@@ -124,7 +124,12 @@ export function pruefeStrecke(d, { voll = false } = {}) {
         if (!istObjekt(w) || !['s', 'lat', 'rx', 'rz', 'tiefe'].every((k) => istZahl(w[k])) || (w.seite !== 1 && w.seite !== -1)) { fehler(p, '{ s, seite: 1/-1, lat, rx, rz, tiefe } erwartet'); return; }
         if (!(w.s >= 0 && w.s <= d.laenge)) fehler(`${p}.s`, `${w.s} liegt nicht auf der Strecke`);
         if (!(w.rx > 0 && w.rz > 0)) fehler(p, 'rx und rz müssen grösser als 0 sein');
-        if (w.lat - w.rx < 12) fehler(p, `Ufer nur ${(w.lat - w.rx).toFixed(1)} m neben der Strasse (mindestens 12)`);
+        // M10c.1: naher See (nah: true, Seekehre) darf bis 8 m an die Strasse, braucht ufer, uferSteigung, innenSteigung, schulter
+        const minUfer = w.nah ? 8 : 12;
+        if (w.lat - w.rx < minUfer) fehler(p, `Ufer nur ${(w.lat - w.rx).toFixed(1)} m neben der Strasse (mindestens ${minUfer})`);
+        if (w.nah && !['ufer', 'uferSteigung', 'innenSteigung', 'schulter'].every((k) => istZahl(w[k]))) fehler(p, 'naher See: ufer, uferSteigung, innenSteigung, schulter (Zahlen) erwartet');
+        if (w.nah && !(w.uferSteigung > 0 && w.uferSteigung <= 0.3 && w.innenSteigung > 0 && w.innenSteigung <= 0.5)) fehler(p, 'naher See: uferSteigung 0–0.3, innenSteigung 0–0.5');
+        if (w.zurueck != null && !(w.zurueck >= 0 && w.zurueck <= d.laenge)) fehler(`${p}.zurueck`, `${w.zurueck} liegt nicht auf der Strecke`);
       });
       (Array.isArray(W.fluesse) ? W.fluesse : W.fluesse == null ? [] : (fehler('wasser.fluesse', 'Liste erwartet'), [])).forEach((w, i) => {
         const p = `wasser.fluesse[${i}]`;
