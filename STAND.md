@@ -2,11 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 10c.1 fertig** (Version 0.10c.1) – nach Linos Review zu M10c: **Sprungkamera steifer** (Zoom-Out 14 → 3 %,
-kein steiler Blick von oben mehr), **Wand-Kollision mit echter Strafe** (Streifen 25 %, steil 60 %, frontal 75 %, keine Drehung
-mehr durch die Wand), **Seekehre bei 3314 m** in Finnland (Leitplanke weg, Ufer, See), **kleinere Vorschaukarte**, **Pixelgrösse
-AUTO** (640x360, senkt bei Ruckeln selbst). **Nur Chromium, kein Handy, kein Gamepad.** **Bitte zuerst die Test-Anleitung in
-`docs/meilensteine/m10c1.md`.** Nächster Schritt: M10d (Alpen mit Sprüngen und Schatten, siehe KONZEPT.md, Fahrplan).
+Aktuell: **Meilenstein 10c.2 fertig** (Version 0.10c.2) – nach Linos Review zu M10c.1: **Wand-Strafe „Motor sammelt sich“**
+(spürbarer Wand-Treffer = Motor 2–4 s gedrosselt, zäh schalten, MOTOR-Leuchte im HUD), **Sprungkamera in drei Stufen**
+(AUS / RUHIG / NORMAL, neuer Standard NORMAL in der Mitte), **lauterer Landungs-Wums**. **Nur Chromium, kein Handy, kein Gamepad,
+Ton nur gemessen.** **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m10c2.md`.** Nächster Schritt: M10d (Alpen mit
+Sprüngen und Schatten, siehe KONZEPT.md, Fahrplan).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -186,6 +186,9 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Bekannte Probleme
 
+- **Schalt-Ton im Rennen fehlt seit M10c** (gefunden in M10c.2, nicht behoben): in `js/main.js` stehen `tonZ.zielGang` und
+  `tonZ.schaltet` hinter einem `//` (Zeile mit `tonZ.drehzahl = anzeigeDrehzahl()`). Schalt-Dip, Schaltknall, Klack und
+  Zwischengas kommen darum nur in der Garage. Beheben ändert den Ton in Alpen und Finnland (eigener Auftrag).
 - **Ähnlichkeit der Allradler:** Audan, Delto und Subora liegen in 8–9 von 12 Messzeilen nah beieinander (Regel: höchstens 2),
   siehe Vergleich – weil sich ihre Zielbereiche überlappen.
 - Mehrere Fahrmesswerte liegen **knapp am Rand** des Ziels (siehe Messtabelle); schon kleine Änderungen an Lanza-Werten
@@ -221,8 +224,12 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
-- **Offen aus M10c.1:** In den vier Alpen-Kehren bringt Vollgas in die Planke noch +0.3–0.9 s (Stufe „Mittel“); Idee: Stufe
-  „Streng“ oder `kollision.wand.steil`/`frontal` höher, wenn Lino das will. Seekehre: Ufer 2–7 m statt 3–4 m (ein See = ein
+- **Offen aus M10c.2:** Kurven-Vergleich: in 7 von 20 Alpen-Kehren lohnt sich die Planke noch (Escorta alle vier: die Drossel
+  wirkt beim Hinterradler mit Vollgas wie eine Traktionshilfe; Lanza 073 Kehre 1/3, Imprexa Kehre 4: mit Drossel weniger
+  Schleifen). Vorschlag V1 `wandStrafe.leistungStart` 0.1 statt 0.25 (Zahlen im Bericht). Ideen: Strafe zusätzlich als
+  Tempo-Limit (Begrenzer tiefer), Testfahrer mit Gefühl am Gas als Messlatte, Schalt-Ton im Rennen reparieren (siehe Bekannte
+  Probleme), Wums-Lautstärke nach Linos Hörtest (`LANDUNG_WUMMS_LAUTSTAERKE`).
+- **Offen aus M10c.1:** (In den Alpen-Kehren lohnte sich die Planke noch – mit M10c.2 für Audan, Delto weg, siehe oben.) Seekehre: Ufer 2–7 m statt 3–4 m (ein See = ein
   Wasserspiegel, die Strasse steigt), Zuschauer nur aussen (innen verbietet die Abkürzungs-Regel). Ideen: Wand-Strafe als
   Einstellung (MILD / MITTEL / STRENG), Delle oder Kratzer am Auto nach Einschlägen, Wasserbad-Zähler in der Statistik.
 
@@ -286,6 +293,15 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
 
+- **M10c.2** (0.10c.2) – Review M10c.1: **Wand-Strafe** (`js/wand.js`, `kollision.wandStrafe`): ab 10 km/h Tempoverlust im
+  Wand-Kontakt Motor 25 → 100 % in 2–4 s (frontal 4 s), Schalten ×2, Drehzahl-Einbruch, Ladedruck und Ton mit, 3 Aussetzer,
+  MOTOR-Leuchte neben dem Drehzahlmesser; stapelt bis 6 s; R, Wasser, Neustart, Menü, Countdown löschen, Pause friert ein.
+  Kurven-Vergleich (`strecke-abfahren --kurven-vergleich`): Audan/Delto und ganz Finnland frei, 7 Alpen-Kehren noch nicht
+  (Escorta, Lanza 073, Imprexa – Gründe im Bericht). Läufe ohne Kontakt bit-gleich, keine neue `revision`. Alte rote Tests
+  entschieden (3 Erwartungen angepasst, nebenweg-Skript behoben). **Sprungkamera** AUS / RUHIG (= 0.10c.1) / NORMAL (Standard:
+  Zoom 7 %, Neigung Sprung 3 8.6°, Ruck 1.1 %, 0.32 s; `sprung.SPRUNGKAMERA_STUFEN`), AN → NORMAL. **Wums** (Bass, Rauschen,
+  Klack, Aua, Ducking −6 dB, Regler `LANDUNG_WUMMS_LAUTSTAERKE`): im Mix +2.0 / +6.7 / +10.3 dB gegen das Fahrgeräusch
+  (vorher −2.9 / −0.3 / +4.9), Spitze ≤ −1.03 dBFS. Bericht: `docs/meilensteine/m10c2.md`.
 - **M10c.1** (0.10c.1) – Review M10c: **Sprungkamera** steifer (`sprung.kamera`: zurück 0.05, heben 0.24 m, folgt in der Luft
   der Autohöhe, Ruck 0.4–0.6 % der Bildhöhe, 0.25 s). **Wand-Strafe** `js/wand.js` für Leitplanke, Zaun, Geländer, Absperr-Wand,
   Felswand (Winkel zur Wand: 25/60/75 %, Schleifen 35 %/s, keine Ausrichtung); Testfahrer-Stil `wand`, `tools/wand-kurven.mjs`:
