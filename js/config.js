@@ -944,6 +944,30 @@ export const CONFIG = {
       staubJe: 1.5,            // Pixelstaub beim Einschlag: so viele Wölkchen je m/s verlorenes Tempo ...
       staubMax: 24,            // ... höchstens so viele
     },
+    // M10c.2: Motor-Strafe nach einem Wand-Treffer („Motor sammelt sich“): gilt für alle Wände oben (Leitplanke, Zaun,
+    // Geländer, Absperr-Wand, Felswand), nicht für Bäume, Steine, Sprung-Landungen oder Wasser.
+    wandStrafe: {
+      an: true,                // false = keine Motor-Strafe (wie 0.10c.1)
+      WAND_STRAFE_MIN: 10,     // ab so viel Tempoverlust (km/h) im Kontakt gibt es eine Strafe; ein kleiner Streifer nicht
+      hartAb: 50,              // ab so viel Verlust (km/h) ist es ein harter Treffer (volle Dauer)
+      dauerMin: 2.0,           // Dauer (s) beim leichten Treffer (WAND_STRAFE_MIN) ...
+      dauerMax: 4.0,           // ... beim harten (hartAb oder frontal), dazwischen gleichmässig
+      frontalAb: 80,           // Einschlag ab so viel Grad (90 = frontal) = immer volle Dauer
+      gesamtMax: 6.0,          // mehrere Treffer: Restzeit + neue Dauer, aber höchstens so viel (s)
+      trennung: 0.3,           // so lange (s) ohne Kontakt, dann ist der nächste Kontakt ein neuer Treffer
+      leistungStart: 0.25,     // Motorleistung direkt nach dem Treffer (Anteil), steigt glatt auf 1 bis zum Ende
+      schaltFaktor: 2,         // Gangwechsel dauern während der Strafe so viel mal länger
+      drehzahlTief: 0.4,       // Drehzahl (Tacho, Ton) sackt beim Treffer auf diesen Anteil ...
+      drehzahlZeit: 0.3,       // ... für so lange (s) ...
+      drehzahlZurueck: 0.4,    // ... und kommt in so vielen Sekunden glatt zurück
+      // Motor-Ton: Aussetzer (Zünd-Unterbrechungen mit Knall) direkt nach dem Treffer
+      aussetzer: [0.05, 0.2, 0.38], // Zeitpunkte (s nach dem Treffer)
+      aussetzerDauer: 0.07,    // so lange (s) setzt der Motor jeweils aus
+      aussetzerTief: 0.12,     // Motor-Pegel während eines Aussetzers (Anteil)
+      aussetzerKnall: 0.5,     // Pegel des Knalls bei jedem Aussetzer (Anteil eines normalen Popps)
+      blinken: 1.2,            // MOTOR-Leuchte im HUD: so viele Sekunden je An/Aus-Runde (langsam)
+      blinkenAn: 0.65,         // davon so ein Anteil an
+    },
   },
 
   // --- Abkürzungen (Analyse) -------------------------------------------
@@ -1204,6 +1228,8 @@ export const CONFIG = {
   // --- Anzeigen (HUD) ----------------------------------------------------
   // Masse in Pixeln des 320x180-Bildes.
   hud: {
+    // M10c.2: MOTOR-Warnleuchte (Motor-Strafe nach Wand-Treffer) links neben dem Drehzahlmesser; blinken: kollision.wandStrafe
+    motorLeuchte: { abstand: 3, rand: '#101418', tafel: '#2a1a14', farbeAn: '#ff8a1e', farbeAus: '#6a2a18' },
     // M9a.2: Einstellung HUD-GRÖSSE: Faktor je HUD-Teil (zeit = Zeit-Tafel, Live-Vergleich und Meldung; notes = Pace-Notes
     // mit R-Countdown; karte = Minimap; tacho = Tachos). MITTEL = 1 = wie bisher. Ein Teil mit Faktor f malt auf eine
     // Leinwand von 320/f x 180/f Pixeln (ganze Pixel); sauber sind nur Faktoren, bei denen beides ganz aufgeht oder fast:

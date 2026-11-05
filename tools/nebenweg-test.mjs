@@ -106,7 +106,9 @@ const erg = await spiel.page.evaluate(async () => {
     while (t < 90 && phase < 3) {
       let e;
       if (phase === 0) { e = steuer(ziel.x, ziel.z, 12, false); if (Math.hypot(A.physik.x - ziel.x, A.physik.z - ziel.z) < 4 || A.kollision.letzterAufprall) phase = 1; }
-      else if (phase === 1) { e = { ...LEER, bremse: 1 }; if (Math.hypot(A.physik.x - ast.px[0], A.physik.z - ast.pz[0]) < 4) phase = 2; }
+      // (M10c.2: oder zurück vor der Kreuzung – seit 0.10c.1 dreht die Absperr-Wand das Auto beim Anlehnen nicht mehr, die
+      // Rückwärts-Linie verfehlte den 4-m-Kreis um 0.6 m und das Skript fuhr ewig weiter rückwärts; der Weg war nie gesperrt)
+      else if (phase === 1) { e = { ...LEER, bremse: 1 }; if (Math.hypot(A.physik.x - ast.px[0], A.physik.z - ast.pz[0]) < 4 || A.rennen.letztesS < ast.sJ) phase = 2; }
       else {
         const pZ = S.punktBei(Math.min(S.laenge - 1, Math.max(A.rennen.letztesS, ast.sJ) + 12));
         e = steuer(pZ.x, pZ.z, 12, false);

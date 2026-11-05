@@ -65,10 +65,11 @@ const erg = await spiel.page.evaluate(() => {
     A.getriebe.reset();
     A.rennen.zustand = 'bereit';
     const vorher = A.kollision.letzterAufprall;
-    let t = 0, aufprall = null, tempoVor = v, maxEin = 0, getroffen = null;
+    let t = 0, aufprall = null, tempoVor = v, maxEin = 0, getroffen = null, ersterWand = null;
     while (t < dauer) {
       const tv = A.physik.tempo;
       A.physikSchritt(A.SCHRITT, eingabe);
+      if (!ersterWand && A.wand && A.wand.strafe) ersterWand = { ...A.wand.letzter }; // M10c.2: erster Einschlag
       t += A.SCHRITT;
       maxEin = Math.max(maxEin, eindringen());
       if (!aufprall && A.kollision.letzterAufprall !== vorher) {
@@ -92,7 +93,12 @@ const erg = await spiel.page.evaluate(() => {
       if (still) rueck = Math.hypot(A.physik.x - still.x, A.physik.z - still.z);
     }
     const qq = S.abfrage(A.physik.x, A.physik.z, {});
+    // M10c.2: Wand-Strafe aus M10c.1 (Leitplanke, Zaun): Einschlagwinkel und Strafe nach der Formel in js/wand.js
+    const W = A.CONFIG.kollision.wand, wl = ersterWand;
+    const formel = (w) => (w <= W.streifen[0] ? W.streifen[1] : w <= W.steil[0] ? W.streifen[1] + (W.steil[1] - W.streifen[1]) * (w - W.streifen[0]) / (W.steil[0] - W.streifen[0])
+      : w <= W.frontal[0] ? W.steil[1] + (W.frontal[1] - W.steil[1]) * (w - W.steil[0]) / (W.frontal[0] - W.steil[0]) : W.frontal[1]);
     return {
+      wandStrafe: wl ? { winkel: wl.winkel, vorher: wl.vorher * 3.6, nachher: wl.nachher * 3.6, soll: formel(wl.winkel) } : null,
       aufprall: aufprall ? { vorher: aufprall.vorher * 3.6, nachher: aufprall.nachher * 3.6, winkel: aufprall.winkel } : null,
       tempoVor: tempoVor * 3.6, standTempo: stand.tempo * 3.6, rueck, maxEin, getroffen,
       endeLat: Math.abs(qq.seite), endeS: qq.s,
@@ -186,10 +192,17 @@ for (const [name, art] of [['planke', 'planke'], ['zaun', 'zaun'], ['schild', 's
   for (const [w, r] of Object.entries(e.laeufe)) {
     console.log('  ' + zeile(w, r));
     pruefe(r.aufprall && r.getroffen === art, `${w}°: trifft ${art}`);
-    // Winkel hier = gegen die Strasse (0° = parallel). Ab 60° (= höchstens 30° von frontal) ist das
-    // nach der bestehenden Aufprall-Physik ein harter Stopp, flacher rutscht man entlang (wie an Stämmen).
-    if (+w >= 60) pruefe(r.aufprall && r.standTempo < 0.1 * r.aufprall.vorher, `${w}°: hart zum Halt (0.4 s nach dem Aufprall unter 10 % vom Tempo)`);
-    if (+w === 45) pruefe(r.aufprall && r.aufprall.nachher < 0.35 * r.aufprall.vorher, `${w}°: wie ein Stamm unter 45° (höchstens 35 % bleiben)`);
+    // Winkel hier = gegen die Strasse (0° = parallel). Schild (kein Wand-Teil): ab 60° harter Stopp, 45° höchstens 35 %.
+    // M10c.2: Leitplanke und Zaun sind seit M10c.1 Wände mit eigener Strafe (Linos Stufe „Mittel“: Streifen 25 %, 60° 60 %,
+    // frontal 75 %, Formel in js/wand.js) statt hartem Stopp – die alte Erwartung „hart zum Halt“ galt bis 0.10c.
+    // Geprüft wird jetzt: Tempo nach dem Einschlag wie die Formel (±5 Prozentpunkte) und danach weiter gebremst.
+    if (art !== 'schild') {
+      const ws = r.wandStrafe, rest = ws ? ws.nachher / ws.vorher : null;
+      pruefe(ws && Math.abs((1 - rest) - ws.soll) <= 0.05 && r.standTempo < ws.nachher, `${w}°: Wand-Strafe wie die Formel (Einschlag ${ws ? ws.winkel.toFixed(0) : '–'}°: ${ws ? `${f(ws.vorher, 0)} -> ${f(ws.nachher, 0)} km/h, Verlust ${f((1 - rest) * 100, 0)} %, Formel ${f(ws.soll * 100, 0)} %` : 'kein Einschlag'}), 0.4 s danach langsamer (${f(r.standTempo)} km/h)`);
+    } else {
+      if (+w >= 60) pruefe(r.aufprall && r.standTempo < 0.1 * r.aufprall.vorher, `${w}°: hart zum Halt (0.4 s nach dem Aufprall unter 10 % vom Tempo)`);
+      if (+w === 45) pruefe(r.aufprall && r.aufprall.nachher < 0.35 * r.aufprall.vorher, `${w}°: wie ein Stamm unter 45° (höchstens 35 % bleiben)`);
+    }
     pruefe(r.rueck > 2, `${w}°: kommt rückwärts raus (${f(r.rueck)} m in 2.5 s ab Stillstand)`);
     pruefe(r.maxEin < 0.15, `${w}°: steckt nicht fest (max. ${f(r.maxEin, 2)} m im Hindernis)`);
   }

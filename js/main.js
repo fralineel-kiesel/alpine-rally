@@ -331,7 +331,7 @@ const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken 
 const wasserBad = { aktiv: false, t: 0, versetzt: false, sicherS: 0, plaetscher: 0, anzahl: 0, nass: false, spritzer: 0 };
 function setzeAuf(s, seite = 0) {
   rueck.rest = 0; // ein laufender R-Countdown ist damit erledigt
-  wand.reset(); // M10c.1
+  wand.reset(); // M10c.1 (M10c.2: beendet auch die Motor-Strafe)
   wasserBad.aktiv = false; wasserBad.sicherS = s; // M10b.2: Neustart/Setzen beendet ein Schwarzbild
   const p = strecke.punktBei(s);
   physik.reset(p.x + -p.tz * seite, p.z + p.tx * seite, Math.atan2(p.tx, p.tz));
@@ -407,6 +407,7 @@ function aufStrasse() {
   const p = strecke.punktBei(s);
   physik.reset(p.x, p.z, Math.atan2(p.tx, p.tz));
   getriebe.reset();
+  wand.strafeAus(); // M10c.2: zurück auf die Strasse = ohne Motor-Strafe
   rennen.letztesS = s;
   kameraSofort();
 }
@@ -463,7 +464,10 @@ function physikSchritt(dt, e, nurFahren = false) {
   const xAlt = physik.x, zAlt = physik.z, hAlt = boden.h, wAlt = physik.richtung;
   // Getriebe: wie stark treibt der Motor gerade an (Schaltpause = gar nicht)?
   // (M8a: der Belag geht mit, für die Allrad-Traktion und den Heck-Grip je Belag des Fahrprofils)
+  // M10c.2: Motor-Strafe nach Wand-Treffer: Schalten dauert länger, Motor zieht weniger (Bremse, Lenkung, Rückwärts voll)
+  getriebe.schaltFaktor = wand.strafeRest > 0 ? CONFIG.kollision.wandStrafe.schaltFaktor : 1;
   const motor = getriebe.schritt(dt, eingabe, physik.vVor, physik.tempo, u.grip, boden.art);
+  if (wand.strafeRest > 0) motor.beschl *= wand.leistung();
   // M10c: in der Luft (Sprung) kein Reifenmodell: Tempo und Blickrichtung bleiben
   const fliegt = flug.inLuft;
   if (fliegt) physik.luftSchritt(dt, eingabe);
@@ -934,7 +938,17 @@ function sprungBild(dt, imRennen) {
   } else if (sk.frei > 0) sk.frei = Math.max(0, sk.frei - dt / T.fangen);
 }
 // Drehzahl für Ton und Tacho (M10c: in der Luft und kurz nach der Landung die frei drehende, sonst die des Getriebes)
-function anzeigeDrehzahl() { return sk.frei > 0 ? getriebe.drehzahl + (sk.dz - getriebe.drehzahl) * sk.frei : getriebe.drehzahl; }
+function anzeigeDrehzahl() {
+  const d = sk.frei > 0 ? getriebe.drehzahl + (sk.dz - getriebe.drehzahl) * sk.frei : getriebe.drehzahl;
+  // M10c.2: nach einem Wand-Treffer sackt die Drehzahl kurz ein (nur Tacho und Ton)
+  return wand.strafeRest > 0 ? Math.max(CONFIG.getriebe.leerlauf, d * wand.drehzahlFaktor()) : d;
+}
+// M10c.2: Ladedruck für Anzeige und Ton: bricht mit der Motor-Strafe ein und baut sich mit der Leistung wieder auf
+function anzeigeLadedruck() {
+  if (wand.strafeRest <= 0) return getriebe.ladedruck;
+  const a = CONFIG.kollision.wandStrafe.leistungStart;
+  return getriebe.ladedruck * ((wand.leistung() - a) / (1 - a));
+}
 
 // Kamera nicht in die Felswand, nicht ins Stroh an Start/Ziel, nicht unter das Gelände
 // (seit M5a eigene Funktion: auch für die Kameras der Demo-Fahrt)
@@ -1393,7 +1407,8 @@ function schleife(jetzt) {
       zustand: rennen.zustand, zeit: rennen.zeit, endZeit: rennen.endZeit, hilfe: rennen.hilfe,
       dt: dtWelt, kmh: physik.tempo * 3.6, debug: debugAn, fps, countdown: rueck.rest,
       gang: getriebe.anzeige, drehzahl: anzeigeDrehzahl(), schaltet: getriebe.schaltet, // (M10c: Drehzahl frei in der Luft)
-      ladedruck: getriebe.ladedruck, gas: tonEingabe.gas, turboAn: !!CONFIG.getriebe.turbo.an, // M8g: Ladedruck-/Lader-Anzeige
+      motorWarnung: wand.strafeRest > 0 && def.welt === 'rennen', motorStrafeSeit: wand.strafeSeit, // M10c.2: MOTOR-Leuchte
+      ladedruck: anzeigeLadedruck(), gas: tonEingabe.gas, turboAn: !!CONFIG.getriebe.turbo.an, // M8g: Ladedruck-/Lader-Anzeige
       meter: rennen.letztesS, laenge: strecke.laenge, drift: Math.abs(physik.driftWinkel),
       untergrund, zielSchirm: ablauf.zustand === 'ziel',
       hindernisse: kollision.anzahl, aufprall: kollision.letzterAufprall,
@@ -1480,7 +1495,8 @@ function tonBild(dt) {
   tonZ.drehzahl = anzeigeDrehzahl(); tonZ.inLuft = flug.inLuft; tonZ.gang = getriebe.gang; // (M10c: frei drehend in der Luft) tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
-  tonZ.ladedruck = getriebe.ladedruck; tonZ.turboAn = !!CONFIG.getriebe.turbo.an; // M8b
+  tonZ.motorStrafen = wand.strafen; // M10c.2: neuer Wand-Treffer mit Motor-Strafe = Aussetzer im Motor-Ton
+  tonZ.ladedruck = anzeigeLadedruck(); tonZ.turboAn = !!CONFIG.getriebe.turbo.an; // M8b
   tonZ.turboMal = tonWerte.turboMal; tonZ.knallMal = tonWerte.knallMal; // M8c: Ton je Auto (Fahrprofil, Block "ton")
   tonZ.motorAus = wasserBad.aktiv && !wasserBad.versetzt; // M10b.2: im tiefen Wasser abgewürgt
   tonZ.aufprall = tonInfo.wucht; tonZ.aufprallArt = tonInfo.art; tonZ.kontaktArt = tonInfo.kontaktArt; tonZ.kontaktTempo = tonInfo.kontaktTempo;

@@ -668,6 +668,7 @@ export function baueKlangwerk(ctx) {
     // Schalten (M7a.1): läuft eine Schaltpause, rauf oder runter, wie viel Gas davor, Gasstoss bis, eigene Sperre
     schaltetVor: false, schaltHoch: false, schaltLast: 0, zwischengasBis: -1e9, schaltTonSperre: -1e9,
     duckEnde: -1e9, duckTiefe: 1, // laufendes Ducking (bis wann, wie tief)
+    strafenVor: -1, aussetzerAb: -1e9, // M10c.2: Motor-Aussetzer nach Wand-Treffer (Zähler zuletzt, Beginn)
     // Ziele (was zuletzt gesetzt wurde), für Tests und das Labor
     f0: 0, filter: 0, motorPegel: 0, motorAn: 0, turbo: 0, begrenzer: 0, heulen: 0, heulenHz: 0, hoch: 0, surren: 0, weich: 0, kies: 0,
     quietschen: 0, rutschen: 0, wind: 0, schleifen: 0, pause: false, modus: 'aus', duck: 1,
@@ -736,6 +737,8 @@ export function baueKlangwerk(ctx) {
     const gasTon = Math.max(gas, zu.uhr < zu.zwischengasBis ? M.zwischengasStaerke : 0);
     // Zünd-Unterbrechung: Hochschalten unter Last -> Motor fällt in der Schaltpause schnell auf schaltDip
     const dip = z.schaltet && zu.schaltHoch && zu.schaltLast > M.schaltLastAb;
+    // M10c.2: neuer Wand-Treffer mit Motor-Strafe (z.motorStrafen zählt hoch): 2-3 Aussetzer mit Knall (vorhandener Pop)
+    const ausF = motorAussetzer(z, faehrt);
     const anteil = begr((rpm - leer) / (maxD - leer), 0, 1);
     const leerlaufig = (1 - begr(anteil * 5, 0, 1)) * (1 - gasTon);
     zu.zitterUhr -= dt;
@@ -753,8 +756,8 @@ export function baueKlangwerk(ctx) {
     setze(W_LP, motorLp.frequency, zu.filter);
     let last = mische(M.schubPegel, M.lastPegel, dip ? zu.schaltLast : gasTon);
     last = mische(last, M.leerlaufPegel, leerlaufig);
-    zu.motorPegel = M.pegel * last * (1 + M.drehzahlPegel * anteil) / (1 + M.drehzahlPegel) * (dip ? M.schaltDip : 1);
-    setze(W_LAST, motorLast.gain, zu.motorPegel, dip ? M.schaltDipZeit : C.glaetten);
+    zu.motorPegel = M.pegel * last * (1 + M.drehzahlPegel * anteil) / (1 + M.drehzahlPegel) * (dip ? M.schaltDip : 1) * ausF;
+    setze(W_LAST, motorLast.gain, zu.motorPegel, dip || ausF < 1 ? M.schaltDipZeit : C.glaetten);
     const am = mische(M.amTiefe, M.amTiefeLeerlauf, leerlaufig);
     setze(W_AM, amTiefe.gain, am); setze(W_AMG, amGain.gain, 1 - am);
     setze(W_RAUH, rauhGain.gain, M.rauh * (0.3 + 0.7 * gasTon));
@@ -884,6 +887,23 @@ export function baueKlangwerk(ctx) {
     merke(art, wann);
     spiele(art, 'pop', motorAus, M.popPegel * staerke, wann, zwischen(M.popTempo, rnd()));
     if (knallHoerer) knallHoerer(art, ctx.currentTime + wann, staerke);
+  }
+  // M10c.2: Motor-Aussetzer nach einem Wand-Treffer (Motor-Strafe). Ergebnis: Faktor für den Motor-Pegel (1 = normal).
+  // Beim neuen Treffer: Pops zu den Aussetzer-Zeiten (mittleres Abspieltempo, keine Zufallszahl: der übrige Ton bleibt gleich)
+  function motorAussetzer(z, faehrt) {
+    const W = CONFIG.kollision.wandStrafe, n = z.motorStrafen ?? -1;
+    if (n !== zu.strafenVor) {
+      if (faehrt && zu.strafenVor >= 0 && n > zu.strafenVor) {
+        zu.aussetzerAb = zu.uhr;
+        for (const t of W.aussetzer) spiele('knall', 'pop', motorAus, M.popPegel * W.aussetzerKnall, t, zwischen(M.popTempo, 0.5));
+        merke('aussetzer', W.aussetzer.length);
+      }
+      zu.strafenVor = n;
+    }
+    const t = zu.uhr - zu.aussetzerAb;
+    if (t < 0 || t > 1) return 1;
+    for (const a of W.aussetzer) if (t >= a && t < a + W.aussetzerDauer) return W.aussetzerTief;
+    return 1;
   }
   // Gaswegnehmen aus hoher Last: mit knallChance eine Salve (1-4 Pops), dazu manchmal leises Knistern. Ergebnis: Anzahl Pops.
   // antiLag (M8b): Turbo mit Anti-Lag aktiv -> Chance plus turboKnallPlus (gleich viele Zufallszahlen wie ohne)

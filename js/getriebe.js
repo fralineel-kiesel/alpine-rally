@@ -58,6 +58,7 @@ export class Getriebe {
     this.gasGlatt = 0;        // geglättetes Gaspedal (für die Schaltpunkte)
     this.letzteSchaltung = null; // { von, nach, tempo } für Tests
     this.ladedruck = 0;       // M8a: Ladedruck des Turbos (0..1; im Prototyp immer 0). Lesbar für Anzeige und Ton
+    this.schaltFaktor = 1;    // M10c.2: Schaltpause so viel mal länger (Motor-Strafe nach Wand-Treffer, sonst 1)
   }
 
   // Für die Anzeige: 'R', 'N' oder '1' bis '5'
@@ -70,7 +71,7 @@ export class Getriebe {
     const g = CONFIG.getriebe;
     this.zielGang = nach;
     this.schaltet = true;
-    this.schaltRest = nach > this.gang ? g.schaltDauerHoch : g.schaltDauerRunter;
+    this.schaltRest = (nach > this.gang ? g.schaltDauerHoch : g.schaltDauerRunter) * this.schaltFaktor; // M10c.2: Faktor
     this.letzteSchaltung = { von: this.gang, nach, tempo: v };
   }
 

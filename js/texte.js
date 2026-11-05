@@ -327,6 +327,7 @@ export const TEXTE = {
   'hud.zeit': { de: 'ZEIT', en: 'TIME' },
   'tacho.drehzahl': { de: 'X1000', en: 'X1000' },
   'tacho.boost': { de: 'BOOST', en: 'BOOST' }, // M8g: Ladedruck-Anzeige (Turbo), kleine Schrift (nur A B D E H I K L M N O P R S T U W X Z)
+  'tacho.motor': { de: 'MOTOR', en: 'ENGINE' }, // M10c.2: Warnleuchte nach Wand-Treffer (kleine Schrift, G neu)
   'tacho.lader': { de: 'LADER', en: 'BLOWER' }, // M8g: Lader-Anzeige (Kompressor, Lanza 073)
   'hud.cp': { de: 'CP {n}  {zeit}', en: 'CP {n}  {zeit}' },
   'hud.cpVerpasst': { de: 'CHECKPOINT VERPASST', en: 'CHECKPOINT MISSED' },
