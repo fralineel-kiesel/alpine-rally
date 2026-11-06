@@ -18,6 +18,7 @@
 //   (l) Stabilität: alle bisherigen Tests mit prototyp (lang), Ladezeit (mit --alt <ordner 0.8b>)
 // Ich habe weder das Fahrgefühl gespürt noch den Ton gehört: das sind Messungen.
 
+// (M10d: Alpen mit revision 2 – Schlüssel der Bestzeiten 'passstrasse-r2')
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -401,7 +402,7 @@ if (teil('g')) {
     { zeit: 201.22, cps: [40, 110, 160], datum: '2026-09-02T10:00:00.000Z', auto: 'rt4', aufpralle: 0, resets: 0, hoechstTempo: 40 },
     { zeit: 202.33, cps: [40, 110, 160], datum: '2026-09-03T10:00:00.000Z', auto: 'prototyp', aufpralle: 1, resets: 0, hoechstTempo: 41 },
   ];
-  await p.evaluate((a) => { localStorage.clear(); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ passstrasse: a })); }, alt); // (M8h: wird übernommen)
+  await p.evaluate((a) => { localStorage.clear(); localStorage.setItem('alpineRally.bestzeiten', JSON.stringify({ 'passstrasse-r2': a })); }, alt); // (M8h: wird übernommen)
   const fahrerCode = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
   const laeufe = {};
   for (const id of ['delto', 'escorta', 'rt4']) {
@@ -411,7 +412,7 @@ if (teil('g')) {
       const A = window.__alpineRally; A.anhalten = true;
       const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
       const { ladeBestzeiten } = await import('/js/bestzeiten.js');
-      const bestVorher = ladeBestzeiten('passstrasse')[0].zeit, refVorher = A.vergleich.referenzBei(A.strecke.zielS + 50);
+      const bestVorher = ladeBestzeiten('passstrasse-r2')[0].zeit, refVorher = A.vergleich.referenzBei(A.strecke.zielS + 50);
       const r = f.fahreEtappe(A, id === 'rt4' ? 'vorsichtig' : 'mittel');
       for (let i = 0; i < 5 && !A.lauf.zielErledigt; i++) await new Promise((res) => requestAnimationFrame(res));
       return { zeit: r.zeit, ziel: r.ziel, auto: A.lauf.ergebnis && A.lauf.ergebnis.auto, platz: A.lauf.ergebnis && A.lauf.ergebnis.platz, refZeit: refVorher, bestVorher, quelle: A.vergleich.ref.quelle };
@@ -421,13 +422,13 @@ if (teil('g')) {
     const A = window.__alpineRally; A.anhalten = false;
     const { ladeBestzeiten } = await import('/js/bestzeiten.js');
     // M8h: neuer Speicher (eine Liste je Auto, Einträge ohne gültige Id im Behälter _ohne)
-    const roh = Object.values(JSON.parse(localStorage.getItem('alpineRally.bestzeiten2')).passstrasse).flat();
+    const roh = Object.values(JSON.parse(localStorage.getItem('alpineRally.bestzeiten2'))['passstrasse-r2']).flat();
     A.menue.zeige(A.seiten.bestzeiten, true);
     A.ablauf.wechsle('menue'); A.menue.zeige(A.seiten.bestzeiten, true);
     await new Promise((r) => setTimeout(r, 600));
     const zeilen = A.menue.seite.eintraege().filter((e) => e.autoKurz).map((e) => `${e.inhalt()} ${e.autoKurz()}`);
-    const je = Object.fromEntries(['rt4', 'prototyp'].map((a) => [a, ladeBestzeiten('passstrasse', a).map((e) => e.zeit)]));
-    return { zeilen, je, schluessel: [...new Set(roh.flatMap((e) => Object.keys(e)))].sort(), best: ladeBestzeiten('passstrasse').map((e) => e.auto), rollen: A.menue.rollen };
+    const je = Object.fromEntries(['rt4', 'prototyp'].map((a) => [a, ladeBestzeiten('passstrasse-r2', a).map((e) => e.zeit)]));
+    return { zeilen, je, schluessel: [...new Set(roh.flatMap((e) => Object.keys(e)))].sort(), best: ladeBestzeiten('passstrasse-r2').map((e) => e.auto), rollen: A.menue.rollen };
   });
   await p.screenshot({ path: path.join(WURZEL, 'screenshots/m8c/70-bestzeiten-320x180.png') });
   melde(Object.values(laeufe).every((l) => l.ziel) && laeufe.delto.auto === 'delto' && laeufe.escorta.auto === 'escorta' && laeufe.rt4.auto === 'rt4',

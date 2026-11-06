@@ -2,11 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 10c.2 fertig** (Version 0.10c.2) – nach Linos Review zu M10c.1: **Wand-Strafe „Motor sammelt sich“**
-(spürbarer Wand-Treffer = Motor 2–4 s gedrosselt, zäh schalten, MOTOR-Leuchte im HUD), **Sprungkamera in drei Stufen**
-(AUS / RUHIG / NORMAL, neuer Standard NORMAL in der Mitte), **lauterer Landungs-Wums**. **Nur Chromium, kein Handy, kein Gamepad,
-Ton nur gemessen.** **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m10c2.md`.** Nächster Schritt: M10d (Alpen mit
-Sprüngen und Schatten, siehe KONZEPT.md, Fahrplan).
+Aktuell: **Meilenstein 10d fertig** (Version 0.10d) – nach Linos Review zu M10c.2: **Schaltton im Rennen repariert**
+(mit Wächter), **Wums etwas lauter**, **Wand-Strafe deutlich stärker** (erste Sekunde Motor fast aus, 3–6 s), **Alpen mit drei
+Sprüngen** und **kurzen Mittags-Schatten**. Mehr Deko in den Alpen (Teil E) ist offen. **Nur Chromium, kein Handy, kein
+Gamepad, Ton nur gemessen.** **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m10d.md`.** Nächster Schritt: siehe
+KONZEPT.md, Fahrplan (Alpen-Deko, weitere Maps).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -122,9 +122,9 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Unveränderliche Referenzwerte (jedes Mal prüfen)
 
-- Strecke **3667.587 m** ±0.5.
+- Strecke **3667.587 m** ±0.5. Seit M10d: 3 Sprungzonen (Kante 180 / 2140 / 3440 m), `revision` 2, Schatten.
 - `node tools/abkuerzungen.mjs --pruefen` = **127 / 2 / 342 / 84**.
-- Testfahrer mit Profil `prototyp`: **2:59.33 / 2:42.35 / 2:31.92** (Zwischenzeiten und Statistik gleich).
+- Testfahrer mit Profil `prototyp`: seit M10d (Sprünge, revision 2) **3:01.80 / 2:43.73 / 2:32.40** (vorher 2:59.33 / 2:42.35 / 2:31.92).
 - Pace-Notes-Tabelle und Abkürzungs-Daten (seit M10a in `strecken/alpen.js` unter `erzeugt`) und `tools/schneiden-zeiten.json` nicht neu schreiben.
 - Profil `prototyp` bleibt bit-gleich (Referenz für Pace-Notes, Sperren, Testfahrer). Fertige Autos bleiben bit-gleich, wenn der
   Auftrag sie nicht nennt (Aussehen, Fahrgefühl, Ton, Tacho).
@@ -135,6 +135,9 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Werkzeuge und Tests
 
+- `node tools/m10d-test.mjs --alt <0.10c.2 = b14cecc> --alt017 <017fb8f> --altC <059fad6> [--nur a,b] [--lang]` – alle Prüfungen von
+  M10d (a … ac, zz = frühere Tests mit `--lang`); `node tools/m10d-bilder.mjs` – Bilder nach `screenshots/m10d/`;
+  `node tools/kommentar-waechter.mjs` – findet auskommentierte Code-Zeilen in `js/*.js` (Schaltton-Fehler aus M10c).
 - `node tools/m10c1-test.mjs --alt <ordner 0.10c = 612cc62> [--nur a,b] [--lang]` – alle Prüfungen von M10c.1 (a … ae, bz =
   Bildzeit je Auflösung, x1–x5 Alpen, zz = frühere Tests mit `--lang`); `node tools/m10c1-bilder.mjs` – Bilder nach
   `screenshots/m10c1/`; `node tools/wand-kurven.mjs --strecke <id> --auto <id>` – Wert der Wand je Kurve; Stil `--stil wand`.
@@ -186,9 +189,6 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Bekannte Probleme
 
-- **Schalt-Ton im Rennen fehlt seit M10c** (gefunden in M10c.2, nicht behoben): in `js/main.js` stehen `tonZ.zielGang` und
-  `tonZ.schaltet` hinter einem `//` (Zeile mit `tonZ.drehzahl = anzeigeDrehzahl()`). Schalt-Dip, Schaltknall, Klack und
-  Zwischengas kommen darum nur in der Garage. Beheben ändert den Ton in Alpen und Finnland (eigener Auftrag).
 - **Ähnlichkeit der Allradler:** Audan, Delto und Subora liegen in 8–9 von 12 Messzeilen nah beieinander (Regel: höchstens 2),
   siehe Vergleich – weil sich ihre Zielbereiche überlappen.
 - Mehrere Fahrmesswerte liegen **knapp am Rand** des Ziels (siehe Messtabelle); schon kleine Änderungen an Lanza-Werten
@@ -224,7 +224,12 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
-- **Offen aus M10c.2:** Kurven-Vergleich: in 7 von 20 Alpen-Kehren lohnt sich die Planke noch (Escorta alle vier: die Drossel
+- **Offen aus M10d:** Teil E (mehr Deko in den Alpen: Holzstapel, Heuballen, Wegkreuz/Bergkapelle, Murmeltiere) nicht gebaut
+  (Kontext-Regel: E fällt zuerst weg). Kartierung der vorhandenen Alpen-Deko im Bericht. Ideen: Schatten auch für die Alphütten
+  (liegen 38–52 m neben der Strasse, ausserhalb `schatten.nahStrecke`), Hinweistext SCHATTEN („NUR AUF STRECKEN MIT SCHATTEN“)
+  stimmt noch, könnte jetzt „ALPEN UND FINNLAND“ heissen; bei kleinen Streifern (10–15 km/h) eine mildere Stufe, falls Lino
+  3 s zu hart findet.
+- **Offen aus M10c.2 (mit M10d erledigt: Strafe härter, Schaltton, Wums):** Kurven-Vergleich: in 7 von 20 Alpen-Kehren lohnte sich die Planke noch (Escorta alle vier: die Drossel
   wirkt beim Hinterradler mit Vollgas wie eine Traktionshilfe; Lanza 073 Kehre 1/3, Imprexa Kehre 4: mit Drossel weniger
   Schleifen). Vorschlag V1 `wandStrafe.leistungStart` 0.1 statt 0.25 (Zahlen im Bericht). Ideen: Strafe zusätzlich als
   Tempo-Limit (Begrenzer tiefer), Testfahrer mit Gefühl am Gas als Messlatte, Schalt-Ton im Rennen reparieren (siehe Bekannte
@@ -293,6 +298,13 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
 
+- **M10d** (0.10d) – Review M10c.2: **Schaltton** repariert (seit M10c schluckte ein Kommentar am Zeilenende in `js/main.js`
+  `tonZ.zielGang`/`tonZ.schaltet`; Pegel wie vorher), Wächter `tools/kommentar-waechter.mjs` + Zähltest. **Wums** hart/sehr
+  hart länger (`sprung.ton.wumms.laenger`): im Mix +8.8 / +12.2 dB (vorher +6.7 / +10.3), Spitze ≤ −1.05 dBFS. **Wand-Strafe**
+  3–6 s, stapelt bis 9 s, 1 s Motor fast aus (0.03), dann glatt zurück; Kurven-Vergleich inkl. sanfter Gas-Rampe: „wand“
+  gewinnt in **keiner** Kurve mehr (vorher 4, alte Messlatte 7). Kontaktfreie Läufe bit-gleich. **Alpen-Sprünge** STARTKUPPE
+  180 / ALMKUPPE 2140 / ZIELKUPPE 3440 m (16.6 / 19.6 / 22.5 m bei 100 km/h), Alpen `revision` 2. **Mittags-Schatten** in den
+  Alpen (Sonne 125°, kurz, kontrastarm, mit Steinen; Budget 60). Teil E (Deko) offen. Bericht: `docs/meilensteine/m10d.md`.
 - **M10c.2** (0.10c.2) – Review M10c.1: **Wand-Strafe** (`js/wand.js`, `kollision.wandStrafe`): ab 10 km/h Tempoverlust im
   Wand-Kontakt Motor 25 → 100 % in 2–4 s (frontal 4 s), Schalten ×2, Drehzahl-Einbruch, Ladedruck und Ton mit, 3 Aussetzer,
   MOTOR-Leuchte neben dem Drehzahlmesser; stapelt bis 6 s; R, Wasser, Neustart, Menü, Countdown löschen, Pause friert ein.

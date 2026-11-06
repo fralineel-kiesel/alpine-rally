@@ -10,6 +10,7 @@
 //       (zeit) Zeitverlust Streifer/Frontal (Bericht)
 //   Teil C – Alpen-Sprünge: (r) Länge/Verlauf, (s) Flugweiten, (t) Orte, (u) Landungen, (v) kein Zeitgewinn, (w) SPRUNG-Ansage,
 //       (abk) Abkürzungen, (x) Finnland bit-gleich, (y) Bildzeit
+//   (zz) nur mit --lang: frühere Tests (einmal)
 //   Teil D – Mittags-Schatten Alpen: (z) AUS bit-gleich (--altC <Stand nach C>), (aa) Budget/Auto, (ab) Bildzeit, (ac) Finnland-Bilder
 
 import fs from 'node:fs';
@@ -719,6 +720,39 @@ if (teil('ac')) {
   titel('(ac) Finnland-Bilder bit-gleich zu 0.10c.2 (SCHATTEN AN und AUS, 4 Stellen, 320x180)');
   if (!ALT) melde(false, 'nur mit --alt');
   else for (const an of [true, false]) { const n = await bildSummen(WURZEL, 'finnland', an, STELLEN_F), a = await bildSummen(ALT, 'finnland', an, STELLEN_F); melde(JSON.stringify(n.out) === JSON.stringify(a.out), `SCHATTEN ${an ? 'AN' : 'AUS'}: ${n.out.filter((x, i) => x === a.out[i]).length} von ${n.out.length} gleich`); }
+}
+
+// ===================================================================== (zz) volle Regression (nur mit --lang, einmal)
+if (teil('zz') && process.argv.includes('--lang')) {
+  titel('(zz) Frühere Tests (Teile, die nicht am alten Quelltext hängen); rot = nur melden, wenn die Zeilen in 0.10c.2 nicht auch rot sind');
+  const laeufe = [
+    ['pacenotes-test.mjs', []], ['leben-test.mjs', []], ['kuh-test.mjs', []], ['startziel-test.mjs', []], ['strassenrand-test.mjs', []],
+    ['nebenweg-test.mjs', []], ['felswand-test.mjs', []], ['belag-test.mjs', []], ['rennablauf-test.mjs', []], ['menue-test.mjs', []],
+    ['overlay-test.mjs', []], ['m9a2-test.mjs', ['--nur', 'a,c,e,f,g,h,k,l,m']], ['m9a1-test.mjs', ['--nur', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']],
+    ['m8h-test.mjs', []], ['m10c-test.mjs', ['--nur', 'c,d,e,f,g,h,i,l,m,o,r,s,t,v,x,y']],
+    ['m10c1-test.mjs', ['--nur', 'h,i,j,k,n,o,p,q,s,t,v,w,y,z,aa,ab,ad']],
+    ['m10c2-test.mjs', ['--nur', 'a,b,c,d,e,f,g,h,m,n,p,q,r,s']], // (M10d: Strafe-Werte umgestellt; Kamera-Stufen, Flugweiten, HUD)
+    ['kommentar-waechter.mjs', []],
+  ];
+  const vorher = new Set(spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter(Boolean));
+  for (const [datei, a] of laeufe) {
+    if (!fs.existsSync(path.join(WURZEL, 'tools', datei))) continue;
+    const r = werkzeug(datei, a);
+    fs.writeFileSync(path.join(LOG, `zz-${datei.replace('.mjs', '.log')}`), r.text);
+    const zeilenVon = (t) => t.split('\n').filter((x) => /^\s*(ok|OK|FEHLER|FEHLT)\s/.test(x));
+    const z = zeilenVon(r.text);
+    const rot = z.filter((x) => /^\s*(FEHLER|FEHLT)/.test(x)).map((x) => x.trim());
+    let alt = false;
+    if (r.code !== 0 && ALT && fs.existsSync(path.join(ALT, 'tools', datei))) {
+      const ra = werkzeug(datei, a, ALT);
+      const rotAlt = new Set(zeilenVon(ra.text).filter((x) => /^\s*(FEHLER|FEHLT)/.test(x)).map((x) => x.trim()));
+      alt = rot.length > 0 && rot.every((x) => rotAlt.has(x));
+    }
+    melde(r.code === 0 || alt, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok, ${rot.length} rot${alt ? ' (genau diese Zeilen sind schon in 0.10c.2 rot)' : ''}${rot.length ? ` – ${rot.slice(0, 3).map((x) => x.slice(0, 160)).join(' | ')}` : ''}`);
+  }
+  const neu = spawnSync('git', ['diff', '--name-only'], { cwd: WURZEL, encoding: 'utf8' }).stdout.split('\n').filter((d) => d && !vorher.has(d) && /^(screenshots|tools)\//.test(d));
+  if (neu.length) spawnSync('git', ['checkout', '--', ...neu], { cwd: WURZEL });
+  info(`von den alten Tests geänderte Messdateien zurückgesetzt: ${neu.length}`);
 }
 
 // ===================================================================== Zusammenfassung

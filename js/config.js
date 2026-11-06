@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10c.2';
+export const VERSION = '0.10d';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------

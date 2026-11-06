@@ -325,7 +325,10 @@ const erg = await spiel.page.evaluate(async () => {
       }
     }
     let beschl = { v: 0 }, nickRate = { v: 0 };
+    // M10d: Sprungzonen (gewollte Kuppen, z. B. ALMKUPPE auf dem Almweg) zählen nicht – geprüft werden Abzweig und Einmündung
+    const zonen = S.sprungZonen || [];
     for (let n = 1; n < proben.length - 1; n++) {
+      if (zonen.some((z) => proben[n].s >= z.von && proben[n].s <= z.bis)) continue;
       const a = Math.abs(proben[n + 1].y - 2 * proben[n].y + proben[n - 1].y) / 0.0025;      // m/s²
       const r = Math.abs(proben[n + 1].nick - proben[n].nick) / 0.05 / GRAD;                // Grad/s
       if (a > beschl.v) beschl = { v: a, s: proben[n].s };

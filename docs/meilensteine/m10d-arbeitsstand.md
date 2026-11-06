@@ -12,3 +12,4 @@ Ziel: Schaltton, Wums, Wand-Strafe, Alpen mit Sprüngen/Schatten/Deko, 0.10d. Te
   rt4 „flott“ fliegt 450 m nach der Startkuppe bei 655 m ab (bekannte Empfindlichkeit, M8f). Bildzeit +2.3 % (Grenze 3 %).
 - **D:** `schatten` Alpen: Sonne 125°, Länge 0.7, Dunkelheit 0.6 (0.5/0.45 war unsichtbar), Steine/Felsbrocken; Budget 60 (oft voll). Bildzeit +5.4 %
   (bereinigt +3.5 %; mit 0.5/0.45 waren es +0.2 %). AUS bit-gleich zu C, Finnland-Bilder bit-gleich (AN/AUS). E fällt weg (Kontext). Nächster: F.
+- **F:** Regression `--lang` einmal; 5 Tests umgestellt (Schlüssel `passstrasse-r2`, Referenzen, Sprungzone, Strafe), Bericht m10d.md.
