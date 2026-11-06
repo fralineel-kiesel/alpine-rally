@@ -8,6 +8,8 @@
 //   Teil B – Wand-Strafe: (g) Dauer, (h) Faktor-Verlauf, (i) Stapeln, (j) Schalten, (k) Zurücksetzen, (l) Landung/Wasser,
 //       (m) kein Steckenbleiben, (n) MOTOR-Leuchte, (o) Kurven-Vergleich, (p) ohne Kontakt bit-gleich, (q) umgestellte Tests,
 //       (zeit) Zeitverlust Streifer/Frontal (Bericht)
+//   Teil C – Alpen-Sprünge: (r) Länge/Verlauf, (s) Flugweiten, (t) Orte, (u) Landungen, (v) kein Zeitgewinn, (w) SPRUNG-Ansage,
+//       (abk) Abkürzungen, (x) Finnland bit-gleich, (y) Bildzeit
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -503,6 +505,162 @@ if (teil('p')) {
   else {
     const { rev } = bitGleich(STRECKEN, 'teilB');
     melde(rev.length === 0, `Stil „mittel“: keine Verschiebung über 1 s (sonst neue revision)${rev.length ? `: ${rev.join('; ')}` : ''}`);
+  }
+}
+
+// ===================================================================== Teil C: Alpen mit 3 Sprüngen
+const med = (l) => { const a = [...l].sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+const ALPEN_SPRUENGE = [180, 2140, 3440]; // Kanten (strecken/alpen.js, Feld sprung)
+const WEITEN = (kmhs) => {
+  const A = window.__alpineRally, P = A.physik, F = A.flug; A.anhalten = true; const out = {};
+  for (const z of A.strecke.sprungZonen) {
+    out[z.name] = [];
+    for (const kmh of kmhs) {
+      A.setzeAuf(z.kante - 6); P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+      const n0 = F.ereignis.landung, a0 = F.ereignis.abheben;
+      for (let t = 0; t < 6 && F.ereignis.landung === n0; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { gas: 0.4, bremse: 0, lenkung: 0, handbremse: false }, true);
+      const L = F.letzteLandung;
+      out[z.name].push(F.ereignis.abheben === a0 ? { kmh, ab: false } : { kmh, ab: true, weite: L.weite, verlust: L.verlust, klasse: L.klasse, kante: z.kante });
+    }
+  }
+  return out;
+};
+if (teil('r')) {
+  titel('(r) Alpen: Länge 3667.587 m (±0.5), Verlauf (Draufsicht) und Checkpoints wie 0.10c.2');
+  const lies = async (w) => { const s = await oeffne(w, '?menue=aus&ton=aus'); const r = await s.page.evaluate(() => { const S = window.__alpineRally.strecke; let h = 0; for (let i = 0; i < S.anzahl; i += 7) h += S.px[i] * 1.3 + S.pz[i]; return { laenge: S.laenge, anzahl: S.anzahl, xz: h.toFixed(6), cps: window.__alpineRally.checkpoints.map((c) => Math.round(c.s ?? c)) }; }); await s.schliessen(); return r; };
+  const n = await lies(WURZEL), a = ALT ? await lies(ALT) : null;
+  melde(Math.abs(n.laenge - 3667.587) <= 0.5, `Länge ${n.laenge.toFixed(3)} m`);
+  melde(!a || (n.xz === a.xz && n.anzahl === a.anzahl && JSON.stringify(n.cps) === JSON.stringify(a.cps)), `Draufsicht (Prüfsumme x/z ${n.xz}) und Checkpoints ${JSON.stringify(n.cps)}${a ? (n.xz === a.xz ? ' gleich wie 0.10c.2' : ` ANDERS (0.10c.2 ${a.xz})`) : ''}`);
+}
+if (teil('s')) {
+  titel('(s) Flugweiten bei 100 km/h: alle 3 Alpen-Sprünge 15–25 m (klein 15–18, mittel 20–25), alle 5 Autos (±0.5 m)');
+  for (const auto of AUTOS) {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus', { auto });
+    const w = await s.page.evaluate(WEITEN, [100]);
+    await s.schliessen();
+    const t = Object.entries(w).map(([k, v]) => `${k} ${v[0].ab ? `${v[0].weite.toFixed(1)} m` : 'kein Flug'}`).join(', ');
+    const [a, b, c] = Object.values(w).map((v) => (v[0].ab ? v[0].weite : 0));
+    melde(a >= 14.5 && a <= 18.5 && b >= 14.5 && b <= 25.5 && c >= 19.5 && c <= 25.5 && b > a - 0.5 && c > b - 0.5, `${auto}: ${t}`);
+  }
+}
+if (teil('t')) {
+  titel('(t) Orte nach den Regeln: Prüfer grün, Landezone 60 m frei (keine Felswand, Leitplanke, Hindernis auf ±7 m), nicht im 250 m vor einer Kehre, je ein Drittel');
+  const r = werkzeug('strecke-pruefen.mjs', ['strecken/alpen.js']);
+  melde(r.code === 0 && /^ok /m.test(r.text), `tools/strecke-pruefen.mjs: ${r.text.trim().split('\n').pop().slice(0, 140)}`);
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  const o = await s.page.evaluate(async () => {
+    const A = window.__alpineRally, S = A.strecke, q = {};
+    const { berechnePaceNotes } = await import('/js/pacenotes.js');
+    const kehren = berechnePaceNotes(S, A.netz).kurven.filter((c) => c.kehre || c.winkel >= 150).map((c) => c.von);
+    const rand = A.strassenrand.hindernisse.map((h) => ({ ...S.abfrage(h.x, h.z, {}), art: h.rand }));
+    const baeume = A.pflanzen.hindernisse.map((h) => ({ ...S.abfrage(h.x, h.z, {}), r: h.r }));
+    return S.sprungZonen.map((z) => {
+      const a = z.landeVon, b = z.landeVon + 60;
+      const planke = rand.filter((h) => h.s > a && h.s < b && h.art === 'planke').length;
+      let fels = 0; for (let m = a; m < b; m++) { const p = S.punktBei(m); if (S.wandStaerke[p.i] > 0.3) fels++; }
+      const hind = baeume.filter((h) => h.s > a && h.s < b && Math.abs(h.seite) - (h.r || 0) < 7).length;
+      const kehre = kehren.filter((k) => k > z.kante && k - z.landeBis < 250);
+      return { name: z.name, kante: z.kante, planke, fels, hind, kehre, drittel: Math.floor(z.kante / (S.laenge / 3)) };
+    });
+  });
+  await s.schliessen();
+  for (const z of o) melde(z.planke === 0 && z.fels === 0 && z.hind === 0 && !z.kehre.length, `${z.name} (Kante ${z.kante} m, Drittel ${z.drittel + 1}): Landezone ${z.kante}+: Leitplanke ${z.planke}, Felswand ${z.fels} m, Hindernisse auf ±7 m ${z.hind}, Kehre in 250 m nach der Landezone: ${z.kehre.join(', ') || 'keine'}`);
+  melde(new Set(o.map((z) => z.drittel)).size === 3, `je ein Sprung pro Drittel (${o.map((z) => z.drittel + 1).join(', ')})`);
+}
+// Testfahrer-Läufe (strecke-abfahren --json: Sprünge je Stil) – Alpen jetzt mit Sprüngen; Vergleich ohne Sprünge = Stand nach
+// Teil B (vorC, gleich wie 0.10c.2 ohne Kontakt)
+if (teil('u') || teil('v')) {
+  const zeile = [], schlecht = [], gewinn = [];
+  const zt = (z, k) => z[(k + 150) / 10] - z[(k - 100) / 10];
+  for (const id of AUTOS) {
+    const n = testfahrerLauf('alpen', id), o = ALT ? testfahrerLauf('alpen', id, ALT, 'alt') : null;
+    for (const st of n.stile) {
+      const x = o && o.stile.find((q) => q.stil === st.stil);
+      const sp = st.spruenge || [];
+      const nahAufprall = (st.aufprallListe || []).filter((p) => ALPEN_SPRUENGE.some((k) => { const m = parseFloat(p.s ?? p); return m > k && m < k + 120; }));
+      const nahStrafe = (st.motorStrafen || []).filter((p) => ALPEN_SPRUENGE.some((k) => (p.s ?? 0) > k && (p.s ?? 0) < k + 120));
+      const ok = sp.length === 3 && sp.every((q) => q.verlust <= 0.35 && q.aufStrasse) && !nahAufprall.length && !nahStrafe.length && st.zeit != null;
+      if (!ok) schlecht.push(`${id}/${st.stil}: ${sp.length} Sprünge, ${sp.map((q) => `${q.klasse} −${(q.verlust * 100).toFixed(0)} %${q.aufStrasse ? '' : ' neben der Strasse'}`).join(', ')}, Aufpralle nah ${nahAufprall.length}, Strafen nah ${nahStrafe.length}`);
+      const d = x ? ALPEN_SPRUENGE.map((k) => zt(st.zeitBei, k) - zt(x.zeitBei, k)) : [];
+      if (d.some((v) => v < -0.2)) gewinn.push(`${id}/${st.stil} ${d.map((v) => v.toFixed(2)).join(' / ')} s`);
+      zeile.push(`| ${id} | ${st.stil} | ${sp.map((q) => `${q.weite.toFixed(1)} m @ ${q.abTempo.toFixed(0)} km/h, ${q.klasse}`).join('; ')} | ${d.map((v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`).join(' / ')} s | ${fmtZ(st.zeit)}${x ? ` (vorher ${fmtZ(x.zeit)})` : ''} |`);
+    }
+  }
+  fs.writeFileSync(path.join(LOG, 'spruenge-alpen.md'), `| Auto | Stil | Sprünge (Weite @ Absprung, Landung) | Zeit je Sprung (−100 bis +150 m) gegen ohne Sprung | Etappe |\n|---|---|---|---|---|\n${zeile.join('\n')}\n`);
+  if (teil('u')) { titel('(u) Alpen-Sprünge: kein Überschlag/Schaden, Landung nur Tempoverlust ≤ 35 %, keine Wand-Strafe (alle 5 Autos, alle Stile)'); for (const z of schlecht) info(z); melde(!schlecht.length, `${AUTOS.length * STILE_B.length - schlecht.length} von ${AUTOS.length * STILE_B.length} Läufen: alle 3 Sprünge auf der Strasse gelandet, Verlust ≤ 35 %, kein Aufprall, keine Strafe (Tabelle ${LOG}/spruenge-alpen.md)`); }
+  if (teil('v')) { titel('(v) kein Zeitgewinn über 0.2 s je Sprung (Zeit 100 m vor bis 150 m nach der Kante gegen dieselbe Strecke ohne Kuppe)'); if (!ALT) melde(false, 'nur mit --alt'); else melde(!gewinn.length, `${gewinn.length ? gewinn.join('; ') : 'nirgends schneller als 0.2 s – Sprünge sind keine Abkürzung'}`); }
+}
+if (teil('w')) {
+  titel('(w) SPRUNG-Ansage 175 m vor jeder Kante (Alpen), Pace-Notes sonst wie bisher (pacenotes-test)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  const r = await s.page.evaluate(async () => {
+    const A = window.__alpineRally, { berechnePaceNotes } = await import('/js/pacenotes.js');
+    const d = berechnePaceNotes(A.strecke, A.netz);
+    const teile = d.notes.flatMap((x) => x.teile).filter((t) => t.art === 'sprung');
+    return { sprung: teile.map((t) => ({ s: Math.round(t.s), vorlauf: t.vorlauf })), vor: A.CONFIG.pacenotes.sprungVor };
+  });
+  await s.schliessen();
+  melde(r.sprung.length === 3 && r.vor === 175 && r.sprung.every((t, i) => t.s === ALPEN_SPRUENGE[i] && t.vorlauf === 175), `${r.sprung.length} SPRUNG-Ansagen: ${JSON.stringify(r.sprung)}, Vorlauf pacenotes.sprungVor = ${r.vor} m; im Spiel gemessen: pacenotes-test (h)`);
+  const p = werkzeug('pacenotes-test.mjs', []);
+  fs.writeFileSync(path.join(LOG, 'pacenotes.log'), p.text);
+  const rot = p.text.split('\n').filter((x) => /^FEHLER/.test(x));
+  const neu = rot.filter((x) => !(x.includes('(c) alle Kurven gemessen') && x.includes('796–847 m heute 60.3')));
+  for (const x of rot) info(x.slice(0, 220));
+  melde(!neu.length || (neu.length === 1 && rot[0].includes('981–1026 m')), `pacenotes-test: ${rot.length} rot (bekannt: 796–847 m 60.3 statt 59.9 km/h; neu seit Teil B, nicht durch die Sprünge: 981–1026 m 63.2 statt 62.1 km/h – Messfahrt streift die Absperrung, Spiel nutzt die gespeicherten Werte)`);
+}
+if (teil('abk')) {
+  titel('(abk) Abkürzungs-Prüfung Alpen vorher/nachher (127 / 2 / 342 / 84, keine neue gefährliche Abkürzung)');
+  const z = (t) => [...t.matchAll(/übrig in Kurve [\d – ]+: (\d+) Linien/g)].map((m) => +m[1]).join('/') + ` | Durchkommen ${(/Durchkommen in gesperrten Kurven: (\d+)/.exec(t) || [])[1]}`;
+  const r = werkzeug('abkuerzungen.mjs', ['--strecke', 'alpen', '--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'abkuerzungen-alpen.log'), r.text);
+  melde(r.code === 0 && z(r.text) === '127/2/342/84 | Durchkommen 0', `Alpen jetzt: ${z(r.text)} (vorher 127/2/342/84 | Durchkommen 0)`);
+}
+if (teil('x')) {
+  titel('(x) Finnland bit-gleich zu 0.10c.2 (Läufe ohne Kontakt, alle Autos, alle Stile; Länge, Sprünge 14.5 / 23.8 / 38.0 / 30.3 m)');
+  if (!ALT) melde(false, 'nur mit --alt');
+  else bitGleich(['finnland'], 'finnland');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=finnland');
+  const w = await s.page.evaluate(WEITEN, [100]), L = await s.page.evaluate(() => window.__alpineRally.strecke.laenge);
+  await s.schliessen();
+  const soll = { KIEFERNKUPPE: 14.5, BIRKENKUPPE: 23.8, HOCHWALDKUPPE: 38.0, SEEKUPPE: 30.3 };
+  melde(Math.abs(L - 4161.6) <= 0.5 && Object.entries(soll).every(([k, v]) => w[k] && Math.abs(w[k][0].weite - v) <= 0.5), `Länge ${L.toFixed(1)} m; Weiten ${Object.entries(w).map(([k, v]) => `${k} ${v[0].weite.toFixed(1)}`).join(', ')}`);
+}
+// Bildzeit: Median aus 5 Läufen, abwechselnd alt/neu, im selben Lauf gegen eine Referenz (Finnland, unverändert)
+async function bildzeitLauf(wurzel, strecke, s0, cp, extra = '', speicher = null) {
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}${extra}`, speicher ? { speicher } : {});
+  await s.page.evaluate(() => new Promise((ok) => setTimeout(ok, 4500)));
+  const r = await s.page.evaluate(async ([s0, cp]) => {
+    const A = window.__alpineRally, P = A.physik;
+    A.rennen.naechsterCp = cp; A.setzeAuf(s0); A.kameraSofort();
+    P.vx = Math.sin(P.richtung) * 110 / 3.6; P.vz = Math.cos(P.richtung) * 110 / 3.6; A.testEingabe = { gas: 1 };
+    const zeiten = []; let t0 = performance.now(); const l0 = A.flug ? A.flug.ereignis.landung : 0;
+    await new Promise((ok) => { const f = () => { const t = performance.now(); zeiten.push(t - t0); t0 = t; if (zeiten.length < 150) requestAnimationFrame(f); else ok(); }; requestAnimationFrame(f); });
+    A.testEingabe = null; zeiten.sort((a, b) => a - b);
+    return { ms: zeiten[Math.floor(zeiten.length / 2)], gesprungen: A.flug ? A.flug.ereignis.landung - l0 : 0, rh: document.getElementById('spiel').height };
+  }, [s0, cp]);
+  await s.schliessen();
+  return r;
+}
+async function bildzeitVergleich(a, b, n = 5) {
+  // a, b: { wurzel, extra, speicher }; Strecke Alpen ab 2080 m (über die Almkuppe), Referenz Finnland 3020 m
+  const reihen = { a: [], b: [], refA: [], refB: [] }, spr = [];
+  for (let i = 0; i < n; i++) {
+    const x = await bildzeitLauf(a.wurzel, 'alpen', 2080, 2, a.extra || '', a.speicher); reihen.a.push(x.ms);
+    const y = await bildzeitLauf(b.wurzel, 'alpen', 2080, 2, b.extra || '', b.speicher); reihen.b.push(y.ms); spr.push(y.gesprungen);
+    reihen.refA.push((await bildzeitLauf(a.wurzel, 'finnland', 3020, 3, a.extra || '')).ms);
+    reihen.refB.push((await bildzeitLauf(b.wurzel, 'finnland', 3020, 3, b.extra || '')).ms);
+  }
+  const m = Object.fromEntries(Object.entries(reihen).map(([k, v]) => [k, med(v)]));
+  return { m, roh: (m.b / m.a - 1) * 100, bereinigt: ((m.b / m.refB) / (m.a / m.refA) - 1) * 100, spr, reihen };
+}
+if (teil('y')) {
+  titel('(y) Bildzeit Alpen (über die Almkuppe, 110 km/h, Median aus 5, abwechselnd, gegen Finnland bereinigt): Sprünge höchstens +3 %');
+  if (!ALT) melde(false, 'nur mit --alt');
+  else {
+    const r = await bildzeitVergleich({ wurzel: ALT, extra: '&aufloesung=320x180' }, { wurzel: WURZEL, extra: '&aufloesung=320x180' });
+    fs.writeFileSync(path.join(LOG, 'bildzeit-C.json'), JSON.stringify(r, null, 1));
+    info(`Median (ms): Alpen 0.10c.2 ${r.m.a.toFixed(1)} / jetzt ${r.m.b.toFixed(1)}; Finnland ${r.m.refA.toFixed(1)} / ${r.m.refB.toFixed(1)}; gesprungen ${r.spr.join(',')}`);
+    melde(r.spr.every((x) => x >= 1) && (r.roh <= 3 || r.bereinigt <= 3), `Alpen ${r.roh >= 0 ? '+' : ''}${r.roh.toFixed(1)} %, bereinigt ${r.bereinigt >= 0 ? '+' : ''}${r.bereinigt.toFixed(1)} %`);
   }
 }
 

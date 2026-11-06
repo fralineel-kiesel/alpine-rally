@@ -1,18 +1,13 @@
 # M10d – Arbeitsstand (höchstens 15 Zeilen)
 
-Ziel: Schaltton-Fix, Wums lauter, Wand-Strafe härter, Alpen mit 3 Sprüngen, Schatten, Deko. Version 0.10d. Tests: `tools/m10d-test.mjs`.
-Referenzen: 0.10c.2 = b14cecc, vor dem Schaltton-Fehler = 017fb8f (je `git worktree add`).
-
-- **A erledigt:** Ursache `js/main.js` (M10c Teil C, 9c1c555): Kommentar „(M10c: frei drehend in der Luft)“ schluckte
-  `tonZ.zielGang`/`tonZ.schaltet`. Sonst keine auskommentierten Code-Zeilen in den M10c-Diffs. Schaltton-Pegel = vor dem Fehler
-  (Δ 0.00 dB, 5 Autos, hoch/runter, beide Strecken). Wächter: (a) Ereignisse = Gangwechsel (rt4 Alpen 56 = 56, kaputt 0),
-  (b) `tools/kommentar-waechter.mjs` (2 begründete Ausnahmen in musikstueck.js), (c) Pegel > −24 dB.
-- **Wums** (`sprung.ton.wumms.laenger`): Bass-Abfall ×2.2 (hart) / ×2.6 (sehr hart), Ducking −9 dB 0.3 s; Rauschen ×1.0
-  (mehr Rauschen hob die Spitze über −1 dBFS). Im Mix: hart +6.7 → +8.8 dB, sehr hart +10.3 → +12.2 dB, sauber +2.0 gleich;
-  Spitze ≤ −1.05 dBFS; Ducking gemessen −8.4 dB.
-- **B erledigt:** Dauer 3–6 s, Stapeln 9 s, Phase 1 0.03 für 1 s, 0.15 s glatt auf 0.10, smoothstep auf 1; Drehzahl 30 %
-  für 1 s, 5 Aussetzer. Kurven-Vergleich inkl. Gas-Rampe: 0.10c.2 4 Kurven offen (alte Messlatte 7) → **0**; kleinster Wert
-  Alpen +0.62 s, Finnland +0.28 s. Kein Nachziehen nötig. Streifer 10/15 km/h +1.15/+1.25 s, frontal +3.46 s (150 m).
-  37 Läufe ohne Kontakt bit-gleich, keine revision. Lanza 073 Finnland digital: 1 Strafe 4.0 s, 3:10.38 → 3:13.18.
-  M10c.2-Tests a, b, d, e, g umgestellt (Kommentar „M10d“); (g) prüft jetzt „frei“, Gleichheit vom selben Zustand in m10d (m).
-- Nächster: C (Alpen-Sprünge).
+Ziel: Schaltton, Wums, Wand-Strafe, Alpen mit Sprüngen/Schatten/Deko, 0.10d. Tests `tools/m10d-test.mjs`. Referenzen: 0.10c.2 = b14cecc, vor Schaltton-Fehler = 017fb8f.
+- **A:** Ursache `main.js` (9c1c555, Kommentar am Zeilenende schluckte `tonZ.zielGang/schaltet`), sonst nichts. Pegel = vorher (Δ 0.00 dB).
+  Wächter (a) Ereignisse = Gangwechsel, (b) `tools/kommentar-waechter.mjs`, (c) Pegel. Wums im Mix: hart +6.7 → +8.8, sehr hart
+  +10.3 → +12.2 dB (Bass-Abfall länger, Ducking −9 dB), Spitze ≤ −1.05 dBFS; mehr Rauschen hob die Spitze → Faktor 1.0.
+- **B:** Dauer 3–6 s, Stapeln 9 s, 0.03 für 1 s, glatt 0.10 → 1. Kurven-Vergleich inkl. Gas-Rampe: 4 (alt 7) → **0** offen,
+  kein Nachziehen. Streifer +1.2 s, frontal +3.5 s. 37 Läufe ohne Kontakt bit-gleich. l073 Finnland digital 1 Strafe 4.0 s.
+- **C:** Sprünge STARTKUPPE 180 / ALMKUPPE 2140 / ZIELKUPPE 3440 m: 16.6 / 19.6 / 22.5 m bei 100 km/h (alle Autos ±0.6),
+  190 km/h bis 58 / 68 / 75 m, Verlust ≤ 28 %. Alpen `revision: 2`. 25 Läufe: keine Aufpralle/Strafen, kein Zeitgewinn.
+  Abkürzungen unverändert. pacenotes-test: SPRUNG-Ausnahme ergänzt; 981 m 63.2 statt 62.1 km/h kommt aus Teil B.
+  rt4 „flott“ fliegt 450 m nach der Startkuppe bei 655 m ab (bekannte Empfindlichkeit, M8f). Bildzeit +2.3 % (Grenze 3 %).
+- **D (in Arbeit):** `schatten` Alpen: Sonne 125°, Länge 0.5, Dunkelheit 0.45, Steine/Felsbrocken (Entwurf im Scratchpad).
