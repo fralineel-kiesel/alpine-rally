@@ -1,5 +1,5 @@
 // Kunst-Schatten (M10b.2): Die Engine rechnet keine echten Schatten, darum liegen flache Schatten-Flecken auf dem Boden.
-// Nur auf Strecken mit dem Feld "schatten" (Streckendatei, sonst nichts: Alpen unverändert). Pixel-Look: drei Dunkelstufen
+// Nur auf Strecken mit dem Feld "schatten" (Streckendatei; seit M10d auch die Alpen, kurze Mittagsschatten). Pixel-Look: drei Dunkelstufen
 // mit Raster-Kanten statt weicher Verläufe, Farbe = kühle Abdunklung des Untergrunds (CONFIG.schatten.farbe, multipliziert,
 // nie schwarz übermalt), knapp über dem Boden.
 //  - Auto: ein Fleck unter dem Auto, in Sonnenrichtung verlängert, dreht mit dem Auto. Er liegt immer auf der BODENHÖHE

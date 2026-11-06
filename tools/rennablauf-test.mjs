@@ -248,7 +248,8 @@ console.log('(c) Testfahrer bis ins Ziel, Zielbildschirm');
   pruefe(r.zeilen.some((z) => z.text === 'ERSTE ZEIT') && !r.erg.neueBest, 'erster Lauf: "ERSTE ZEIT", keine "neue Bestzeit"');
   // der Testweg (ohne Countdown) ändert die Testfahrer-Zeit nicht
   // (M8c: mit --auto die Zeit des Testfahrers mit diesem Auto, siehe STAND.md M8c; Standard prototyp: 2:31.92 wie bisher)
-  const sollZeit = { prototyp: '2:31.92', rt4: '2:31.22', delto: '2:31.22', escorta: '2:34.68' }[AUTO] || '2:31.92';
+  // M10d: Alpen mit drei Sprüngen (revision 2) – neue Referenz (vorher prototyp 2:31.92, rt4/delto 2:31.22, escorta 2:34.68)
+  const sollZeit = { prototyp: '2:32.40', rt4: '2:37.66', delto: '2:31.93', escorta: '2:34.16' }[AUTO] || '2:32.40';
   pruefe(fmt(r.fahrt.zeit) === sollZeit, `Testfahrer-Zeit "flott" unverändert ${sollZeit}`, fmt(r.fahrt.zeit));
   // Esc tut im Zielbildschirm nichts
   await A(p, () => { window.__alpineRally.anhalten = false; });
@@ -553,7 +554,8 @@ console.log('(i) BESTZEITEN-Seite und Löschen, (k) altes Format');
   const spiel = await lade();
   const p = spiel.page;
   // (k) altes Format aus M5a (nur zeit, cps, datum), absichtlich unsortiert
-  const alt = { passstrasse: [{ zeit: 170.25, cps: [35, 97, 150], datum: '2026-10-01T10:00:00.000Z' }, { zeit: 165.5, cps: [34, 95, 147], datum: '2026-10-02T10:00:00.000Z' }] };
+  // M10d: Alpen mit revision 2 – Bestzeiten stehen unter 'passstrasse-r2' (geprüft wird weiter das alte Format aus M5a)
+  const alt = { 'passstrasse-r2': [{ zeit: 170.25, cps: [35, 97, 150], datum: '2026-10-01T10:00:00.000Z' }, { zeit: 165.5, cps: [34, 95, 147], datum: '2026-10-02T10:00:00.000Z' }] };
   await A(p, (alt) => localStorage.setItem('alpineRally.bestzeiten', JSON.stringify(alt)), alt);
   await taste(p, 'Enter');
   await zu(p, 3); await taste(p, 'Enter');
@@ -595,7 +597,7 @@ console.log('(i) BESTZEITEN-Seite und Löschen, (k) altes Format');
   await zu(p, await nrVon(p, 'einst.bestzeitenLoeschen')); await taste(p, 'Enter');
   const frage = { s: await seite(p), w: await wahl(p), text: await A(p, () => window.__alpineRally.menue.seite.eintraege[0].inhalt()) };
   await taste(p, 'Enter'); // NEIN
-  const nachNein = { s: await seite(p), n: (await A(p, () => window.__T.speicher())).passstrasse.length };
+  const nachNein = { s: await seite(p), n: (await A(p, () => window.__T.speicher()))['passstrasse-r2'].length };
   await taste(p, 'Enter'); // wieder BESTZEITEN LÖSCHEN
   await zu(p, 2); await taste(p, 'Enter'); // JA
   await bilderAbwarten(p, 3);

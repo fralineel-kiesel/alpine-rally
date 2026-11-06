@@ -139,11 +139,13 @@ const erg = await spiel.page.evaluate(async () => {
         const w = N.stummelAbfrage(START, A.physik.x, A.physik.z, 80, {});
         // danach wie ein Spieler: vorwärts weg; geht das nicht (Nase am Band), erst ein Stück rückwärts mit Gegenlenken
         const p0 = { x: A.physik.x, z: A.physik.z };
-        for (let k = 0; k < 360; k++) A.physikSchritt(A.SCHRITT, { ...LEER, gas: 1 });
+        // M10d: nach dem Anprall an die Absperrung läuft die Wand-Strafe (bis 9 s, erste Sekunde Motor fast aus) – vorwärts so
+        // lange Gas, bis sie vorbei ist (höchstens 9 s), statt fest 3 s. Geprüft wird weiter: steckt nicht fest
+        for (let k = 0; k < 360 || (A.wand.strafeRest > 0 && k < 1080); k++) A.physikSchritt(A.SCHRITT, { ...LEER, gas: 1 });
         let raus = Math.hypot(A.physik.x - p0.x, A.physik.z - p0.z);
         if (raus < 3) {
           for (let k = 0; k < 240; k++) A.physikSchritt(A.SCHRITT, { ...LEER, bremse: 1, lenkung: -lenk || 1 });
-          for (let k = 0; k < 360; k++) A.physikSchritt(A.SCHRITT, { ...LEER, gas: 1, lenkung: lenk || -1 });
+          for (let k = 0; k < 360 || (A.wand.strafeRest > 0 && k < 1080); k++) A.physikSchritt(A.SCHRITT, { ...LEER, gas: 1, lenkung: lenk || -1 }); // (M10d: wie oben)
           raus = Math.hypot(A.physik.x - p0.x, A.physik.z - p0.z);
         }
         ergebnis.rueckwaerts.push({ lat, winkel, lenk, durch, u: w ? Math.round(w.s * 10) / 10 : null, raus: Math.round(raus * 10) / 10 });

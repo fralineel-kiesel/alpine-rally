@@ -6,7 +6,8 @@
 //   Dauerkontakt: solange es an der Wand schleift, zusätzlich ein fester Anteil pro Sekunde.
 //   Keine Ausrichtung: die Wand dreht das Auto nicht in ihre Richtung (nur aus der Wand geschoben).
 // M10c.2: Motor-Strafe („Motor sammelt sich“): ein spürbarer Treffer (ab WAND_STRAFE_MIN km/h Tempoverlust im Kontakt)
-// drosselt den Motor für 2 bis 4 s (25 % → 100 %, glatt), Schalten dauert länger, Drehzahl sackt kurz ein, MOTOR-Leuchte.
+// drosselt den Motor (M10d: 3 bis 6 s, erste Sekunde fast aus, dann glatt zurück), Schalten dauert länger, Drehzahl sackt
+// ein, MOTOR-Leuchte.
 // Werte: config.js, Blöcke kollision.wand und kollision.wandStrafe. Diese Datei kennt kein Three.js.
 
 import { CONFIG } from './config.js';
@@ -55,11 +56,17 @@ export function baueWand() {
     strafen: 0,          // Zähler: Treffer mit Strafe seit dem Laden (Ton: Aussetzer bei jedem neuen; Werkzeuge, Tests)
     strafeLetzte: null,  // letzter Treffer mit Strafe { verlust (km/h), dauer, frontal } (Werkzeuge, Tests)
 
-    // Anteil der Motorleistung (0.25 direkt nach dem Treffer, glatt zurück auf 1 am Ende der Strafe)
+    // Anteil der Motorleistung. M10d, zwei Phasen: Phase 1 „Motor fast aus“ (WAND_STRAFE_STALL_FAKTOR für
+    // WAND_STRAFE_STALL_ZEIT s), dann glatt in stallUebergang s auf WAND_STRAFE_START_FAKTOR, Phase 2 glatt (smoothstep)
+    // auf 1 bis zum Ende der Strafe. Ein neuer Treffer beginnt wieder mit Phase 1 (strafeGesamt = Restzeit, vergangen = 0)
     leistung() {
       if (w.strafeRest <= 0) return 1;
-      const T = CONFIG.kollision.wandStrafe, p = 1 - w.strafeRest / w.strafeGesamt;
-      return T.leistungStart + (1 - T.leistungStart) * p * p * (3 - 2 * p);
+      const T = CONFIG.kollision.wandStrafe, t = w.strafeGesamt - w.strafeRest; // so lange läuft die Strafe schon
+      const t1 = T.WAND_STRAFE_STALL_ZEIT, t2 = t1 + T.stallUebergang, f0 = T.WAND_STRAFE_STALL_FAKTOR, f1 = T.WAND_STRAFE_START_FAKTOR;
+      if (t < t1) return f0;
+      if (t < t2) { const p = (t - t1) / T.stallUebergang; return f0 + (f1 - f0) * p * p * (3 - 2 * p); }
+      const p = Math.min(1, (t - t2) / Math.max(1e-6, w.strafeGesamt - t2));
+      return f1 + (1 - f1) * p * p * (3 - 2 * p);
     },
     // Anteil der angezeigten Drehzahl (Tacho, Ton): sackt beim Treffer kurz auf drehzahlTief und kommt glatt zurück
     drehzahlFaktor() {

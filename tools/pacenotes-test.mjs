@@ -32,6 +32,8 @@ import path from 'node:path';
 import { starteSpiel, WURZEL, AUTO } from './spiel-browser.mjs';
 import { pathToFileURL } from 'node:url';
 import { schreibeErzeugt, STRECKEN_DATEI } from './strecke-erzeugt.mjs';
+// M10d: fester Vorlauf der SPRUNG-Ansage (js/config.js paceNotes.sprungVor; config.js lädt nur im Browser, darum aus dem Text)
+const SPRUNG_VOR = +(/sprungVor:\s*([\d.]+)/.exec(fs.readFileSync(path.join(WURZEL, 'js/config.js'), 'utf8')) || [0, 175])[1];
 
 const schreiben = process.argv.includes('--schreiben');
 const PRUEF_WINKEL = 25;    // (a): Richtungsänderung (Grad) auf ...
@@ -213,7 +215,7 @@ console.log(`Zusammengefasst ("UND"): ${d.notes.filter((n) => n.text.includes(' 
     && alsZahl(c.kmh) !== alsZahl(k.kmh) && !(Math.abs(alsZahl(c.kmh) - alsZahl(k.kmh)) <= 0.11)));
   if (REFERENZ) {
     melde(ok, `(c) Stufen monoton zum gemessenen Kurventempo${fall ? ` – nicht bei ${fall}` : ''}`);
-    melde(nichtGemessen === 0 && !veraltet.length, `(c) alle Kurven gemessen und erzeugt.kurvenTempo aktuell (ohne Messung: ${nichtGemessen}, abweichend: ${veraltet.length})`);
+    melde(nichtGemessen === 0 && !veraltet.length, `(c) alle Kurven gemessen und erzeugt.kurvenTempo aktuell (ohne Messung: ${nichtGemessen}, abweichend: ${veraltet.length}${veraltet.length ? ` – ${veraltet.map((k) => `${Math.round(k.von)}–${Math.round(k.bis)} m heute ${Math.round(k.kmh * 10) / 10} km/h`).join(', ')}` : ''})`);
   } else {
     // M8a (j): anderes Profil gegen die Referenz – Asphalt höchstens ±5 %, Schotter/Wiesenweg bis +10 %; Stufe nur melden
     const KURVEN_TEMPO = (await import(`${pathToFileURL(STRECKEN_DATEI()).href}?${Date.now()}`)).default.erzeugt.kurvenTempo;
@@ -308,7 +310,8 @@ melde(d.json === d.json2 && d.json === dNeu.json, `(f) Liste bei zwei Läufen gl
           // eigenes Zeitfenster (Gruppe): die hinterste Kachel der Gruppe muss im Fenster sein
           const g = gruppeVon[i];
           const fenster = Math.min(P.vorlaufMax, Math.max(P.vorlaufMin, v * P.vorlaufZeit)) * (g.bremsen ? P.vorlaufBremsen : 1);
-          if (g.anker - s > fenster + 1) zuFrueh.push(`${notes[kk.note].text} ${Math.round(g.anker - s)} m (Fenster ${Math.round(fenster)} m)`);
+          // M10d: SPRUNG hat einen festen Vorlauf (paceNotes.sprungVor, wie in Finnland seit M10c), kein Zeitfenster
+          if (kk.art !== 'sprung' && g.anker - s > fenster + 1) zuFrueh.push(`${notes[kk.note].text} ${Math.round(g.anker - s)} m (Fenster ${Math.round(fenster)} m)`);
         }
         if (jetzt[i] && weg[i]) flackern.push(`${notes[kk.note].text} bei ${Math.round(s)} m wieder da`);
         // nicht mehr ganz sichtbar (blendet aus), obwohl die Kurvenmitte noch nicht erreicht ist
@@ -368,7 +371,8 @@ melde(d.json === d.json2 && d.json === dNeu.json, `(f) Liste bei zwei Läufen gl
   melde(r.nachZiel === 0, `(g) nach dem Ziel keine Kachel (${r.nachZiel} nach 1 s)`);
   melde(r.ersteNachNeustart === 0, `(g) nach dem Neustart wieder von vorn (erste Kachel: ${r.ersteNachNeustart})`);
   // (h)
-  const grenze = (k) => (k.bremsen ? 200 : 160);
+  // M10d: SPRUNG (Alpen seit M10d) kommt fest paceNotes.sprungVor (175 m) vor der Kante, wie in Finnland
+  const grenze = (k) => (k.art === 'sprung' ? SPRUNG_VOR : k.bremsen ? 200 : 160);
   const zuWeit = r.kacheln.filter((k) => k.erst && k.erst.d > grenze(k) + 0.5).map((k) => `${Math.round(k.s)} ${k.art} ${Math.round(k.erst.d)} m`);
   for (const [kmh, ff] of Object.entries(r.festeFahrt)) {
     const max = Math.max(...ff.d.filter((x) => x != null));

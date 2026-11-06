@@ -193,12 +193,15 @@ function nebenwegSperrenZeigen(kamPos) {
 }
 // Leben an der Strecke (M3d): Alphütte und Details am Wiesenweg, Fan-Spots, Unfallautos – sind auch Hindernisse
 const leben = baueLeben(szene, strecke, welt, { pflanzen, rand: strassenrand, kuehe });
-// M10b.2: Kunst-Schatten (nur Strecken mit dem Feld "schatten"): Bäume, Rentiere/Kühe, Zuschauer, Häuser, dazu das Auto
+// M10b.2: Kunst-Schatten (nur Strecken mit dem Feld "schatten", seit M10d auch die Alpen): Bäume, Rentiere/Kühe,
+// Zuschauer, Häuser, dazu das Auto
 const schatten = (() => {
   if (!STRECKE.schatten) return baueSchatten(szene, strecke, welt, [], null);
   const Q = [], bb = CONFIG.schatten.baumBreite;
   for (const t of pflanzen.tannen.concat(pflanzen.laubbaeume)) Q.push({ x: t.x, z: t.z, h: t.h, b: t.b * bb });
   for (const k of kuehe.kuehe) Q.push({ x: k.x, z: k.z, h: 1.3 * (k.groesse || 1), b: 1.1 * (k.groesse || 1) });
+  // M10d: Steine und Felsbrocken (nur wenn die Strecke es will: Alpen; Finnland unverändert)
+  if (STRECKE.schatten.steine) for (const t of pflanzen.steine.concat(pflanzen.felsbrocken || [])) Q.push({ x: t.x, z: t.z, h: t.h, b: t.b * CONFIG.schatten.steinBreite });
   for (const f of leben.figuren || []) Q.push({ x: f.x, z: f.z, h: 1.7 * (f.groesse || 1), b: 0.7 });
   const W = CONFIG.leben && CONFIG.leben.wiesenweg;
   for (const hs of (W && W.haeuser) || []) {
@@ -948,8 +951,8 @@ function anzeigeDrehzahl() {
 // M10c.2: Ladedruck für Anzeige und Ton: bricht mit der Motor-Strafe ein und baut sich mit der Leistung wieder auf
 function anzeigeLadedruck() {
   if (wand.strafeRest <= 0) return getriebe.ladedruck;
-  const a = CONFIG.kollision.wandStrafe.leistungStart;
-  return getriebe.ladedruck * ((wand.leistung() - a) / (1 - a));
+  const a = CONFIG.kollision.wandStrafe.WAND_STRAFE_STALL_FAKTOR; // M10d: in Phase 1 (Motor fast aus) kein Ladedruck
+  return getriebe.ladedruck * Math.max(0, (wand.leistung() - a) / (1 - a));
 }
 
 // Kamera nicht in die Felswand, nicht ins Stroh an Start/Ziel, nicht unter das Gelände
@@ -1494,7 +1497,8 @@ function tonBild(dt) {
   tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm (nur Musik)
   tonZ.musikModus = MUSIK_MODUS[ablauf.zustand] || 'aus';
   tonZ.hx = kam.pos.x; tonZ.hz = kam.pos.z; tonZ.hyaw = kam.yaw; tonZ.s = rennen.letztesS;
-  tonZ.drehzahl = anzeigeDrehzahl(); tonZ.inLuft = flug.inLuft; tonZ.gang = getriebe.gang; // (M10c: frei drehend in der Luft) tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
+  tonZ.drehzahl = anzeigeDrehzahl(); tonZ.inLuft = flug.inLuft; tonZ.gang = getriebe.gang; // inLuft: Motor dreht in der Luft frei (M10c)
+  tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet; // Schaltton (M10d: war seit M10c versehentlich auskommentiert)
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
   tonZ.motorStrafen = wand.strafen; // M10c.2: neuer Wand-Treffer mit Motor-Strafe = Aussetzer im Motor-Ton

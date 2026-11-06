@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10c.2';
+export const VERSION = '0.10d';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -216,7 +216,7 @@ export const CONFIG = {
     },
   },
 
-  // --- Kunst-Schatten (M10b.2, js/schatten.js): nur auf Strecken mit dem Feld "schatten" (Sonne, Länge, Dunkelheit) ---
+  // --- Kunst-Schatten (M10b.2, js/schatten.js): nur auf Strecken mit dem Feld "schatten" (Sonne, Länge, Dunkelheit; seit M10d Finnland und Alpen) ---
   schatten: {
     max: 60,                   // höchstens so viele Flecken (Bäume, Häuser, Tiere, Zuschauer) pro Bild, die nächsten vor dem Auto
                                // (M10b.2: 240 kostete im Test-Browser +51 % Bildzeit, 60 nichts Messbares)
@@ -226,6 +226,7 @@ export const CONFIG = {
     stufen: [0.62, 0.42, 0.22], // Deckkraft der drei Dunkelstufen (innen -> aussen), mal "dunkelheit" der Strecke
     heben: 0.05,               // so hoch (m) über dem Boden (kein Flackern)
     baumBreite: 0.5,           // Fleck eines Baums: so viel mal die Breite des Baum-Bilds
+    steinBreite: 0.8,          // M10d: Fleck eines Steins / Felsbrockens: so viel mal seine Breite (nur Strecken mit schatten.steine)
     maxLaenge: 14,             // kein Fleck ist länger als so viele Meter (hohe Fichten in der Abendsonne)
     auto: { laenge: 4.2, breite: 1.8, hoehe: 1.3 }, // Fleck unter dem Auto (m)
   },
@@ -950,18 +951,22 @@ export const CONFIG = {
       an: true,                // false = keine Motor-Strafe (wie 0.10c.1)
       WAND_STRAFE_MIN: 10,     // ab so viel Tempoverlust (km/h) im Kontakt gibt es eine Strafe; ein kleiner Streifer nicht
       hartAb: 50,              // ab so viel Verlust (km/h) ist es ein harter Treffer (volle Dauer)
-      dauerMin: 2.0,           // Dauer (s) beim leichten Treffer (WAND_STRAFE_MIN) ...
-      dauerMax: 4.0,           // ... beim harten (hartAb oder frontal), dazwischen gleichmässig
+      dauerMin: 3.0,           // Dauer (s) beim leichten Treffer (WAND_STRAFE_MIN) ... (M10d: 3 statt 2)
+      dauerMax: 6.0,           // ... beim harten (hartAb oder frontal), dazwischen gleichmässig (M10d: 6 statt 4)
       frontalAb: 80,           // Einschlag ab so viel Grad (90 = frontal) = immer volle Dauer
-      gesamtMax: 6.0,          // mehrere Treffer: Restzeit + neue Dauer, aber höchstens so viel (s)
+      gesamtMax: 9.0,          // mehrere Treffer: Restzeit + neue Dauer, aber höchstens so viel (s) (M10d: 9 statt 6)
       trennung: 0.3,           // so lange (s) ohne Kontakt, dann ist der nächste Kontakt ein neuer Treffer
-      leistungStart: 0.25,     // Motorleistung direkt nach dem Treffer (Anteil), steigt glatt auf 1 bis zum Ende
+      // M10d (Lino: „lohnt sich immer noch“): zwei Phasen. Phase 1 „Motor fast aus“, dann glatt zurück
+      WAND_STRAFE_STALL_ZEIT: 1.0,   // Phase 1: so lange (s) nach dem Treffer ist der Motor fast aus ...
+      WAND_STRAFE_STALL_FAKTOR: 0.03, // ... mit so viel Leistung (Anteil)
+      stallUebergang: 0.15,    // danach in so vielen Sekunden glatt (ohne Sprung) auf ...
+      WAND_STRAFE_START_FAKTOR: 0.10, // ... diesen Anteil; Phase 2: glatt (smoothstep) auf 1 bis zum Ende der Strafe
       schaltFaktor: 2,         // Gangwechsel dauern während der Strafe so viel mal länger
-      drehzahlTief: 0.4,       // Drehzahl (Tacho, Ton) sackt beim Treffer auf diesen Anteil ...
-      drehzahlZeit: 0.3,       // ... für so lange (s) ...
+      drehzahlTief: 0.3,       // Drehzahl (Tacho, Ton) sackt beim Treffer auf diesen Anteil (M10d: 0.3 statt 0.4) ...
+      drehzahlZeit: 1.0,       // ... für so lange (s, M10d: die ganze Phase 1) ...
       drehzahlZurueck: 0.4,    // ... und kommt in so vielen Sekunden glatt zurück
       // Motor-Ton: Aussetzer (Zünd-Unterbrechungen mit Knall) direkt nach dem Treffer
-      aussetzer: [0.05, 0.2, 0.38], // Zeitpunkte (s nach dem Treffer)
+      aussetzer: [0.05, 0.27, 0.5, 0.72, 0.92], // Zeitpunkte (s nach dem Treffer; M10d: 5 Aussetzer über die ganze Phase 1)
       aussetzerDauer: 0.07,    // so lange (s) setzt der Motor jeweils aus
       aussetzerTief: 0.12,     // Motor-Pegel während eines Aussetzers (Anteil)
       aussetzerKnall: 0.5,     // Pegel des Knalls bei jedem Aussetzer (Anteil eines normalen Popps)
@@ -1218,6 +1223,11 @@ export const CONFIG = {
         klackPegel: 0.5, klackTempo: 1.3,                                  // Federungs-Klack (helle Transiente)
         aua: { pegel: 1.0, von: 60, bis: 32, zeit: 0.18, dauer: 0.6, wann: 0.05, anstieg: 0.02 }, // sehr hart: tiefes „Aua“
         duckDb: -6, duckDauer: 0.25, duckZurueck: 0.05,                    // Motor kurz leiser (dB, s, Zeitkonstante zurück)
+        // M10d (Lino: „etwas lauter“, nur hart und sehr hart): mehr Lautheit bei gleicher Spitze – der Bass klingt länger aus
+        // (Faktor auf bass.dauer), der Motor tritt tiefer zurück. rauschen/rauschPegel: Faktoren auf den Rausch-Stoss (gemessen:
+        // mehr Rauschen hebt die Spitze über −1 dBFS, darum 1.0). sauber = wie 0.10c.2
+        laenger: { hart: { bass: 2.2, rauschen: 1.0, rauschPegel: 1.0, duckDb: -9, duckDauer: 0.3 },
+                   sehrHart: { bass: 2.6, rauschen: 1.0, rauschPegel: 1.0, duckDb: -9, duckDauer: 0.3 } },
       },
       jubelAbstand: 40,        // Zuschauer so nah (Meter vor/nach dem Fan-Spot) jubeln beim Abheben
     },

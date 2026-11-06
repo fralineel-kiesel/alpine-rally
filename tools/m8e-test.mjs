@@ -18,6 +18,7 @@
 //   (j) Stabilität: alle bisherigen Tests (nur mit --lang), Bildzeit, Ladezeit (mit --alt)
 // Ich habe den Ton nicht gehört und das Fahrgefühl nicht gespürt: das sind Messungen.
 
+// (M10d: Alpen mit revision 2 – Schlüssel der Bestzeiten 'passstrasse-r2')
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -494,7 +495,7 @@ if (teil('e')) {
       const B = await import('/js/bestzeiten.js');
       const liste = ['rt4', 'delto', 'escorta', 'l073', 'imprexa', 'prototyp', null].map((auto, i) => ({ zeit: 150 + i * 1.37, datum: '2026-10-21T10:00:00Z', auto }));
       localStorage.removeItem(A.CONFIG.menue.bestzeitenNameV2); // (M8h: alte Daten = nur der alte Schlüssel, werden übernommen)
-      localStorage.setItem(A.CONFIG.menue.bestzeitenName, JSON.stringify({ passstrasse: liste }));
+      localStorage.setItem(A.CONFIG.menue.bestzeitenName, JSON.stringify({ 'passstrasse-r2': liste }));
       const best = [];
       for (const sprache of ['de', 'en']) {
         T.setzeSprache(sprache);

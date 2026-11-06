@@ -10,6 +10,7 @@ export default {
   format: 1,
   id: 'alpen',
   etappe: 'passstrasse',      // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
+  revision: 2,                 // M10d: drei Sprünge (neues Höhenprofil) – Bestzeiten der Alpen beginnen neu ('passstrasse-r2')
   name: { de: 'PASSSTRASSE', en: 'MOUNTAIN PASS' },
   beschreibung: { de: 'ASPHALT, SCHOTTER, WIESENWEG', en: 'TARMAC, GRAVEL, MEADOW TRACK' },
   untergrundInfo: { de: 'ASPHALT UND SCHOTTER', en: 'TARMAC AND GRAVEL' }, // Kurzinfo für die Etappenwahl (seit M10b)
@@ -249,6 +250,18 @@ export default {
   },
   checkpoints: [900, 1870, 2880], // wo die Tore stehen (Meter ab Strassenanfang)
 
+  // M10d: drei Sprünge auf natürlichen Kuppen (Format wie Finnland, docs/strecken-format.md „Sprünge“). Der Verlauf der
+  // Strasse bleibt, nur das Höhenprofil bekommt Kuppen. Orte: schnelle Geraden (Testfahrer ≥ 90 km/h), Landezone 60 m frei,
+  // nicht vor den Kehren, je ein Drittel der Strecke. Richtwerte bei 100 km/h: 1 klein 15–18 m, 2 dazwischen, 3 mittel 20–25 m.
+  sprung: [
+    { s: 180, name: 'STARTKUPPE', von: 95, bis: 300, kante: 180, landeVon: 184, landeBis: 215, staerke: 1.0,
+      form: { anlauf: 40, rampe: 0.061, kante: 2, gefaelle: 0.061, auslauf: 30, weich: 15 } },
+    { s: 2140, name: 'ALMKUPPE', von: 2050, bis: 2265, kante: 2140, landeVon: 2145, landeBis: 2180, staerke: 1.0,
+      form: { anlauf: 35, rampe: 0.08, kante: 3, gefaelle: 0.08, auslauf: 30, weich: 15 } },
+    { s: 3440, name: 'ZIELKUPPE', von: 3340, bis: 3560, kante: 3440, landeVon: 3445, landeBis: 3485, staerke: 1.0,
+      form: { anlauf: 40, rampe: 0.08, kante: 3, gefaelle: 0.08, auslauf: 30, weich: 15 } },
+  ],
+
   // --- Nebenwege: Untergrund-Abschnitte (sonst Asphalt). Die Etappe biegt von der Hauptstrasse auf einen Nebenweg ab
   //     und mündet später wieder ein; die Hauptstrasse läuft an beiden Stellen als Stummel weiter (abgesperrt, Ende
   //     versteckt). Stützpunkte des Nebenwegs: oben in "punkte" (gerechnet mit tools/nebenweg-bogen.mjs).
@@ -379,6 +392,11 @@ export default {
   },
 
   // --- Natur: Baumdichte, Büsche, Kühe, Waldrand-Gruppen ---
+  // M10d: Kunst-Schatten (js/schatten.js, wie Finnland) im Stil „Mittagssonne“: Sonne aus Südosten wie das Licht
+  // (umgebung.licht.sonneRichtung, ca. 125°, 56° hoch), kurze Flecken direkt am Fuss (Länge = Höhe mal laenge; 0.7 passt
+  // zum Sonnenstand, Finnland 2.2), eher kontrastarm (dunkelheit; 0.45 war kaum zu sehen). steine: auch Steine und Felsbrocken an der Strasse werfen einen Fleck
+  schatten: { sonne: 125, laenge: 0.7, dunkelheit: 0.6, steine: true },
+
   natur: {
     sprites: {
       tannenProKm: 4200,         // Versuche pro km Strecke (wie viele stehen bleiben, hängt vom Abschnitt ab)

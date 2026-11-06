@@ -91,15 +91,19 @@ if (process.argv.includes('--kurven-vergleich')) {
       // Gegenprobe (nur Bericht): kontaktfrei, aber ab einem Punkt in der Kehre (30/50/70 % des Bogens) Gas höchstens wie die
       // Leistungskurve der Strafe – zeigt, ob sanftes Herausbeschleunigen (statt Vollgas, durchdrehende Räder) schon die Zeit
       // bringt, die „wand“ gewinnt (dann bringt die Wand nichts, sondern nur die Drossel als Traktionshilfe)
+      // M10d: diese „sanfte Gas-Rampe aus der Kehre“ zählt jetzt als kontaktfreie Variante mit (Lino/Auftrag M10d): auch mit
+      // Stil mittel (bremst früher) und mit einer schnelleren Rampe (2 s). Ziel: „wand“ nirgends schneller als die beste davon
       const dosiert = [];
-      for (const st of ['flott', 'digital']) for (const anteil of [0.3, 0.5, 0.7]) {
-        const x = { stil: `${st} sanft ab ${Math.round(anteil * 100)} %`, ...lauf(voll[st].vZiel, a, b, v0, 1, c.von + (c.bis - c.von) * anteil) };
+      for (const st of ['flott', 'digital', 'mittel']) for (const anteil of [0.3, 0.5, 0.7]) for (const dauer of [2, 3.5]) {
+        const x = { stil: `${st} sanft ab ${Math.round(anteil * 100)} % in ${dauer} s`, ...lauf(voll[st].vZiel, a, b, v0, 1, c.von + (c.bis - c.von) * anteil, dauer) };
         if (x.fertig && !x.kontakt && !x.baum) dosiert.push(x);
       }
       const bestDosiert = dosiert.reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
+      const bestAlle = [best, bestDosiert].filter(Boolean).reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
       const vw = f.bauePfad(A, Array.from(S.px), Array.from(S.pz), { ...f.PROFILE.wand, nurBereich: [c.von - 10, c.bis + 10] }).vZiel;
       const w = lauf(vw, a, b, v0);
-      out.push({ von: c.von, bis: c.bis, winkel: Math.round(c.winkel), kehre: c.kehre, kmh: Math.round(v0 * 3.6), ohne, best, ersatz, bestDosiert, wand: w, diff: best && w.fertig ? w.zeit - best.zeit : null });
+      out.push({ von: c.von, bis: c.bis, winkel: Math.round(c.winkel), kehre: c.kehre, kmh: Math.round(v0 * 3.6), ohne, best, ersatz, bestDosiert, bestAlle, wand: w,
+        diffOhneRampe: best && w.fertig ? w.zeit - best.zeit : null, diff: bestAlle && w.fertig ? w.zeit - bestAlle.zeit : null });
     }
     return out;
   });
