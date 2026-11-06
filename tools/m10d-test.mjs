@@ -5,6 +5,9 @@
 //   Teil A – Schaltton und Wums: (a) Schalt-Ereignisse = Gangwechsel (Testfahrer, alle Autos, beide Strecken),
 //       (a2) Klang/Pegel wie vor dem Fehler (±1 dB), (a3) Stille (Menü-Demo, Countdown, Pause), (b) Quelltext-Wächter,
 //       (c) Schaltton-Pegel über Mindestschwelle, (d) Wums-Pegel, (e) Spitze ≤ −1 dBFS, (f) Pause, LAUTSTÄRKE, Ducking
+//   Teil B – Wand-Strafe: (g) Dauer, (h) Faktor-Verlauf, (i) Stapeln, (j) Schalten, (k) Zurücksetzen, (l) Landung/Wasser,
+//       (m) kein Steckenbleiben, (n) MOTOR-Leuchte, (o) Kurven-Vergleich, (p) ohne Kontakt bit-gleich, (q) umgestellte Tests,
+//       (zeit) Zeitverlust Streifer/Frontal (Bericht)
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -260,6 +263,246 @@ if (['d', 'e', 'f'].some(teil)) {
     melde(Math.abs(db(r.halb / r.voll) + 6.02) < 0.3 && Math.abs(db(r.halbH / r.vollH) + 6.02) < 0.3, `LAUTSTÄRKE 50 %: sehr hart ${db(r.halb / r.voll).toFixed(2)} dB, hart ${db(r.halbH / r.vollH).toFixed(2)} dB gegen 100 %`);
     melde(r.pause < r.vor * 0.5, `Pause: keine Landung, Pegel ${db(r.pause / r.vor).toFixed(1)} dB gegen Leerlauf vorher`);
     await s.schliessen();
+  }
+}
+
+// ===================================================================== Teil B: Wand-Strafe deutlich stärker
+const STILE_B = ['vorsichtig', 'mittel', 'flott', 'digital', 'wand'];
+const fmtZ = (t) => (t == null ? 'NICHT IM ZIEL' : `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`);
+// Formel aus dem Auftrag (km/h -> s), unabhängig vom Spiel: 3 s + (Verlust − 10) / 40 · 3 s, 3 bis 6 s
+const dauerFormel = (v) => (v < 10 ? 0 : Math.max(3, Math.min(6, 3 + ((v - 10) / 40) * 3)));
+// Treffer mit genau so viel Tempoverlust (km/h) einspielen (wie wand.ende nach einem Kontakt-Schritt)
+const TREFFER = (kmh, frontal = false) => {
+  const W = window.__alpineRally.wand;
+  W.uhr += 1;
+  W.schrittVerlust = kmh / 3.6; W.strafe = frontal; W.letzter = frontal ? { winkel: 90, vorher: 0, nachher: 0, strafe: 0.75 } : W.letzter;
+  W.treffer(); W.strafe = false;
+  return { rest: W.strafeRest, leistung: W.leistung() };
+};
+const FREI = ({ s = 2200, kmh = 0 } = {}) => {
+  const A = window.__alpineRally; A.anhalten = true; A.setzeAuf(s);
+  A.physik.vx = Math.sin(A.physik.richtung) * kmh / 3.6; A.physik.vz = Math.cos(A.physik.richtung) * kmh / 3.6; A.physik.vVor = kmh / 3.6;
+};
+// Fahren mit einfachem Nachlenken auf die Strassenmitte (15 m voraus); bisMeter: bis so viele Meter gefahren sind
+const FOLGE = ({ sek = 20, gas = 1, bisMeter = Infinity }) => {
+  const A = window.__alpineRally, P = A.physik, S = A.strecke, q = {};
+  const s0 = S.abfrage(P.x, P.z, q).s; let t = 0;
+  for (; t < sek; t += A.SCHRITT) {
+    S.abfrage(P.x, P.z, q); if (q.s - s0 >= bisMeter) break;
+    const z = S.punktBei(Math.min(S.laenge - 1, q.s + 15));
+    const f = Math.atan2(Math.sin(Math.atan2(z.x - P.x, z.z - P.z) - P.richtung), Math.cos(Math.atan2(z.x - P.x, z.z - P.z) - P.richtung));
+    A.physikSchritt(A.SCHRITT, { gas, bremse: 0, lenkung: Math.max(-1, Math.min(1, -f * 2.5)), handbremse: false, reset: false });
+  }
+  return t;
+};
+const schritt = (A, e = {}) => A.physikSchritt(A.SCHRITT, { gas: 0, bremse: 0, lenkung: 0, handbremse: false, reset: false, ...e });
+if (['g', 'h', 'i', 'm', 'zeit'].some(teil)) {
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus');
+  await s.page.evaluate(`window.__TREFFER = ${TREFFER}; window.__FREI = ${FREI}; window.__FOLGE = ${FOLGE}; window.__schritt = ${schritt};`);
+  if (teil('g')) {
+    titel('(g) Strafe-Dauer = 3 s + (Verlust − 10) / 40 · 3 s, 3 bis 6 s (±0.05 s), gemessen bis die Strafe aus ist');
+    for (const v of [9, 10, 20, 30, 50, 80]) {
+      const r = await s.page.evaluate((v) => {
+        const A = window.__alpineRally; window.__FREI({});
+        const t0 = window.__TREFFER(v); let t = 0;
+        while (A.wand.strafeRest > 0 && t < 12) { window.__schritt(A, { bremse: 1 }); t += A.SCHRITT; }
+        return { rest0: t0.rest, t };
+      }, v);
+      const soll = dauerFormel(v);
+      melde(Math.abs(r.t - soll) <= 0.05 && Math.abs(r.rest0 - soll) <= 0.05, `${v} km/h Verlust: Strafe ${r.rest0.toFixed(3)} s, gemessen ${r.t.toFixed(3)} s (Formel ${soll.toFixed(2)} s${v < 10 ? ', keine Strafe' : ''})`);
+    }
+  }
+  if (teil('h')) {
+    titel('(h) Antriebsfaktor: 0.03 für 1.0 s, glatter Übergang (0.15 s) auf 0.10, glatt auf 1.0, kein Sprung am Ende');
+    const r = await s.page.evaluate(() => {
+      const A = window.__alpineRally; window.__FREI({});
+      window.__TREFFER(30); // 4.5 s
+      const l = [A.wand.leistung()], t = [0];
+      while (A.wand.strafeRest > 0) { window.__schritt(A, { bremse: 1 }); l.push(A.wand.leistung()); t.push(t[t.length - 1] + A.SCHRITT); }
+      let maxD = 0, maxD2 = 0, steigt = true;
+      for (let i = 1; i < l.length; i++) { maxD = Math.max(maxD, Math.abs(l[i] - l[i - 1])); if (l[i] < l[i - 1] - 1e-12) steigt = false; if (i > 1) maxD2 = Math.max(maxD2, Math.abs(l[i] - 2 * l[i - 1] + l[i - 2])); }
+      const bei = (x) => l[t.findIndex((y) => y >= x - 1e-9)];
+      const stall = l.filter((_, i) => t[i] < 1.0 - 1e-9);
+      return { stallMin: Math.min(...stall), stallMax: Math.max(...stall), n: stall.length, bei1: bei(1.0), bei115: bei(1.15), bei2: bei(2.0), bei3: bei(3.0), vorEnde: l[l.length - 2], ende: l[l.length - 1], maxD, maxD2, steigt };
+    });
+    melde(r.stallMin === 0.03 && r.stallMax === 0.03, `Phase 1: ${r.n} Schritte (1.0 s) genau ${r.stallMin}`);
+    melde(Math.abs(r.bei115 - 0.10) < 0.002 && r.bei1 >= 0.03 && r.maxD < 0.007 && r.steigt, `Übergang: bei 1.0 s ${r.bei1.toFixed(4)}, bei 1.15 s ${r.bei115.toFixed(4)}; grösster Schritt ${r.maxD.toFixed(4)} (kein Sprung), steigt nur`);
+    melde(r.vorEnde > 0.9999 && r.ende === 1 && r.maxD2 < 0.002, `Phase 2: bei 2 s ${r.bei2.toFixed(3)}, bei 3 s ${r.bei3.toFixed(3)}, letzter Schritt ${r.vorEnde.toFixed(6)} → ${r.ende} (glatt, grösste Krümmung ${r.maxD2.toExponential(1)})`);
+    const a = await s.page.evaluate(() => {
+      const A = window.__alpineRally, Gt = A.getriebe, G = { gas: 1 };
+      const orig = Gt.schritt; let vor = 0, obj = null;
+      Gt.schritt = function (...x) { obj = orig.apply(this, x); vor = obj.beschl; return obj; };
+      const l = [];
+      try {
+        window.__FREI({ kmh: 40 }); for (let i = 0; i < 30; i++) window.__schritt(A, G);
+        window.__TREFFER(50);
+        for (let i = 0; i < 900 && A.wand.strafeRest > 0; i++) { window.__schritt(A, G); if (vor > 0) l.push([obj.beschl / vor, A.wand.leistung()]); }
+        return { erst: l[0][0], abw: Math.max(...l.map(([q, w]) => Math.abs(q - w))), n: l.length };
+      } finally { Gt.schritt = orig; }
+    });
+    melde(Math.abs(a.erst - 0.03) < 1e-9 && a.abw < 1e-9, `Antriebskraft im ersten Schritt ×${a.erst.toFixed(3)}, danach immer genau der Leistungsfaktor (Abweichung ${a.abw.toExponential(1)}, ${a.n} Schritte)`);
+    const d = await s.page.evaluate(() => {
+      const A = window.__alpineRally, out = [];
+      window.__FREI({ kmh: 60 }); for (let i = 0; i < 30; i++) window.__schritt(A, { gas: 1 });
+      const normal = A.getriebe.drehzahl;
+      window.__TREFFER(30);
+      for (let i = 0; i < 240; i++) { window.__schritt(A, { gas: 1 }); if (i % 24 === 0) out.push(+(A.wand.drehzahlFaktor()).toFixed(3)); }
+      return { normal: Math.round(normal), out };
+    });
+    melde(d.out[0] === 0.3 && d.out[4] === 0.3, `Drehzahl (Tacho/Ton): Faktor alle 0.2 s ${d.out.join(' / ')} (Phase 1 auf 30 %, dann glatt zurück)`);
+  }
+  if (teil('i')) {
+    titel('(i) Stapeln: Restzeit + neue Dauer, höchstens 9 s; ein neuer Treffer startet Phase 1 neu (sofort 0.03)');
+    const r = await s.page.evaluate(() => {
+      const A = window.__alpineRally; window.__FREI({});
+      const e1 = window.__TREFFER(30);                                     // 4.5 s
+      for (let i = 0; i < 240; i++) window.__schritt(A, { bremse: 1 });    // 2 s später: Phase 2
+      const vor = { rest: A.wand.strafeRest, leistung: A.wand.leistung() };
+      const e2 = window.__TREFFER(20);                                     // + 3.75 s
+      for (let i = 0; i < 60; i++) window.__schritt(A, { bremse: 1 });
+      const phase1 = A.wand.leistung();
+      const e3 = window.__TREFFER(50), e4 = window.__TREFFER(80);
+      return { e1, vor, e2, phase1, e3, e4 };
+    });
+    melde(Math.abs(r.e1.rest - 4.5) < 1e-6 && Math.abs(r.vor.rest - 2.5) < 0.01 && Math.abs(r.e2.rest - 6.25) < 0.01 && r.e3.rest === 9 && r.e4.rest === 9,
+      `30 km/h: 4.5 s; nach 2 s Rest ${r.vor.rest.toFixed(2)} s; + 20 km/h (3.75 s) → ${r.e2.rest.toFixed(2)} s; + 50 km/h → ${r.e3.rest} s; + 80 km/h → ${r.e4.rest} s (Obergrenze 9 s)`);
+    melde(r.vor.leistung > 0.1 && r.e2.leistung === 0.03 && r.phase1 === 0.03 && r.e3.leistung === 0.03, `Leistung vor dem 2. Treffer ${r.vor.leistung.toFixed(3)}, direkt danach ${r.e2.leistung}, 0.5 s danach ${r.phase1} (Phase 1 neu)`);
+  }
+  if (teil('m')) {
+    titel('(m) kein Steckenbleiben: Rückwärts (über die Bremse) mit Strafe gleich wie ohne, auch am steilsten Hang (bergauf und bergab)');
+    const r = await s.page.evaluate(() => {
+      const A = window.__alpineRally, P = A.physik, S = A.strecke;
+      let best = 0, sH = 0;
+      for (let i = 200; i < S.anzahl - 200; i += 2) { const st = Math.abs(S.py[i + 3] - S.py[i - 3]) / Math.hypot(S.px[i + 3] - S.px[i - 3], S.pz[i + 3] - S.pz[i - 3]); if (st > best) { best = st; sH = i; } }
+      const sHang = S.abfrage(S.px[sH], S.pz[sH], {}).s;
+      const out = { steigung: best };
+      for (const [name, s0, dreh] of [['eben', 2200, 0], ['Hang, Nase bergauf', sHang, 0], ['Hang, Nase bergab', sHang, Math.PI]]) {
+        const w = {};
+        for (const mit of [false, true]) {
+          window.__FREI({ s: s0 }); if (dreh) P.reset(P.x, P.z, P.richtung + dreh);
+          for (let i = 0; i < 60; i++) window.__schritt(A, { bremse: 1 });  // stehen lassen
+          if (mit) window.__TREFFER(80, true);
+          const x0 = P.x, z0 = P.z;
+          for (let t = 0; t < 2.5; t += A.SCHRITT) window.__schritt(A, { bremse: 1 });
+          w[mit ? 'mit' : 'ohne'] = Math.hypot(P.x - x0, P.z - z0); w.rest = A.wand.strafeRest;
+          A.wand.strafeAus();
+        }
+        out[name] = w;
+      }
+      return out;
+    });
+    for (const k of ['eben', 'Hang, Nase bergauf', 'Hang, Nase bergab']) melde(r[k].mit > 1 && Math.abs(r[k].mit - r[k].ohne) < 1e-6, `${k}${k === 'eben' ? '' : ` (Steigung ${(r.steigung * 100).toFixed(1)} %)`}: 2.5 s rückwärts mit Strafe (0.03, noch ${r[k].rest.toFixed(1)} s) ${r[k].mit.toFixed(2)} m, ohne ${r[k].ohne.toFixed(2)} m`);
+  }
+  if (teil('zeit')) {
+    titel('(zeit) Zeitverlust: kleiner Streifer (10–15 km/h Verlust) und harter Frontaltreffer (nur Bericht; 150 m Vollgas danach)');
+    const r = await s.page.evaluate(() => {
+      const A = window.__alpineRally, out = {};
+      for (const [name, kmh, verlust, frontal] of [['Streifer 10 km/h', 70, 10, false], ['Streifer 15 km/h', 70, 15, false], ['Frontal (aus 60 km/h auf 15)', 15, 45, true]]) {
+        const t = [];
+        for (const mit of [false, true]) {
+          window.__FREI({ s: 2150, kmh }); A.wand.strafeAus();
+          if (mit) window.__TREFFER(verlust, frontal);
+          t.push(window.__FOLGE({ bisMeter: 150 }));
+        }
+        out[name] = { ohne: t[0], mit: t[1], dauer: Math.min(6, Math.max(3, 3 + (verlust - 10) / 40 * 3)) };
+        A.wand.strafeAus();
+      }
+      return out;
+    });
+    for (const [k, v] of Object.entries(r)) info(`${k}: 150 m in ${v.ohne.toFixed(2)} s ohne, ${v.mit.toFixed(2)} s mit Strafe → +${(v.mit - v.ohne).toFixed(2)} s`);
+    fs.writeFileSync(path.join(LOG, 'zeitverlust.json'), JSON.stringify(r, null, 1));
+    melde(true, 'gemessen');
+  }
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
+  await s.schliessen();
+}
+// (j) Schalten, (k) Zurücksetzen/Pause/Wasser, (l) Landung ohne Strafe, (n) MOTOR-Leuchte, (q) umgestellte M10c.2-Tests:
+// die Prüfungen aus tools/m10c2-test.mjs (Werte dort auf M10d umgestellt, jede Änderung mit Kommentar „M10d“)
+const m10c2Teil = (buchstaben, titelText) => {
+  titel(titelText);
+  const r = werkzeug('m10c2-test.mjs', ['--nur', buchstaben]);
+  fs.writeFileSync(path.join(LOG, `m10c2-${buchstaben.replace(/,/g, '')}.log`), r.text);
+  const z = r.text.split('\n').filter((x) => /^(  ok  |FEHLER) /.test(x));
+  for (const x of z.filter((x) => x.startsWith('FEHLER'))) info(x.slice(0, 200));
+  melde(r.code === 0 && z.length > 0, `tools/m10c2-test.mjs --nur ${buchstaben}: ${z.filter((x) => x.startsWith('  ok')).length} ok, ${z.filter((x) => x.startsWith('FEHLER')).length} rot`);
+};
+if (teil('j')) m10c2Teil('c', '(j) Gangwechsel doppelt so lang nur während der Strafe (m10c2 (c))');
+if (teil('k')) m10c2Teil('e', '(k) R, Wasser, Neustart, Menü beenden die Strafe, Pause friert ein, Countdown ohne Strafe (m10c2 (e), auf 9 s umgestellt)');
+if (teil('l')) m10c2Teil('f', '(l) Sprung-Landung (Finnland, 110/140 km/h) und Wasser lösen keine Strafe aus (m10c2 (f), (e)); Alpen-Sprünge: Teil C (u)');
+if (teil('n')) m10c2Teil('h', '(n) MOTOR-Leuchte nur während der Strafe, blinkt, überlappt nichts (3 Auflösungen, HUD-Grössen, englisch, Touch quer/hoch emuliert)');
+if (teil('q')) m10c2Teil('a,b,d,g,m', '(q) M10c.2-Tests Dauer (a), Faktor (b), Stapeln (d), Steckenbleiben (g), Aussetzer-Ton (m) auf die neuen Werte umgestellt');
+
+// (o) Kurven-Vergleich: „wand“ gegen die beste kontaktfreie Fahrt inkl. sanfter Gas-Rampe (Toleranz 0.1 s)
+function kurvenVergleich(strecke, auto, wurzel, stand) {
+  const datei = path.join(LOG, `kv-${stand}-${strecke}-${auto}.json`);
+  if (!fs.existsSync(datei)) {
+    const a = [path.join(wurzel, 'strecken', `${strecke}.js`), '--auto', auto, '--kurven-vergleich', '--json', datei];
+    if (wurzel !== WURZEL) a.push('--wurzel', wurzel);
+    const r = werkzeug('strecke-abfahren.mjs', a);
+    if (!fs.existsSync(datei)) { console.log(r.text.slice(-1500)); throw new Error(`kurven-vergleich ${strecke} ${auto} ${stand}`); }
+  }
+  return JSON.parse(fs.readFileSync(datei, 'utf8'));
+}
+if (teil('o')) {
+  titel('(o) Kurven-Vergleich (alle Kehren/180-Grad-Kurven, 100 m davor bis 100 m danach): „wand“ nirgends > 0.1 s schneller als die beste kontaktfreie Fahrt inkl. Gas-Rampe');
+  const d = (x) => (x == null ? '–' : `${x >= 0 ? '+' : ''}${x.toFixed(2)} s`);
+  const tab = ['| Strecke | Auto | Kurve (m) | beste kontaktfrei (inkl. Rampe) | wand 0.10c.2 | wand 0.10d (Strafen, Strafzeit) |', '|---|---|---|---|---|---|'];
+  const schneller = [], schnellerAlt = [], ohneVgl = [];
+  for (const strecke of STRECKEN) for (const id of AUTOS) {
+    const n = kurvenVergleich(strecke, id, WURZEL, 'neu'), a = ALT ? kurvenVergleich(strecke, id, ALT, 'alt') : null;
+    n.forEach((k, i) => {
+      const ka = a && a[i];
+      tab.push(`| ${strecke} | ${id} | ${k.von}–${k.bis} | ${k.bestAlle ? `${k.bestAlle.stil} ${k.bestAlle.zeit.toFixed(2)} s` : '–'} | ${ka ? `${d(ka.diff)}${ka.wand.kontakt ? '' : ' (ohne Kontakt)'}` : '–'} | ${d(k.diff)}${k.wand.kontakt ? '' : ' (ohne Kontakt)'}${k.wand.strafen ? ` (${k.wand.strafen}, ${k.wand.strafeZeit.toFixed(1)} s)` : ''} |`);
+      if (k.diff == null) ohneVgl.push(`${strecke}/${id} ${k.von} m`);
+      else if (k.diff < -0.1 && k.wand.kontakt) schneller.push(`${strecke}/${id} ${k.von} m ${d(k.diff)}`);
+      if (ka && ka.diff != null && ka.diff < -0.1 && ka.wand.kontakt) schnellerAlt.push(`${strecke}/${id} ${ka.von} m ${d(ka.diff)}`);
+    });
+  }
+  fs.writeFileSync(path.join(LOG, 'kurven-vergleich.md'), `${tab.join('\n')}\n`);
+  for (const z of tab.filter((z) => z.includes('| alpen |'))) info(z);
+  if (ALT) info(`0.10c.2 (gleiche Messlatte inkl. Rampe): „wand“ schneller in ${schnellerAlt.length} Kurven${schnellerAlt.length ? `: ${schnellerAlt.join('; ')}` : ''}`);
+  melde(schneller.length === 0, `0.10d: „wand“ mit Wandkontakt in ${schneller.length} Kurven mehr als 0.1 s schneller${schneller.length ? `: ${schneller.join('; ')}` : ''}${ohneVgl.length ? ` (ohne Vergleich: ${ohneVgl.join(', ')})` : ''}`);
+}
+
+// (p) Läufe ohne Hindernis-Kontakt bit-gleich wie 0.10c.2 (Testfahrer, beide Strecken, alle Autos, alle Stile)
+function testfahrerLauf(strecke, auto, wurzel = WURZEL, stand = 'neu', extra = []) {
+  const datei = path.join(LOG, `fahrt-${stand}-${strecke}-${auto}${extra.length ? `-${extra.join('')}` : ''}.json`);
+  if (fs.existsSync(datei) && !(stand === 'neu' && process.env.M10D_NEU)) return JSON.parse(fs.readFileSync(datei, 'utf8'));
+  const a = [path.join(wurzel, 'strecken', `${strecke}.js`), '--auto', auto, '--stil', STILE_B.join(','), '--json', datei, '--aus', path.join(LOG, `fahrt-${stand}-${strecke}-${auto}.txt`)];
+  if (wurzel !== WURZEL) a.push('--wurzel', wurzel);
+  a.push(...extra);
+  const r = werkzeug('strecke-abfahren.mjs', a);
+  if (!fs.existsSync(datei)) { console.log(r.text.slice(-2000)); throw new Error(`strecke-abfahren ${strecke} ${auto} ${stand}`); }
+  return JSON.parse(fs.readFileSync(datei, 'utf8'));
+}
+const relativ = (l) => { const a = (l || []).find((x) => x >= 0); return (l || []).map((x) => (x < 0 ? x : +(x - a).toFixed(9))); };
+// streckenListe: welche Strecken bit-gleich sein müssen (ab Teil C nur noch Finnland)
+function bitGleich(streckenListe, bezeichnung) {
+  const ohne = [], anders = [], mit = [], rev = [];
+  const tab = ['| Strecke | Auto | Stil | 0.10c.2: Zeit (Wand, Aufpr.) | jetzt: Zeit (Wand, Aufpr., Motor-Strafen, Strafzeit) |', '|---|---|---|---|---|'];
+  for (const strecke of streckenListe) for (const id of AUTOS) {
+    const n = testfahrerLauf(strecke, id), a = testfahrerLauf(strecke, id, ALT, 'alt');
+    for (const stil of STILE_B) {
+      const x = n.stile.find((q) => q.stil === stil), y = a.stile.find((q) => q.stil === stil), k = `${strecke}/${id}/${stil}`;
+      tab.push(`| ${strecke} | ${id} | ${stil} | ${fmtZ(y.zeit)} (${y.wandKontakte.length}, ${y.aufpralle}) | ${fmtZ(x.zeit)} (${x.wandKontakte.length}, ${x.aufpralle}, ${x.motorStrafen.length}, ${x.strafeZeit.toFixed(1)} s) |`);
+      if (stil === 'mittel' && Math.abs((x.zeit ?? 999) - (y.zeit ?? 999)) > 1) rev.push(`${k} ${fmtZ(y.zeit)} → ${fmtZ(x.zeit)}`);
+      if (y.wandKontakte.length > 0 || x.wandKontakte.length > 0) { mit.push(`${k} ${fmtZ(y.zeit)} → ${fmtZ(x.zeit)} (Wand ${y.wandKontakte.length} → ${x.wandKontakte.length}, Motor-Strafen ${y.motorStrafen.length} → ${x.motorStrafen.length}, Strafzeit ${y.strafeZeit.toFixed(1)} → ${x.strafeZeit.toFixed(1)} s)`); continue; }
+      ohne.push(k);
+      if (x.zeit !== y.zeit || x.aufpralle !== y.aufpralle || JSON.stringify(x.cps) !== JSON.stringify(y.cps) || JSON.stringify(x.aufprallListe) !== JSON.stringify(y.aufprallListe) || JSON.stringify(relativ(x.zeitBei)) !== JSON.stringify(relativ(y.zeitBei))) anders.push(k);
+    }
+  }
+  fs.writeFileSync(path.join(LOG, `testfahrer-${bezeichnung}.md`), `${tab.join('\n')}\n\nmit Kontakt:\n${mit.join('\n')}\n`);
+  melde(anders.length === 0 && ohne.length > 0, `${ohne.length} Läufe ohne Wandkontakt (${streckenListe.join(', ')}): Zeit, Zwischenzeiten, Zeit je 10 m, Aufpralle gleich wie 0.10c.2${anders.length ? ` – ANDERS: ${anders.join('; ')}` : ''}`);
+  info(`${mit.length} Läufe mit Wandkontakt (dürfen sich ändern): ${LOG}/testfahrer-${bezeichnung}.md`);
+  for (const m of mit.filter((m) => m.startsWith('finnland/l073/digital'))) info(`Lanza 073 Finnland digital: ${m}`);
+  return { rev, mit };
+}
+if (teil('p')) {
+  titel('(p) Läufe ohne Hindernis-Kontakt bit-gleich wie 0.10c.2 (Alpen und Finnland, alle Autos, alle Stile)');
+  if (!ALT) melde(false, 'nur mit --alt');
+  else {
+    const { rev } = bitGleich(STRECKEN, 'teilB');
+    melde(rev.length === 0, `Stil „mittel“: keine Verschiebung über 1 s (sonst neue revision)${rev.length ? `: ${rev.join('; ')}` : ''}`);
   }
 }
 

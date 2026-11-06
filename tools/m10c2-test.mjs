@@ -119,7 +119,8 @@ const AN_DIE_WAND = ({ art, winkel, kmh, gas = 0, bremse = 0, sek = 1.5, lenk = 
 // ===================================================================== Teil A: Wand-Strafe „Motor sammelt sich“
 const pz = (x) => `${(x * 100).toFixed(0)} %`;
 // Formel aus dem Auftrag (km/h -> s), unabhängig vom Spiel gerechnet
-const dauerFormel = (v) => (v < 10 ? 0 : Math.max(2, Math.min(4, 2 + ((v - 10) / 40) * 2)));
+// M10d: auf die neuen Werte umgestellt (Lino 2026-11-06: Strafe deutlich stärker): 3 s + (Verlust − 10) / 40 · 3 s, 3 bis 6 s
+const dauerFormel = (v) => (v < 10 ? 0 : Math.max(3, Math.min(6, 3 + ((v - 10) / 40) * 3)));
 // Treffer mit genau so viel Tempoverlust (km/h) einspielen (wie wand.ende nach einem Kontakt-Schritt)
 const TREFFER = (kmh, frontal = false) => {
   const W = window.__alpineRally.wand;
@@ -140,7 +141,7 @@ if (['a', 'b', 'c', 'd', 'e', 'g'].some(teil)) {
   const ev = (f, a) => s.page.evaluate(`(${f})(${JSON.stringify(a ?? null)})`);
   await s.page.evaluate(`window.__TREFFER = ${TREFFER}; window.__FREI = ${FREI}; window.__WAND = ${AN_DIE_WAND};`);
   if (teil('a')) {
-    console.log('(a) Strafe-Dauer gegen die Formel 2 s + (Verlust − 10) / 40 · 2 s, 2 bis 4 s (±0.05 s), gemessen bis die Strafe aus ist');
+    console.log('(a) Strafe-Dauer gegen die Formel (seit M10d: 3 s + (Verlust − 10) / 40 · 3 s, 3 bis 6 s) (±0.05 s), gemessen bis die Strafe aus ist');
     for (const v of [9, 10, 20, 30, 50, 80]) {
       const r = await s.page.evaluate((v) => {
         const A = window.__alpineRally; window.__FREI({ s: 2200 });
@@ -158,12 +159,12 @@ if (['a', 'b', 'c', 'd', 'e', 'g'].some(teil)) {
         const o = window.__WAND({ art, winkel, kmh, gas: 1, sek: 0.6, abstand: 0.3 });
         return { ...o, neu: A.wand.strafen - n0, l: A.wand.strafeLetzte, rest: A.wand.strafeRest };
       }, [art, winkel, kmh]);
-      const soll = r.l ? (r.l.frontal ? 4 : dauerFormel(r.l.verlust)) : 0;
+      const soll = r.l ? (r.l.frontal ? 6 : dauerFormel(r.l.verlust)) : 0; // (M10d: frontal 6 statt 4 s)
       melde(r.neu >= 1 && Math.abs(r.l.dauer - soll) <= 0.05, `${art} ${winkel}° mit ${kmh} km/h: ${r.neu} Treffer mit Strafe, Verlust ${r.l ? r.l.verlust.toFixed(1) : '–'} km/h${r.l && r.l.frontal ? ' (frontal)' : ''}, Dauer ${r.l ? r.l.dauer.toFixed(2) : '–'} s (Soll ${soll.toFixed(2)} s)`);
     }
   }
   if (teil('b')) {
-    console.log('(b) Antriebsfaktor 0.25 → 1.0 glatt (smoothstep), Ende ohne Sprung');
+    console.log('(b) Antriebsfaktor (seit M10d: 0.03 für 1 s, dann glatt über 0.10 auf 1.0), Ende ohne Sprung');
     const r = await s.page.evaluate(() => {
       const A = window.__alpineRally; window.__FREI({ s: 2200 });
       window.__TREFFER(30);
@@ -172,7 +173,8 @@ if (['a', 'b', 'c', 'd', 'e', 'g'].some(teil)) {
       let maxD = 0, steigt = true; for (let i = 1; i < l.length; i++) { maxD = Math.max(maxD, Math.abs(l[i] - l[i - 1])); if (l[i] < l[i - 1] - 1e-12) steigt = false; }
       return { start: l[0], vorEnde: l[l.length - 2], ende: l[l.length - 1], maxD, steigt, n: l.length, mitte: l[Math.floor(l.length / 2)] };
     });
-    melde(Math.abs(r.start - 0.25) < 1e-9 && r.steigt && r.maxD < 0.004 && r.vorEnde > 0.9999 && r.ende === 1 && Math.abs(r.mitte - 0.625) < 0.01,
+    // M10d umgestellt: Start 0.03 (Phase 1), grösster Schritt im Übergang 0.03 → 0.10 in 0.15 s (ca. 0.006); Mitte nicht mehr fest
+    melde(Math.abs(r.start - 0.03) < 1e-9 && r.steigt && r.maxD < 0.007 && r.vorEnde > 0.9999 && r.ende === 1,
       `Start ${r.start.toFixed(3)}, Mitte ${r.mitte.toFixed(3)}, letzter Schritt vor Ende ${r.vorEnde.toFixed(6)}, danach ${r.ende}; grösster Schritt ${r.maxD.toFixed(4)} (${r.n} Schritte, steigt nur)`);
     // Wirkung im Antrieb: Antriebskraft aus dem Getriebe vor und nach der Drosselung (main.js), Vollgas 40 km/h
     const a = await s.page.evaluate(() => {
@@ -188,7 +190,8 @@ if (['a', 'b', 'c', 'd', 'e', 'g'].some(teil)) {
         return { normal, erst: l[0][0], abw: Math.max(...l.map(([r, w]) => Math.abs(r - w))), n: l.length };
       } finally { Gt.schritt = orig; }
     });
-    melde(a.normal === 1 && Math.abs(a.erst - 0.25) < 0.01 && a.abw < 1e-9, `Antriebskraft ohne Strafe ×${a.normal}, im ersten Schritt nach dem Treffer ×${a.erst.toFixed(3)}, danach immer genau der Leistungsfaktor (grösste Abweichung ${a.abw.toExponential(1)}, ${a.n} Schritte mit Gas)`);
+    // (M10d: im ersten Schritt 0.03 statt 0.25)
+    melde(a.normal === 1 && Math.abs(a.erst - 0.03) < 0.01 && a.abw < 1e-9, `Antriebskraft ohne Strafe ×${a.normal}, im ersten Schritt nach dem Treffer ×${a.erst.toFixed(3)}, danach immer genau der Leistungsfaktor (grösste Abweichung ${a.abw.toExponential(1)}, ${a.n} Schritte mit Gas)`);
   }
   if (teil('c')) {
     console.log('(c) Gangwechsel: während der Strafe doppelt so lang, sonst gleich (Schaltlicht aus)');
@@ -211,20 +214,21 @@ if (['a', 'b', 'c', 'd', 'e', 'g'].some(teil)) {
     melde(Math.abs(r.normal - r.soll) <= 0.01 && Math.abs(r.strafe - r.soll * r.faktor) <= 0.01, `Hochschalten 1→2: normal ${r.normal.toFixed(3)} s (Getriebe ${r.soll} s), während der Strafe ${r.strafe.toFixed(3)} s (Soll ${(r.soll * r.faktor).toFixed(2)} s)`);
   }
   if (teil('d')) {
-    console.log('(d) Stapeln: zweiter Treffer = Restzeit + neue Dauer, höchstens 6 s; Leistung fällt wieder auf 0.25');
+    console.log('(d) Stapeln: zweiter Treffer = Restzeit + neue Dauer, höchstens 9 s (seit M10d); Leistung fällt wieder auf 0.03');
     const r = await s.page.evaluate(() => {
       const A = window.__alpineRally, B = { gas: 0, bremse: 1, lenkung: 0, handbremse: false, reset: false };
       window.__FREI({ s: 2200 });
-      const e1 = window.__TREFFER(30);                                   // 3 s
-      for (let i = 0; i < 120; i++) A.physikSchritt(A.SCHRITT, B);       // 1 s später: noch 2 s, Leistung gestiegen
+      const e1 = window.__TREFFER(30);                                   // 4.5 s (M10d)
+      for (let i = 0; i < 120; i++) A.physikSchritt(A.SCHRITT, B);       // 1 s später: noch 3.5 s
       const vor = { rest: A.wand.strafeRest, leistung: A.wand.leistung() };
-      const e2 = window.__TREFFER(20);                                   // + 2.5 s = 4.5 s
-      const e3 = window.__TREFFER(50);                                   // + 4 s, höchstens 6 s
+      const e2 = window.__TREFFER(20);                                   // + 3.75 s = 7.25 s (M10d)
+      const e3 = window.__TREFFER(50);                                   // + 6 s, höchstens 9 s
       const e4 = window.__TREFFER(80);
       return { e1, vor, e2, e3, e4 };
     });
-    melde(Math.abs(r.e1.rest - 3) < 0.01 && Math.abs(r.vor.rest - 2) < 0.01 && Math.abs(r.e2.rest - 4.5) < 0.01 && r.e2.leistung === 0.25 && r.e3.rest === 6 && r.e4.rest === 6,
-      `3 s; nach 1 s Rest ${r.vor.rest.toFixed(2)} s (Leistung ${r.vor.leistung.toFixed(2)}); + 20 km/h → ${r.e2.rest.toFixed(2)} s (Leistung ${r.e2.leistung}); + 50 km/h → ${r.e3.rest.toFixed(2)} s; + 80 km/h → ${r.e4.rest.toFixed(2)} s`);
+    // M10d umgestellt: neue Dauer (4.5 / 3.75 s), Obergrenze 9 s, Leistung nach neuem Treffer 0.03
+    melde(Math.abs(r.e1.rest - 4.5) < 0.01 && Math.abs(r.vor.rest - 3.5) < 0.01 && Math.abs(r.e2.rest - 7.25) < 0.01 && r.e2.leistung === 0.03 && r.e3.rest === 9 && r.e4.rest === 9,
+      `4.5 s; nach 1 s Rest ${r.vor.rest.toFixed(2)} s (Leistung ${r.vor.leistung.toFixed(2)}); + 20 km/h → ${r.e2.rest.toFixed(2)} s (Leistung ${r.e2.leistung}); + 50 km/h → ${r.e3.rest.toFixed(2)} s; + 80 km/h → ${r.e4.rest.toFixed(2)} s`);
   }
   if (teil('e')) {
     console.log('(e) Zurücksetzen: R, Neustart, Menü, Countdown beenden die Strafe; Pause friert sie ein (Wasser: Finnland unten)');
@@ -252,8 +256,8 @@ if (['a', 'b', 'c', 'd', 'e', 'g'].some(teil)) {
       window.__TREFFER(80); A.start(); window.__bild(5, 1000 / 60); out.countdown = A.wand.strafeRest; out.zustand = A.rennen.zustand;
       return out;
     });
-    melde(p.vor === 6 && p.inPause === 6 && p.nachWeiter < 6 && p.nachWeiter > 4.9, `Pause: 6 s → nach 4 s Pause ${p.inPause.toFixed(2)} s (eingefroren), 1 s nach Weiter ${p.nachWeiter.toFixed(2)} s`);
-    melde(p.nachR === 0, `Taste R (4 s Wartezeit, dann zurück auf die Strasse): Strafe danach ${p.nachR} s (6 s Strafe, 5 s gewartet: ohne R wären noch ca. 1 s übrig; R-Zähler ${p.rRest})`);
+    melde(p.vor === 9 && p.inPause === 9 && p.nachWeiter < 9 && p.nachWeiter > 7.9, `Pause (M10d: 9 s statt 6 s): 9 s → nach 4 s Pause ${p.inPause.toFixed(2)} s (eingefroren), 1 s nach Weiter ${p.nachWeiter.toFixed(2)} s`);
+    melde(p.nachR === 0, `Taste R (4 s Wartezeit, dann zurück auf die Strasse): Strafe danach ${p.nachR} s (9 s Strafe, 5 s gewartet: ohne R wären noch ca. 4 s übrig; R-Zähler ${p.rRest})`);
     melde(p.nachMenue === 0 && p.countdown === 0, `Hauptmenü: ${p.nachMenue} s; Start mit Countdown (${p.zustand}): ${p.countdown} s`);
     melde(u.fehler.length === 0, `Konsole ohne Fehler (${u.fehler.length})`);
     await u.schliessen();
@@ -277,7 +281,10 @@ if (teil('g')) {
       A.CONFIG.kollision.wandStrafe.an = true;
       return out;
     }, art);
-    melde(r.mit.rest > 1 && r.mit.weg > 1 && !r.mit.kontakt && Math.abs(r.mit.weg - r.ohne.weg) < 0.05, `${art} bei ${r.mit.s0.toFixed(0)} m, 70° mit 40 km/h: Strafe ${r.mit.rest.toFixed(2)} s; 2.5 s rückwärts ${r.mit.weg.toFixed(2)} m (ohne Strafe ${r.ohne.weg.toFixed(2)} m), Kontakt am Ende ${r.mit.kontakt}`);
+    // M10d umgestellt: „gleich weit wie ohne Strafe“ gilt nicht mehr, weil das Auto mit Motor fast aus (0.03) in den 1.2 s an der
+    // Wand anders liegt (weniger gedrückt) – der Startzustand fürs Rückwärts ist ein anderer. Geprüft wird: frei (> 1 m, kein
+    // Kontakt, mindestens 80 % des Wegs ohne Strafe). Rückwärts vom selben Zustand mit/ohne Strafe: tools/m10d-test.mjs (m)
+    melde(r.mit.rest > 1 && r.mit.weg > 1 && !r.mit.kontakt && r.mit.weg > 0.8 * r.ohne.weg, `${art} bei ${r.mit.s0.toFixed(0)} m, 70° mit 40 km/h: Strafe ${r.mit.rest.toFixed(2)} s; 2.5 s rückwärts ${r.mit.weg.toFixed(2)} m (ohne Strafe ${r.ohne.weg.toFixed(2)} m), Kontakt am Ende ${r.mit.kontakt}`);
   }
   melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.length})`);
   await s.schliessen();

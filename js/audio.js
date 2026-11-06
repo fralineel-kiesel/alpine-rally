@@ -901,7 +901,7 @@ export function baueKlangwerk(ctx) {
       zu.strafenVor = n;
     }
     const t = zu.uhr - zu.aussetzerAb;
-    if (t < 0 || t > 1) return 1;
+    if (t < 0 || t > W.aussetzer[W.aussetzer.length - 1] + W.aussetzerDauer) return 1; // M10d: Fenster = alle Aussetzer
     for (const a of W.aussetzer) if (t >= a && t < a + W.aussetzerDauer) return W.aussetzerTief;
     return 1;
   }

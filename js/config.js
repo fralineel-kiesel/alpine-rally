@@ -950,18 +950,22 @@ export const CONFIG = {
       an: true,                // false = keine Motor-Strafe (wie 0.10c.1)
       WAND_STRAFE_MIN: 10,     // ab so viel Tempoverlust (km/h) im Kontakt gibt es eine Strafe; ein kleiner Streifer nicht
       hartAb: 50,              // ab so viel Verlust (km/h) ist es ein harter Treffer (volle Dauer)
-      dauerMin: 2.0,           // Dauer (s) beim leichten Treffer (WAND_STRAFE_MIN) ...
-      dauerMax: 4.0,           // ... beim harten (hartAb oder frontal), dazwischen gleichmässig
+      dauerMin: 3.0,           // Dauer (s) beim leichten Treffer (WAND_STRAFE_MIN) ... (M10d: 3 statt 2)
+      dauerMax: 6.0,           // ... beim harten (hartAb oder frontal), dazwischen gleichmässig (M10d: 6 statt 4)
       frontalAb: 80,           // Einschlag ab so viel Grad (90 = frontal) = immer volle Dauer
-      gesamtMax: 6.0,          // mehrere Treffer: Restzeit + neue Dauer, aber höchstens so viel (s)
+      gesamtMax: 9.0,          // mehrere Treffer: Restzeit + neue Dauer, aber höchstens so viel (s) (M10d: 9 statt 6)
       trennung: 0.3,           // so lange (s) ohne Kontakt, dann ist der nächste Kontakt ein neuer Treffer
-      leistungStart: 0.25,     // Motorleistung direkt nach dem Treffer (Anteil), steigt glatt auf 1 bis zum Ende
+      // M10d (Lino: „lohnt sich immer noch“): zwei Phasen. Phase 1 „Motor fast aus“, dann glatt zurück
+      WAND_STRAFE_STALL_ZEIT: 1.0,   // Phase 1: so lange (s) nach dem Treffer ist der Motor fast aus ...
+      WAND_STRAFE_STALL_FAKTOR: 0.03, // ... mit so viel Leistung (Anteil)
+      stallUebergang: 0.15,    // danach in so vielen Sekunden glatt (ohne Sprung) auf ...
+      WAND_STRAFE_START_FAKTOR: 0.10, // ... diesen Anteil; Phase 2: glatt (smoothstep) auf 1 bis zum Ende der Strafe
       schaltFaktor: 2,         // Gangwechsel dauern während der Strafe so viel mal länger
-      drehzahlTief: 0.4,       // Drehzahl (Tacho, Ton) sackt beim Treffer auf diesen Anteil ...
-      drehzahlZeit: 0.3,       // ... für so lange (s) ...
+      drehzahlTief: 0.3,       // Drehzahl (Tacho, Ton) sackt beim Treffer auf diesen Anteil (M10d: 0.3 statt 0.4) ...
+      drehzahlZeit: 1.0,       // ... für so lange (s, M10d: die ganze Phase 1) ...
       drehzahlZurueck: 0.4,    // ... und kommt in so vielen Sekunden glatt zurück
       // Motor-Ton: Aussetzer (Zünd-Unterbrechungen mit Knall) direkt nach dem Treffer
-      aussetzer: [0.05, 0.2, 0.38], // Zeitpunkte (s nach dem Treffer)
+      aussetzer: [0.05, 0.27, 0.5, 0.72, 0.92], // Zeitpunkte (s nach dem Treffer; M10d: 5 Aussetzer über die ganze Phase 1)
       aussetzerDauer: 0.07,    // so lange (s) setzt der Motor jeweils aus
       aussetzerTief: 0.12,     // Motor-Pegel während eines Aussetzers (Anteil)
       aussetzerKnall: 0.5,     // Pegel des Knalls bei jedem Aussetzer (Anteil eines normalen Popps)

@@ -948,8 +948,8 @@ function anzeigeDrehzahl() {
 // M10c.2: Ladedruck für Anzeige und Ton: bricht mit der Motor-Strafe ein und baut sich mit der Leistung wieder auf
 function anzeigeLadedruck() {
   if (wand.strafeRest <= 0) return getriebe.ladedruck;
-  const a = CONFIG.kollision.wandStrafe.leistungStart;
-  return getriebe.ladedruck * ((wand.leistung() - a) / (1 - a));
+  const a = CONFIG.kollision.wandStrafe.WAND_STRAFE_STALL_FAKTOR; // M10d: in Phase 1 (Motor fast aus) kein Ladedruck
+  return getriebe.ladedruck * Math.max(0, (wand.leistung() - a) / (1 - a));
 }
 
 // Kamera nicht in die Felswand, nicht ins Stroh an Start/Ziel, nicht unter das Gelände
