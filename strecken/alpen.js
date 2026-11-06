@@ -392,6 +392,11 @@ export default {
   },
 
   // --- Natur: Baumdichte, Büsche, Kühe, Waldrand-Gruppen ---
+  // M10d: Kunst-Schatten (js/schatten.js, wie Finnland) im Stil „Mittagssonne“: Sonne aus Südosten wie das Licht
+  // (umgebung.licht.sonneRichtung, ca. 125°, 56° hoch), kurze Flecken direkt am Fuss (Länge = Höhe mal laenge; 0.7 passt
+  // zum Sonnenstand, Finnland 2.2), eher kontrastarm (dunkelheit; 0.45 war kaum zu sehen). steine: auch Steine und Felsbrocken an der Strasse werfen einen Fleck
+  schatten: { sonne: 125, laenge: 0.7, dunkelheit: 0.6, steine: true },
+
   natur: {
     sprites: {
       tannenProKm: 4200,         // Versuche pro km Strecke (wie viele stehen bleiben, hängt vom Abschnitt ab)

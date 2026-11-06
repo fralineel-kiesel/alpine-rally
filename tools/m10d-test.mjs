@@ -10,6 +10,7 @@
 //       (zeit) Zeitverlust Streifer/Frontal (Bericht)
 //   Teil C – Alpen-Sprünge: (r) Länge/Verlauf, (s) Flugweiten, (t) Orte, (u) Landungen, (v) kein Zeitgewinn, (w) SPRUNG-Ansage,
 //       (abk) Abkürzungen, (x) Finnland bit-gleich, (y) Bildzeit
+//   Teil D – Mittags-Schatten Alpen: (z) AUS bit-gleich (--altC <Stand nach C>), (aa) Budget/Auto, (ab) Bildzeit, (ac) Finnland-Bilder
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -662,6 +663,62 @@ if (teil('y')) {
     info(`Median (ms): Alpen 0.10c.2 ${r.m.a.toFixed(1)} / jetzt ${r.m.b.toFixed(1)}; Finnland ${r.m.refA.toFixed(1)} / ${r.m.refB.toFixed(1)}; gesprungen ${r.spr.join(',')}`);
     melde(r.spr.every((x) => x >= 1) && (r.roh <= 3 || r.bereinigt <= 3), `Alpen ${r.roh >= 0 ? '+' : ''}${r.roh.toFixed(1)} %, bereinigt ${r.bereinigt >= 0 ? '+' : ''}${r.bereinigt.toFixed(1)} %`);
   }
+}
+
+// ===================================================================== Teil D: kurze Mittags-Schatten in den Alpen
+// Bild-Prüfsumme: Spiel mit eigener Bild-Uhr, Auto an festen Stellen, 3D-Bild (fest 320x180) als Zahl
+const BILD_SUMME = async ({ stellen }) => {
+  const A = window.__alpineRally, out = [];
+  for (const s0 of stellen) {
+    A.setzeAuf(s0); A.kameraSofort(); window.__bild(3, 1000 / 60);
+    const c = document.getElementById('spiel'), g = c.getContext('webgl2') || c.getContext('webgl');
+    const w = g.drawingBufferWidth, h = g.drawingBufferHeight, px = new Uint8Array(w * h * 4);
+    A.renderer.render(A.szene, A.kamera); g.readPixels(0, 0, w, h, g.RGBA, g.UNSIGNED_BYTE, px);
+    let x = 0; for (let i = 0; i < px.length; i += 3) x = (x * 31 + px[i]) % 1000000007;
+    out.push(`${w}x${h}:${x}`);
+  }
+  return { out, gezeigt: A.schatten ? A.schatten.gezeigt : null, anzahl: A.schatten ? A.schatten.anzahl : null };
+};
+async function bildSummen(wurzel, strecke, schattenAn, stellen) {
+  const sp = { 'alpineRally.einstellungen': JSON.stringify({ schatten: schattenAn }) };
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}&aufloesung=320x180`, { uhr: true, speicher: sp });
+  await s.page.evaluate(() => { window.__alpineRally.anhalten = true; window.__bild(5, 1000 / 60); });
+  const r = await s.page.evaluate(BILD_SUMME, { stellen });
+  await s.schliessen();
+  return r;
+}
+const STELLEN_A = [300, 1200, 2140, 2560, 3300], STELLEN_F = [495, 1500, 2600, 3300];
+if (teil('z')) {
+  titel('(z) SCHATTEN AUS: Alpen-Bilder bit-gleich zu Stand nach Teil C (5 Stellen, 320x180)');
+  const altC = arg('--altC') ? path.resolve(arg('--altC')) : null;
+  if (!altC) melde(false, 'nur mit --altC <ordner Stand nach Teil C>');
+  else { const n = await bildSummen(WURZEL, 'alpen', false, STELLEN_A), a = await bildSummen(altC, 'alpen', false, STELLEN_A); melde(JSON.stringify(n.out) === JSON.stringify(a.out), `${n.out.filter((x, i) => x === a.out[i]).length} von ${n.out.length} Bildern gleich`); }
+}
+if (teil('aa')) {
+  titel('(aa) SCHATTEN AN (Alpen): Flecken ≤ Budget 60 je Bild, Auto-Schatten vorhanden, Bild anders als AUS');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&aufloesung=320x180', { uhr: true });
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.schatten; A.anhalten = true; let max = 0, n = 0;
+    for (let s0 = 50; s0 < A.strecke.laenge - 50; s0 += 25) { A.setzeAuf(s0); window.__bild(1, 1000 / 60); max = Math.max(max, S.gezeigt); n++; }
+    return { max, n, anzahl: S.anzahl, auto: !!(S.auto && S.auto.visible), aktiv: S.aktiv, budget: A.CONFIG.schatten.max };
+  });
+  await s.schliessen();
+  melde(r.aktiv && r.max <= r.budget && r.max > 10 && r.auto, `${r.anzahl} Schatten-Quellen nahe der Strasse; je Bild höchstens ${r.max} Flecken (Budget ${r.budget}, ${r.n} Stellen); Auto-Schatten ${r.auto ? 'da' : 'FEHLT'}`);
+  const an = await bildSummen(WURZEL, 'alpen', true, STELLEN_A), aus = await bildSummen(WURZEL, 'alpen', false, STELLEN_A);
+  melde(an.out.every((x, i) => x !== aus.out[i]), `AN gegen AUS: ${an.out.filter((x, i) => x !== aus.out[i]).length} von ${an.out.length} Bildern anders`);
+}
+if (teil('ab')) {
+  titel('(ab) Bildzeit Alpen mit gegen ohne Schatten (Median aus 5, abwechselnd, gegen Finnland bereinigt): höchstens +10 %');
+  const r = await bildzeitVergleich({ wurzel: WURZEL, extra: '&aufloesung=320x180', speicher: { 'alpineRally.einstellungen': JSON.stringify({ schatten: false }) } },
+    { wurzel: WURZEL, extra: '&aufloesung=320x180', speicher: { 'alpineRally.einstellungen': JSON.stringify({ schatten: true }) } });
+  fs.writeFileSync(path.join(LOG, 'bildzeit-D.json'), JSON.stringify(r, null, 1));
+  info(`Median (ms): Alpen ohne ${r.m.a.toFixed(1)} / mit Schatten ${r.m.b.toFixed(1)}; Finnland ${r.m.refA.toFixed(1)} / ${r.m.refB.toFixed(1)}`);
+  melde(r.roh <= 10 || r.bereinigt <= 10, `Alpen mit Schatten ${r.roh >= 0 ? '+' : ''}${r.roh.toFixed(1)} %, bereinigt ${r.bereinigt >= 0 ? '+' : ''}${r.bereinigt.toFixed(1)} %`);
+}
+if (teil('ac')) {
+  titel('(ac) Finnland-Bilder bit-gleich zu 0.10c.2 (SCHATTEN AN und AUS, 4 Stellen, 320x180)');
+  if (!ALT) melde(false, 'nur mit --alt');
+  else for (const an of [true, false]) { const n = await bildSummen(WURZEL, 'finnland', an, STELLEN_F), a = await bildSummen(ALT, 'finnland', an, STELLEN_F); melde(JSON.stringify(n.out) === JSON.stringify(a.out), `SCHATTEN ${an ? 'AN' : 'AUS'}: ${n.out.filter((x, i) => x === a.out[i]).length} von ${n.out.length} gleich`); }
 }
 
 // ===================================================================== Zusammenfassung

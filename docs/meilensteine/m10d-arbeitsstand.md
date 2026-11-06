@@ -10,4 +10,5 @@ Ziel: Schaltton, Wums, Wand-Strafe, Alpen mit Sprüngen/Schatten/Deko, 0.10d. Te
   190 km/h bis 58 / 68 / 75 m, Verlust ≤ 28 %. Alpen `revision: 2`. 25 Läufe: keine Aufpralle/Strafen, kein Zeitgewinn.
   Abkürzungen unverändert. pacenotes-test: SPRUNG-Ausnahme ergänzt; 981 m 63.2 statt 62.1 km/h kommt aus Teil B.
   rt4 „flott“ fliegt 450 m nach der Startkuppe bei 655 m ab (bekannte Empfindlichkeit, M8f). Bildzeit +2.3 % (Grenze 3 %).
-- **D (in Arbeit):** `schatten` Alpen: Sonne 125°, Länge 0.5, Dunkelheit 0.45, Steine/Felsbrocken (Entwurf im Scratchpad).
+- **D:** `schatten` Alpen: Sonne 125°, Länge 0.7, Dunkelheit 0.6 (0.5/0.45 war unsichtbar), Steine/Felsbrocken; Budget 60 (oft voll). Bildzeit +5.4 %
+  (bereinigt +3.5 %; mit 0.5/0.45 waren es +0.2 %). AUS bit-gleich zu C, Finnland-Bilder bit-gleich (AN/AUS). E fällt weg (Kontext). Nächster: F.
