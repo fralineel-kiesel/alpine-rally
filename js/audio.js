@@ -976,14 +976,19 @@ export function baueKlangwerk(ctx) {
     // Landehärte. Der Motor tritt kurz zurück (Ducking). (Zufallszahlen in derselben Reihenfolge wie bis 0.10c.1)
     const W = T.wumms, L = T.LANDUNG_WUMMS_LAUTSTAERKE * (W.stufen[info.klasse] ?? 1);
     const r1 = rnd();
-    wummsTon('landung', W.bass, L * W.bass.pegel * (1 + 0.04 * (r1 - 0.5)));
-    wummsRauschen('landung', W.rauschen, L * W.rauschen.pegel);
+    // M10d: hart / sehr hart länger ausklingen lassen (mehr Lautheit, gleiche Spitze); sauber unverändert
+    const X = W.laenger && W.laenger[info.klasse];
+    const bass = X ? Object.assign(wummsBass, W.bass) : W.bass, rausch = X ? Object.assign(wummsRausch, W.rauschen) : W.rauschen;
+    if (X) { wummsBass.dauer = W.bass.dauer * X.bass; wummsRausch.dauer = W.rauschen.dauer * X.rauschen; }
+    wummsTon('landung', bass, L * W.bass.pegel * (1 + 0.04 * (r1 - 0.5)));
+    wummsRauschen('landung', rausch, L * W.rauschen.pegel * (X ? X.rauschPegel : 1));
     spiele('landung', 'klack', fahrzeug, L * W.klackPegel, 0, W.klackTempo);
     spiele('aufprall', 'aufprall-stein', fahrzeug, T.LANDUNG_WUMMS_LAUTSTAERKE * T.kiesPegel * (0.4 + 0.6 * h), 0, 1.15 + 0.2 * rnd(), 2600);
     if (info.klasse !== 'sauber') spiele('aufprall', 'aufprall-stein', fahrzeug, L * T.hartPegel * h, 0, 0.9 + 0.1 * rnd());
     if (info.klasse === 'sehrHart') { wummsTon('landung', W.aua, L * W.aua.pegel); spiele('schlag', 'schlag', fahrzeug, L * T.auaPegel, 0.04, 0.45); }
-    ducke(W.duckDb, W.duckDauer, W.duckZurueck, false);
+    ducke(X ? X.duckDb : W.duckDb, X ? X.duckDauer : W.duckDauer, W.duckZurueck, false);
   }
+  const wummsBass = {}, wummsRausch = {}; // M10d: Arbeitsobjekte (kein Garbage pro Landung)
   // M10c.2: tiefer Sinus-Schlag (Tonhöhe fällt von "von" auf "bis" Hz in "zeit" s, klingt in "dauer" s aus), mittig
   function wummsTon(art, B, pegel) {
     if (!(pegel > 0)) return;

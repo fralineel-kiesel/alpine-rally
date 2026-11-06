@@ -1494,7 +1494,8 @@ function tonBild(dt) {
   tonZ.modus = TON_MODUS[ablauf.zustand] || 'aus'; // Titel, Menü, Demo-Fahrt: stumm (nur Musik)
   tonZ.musikModus = MUSIK_MODUS[ablauf.zustand] || 'aus';
   tonZ.hx = kam.pos.x; tonZ.hz = kam.pos.z; tonZ.hyaw = kam.yaw; tonZ.s = rennen.letztesS;
-  tonZ.drehzahl = anzeigeDrehzahl(); tonZ.inLuft = flug.inLuft; tonZ.gang = getriebe.gang; // (M10c: frei drehend in der Luft) tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet;
+  tonZ.drehzahl = anzeigeDrehzahl(); tonZ.inLuft = flug.inLuft; tonZ.gang = getriebe.gang; // inLuft: Motor dreht in der Luft frei (M10c)
+  tonZ.zielGang = getriebe.zielGang; tonZ.schaltet = getriebe.schaltet; // Schaltton (M10d: war seit M10c versehentlich auskommentiert)
   tonZ.gas = tonEingabe.gas; tonZ.bremse = tonEingabe.bremse; tonZ.handbremse = tonEingabe.handbremse;
   tonZ.tempo = physik.tempo; tonZ.vVor = physik.vVor; tonZ.untergrund = untergrund; tonZ.drift = physik.driftWinkel;
   tonZ.motorStrafen = wand.strafen; // M10c.2: neuer Wand-Treffer mit Motor-Strafe = Aussetzer im Motor-Ton

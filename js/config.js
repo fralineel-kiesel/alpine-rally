@@ -1218,6 +1218,11 @@ export const CONFIG = {
         klackPegel: 0.5, klackTempo: 1.3,                                  // Federungs-Klack (helle Transiente)
         aua: { pegel: 1.0, von: 60, bis: 32, zeit: 0.18, dauer: 0.6, wann: 0.05, anstieg: 0.02 }, // sehr hart: tiefes „Aua“
         duckDb: -6, duckDauer: 0.25, duckZurueck: 0.05,                    // Motor kurz leiser (dB, s, Zeitkonstante zurück)
+        // M10d (Lino: „etwas lauter“, nur hart und sehr hart): mehr Lautheit bei gleicher Spitze – der Bass klingt länger aus
+        // (Faktor auf bass.dauer), der Motor tritt tiefer zurück. rauschen/rauschPegel: Faktoren auf den Rausch-Stoss (gemessen:
+        // mehr Rauschen hebt die Spitze über −1 dBFS, darum 1.0). sauber = wie 0.10c.2
+        laenger: { hart: { bass: 2.2, rauschen: 1.0, rauschPegel: 1.0, duckDb: -9, duckDauer: 0.3 },
+                   sehrHart: { bass: 2.6, rauschen: 1.0, rauschPegel: 1.0, duckDb: -9, duckDauer: 0.3 } },
       },
       jubelAbstand: 40,        // Zuschauer so nah (Meter vor/nach dem Fan-Spot) jubeln beim Abheben
     },
