@@ -55,6 +55,10 @@ const messung = await spiel.page.evaluate(async () => {
   const pn = await import('/js/pacenotes.js');
   const m = await import('/tools/pacenotes-browser.js');
   const kurven = pn.findeKurven(A.strecke, A.netz);
+  // M11a: Die Messfahrt misst das Grenztempo der Kurve (Grip). Streift sie dabei eine Absperrung, darf die Wand-Strafe
+  // (seit M10c.2, härter seit M10d) ihre Linie nicht verändern: Strafe während der Messung aus, danach wie vorher
+  const W = A.CONFIG.kollision.wandStrafe, strafeAn = W.an;
+  W.an = false;
   const aus = [];
   kurven.forEach((c, j) => {
     const p = j ? kurven[j - 1] : null;
@@ -65,6 +69,7 @@ const messung = await spiel.page.evaluate(async () => {
       grenzeMs: g.grenze, kmh: g.vollgas ? null : Math.round(g.grenze * 3.6 * 10) / 10, schaetzung: c.kmh, gemessenVorher: c.gemessen,
     });
   });
+  W.an = strafeAn;
   A.neustart();
   return aus;
 });

@@ -419,16 +419,19 @@ console.log('(j) Credits: Mitwirkende und Unterstützer (M5a.1)');
     for (const x of z.slice(i + 1)) { if (x.leer || x.gruppe) break; namen.push(x.text); }
     return namen;
   };
+  // M11a: Die Namen pflegt Lino selbst in js/config.js (menue.credits, seit Okt. 2026 „SHAI-RON, BENJAMIN“): der Test
+  // erwartet darum genau die Liste aus config.js statt fester Namen (vorher seit 0.9a.2 rot, Erwartung war alt)
+  const soll = JSON.stringify(await A(p, () => { const C = window.__alpineRally.CONFIG.menue.credits; return { m: C.mitwirkende, u: C.unterstuetzer }; }));
   let z = await zeilen();
   const de = { m: gruppe(z, 'MITWIRKENDE'), u: gruppe(z, 'UNTERSTÜTZER') };
-  pruefe((await seite(p)) === 'credits' && JSON.stringify(de) === '{"m":["LOUIS"],"u":["SHAI-RON"]}',
-    'Deutsch: MITWIRKENDE / LOUIS, UNTERSTÜTZER / SHAI-RON (Überschrift in der Gruppenfarbe)', `${JSON.stringify(de)}`);
+  pruefe((await seite(p)) === 'credits' && JSON.stringify(de) === soll,
+    'Deutsch: MITWIRKENDE / UNTERSTÜTZER mit den Namen aus config.js (Überschrift in der Gruppenfarbe)', `${JSON.stringify(de)}`);
   const iIdee = z.findIndex((x) => x.text.startsWith('IDEE')), iM = z.findIndex((x) => x.text === 'MITWIRKENDE');
   pruefe(iIdee >= 0 && iM > iIdee, 'die Gruppen stehen unter "Idee und Design / Gebaut mit Claude"');
   await sprache('en'); await bilderAbwarten(p, 2);
   z = await zeilen();
   const en = { m: gruppe(z, 'CONTRIBUTORS'), u: gruppe(z, 'SUPPORTERS') };
-  pruefe(JSON.stringify(en) === '{"m":["LOUIS"],"u":["SHAI-RON"]}', 'Englisch: CONTRIBUTORS / LOUIS, SUPPORTERS / SHAI-RON (Namen nicht übersetzt)', JSON.stringify(en));
+  pruefe(JSON.stringify(en) === soll, 'Englisch: CONTRIBUTORS / SUPPORTERS mit denselben Namen (Namen nicht übersetzt)', JSON.stringify(en));
   await sprache('de');
   // leere Liste = keine Gruppe
   await A(p, () => { const C = window.__alpineRally.CONFIG.menue.credits; window.__cAlt = { ...C }; C.unterstuetzer = []; });
