@@ -41,9 +41,20 @@ const RENTIER_FELLE = [
   { name: 'dunkelbraun', grund: '#4f3f31', weiss: '#c9c1b0', flecken: 0, kopfWeiss: false, socken: false, bauch: false, halsHell: true,
     maul: '#3a3028', nase: '#1e1a16', ohr: '#4f3f31', quaste: '#d6cfc0', dunkelUnten: '#2c241d' },
 ];
+// M11a: Steinböcke (Tier-Typ "steinbock", Gletscher): graubraun mit hellem Bauch, dunkle Beine, grosse, nach hinten
+// gebogene Hörner (mit = Bock, ohne = Geiss mit kleinen Hörnchen). Fantasie-Tiere im Pixel-Look, reine Deko (kein Ton).
+const STEINBOCK_FELLE = [
+  { name: 'graubraun', grund: '#7a6a55', weiss: '#d8cfbd', flecken: 0, kopfWeiss: false, socken: false, bauch: true,
+    maul: '#5a4d3e', nase: '#2a2420', ohr: '#7a6a55', quaste: '#3b3129', dunkelUnten: '#3e3328' },
+  { name: 'hellgrau', grund: '#948a7c', weiss: '#e2dccf', flecken: 0, kopfWeiss: false, socken: false, bauch: true,
+    maul: '#6a6056', nase: '#2e2a26', ohr: '#948a7c', quaste: '#4a4038', dunkelUnten: '#4a4038' },
+  { name: 'dunkel', grund: '#5a4a3a', weiss: '#bfb5a2', flecken: 0, kopfWeiss: false, socken: false, bauch: false,
+    maul: '#3e3328', nase: '#1e1a16', ohr: '#5a4a3a', quaste: '#2c241d', dunkelUnten: '#2c241d' },
+];
 const TIERE = {
   kuh: { felle: FELLE, mit: 'mit Hörnern', ohne: 'ohne Hörner', schmuck: 'horn' },
   rentier: { felle: RENTIER_FELLE, mit: 'mit Geweih', ohne: 'ohne Geweih', schmuck: 'geweih' },
+  steinbock: { felle: STEINBOCK_FELLE, mit: 'Bock', ohne: 'Geiss', schmuck: 'gehoern' }, // M11a
 };
 // Arten eines Tier-Typs: jede Fellart mit und ohne Hörner (Geweih)
 export function tierArten(typ = 'kuh') {
@@ -56,7 +67,7 @@ export const TIER_TYPEN = Object.keys(TIERE);
 export const KUH_ARTEN = FELLE.flatMap((f, i) => [{ fell: i, horn: true, name: `${f.name} mit Hörnern` }, { fell: i, horn: false, name: `${f.name} ohne Hörner` }]);
 
 // Farben einmal in RGB umrechnen
-for (const f of [...FELLE, ...RENTIER_FELLE]) for (const k of ['grund', 'weiss', 'maul', 'nase', 'ohr', 'quaste', 'dunkelUnten']) if (f[k]) f[k] = hexZuRgb(f[k]);
+for (const f of [...FELLE, ...RENTIER_FELLE, ...STEINBOCK_FELLE]) for (const k of ['grund', 'weiss', 'maul', 'nase', 'ohr', 'quaste', 'dunkelUnten']) if (f[k]) f[k] = hexZuRgb(f[k]);
 const GEWEIH = hexZuRgb('#b39c78'), GEWEIH_SPITZE = hexZuRgb('#d8c8a6');
 const HORN = hexZuRgb('#e0d3b0'), HORN_SPITZE = hexZuRgb('#3b342b'), HUF = hexZuRgb('#2a2420'), AUGE = hexZuRgb('#141110');
 
@@ -92,6 +103,7 @@ function kopf(P, F, horn, schmuck = 'horn') {
     teile.push(kugel('auge', plus(plus(plus(P, mal(F, 0.16)), mal(S, 0.135)), mal(U, 0.04)), 0.035, 0.035, 0.035));
     teile.push(ei('ohr', plus(plus(plus(P, mal(S, 0.21)), mal(F, 0.04)), mal(U, -0.03)), plus(S, mal(F, 0.2)), 0.11, 0.07, 0.035));
     if (horn && schmuck === 'geweih') teile.push(...geweih(P, F, U, S));
+    else if (schmuck === 'gehoern') teile.push(...gehoern(P, F, U, S, horn)); // M11a: Steinbock (Geiss: kleine Hörnchen)
     else if (horn) teile.push(ei('horn', plus(plus(plus(P, mal(S, 0.15)), mal(U, 0.07)), mal(F, 0.02)), norm(plus(plus(S, mal(U, 0.9)), mal(F, 0.15))), 0.12, 0.033, 0.033));
   }
   return teile;
@@ -106,6 +118,18 @@ function geweih(P, F, U, S) {
   stange(a1, plus(F, mal(U, 0.5)), 0.16, 0.022);                       // Augspross nach vorne
   stange(a2, plus(plus(mal(F, 0.8), mal(U, 0.7)), mal(S, 0.2)), 0.14, 0.02); // Ende oben vorne
   t.push(ei('geweih', plus(a2, mal(U, 0.05)), norm(plus(U, mal(F, 0.3))), 0.09, 0.05, 0.02)); // kleine Schaufel
+  return t;
+}
+
+// M11a: Steinbock-Gehörn: je Seite ein dickes Horn in drei Stücken nach oben und weit nach hinten gebogen (Bock),
+// bei der Geiss nur ein kurzes, dünnes Stück
+function gehoern(P, F, U, S, bock) {
+  const t = [], basis = plus(plus(P, mal(S, 0.08)), mal(U, 0.1));
+  const stueck = (a, richtung, laenge, r) => { const b = plus(a, mal(norm(richtung), laenge)); t.push(ei('horn', mitte(a, b), norm(richtung), laenge / 2, r, r)); return b; };
+  if (!bock) { stueck(basis, plus(plus(U, mal(F, -0.6)), mal(S, 0.1)), 0.14, 0.025); return t; }
+  const a1 = stueck(basis, plus(plus(U, mal(F, -0.25)), mal(S, 0.12)), 0.2, 0.045);
+  const a2 = stueck(a1, plus(plus(U, mal(F, -0.9)), mal(S, 0.15)), 0.22, 0.04);
+  stueck(a2, plus(plus(mal(U, -0.3), mal(F, -1)), mal(S, 0.1)), 0.2, 0.032);
   return t;
 }
 

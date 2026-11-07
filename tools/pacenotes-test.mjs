@@ -316,7 +316,9 @@ melde(d.json === d.json2 && d.json === dNeu.json, `(f) Liste bei zwei Läufen gl
           const g = gruppeVon[i];
           const fenster = Math.min(P.vorlaufMax, Math.max(P.vorlaufMin, v * P.vorlaufZeit)) * (g.bremsen ? P.vorlaufBremsen : 1);
           // M10d: SPRUNG hat einen festen Vorlauf (paceNotes.sprungVor, wie in Finnland seit M10c), kein Zeitfenster
-          if (kk.art !== 'sprung' && g.anker - s > fenster + 1) zuFrueh.push(`${notes[kk.note].text} ${Math.round(g.anker - s)} m (Fenster ${Math.round(fenster)} m)`);
+          // M11a: EIS ebenso (paceNotes.eisVor), auch die Kurve in derselben Gruppe kommt dann mit dem festen Vorlauf
+          const fest = kk.art === 'sprung' || kk.art === 'eis' || (g.vorlauf && kacheln[g.von] && kacheln[g.von].art === 'eis');
+          if (!fest && g.anker - s > fenster + 1) zuFrueh.push(`${notes[kk.note].text} ${Math.round(g.anker - s)} m (Fenster ${Math.round(fenster)} m)`);
         }
         if (jetzt[i] && weg[i]) flackern.push(`${notes[kk.note].text} bei ${Math.round(s)} m wieder da`);
         // nicht mehr ganz sichtbar (blendet aus), obwohl die Kurvenmitte noch nicht erreicht ist

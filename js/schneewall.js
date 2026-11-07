@@ -60,7 +60,8 @@ export function baueSchneewall(strecke, netz, welt) {
   function wirke(physik, qa, dt) {
     const i = begrenze(Math.round(qa.i), 0, n - 1), sd = qa.seite >= 0 ? 1 : -1;
     const tiefe = (sd < 0 ? links[i] : rechts[i]) ? Math.abs(qa.seite) + C.autoHalb - kante[i] : 0;
-    if (tiefe <= 0) { kontaktVorher = false; return null; }
+    if (tiefe <= 0) { kontaktVorher = false; erg.kontakt = false; return null; }
+    erg.kontakt = true; erg.kontaktSchritte++; // (für Werkzeuge und Tests)
     // Richtung zur Strasse (n) und Tempo in den Wall (vIn > 0 = hinein)
     const nx = qa.tz * sd, nz = -qa.tx * sd;
     const vIn = -(physik.vx * nx + physik.vz * nz);
@@ -78,7 +79,14 @@ export function baueSchneewall(strecke, netz, welt) {
     physik.vx *= f; physik.vz *= f;
     // ... das Tempo in den Wall hinein wird zusätzlich weich geschluckt (das Auto taucht ein statt abzuprallen)
     const vIn2 = -(physik.vx * nx + physik.vz * nz);
-    if (vIn2 > 0) { const g = Math.min(1, C.schlucken * dt); physik.vx += nx * vIn2 * g; physik.vz += nz * vIn2 * g; }
+    if (vIn2 > 0) {
+      const g = Math.min(1, C.schlucken * dt), weg = vIn2 * g;
+      physik.vx += nx * weg; physik.vz += nz * weg;
+      // ... und was er schluckt, kostet zusätzlich Tempo entlang des Walls (wie Reibung beim Aufprall): wer in einer
+      // Kehre mit Schwung in den Wall fährt, statt zu bremsen, verliert mehr, als er gewinnt (kein Polster)
+      const tx = -nz, tz = nx, vt = physik.vx * tx + physik.vz * tz, vtNeu = Math.sign(vt) * Math.max(0, Math.abs(vt) - C.reibung * weg);
+      physik.vx += tx * (vtNeu - vt); physik.vz += tz * (vtNeu - vt);
+    }
     // 3. Feder: schiebt zur Strasse zurück (rutscht wieder heraus): als Tempo und, weil die Reifen seitlich haften
     //    (stehend hielte sie sonst nichts heraus), zusätzlich direkt an der Position
     physik.vx += nx * C.feder * t * dt; physik.vz += nz * C.feder * t * dt;
@@ -94,7 +102,10 @@ export function baueSchneewall(strecke, netz, welt) {
       ax += nx * C.wegWinkel; az += nz * C.wegWinkel;
       let diff = Math.atan2(ax, az) - physik.richtung;
       diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-      physik.richtung += Math.sign(diff) * Math.min(Math.abs(diff), C.ausrichten * dt * Math.min(1, t / C.tiefeVoll));
+      // (schnell: kaum Ausrichten, sonst wäre der Wall in Kehren eine Lenkhilfe)
+      // (auf Eis noch weniger: dort lenken die Reifen kaum, der Wall soll nicht lenken, wo die Reifen es nicht können)
+      const langsam = Math.min(1, C.ausrichtenBis / Math.max(1, physik.tempo)) * (netz.belag && netz.belag[i] === 'eis' ? C.ausrichtenEis : 1);
+      physik.richtung += Math.sign(diff) * Math.min(Math.abs(diff), C.ausrichten * langsam * dt * Math.min(1, t / C.tiefeVoll));
     }
     aus.tiefe = t;
     return aus;
@@ -135,6 +146,24 @@ export function baueSchneewall(strecke, netz, welt) {
       st = -1;
     }
   }
+  // Schneestangen (rot-weiss, Orientierung am Rand): alle stangenAbstand Meter auf dem Wall, zwei gekreuzte schmale
+  // Flächen (von allen Seiten sichtbar), im selben Zeichenaufruf wie der Wall
+  const rot = new THREE.Color(C.stangeRot), weissS = new THREE.Color(C.stangeWeiss);
+  for (const [sd, a] of [[-1, links], [1, rechts]]) {
+    for (let k = Math.round(C.stangenAbstand / 2) + (sd > 0 ? Math.round(C.stangenAbstand / 2) : 0); k < n; k += C.stangenAbstand) {
+      if (!a[k]) continue;
+      const l = sd * (kante[k] + C.breite * 0.3), x = strecke.px[k] - strecke.tz[k] * l, z = strecke.pz[k] + strecke.tx[k] * l;
+      const y0 = strecke.py[k] + C.hoehe * 0.6, b = C.stangeBreite / 2, teil = C.stangeHoehe / C.stangeTeile;
+      for (let t = 0; t < C.stangeTeile; t++) {
+        const farbe = t % 2 ? weissS : rot, ya = y0 + t * teil, yb = ya + teil;
+        for (const [dx, dz] of [[b, 0], [0, b]]) {
+          const b0 = pos.length / 3;
+          for (const [px, py, pz] of [[x - dx, ya, z - dz], [x + dx, ya, z + dz], [x + dx, yb, z + dz], [x - dx, yb, z - dz]]) { pos.push(px, py, pz); col.push(farbe.r, farbe.g, farbe.b); }
+          idx.push(b0, b0 + 1, b0 + 2, b0, b0 + 2, b0 + 3);
+        }
+      }
+    }
+  }
   let mesh = null;
   if (idx.length) {
     const geo = new THREE.BufferGeometry();
@@ -144,5 +173,6 @@ export function baueSchneewall(strecke, netz, welt) {
     const g2 = geo.toNonIndexed(); g2.computeVertexNormals(); // flach schattiert (jede Fläche eigene Normale)
     mesh = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
   }
-  return { an: true, links, rechts, kante, wirke, mesh, dreiecke: idx.length / 3 };
+  const erg = { an: true, links, rechts, kante, wirke, mesh, dreiecke: idx.length / 3, kontakt: false, kontaktSchritte: 0 };
+  return erg;
 }

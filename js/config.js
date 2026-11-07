@@ -98,7 +98,9 @@ export const CONFIG = {
   // Absperrungen auf den Stummeln (js/absperrungen.js). Kollision hart wie ein Zaun.
   absperrung: {
     reihenfolge: ['band', 'reifen', 'heu', 'zaun'], // ohne Angabe beim Nebenweg: reihum, nie zweimal dieselbe hintereinander
-    abstandWeg: 0.5,           // M3a.1: Leitwand steht so weit (Meter) neben dem Bankett der Etappe (Kurven-Aussenseite)
+    // M3a.1: Leitwand steht so weit (Meter) neben dem Bankett der Etappe (Kurven-Aussenseite). M11a: mit Schneewall (Gletscher)
+    // 2.5 m: an der Kreuzung fehlt dort der Wall, wer auf Schnee weit rutscht, soll nicht gleich in der Absperrung (Strafe) stehen
+    abstandWeg: S.strassenrand && S.strassenrand.schneewall && S.strassenrand.schneewall.an ? 2.5 : 0.5,
     kreisRadius: 0.32,         // Kollision: Kreise entlang der Leitwand ...
     kreisAbstand: 0.5,         // ... alle so viele Meter
     seed: Z.absperrung,  // Zufallszahl (Höhe der Reifenstapel, schiefe Böcke ...) (Streckendatei)
@@ -339,7 +341,7 @@ export const CONFIG = {
   // Reine Deko ohne Kollision (man fährt "drüber"), darum ändern sie nichts an den Abkürzungen.
   // Eigener seed: die Bäume und Steine von oben bleiben genau gleich.
   buesche: {
-    an: true,                  // false = keine Büsche, Jungtannen und Grasbüschel
+    an: N.buesche.an ?? true,  // false = keine Büsche, Jungtannen und Grasbüschel (M11a: Streckendatei natur.buesche.an, Gletscher aus)
     seed: Z.buesche,  // Zufallszahl (gleich = gleiche Büsche) (Streckendatei)
     mindestAbstand: 6,         // so nah dürfen sie an die Strassenmitte (Bankett endet bei 5.5)
     hoehe: [0.6, 1.2],         // Büsche: Höhe von bis (Meter)
@@ -713,7 +715,7 @@ export const CONFIG = {
         heckJeBelag: { schotter: 1.34, wiesenweg: 1.4, schnee: 1.2, eis: 1.15 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
                                  // losem Boden aus (sonst Kreis Schotter -5 %); unter Gas bleibt das Heck locker
                                  // (M11a: auf Schnee/Eis weniger Ausgleich: das zickigste Auto, aber fahrbar)
-        schneeGrip: 1.0, eisGrip: 1.0, // M11a: Schnee/Eis-Griff
+        schneeGrip: 0.97, eisGrip: 0.97, // M11a: Schnee/Eis-Griff etwas kleiner (bleibt das zickigste Auto)
       },
       getriebe: {
         allrad: { schotter: 1.0, wiesenweg: 0.95, bankett: 0.85, gras: 0.995, schnee: 0.88, eis: 0.82 }, // Hinterrad, aber der Motor drückt auf
@@ -1090,11 +1092,15 @@ export const CONFIG = {
     autoHalb: 0.9,             // halbe Autobreite: ab hier berührt die Karosserie den Wall
     tiefeVoll: 0.5,            // ab so viel Eintauchen (m) bremst er voll ...
     verlustJeSek: 0.5,         // ... so viel vom Tempo je Sekunde Kontakt (Richtwert Lino: 40 bis 50 %)
-    schlucken: 6,              // das Tempo IN den Wall wird so schnell geschluckt (1/s, taucht ein statt abzuprallen)
+    schlucken: 6,              // das Tempo IN den Wall wird so schnell geschluckt (1/s, taucht ein statt abzuprallen) ...
+    reibung: 0,                // ... und kostet mal diesem Wert Tempo entlang des Walls (M11a gemessen: bremst wie eine
+                               // Bremse und macht den Wall in Kehren eher besser, darum 0)
     feder: 9,                  // schiebt mit so viel m/s² je Meter Eintauchen zur Strasse zurück
     herausJeSek: 1.2,          // ... und direkt an der Position mit so viel m/s je Meter Eintauchen (auch im Stand)
     ausrichten: 0.7,           // schaut die Nase in den Wall, dreht er sie so schnell (rad/s) parallel zum Wall ...
-    wegWinkel: 0.1,            // ... und noch so viel (ca. 6°) zur Strasse hin
+    wegWinkel: 0.1,            // ... und noch so viel (ca. 6°) zur Strasse hin;
+    ausrichtenBis: 12,         // ... voll nur bis so viel m/s (ca. 43 km/h), schneller weniger (keine Lenkhilfe in Kehren)
+    ausrichtenEis: 0.2,        // ... auf Eis nur so ein Anteil davon
     tiefeMax: 1.0,             // tiefer kommt das Auto nicht (kein Abkürzen durch den Wall)
     drehBremse: 1.5,           // bremst ein Drehen des Autos im Schnee (Anteil je Sekunde)
     kreuzungLuecke: 45,        // an Abzweig/Einmündung so viele Meter um die Kreuzung: Lücke für den Stummel
@@ -1103,6 +1109,11 @@ export const CONFIG = {
     farbeOben: '#f6f9ff',      // oben: Schneeweiss
     farbeInnen: '#dfe8f4',     // zur Strasse: hell, leicht bläulich
     farbeSchatten: '#9fb4d6',  // aussen: blauer Schatten
+    stangenAbstand: 30,        // rot-weisse Schneestangen auf dem Wall: alle so viele Meter (je Seite versetzt)
+    stangeHoehe: 1.8,          // so hoch über dem Wall (Meter) ...
+    stangeBreite: 0.12,        // ... so dick ...
+    stangeTeile: 4,            // ... in so vielen rot-weissen Stücken
+    stangeRot: '#d8262a', stangeWeiss: '#f6f6f6',
     tonWucht: 0.45,            // Aufprall-Ton (Material "weich") mit so viel der Wucht: dumpf und gedämpft
     staubJe: 1.2,              // weisser Schneestaub beim Eintauchen: so viele Wölkchen je m/s ...
     staubMax: 18,              // ... höchstens so viele
@@ -1110,6 +1121,7 @@ export const CONFIG = {
 
   strassenrand: {
     seed: Z.strassenrand,  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (Streckendatei)
+    schneewall: (S.strassenrand && S.strassenrand.schneewall) || null, // M11a: Schneewall (Streckendatei, nur Gletscher)
     abstand: 6.0,              // Abstand Strassenmitte -> Vorderkante Leitplanke (Bankett endet bei 5.5).
                                // Zaun und Schilder stehen etwas dahinter (siehe versatz)
     puffer: 20,                // so viele Meter vor/nach einer gesperrten Kurve ("nicht schneiden") bleibt die Innenseite frei
@@ -1143,7 +1155,7 @@ export const CONFIG = {
     },
 
     zaun: {
-      an: true,                // false = keine Holzzäune
+      an: !(S.strassenrand && S.strassenrand.ohneZaun), // false = keine Holzzäune (M11a: Streckendatei strassenrand.ohneZaun, Gletscher)
       versatz: 0.35,           // steht so viel weiter weg als die Leitplanken (randAbstand + versatz)
       hoehe: 1.1,              // Höhe der Pfosten
       latten: [0.4, 0.75, 1.0], // Höhe der Querlatten (2 oder 3 Stück)
@@ -1265,6 +1277,7 @@ export const CONFIG = {
       windMehr: 0.35,          // Fahrtwind in der Luft so viel lauter (0.35 = +35 %)
       schlagPegel: 0.55,       // (bis 0.10c.1: dumpfer Federungsschlag; seit M10c.2 ersetzt durch wumms.bass)
       kiesPegel: 0.35,         // Schotterknirschen bei jeder Landung
+      schnee: { pegel: 0.7, kiesMal: 0.6, tiefpass: 800 }, // M11a: Landung auf Schnee/Eis: Wums leiser (mal pegel), Knirschen leiser und dumpfer (Tiefpass Hz)
       hartPegel: 0.7,          // hart: lauter Schlag mit Knirschen
       auaPegel: 0.6,           // sehr hart: kurzer tiefer "Aua"-Ton dazu
       // M10c.2: Landungs-Wums (Lino: „viel zu leise“). Mit dieser einen Zahl lässt sich der ganze Wums lauter/leiser stellen

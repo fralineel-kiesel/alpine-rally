@@ -34,11 +34,19 @@ const AUTOS = process.env.M11A_AUTOS ? process.env.M11A_AUTOS.split(',') : ['rt4
 if (!ALT) info('Vergleiche gegen 0.10d nur mit --alt <ordner> (git worktree add <ordner> 40c41f3)');
 
 // Spiel öffnen
-async function oeffne(wurzel, adresse = '', { auto, breite = 640, hoehe = 360, geraet, speicher = null } = {}) {
+async function oeffne(wurzel, adresse = '', { auto, breite = 640, hoehe = 360, geraet, speicher = null, uhr = false } = {}) {
   const s = await starteSpiel({ wurzel, breite, hoehe, ...(auto ? { auto } : {}), ...(geraet ? { geraet } : {}) });
   s.fehler = [];
   s.page.on('pageerror', (e) => s.fehler.push(String(e.message || e)));
   if (speicher) await s.page.addInitScript((sp) => { localStorage.clear(); for (const [k, v] of Object.entries(sp)) localStorage.setItem(k, v); }, speicher);
+  // uhr: eigene Bild-Uhr (window.__bild(n, dt)), damit Bilder pixelgleich vergleichbar sind (wie m10d-test)
+  if (uhr) await s.page.addInitScript(() => {
+    let jetzt = 0; const warte = [];
+    performance.now = () => jetzt;
+    window.requestAnimationFrame = (f) => { warte.push(f); return warte.length; };
+    window.cancelAnimationFrame = () => {};
+    window.__bild = (n, dt) => { for (let i = 0; i < n; i++) { jetzt += dt; for (const f of warte.splice(0)) f(jetzt); } };
+  });
   await s.page.goto(`${s.url}/index.html${adresse}`);
   await s.page.waitForFunction(() => window.__alpineRally || window.__fehlerseite, null, { timeout: 120000, polling: 100 });
   return s;
@@ -179,7 +187,7 @@ if (teil('f')) {
 // (g) Alpen und Finnland: Testfahrer-Läufe (alle Autos, alle Stile) genau gleich wie 0.10d
 const STILE = ['vorsichtig', 'mittel', 'flott', 'digital', 'wand'];
 function testfahrerLauf(strecke, auto, wurzel = WURZEL, stand = 'neu', extra = []) {
-  const datei = path.join(LOG, `fahrt-${stand}-${strecke}-${auto}${extra.length ? `-${extra.join('').replace(/[^a-z0-9]/gi, '')}` : ''}.json`);
+  const datei = path.join(LOG, `fahrt-${stand}-${path.basename(strecke, '.js')}-${auto}${extra.length ? `-${extra.join('').replace(/[^a-z0-9]/gi, '')}` : ''}.json`);
   if (fs.existsSync(datei) && !(stand === 'neu' && process.env.M11A_NEU)) return Promise.resolve(JSON.parse(fs.readFileSync(datei, 'utf8')));
   const a = [path.join(wurzel, 'tools', 'strecke-abfahren.mjs'), strecke.includes('/') ? strecke : path.join(wurzel, 'strecken', `${strecke}.js`), '--auto', auto, '--stil', STILE.join(','), '--json', datei, '--aus', datei.replace('.json', '.txt')];
   if (wurzel !== WURZEL) a.push('--wurzel', wurzel);
@@ -319,6 +327,233 @@ if (teil('j')) {
     melde(r.pause.pause < r.schnee.pause, `Pause dämpft den Reifenton: Pausen-Regler ${f(r.pause.pause)} statt ${f(r.schnee.pause)}`);
   }
   await s.schliessen();
+}
+
+// ===================================================================== Teil C: Strecke Gletscher
+const G_DATEI = path.join(WURZEL, 'strecken', 'gletscher.js');
+const STILE_C = ['mittel', 'flott', 'digital'];
+if (teil('k')) {
+  titel('(k) Prüfer akzeptiert strecken/gletscher.js und lehnt kaputte Varianten ab');
+  const r = werkzeug('strecke-pruefen.mjs', [G_DATEI]);
+  melde(r.code === 0, `gletscher.js: ${r.text.trim().split('\n').pop().slice(0, 160)}`);
+  const text = fs.readFileSync(G_DATEI, 'utf8');
+  const varianten = [
+    ['unbekannter Belag', text.replace("belag: 'schnee',", "belag: 'pulverschnee',")],
+    ['Schnee ohne Schneefarben', text.replace(/      schneeWeg: '#[0-9a-f]+',\n/, '')],
+    ['Schneewall kaputt', text.replace("schneewall: { an: true, ohne: [] }", "schneewall: { an: 'ja', ohne: [] }")],
+    ['Sprung-Landung hinter der Zone', text.replace("landeVon: 3201, landeBis: 3240", "landeVon: 3201, landeBis: 3340")],
+    ['Checkpoint hinter dem Ziel', text.replace('checkpoints: [1000, 1900, 2650, 3550]', 'checkpoints: [1000, 1900, 2650, 4400]')],
+  ];
+  const aus = [];
+  for (const [name, inhalt] of varianten) {
+    const f = path.join(WURZEL, 'strecken', `_m11a-kaputt.js`); fs.writeFileSync(f, inhalt);
+    const k = werkzeug('strecke-pruefen.mjs', [f]); fs.rmSync(f);
+    aus.push({ name, ok: k.code === 1 && inhalt !== text, grund: (k.text.split('\n').find((z) => /^\s+\S/.test(z)) || '').trim().slice(0, 90) });
+  }
+  melde(aus.every((x) => x.ok), aus.map((x) => `${x.name}: ${x.ok ? 'abgelehnt' : 'NICHT abgelehnt'} (${x.grund})`).join('; '));
+}
+if (teil('l')) {
+  titel('(l) Länge, Checkpoints, Start/Ziel, Untergrund-Anteile (Eis 10–15 %, Schnee 75–80 %)');
+  const r = werkzeug('strecke-karte.mjs', ['--strecke', 'gletscher', '--aus', LOG]);
+  const t = r.text;
+  const gefahren = +(/gefahren ([\d.]+) m/.exec(t) || [])[1], belag = Object.fromEntries([...t.matchAll(/(schotter|schnee|eis|asphalt) ([\d.]+) %/g)].map((m) => [m[1], +m[2]]));
+  const hm = (/Höhenmeter: ([^\n]+)/.exec(t) || [])[1];
+  melde(gefahren >= 3800 && gefahren <= 4300, `Länge Start bis Ziel ${gefahren} m (3800–4300); ${(/Länge: [^\n]+/.exec(t) || [''])[0]}; ${hm}`);
+  melde(belag.eis >= 10 && belag.eis <= 15 && belag.schnee >= 75 && belag.schnee <= 80, `Belag: ${Object.entries(belag).map(([k, v]) => `${k} ${v} %`).join(', ')} (Rest: Schotter am Anfang, Asphalt an der Bergstation)`);
+  melde(/Checkpoints: 4 /.test(t), `${(/Checkpoints: [^\n]+/.exec(t) || [''])[0]}; ${(/Sprünge: \d+/.exec(t) || [''])[0]}; ${(/Pace-Notes: [^\n]+/.exec(t) || [''])[0]}`);
+  info(`Karte/Profil: ${LOG}/gletscher-karte.png, gletscher-profil.png`);
+}
+const GL = {};
+const gletscherLaeufe = async () => { if (!GL.d) GL.d = await parallel(AUTOS.map((id) => () => testfahrerLauf(G_DATEI, id, WURZEL, 'neu-gletscher')), 3); return GL.d; };
+if (teil('m')) {
+  titel('(m) Testfahrer Gletscher, alle 5 Autos (mittel, flott, digital): im Ziel, kein Stillstand, Allrad vorn, Lanza 073 am Ende, höchstens +25 %');
+  const d = await gletscherLaeufe();
+  const tab = ['| Auto | vorsichtig | mittel | flott | digital | wand | Schneewall-Kontakte (mittel/flott/digital) |', '|---|---|---|---|---|---|---|'];
+  let alleIm = true;
+  AUTOS.forEach((id, k) => {
+    const z = (st) => d[k].stile.find((x) => x.stil === st);
+    for (const st of STILE_C) if (z(st).zeit == null) alleIm = false;
+    tab.push(`| ${id} | ${['vorsichtig', ...STILE_C, 'wand'].map((st) => fmtZ(z(st).zeit)).join(' | ')} | ${STILE_C.map((st) => (z(st).schneewallKontakte || []).length).join(' / ')} |`);
+  });
+  fs.writeFileSync(path.join(LOG, 'testfahrer-gletscher.md'), tab.join('\n') + '\n');
+  for (const z of tab) info(z);
+  // Stillstand / Abkommen stehen in der Textausgabe von strecke-abfahren (Zeile je Stil)
+  const stand = AUTOS.flatMap((id) => { const f = path.join(LOG, `fahrt-neu-gletscher-gletscher-${id}.txt`); return fs.existsSync(f) ? fs.readFileSync(f, 'utf8').split('\n').filter((z) => /Stillstand über 1 s: (?!keiner)/.test(z)).map((z) => `${id}: ${z.slice(0, 60)}`) : []; });
+  melde(alleIm && stand.length === 0, `alle 15 Läufe (mittel/flott/digital) im Ziel, kein Stillstand${stand.length ? ` – ${stand.join('; ')}` : ''}`);
+  for (const st of STILE_C) {
+    const t = Object.fromEntries(AUTOS.map((id, k) => [id, d[k].stile.find((x) => x.stil === st).zeit]));
+    const best = Math.min(...Object.values(t)), allradMax = Math.max(...ALLRAD.map((id) => t[id])), hintenMin = Math.min(...HINTERRAD.map((id) => t[id]));
+    const l073Letzter = t.l073 >= Math.max(...AUTOS.map((id) => t[id])) - 0.5;
+    melde(allradMax < hintenMin && Math.max(...Object.values(t)) <= best * 1.25, `${st}: Allrad ${ALLRAD.map((id) => fmtZ(t[id])).join(' / ')} vor Escorta ${fmtZ(t.escorta)} und Lanza 073 ${fmtZ(t.l073)}; langsamster +${((Math.max(...Object.values(t)) / best - 1) * 100).toFixed(1)} % (höchstens 25)${l073Letzter ? '; Lanza 073 am Ende (±0.5 s)' : '; Lanza 073 NICHT am Ende'}`);
+  }
+}
+// (n) Abkürzen: Werkzeug (keine Linien, der Wall sperrt) und nachgemessen: an jeder Kehre quer durch das Innere zielen
+const ABKUERZEN = async () => {
+  const A = window.__alpineRally, P = A.physik, S = A.strecke, SW = A.schneewall, C = A.CONFIG.schneewall; A.anhalten = true;
+  const { berechnePaceNotes } = await import('/js/pacenotes.js');
+  const kehren = berechnePaceNotes(S, A.netz).kurven.filter((c) => c.kehre || c.winkel >= 150);
+  const out = [];
+  for (const c of kehren) {
+    // vom Anfang der Kehre geradeaus auf den Ausgang zielen (Sehne durch das Innere), 50 km/h, Gas halb
+    A.setzeAuf(c.von - 10); const z = S.punktBei(Math.min(S.anzahl - 1, c.bis + 15));
+    P.richtung = Math.atan2(z.x - P.x, z.z - P.z); P.vx = Math.sin(P.richtung) * 50 / 3.6; P.vz = Math.cos(P.richtung) * 50 / 3.6;
+    let maxRaus = -9; const q = {};
+    for (let t = 0; t < 5; t += A.SCHRITT) {
+      A.physikSchritt(A.SCHRITT, { gas: 0.5, bremse: 0, lenkung: 0, handbremse: false }, true);
+      S.abfrage(P.x, P.z, q); const i = Math.max(0, Math.min(S.anzahl - 1, Math.round(q.i)));
+      const kante = SW.kante[i]; maxRaus = Math.max(maxRaus, Math.abs(q.seite) + C.autoHalb - kante);
+    }
+    out.push({ von: c.von, bis: c.bis, maxRaus });
+  }
+  return { out, tiefeMax: C.tiefeMax };
+};
+if (teil('n')) {
+  titel('(n) Abkürzungs- und Hang-Prüfung (Gletscher)');
+  const a = werkzeug('abkuerzungen.mjs', ['--strecke', 'gletscher', '--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'abkuerzungen-gletscher.log'), a.text);
+  const z = (re) => (re.exec(a.text) || [''])[0];
+  melde(/Durchkommen in gesperrten Kurven: 0/.test(a.text) || /übrige Linien je Kurve \(keine\)/.test(a.text), `Werkzeug: ${z(/Abkürzungen \(Linien\)[^\n]*/)} ${z(/übrige Linien je Kurve[^\n]*/)} – der Schneewall sperrt alle Abkürzungen (keine Sperren nötig)`);
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher');
+  const r = await s.page.evaluate(ABKUERZEN);
+  await s.schliessen();
+  melde(r.out.length >= 3 && r.out.every((k) => k.maxRaus <= r.tiefeMax + 0.05), `nachgemessen: quer durch das Innere jeder Kehre zielen (50 km/h): tiefstes Eintauchen ${r.out.map((k) => `${k.von} m ${k.maxRaus.toFixed(2)} m`).join(', ')} (Wall höchstens ${r.tiefeMax} m, keiner kommt durch)`);
+  const h = werkzeug('hang-pruefen.mjs', ['--strecke', 'gletscher', '--pruefen']);
+  melde(h.code === 0, `Hang-Check: ${h.text.split('\n').filter((x) => /Stellen über|grösste/.test(x)).join('; ')}`);
+}
+// (o) Kontrast Fahrbahn / Seitenhang an 5 festen Punkten (Helligkeit 0..255, Mittel aus je 5x5 Pixeln, 320x180)
+const KONTRAST = async ({ stellen }) => {
+  const A = window.__alpineRally, out = [];
+  for (const s0 of stellen) {
+    A.setzeAuf(s0); A.kameraSofort(); window.__bild(3, 1000 / 60);
+    const c = document.getElementById('spiel'), g = c.getContext('webgl2') || c.getContext('webgl');
+    const w = g.drawingBufferWidth, h = g.drawingBufferHeight, px = new Uint8Array(w * h * 4);
+    A.renderer.render(A.szene, A.kamera); g.readPixels(0, 0, w, h, g.RGBA, g.UNSIGNED_BYTE, px);
+    const S = A.strecke, V = new A.THREE.Vector3();
+    const hell = (s, lat) => {
+      const p = S.punktBei(s + 18); V.set(p.x - p.tz * lat, p.h + 0.05, p.z + p.tx * lat).project(A.kamera);
+      const x = Math.round((V.x + 1) / 2 * w), y = Math.round((V.y + 1) / 2 * h); let sum = 0, n = 0;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const i = ((y + dy) * w + (x + dx)) * 4; if (i >= 0 && i < px.length) { sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]; n++; } }
+      return n ? sum / n : null;
+    };
+    const fahrbahn = (hell(s0, -1.2) + hell(s0, 1.2)) / 2, hang = (hell(s0, -11) + hell(s0, 11)) / 2;
+    const sonne = A.CONFIG.licht ? null : null;
+    out.push({ s: s0, fahrbahn, hang, diff: hang - fahrbahn, belag: A.netz.belag[Math.round(s0 + 18)], richtung: Math.round(Math.atan2(S.punktBei(s0).tx, -S.punktBei(s0).tz) * 180 / Math.PI) });
+  }
+  return out;
+};
+if (teil('o')) {
+  titel('(o) Kontrast Fahrbahn gegen Seitenhang (Helligkeit, 5 feste Punkte, 18 m vor dem Auto, 320x180)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher&aufloesung=320x180', { uhr: true });
+  await s.page.evaluate(() => { window.__alpineRally.anhalten = true; });
+  const r = await s.page.evaluate(KONTRAST, { stellen: [600, 1300, 1950, 2450, 3650] }).catch((e) => [{ fehler: String(e) }]);
+  await s.schliessen();
+  if (r[0].fehler) melde(false, r[0].fehler);
+  else melde(r.every((x) => Math.abs(x.diff) >= 25), r.map((x) => `${x.s} m (${x.belag}, Fahrtrichtung ${x.richtung}°): Fahrbahn ${x.fahrbahn.toFixed(0)}, Hang ${x.hang.toFixed(0)}, Unterschied ${x.diff.toFixed(0)}`).join('; ') + ' (Ziel: mindestens 25 Stufen)');
+}
+// (p) Kurven-Vergleich am Schneewall (alle Kehren, alle 5 Autos)
+function kurvenVergleich(auto) {
+  const datei = path.join(LOG, `kurven-gletscher-${auto}.json`);
+  if (!fs.existsSync(datei) || process.env.M11A_NEU) {
+    const r = werkzeug('strecke-abfahren.mjs', [G_DATEI, '--auto', auto, '--kurven-vergleich', '--json', datei]);
+    if (!fs.existsSync(datei)) { console.log(r.text.slice(-1500)); throw new Error(`kurven-vergleich ${auto}`); }
+  }
+  return JSON.parse(fs.readFileSync(datei, 'utf8'));
+}
+if (teil('p') || teil('i')) {
+  titel('(p)/(i) Kurven-Vergleich Schneewall (Kehren, 100 m davor bis 100 m danach): „wand“ nirgends > 0.1 s schneller als die beste kontaktfreie Fahrt');
+  const d = (x) => (x == null ? '–' : `${x >= 0 ? '+' : ''}${x.toFixed(2)} s`);
+  const tab = ['| Auto | Kurve (m) | beste kontaktfrei (inkl. Rampe) | wand: Unterschied (Wall-Kontakt s) |', '|---|---|---|---|'];
+  const schneller = [], ohne = [];
+  const alle = await parallel(AUTOS.map((id) => async () => kurvenVergleich(id)), 3);
+  AUTOS.forEach((id, k) => {
+    for (const c of alle[k]) {
+      tab.push(`| ${id} | ${c.von}–${c.bis} | ${c.bestAlle ? `${c.bestAlle.stil} ${c.bestAlle.zeit.toFixed(2)} s` : '–'} | ${d(c.diff)}${c.wand.kontakt ? ` (${c.wand.kontakt.toFixed(2)} s)` : ' (ohne Kontakt)'}${c.wand.strafen ? `, ${c.wand.strafen} Strafen` : ''} |`);
+      if (c.diff == null) ohne.push(`${id} ${c.von} m`); else if (c.diff < -0.1 && c.wand.kontakt) schneller.push(`${id} ${c.von} m ${d(c.diff)}`);
+    }
+  });
+  fs.writeFileSync(path.join(LOG, 'kurven-gletscher.md'), tab.join('\n') + '\n');
+  for (const z of tab) info(z);
+  melde(schneller.length === 0, `„wand“ mit Wall-Kontakt in ${schneller.length} Kurven mehr als 0.1 s schneller${schneller.length ? `: ${schneller.join('; ')}` : ''}${ohne.length ? ` (ohne Vergleich: ${ohne.join(', ')})` : ''}`);
+  const strafen = alle.flat().reduce((n, c) => n + (c.wand.strafen || 0), 0);
+  melde(strafen === 0, `keine Wand-Strafe am Schneewall (Strafen im Stil „wand“: ${strafen})`);
+}
+// (q) Sprünge: Weite bei 100 km/h, Landezone Schnee, Zeit je Sprung (aus den Testfahrer-Läufen) und Landungen aller Autos
+const WEITEN = (kmhs) => {
+  const A = window.__alpineRally, P = A.physik, F = A.flug; A.anhalten = true; const out = {};
+  for (const z of A.strecke.sprungZonen) {
+    out[z.name] = [];
+    for (const kmh of kmhs) {
+      A.setzeAuf(z.kante - 6); P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6;
+      const n0 = F.ereignis.landung, a0 = F.ereignis.abheben;
+      for (let t = 0; t < 6 && F.ereignis.landung === n0; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { gas: 0.4, bremse: 0, lenkung: 0, handbremse: false }, true);
+      const L = F.letzteLandung, belag = A.netz.belag[Math.round(L.s)];
+      out[z.name].push(F.ereignis.abheben === a0 ? { kmh, ab: false } : { kmh, ab: true, weite: L.weite, verlust: L.verlust, klasse: L.klasse, belag, s: L.s, strafen: A.wand.strafen });
+    }
+  }
+  const eisNach = A.strecke.sprungZonen.map((z) => { let e = 0; for (let i = Math.round(z.landeVon); i < z.landeVon + 60; i++) if (A.netz.belag[i] === 'eis') e++; return e; });
+  return { out, eisNach };
+};
+if (teil('q')) {
+  titel('(q) Sprünge Gletscher: Weite bei 100 km/h 15–28 m, Landezone Schnee (60 m ohne Eis), alle 5 Autos ohne Strafe, Zeit je Sprung');
+  const zeilen = [];
+  let ok = true;
+  for (const id of AUTOS) {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher', { auto: id });
+    const r = await s.page.evaluate(WEITEN, [100, 140]);
+    await s.schliessen();
+    for (const [name, l] of Object.entries(r.out)) {
+      const w100 = l[0];
+      ok = ok && w100.ab && w100.weite >= 15 && w100.weite <= 28 && l.every((x) => x.ab && x.belag === 'schnee' && x.verlust <= 0.35) && !l.some((x) => x.strafen);
+      if (id === 'rt4' || id === 'l073') zeilen.push(`${id} ${name}: 100 km/h ${w100.ab ? `${w100.weite.toFixed(1)} m` : 'hebt nicht ab'}, 140 km/h ${l[1].ab ? `${l[1].weite.toFixed(1)} m (${l[1].klasse}, −${(l[1].verlust * 100).toFixed(0)} %, ${l[1].belag})` : '–'}`);
+    }
+    if (id === 'rt4') { ok = ok && r.eisNach.every((e) => e === 0); zeilen.push(`Eis in den 60 m nach den Landezonen: ${r.eisNach.join(' / ')} m`); }
+  }
+  melde(ok, zeilen.join('; '));
+  // Zeit je Sprung: Testfahrer "mittel" mit gegen ohne Kuppe (100 m vor bis 150 m nach der Kante) – Werkzeug-Vergleich
+  const d = await gletscherLaeufe();
+  const spr = AUTOS.map((id, k) => { const m = d[k].stile.find((x) => x.stil === 'mittel'); return `${id} ${(m.spruenge || []).map((x) => `${Math.round(x.weite)} m`).join('/')}`; });
+  info(`Testfahrer „mittel“, Flugweiten: ${spr.join('; ')}`);
+}
+if (teil('r')) {
+  titel('(r) Gletscher wird nur geladen, wenn gewählt (Start, Alpen, Finnland laden ihn nicht)');
+  const zeilen = []; let ok = true;
+  for (const adresse of ['', '?strecke=alpen&menue=aus', '?strecke=finnland&menue=aus']) {
+    const s = await starteSpiel({ breite: 640, hoehe: 360 });
+    const geladen = []; s.page.on('request', (q) => { if (/strecken\//.test(q.url())) geladen.push(q.url().replace(/^.*strecken\//, '')); });
+    await s.page.goto(`${s.url}/index.html${adresse}`);
+    await s.page.waitForFunction(() => window.__alpineRally, null, { timeout: 120000 });
+    await new Promise((ok2) => setTimeout(ok2, 1500));
+    ok = ok && !geladen.some((x) => x.startsWith('gletscher'));
+    zeilen.push(`${adresse || 'Start'}: ${[...new Set(geladen)].join(', ')}`);
+    await s.schliessen();
+  }
+  melde(ok, zeilen.join('; '));
+}
+if (teil('s')) {
+  titel('(s) Bildzeit Gletscher gegen Finnland (Median aus 5, abwechselnd, 110 km/h, 320x180), AUTO-Auflösung');
+  const lauf = async (strecke, s0, cp, extra = '&aufloesung=320x180') => {
+    const s = await oeffne(WURZEL, `?menue=aus&ton=aus&strecke=${strecke}${extra}`);
+    await s.page.evaluate(() => new Promise((ok) => setTimeout(ok, 4500)));
+    const r = await s.page.evaluate(async ([s0, cp]) => {
+      const A = window.__alpineRally, P = A.physik;
+      A.rennen.naechsterCp = cp; A.setzeAuf(s0); A.kameraSofort();
+      P.vx = Math.sin(P.richtung) * 110 / 3.6; P.vz = Math.cos(P.richtung) * 110 / 3.6; A.testEingabe = { gas: 1 };
+      const zeiten = []; let t0 = performance.now();
+      await new Promise((ok) => { const f = () => { const t = performance.now(); zeiten.push(t - t0); t0 = t; if (zeiten.length < 150) requestAnimationFrame(f); else ok(); }; requestAnimationFrame(f); });
+      A.testEingabe = null; zeiten.sort((a, b) => a - b);
+      return { ms: zeiten[Math.floor(zeiten.length / 2)], rh: document.getElementById('spiel').height };
+    }, [s0, cp]);
+    await s.schliessen();
+    return r;
+  };
+  const med = (l) => { const a = [...l].sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+  const g = [], f = [];
+  for (let i = 0; i < 5; i++) { g.push((await lauf('gletscher', 3600, 3)).ms); f.push((await lauf('finnland', 3020, 3)).ms); }
+  const mg = med(g), mf = med(f);
+  info(`Gletscher ${g.map((x) => x.toFixed(0)).join('/')} ms, Finnland ${f.map((x) => x.toFixed(0)).join('/')} ms`);
+  melde(mg <= mf * 1.03, `Median Gletscher ${mg.toFixed(1)} ms gegen Finnland ${mf.toFixed(1)} ms (${((mg / mf - 1) * 100).toFixed(1)} %; Grenze: nicht schlechter, ±3 % Streuung)`);
+  const a = await lauf('gletscher', 3600, 3, '&aufloesung=auto');
+  info(`AUTO-Auflösung (Software-Grafik, ca. 4 Bilder/s): Bildhöhe nach dem Lauf ${a.rh} – auf echtem Gerät nicht prüfbar`);
 }
 
 // ===================================================================== Zusammenfassung

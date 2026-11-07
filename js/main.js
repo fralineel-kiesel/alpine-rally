@@ -331,7 +331,7 @@ const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 // bleibt im Flug auf ihrer Höhe), land = Zeit seit der Landung, ruck = Federungs-Ruck (ganze Bildpunkte), frei = Gewicht
 // der frei drehenden Motordrehzahl (1 in der Luft, nach der Landung zurück auf 0), dz = diese Drehzahl
 const sk = { e: 0, yAb: 0, land: 99, ruckT: 99, ruckAmp: 0, ruckPx: 0, ruckAktiv: 0, ab: 0, landung: 0, frei: 0, dz: 0 };
-const sprungTonInfo = { haerte: 0, klasse: 'sauber', s: 0 };
+const sprungTonInfo = { haerte: 0, klasse: 'sauber', s: 0, untergrund: 'asphalt' };
 const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken und Rollen in js/federung.js)
 
 // M10b.2: Wasserbad (zu tief ins Wasser): aktiv = Schwarzbild läuft, t = Zeit seitdem, sicherS = letzte sichere Stelle
@@ -939,7 +939,7 @@ function sprungBild(dt, imRennen) {
     sk.land = 0;
     // M10c.1: Ruck als Anteil der Bildhöhe (bleibt gleich gross, egal welche Auflösung), mindestens 1 Bildpunkt
     sk.ruckT = 0; sk.ruckAmp = an ? Math.max(1, (K.ruckAnteil[0] + (K.ruckAnteil[1] - K.ruckAnteil[0]) * L.haerte) * renderer.domElement.height) : 0;
-    sprungTonInfo.haerte = L.haerte; sprungTonInfo.klasse = L.klasse; sprungTonInfo.s = rennen.letztesS;
+    sprungTonInfo.haerte = L.haerte; sprungTonInfo.klasse = L.klasse; sprungTonInfo.s = rennen.letztesS; sprungTonInfo.untergrund = untergrund; // (M11a: Schnee-Landung)
     if (imRennen) { ton.sprung('landung', sprungTonInfo); spielTick('landung', L.haerte); }
     staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(ST.landungMin + (ST.landungMax - ST.landungMin) * L.haerte), 0.4 + 0.6 * L.haerte, untergrund);
   }
@@ -1578,7 +1578,7 @@ if (fahrlaborAn) {
 // start(): am Menü vorbei ins Rennen wie "STARTEN" (mit Countdown); start({ countdown: false }): ohne Countdown wie vor M5b
 // rennSchritt(dt, e): ein fester Schritt wie in der Spielschleife (Countdown oder Physik), lauf/stat: Rennablauf, Statistik
 window.__alpineRally = {
-  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision, wand,
+  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision, wand, schneewall, // (M11a: schneewall)
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
   ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,
