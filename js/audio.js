@@ -838,15 +838,16 @@ export function baueKlangwerk(ctx) {
     if (b.art === 'surren') setze(W_SURRLP, surrenLp.frequency, hell, R.wechsel);
     if (b.art === 'weich') setze(W_WEICHLP, weichLp.frequency, hell, R.wechsel);
     if (b.art === 'kies') setze(W_KIESBP, kiesBp.frequency, hell, R.wechsel);
-    if (kiesQuelle) setze(W_KIESRATE, kiesQuelle.playbackRate, R.kiesRate + v * R.kiesRateTempo);
+    if (kiesQuelle) setze(W_KIESRATE, kiesQuelle.playbackRate, (R.kiesRate + v * R.kiesRateTempo) * (b.rate ?? 1)); // (M11a: Schnee tiefer)
     // Quietschen (Asphalt) bzw. Rutschen (loser Untergrund)
     const t0 = R.quietschTempo[0], t1 = R.quietschTempo[1];
     const tq = begr((v - t0) / (t1 - t0), 0, 1);
     let q = begr((Math.abs(z.drift) - R.quietschAb) / (R.quietschVoll - R.quietschAb), 0, 1) * tq;
     if (z.handbremse && v > t0) q = Math.max(q, R.handbremseQuietschen * tq);
     const asphalt = z.untergrund === 'asphalt';
-    zu.quietschen = asphalt ? R.quietschPegel * q : 0;
-    zu.rutschen = asphalt ? 0 : R.rutschPegel * q;
+    // M11a: Eis quietscht leise und hell (quietschMal) statt zu knirschen, Schnee knirscht weicher (rutschMal)
+    zu.quietschen = asphalt ? R.quietschPegel * q : b.quietschMal ? R.quietschPegel * b.quietschMal * q : 0;
+    zu.rutschen = asphalt || b.quietschMal ? 0 : R.rutschPegel * q * (b.rutschMal ?? 1);
     setze(W_QUIETSCH, quietschGain.gain, zu.quietschen, 0.04); setze(W_RUTSCH, rutschGain.gain, zu.rutschen, 0.04);
     const qhz = mische(R.quietschTon[0], R.quietschTon[1], q);
     setze(W_QHZ, quietschOsz.frequency, qhz, 0.08); setze(W_QBP, quietschBp.frequency, qhz, 0.08);

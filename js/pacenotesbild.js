@@ -123,6 +123,22 @@ const GROSS = {
     '###########',
     '...........',
   ],
+  // Eis (M11a): Schneeflocke – Achtung, gleich kommt eine Eisstelle
+  eis: [
+    '.....#.....',
+    '...#.#.#...',
+    '....###....',
+    '.#...#...#.',
+    '..#..#..#..',
+    '...#.#.#...',
+    '###########',
+    '...#.#.#...',
+    '..#..#..#..',
+    '.#...#...#.',
+    '....###....',
+    '...#.#.#...',
+    '.....#.....',
+  ],
   // Abzweig rechts: die Etappe biegt ab (Pfeil in der Farbe der Stufe),
   // geradeaus geht die alte Strasse weiter, aber abgesperrt (grau mit rotem Balken)
   abzweig: [
@@ -200,6 +216,7 @@ const KLEIN = {
   // Belag beim Abzweig: Schotter (Körner) und Wiesenweg (Grasbüschel)
   schotter: ['.#..#', '#..#.', '..#..', '.#..#', '#..#.'],
   wiesenweg: ['#.#.#', '#.#.#', '.###.', '..#..', '#####'],
+  schnee: ['#.#.#', '.###.', '##.##', '.###.', '#.#.#'], // M11a: kleine Schneeflocke (Abzweig auf die Schneestrasse)
 };
 
 export const SYMBOL_BREITE = 11;

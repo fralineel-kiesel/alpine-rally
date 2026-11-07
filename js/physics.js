@@ -113,6 +113,11 @@ export class Fahrphysik {
     if (boden.belag && c.heckJeBelag) gripH *= c.heckJeBelag[boden.belag] ?? 1;
     // M10b.1: Schotter-Griff des Autos (Escorta > 1; 1 = keine Rechnung, damit die anderen Autos bit-gleich bleiben)
     if (boden.belag === 'schotter' && c.schotterGrip && c.schotterGrip !== 1) { gripV *= c.schotterGrip; gripH *= c.schotterGrip; }
+    // M11a: Schnee-/Eis-Griff des Autos (wie schotterGrip, nur auf diesem Belag; 1 = keine Rechnung)
+    else if (boden.belag === 'schnee' || boden.belag === 'eis') {
+      const bg = boden.belag === 'schnee' ? c.schneeGrip : c.eisGrip;
+      if (bg && bg !== 1) { gripV *= bg; gripH *= bg; }
+    }
     const schraeg = Math.atan2(vSeit, Math.max(Math.abs(vVor), 0.5));
     // M10b.2: Escorta auf Schotter (auto.schotterHeck < 1): Gas im Drift und der Schub hinten lockern das Heck nur zu
     // diesem Anteil (das Heck bricht später und sanfter aus); 1 = wie bisher (alle anderen Autos, jeder andere Belag)

@@ -10,7 +10,7 @@ import { pruefeSprung } from './sprung.js';
 export const FORMAT = 1;
 
 // Bekannte Beläge (müssen zu den Schlüsseln von config.belaege passen, prüft tools/m10a-test.mjs)
-export const BELAEGE = ['asphalt', 'schotter', 'wiesenweg'];
+export const BELAEGE = ['asphalt', 'schotter', 'wiesenweg', 'schnee', 'eis']; // M11a: Schnee und Eis (Gletscher)
 // Bekannte Absperrungen und Seitenschutz an Stummeln und Verlängerungen
 export const SPERREN = ['band', 'reifen', 'heu', 'zaun'];
 export const SEITENSCHUTZ = ['planke', 'zaun'];

@@ -16,6 +16,9 @@ import { kachelBreite } from './pacenotesbild.js';
 const GRAD = 180 / Math.PI;
 
 // --- Krümmung je Streckenpunkt (1/Meter, + = Rechtskurve), geglättet -----------------------
+// M11a: Ansagen mit festem Vorlauf (SPRUNG seit M10c, EIS seit M11a): eigene Ansage, zuerst in ihrer Gruppe
+const FEST = (art) => art === 'sprung' || art === 'eis';
+
 export function kruemmung(strecke, glaetten = CONFIG.pacenotes.glaetten) {
   const { tx, tz, anzahl: n } = strecke;
   const roh = new Float32Array(n);
@@ -262,6 +265,8 @@ export function berechnePaceNotes(strecke, netz, P = CONFIG.pacenotes) {
   if (netz) {
     for (let i = 1; i < strecke.anzahl; i++) {
       const b = netz.belag[i];
+      // M11a: Eis bekommt eine eigene Warnung (unten), die Rückkehr vom Eis auf Schnee keine Ansage
+      if (b === 'eis' || (b === 'schnee' && netz.belag[i - 1] === 'eis')) continue;
       if (b !== netz.belag[i - 1] && b !== 'asphalt' && T[b]) belagWechsel.push({ s: i, belag: b });
     }
   }
@@ -278,6 +283,13 @@ export function berechnePaceNotes(strecke, netz, P = CONFIG.pacenotes) {
   for (const z of zonen) {
     if (!imRennen(z.kante)) continue;
     teile.push({ art: 'sprung', s: z.kante, sEnde: z.kante, symbol: 'sprung', farbe: 'weiss', varianten: [T.sprung, ''], vorlauf: P.sprungVor });
+  }
+  // M11a: Eisstellen – Schneeflocke "EIS" mit festem Vorlauf (wie SPRUNG) am Anfang jeder Eisstelle
+  if (netz && T.eis) {
+    for (let i = 1; i < strecke.anzahl; i++) {
+      if (netz.belag[i] !== 'eis' || netz.belag[i - 1] === 'eis' || !imRennen(i)) continue;
+      teile.push({ art: 'eis', s: i, sEnde: i, symbol: 'eis', farbe: 'weiss', varianten: [T.eis, ''], vorlauf: P.eisVor });
+    }
   }
 
   // 6. Felswand: nur wo eine Kurve im Felswand-Stück die Wand aussen hat
@@ -380,7 +392,8 @@ export function berechnePaceNotes(strecke, netz, P = CONFIG.pacenotes) {
   for (const t of teile) {
     const letzte = notes[notes.length - 1];
     // (M10c: SPRUNG bleibt eine eigene Ansage, damit sie mit ihrem festen Vorlauf vor der Kante kommt)
-    if (letzte && t.art !== 'sprung' && letzte.teile[0].art !== 'sprung' && t.s - letzte.teile[letzte.teile.length - 1].s < P.zusammen) letzte.teile.push(t);
+    // (M11a: EIS ebenso, eigener Vorlauf vor der Eisstelle)
+    if (letzte && !FEST(t.art) && !FEST(letzte.teile[0].art) && t.s - letzte.teile[letzte.teile.length - 1].s < P.zusammen) letzte.teile.push(t);
     else notes.push({ s: t.s, teile: [t] });
   }
   for (const nt of notes) fertigeNote(nt, P);
@@ -425,7 +438,7 @@ function fertigeNote(nt, P) {
 // config.pacenotes.anzeigen. Ergebnis je Kachel: was zeichneKachel() braucht, dazu s (Anfang) und
 // mitte (beim Passieren dieser Stelle blendet die Kachel aus).
 export function kachelnAusNote(nt, P = CONFIG.pacenotes) {
-  const SYMBOL = { kuppe: 'kuppe', sprung: 'sprung', ziel: 'ziel', senke: 'senke', gerade: 'gerade', felswand: 'gefahr', belag: 'belag' };
+  const SYMBOL = { kuppe: 'kuppe', sprung: 'sprung', ziel: 'ziel', senke: 'senke', gerade: 'gerade', felswand: 'gefahr', belag: 'belag', eis: 'eis' };
   const aus = [];
   for (const t of nt.teile) {
     if (P.anzeigen[t.art] === false) continue;
@@ -480,7 +493,7 @@ export function bauePaceNotes(strecke, netz) {
   // M10c: SPRUNG zuerst in seiner Gruppe (wichtiger als eine Kurve davor; ist nur ein Platz frei, kommt er zuerst)
   for (const g of gruppen) {
     for (let i = g.von + 1; i <= g.bis; i++) {
-      if (kacheln[i].art !== 'sprung') continue;
+      if (!FEST(kacheln[i].art)) continue;
       const k = kacheln[i];
       for (let j = i; j > g.von; j--) kacheln[j] = kacheln[j - 1];
       kacheln[g.von] = k;
@@ -488,12 +501,12 @@ export function bauePaceNotes(strecke, netz) {
   }
   for (const g of gruppen) {
     g.anker = kacheln[g.bis].s; // Zeitfenster: die hinterste Kachel der Gruppe muss im Fenster sein
-    if (kacheln[g.von].art === 'sprung') g.anker = Math.max(...kacheln.slice(g.von, g.bis + 1).map((k) => k.s)); // (M10c)
+    if (FEST(kacheln[g.von].art)) g.anker = Math.max(...kacheln.slice(g.von, g.bis + 1).map((k) => k.s)); // (M10c)
     g.letzteMitte = Math.max(...kacheln.slice(g.von, g.bis + 1).map((k) => k.mitte));
     g.bremsen = kacheln.slice(g.von, g.bis + 1).some((k) => k.art === 'kehre' || k.art === 'abzweig' || k.art === 'einmuendung');
     g.vorlauf = notes[kacheln[g.von].note].vorlauf; // fester Vorlauf (nur wenn zielVor gesetzt)
     // M10c: steht SPRUNG in der Gruppe, gilt dessen fester Vorlauf (vor der Kante, auch wenn eine Kurve davor liegt)
-    for (let i = g.von; i <= g.bis; i++) if (kacheln[i].art === 'sprung') g.vorlauf = Math.max(g.vorlauf || 0, notes[kacheln[i].note].vorlauf || 0) || null;
+    for (let i = g.von; i <= g.bis; i++) if (FEST(kacheln[i].art)) g.vorlauf = Math.max(g.vorlauf || 0, notes[kacheln[i].note].vorlauf || 0) || null;
   }
   const G = gruppen.length;
   // Ende jeder Ansage (für die F3-Liste "nächste Ansagen")

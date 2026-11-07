@@ -59,6 +59,7 @@ import { baueStartZiel } from './startziel.js';
 import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
+import { baueSchneewall } from './schneewall.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
@@ -164,6 +165,9 @@ const welt = baueWelt(szene, strecke, netz);
 const pflanzen = bauePflanzen(szene, strecke, welt);
 // Leitplanken, Holzzäune, Schilder (Meilenstein 2a) – sind auch Hindernisse
 const strassenrand = baueStrassenrand(szene, strecke, welt, pflanzen);
+// M11a: Schneewall (nur Strecken mit strassenrand.schneewall, Gletscher): weicher Rand statt Leitplanken
+const schneewall = baueSchneewall(strecke, netz, welt);
+if (schneewall.mesh) szene.add(schneewall.mesh);
 // Absperrungen auf den Stummeln der Nebenwege (M3a) – Hindernisse wie der Strassenrand
 const absperrungen = baueAbsperrungen(szene, welt, [...pflanzen.hindernisse, ...strassenrand.hindernisse]);
 strassenrand.hindernisse.push(...absperrungen.hindernisse);
@@ -317,6 +321,7 @@ function aufprallZaehlen(wucht) {
 const grenzWucht = (nx, nz) => Math.max(0, physik.vx * nx + physik.vz * nz);
 // Für den Ton (M7a, nur gelesen): stärkster Kontakt im Bild (Wucht, Material), Kontakt zum Schleifen, Pedale aus der Physik
 const FELS = materialNr('fels');
+const WEICH = materialNr('weich'); // M11a: Schneewall
 const tonInfo = { wucht: 0, art: 0, kontaktArt: -1, kontaktTempo: 0 };
 const tonEingabe = { gas: 0, bremse: 0, handbremse: false };
 let pnStand = 0; // so viele Pace-Notes-Kacheln sind schon erschienen (für das Signal)
@@ -543,6 +548,15 @@ function physikSchritt(dt, e, nurFahren = false) {
   if (wand.strafe) {
     tonW = Math.max(tonW, wand.verlust);
     if (!nurFahren) staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(Math.min(CONFIG.kollision.wand.staubMax, wand.verlust * CONFIG.kollision.wand.staubJe)), 0.3 + Math.min(0.7, wand.verlust / 20), untergrund);
+  }
+  // M11a: Schneewall (weicher Rand): bremst, schiebt zurück, keine Wand-Strafe; dumpfer Ton (weich), weisser Staub
+  if (schneewall.an && !fliegt) {
+    const sw = schneewall.wirke(physik, q2, dt);
+    if (sw) {
+      const SW = CONFIG.schneewall, wSw = sw.wucht * SW.tonWucht;
+      if (wSw > tonW) { tonW = wSw; tonArt = WEICH; }
+      if (sw.neu && sw.wucht > 1 && !nurFahren) staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(Math.min(SW.staubMax, sw.wucht * SW.staubJe)), 0.5, 'schnee');
+    }
   }
   if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
     // Abhang auf der anderen Seite

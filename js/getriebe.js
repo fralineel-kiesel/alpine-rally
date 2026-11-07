@@ -167,6 +167,12 @@ export class Getriebe {
           let sg = belag === 'schotter' && CONFIG.auto.schotterGrip && CONFIG.auto.schotterGrip !== 1 ? CONFIG.auto.schotterGrip : 1;
           // M10b.2: Traktion nur auf Schotter (auto.schotterTraktion, Escorta: Räder drehen weniger durch; 1 = wie bisher)
           if (belag === 'schotter' && CONFIG.auto.schotterTraktion && CONFIG.auto.schotterTraktion !== 1) sg *= CONFIG.auto.schotterTraktion;
+          // M11a: Schnee-/Eis-Griff des Autos gilt wie schotterGrip auch für die Traktion (nur auf diesem Belag)
+          // (dazu untergrund.<belag>.traktion: Spikes, auf Eis geht mehr Schub auf den Boden als der kleine Grip hergibt)
+          if (belag === 'schnee' || belag === 'eis') {
+            const bg = belag === 'schnee' ? CONFIG.auto.schneeGrip : CONFIG.auto.eisGrip;
+            sg = (CONFIG.untergrund[belag].traktion ?? 1) * (bg || 1);
+          }
           beschl = Math.min(beschl, g.traktion * grip * sg * (belag && g.allrad ? g.allrad[belag] ?? 1 : 1));
         }
         if (gas < 0.05) {
