@@ -875,6 +875,10 @@ export const CONFIG = {
     //   traktion (nur Schnee/Eis): Schub beim Anfahren mal diesem Wert (Spikes: auf Eis mehr, als der Grip hergibt)
     schnee: { grip: 0.42, rollen: 0.45, rollenTempo: 0.012, rueckwaerts: 1.3, heck: 0.82, stabilitaet: 0.5, geradeaus: 0.4, traktion: 1.0 },
     eis:    { grip: 0.11, rollen: 0.1, rollenTempo: 0.002, rueckwaerts: 1.0, heck: 0.9, stabilitaet: 0.25, geradeaus: 0.15, traktion: 2.0 },
+    // M11a.1: Tiefschnee neben der Gletscherstrasse (Streckendatei strassenrand.tiefschnee): bremst sehr stark, je
+    // schneller desto mehr (rollenTempo: aus 80 km/h ohne Gas in 2 s über 60 % weg, viel stärker als Gras), keine Wand-
+    // Strafe; im Schritttempo bremst er wenig (rollen klein), rückwärts kräftig (rueckwaerts): man kommt immer heraus.
+    tiefschnee: { grip: 0.38, rollen: 1.2, rollenTempo: 0.7, rueckwaerts: 2.6, heck: 0.85, stabilitaet: 0.6, geradeaus: 0.4, traktion: 1.0 },
   },
 
   // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------
@@ -902,6 +906,7 @@ export const CONFIG = {
       wiesenweg: { farbe: '#8c7356', staerke: 0.55 },  // dunkler, erdig, schwächer
       schnee: { farbe: '#f4f8ff', staerke: 0.85 },     // M11a: weisser Schneestaub
       eis: { farbe: '#dceaf6', staerke: 0.12 },        // M11a: auf Eis kaum Staub (nur ein Hauch Eiskristalle)
+      tiefschnee: { farbe: '#ffffff', staerke: 1.3 },  // M11a.1: Tiefschnee: viel weisser Pulverschnee
     },
   },
 
@@ -1117,6 +1122,25 @@ export const CONFIG = {
     tonWucht: 0.45,            // Aufprall-Ton (Material "weich") mit so viel der Wucht: dumpf und gedämpft
     staubJe: 1.2,              // weisser Schneestaub beim Eintauchen: so viele Wölkchen je m/s ...
     staubMax: 18,              // ... höchstens so viele
+    // M11a.1: Hohlweg (Streckendatei hohlwege): statt des niedrigen Walls eine breite, schräge Schneebank (Physik gleich)
+    bankHoehe: 2.0,            // so hoch über der (abgesenkten) Strasse ist die Kante oben (Meter, ± welle)
+    bankInnen: 2.6,            // so breit ist die schräge Innenseite (Meter quer: Neigung ca. 37°, keine senkrechte Mauer)
+    bankOben: 1.6,             // so breit ist die Krone oben (mit Schneehaube)
+    bankAussen: 3.0,           // so breit fällt sie aussen zum Gelände ab
+    haube: 0.25,               // Schneehaube: so weit steht die Kante oben über (Meter)
+    felsAlle: [14, 30],        // ab und zu Fels in der Bank: alle so viele Meter (von … bis, je Seite)
+    farbeBankUnten: '#e2eaf5', // Innenseite unten (hell: die graue Fahrbahn muss sich klar abheben, Kontrast ≥ 40)
+    farbeBankInnen: '#eef3fa', // Innenseite oben
+    eigenLicht: 0.18,          // Schnee der Bank leuchtet so viel selbst (Streulicht): auch die Schattenseite bleibt hell (Kontrast)
+    farbeFels: '#6c7079',      // Fels im Schnee (oben etwas heller: farbeFelsHell)
+    farbeFelsHell: '#8f949c',
+    stangenTiefschnee: true,   // ohne Wall stehen die Schneestangen am Rand des Tiefschnees (wie bisher alle 30 m)
+  },
+
+  // --- Hohlwege (M11a.1, js/hohlweg.js): eingesenkte Schneestrasse (Streckendatei hohlwege [{ von, bis }]) ----------
+  hohlweg: {
+    tiefe: 0.8,                // so viel liegt die Strasse tiefer (Meter, Richtwert 0.5 bis 1) ...
+    rampe: 35,                 // ... ein- und ausgefahren über so viele Meter (sanft, kein harter Schnitt)
   },
 
   // --- Eisseen (M11a.1, js/eissee.js): kleine gefrorene Seen auf der Strasse der Gletscher-Etappe ------------------
@@ -1140,6 +1164,7 @@ export const CONFIG = {
   strassenrand: {
     seed: Z.strassenrand,  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (Streckendatei)
     schneewall: (S.strassenrand && S.strassenrand.schneewall) || null, // M11a: Schneewall (Streckendatei, nur Gletscher)
+    tiefschnee: !!(S.strassenrand && S.strassenrand.tiefschnee), // M11a.1: neben der Strasse Tiefschnee statt Gras (Gletscher)
     abstand: 6.0,              // Abstand Strassenmitte -> Vorderkante Leitplanke (Bankett endet bei 5.5).
                                // Zaun und Schilder stehen etwas dahinter (siehe versatz)
     puffer: 20,                // so viele Meter vor/nach einer gesperrten Kurve ("nicht schneiden") bleibt die Innenseite frei
@@ -2098,6 +2123,7 @@ export const CONFIG = {
         // Knirschen (quietschMal = Anteil des Asphalt-Quietschens)
         schnee: { art: 'kies', pegel: 0.11, grenze: 900, grenzeTempo: 18, rate: 0.6, rutschMal: 0.7 },
         eis: { art: 'surren', pegel: 0.035, grenze: 2400, grenzeTempo: 30, quietschMal: 0.35 },
+        tiefschnee: { art: 'weich', pegel: 0.13, grenze: 200, grenzeTempo: 4 }, // M11a.1: Tiefschnee: dumpfes Rauschen
       },
       wechsel: 0.05,           // Überblendung beim Untergrundwechsel (Zeitkonstante; nach ca. 0.15 s fertig)
       kiesRate: 0.7,           // Kies: Abspieltempo im Schritttempo ...

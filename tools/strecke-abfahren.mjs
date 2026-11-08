@@ -50,7 +50,9 @@ if (process.argv.includes('--kurven-vergleich')) {
     const { berechnePaceNotes } = await import('/js/pacenotes.js');
     const A = window.__alpineRally, S = A.strecke;
     A.anhalten = true;
-    const an = berechnePaceNotes(S, A.netz).kurven.filter((c) => c.kehre || c.winkel >= 150);
+    // (M11a.1: dazu die Kurven, in denen ein Hohlweg liegt – dort steht die Schneebank)
+    const hw = S.hohlwege || [];
+    const an = berechnePaceNotes(S, A.netz).kurven.filter((c) => c.kehre || c.winkel >= 150 || hw.some((h) => c.von < h.bis && c.bis > h.von));
     const voll = {};
     for (const st of ['flott', 'digital', 'mittel']) voll[st] = f.bauePfad(A, Array.from(S.px), Array.from(S.pz), f.PROFILE[st]);
     // sanftAb (Meter): ab dort Gas höchstens wie die Leistungskurve der Motor-Strafe (0.25 → 1 in sanftDauer s, smoothstep)
@@ -72,7 +74,7 @@ if (process.argv.includes('--kurven-vergleich')) {
           if (sanftT >= 0) { const p = Math.min(1, sanftT / sanftDauer); gm = Math.min(gm, 0.25 + 0.75 * p * p * (3 - 2 * p)); sanftT += dt; }
         }
         schritt(dt, gm < 1 && e.gas > gm ? { ...e, gas: gm } : e, nf);
-        if (A.wand.kontakt || (A.schneewall && A.schneewall.kontakt)) kontakt++; // (M11a: auch der Schneewall)
+        if (A.wand.kontakt || (A.schneewall && A.schneewall.kontakt) || A.untergrund === 'tiefschnee') kontakt++; // (M11a: auch der Schneewall; M11a.1: Tiefschnee)
         else if (A.kollision.letzterAufprall !== l0) baum = true;
         if (A.wand.strafeRest > 0) strafeZeit += dt;
       };
@@ -114,8 +116,32 @@ if (process.argv.includes('--kurven-vergleich')) {
       const bestDosiert = dosiert.reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
       const bestAlle = [best, bestDosiert].filter(Boolean).reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
       const vw = f.bauePfad(A, Array.from(S.px), Array.from(S.pz), { ...f.PROFILE.wand, nurBereich: [c.von - 10, c.bis + 10] }).vZiel;
-      const w = lauf(vw, a, b, v0);
-      out.push({ von: c.von, bis: c.bis, winkel: Math.round(c.winkel), kehre: c.kehre, kmh: Math.round(v0 * 3.6), ohne, best, ersatz, bestDosiert, bestAlle, wand: w,
+      let w = lauf(vw, a, b, v0);
+      // M11a.1: mit Tiefschnee-Rand (Gletscher) zusätzlich „durch den Tiefschnee abkürzen“: Linie durch das Innere der Kehre
+      // (Strassenmitte nach innen versetzt um 4 / 7 / 10 / 14 m, weich ein- und ausgeblendet), Tempo nach dieser Linie;
+      // die schnellste dieser Fahrten mit Tiefschnee-Kontakt zählt als „wand“ (Rand-Kontakt), wenn sie schneller ist
+      const abkuerzen = [];
+      if (A.CONFIG.strassenrand.tiefschnee) {
+        const innen = c.richtung > 0 ? 1 : -1;
+        for (const d of [4, 7, 10, 14]) {
+          const xs = Array.from(S.px), zs = Array.from(S.pz);
+          for (let i = a; i < b; i++) {
+            const t = Math.min(Math.max(0, Math.min(1, (i - (c.von - 25)) / 25)), Math.max(0, Math.min(1, ((c.bis + 25) - i) / 25)));
+            const l = innen * d * t * t * (3 - 2 * t);
+            xs[i] = S.px[i] - S.tz[i] * l; zs[i] = S.pz[i] + S.tx[i] * l;
+          }
+          const p = f.bauePfad(A, xs.slice(a, b), zs.slice(a, b), f.PROFILE.digital).vZiel;
+          const vz = new Float64Array(S.anzahl); for (let i = 0; i < p.length; i++) vz[a + i] = p[i];
+          const sx = S.px, sz = S.pz;
+          // (lauf fährt die Strassenmitte von a bis b: hier mit der versetzten Linie)
+          S.px = Float64Array.from(xs); S.pz = Float64Array.from(zs);
+          let x; try { x = { stil: `abkürzen ${d} m innen`, ...lauf(vz, a, b, v0) }; } finally { S.px = sx; S.pz = sz; }
+          abkuerzen.push(x);
+        }
+        const bestAb = abkuerzen.filter((x) => x.fertig && x.kontakt).reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
+        if (bestAb && (!w.fertig || bestAb.zeit < w.zeit)) w = bestAb;
+      }
+      out.push({ von: c.von, bis: c.bis, winkel: Math.round(c.winkel), kehre: c.kehre, kmh: Math.round(v0 * 3.6), ohne, best, ersatz, bestDosiert, bestAlle, wand: w, abkuerzen,
         diffOhneRampe: best && w.fertig ? w.zeit - best.zeit : null, diff: bestAlle && w.fertig ? w.zeit - bestAlle.zeit : null });
     }
     return out;
@@ -180,7 +206,7 @@ for (const profil of STILE) {
       const iT = Math.round(s);
       if (iT >= 0 && iT < tempo.length) tempo[iT] = Math.max(tempo[iT], p.tempo * 3.6);
       const art = A.welt.bodenBei(p.x, p.z, q).art; // (q: Ergebnis der Streckenabfrage, wie im Testfahrer)
-      if (art === 'gras') { if (grasAn == null) grasAn = s; } else if (grasAn != null) { gras.push([grasAn, s]); grasAn = null; }
+      if (art === 'gras' || art === 'tiefschnee') { if (grasAn == null) grasAn = s; } else if (grasAn != null) { gras.push([grasAn, s]); grasAn = null; }
       const anWand = q.wandSeite !== 0 && q.wandStaerke > 0.5 && Math.sign(q.seite) === q.wandSeite && Math.abs(q.seite) > C.grenze.wandGrenze - 0.3;
       const iz = Math.floor(s / 10); if (iz >= 0 && iz < zeitBei.length && zeitBei[iz] < 0) zeitBei[iz] = A.rennen.uhr;
       const wk = A.wand ? A.wand.kontakt : (wandMat.has(A.kollision.kontaktArt) || anWand);

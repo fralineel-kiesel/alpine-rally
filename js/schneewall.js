@@ -6,6 +6,7 @@
 // Werte: config.js, Block schneewall. Ohne schneewall in der Streckendatei (Alpen, Finnland) passiert hier nichts.
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { hohlwegAnteil } from './hohlweg.js';
 
 const begrenze = (w, a, b) => (w < a ? a : w > b ? b : w);
 
@@ -59,6 +60,15 @@ export function baueSchneewall(strecke, netz, welt) {
       st = -1;
     }
   }
+
+  // M11a.1: Wall nur in den Hohlwegen (Streckendatei strassenrand.schneewall.nurHohlwege); sonst Tiefschnee-Rand ohne
+  // Wall. Die Schneestangen stehen dann trotzdem überall dort, wo vorher Wall war (Lücken an Kreuzungen und Seen bleiben)
+  const HW = strecke.hohlwege || [];
+  const stangeL = links.slice(), stangeR = rechts.slice();
+  if (D.nurHohlwege) {
+    for (let i = 0; i < n; i++) if (!HW.some((h) => i >= h.von && i <= h.bis)) { links[i] = 0; rechts[i] = 0; }
+  }
+  const imHohlweg = (i) => HW.length && hohlwegAnteil(HW, i) > 0;
 
   // --- Physik (je Schritt, nicht in der Luft) ---
   // q: strecke.abfrage(physik) nach den Hindernissen. Ergebnis: Eintauchtiefe (m, 0 = kein Kontakt) und das Tempo
@@ -122,6 +132,8 @@ export function baueSchneewall(strecke, netz, welt) {
   // --- Aussehen: niedriger Wall, oben weiss, zur Strasse hell, aussen bläulicher Schatten (flach schattiert) ---
   const pos = [], col = [], idx = [];
   const weiss = new THREE.Color(C.farbeOben), innen = new THREE.Color(C.farbeInnen), schatten = new THREE.Color(C.farbeSchatten);
+  const unten = new THREE.Color(C.farbeBankUnten || C.farbeInnen), bankInnen = new THREE.Color(C.farbeBankInnen || C.farbeInnen);
+  const fels = new THREE.Color(C.farbeFels || '#6c7079'), felsHell = new THREE.Color(C.farbeFelsHell || C.farbeFels || '#8f949c');
   const SCHRITT = C.schritt;
   for (const [sd, a] of [[-1, links], [1, rechts]]) {
     let st = -1;
@@ -135,16 +147,28 @@ export function baueSchneewall(strecke, netz, welt) {
       for (let k = st; ; k = Math.min(bis, k + SCHRITT)) {
         const kr = kante[k], h0 = strecke.py[k];
         const pkt = (l, y) => [strecke.px[k] - strecke.tz[k] * sd * l, y, strecke.pz[k] + strecke.tx[k] * sd * l];
-        const welle = C.hoehe * (1 + C.welle * Math.sin(k * 0.37 + sd));
-        const fussA = pkt(kr + C.breite, 0); fussA[1] = Math.min(h0, welt.gelaendeHoehe(fussA[0], fussA[2])) - 0.3;
-        const oben = h0 + welle;
-        reihe.push([pkt(kr, h0 - 0.15), pkt(kr + C.breite * 0.3, oben), pkt(kr + C.breite * 0.7, oben - 0.1), fussA]);
+        if (imHohlweg(k)) {
+          // Hohlweg-Bank: schräge Innenseite (zwei Stufen), Krone mit überstehender Schneehaube, aussen zum Gelände
+          const a = hohlwegAnteil(HW, k), H = C.bankHoehe * (0.3 + 0.7 * a) * (1 + C.welle * 0.6 * Math.sin(k * 0.23 + sd * 2));
+          const bi = C.bankInnen, bo = C.bankOben;
+          const fussA = pkt(kr + bi + bo + C.bankAussen, 0); fussA[1] = Math.min(h0 + H * 0.3, welt.gelaendeHoehe(fussA[0], fussA[2])) - 0.3;
+          reihe.push([pkt(kr, h0 - 0.15), pkt(kr + bi * 0.55, h0 + H * 0.45), pkt(kr + bi - C.haube, h0 + H - 0.05), pkt(kr + bi, h0 + H + 0.12),
+            pkt(kr + bi + bo, h0 + H + 0.05), fussA]);
+        } else {
+          const welle = C.hoehe * (1 + C.welle * Math.sin(k * 0.37 + sd));
+          const fussA = pkt(kr + C.breite, 0); fussA[1] = Math.min(h0, welt.gelaendeHoehe(fussA[0], fussA[2])) - 0.3;
+          const oben = h0 + welle;
+          reihe.push([pkt(kr, h0 - 0.15), pkt(kr + C.breite * 0.3, oben), pkt(kr + C.breite * 0.7, oben - 0.1), fussA]);
+        }
         if (k === bis) break;
       }
       for (let r = 0; r + 1 < reihe.length; r++) {
         const A = reihe[r], B = reihe[r + 1];
-        for (let f = 0; f < 3; f++) {
-          const farbe = f === 0 ? innen : f === 1 ? weiss : schatten;
+        if (A.length !== B.length) continue; // (Übergang Wall ↔ Bank kommt nicht vor: Wall gibt es nur noch im Hohlweg)
+        const flaechen = A.length - 1;
+        for (let f = 0; f < flaechen; f++) {
+          // Wall: innen, oben, aussen; Bank: unten (grauer), innen, Haube (weiss), Krone (weiss), aussen (Schatten)
+          const farbe = flaechen === 3 ? (f === 0 ? innen : f === 1 ? weiss : schatten) : [unten, bankInnen, weiss, weiss, schatten][f];
           const b0 = pos.length / 3;
           for (const p of [A[f], A[f + 1], B[f + 1], B[f]]) { pos.push(p[0], p[1], p[2]); col.push(farbe.r, farbe.g, farbe.b); }
           // Drehsinn: Flächen schauen nach oben/aussen (links und rechts gespiegelt)
@@ -160,14 +184,54 @@ export function baueSchneewall(strecke, netz, welt) {
   for (const [sd, a] of [[-1, links], [1, rechts]]) {
     for (let k = Math.round(C.stangenAbstand / 2) + (sd > 0 ? Math.round(C.stangenAbstand / 2) : 0); k < n; k += C.stangenAbstand) {
       if (!a[k]) continue;
-      const l = sd * (kante[k] + C.breite * 0.3), x = strecke.px[k] - strecke.tz[k] * l, z = strecke.pz[k] + strecke.tx[k] * l;
-      const y0 = strecke.py[k] + C.hoehe * 0.6, b = C.stangeBreite / 2, teil = C.stangeHoehe / C.stangeTeile;
+      const l = sd * (kante[k] + (imHohlweg(k) ? C.bankInnen + C.bankOben * 0.4 : C.breite * 0.3)), x = strecke.px[k] - strecke.tz[k] * l, z = strecke.pz[k] + strecke.tx[k] * l;
+      const y0 = strecke.py[k] + (imHohlweg(k) ? C.bankHoehe * (0.3 + 0.7 * hohlwegAnteil(HW, k)) * 0.9 : C.hoehe * 0.6), b = C.stangeBreite / 2, teil = C.stangeHoehe / C.stangeTeile;
       for (let t = 0; t < C.stangeTeile; t++) {
         const farbe = t % 2 ? weissS : rot, ya = y0 + t * teil, yb = ya + teil;
         for (const [dx, dz] of [[b, 0], [0, b]]) {
           const b0 = pos.length / 3;
           for (const [px, py, pz] of [[x - dx, ya, z - dz], [x + dx, ya, z + dz], [x + dx, yb, z + dz], [x - dx, yb, z - dz]]) { pos.push(px, py, pz); col.push(farbe.r, farbe.g, farbe.b); }
           idx.push(b0, b0 + 1, b0 + 2, b0, b0 + 2, b0 + 3);
+        }
+      }
+    }
+  }
+  // M11a.1: ab und zu Fels in der Hohlweg-Bank (dunkle, schiefe Platte knapp vor der Innenseite)
+  if (HW.length) {
+    let rndF = 9173;
+    const zf = () => { rndF = (rndF * 16807) % 2147483647; return rndF / 2147483647; };
+    for (const [sd, a] of [[-1, links], [1, rechts]]) {
+      for (let k = Math.round(zf() * 10); k < n; k += Math.round(C.felsAlle[0] + zf() * (C.felsAlle[1] - C.felsAlle[0]))) {
+        if (!a[k] || hohlwegAnteil(HW, k) < 0.6) continue;
+        const H = C.bankHoehe, l0 = kante[k] + C.bankInnen * (0.3 + zf() * 0.3), b = 0.6 + zf() * 0.7, hoch = 0.4 + zf() * 0.5;
+        const h0 = strecke.py[k] + H * (0.25 + zf() * 0.2);
+        const pkt = (ds, l, y) => { const i = Math.min(n - 1, Math.max(0, Math.round(k + ds))); return [strecke.px[i] - strecke.tz[i] * sd * l, y, strecke.pz[i] + strecke.tx[i] * sd * l]; };
+        // unregelmässiger Brocken: dunkle Front (Viereck) und hellere, schräge Oberseite (Dreieck), steckt halb im Schnee
+        const quad = [pkt(-b, l0, h0 - 0.2), pkt(b, l0 - 0.1, h0 - 0.2), pkt(b * 0.7, l0 - 0.05, h0 + hoch), pkt(-b * 0.6, l0 + 0.05, h0 + hoch * 0.8)];
+        const spitze = pkt(0, l0 + 0.6, h0 + hoch * 1.15);
+        let b0 = pos.length / 3;
+        for (const p of quad) { pos.push(p[0], p[1], p[2]); col.push(fels.r, fels.g, fels.b); }
+        idx.push(b0, b0 + 1, b0 + 2, b0, b0 + 2, b0 + 3);
+        b0 = pos.length / 3;
+        for (const p of [quad[3], quad[2], spitze]) { pos.push(p[0], p[1], p[2]); col.push(felsHell.r, felsHell.g, felsHell.b); }
+        idx.push(b0, b0 + 1, b0 + 2);
+      }
+    }
+  }
+  // M11a.1: Schneestangen am Tiefschnee-Rand (wo kein Wall ist, aber vorher einer war): alle stangenAbstand Meter
+  if (D.nurHohlwege && C.stangenTiefschnee) {
+    for (const [sd, a, w] of [[-1, stangeL, links], [1, stangeR, rechts]]) {
+      for (let k = Math.round(C.stangenAbstand / 2) + (sd > 0 ? Math.round(C.stangenAbstand / 2) : 0); k < n; k += C.stangenAbstand) {
+        if (!a[k] || w[k]) continue;
+        const l = sd * (kante[k] + 0.3), x = strecke.px[k] - strecke.tz[k] * l, z = strecke.pz[k] + strecke.tx[k] * l;
+        const y0 = Math.min(strecke.py[k], welt.gelaendeHoehe(x, z)) - 0.1, b = C.stangeBreite / 2, teil = (C.stangeHoehe + 0.5) / C.stangeTeile;
+        for (let t = 0; t < C.stangeTeile; t++) {
+          const farbe = t % 2 ? weissS : rot, ya = y0 + t * teil, yb = ya + teil;
+          for (const [dx, dz] of [[b, 0], [0, b]]) {
+            const b0 = pos.length / 3;
+            for (const [px, py, pz] of [[x - dx, ya, z - dz], [x + dx, ya, z + dz], [x + dx, yb, z + dz], [x - dx, yb, z - dz]]) { pos.push(px, py, pz); col.push(farbe.r, farbe.g, farbe.b); }
+            idx.push(b0, b0 + 1, b0 + 2, b0, b0 + 2, b0 + 3);
+          }
         }
       }
     }
@@ -179,7 +243,10 @@ export function baueSchneewall(strecke, netz, welt) {
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     geo.setIndex(idx);
     const g2 = geo.toNonIndexed(); g2.computeVertexNormals(); // flach schattiert (jede Fläche eigene Normale)
-    mesh = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    // M11a.1: nur mit Hohlwegen etwas Eigenlicht (Schattenseite der Bank bleibt hell, die Fahrbahn hebt sich ab)
+    if (D.nurHohlwege && C.eigenLicht) mat.emissive.setRGB(C.eigenLicht, C.eigenLicht, C.eigenLicht * 1.04);
+    mesh = new THREE.Mesh(g2, mat);
   }
   const erg = { an: true, links, rechts, kante, wirke, mesh, dreiecke: idx.length / 3, kontakt: false, kontaktSchritte: 0 };
   return erg;

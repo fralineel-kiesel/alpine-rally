@@ -442,6 +442,8 @@ function felsWand(nx, nz, ueber) {
   physik.x -= nx * ueber; physik.z -= nz * ueber;
   wand.stoss(physik, -nx, -nz);
 }
+// Gelände neben der Strasse: Gras, auf dem Gletscher Tiefschnee (M11a.1)
+const imGelaende = (art) => art === 'gras' || art === 'tiefschnee';
 function physikSchritt(dt, e, nurFahren = false) {
   wand.anfang(dt); // M10c.1
   const q = strecke.abfrage(physik.x, physik.z, qAuto);
@@ -494,8 +496,8 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Steigung im Gelände messen: Stand das Auto vorher auf Asphalt oder Bankett, zählt dort die
   // Geländehöhe. Sonst wirkte die kleine Stufe vom Bankett auf die Wiese (wenige cm auf wenigen mm
   // Weg) wie eine senkrechte Wand, und das Auto blieb an der Bankett-Kante hängen.
-  const hVorher = boden.art === 'gras' ? hAlt : welt.gelaendeHoehe(xAlt, zAlt);
-  if (!fliegt && bodenNeu.art === 'gras' && weg > 1e-4 && (bodenNeu.h - hVorher) / weg > g.steilsterHang) {
+  const hVorher = imGelaende(boden.art) ? hAlt : welt.gelaendeHoehe(xAlt, zAlt);
+  if (!fliegt && imGelaende(bodenNeu.art) && weg > 1e-4 && (bodenNeu.h - hVorher) / weg > g.steilsterHang) {
     // Richtung bergauf (Gefälle zwischen alter und neuer Position messen)
     const mx = (physik.x + xAlt) / 2, mz = (physik.z + zAlt) / 2;
     let nx = welt.gelaendeHoehe(mx + 1, mz) - welt.gelaendeHoehe(mx - 1, mz);
@@ -682,7 +684,7 @@ function wasserSchritt(dt, q) {
   }
   if (rennen.zustand !== 'laeuft') return;
   const b = welt.bodenBei(physik.x, physik.z);
-  const tiefe = b.art === 'gras' ? wasserTiefe(welt.wasser, physik.x, physik.z, b.h) : -Infinity;
+  const tiefe = imGelaende(b.art) ? wasserTiefe(welt.wasser, physik.x, physik.z, b.h) : -Infinity;
   if (tiefe > W.tiefe) {
     wasserBad.aktiv = true; wasserBad.t = 0; wasserBad.versetzt = false; wasserBad.anzahl++;
     // M10c.1: See mit "zurueck" (Seekehre): zurück vor die Kehre, nicht mitten in die Kurve

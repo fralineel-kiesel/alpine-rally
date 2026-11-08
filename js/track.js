@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { STRECKE, StreckenFehler } from './streckenlader.js';
 import { sprungZonen, wendeProfilAn } from './sprung.js';
+import { hohlwege, wendeHohlwegAn } from './hohlweg.js';
 
 // Stützpunkte und Abschnitts-Zeilen in der Reihenfolge der Datei (vom Lader gebaut)
 export const STRECKEN_PUNKTE = STRECKE.stuetzpunkte;
@@ -68,6 +69,9 @@ export function baueStrecke() {
   // Nur die Höhe ändert sich, Draufsicht, Länge und Streckenmeter bleiben. Ohne Zonen (Alpen) passiert hier nichts.
   const sprungZonenListe = sprungZonen(STRECKE.sprung);
   if (sprungZonenListe.length) wendeProfilAn(py, sArr, sprungZonenListe);
+  // M11a.1: Hohlwege (Streckenfeld "hohlwege"): Strasse dort tiefer (nur die Höhe, wie bei den Sprüngen)
+  const hohlwegListe = hohlwege();
+  if (hohlwegListe.length) wendeHohlwegAn(py, sArr, hohlwegListe);
   // Richtung (Tangente) in der Ebene
   for (let i = 0; i < anzahl; i++) {
     const i0 = Math.max(0, i - 1), i1 = Math.min(anzahl - 1, i + 1);
@@ -185,6 +189,7 @@ export function baueStrecke() {
     kurve, laenge, anzahl, px, py, pz, tx, tz, s: sArr, wandSeite, wandStaerke,
     abschnitte, abschnittNr, baumFaktor, waldAnteil, nahWald,
     sprungZonen: sprungZonenListe, // M10c: Sprungzonen (js/sprung.js), leer = keine Sprünge
+    hohlwege: hohlwegListe, // M11a.1: Hohlwege (js/hohlweg.js), leer = keine
     box: { minX, maxX, minZ, maxZ },
     startS: CONFIG.strasse.startBeiMeter,
     zielS: laenge - CONFIG.strasse.zielVorEnde,

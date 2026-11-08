@@ -301,8 +301,16 @@ export default {
   ],
 
   strasse: { startBeiMeter: 25, zielVorEnde: 45, spawnBeiMeter: 10 },
-  // Schneewälle statt Leitplanken (M11a, js/schneewall.js): keine Planke, Wall auf beiden Seiten der ganzen Etappe
-  strassenrand: { ohnePlanke: [[0, 4400, -1], [0, 4400, 1]], ohneZaun: true, schneewall: { an: true, ohne: [] } },
+  // Rand (M11a.1): keine Leitplanken; neben der Strasse Tiefschnee (bremst stark, keine Strafe, wie Gras in den Alpen),
+  // Schneestangen markieren den Rand; der weiche Schneewall (js/schneewall.js) steht nur noch in den Hohlwegen als Bank
+  strassenrand: { ohnePlanke: [[0, 4400, -1], [0, 4400, 1]], ohneZaun: true, tiefschnee: true, schneewall: { an: true, ohne: [], nurHohlwege: true } },
+  // Hohlwege (M11a.1, js/hohlweg.js): Strasse 0.8 m eingesenkt (Rampe 35 m), links und rechts eine schräge Schneebank;
+  // nicht in Kehren, auf Kuppen oder Seen, mindestens 400 m auseinander, einer im ersten Drittel, zwei in langen Bögen
+  hohlwege: [
+    { von: 845, bis: 985 },    // langer Rechtsbogen nach der Schneekuppe
+    { von: 1500, bis: 1700 },  // Linksbogen am Gletscherrand
+    { von: 4030, bis: 4170 },  // Hochebene vor der Bergstation
+  ],
   checkpoints: [1000, 1900, 2650, 3550],
   // Die Gletscherstrasse ist ein Nebenweg mit Belag Schnee: an der Talstation biegt die Etappe vom Schotter rechts ab
   // (geradeaus läuft die Talstrasse als abgesperrter Stummel weiter), an der Bergstation mündet sie in deren Zufahrt ein
@@ -360,15 +368,15 @@ export default {
       bergFuss: '#7c889c',
       schnee: '#f7faff',
       // M11a: Schneestrasse und Eis (js/pixel.js schneeTextur/eisTextur): Fahrbahn grauer als die Hänge, dunkle Spurrillen
-      schneeWeg: '#a8b3c3',      // (M11a Kontrast-Messung: vorher #c2ccd9, im Gegenlicht nur 20 Stufen dunkler als der Hang)
+      schneeWeg: '#a0abbc',      // (M11a: vorher #c2ccd9, im Gegenlicht nur 20 Stufen; M11a.1: #a8b3c3 → etwas dunkler, 600 m nur 38)
       schneeSpur: '#646f80',
       schneeGlitzer: '#ffffff',
       eisWeg: '#6fa3d2',         // (vorher #8fbde3)
       eisGlanz: '#d8ecff',
       eisRiss: '#5f93c4',
       // M11a.1: Eisseen (js/eissee.js): hellblau, schon von weitem klar anders als die graue Schneestrasse
-      seeEis: '#5ea6ef',         // Grund des Sees
-      seeEisHell: '#80bcf3',     // hellere Flecken
+      seeEis: '#549ce6',         // Grund des Sees
+      seeEisHell: '#76b2ec',     // hellere Flecken
       seeRand: '#4f8ed2',        // zum Ufer hin (dickes Eis) ...
       seeRandDunkel: '#3d70a8',  // ... ganz aussen und die Kante
       seeRissDunkel: '#355f92',  // Risse: dunkle Linie ...
@@ -449,7 +457,7 @@ export default {
         { s: 4310, seite: -1, lat: 20, drehung: 5, laenge: 7, tiefe: 6, hoehe: 3, typ: 'alphuette', dach: 'rot' },        // Restaurant
       ],
       stege: [], boote: [], holzstapelOrte: [], briefkaesten: [], holzzaeune: [], parkwagen: [], heurollen: [],
-      findlinge: [[860, 1, 11, 1.1], [1620, -1, 12, 1.3], [2230, 1, 13, 1.0], [2600, -1, 11.5, 1.2], [3330, 1, 12, 0.9], [3700, -1, 12.5, 1.2]],
+      findlinge: [[860, 1, 14.5, 1.1], [1620, -1, 15, 1.3], [2230, 1, 13, 1.0], [2600, -1, 11.5, 1.2], [3330, 1, 12, 0.9], [3700, -1, 12.5, 1.2]],
     },
     fans: {
       abstand: 7.2, gruppe: [3, 7], gruppeLaenge: 6, radius: 0.35, dicht: 0.75, blickStreuung: 0.6,

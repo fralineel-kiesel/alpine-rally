@@ -1040,6 +1040,8 @@ export function baueWelt(szene, strecke, netz) {
   // Etappe bis ganz ans Ende (mit Verlängerung lückenlos, sonst wie früher 0.5 m davor Gras)
   const sMin = netz && netz.ende && netz.ende('start') ? -0.05 : 0.5;
   const sMax = strecke.laenge - (netz && netz.ende && netz.ende('ziel') ? -0.05 : 0.5);
+  // M11a.1: neben der Strasse Tiefschnee statt Gras (Streckendatei strassenrand.tiefschnee, nur Gletscher)
+  const RAND_ART = CONFIG.strassenrand.tiefschnee ? 'tiefschnee' : 'gras';
   welt.bodenBei = function (x, z, abfrage) {
     const a = abfrage || strecke.abfrage(x, z, qb);
     let art = null, h = 0, rang = 9;
@@ -1067,7 +1069,7 @@ export function baueWelt(szene, strecke, netz) {
     // M11a.1: auf dem Eissee (neben der Fahrbahn, auch statt Bankett) ist überall Eis auf Strassenhöhe
     if (EIS.an && rang > 1 && EIS.bei(a.s, a.seite).see && EIS.bei(a.s, a.seite).rho <= 1) return { h: a.h, art: 'eis' };
     if (art) return { h, art };
-    return { h: welt.gelaendeHoehe(x, z), art: 'gras' };
+    return { h: welt.gelaendeHoehe(x, z), art: RAND_ART };
   };
 
   return welt;
