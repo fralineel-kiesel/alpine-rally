@@ -77,6 +77,20 @@ export default {
 };
 ```
 
+## Schnee und Eis, Schneewall (seit M11a, Gletscher)
+
+Alles freiwillig; Alpen und Finnland nutzen nichts davon und bleiben gleich.
+
+| Feld | Inhalt |
+|---|---|
+| Beläge `schnee`, `eis` | wie `schotter` in `nebenwege[].belag` und `belagAbschnitte[].belag`. Werte (Griff, Bremsen, Traktion) in `js/config.js`, Block `untergrund`, je Auto `schneeGrip`/`eisGrip` und Einträge in `heckJeBelag`/`vorneJeBelag`/`getriebe.allrad`. Gletscher: Schnee als Nebenweg (Abzweig/Einmündung), Eisstellen als `belagAbschnitte` darin; jede Eisstelle bekommt die Pace-Note EIS (150 m vorher) |
+| `umgebung.farben` | mit Schnee/Eis Pflicht: `schneeWeg`, `schneeSpur`, `schneeGlitzer`, `eisWeg`, `eisGlanz`, `eisRiss` (Pixel-Texturen in `js/pixel.js`) |
+| `strassenrand.schneewall` | `{ an: true, ohne: [[von, bis, seite]] }`: weicher Rand links und rechts der ganzen Etappe (`js/schneewall.js`, Werte `CONFIG.schneewall`): bremst, schiebt heraus, keine Wand-Strafe, höchstens 1 m tief (kein Abkürzen). Lücken an Kreuzungen und Felswänden von selbst; Leitplanken dazu mit `ohnePlanke` abschalten |
+| `strassenrand.ohneZaun` | `true` = keine automatischen Holzzäune |
+| `natur.buesche.an` | `false` = keine Büsche, Jungtannen, Grasbüschel |
+| `schatten.farbe` | Farbe der Kunst-Schatten (Gletscher bläulich), fehlt = `CONFIG.schatten.farbe` |
+| `deko.tier` | neu `'steinbock'` (Bock mit grossen Hörnern, Geiss; ohne Ton: `tierKlang: null`) |
+
 ## Sprünge (seit M10c, `js/sprung.js`)
 
 Ein Eintrag in `sprung` mit **`von`/`bis`** ist eine Sprungzone. Nur dort kann das Auto abheben (ausserhalb fährt es Bit für

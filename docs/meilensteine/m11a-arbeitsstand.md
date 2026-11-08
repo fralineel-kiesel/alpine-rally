@@ -9,4 +9,5 @@ Ref 0.10d = 40c41f3 (`/tmp/ref010d`). Test: `node tools/m11a-test.mjs --alt /tmp
   356), Testfahrer mittel: Allrad 3:34.0–3:34.4, Escorta 3:45.9, Lanza 3:46.7. Steinbock, Schneestangen, Berghütte/Bergstation.
   OFFEN: Kurven-Vergleich Eiskehre Escorta −1.65 s / Lanza −0.75 s, Kehre 1 Escorta −0.11 s; Lanza „flott“ an der Kreuzung
   356 m in die Absperrung (1.5 s Stillstand). Gipfelkreuz nicht gebaut.
-- **D:** Etappenwahl/Bestzeiten/Demo-Tests (t,u,v,x), Bilder, Bericht, STAND/KONZEPT, Version 0.11a – offen.
+- **D fertig:** Etappenwahl 3 Zeilen, Bestzeiten `gletscher`, Demo; Bilder `screenshots/m11a/`; Bericht `m11a.md`; Version 0.11a.
+  Regression grün bis auf Finnland-Pace-Notes (in 0.10d gleich rot) und einen Timing-Ausreisser.
