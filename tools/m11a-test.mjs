@@ -340,7 +340,8 @@ if (teil('k')) {
   const varianten = [
     ['unbekannter Belag', text.replace("belag: 'schnee',", "belag: 'pulverschnee',")],
     ['Schnee ohne Schneefarben', text.replace(/      schneeWeg: '#[0-9a-f]+',[^\n]*\n/, '')],
-    ['Schneewall kaputt', text.replace("schneewall: { an: true, ohne: [] }", "schneewall: { an: 'ja', ohne: [] }")],
+    // (M11a.1: der Eintrag hat jetzt auch nurHohlwege – darum nur den Anfang ersetzen; Erwartung alt → angepasst)
+    ['Schneewall kaputt', text.replace("schneewall: { an: true,", "schneewall: { an: 'ja',")],
     ['Sprung-Landung hinter der Zone', text.replace("landeVon: 3201, landeBis: 3240", "landeVon: 3201, landeBis: 3340")],
     ['Checkpoint hinter dem Ziel', text.replace('checkpoints: [1000, 1900, 2650, 3550]', 'checkpoints: [1000, 1900, 2650, 4400]')],
   ];

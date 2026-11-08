@@ -60,6 +60,8 @@ import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueSchneewall } from './schneewall.js';
+import { baueEisseen } from './eissee.js';
+import { baueSkipiste } from './skipiste.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
@@ -218,6 +220,8 @@ schatten.setzeAn(einstellungen.schatten !== false);
 strassenrand.hindernisse.push(...leben.hindernisse);
 // M10b: Seen, Flüsse und Brücken (nur wenn die Strecke Wasser hat) – Brückengeländer sind Hindernisse
 const wasser = baueWasser(szene, strecke, netz, welt.wasser);
+const eisseen = baueEisseen(szene, strecke, welt.eisseen); // M11a.1: Eisseen (nur Gletscher)
+const skipiste = baueSkipiste(szene, strecke, welt); // M11a.1: Skipiste mit Skifahrern (nur Gletscher, reine Deko)
 strassenrand.hindernisse.push(...wasser.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
@@ -440,6 +444,8 @@ function felsWand(nx, nz, ueber) {
   physik.x -= nx * ueber; physik.z -= nz * ueber;
   wand.stoss(physik, -nx, -nz);
 }
+// Gelände neben der Strasse: Gras, auf dem Gletscher Tiefschnee (M11a.1)
+const imGelaende = (art) => art === 'gras' || art === 'tiefschnee';
 function physikSchritt(dt, e, nurFahren = false) {
   wand.anfang(dt); // M10c.1
   const q = strecke.abfrage(physik.x, physik.z, qAuto);
@@ -492,8 +498,8 @@ function physikSchritt(dt, e, nurFahren = false) {
   // Steigung im Gelände messen: Stand das Auto vorher auf Asphalt oder Bankett, zählt dort die
   // Geländehöhe. Sonst wirkte die kleine Stufe vom Bankett auf die Wiese (wenige cm auf wenigen mm
   // Weg) wie eine senkrechte Wand, und das Auto blieb an der Bankett-Kante hängen.
-  const hVorher = boden.art === 'gras' ? hAlt : welt.gelaendeHoehe(xAlt, zAlt);
-  if (!fliegt && bodenNeu.art === 'gras' && weg > 1e-4 && (bodenNeu.h - hVorher) / weg > g.steilsterHang) {
+  const hVorher = imGelaende(boden.art) ? hAlt : welt.gelaendeHoehe(xAlt, zAlt);
+  if (!fliegt && imGelaende(bodenNeu.art) && weg > 1e-4 && (bodenNeu.h - hVorher) / weg > g.steilsterHang) {
     // Richtung bergauf (Gefälle zwischen alter und neuer Position messen)
     const mx = (physik.x + xAlt) / 2, mz = (physik.z + zAlt) / 2;
     let nx = welt.gelaendeHoehe(mx + 1, mz) - welt.gelaendeHoehe(mx - 1, mz);
@@ -680,7 +686,7 @@ function wasserSchritt(dt, q) {
   }
   if (rennen.zustand !== 'laeuft') return;
   const b = welt.bodenBei(physik.x, physik.z);
-  const tiefe = b.art === 'gras' ? wasserTiefe(welt.wasser, physik.x, physik.z, b.h) : -Infinity;
+  const tiefe = imGelaende(b.art) ? wasserTiefe(welt.wasser, physik.x, physik.z, b.h) : -Infinity;
   if (tiefe > W.tiefe) {
     wasserBad.aktiv = true; wasserBad.t = 0; wasserBad.versetzt = false; wasserBad.anzahl++;
     // M10c.1: See mit "zurueck" (Seekehre): zurück vor die Kehre, nicht mitten in die Kurve
@@ -1402,6 +1408,7 @@ function schleife(jetzt) {
   strassenrand.aktualisiere(kamera.position);
   startZiel.aktualisiere(dtWelt, kamera.position);
   leben.aktualisiere(dtWelt, kamera.position);
+  skipiste.aktualisiere(dtWelt); // M11a.1: Skifahrer (Pause: steht still)
   nebenwegSperrenZeigen(kamera.position);
   schatten.aktualisiere(physik.x, physik.z, physik.richtung, flug.inLuft ? flug.ueberBoden : 0); // M10b.2 (M10c: Flughöhe)
   renderer.render(szene, kamera);
@@ -1596,6 +1603,7 @@ window.__alpineRally = {
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
+  eisseen, skipiste, // M11a.1 (Tests): Eisseen (Plan: welt.eisseen), Skipiste
   autoAuf, // M10c.1 (Tests): AUTO-Auflösung
   flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };

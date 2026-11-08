@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.11a';
+export const VERSION = '0.11a.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -368,7 +368,7 @@ export const CONFIG = {
   // 1. Geländefarbe nach denselben Waldstücken wie nahe der Strasse (kostet nichts beim Zeichnen)
   // 2. eine dünne Schicht grosser Tannen zwischen ca. 200 und 700 m (ein Zeichenaufruf)
   fernwald: {
-    faerben: true,             // false = Gelände in der Ferne wie früher (nur Gras/Fels)
+    faerben: U.fernwald.faerben ?? true, // false = Gelände in der Ferne wie früher (nur Gras/Fels) (Streckendatei, M11a.1: Gletscher ohne Wald)
     farbeAb: [140, 230],       // ab so vielen Metern neben der Strasse wird eingefärbt, voll ab dem zweiten Wert
     dichteAb: [250, 600],      // Talflanken: ab hier wird der Wald dichter als an der Strasse, ab dem zweiten Wert normal
                                // (an der Strasse gilt die Baumdichte des Abschnitts, z. B. im Tal nur 35 %)
@@ -379,7 +379,7 @@ export const CONFIG = {
     wiesenStaerke: 0.35,       // ... so stark (0 = wie früher)
     geroellFarbe: U.fernwald.geroellFarbe,  // Geröllflecken an Hängen (Streckendatei)
     geroell: 0.74,             // Geröll, wo das Rauschen über diesem Wert liegt (höher = weniger Flecken)
-    baeume: true,              // false = keine Fernbäume
+    baeume: U.fernwald.baeume ?? true, // false = keine Fernbäume (Streckendatei, M11a.1: auf dem Gletscher wachsen keine Bäume)
     seed: Z.fernwald,  // Zufallszahl für die Fernbäume (Streckendatei)
     baeumeProKm: 6500,         // Versuche pro km Strecke (stehen bleiben nur die an Waldstellen)
     von: 195,                  // Fernbäume ab so vielen Metern neben der Strasse ...
@@ -875,6 +875,10 @@ export const CONFIG = {
     //   traktion (nur Schnee/Eis): Schub beim Anfahren mal diesem Wert (Spikes: auf Eis mehr, als der Grip hergibt)
     schnee: { grip: 0.42, rollen: 0.45, rollenTempo: 0.012, rueckwaerts: 1.3, heck: 0.82, stabilitaet: 0.5, geradeaus: 0.4, traktion: 1.0 },
     eis:    { grip: 0.11, rollen: 0.1, rollenTempo: 0.002, rueckwaerts: 1.0, heck: 0.9, stabilitaet: 0.25, geradeaus: 0.15, traktion: 2.0 },
+    // M11a.1: Tiefschnee neben der Gletscherstrasse (Streckendatei strassenrand.tiefschnee): bremst sehr stark, je
+    // schneller desto mehr (rollenTempo: aus 80 km/h ohne Gas in 2 s über 60 % weg, viel stärker als Gras), keine Wand-
+    // Strafe; im Schritttempo bremst er wenig (rollen klein), rückwärts kräftig (rueckwaerts): man kommt immer heraus.
+    tiefschnee: { grip: 0.38, rollen: 1.2, rollenTempo: 0.7, rueckwaerts: 2.6, heck: 0.85, stabilitaet: 0.6, geradeaus: 0.4, traktion: 1.0 },
   },
 
   // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------
@@ -902,6 +906,7 @@ export const CONFIG = {
       wiesenweg: { farbe: '#8c7356', staerke: 0.55 },  // dunkler, erdig, schwächer
       schnee: { farbe: '#f4f8ff', staerke: 0.85 },     // M11a: weisser Schneestaub
       eis: { farbe: '#dceaf6', staerke: 0.12 },        // M11a: auf Eis kaum Staub (nur ein Hauch Eiskristalle)
+      tiefschnee: { farbe: '#ffffff', staerke: 1.3 },  // M11a.1: Tiefschnee: viel weisser Pulverschnee
     },
   },
 
@@ -1117,11 +1122,66 @@ export const CONFIG = {
     tonWucht: 0.45,            // Aufprall-Ton (Material "weich") mit so viel der Wucht: dumpf und gedämpft
     staubJe: 1.2,              // weisser Schneestaub beim Eintauchen: so viele Wölkchen je m/s ...
     staubMax: 18,              // ... höchstens so viele
+    // M11a.1: Hohlweg (Streckendatei hohlwege): statt des niedrigen Walls eine breite, schräge Schneebank (Physik gleich)
+    bankHoehe: 2.0,            // so hoch über der (abgesenkten) Strasse ist die Kante oben (Meter, ± welle)
+    bankInnen: 2.6,            // so breit ist die schräge Innenseite (Meter quer: Neigung ca. 37°, keine senkrechte Mauer)
+    bankOben: 1.6,             // so breit ist die Krone oben (mit Schneehaube)
+    bankAussen: 3.0,           // so breit fällt sie aussen zum Gelände ab
+    haube: 0.25,               // Schneehaube: so weit steht die Kante oben über (Meter)
+    felsAlle: [14, 30],        // ab und zu Fels in der Bank: alle so viele Meter (von … bis, je Seite)
+    farbeBankUnten: '#e2eaf5', // Innenseite unten (hell: die graue Fahrbahn muss sich klar abheben, Kontrast ≥ 40)
+    farbeBankInnen: '#eef3fa', // Innenseite oben
+    eigenLicht: 0.18,          // Schnee der Bank leuchtet so viel selbst (Streulicht): auch die Schattenseite bleibt hell (Kontrast)
+    farbeFels: '#6c7079',      // Fels im Schnee (oben etwas heller: farbeFelsHell)
+    farbeFelsHell: '#8f949c',
+    stangenTiefschnee: true,   // ohne Wall stehen die Schneestangen am Rand des Tiefschnees (wie bisher alle 30 m)
+  },
+
+  // --- Hohlwege (M11a.1, js/hohlweg.js): eingesenkte Schneestrasse (Streckendatei hohlwege [{ von, bis }]) ----------
+  hohlweg: {
+    tiefe: 0.8,                // so viel liegt die Strasse tiefer (Meter, Richtwert 0.5 bis 1) ...
+    rampe: 35,                 // ... ein- und ausgefahren über so viele Meter (sanft, kein harter Schnitt)
+  },
+
+  // --- Eisseen (M11a.1, js/eissee.js): kleine gefrorene Seen auf der Strasse der Gletscher-Etappe ------------------
+  // Wo und wie gross: Streckendatei eisseen [{ s, laenge, breite }]; Farben: umgebung.farben (see…). Sonst keine.
+  // Auf dem See ist der Boden überall Eis (Griff wie die Eis-Strasse: untergrund.eis), nichts steht darauf.
+  eissee: {
+    uferWelle: [0.06, 0.035],  // Ufer nicht ganz rund: Radius mal 1 ± diese Anteile (3- und 5-fache Welle)
+    gelaendeUnter: 0.12,       // Gelände unter der Eisfläche so viel tiefer als die Strasse (Meter, unsichtbar)
+    randGelaende: 8,           // ums Ufer so viele Meter weicher Übergang ins normale Gelände (sanfter Schnee-Rand)
+    freiRand: 3,               // so viele Meter ums Ufer stehen keine Steine, Bäume oder Tiere
+    heben: 0,                  // Eisfläche so viel über der Strasse (Meter; 0 = gleich hoch, liegt per polygonOffset über der Schnee-Strasse, Schatten darüber)
+    randTiefe: 0.2,            // dunkle Kante des dicken Eises: so tief nach unten (Meter)
+    spalten: 16,               // Form: so viele Stücke quer über den See
+    pixelJeMeter: 3,           // Pixel-Textur: so viele Pixel je Meter (eine Leinwand je See)
+    randAb: [0.84, 0.94],      // ab diesem Anteil des Radius wird das Eis zum Ufer hin dunkler (zwei Stufen)
+    staubSchwelle: 0.72,       // Schneestaub-Flecken: Rauschen über diesem Wert (kleiner = mehr Staub)
+    staubEnde: 0.7,            // ab diesem Anteil der halben Länge liegt mehr Schnee auf dem Eis (Ein- und Ausfahrt)
+    risse: [7, 10],            // so viele Risse je 80 m Seelänge (von … bis)
+  },
+
+  // --- Skipiste (M11a.1, js/skipiste.js): reine Deko am Hang (Streckendatei skipiste), keine Kollision, kein Ton -------
+  skipiste: {
+    farbe: '#fbfdff',          // präparierte Piste: fast weiss ...
+    farbeSpur: '#b6c7e0',      // ... mit bläulichen Rillen längs (Pistenspuren)
+    heben: 0.25,               // so viel über dem Gelände (Meter, gegen Flimmern)
+    schritt: 6,                // Form: alle so viele Meter eine Reihe (dem Hang nach) ...
+    spalten: 4,                // ... und so viele Stücke quer
+    stangenAbstand: 14,        // Pistenstangen alle so viele Meter, links rot, rechts blau
+    stangeLinks: '#d8262a', stangeRechts: '#1f5fc8',
+    stangeHoehe: 1.8,
+    groesse: 3.2,              // Skifahrer: so hoch (Meter; deutlich grösser als echt, sonst sieht man sie von der Strasse kaum)
+    jacken: ['#e8402a', '#2a7de8', '#f2c21a', '#2fb84a', '#c43ad0', '#ff8a1c'], // bunte Jacken (der Reihe nach)
+    dauer: [26, 38],           // so viele Sekunden braucht ein Fahrer von oben bis unten (von … bis)
+    boegen: [5, 8],            // so viele Schwünge je Abfahrt (von … bis)
+    wegPunkte: 240,            // vorberechnete Punkte je Weg
   },
 
   strassenrand: {
     seed: Z.strassenrand,  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (Streckendatei)
     schneewall: (S.strassenrand && S.strassenrand.schneewall) || null, // M11a: Schneewall (Streckendatei, nur Gletscher)
+    tiefschnee: !!(S.strassenrand && S.strassenrand.tiefschnee), // M11a.1: neben der Strasse Tiefschnee statt Gras (Gletscher)
     abstand: 6.0,              // Abstand Strassenmitte -> Vorderkante Leitplanke (Bankett endet bei 5.5).
                                // Zaun und Schilder stehen etwas dahinter (siehe versatz)
     puffer: 20,                // so viele Meter vor/nach einer gesperrten Kurve ("nicht schneiden") bleibt die Innenseite frei
@@ -2080,6 +2140,7 @@ export const CONFIG = {
         // Knirschen (quietschMal = Anteil des Asphalt-Quietschens)
         schnee: { art: 'kies', pegel: 0.11, grenze: 900, grenzeTempo: 18, rate: 0.6, rutschMal: 0.7 },
         eis: { art: 'surren', pegel: 0.035, grenze: 2400, grenzeTempo: 30, quietschMal: 0.35 },
+        tiefschnee: { art: 'weich', pegel: 0.13, grenze: 200, grenzeTempo: 4 }, // M11a.1: Tiefschnee: dumpfes Rauschen
       },
       wechsel: 0.05,           // Überblendung beim Untergrundwechsel (Zeitkonstante; nach ca. 0.15 s fertig)
       kiesRate: 0.7,           // Kies: Abspieltempo im Schritttempo ...

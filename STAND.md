@@ -2,11 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 11a fertig** (Version 0.11a) – **Schnee und Eis** als Untergrund (Allrad im Vorteil, Eis sehr
-rutschig), **Schneewall** als weicher Rand (bremst, keine Strafe) und die **dritte Etappe „Gletscher“** (ca. 4.3 km, 3 Kehren,
-7 Eisstellen, 3 Sprünge, strahlender Tag). Zielbildschirm rollt nie mehr. **Zwei offene Punkte** (Eiskehre mit Escorta/Lanza 073,
-Lanza „flott“ an der Kreuzung) und **nur Chromium, kein Handy, kein Gamepad, Ton nur gemessen.** **Bitte zuerst die
-Test-Anleitung in `docs/meilensteine/m11a.md`.** Nächster Schritt: siehe KONZEPT.md, Fahrplan (M11b Gletscherspalten, Eistunnel).
+Aktuell: **Meilenstein 11a.1 fertig** (Version 0.11a.1) – **Gletscher-Feinschliff** nach Linos Test: Eis nur noch als
+**3 gefrorene Seen** auf der Strasse, **3 Hohlwege** mit Schneebank, sonst **Tiefschnee-Rand** (bremst stark, keine Strafe),
+**Talkessel** mit 4 Bergreihen, Gletscherzungen und Gipfelkreuz, **keine Bäume**, **Skipiste** mit Skifahrern. Alpen und Finnland
+unverändert. **Nur Chromium, kein Handy, kein Gamepad, Ton nur gemessen.** **Bitte zuerst die Test-Anleitung in
+`docs/meilensteine/m11a1.md`.** Nächster Schritt: M11b (Spalten, Eistunnel) nach dem Test neu bewerten (KONZEPT.md, Fahrplan).
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -58,6 +58,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/demofahrt.js` – Demo-Fahrt hinter Titel und Hauptmenü (seit M5a).
 - `js/etappenwahl.js` – Etappenwahl (M10b): Infos aller Strecken, Vorschau-Karte, Wählen = merken + neu laden.
 - `js/einstellungen.js` – Einstellungen (seit M5a): Werte, Standardwerte aus config.js (Block…
+- `js/eissee.js` – Eisseen (M11a.1): gefrorene Seen auf der Gletscherstrasse (Boden Eis, Gelände flach, Pixel-Textur je See).
 - `js/fehlerseite.js` – Fehlerseite (M10a), wenn die Strecke nicht geladen werden kann (Pixel-Look, de/en).
 - `js/fahrlabor.js` – Fahr-Labor (Meilenstein 8a): Seitenpanel zum Nachstellen des Fahrgefühls…
 - `js/haptik.js` – Haptik (M9a.1): Vibration nur mit `navigator.vibrate` (Android), nur im Touch-Modus (M9a.2: ohne iPhone-Trick).
@@ -67,6 +68,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/getriebe.js` – Getriebe und Motor (Meilenstein 1.2): 5 Gänge plus Rückwärts, Automatik m…
 - `js/hud.js` – HUD: Tachos, Zeit (oben links), Pace-Notes (oben Mitte, seit M4.1 als Kacheln)…
 - `js/inhalte.js` – Autos und Etappen für die Menüseiten AUTO und ETAPPE (seit M5a).
+- `js/hohlweg.js` – Hohlwege (M11a.1): Strasse eingesenkt (nur die Höhe, wie die Sprünge); die Bank baut `js/schneewall.js`.
 - `js/input.js` – Steuerung: Tastatur und Gamepad gleichzeitig.
 - `js/kollision.js` – Kollisionen mit Bäumen, Steinen und Baumstämmen.
 - `js/kuehe.js` – Kühe (Meilenstein 2b): Herden auf den eingezäunten Weiden im Tal und auf den…
@@ -88,6 +90,7 @@ Fahr-Labor im Spiel mit `index.html?fahrlabor=1`, anderes Auto mit `?auto=<id>`.
 - `js/rennablauf.js` – Rennablauf (seit M5b): Anzeige des Countdowns 3 - 2 - 1 - GO! in der Bi…
 - `js/sperren.js` – Abkürzungs-Sperren: Felsbrocken, Tannengruppen oder umgefallene Baumstämme
 - `js/schneewall.js` – Schneewall (M11a): weicher Rand der Gletscher-Etappe (bremst, schiebt heraus, keine Strafe), Wall und Schneestangen.
+- `js/skipiste.js` – Skipiste (M11a.1): Piste, Pistenstangen und Skifahrer am Hang (reine Deko, vorberechnet).
 - `js/sprites.js` – Bäume und Steine als 2D-Sprites (Billboards) wie bei N64/PS1.
 - `js/start.js` – Start (M10a): lädt `js/main.js`, bei einem StreckenFehler die Fehlerseite.
 - `js/startziel.js` – Start- und Zielbereich (Meilenstein 3c).
@@ -132,13 +135,16 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - **Finnland (seit M10c):** Länge 4161.6 m, Draufsicht/Checkpoints/Untergrund wie 0.10b.2, 4 Sprungzonen (Kante 495 / 1830 /
   3090 / 3656 m), `revision` 3, Hang-Check 0 Stellen über 0.45. Seit M10c.1: Seekehre (keine Planke aussen 3260–3400 m, See).
   Testfahrer-Zeiten: Tabelle in `docs/meilensteine/m10c1.md`.
-- **Gletscher (seit M11a):** Länge 4345.3 m (gefahren 4275 m), Belag Schotter 7.0 / Schnee 78.3 / Eis 13.1 / Asphalt 1.6 %,
-  Sprünge 16.0 / 21.7 / 23.7 m bei 100 km/h, Bestzeiten-Schlüssel `gletscher` (revision 1), Hang-Check 0 Stellen, Testfahrer
-  „mittel“: Allrad 3:34.0–3:34.4, Escorta 3:45.9, Lanza 073 3:46.7, Prototyp 3:39.7. Schnee/Eis-Werte: Tabelle in `m11a.md`.
+- **Gletscher (seit M11a.1, revision 2):** Länge 4345.3 m (gefahren 4275 m), Verlauf/Checkpoints/Kehren/Sprünge wie M11a
+  (16.0 / 21.7 / 23.7 m bei 100 km/h), Eis 4.6 % nur auf 3 Eisseen, Hohlwege 845–985 / 1500–1700 / 4030–4170 m, Tiefschnee-Rand,
+  Bestzeiten-Schlüssel `gletscher-r2`, Hang-Check 0, `erzeugt.kurvenTempo` neu (M11a.1). Testfahrer-Zeiten: Tabelle in `m11a1.md`.
 - **Limits:** Draw Calls pro Auto ≤ 12, Dreiecke pro Auto ≤ 1800, kein Garbage pro Bild, Ladezeit gleich, Ton ändert nie das Spiel.
 
 ## Werkzeuge und Tests
 
+- `node tools/m11a1-test.mjs --alt <0.11a = 06417f7> [--nur a,b] [--lang]` – alle Prüfungen von M11a.1 (a … ac, zz = frühere
+  Tests mit `--lang`); `node tools/m11a1-bilder.mjs` – 4 Bilder nach `screenshots/m11a1/`; `strecke-abfahren --kurven-vergleich`
+  prüft jetzt auch „durch den Tiefschnee abkürzen“ und die Bögen mit Hohlweg.
 - `node tools/m11a-test.mjs --alt <0.10d = 40c41f3> [--nur a,b] [--lang]` – alle Prüfungen von M11a (a … x, zz = frühere Tests
   mit `--lang`); `node tools/m11a-bilder.mjs` – Bilder nach `screenshots/m11a/`; `node tools/schnee-messung.mjs` – Bremsweg,
   0–60, Kreis und Drift je Auto auf Asphalt/Schotter/Schnee/Eis (ohne Browser); `node tools/gletscher-entwurf.mjs [--schreiben]`
@@ -232,7 +238,12 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
-- **Offen aus M11a:** Kurven-Vergleich Eiskehre (Escorta −1.65 s, Lanza 073 −0.75 s mit Wall schneller; Escorta Kehre 1 −0.11 s);
+- **Offen aus M11a.1:** Kreuzung 356 m: Lanza 073 „flott/digital“ rutscht beim Abzweig in Absperrung/Zaun (Testfahrer-Stil,
+  rückwärts frei); Tiefschnee-Band ist nur Physik (überall neben der Strasse), optisch kein eigener Streifen; Hohlweg ohne eigene
+  tiefere Spurrillen (dieselbe Schnee-Textur). Ideen: Eissee mit Spiegelung der Berge, Skilift neben der Piste, Schneekanone,
+  Pistenbully als Deko, Lawinenverbauung, Skifahrer winken, Wasserbad-Zähler, Geisterauto, Rally-Modus, Wetter/Tageszeit, Editor.
+- **Erledigt in M11a.1 (aus M11a):** EIS in der Legende, Zeit je Sprung, Gipfelkreuz, Eiskehre (kein Eis mehr in Kehren).
+  **Alt:** Kurven-Vergleich Eiskehre (Escorta −1.65 s, Lanza 073 −0.75 s mit Wall schneller; Escorta Kehre 1 −0.11 s);
   Lanza 073 „flott“ rutscht an der Gletscher-Kreuzung (356 m) in die Absperrung. Gipfelkreuz am Horizont, echte kleine
   Zwergkiefern, EIS-Symbol in der Legende (STEUERUNG), Zeit je Gletscher-Sprung messen. Alpen-Deko (Teil E aus M10d:
   Holzstapel, Heuballen, Wegkreuz, Murmeltiere) bleibt eine offene Idee (Lino: „die Alpen haben schon viel Deko“).
@@ -310,6 +321,13 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
 
+- **M11a.1** (0.11a.1) – **Gletscher-Feinschliff** nach Linos Test. Eis nur noch als **3 Eisseen** auf der Strasse (`js/eissee.js`:
+  1351–1420, 2380–2479, 3398–3457 m, 32–38 m breit, Eis 4.6 % statt 13.1 %, nichts darauf, Risse/Staub/Glanz, dunkler Rand).
+  **3 Hohlwege** (`js/hohlweg.js`, 0.8 m eingesenkt, Schneebank 2.0–2.3 m mit Haube und Fels), sonst **Tiefschnee-Rand**
+  (`untergrund.tiefschnee`: 80 km/h → −83 % in 2 s, Gras −44 %, keine Strafe). Kurven-Vergleich inkl. Tiefschnee-Abkürzen:
+  nirgends schneller. **Keine Bäume**, **4 Bergreihen** (Alpen 2) mit Gletscherzungen und Gipfelkreuz, **Skipiste** mit 5
+  Skifahrern (`js/skipiste.js`). EIS in der Legende, Sprünge nie schneller, Finnland-Pace-Notes-Test entschieden. Bildzeit
+  Gletscher 34 ms (0.11a 73 ms). Alpen/Finnland bit- und pixelgleich. Bericht: `docs/meilensteine/m11a1.md`.
 - **M11a** (0.11a) – **Schnee und Eis** (`untergrund.schnee/eis`, ein Block): Bremsweg aus 100 km/h gegen Schotter 1.48 / 2.81,
   `schneeGrip`/`eisGrip` je Auto, Allrad 0–60 auf Schnee 4.2–4.4 s, Hinterrad 6.9–7.4 s, Escorta ohne Schotter-Bonus. Ton (dumpfes
   Knirschen, Eis-Zischen), weisser Staub, Pace-Note EIS (Schneeflocke, 150 m). **Schneewall** (`js/schneewall.js`): bremst ca.

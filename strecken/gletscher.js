@@ -3,14 +3,14 @@
 // einer Kreuzung rechts ab auf die geräumte Gletscherstrasse (Schnee), lange offene Bögen am Gletscherrand, drei
 // Spitzkehren (die zweite auf Eis), eine Senke über das Eisfeld, Ziel auf der Hochebene an der Bergstation (dort mündet
 // die Strasse in die asphaltierte Zufahrt der Bergstation ein). Schneewälle statt Leitplanken (js/schneewall.js),
-// 7 Eisstellen (belagAbschnitte), 3 Sprünge über Schneekuppen.
+// Eis nur noch auf 3 gefrorenen Seen (eisseen, seit M11a.1), 3 Sprünge über Schneekuppen.
 // Der Verlauf kommt aus tools/gletscher-entwurf.mjs (Gerade / Kurve mit Radius, Höhenprofil): dort ändern, nicht hier.
 
 export default {
   format: 1,
   id: 'gletscher',
   etappe: 'gletscher',         // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
-  revision: 1,                 // Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
+  revision: 2,                 // Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr (M11a.1: Eisseen, Rand)
   name: { de: 'GLETSCHER', en: 'GLACIER' },
   beschreibung: { de: 'SCHNEE, EIS, KEHREN', en: 'SNOW, ICE, HAIRPINS' },
   untergrundInfo: { de: 'SCHNEE UND EIS', en: 'SNOW AND ICE' },
@@ -23,7 +23,7 @@ export default {
     tierKlang: null,           // ... ohne Ton (keine Glocken)
     haus: 'alphuette',         // Berghütte
     stadel: 'heustadel',       // kleiner Holzschopf
-    nadelbaum: 'kiefer',       // wenige Zwergkiefern (Baumgrenze)
+    nadelbaum: 'kiefer',       // (M11a.1: keine Bäume mehr auf der Etappe; nur noch für Sperren, die es hier nicht gibt)
     laubbaum: 'laub',          // (keine Laubbäume: laubProKm 0)
     unterholz: null,
     tierschild: 'allgemein',
@@ -39,6 +39,10 @@ export default {
     { s: 3845, name: 'FIRNKUPPE', von: 3750, bis: 3970, kante: 3845, landeVon: 3850, landeBis: 3890, staerke: 1.05,
       form: { anlauf: 40, rampe: 0.085, kante: 3, gefaelle: 0.085, auslauf: 30, weich: 15 } },
   ],
+
+  // Skipiste (M11a.1, js/skipiste.js): am Skihang rechts der Hochebene, von oben (Streckenmeter, Abstand) nach unten,
+  // gut sichtbar von der Strasse (ca. 3.45–3.65 km), weit weg von Hohlweg und Sprungkante; reine Deko
+  skipiste: { s: [3620, 3550], seite: 1, lat: [250, 50], breite: 28, skifahrer: 5, seed: 5150 },
 
   // --- Zufallszahlen (gleiche Zahl = gleiche Welt) ---
   seeds: {
@@ -301,8 +305,16 @@ export default {
   ],
 
   strasse: { startBeiMeter: 25, zielVorEnde: 45, spawnBeiMeter: 10 },
-  // Schneewälle statt Leitplanken (M11a, js/schneewall.js): keine Planke, Wall auf beiden Seiten der ganzen Etappe
-  strassenrand: { ohnePlanke: [[0, 4400, -1], [0, 4400, 1]], ohneZaun: true, schneewall: { an: true, ohne: [] } },
+  // Rand (M11a.1): keine Leitplanken; neben der Strasse Tiefschnee (bremst stark, keine Strafe, wie Gras in den Alpen),
+  // Schneestangen markieren den Rand; der weiche Schneewall (js/schneewall.js) steht nur noch in den Hohlwegen als Bank
+  strassenrand: { ohnePlanke: [[0, 4400, -1], [0, 4400, 1]], ohneZaun: true, tiefschnee: true, schneewall: { an: true, ohne: [], nurHohlwege: true } },
+  // Hohlwege (M11a.1, js/hohlweg.js): Strasse 0.8 m eingesenkt (Rampe 35 m), links und rechts eine schräge Schneebank;
+  // nicht in Kehren, auf Kuppen oder Seen, mindestens 400 m auseinander, einer im ersten Drittel, zwei in langen Bögen
+  hohlwege: [
+    { von: 845, bis: 985 },    // langer Rechtsbogen nach der Schneekuppe
+    { von: 1500, bis: 1700 },  // Linksbogen am Gletscherrand
+    { von: 4030, bis: 4170 },  // Hochebene vor der Bergstation
+  ],
   checkpoints: [1000, 1900, 2650, 3550],
   // Die Gletscherstrasse ist ein Nebenweg mit Belag Schnee: an der Talstation biegt die Etappe vom Schotter rechts ab
   // (geradeaus läuft die Talstrasse als abgesperrter Stummel weiter), an der Bergstation mündet sie in deren Zufahrt ein
@@ -313,26 +325,31 @@ export default {
       einmuendung: 4232.2,
       belag: 'schnee',
       sperreAbzweig: 'band', sperreEinmuendung: 'heu',
-      wald: { vor: 0, nach: 0, innenVorNach: 0, steinAnteil: 0.3,
+      wald: { vor: 0, nach: 0, innenVorNach: 0, steinAnteil: 1, // M11a.1: nur noch Felsbrocken, keine Bäume
         innen: { abstand: [12, 14], gruppe: [1, 2], schritt: [4, 6], luecke: [30, 60], zweiteReihe: 0, zweiteAbstand: [14, 16] },
         aussen: { abstand: [13, 18], gruppe: [1, 2], schritt: [4, 6], luecke: [40, 80], zweiteReihe: 0, zweiteAbstand: [16, 20] } },
       // Stummel wie in Finnland (gleiche Abbiege-Richtung): flache Kreuzungen, Stummel länger auf der Höhe der Etappe
-      stummelAbzweig: { kurve: -70, radius: 50, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
-      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
+      stummelAbzweig: { kurve: -70, radius: 50, seitenschutz: 'zaun', hoeheAngleichen: [26, 46], sichtschutz: 0 }, // (M11a.1: keine Tannen am Stummel)
+      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46], sichtschutz: 0 },
     },
   ],
-  // Untergrund ohne Kreuzung: Schotter vom Start bis zum Abzweig, 7 Eisstellen auf der Schneestrasse (40–120 m; vor
-  // Kehren, in der Senke, im Schatten; nie in den ersten 200 m, nie vor einer Landung). Eis ca. 13 % der Etappe.
+  // Untergrund ohne Kreuzung: Schotter vom Start bis zum Abzweig; Eis nur auf den drei Eisseen (M11a.1), jeweils ab 6 m
+  // hinter dem Ufer (davor liegt Schnee auf dem Eis: Übergang Schnee → Eis, der Reifenton wechselt dort)
   belagAbschnitte: [
     { von: 0, bis: 323, belag: 'schotter' },
-    { von: 1030, bis: 1100, belag: 'eis' },   // vor der ersten Kehre
-    { von: 1440, bis: 1520, belag: 'eis' },   // im Schatten am Gletscherrand
-    { von: 2010, bis: 2125, belag: 'eis' },   // Eiskehre (die ganze Spitzkehre)
-    { von: 2390, bis: 2500, belag: 'eis' },   // Senke am Eisfeld
-    { von: 2740, bis: 2800, belag: 'eis' },   // vor der dritten Kehre
-    { von: 3000, bis: 3060, belag: 'eis' },   // Moräne
-    { von: 4000, bis: 4060, belag: 'eis' },   // Hochebene, weit nach der Landung
+    { von: 1356, bis: 1414, belag: 'eis' },   // kleiner See am Gletscherrand
+    { von: 2386, bis: 2474, belag: 'eis' },   // grosser See auf dem Eisfeld
+    { von: 3406, bis: 3454, belag: 'eis' },   // kleiner See an der Moräne
   ],
+  // Eisseen (M11a.1, js/eissee.js): die Strasse weitet sich zu einer freien Eisfläche (Mitte s, Länge entlang der
+  // Strasse, Breite quer, Meter). Nur auf Geraden/weiten Bögen, 150 m weg von Kehren, Sprüngen und Landezonen,
+  // nicht in den ersten 400 m, mindestens 600 m auseinander, einer je Streckendrittel, nichts auf dem See
+  eisseen: [
+    { s: 1385, laenge: 70, breite: 32 },
+    { s: 2430, laenge: 100, breite: 38 },
+    { s: 3430, laenge: 60, breite: 32 },
+  ],
+
 
   umgebung: {
     farben: {
@@ -355,12 +372,21 @@ export default {
       bergFuss: '#7c889c',
       schnee: '#f7faff',
       // M11a: Schneestrasse und Eis (js/pixel.js schneeTextur/eisTextur): Fahrbahn grauer als die Hänge, dunkle Spurrillen
-      schneeWeg: '#a8b3c3',      // (M11a Kontrast-Messung: vorher #c2ccd9, im Gegenlicht nur 20 Stufen dunkler als der Hang)
+      schneeWeg: '#a0abbc',      // (M11a: vorher #c2ccd9, im Gegenlicht nur 20 Stufen; M11a.1: #a8b3c3 → etwas dunkler, 600 m nur 38)
       schneeSpur: '#646f80',
       schneeGlitzer: '#ffffff',
       eisWeg: '#6fa3d2',         // (vorher #8fbde3)
       eisGlanz: '#d8ecff',
       eisRiss: '#5f93c4',
+      // M11a.1: Eisseen (js/eissee.js): hellblau, schon von weitem klar anders als die graue Schneestrasse
+      seeEis: '#549ce6',         // Grund des Sees
+      seeEisHell: '#76b2ec',     // hellere Flecken
+      seeRand: '#4f8ed2',        // zum Ufer hin (dickes Eis) ...
+      seeRandDunkel: '#3d70a8',  // ... ganz aussen und die Kante
+      seeRissDunkel: '#355f92',  // Risse: dunkle Linie ...
+      seeRissHell: '#eef8ff',    // ... mit heller Kante
+      seeStaub: '#e9f1f9',       // Schneestaub auf dem Eis
+      seeGlanz: '#d6edff',       // glänzende Streifen
     },
     licht: {
       sonneStaerke: 2.3,         // Mittagssonne ...
@@ -370,19 +396,28 @@ export default {
       umgebungFarbe: '#a9c1ea',  // bläuliches Himmelslicht (Schattenseiten)
     },
     nebel: { start: 160, ende: 3400, maxDichte: 0.32, bergDunst: 0.18, bergDunstUnten: 0.15 }, // klare Sicht
-    berge: { anzahl: 24, abstand: [1200, 2000], hoehe: [380, 720], bezugsAbstand: 3300, schneeAb: 0.25, fussBis: 0.5 }, // hohe, verschneite Gipfel
-    fernwald: { waldFarbe: '#56625c', waldDunkel: '#3f4944', wiesenFarbe: '#e3eaf3', geroellFarbe: '#7a808b' },
+    // M11a.1: Talkessel – vier Reihen (Alpen: zwei), höhere Gipfel, Schnee in drei Weisstönen, dunkler Fels im Schnee,
+    // blaue Gletscherzungen zur Strecke hin, Gipfelkreuz auf dem Berg beim Ziel
+    berge: {
+      anzahl: 28, abstand: [1200, 2000], hoehe: [1000, 1800], bezugsAbstand: 3300, schneeAb: 0.22, fussBis: 0.5,
+      reihen: [{ r: 1.15, h: 1.1, n: 30 }, { r: 1, h: 0.9, n: 28 }, { r: 0.86, h: 0.62, n: 24 }, { r: 0.74, h: 0.4, n: 20 }],
+      extra: {
+        schneeStufen: ['#f7faff', '#dde7f3', '#c2d0e3'], felsImSchnee: 0.12, eis: '#7db5e8', zungeAlle: 4,
+        gipfelkreuz: { hoehe: 60, dicke: 6, farbe: '#3a2a1e' }, // (gross: der Berg ist ca. 2 km weit weg)
+      },
+    },
+    fernwald: { waldFarbe: '#56625c', waldDunkel: '#3f4944', wiesenFarbe: '#e3eaf3', geroellFarbe: '#7a808b', baeume: false, faerben: false }, // M11a.1: kein Wald, keine Fernbäume
     gelaende: { huegelHoehe: 5, grundWeite: 250, wandBerg: 0, talTiefe: 0, randAnstiegAb: 320, randAnstiegBis: 950, randHoehe: 110 },
-    landschaft: [],
+    landschaft: [{ x: 1069, z: -1555, radius: 150, hoehe: 75 }], // M11a.1: Skihang rechts der Hochebene (ca. 3.6 km, 280 m neben der Strasse)
     boeschung: { schulter: 3, steigung: 0.28, weich: 5, reichweite: 40 },
   },
 
   // Kunst-Schatten: Mittagssonne aus Süden (kurz wie in den Alpen), bläulich auf dem Schnee (farbe, M11a)
   schatten: { sonne: 170, laenge: 0.7, dunkelheit: 0.55, steine: true, farbe: '#3a5c9a' },
 
-  // --- Natur: über der Baumgrenze fast nichts, wenige Zwergkiefern und viele Steine ---
+  // --- Natur: über der Baumgrenze (M11a.1: keine Bäume mehr), viele Steine und Findlinge ---
   natur: {
-    sprites: { tannenProKm: 260, laubProKm: 0, steineProKm: 1100, mindestAbstand: 12, waldAbstand: 12 },
+    sprites: { tannenProKm: 0, laubProKm: 0, steineProKm: 1100, mindestAbstand: 12, waldAbstand: 12 },
     buesche: { an: false, blueten: 0, beeren: 0 },
     kuehe: {                   // (Tiere: Steinböcke, deko.tier)
       anzahl: 4, einzeln: 2, anteilTal: 1, alpAb: 999, alpBreite: [20, 40], passBei: 2000,
@@ -405,10 +440,7 @@ export default {
       sperreBei: 150, sperreBogen: 2.0, sperreUeber: 0.3, sperreArt: 'reifen',
     },
     landschaft: {
-      gruppen: [
-        { bereich: 'start', seite: 1, m: [-90, 120], lat: [22, 60], anzahl: 3 },
-        { bereich: 'start', seite: -1, m: [-110, 120], lat: [18, 60], anzahl: 3 },
-      ],
+      gruppen: [], // M11a.1: keine Bäume an der Talstation (stattdessen Findlinge, leben.wiesenweg.findlinge)
       proGruppe: [1, 3], gruppeRadius: 6, laubAnteil: 0, strasse: 12, buesche: 0, buschLat: [8, 30],
     },
   },
@@ -435,7 +467,7 @@ export default {
         { s: 4310, seite: -1, lat: 20, drehung: 5, laenge: 7, tiefe: 6, hoehe: 3, typ: 'alphuette', dach: 'rot' },        // Restaurant
       ],
       stege: [], boote: [], holzstapelOrte: [], briefkaesten: [], holzzaeune: [], parkwagen: [], heurollen: [],
-      findlinge: [[860, 1, 11, 1.1], [1620, -1, 12, 1.3], [2230, 1, 13, 1.0], [2600, -1, 11.5, 1.2], [3330, 1, 12, 0.9], [3700, -1, 12.5, 1.2]],
+      findlinge: [[60, 1, 16, 1.4], [95, -1, 15, 1.0], [150, 1, 19, 1.2], [860, 1, 14.5, 1.1], [1620, -1, 15, 1.3], [2230, 1, 13, 1.0], [2600, -1, 11.5, 1.2], [3330, 1, 12, 0.9], [3700, -1, 12.5, 1.2]],
     },
     fans: {
       abstand: 7.2, gruppe: [3, 7], gruppeLaenge: 6, radius: 0.35, dicht: 0.75, blickStreuung: 0.6,
@@ -532,17 +564,17 @@ export default {
         { von: 446, bis: 578, kmh: 126.6 }, // links 30°, Radius 212 m, schnee
         { von: 838, bis: 964, kmh: 134.2 }, // rechts 25°, Radius 239 m, schnee
         { von: 1094, bis: 1186, kmh: 37.4 }, // links 169°, Radius 18 m, schnee
-        { von: 1237, bis: 1388, kmh: 110.1 }, // rechts 39°, Radius 160 m, schnee
-        { von: 1495, bis: 1683, kmh: 99 }, // links 55°, Radius 146 m, schnee
+        { von: 1237, bis: 1388, kmh: 98 }, // rechts 39°, Radius 160 m, schnee
+        { von: 1495, bis: 1683, kmh: 104.4 }, // links 55°, Radius 146 m, schnee
         { von: 1756, bis: 1932, kmh: 95.8 }, // rechts 60°, Radius 118 m, schnee
-        { von: 2047, bis: 2140, kmh: 24.4 }, // rechts 174°, Radius 18 m, eis, Kehre
+        { von: 2047, bis: 2140, kmh: 36.6 }, // rechts 174°, Radius 18 m, schnee, Kehre
         { von: 2195, bis: 2331, kmh: 109.8 }, // links 40°, Radius 152 m, schnee
         { von: 2533, bis: 2686, kmh: 97.2 }, // rechts 50°, Radius 121 m, schnee
         { von: 2781, bis: 2876, kmh: 38.4 }, // links 164°, Radius 19 m, schnee
-        { von: 2932, bis: 3056, kmh: 84.7 }, // rechts 30°, Radius 183 m, schnee
-        { von: 3341, bis: 3497, kmh: 124.8 }, // links 35°, Radius 211 m, schnee
+        { von: 2932, bis: 3056, kmh: 120.2 }, // rechts 30°, Radius 183 m, schnee
+        { von: 3341, bis: 3497, kmh: 91.1 }, // links 35°, Radius 211 m, schnee
         { von: 3585, bis: 3724, kmh: 136.7 }, // rechts 26°, Radius 243 m, schnee
-        { von: 3974, bis: 4074, kmh: 95.8 }, // links 20°, Radius 254 m, schnee
+        { von: 3974, bis: 4074, kmh: 133.8 }, // links 20°, Radius 254 m, schnee
         { von: 4195, bis: 4249, kmh: 66 }, // links 57°, Radius 28 m, schnee
       ],
     },

@@ -269,6 +269,7 @@ export const TEXTE = {
   'legende.schikane': { de: 'SCHIKANE (RICHTUNG = ERSTE KURVE)', en: 'CHICANE (DIRECTION = FIRST CURVE)' },
   'legende.kuppe': { de: 'KUPPE: DAHINTER SIEHT MAN NICHTS', en: 'CREST: YOU CANNOT SEE BEYOND' },
   'legende.sprung': { de: 'SPRUNG: HIER HEBT DAS AUTO AB', en: 'JUMP: THE CAR TAKES OFF HERE' }, // M10c
+  'legende.eis': { de: 'SCHNEEFLOCKE: EIS VORAUS, SEHR RUTSCHIG', en: 'SNOWFLAKE: ICE AHEAD, VERY SLIPPERY' }, // M11a.1
   'legende.abzweig': { de: 'ABZWEIG: GERADEAUS IST GESPERRT', en: 'TURN-OFF: STRAIGHT ON IS CLOSED' },
   'legende.einmuendung': { de: 'EINMÜNDUNG: DIE ANDERE SEITE IST ZU', en: 'T-JUNCTION: THE OTHER WAY IS CLOSED' },
   'legende.ziel': { de: 'ZIEL', en: 'FINISH' },
