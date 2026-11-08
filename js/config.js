@@ -1119,6 +1119,24 @@ export const CONFIG = {
     staubMax: 18,              // ... höchstens so viele
   },
 
+  // --- Eisseen (M11a.1, js/eissee.js): kleine gefrorene Seen auf der Strasse der Gletscher-Etappe ------------------
+  // Wo und wie gross: Streckendatei eisseen [{ s, laenge, breite }]; Farben: umgebung.farben (see…). Sonst keine.
+  // Auf dem See ist der Boden überall Eis (Griff wie die Eis-Strasse: untergrund.eis), nichts steht darauf.
+  eissee: {
+    uferWelle: [0.06, 0.035],  // Ufer nicht ganz rund: Radius mal 1 ± diese Anteile (3- und 5-fache Welle)
+    gelaendeUnter: 0.12,       // Gelände unter der Eisfläche so viel tiefer als die Strasse (Meter, unsichtbar)
+    randGelaende: 8,           // ums Ufer so viele Meter weicher Übergang ins normale Gelände (sanfter Schnee-Rand)
+    freiRand: 3,               // so viele Meter ums Ufer stehen keine Steine, Bäume oder Tiere
+    heben: 0,                  // Eisfläche so viel über der Strasse (Meter; 0 = gleich hoch, liegt per polygonOffset über der Schnee-Strasse, Schatten darüber)
+    randTiefe: 0.2,            // dunkle Kante des dicken Eises: so tief nach unten (Meter)
+    spalten: 16,               // Form: so viele Stücke quer über den See
+    pixelJeMeter: 3,           // Pixel-Textur: so viele Pixel je Meter (eine Leinwand je See)
+    randAb: [0.84, 0.94],      // ab diesem Anteil des Radius wird das Eis zum Ufer hin dunkler (zwei Stufen)
+    staubSchwelle: 0.72,       // Schneestaub-Flecken: Rauschen über diesem Wert (kleiner = mehr Staub)
+    staubEnde: 0.7,            // ab diesem Anteil der halben Länge liegt mehr Schnee auf dem Eis (Ein- und Ausfahrt)
+    risse: [7, 10],            // so viele Risse je 80 m Seelänge (von … bis)
+  },
+
   strassenrand: {
     seed: Z.strassenrand,  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (Streckendatei)
     schneewall: (S.strassenrand && S.strassenrand.schneewall) || null, // M11a: Schneewall (Streckendatei, nur Gletscher)

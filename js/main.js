@@ -60,6 +60,7 @@ import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueSchneewall } from './schneewall.js';
+import { baueEisseen } from './eissee.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
@@ -218,6 +219,7 @@ schatten.setzeAn(einstellungen.schatten !== false);
 strassenrand.hindernisse.push(...leben.hindernisse);
 // M10b: Seen, Flüsse und Brücken (nur wenn die Strecke Wasser hat) – Brückengeländer sind Hindernisse
 const wasser = baueWasser(szene, strecke, netz, welt.wasser);
+const eisseen = baueEisseen(szene, strecke, welt.eisseen); // M11a.1: Eisseen (nur Gletscher)
 strassenrand.hindernisse.push(...wasser.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
@@ -1596,6 +1598,7 @@ window.__alpineRally = {
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
+  eisseen, // M11a.1 (Tests): Eisseen (Plan: welt.eisseen)
   autoAuf, // M10c.1 (Tests): AUTO-Auflösung
   flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };

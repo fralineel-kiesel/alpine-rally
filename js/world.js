@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { STRECKE } from './streckenlader.js';
 import { wasserFlaechen, wasserSchnitt, imWasser, uferAnstieg, flussAbstand, nahSee } from './wasser.js';
+import { planeEisseen } from './eissee.js';
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
@@ -41,6 +42,10 @@ export function baueWelt(szene, strecke, netz) {
   // M10b: Seen und Flüsse (Streckendatei, Block "wasser"; fehlt er, ist plan.an false und nichts ändert sich)
   const WASSER = wasserFlaechen(STRECKE.wasser, strecke, netz);
   welt.wasser = WASSER;
+  // M11a.1: Eisseen auf der Strasse (nur Gletscher): Gelände flach, Boden Eis, nichts darauf
+  const EIS = planeEisseen(strecke);
+  welt.eisseen = EIS;
+  const qe = {};
 
   // Geländefläche: Streckenbox plus Rand, in Kacheln aufgeteilt
   const T = g.kachel;
@@ -239,7 +244,17 @@ export function baueWelt(szene, strecke, netz) {
     }
     if (WASSER.an) h = wasserSchnitt(WASSER, x, z, h); // M10b: unter Seen und Flüssen ausheben
     if (BOESCHUNG && minD < BOESCHUNG.reichweite + 6) h = boeschungUnten(x, z, h); // M10b.2
+    if (EIS.an && EIS.naheXZ(x, z)) h = seeFlach(x, z, h); // M11a.1
     return h;
+  }
+
+  // M11a.1: auf dem Eissee liegt das Gelände flach knapp unter der Strasse (die Eisfläche liegt darüber), ums Ufer
+  // geht es über CONFIG.eissee.randGelaende Meter weich ins normale Gelände über (sanfter Schnee-Rand, kein Wall)
+  function seeFlach(x, z, h) {
+    strecke.abfrage(x, z, qe);
+    const b = EIS.bei(qe.s, qe.seite);
+    if (!b.see) return h;
+    return mische(qe.h - CONFIG.eissee.gelaendeUnter, h, glatt(0, CONFIG.eissee.randGelaende, b.draussen));
   }
 
   // M10b.2: Böschung (Streckendatei umgebung.boeschung, fehlt = aus): neben der Strasse fällt das Gelände nach einer
@@ -885,6 +900,10 @@ export function baueWelt(szene, strecke, netz) {
   const STAMM = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [0.71, 0.71], [-0.71, 0.71], [0.71, -0.71], [-0.71, -0.71]];
   welt.imFels = function (x, z, r = 0) {
     if (WASSER.an && imWasser(WASSER, x, z, r)) return true; // M10b: im Wasser steht auch nichts
+    if (EIS.an && EIS.naheXZ(x, z)) { // M11a.1: auf dem Eissee (und knapp daneben) steht nichts
+      strecke.abfrage(x, z, qe);
+      if (EIS.bei(qe.s, qe.seite).see && EIS.bei(qe.s, qe.seite).draussen < r + CONFIG.eissee.freiRand) return true;
+    }
     if (!felsZellen.size) return false;
     const toleranz = CONFIG.felswand.imFelsToleranz;
     for (const [a, b] of STAMM) {
@@ -1045,6 +1064,8 @@ export function baueWelt(szene, strecke, netz) {
         if (e) { art = e.ast.nebenweg.belag || 'schotter'; h = e.h; rang = 1; }
       }
     }
+    // M11a.1: auf dem Eissee (neben der Fahrbahn, auch statt Bankett) ist überall Eis auf Strassenhöhe
+    if (EIS.an && rang > 1 && EIS.bei(a.s, a.seite).see && EIS.bei(a.s, a.seite).rho <= 1) return { h: a.h, art: 'eis' };
     if (art) return { h, art };
     return { h: welt.gelaendeHoehe(x, z), art: 'gras' };
   };

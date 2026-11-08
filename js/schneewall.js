@@ -24,6 +24,14 @@ export function baueSchneewall(strecke, netz, welt) {
     if (strecke.wandSeite && strecke.wandSeite[i] === -1) links[i] = 0;
     if (strecke.wandSeite && strecke.wandSeite[i] === 1) rechts[i] = 0;
   }
+  // M11a.1: am Eissee kein Wall (der See ist frei, das Ufer ist ein sanfter Schnee-Rand)
+  const EIS = welt.eisseen;
+  if (EIS && EIS.an) {
+    for (let i = 0; i < n; i++) for (const sd of [-1, 1]) {
+      const b = EIS.bei(i, sd * (kante[i] + C.breite / 2));
+      if (b.see && b.draussen < C.breite + 3) (sd < 0 ? links : rechts)[i] = 0;
+    }
+  }
   // von Hand ausgenommen (Streckendatei: ohne: [[von, bis, seite]], seite -1 = links, 1 = rechts, 0 = beide)
   for (const [von, bis, sd] of D.ohne || []) {
     for (let i = Math.max(0, Math.ceil(von)); i <= Math.min(n - 1, Math.floor(bis)); i++) { if (sd <= 0) links[i] = 0; if (sd >= 0) rechts[i] = 0; }

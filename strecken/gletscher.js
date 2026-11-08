@@ -3,14 +3,14 @@
 // einer Kreuzung rechts ab auf die geräumte Gletscherstrasse (Schnee), lange offene Bögen am Gletscherrand, drei
 // Spitzkehren (die zweite auf Eis), eine Senke über das Eisfeld, Ziel auf der Hochebene an der Bergstation (dort mündet
 // die Strasse in die asphaltierte Zufahrt der Bergstation ein). Schneewälle statt Leitplanken (js/schneewall.js),
-// 7 Eisstellen (belagAbschnitte), 3 Sprünge über Schneekuppen.
+// Eis nur noch auf 3 gefrorenen Seen (eisseen, seit M11a.1), 3 Sprünge über Schneekuppen.
 // Der Verlauf kommt aus tools/gletscher-entwurf.mjs (Gerade / Kurve mit Radius, Höhenprofil): dort ändern, nicht hier.
 
 export default {
   format: 1,
   id: 'gletscher',
   etappe: 'gletscher',         // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
-  revision: 1,                 // Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
+  revision: 2,                 // Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr (M11a.1: Eisseen, Rand)
   name: { de: 'GLETSCHER', en: 'GLACIER' },
   beschreibung: { de: 'SCHNEE, EIS, KEHREN', en: 'SNOW, ICE, HAIRPINS' },
   untergrundInfo: { de: 'SCHNEE UND EIS', en: 'SNOW AND ICE' },
@@ -321,18 +321,23 @@ export default {
       stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46] },
     },
   ],
-  // Untergrund ohne Kreuzung: Schotter vom Start bis zum Abzweig, 7 Eisstellen auf der Schneestrasse (40–120 m; vor
-  // Kehren, in der Senke, im Schatten; nie in den ersten 200 m, nie vor einer Landung). Eis ca. 13 % der Etappe.
+  // Untergrund ohne Kreuzung: Schotter vom Start bis zum Abzweig; Eis nur auf den drei Eisseen (M11a.1), jeweils ab 6 m
+  // hinter dem Ufer (davor liegt Schnee auf dem Eis: Übergang Schnee → Eis, der Reifenton wechselt dort)
   belagAbschnitte: [
     { von: 0, bis: 323, belag: 'schotter' },
-    { von: 1030, bis: 1100, belag: 'eis' },   // vor der ersten Kehre
-    { von: 1440, bis: 1520, belag: 'eis' },   // im Schatten am Gletscherrand
-    { von: 2010, bis: 2125, belag: 'eis' },   // Eiskehre (die ganze Spitzkehre)
-    { von: 2390, bis: 2500, belag: 'eis' },   // Senke am Eisfeld
-    { von: 2740, bis: 2800, belag: 'eis' },   // vor der dritten Kehre
-    { von: 3000, bis: 3060, belag: 'eis' },   // Moräne
-    { von: 4000, bis: 4060, belag: 'eis' },   // Hochebene, weit nach der Landung
+    { von: 1356, bis: 1414, belag: 'eis' },   // kleiner See am Gletscherrand
+    { von: 2386, bis: 2474, belag: 'eis' },   // grosser See auf dem Eisfeld
+    { von: 3406, bis: 3454, belag: 'eis' },   // kleiner See an der Moräne
   ],
+  // Eisseen (M11a.1, js/eissee.js): die Strasse weitet sich zu einer freien Eisfläche (Mitte s, Länge entlang der
+  // Strasse, Breite quer, Meter). Nur auf Geraden/weiten Bögen, 150 m weg von Kehren, Sprüngen und Landezonen,
+  // nicht in den ersten 400 m, mindestens 600 m auseinander, einer je Streckendrittel, nichts auf dem See
+  eisseen: [
+    { s: 1385, laenge: 70, breite: 32 },
+    { s: 2430, laenge: 100, breite: 38 },
+    { s: 3430, laenge: 60, breite: 32 },
+  ],
+
 
   umgebung: {
     farben: {
@@ -361,6 +366,15 @@ export default {
       eisWeg: '#6fa3d2',         // (vorher #8fbde3)
       eisGlanz: '#d8ecff',
       eisRiss: '#5f93c4',
+      // M11a.1: Eisseen (js/eissee.js): hellblau, schon von weitem klar anders als die graue Schneestrasse
+      seeEis: '#5ea6ef',         // Grund des Sees
+      seeEisHell: '#80bcf3',     // hellere Flecken
+      seeRand: '#4f8ed2',        // zum Ufer hin (dickes Eis) ...
+      seeRandDunkel: '#3d70a8',  // ... ganz aussen und die Kante
+      seeRissDunkel: '#355f92',  // Risse: dunkle Linie ...
+      seeRissHell: '#eef8ff',    // ... mit heller Kante
+      seeStaub: '#e9f1f9',       // Schneestaub auf dem Eis
+      seeGlanz: '#d6edff',       // glänzende Streifen
     },
     licht: {
       sonneStaerke: 2.3,         // Mittagssonne ...

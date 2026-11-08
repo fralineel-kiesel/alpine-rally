@@ -103,6 +103,22 @@ export function pruefeStrecke(d, { voll = false } = {}) {
     // M10c: Sprungzonen (von, bis, kante, landeVon, landeBis, staerke, form): Regeln in js/sprung.js
     pruefeSprung(d, fehler);
   }
+  // M11a.1: Eisseen [{ s, laenge, breite }] (freiwillig): Länge 40–150 m, Breite 20–50 m, auf der Strecke, ohne Überlappen
+  if (d.eisseen != null) {
+    if (!Array.isArray(d.eisseen)) fehler('eisseen', 'Liste erwartet');
+    else d.eisseen.forEach((e, i) => {
+      const p = `eisseen[${i}]`;
+      if (!istZahl(e.s) || !istZahl(e.laenge) || !istZahl(e.breite)) { fehler(p, 's, laenge und breite (Zahlen) erwartet'); return; }
+      if (e.laenge < 40 || e.laenge > 150) fehler(`${p}.laenge`, `${e.laenge}: 40 bis 150 m erwartet`);
+      if (e.breite < 20 || e.breite > 50) fehler(`${p}.breite`, `${e.breite}: 20 bis 50 m erwartet`);
+      if (istZahl(d.laenge) && (e.s - e.laenge / 2 < 0 || e.s + e.laenge / 2 > d.laenge)) fehler(`${p}.s`, 'See liegt nicht ganz auf der Strecke');
+      const v = d.eisseen[i - 1];
+      if (v && istZahl(v.s) && v.s + v.laenge / 2 > e.s - e.laenge / 2) fehler(p, 'überlappt den See davor (aufsteigend sortieren)');
+    });
+    if (Array.isArray(d.eisseen) && d.eisseen.length && istObjekt(d.umgebung) && istObjekt(d.umgebung.farben)) {
+      for (const k of ['seeEis', 'seeEisHell', 'seeRand', 'seeRandDunkel', 'seeRissDunkel', 'seeRissHell', 'seeStaub', 'seeGlanz']) if (!farbe(d.umgebung.farben[k])) fehler(`umgebung.farben.${k}`, `${JSON.stringify(d.umgebung.farben[k])}: Farbe erwartet (Strecke mit Eisseen)`);
+    }
+  }
 
   if ('belagAbschnitte' in d) {
     // Untergrund ohne Abzweig: { von, bis, belag }, aufsteigend, ohne Überlappung

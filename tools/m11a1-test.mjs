@@ -253,6 +253,241 @@ if (teil('d')) {
 }
 if (teil('e')) await unveraendert('e');
 
+// ===================================================================== Teil B: Eisseen
+// Lage, Grösse, Eis-Anteil, Objekte auf dem See, Farben (im Spiel gemessen)
+const SEEN_PRUEFEN = async ({ hohlwege }) => {
+  const A = window.__alpineRally, S = A.strecke, E = A.welt.eisseen, N = A.netz;
+  const { berechnePaceNotes } = await import('/js/pacenotes.js');
+  const kurven = berechnePaceNotes(S, N).kurven;
+  const kehren = kurven.filter((c) => c.kehre || c.winkel >= 150);
+  const startS = S.startS ?? A.CONFIG.strasse.startBeiMeter, zielS = S.zielS ?? (S.laenge - A.CONFIG.strasse.zielVorEnde);
+  const gefahren = zielS - startS;
+  // Ufer entlang der Strasse (rho auf der Mitte <= 1) und grösste Breite
+  const seen = E.seen.map((see) => {
+    let von = null, bis = null, breite = 0, rMin = Infinity;
+    for (let s = Math.floor(see.s - see.halbL * 1.3); s <= see.s + see.halbL * 1.3; s++) {
+      if (E.rho(see, s, 0) <= 1) { if (von == null) von = s; bis = s; }
+      let l = 0, r = 0; while (E.rho(see, s, -(l + 0.1)) <= 1 && l < 60) l += 0.1; while (E.rho(see, s, r + 0.1) <= 1 && r < 60) r += 0.1;
+      breite = Math.max(breite, l + r);
+    }
+    // Kurvenradius im See (Richtungsänderung je Meter)
+    for (let s = von; s < bis - 10; s += 5) {
+      const a = S.punktBei(s), b = S.punktBei(s + 10); const d = Math.abs(Math.atan2(a.tx * b.tz - a.tz * b.tx, a.tx * b.tx + a.tz * b.tz));
+      rMin = Math.min(rMin, d > 1e-6 ? 10 / d : Infinity);
+    }
+    const nahKehre = kehren.filter((k) => k.bis > von - 150 && k.von < bis + 150).map((k) => Math.round(k.von));
+    const nahSprung = S.sprungZonen.filter((z) => Math.min(Math.abs(z.kante - von), Math.abs(z.kante - bis), Math.abs(z.landeVon - bis), Math.abs(z.landeBis - von)) < 150 || (z.kante > von && z.kante < bis) || (z.landeBis > von && z.landeVon < bis)).map((z) => z.name);
+    const imHohlweg = (hohlwege || []).filter((h) => h.von < bis && h.bis > von).map((h) => `${h.von}–${h.bis}`);
+    const cp = A.checkpoints.filter((c) => c.s > von - 20 && c.s < bis + 20).map((c) => c.s);
+    return { s: see.s, von, bis, laenge: bis - von + 1, breite, rMin, nahKehre, nahSprung, imHohlweg, cp, drittel: Math.floor((see.s - startS) / (gefahren / 3)) };
+  });
+  // Eis-Anteil (Fahrbahn zwischen Start und Ziel) und ob alles Eis in einem See liegt
+  let eis = 0, schnee = 0; const eisAusserhalb = [];
+  for (let i = Math.ceil(startS); i < zielS; i++) {
+    if (N.belag[i] === 'eis') { eis++; if (!E.seen.some((see) => E.rho(see, i, 0) <= 1)) eisAusserhalb.push(i); }
+    if (N.belag[i] === 'schnee') schnee++;
+  }
+  // Objekte auf dem See (Ufer + 1 m): Bäume, Steine, Fernbäume, Strassenrand, Leben, Tiere, Start/Ziel, Absperrungen, Stangen
+  const listen = {
+    baeume: A.pflanzen.tannen, steine: A.pflanzen.steine, hindernisse: A.pflanzen.hindernisse, fernbaeume: A.deko.fernbaeume,
+    strassenrand: A.strassenrand.hindernisse, leben: A.leben.hindernisse, figuren: A.leben.figuren, tiere: A.kuehe.kuehe,
+    startZiel: A.startZiel.hindernisse, zuschauer: A.startZiel.zuschauer, absperrungen: A.absperrungen.hindernisse,
+  };
+  const q = {}, drauf = {};
+  for (const [name, l] of Object.entries(listen)) {
+    let n = 0;
+    for (const o of l || []) { if (!E.naheXZ(o.x, o.z)) continue; S.abfrage(o.x, o.z, q); const b = E.bei(q.s, q.seite); if (b.see && b.draussen < 1 + (o.r || 0)) n++; }
+    drauf[name] = n;
+  }
+  // Schilder des Strassenrands (Plan) und Schneestangen/Wall: nicht im See
+  const schilder = ((A.strassenrand.plan && A.strassenrand.plan.schilder) || []).filter((o) => { if (!E.naheXZ(o.x, o.z)) return false; S.abfrage(o.x, o.z, q); const b = E.bei(q.s, q.seite); return b.see && b.draussen < 1; }).length;
+  drauf.schilder = schilder;
+  const SW = A.schneewall; let wall = 0;
+  if (SW.an) for (const see of E.seen) for (let i = Math.floor(see.s - see.halbL * 1.2); i <= see.s + see.halbL * 1.2; i++) for (const sd of [-1, 1]) {
+    if (!(sd < 0 ? SW.links : SW.rechts)[i]) continue; const b = E.bei(i, sd * (SW.kante[i] + 1)); if (b.see && b.draussen < 1) wall++;
+  }
+  drauf.schneewallUndStangen = wall;
+  drauf.checkpoints = seen.reduce((n, x) => n + x.cp.length, 0);
+  return { seen, eis, schnee, gefahren, eisAusserhalb: eisAusserhalb.length, drauf, startS, zielS };
+};
+const HOHLWEGE = () => { const t = fs.readFileSync(G_DATEI, 'utf8'), m = /hohlwege:\s*\[([\s\S]*?)\n  \]/.exec(t); return m ? [...m[1].matchAll(/von: (\d+), bis: (\d+)/g)].map((x) => ({ von: +x[1], bis: +x[2] })) : []; };
+let SEEN = null;
+const seenDaten = async () => {
+  if (SEEN) return SEEN;
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher');
+  SEEN = await s.page.evaluate(SEEN_PRUEFEN, { hohlwege: HOHLWEGE() });
+  SEEN.fehler = s.fehler;
+  await s.schliessen();
+  return SEEN;
+};
+if (teil('f')) {
+  titel('(f) Eisseen: 2 bis 3, Länge 60–120 m, Breite 30–40 m, Lage nach den Regeln (Prüfer grün)');
+  const p = werkzeug('strecke-pruefen.mjs', ['strecken/gletscher.js']);
+  melde(p.code === 0, `strecke-pruefen: ${p.text.trim().split('\n').pop().slice(0, 150)}`);
+  const d = await seenDaten();
+  melde(d.seen.length >= 2 && d.seen.length <= 3, `${d.seen.length} Eisseen`);
+  for (const x of d.seen) {
+    const ok = x.laenge >= 55 && x.laenge <= 125 && x.breite >= 28 && x.breite <= 42 && x.rMin >= 100 && !x.nahKehre.length && !x.nahSprung.length && !x.imHohlweg.length && x.von - d.startS >= 400 && !x.cp.length;
+    melde(ok, `See ${x.von}–${x.bis} m (Drittel ${x.drittel + 1}): Länge ${x.laenge} m, Breite ${x.breite.toFixed(1)} m, engster Radius ${x.rMin === Infinity ? 'gerade' : `${x.rMin.toFixed(0)} m`}, Kehre ±150 m: ${x.nahKehre.join(', ') || 'keine'}, Sprung ±150 m: ${x.nahSprung.join(', ') || 'keiner'}, Hohlweg: ${x.imHohlweg.join(', ') || 'keiner'}, Checkpoint: ${x.cp.join(', ') || 'keiner'}`);
+  }
+  const abst = d.seen.slice(1).map((x, i) => x.von - d.seen[i].bis);
+  melde(abst.every((a) => a >= 600) && new Set(d.seen.map((x) => x.drittel)).size === d.seen.length, `Abstand zwischen den Seen ${abst.join(' / ')} m (mindestens 600), je Drittel einer (${d.seen.map((x) => x.drittel + 1).join(', ')})`);
+}
+if (teil('g')) {
+  titel('(g) Eis nur auf den Seen, Eis-Anteil 3–5 % der gefahrenen Strecke');
+  const d = await seenDaten(), anteil = d.eis / d.gefahren * 100;
+  melde(d.eisAusserhalb === 0 && anteil >= 3 && anteil <= 5, `Eis ${d.eis} m von ${d.gefahren.toFixed(0)} m = ${anteil.toFixed(1)} % (Schnee ${(d.schnee / d.gefahren * 100).toFixed(1)} %), Eis ausserhalb der Seen: ${d.eisAusserhalb} m (vorher 7 Eisstellen, 13.1 %)`);
+}
+if (teil('h')) {
+  titel('(h) Nichts auf den Seen: keine Zäune, Leitplanken, Schilder, Stangen, Zuschauer, Bäume, Steine, Tiere, Checkpoints');
+  const d = await seenDaten();
+  const summe = Object.values(d.drauf).reduce((a, b) => a + b, 0);
+  melde(summe === 0, Object.entries(d.drauf).map(([k, v]) => `${k} ${v}`).join(', '));
+  melde(d.fehler.length === 0, `Konsole ohne Fehler (${d.fehler.length})`);
+}
+if (teil('i')) {
+  titel('(i) Bremsweg 100 → 0 gegen Schotter: Schnee ca. 1.5, Eis ca. 2.8 (±15 %, wie 0.11a: 1.48–1.49 / 2.81–2.83)');
+  const e = await (await import('./schnee-messung.mjs')).schneeMessung(WURZEL);
+  let ok = true; const z = [];
+  for (const id of AUTOS) {
+    const r = e[id], vs = r.schnee.bremsweg / r.schotter.bremsweg, ve = r.eis.bremsweg / r.schotter.bremsweg;
+    ok = ok && vs >= 1.475 && vs <= 1.495 && ve >= 2.805 && ve <= 2.835;
+    z.push(`${id} ${vs.toFixed(2)} / ${ve.toFixed(2)}`);
+  }
+  melde(ok, `Schnee / Eis: ${z.join(', ')}`);
+}
+// (j) seitlich aus dem See fahren: Rand bremst, keine Strafe, kein Steckenbleiben
+const RAND_AUSTRITT = async () => {
+  const A = window.__alpineRally, P = A.physik, S = A.strecke, E = A.welt.eisseen; A.anhalten = true;
+  const LEER = { gas: 0, bremse: 0, lenkung: 0, handbremse: false }, out = [];
+  for (const see of E.seen) for (const sd of [-1, 1]) {
+    // von der Seemitte quer zum Ufer (45° zur Strasse), 50 km/h, Gas halb
+    A.setzeAuf(see.s); const p = S.punktBei(see.s);
+    P.richtung += sd * -Math.PI / 4; // (Richtung kleiner = nach rechts)
+    P.vx = Math.sin(P.richtung) * 50 / 3.6; P.vz = Math.cos(P.richtung) * 50 / 3.6;
+    const st0 = A.wand.strafen, q = {}; let draussen = null, vRaus = null, v2 = null, maxSeite = 0;
+    for (let t = 0; t < 8; t += A.SCHRITT) {
+      A.physikSchritt(A.SCHRITT, { ...LEER, gas: 0.5 }, true);
+      S.abfrage(P.x, P.z, q); const b = E.bei(q.s, q.seite); maxSeite = Math.max(maxSeite, Math.abs(q.seite));
+      if (draussen == null && (!b.see || b.rho > 1)) { draussen = t; vRaus = P.tempo * 3.6; }
+      if (draussen != null && v2 == null && t >= draussen + 2) v2 = P.tempo * 3.6;
+    }
+    const x0 = P.x, z0 = P.z; for (let t = 0; t < 3; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { ...LEER, bremse: 1 }, true);
+    out.push({ s: see.s, seite: sd, draussen, vRaus, v2, strafen: A.wand.strafen - st0, rueck: Math.hypot(P.x - x0, P.z - z0), untergrund: A.welt.bodenBei(x0, z0).art, maxSeite });
+  }
+  return out;
+};
+if (teil('j')) {
+  titel('(j) Seitlich aus dem See (50 km/h, Gas halb): der Rand bremst, keine Strafe, kein Steckenbleiben (rückwärts frei)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher');
+  const r = await s.page.evaluate(RAND_AUSTRITT);
+  await s.schliessen();
+  for (const x of r) melde(x.draussen != null && x.strafen === 0 && x.rueck >= 2 && x.v2 < x.vRaus, `See ${x.s} m ${x.seite < 0 ? 'links' : 'rechts'}: Ufer nach ${x.draussen && x.draussen.toFixed(1)} s mit ${x.vRaus && x.vRaus.toFixed(0)} km/h, 2 s später ${x.v2 && x.v2.toFixed(0)} km/h (Rand: ${x.untergrund}), Strafen ${x.strafen}, rückwärts in 3 s ${x.rueck.toFixed(1)} m`);
+}
+if (teil('k')) {
+  titel('(k) Abkürzungs-Prüfung Gletscher vorher (0.11a) / nachher: nicht schlechter');
+  const n = werkzeug('abkuerzungen.mjs', ['--strecke', 'gletscher', '--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'abkuerzungen-gletscher.log'), n.text);
+  const zeile = (t) => t.split('\n').filter((x) => /Abkürzungen \(Linien\)|übrige Linien|Durchkommen|gesperrt|frei:/.test(x)).map((x) => x.trim()).join(' | ').slice(0, 400);
+  info(`nachher: ${zeile(n.text)}`);
+  if (ALT) { const a = werkzeug('abkuerzungen.mjs', ['--strecke', 'gletscher', '--pruefen'], ALT); fs.writeFileSync(path.join(LOG, 'abkuerzungen-gletscher-alt.log'), a.text); info(`vorher: ${zeile(a.text)}`); }
+  melde(n.code === 0, `abkuerzungen --pruefen: Rückgabe ${n.code}`);
+}
+// Testfahrer Gletscher (alle Autos, mittel/flott/digital): Zeiten gestaffelt, im Ziel, kein Stillstand
+const STILE_G = ['mittel', 'flott', 'digital'];
+async function gletscherTestfahrer(buchstabe, text) {
+  titel(`(${buchstabe}) Testfahrer Gletscher ${text}: alle im Ziel, kein Stillstand/Klemmen, Allrad vorn, Lanza 073 am Ende, ≤ +25 %`);
+  const d = await parallel(AUTOS.map((id) => () => testfahrerLauf(G_DATEI, id, WURZEL, `neu${buchstabe}`, STILE_G)), 3);
+  const alt = ALT ? await parallel(AUTOS.map((id) => () => testfahrerLauf(G_DATEI.replace(WURZEL, ALT), id, ALT, 'alt', STILE_G)), 3) : null;
+  const tab = ['| Auto | ' + STILE_G.join(' | ') + ' | Aufpralle / Strafen | Stillstand |', '|---|---|---|---|---|---|'];
+  let alleIm = true; const stand = [], bekannt = [];
+  AUTOS.forEach((id, k) => {
+    const z = (st) => d[k].stile.find((x) => x.stil === st), za = (st) => alt && alt[k].stile.find((x) => x.stil === st);
+    for (const st of STILE_G) if (z(st).zeit == null) alleIm = false;
+    const f = path.join(LOG, `fahrt-neu${buchstabe}-gletscher-${id}-${STILE_G.join('').slice(0, 24)}.txt`);
+    const sl = fs.existsSync(f) ? fs.readFileSync(f, 'utf8').split('\n').filter((x) => /Stillstand über 1 s: (?!keiner)/.test(x)).map((x) => x.trim().slice(0, 50)) : [];
+    // (Kreuzung 340–370 m: in Teil A (c) entschieden – Testfahrer-Stil, rückwärts frei; nur gemeldet)
+    for (const x of sl) { const m = +((/: (\d+) m/.exec(x) || [])[1] || -1); if (m >= 340 && m <= 370) bekannt.push(`${id}: ${x}`); else stand.push(`${id}: ${x}`); }
+    tab.push(`| ${id} | ${STILE_G.map((st) => `${fmtZ(z(st).zeit)}${za(st) ? ` (vorher ${fmtZ(za(st).zeit)})` : ''}`).join(' | ')} | ${STILE_G.map((st) => `${z(st).aufpralle}/${(z(st).motorStrafen || []).length}`).join(' · ')} | ${sl.length ? sl.join('; ') : 'keiner'} |`);
+  });
+  fs.writeFileSync(path.join(LOG, `testfahrer-gletscher-${buchstabe}.md`), tab.join('\n') + '\n');
+  for (const z of tab) info(z);
+  melde(alleIm && stand.length === 0, `alle ${AUTOS.length * 3} Läufe im Ziel, kein Stillstand über 1 s${stand.length ? ` – ${stand.join('; ')}` : ''}${bekannt.length ? ` (bekannt aus Teil A, Kreuzung: ${bekannt.join('; ')})` : ''}`);
+  for (const st of STILE_G) {
+    const t = Object.fromEntries(AUTOS.map((id, k) => [id, d[k].stile.find((x) => x.stil === st).zeit ?? 9999]));
+    const best = Math.min(...Object.values(t)), schlecht = Math.max(...Object.values(t));
+    const allradVorn = Math.max(...ALLRAD.map((id) => t[id])) < Math.min(...HINTERRAD.map((id) => t[id]));
+    melde(allradVorn && schlecht <= best * 1.25, `${st}: Allrad ${ALLRAD.map((id) => fmtZ(t[id])).join(' / ')}, Escorta ${fmtZ(t.escorta)}, Lanza 073 ${fmtZ(t.l073)}; langsamster +${((schlecht / best - 1) * 100).toFixed(1)} %${t.l073 >= schlecht - 0.5 ? ', Lanza 073 am Ende' : ', Lanza 073 nicht am Ende (nur gemeldet)'}`);
+  }
+}
+// Kurven-Vergleich (alle Kehren, alle Autos): „wand“ (Rand-Kontakt) gegen die beste Fahrt ohne Kontakt, vorher/nachher
+function kurvenVergleich(auto, wurzel = WURZEL, stand = 'neu') {
+  const datei = path.join(LOG, `kurven-${stand}-${auto}.json`);
+  if (!fs.existsSync(datei) || (stand.startsWith('neu') && process.env.M11A1_NEU)) {
+    const r = werkzeug('strecke-abfahren.mjs', [G_DATEI.replace(WURZEL, wurzel), '--auto', auto, '--kurven-vergleich', '--json', datei, ...(wurzel !== WURZEL ? ['--wurzel', wurzel] : [])], WURZEL);
+    if (!fs.existsSync(datei)) { console.log(r.text.slice(-1500)); throw new Error(`kurven-vergleich ${auto} ${stand}`); }
+  }
+  return JSON.parse(fs.readFileSync(datei, 'utf8'));
+}
+async function kurvenTabelle(buchstabe, text, pflicht = true) {
+  titel(`(${buchstabe}) Kurven-Vergleich ${text}: Rand-Kontakt („wand“) nirgends > 0.1 s schneller als die beste Fahrt auf der Strasse`);
+  const neu = await parallel(AUTOS.map((id) => async () => kurvenVergleich(id, WURZEL, `neu${buchstabe}`)), 3);
+  const alt = ALT ? await parallel(AUTOS.map((id) => async () => kurvenVergleich(id, ALT, 'alt')), 3) : null;
+  const d = (x) => (x == null ? '–' : `${x >= 0 ? '+' : ''}${x.toFixed(2)} s`);
+  const tab = ['| Auto | Kurve (m) | beste auf der Strasse | Rand-Kontakt: Unterschied | vorher (0.11a) |', '|---|---|---|---|---|'];
+  const schneller = [];
+  AUTOS.forEach((id, k) => {
+    for (const c of neu[k]) {
+      const a = alt && alt[k].find((x) => Math.abs(x.von - c.von) < 30);
+      tab.push(`| ${id} | ${c.von}–${c.bis} | ${c.bestAlle ? `${c.bestAlle.stil} ${c.bestAlle.zeit.toFixed(2)} s` : '–'} | ${d(c.diff)}${c.wand.kontakt ? ` (Kontakt ${c.wand.kontakt.toFixed(2)} s)` : ' (ohne Kontakt)'}${c.wand.strafen ? `, ${c.wand.strafen} Strafen` : ''} | ${a ? `${d(a.diff)}${a.bestAlle ? `, beste ${a.bestAlle.zeit.toFixed(2)} s` : ''}` : '–'} |`);
+      if (c.diff != null && c.diff < -0.1 && c.wand.kontakt) schneller.push(`${id} ${c.von} m ${d(c.diff)}`);
+    }
+  });
+  fs.writeFileSync(path.join(LOG, `kurven-${buchstabe}.md`), tab.join('\n') + '\n');
+  for (const z of tab) info(z);
+  (pflicht ? melde : (ok, t) => info(`(nur gemeldet, Teil B: der Wall steht noch) ${t}`))(schneller.length === 0, `Rand-Kontakt in ${schneller.length} Kurven mehr als 0.1 s schneller${schneller.length ? `: ${schneller.join('; ')}` : ''}`);
+  const strafen = neu.flat().reduce((n, c) => n + (c.wand.strafen || 0), 0);
+  melde(strafen === 0, `keine Wand-Strafe am weichen Rand (Strafen: ${strafen})`);
+}
+if (teil('l')) { await gletscherTestfahrer('l', '(mit Eisseen)'); await kurvenTabelle('l2', 'Kehren ohne Eis (besonders die ehemalige Eiskehre 2047 m)', false); }
+if (teil('m')) await unveraendert('m', { bilder: false });
+// (n) Farbabstand See / Schneestrasse / Hang (Helligkeit und Blauanteil, 320x180, aus 25, 80 und 130 m)
+const SEE_FARBEN = async () => {
+  const A = window.__alpineRally, S = A.strecke, E = A.welt.eisseen, out = [];
+  for (const see of E.seen) for (const vor of [25, 80, 130]) {
+    const a0 = see.s - see.halbL + 5;
+    A.setzeAuf(a0 - vor); A.kameraSofort(); window.__bild(3, 1000 / 60);
+    const c = document.getElementById('spiel'), g = c.getContext('webgl2') || c.getContext('webgl');
+    const w = g.drawingBufferWidth, h = g.drawingBufferHeight, px = new Uint8Array(w * h * 4);
+    A.renderer.render(A.szene, A.kamera); g.readPixels(0, 0, w, h, g.RGBA, g.UNSIGNED_BYTE, px);
+    const V = new A.THREE.Vector3();
+    // Median vieler Einzelpixel (Punkte auf der Fläche, auf das Bild projiziert): robust auch aus der Ferne
+    const pixel = (s0, lat) => {
+      const p = S.punktBei(s0); V.set(p.x - p.tz * lat, p.h + 0.05, p.z + p.tx * lat).project(A.kamera);
+      const x = Math.round((V.x + 1) / 2 * w - 0.5), y = Math.round((V.y + 1) / 2 * h - 0.5); const i = (y * w + x) * 4;
+      return V.z < 1 && x >= 0 && y >= 0 && x < w && y < h ? [px[i], px[i + 1], px[i + 2]] : null;
+    };
+    const median = (l) => [0, 1, 2].map((k) => { const a = l.filter(Boolean).map((f) => f[k]).sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; });
+    const seeP = [], strP = [], hangP = [];
+    const s1 = see.s - see.halbL;
+    for (let k = 0; k < 8; k++) for (let j = -3; j <= 3; j++) seeP.push(pixel(s1 + 8 + k * 3, j * see.halbB * 0.2));
+    for (let k = 0; k < 8; k++) for (const j of [-1.5, -0.5, 0.5, 1.5]) { strP.push(pixel(s1 - 30 + k * 3, j)); hangP.push(pixel(s1 - 30 + k * 3, j * 8)); }
+    const seeF = median(seeP), strasse = median(strP), hang = median(hangP);
+    const hell = (f) => 0.299 * f[0] + 0.587 * f[1] + 0.114 * f[2];
+    out.push({ s: see.s, vor, see: seeF.map(Math.round), strasse: strasse.map(Math.round), hang: hang.map(Math.round), abstand: Math.hypot(...seeF.map((v, k) => v - strasse[k])), blauSee: seeF[2] - seeF[0], blauStrasse: strasse[2] - strasse[0], hellSee: hell(seeF), hellStrasse: hell(strasse) });
+  }
+  return out;
+};
+if (teil('n')) {
+  titel('(n) Farbabstand Eissee gegen Schneestrasse (320x180): blau, klar anders als die Strasse, auch aus 130 m');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher&aufloesung=320x180', { uhr: true });
+  await s.page.evaluate(() => { window.__alpineRally.anhalten = true; });
+  const r = await s.page.evaluate(SEE_FARBEN);
+  await s.schliessen();
+  // Pflicht aus 25 und 80 m; aus 130 m nur gemeldet (Dunst, Senke, Kurve davor: der See ist dort teils verdeckt)
+  for (const x of r) (x.vor <= 80 ? melde : (ok, t) => info(`${ok ? '(ok)' : '(nur gemeldet)'} ${t}`))(x.abstand >= 30 && x.blauSee >= 2 * Math.max(10, x.blauStrasse), `See ${x.s} m aus ${x.vor} m: See ${x.see.join(',')}, Strasse ${x.strasse.join(',')}, Hang ${x.hang.join(',')}; Farbabstand ${x.abstand.toFixed(0)}, Blauanteil (B−R) See ${x.blauSee.toFixed(0)} gegen Strasse ${x.blauStrasse.toFixed(0)}, Helligkeit ${x.hellSee.toFixed(0)} / ${x.hellStrasse.toFixed(0)}`);
+}
+
 // ===================================================================== Zusammenfassung (Teile B bis E folgen)
 console.log('\n| Test | Ergebnis |\n|---|---|');
 for (const e of ergebnisse) console.log(`| ${e.titel.slice(0, 120)} | ${e.rot ? `**${e.rot} rot**, ${e.ok} ok` : `grün (${e.ok} ok)`} |`);

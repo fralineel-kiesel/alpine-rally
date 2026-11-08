@@ -105,6 +105,7 @@ export function planeKuehe(strecke, welt, pflanzen, rand, frei = []) {
     const h = [welt.gelaendeHoehe(x - 1.2, z), welt.gelaendeHoehe(x + 1.2, z), welt.gelaendeHoehe(x, z - 1.2), welt.gelaendeHoehe(x, z + 1.2)];
     if (Math.max(...h) - Math.min(...h) > c.maxSteigung * 2.4) return false;
     if (welt.waldBei(x, z, q.i) > c.maxWald) return false;
+    if (welt.eisseen && welt.eisseen.an && welt.imFels(x, z, r)) return false; // M11a.1: nicht auf dem Eissee
     if (!kolBaum.frei(x, z, r + c.abstandBaum)) return false;
     if (!kolRand.frei(x, z, r + c.abstandZaun)) return false;
     if (!torFrei(x, z, r, c.abstandTor, c.torTiefe) || !torFreiZusatz(x, z, r, c.abstandTor, c.torTiefe)) return false;

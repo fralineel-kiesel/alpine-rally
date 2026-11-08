@@ -140,7 +140,7 @@ export function baueEisseen(szene, strecke, plan) {
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     geo.setIndex(idx);
     geo.computeVertexNormals();
-    const mat = new THREE.MeshLambertMaterial({ map: textur, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1, side: THREE.DoubleSide });
+    const mat = new THREE.MeshLambertMaterial({ map: textur, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     szene.add(mesh);
     meshes.push(mesh);
