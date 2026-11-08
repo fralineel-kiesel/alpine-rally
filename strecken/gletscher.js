@@ -564,17 +564,17 @@ export default {
         { von: 446, bis: 578, kmh: 126.6 }, // links 30°, Radius 212 m, schnee
         { von: 838, bis: 964, kmh: 134.2 }, // rechts 25°, Radius 239 m, schnee
         { von: 1094, bis: 1186, kmh: 37.4 }, // links 169°, Radius 18 m, schnee
-        { von: 1237, bis: 1388, kmh: 110.1 }, // rechts 39°, Radius 160 m, schnee
-        { von: 1495, bis: 1683, kmh: 99 }, // links 55°, Radius 146 m, schnee
+        { von: 1237, bis: 1388, kmh: 98 }, // rechts 39°, Radius 160 m, schnee
+        { von: 1495, bis: 1683, kmh: 104.4 }, // links 55°, Radius 146 m, schnee
         { von: 1756, bis: 1932, kmh: 95.8 }, // rechts 60°, Radius 118 m, schnee
-        { von: 2047, bis: 2140, kmh: 24.4 }, // rechts 174°, Radius 18 m, eis, Kehre
+        { von: 2047, bis: 2140, kmh: 36.6 }, // rechts 174°, Radius 18 m, schnee, Kehre
         { von: 2195, bis: 2331, kmh: 109.8 }, // links 40°, Radius 152 m, schnee
         { von: 2533, bis: 2686, kmh: 97.2 }, // rechts 50°, Radius 121 m, schnee
         { von: 2781, bis: 2876, kmh: 38.4 }, // links 164°, Radius 19 m, schnee
-        { von: 2932, bis: 3056, kmh: 84.7 }, // rechts 30°, Radius 183 m, schnee
-        { von: 3341, bis: 3497, kmh: 124.8 }, // links 35°, Radius 211 m, schnee
+        { von: 2932, bis: 3056, kmh: 120.2 }, // rechts 30°, Radius 183 m, schnee
+        { von: 3341, bis: 3497, kmh: 91.1 }, // links 35°, Radius 211 m, schnee
         { von: 3585, bis: 3724, kmh: 136.7 }, // rechts 26°, Radius 243 m, schnee
-        { von: 3974, bis: 4074, kmh: 95.8 }, // links 20°, Radius 254 m, schnee
+        { von: 3974, bis: 4074, kmh: 133.8 }, // links 20°, Radius 254 m, schnee
         { von: 4195, bis: 4249, kmh: 66 }, // links 57°, Radius 28 m, schnee
       ],
     },

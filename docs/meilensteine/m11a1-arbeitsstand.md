@@ -9,4 +9,5 @@ Testfahrer mittel: Allrad 3:21.1–3:21.4, Escorta 3:31.1, Lanza 3:32.4 (+5.7 %)
 Lanza digital 336 m: Tiefschnee vor dem Abzweig, Zaun, 3.1 s, rückwärts frei (Testfahrer-Stil wie A).
 **D fertig:** Bäume 0 (vorher 196 Kiefern, 7 Start, 3267 Fernbäume); Berge 4 Reihen/102 (Alpen 2/58), 1000–1800 m, Zungen,
 Gipfelkreuz 60 m (2 km vom Ziel); Skipiste 3550–3620 m rechts, 5 Skifahrer, 0 KB Garbage; Bildzeit 34 ms (0.11a 73, Finnland 344).
-**Offen:** Teil E (Gesamtlauf, Bilder, Bericht, Version, PR).
+**E fertig:** Gesamtlauf a…ab + zz (`--lang`): alles grün ausser Bildzeit Skipiste einmal +9.5 % (zwei Einzelläufe −1.2/−2.2 %),
+overlay-Wackler (einzeln grün), m11a-test (k) Erwartung alt → angepasst. 4 Bilder, Bericht `m11a1.md`, Version 0.11a.1.

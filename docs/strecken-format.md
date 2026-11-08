@@ -91,6 +91,21 @@ Alles freiwillig; Alpen und Finnland nutzen nichts davon und bleiben gleich.
 | `schatten.farbe` | Farbe der Kunst-Schatten (Gletscher bläulich), fehlt = `CONFIG.schatten.farbe` |
 | `deko.tier` | neu `'steinbock'` (Bock mit grossen Hörnern, Geiss; ohne Ton: `tierKlang: null`) |
 
+## Eisseen, Hohlwege, Tiefschnee, Talkessel, Skipiste (seit M11a.1, Gletscher)
+
+Alles freiwillig; Alpen und Finnland nutzen nichts davon und bleiben gleich.
+
+| Feld | Inhalt |
+|---|---|
+| `eisseen` | `[{ s, laenge, breite }]`: gefrorener See **auf** der Strasse (`js/eissee.js`): Ellipse um die Strasse (Mitte `s`, Länge entlang, Breite quer, Meter; Ufer leicht wellig). Dort ist der Boden überall Eis auf Strassenhöhe, das Gelände flach, nichts steht darauf (Platzierung über `welt.imFels`). Eis-Belag der Fahrbahn mit `belagAbschnitte` (ca. 6 m hinter dem Ufer, davor Schnee auf dem Eis). Farben `umgebung.farben.see…` (8 Stück) Pflicht. Prüfer: Länge 40–150, Breite 20–50, auf der Strecke, ohne Überlappen |
+| `hohlwege` | `[{ von, bis, tiefe?, rampe? }]`: eingesenkte Schneestrasse (`js/hohlweg.js`): Strasse `tiefe` m tiefer (Standard `CONFIG.hohlweg`, 0.8 m, Rampe 35 m), links und rechts eine schräge Schneebank (Physik wie der Schneewall). Prüfer: 80–300 m, aufsteigend |
+| `strassenrand.schneewall.nurHohlwege` | `true` = der weiche Wall steht nur noch in den Hohlwegen (als Bank); die Schneestangen stehen trotzdem am ganzen Rand |
+| `strassenrand.tiefschnee` | `true` = neben der Strasse Tiefschnee statt Gras (`CONFIG.untergrund.tiefschnee`: bremst sehr stark, keine Strafe, rückwärts frei) |
+| `umgebung.berge.reihen` | `[{ r, h, n }]`: Reihen der Hintergrundberge (Abstand mal `r`, Höhe mal `h`, Anzahl `n`); fehlt = zwei Reihen wie bisher |
+| `umgebung.berge.extra` | `{ schneeStufen: [3 Farben], felsImSchnee, eis, zungeAlle, gipfelkreuz: { hoehe, dicke, farbe } }`: Schnee in Weisstönen, Fels-Flecken, blaue Gletscherzungen (jeder `zungeAlle`-te Berg der vorderen Reihen), Gipfelkreuz auf dem Berg der vordersten Reihe beim Ziel |
+| `umgebung.fernwald.baeume`, `.faerben` | `false` = keine Fernbäume, kein Wald-Einfärben des fernen Geländes |
+| `skipiste` | `{ s: [oben, unten], seite, lat: [oben, unten], breite, skifahrer }`: Skipiste am Hang (`js/skipiste.js`), reine Deko ohne Kollision und Ton |
+
 ## Sprünge (seit M10c, `js/sprung.js`)
 
 Ein Eintrag in `sprung` mit **`von`/`bis`** ist eine Sprungzone. Nur dort kann das Auto abheben (ausserhalb fährt es Bit für

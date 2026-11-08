@@ -90,7 +90,8 @@ export function baueSkipiste(szene, strecke, welt) {
       weg[m * 4] = x; weg[m * 4 + 1] = boden(x, z) + C.groesse * 0.5; weg[m * 4 + 2] = z; weg[m * 4 + 3] = Math.cos(w) >= 0 ? 1 : -1;
     }
     const sprites = [false, true].map((rechts) => {
-      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: fahrerTextur(jacke, rechts), fog: true }));
+      // (harte Alpha-Kante statt Transparenz-Mischung: billiger und Pixel-Look wie die Bäume)
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: fahrerTextur(jacke, rechts), fog: true, transparent: false, alphaTest: 0.5 }));
       s.scale.set(C.groesse * 0.67, C.groesse, 1);
       szene.add(s); return s;
     });

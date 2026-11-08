@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.11a';
+export const VERSION = '0.11a.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -1164,14 +1164,14 @@ export const CONFIG = {
   // --- Skipiste (M11a.1, js/skipiste.js): reine Deko am Hang (Streckendatei skipiste), keine Kollision, kein Ton -------
   skipiste: {
     farbe: '#fbfdff',          // präparierte Piste: fast weiss ...
-    farbeSpur: '#cfdcee',      // ... mit bläulichen Rillen längs (Pistenspuren)
+    farbeSpur: '#b6c7e0',      // ... mit bläulichen Rillen längs (Pistenspuren)
     heben: 0.25,               // so viel über dem Gelände (Meter, gegen Flimmern)
     schritt: 6,                // Form: alle so viele Meter eine Reihe (dem Hang nach) ...
     spalten: 4,                // ... und so viele Stücke quer
     stangenAbstand: 14,        // Pistenstangen alle so viele Meter, links rot, rechts blau
     stangeLinks: '#d8262a', stangeRechts: '#1f5fc8',
     stangeHoehe: 1.8,
-    groesse: 2.2,              // Skifahrer: so hoch (Meter; etwas grösser als echt, damit man sie von der Strasse sieht)
+    groesse: 3.2,              // Skifahrer: so hoch (Meter; deutlich grösser als echt, sonst sieht man sie von der Strasse kaum)
     jacken: ['#e8402a', '#2a7de8', '#f2c21a', '#2fb84a', '#c43ad0', '#ff8a1c'], // bunte Jacken (der Reihe nach)
     dauer: [26, 38],           // so viele Sekunden braucht ein Fahrer von oben bis unten (von … bis)
     boegen: [5, 8],            // so viele Schwünge je Abfahrt (von … bis)

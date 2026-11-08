@@ -759,7 +759,28 @@ if (teil('ab')) {
 }
 if (teil('ac')) await unveraendert('ac', { bilder: true });
 
-// ===================================================================== Zusammenfassung (Teile B bis E folgen)
+// ===================================================================== Teil E: volle Regression (nur mit --lang, einmal)
+if (teil('zz') && process.argv.includes('--lang')) {
+  titel('(zz) frühere Tests (--lang): nur neue Abweichungen melden');
+  const laeufe = [
+    ['pacenotes-test.mjs', []], ['pacenotes-test.mjs', ['--strecke', 'finnland']], ['pacenotes-test.mjs', ['--strecke', 'gletscher']],
+    ['leben-test.mjs', []], ['kuh-test.mjs', []], ['startziel-test.mjs', []], ['strassenrand-test.mjs', []], ['nebenweg-test.mjs', []],
+    ['felswand-test.mjs', []], ['belag-test.mjs', []], ['rennablauf-test.mjs', []], ['menue-test.mjs', []], ['overlay-test.mjs', []],
+    ['m9a2-test.mjs', ['--nur', 'a,c,e,f,g,h,k,l,m']], ['m9a1-test.mjs', ['--nur', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']], ['m8h-test.mjs', []],
+    ['m10d-test.mjs', ['--nur', 'a,a3,b,c,g,h,i,j,k,l,m,n,s,t,u,w']],
+    // M11a: alles, was nicht die alten Gletscher-Zahlen erwartet (Eis 13 %, Wall überall, revision 1, alte Testfahrer-Zeiten)
+    ['m11a-test.mjs', ['--nur', 'a,b,d,e,f,j,k,r,t,v']], ['kommentar-waechter.mjs', []],
+  ];
+  for (const [datei, a] of laeufe) {
+    const r = werkzeug(datei, a);
+    fs.writeFileSync(path.join(LOG, `zz-${datei.replace('.mjs', '')}${a.length ? '-' + a.join('').replace(/[^a-z0-9]/gi, '') : ''}.log`), r.text);
+    const z = r.text.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x));
+    const rot = z.filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim().slice(0, 160));
+    melde(rot.length === 0 && r.code === 0, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok${rot.length ? `, ${rot.length} rot: ${rot.join(' | ')}` : ''}${r.code ? ` (Rückgabe ${r.code})` : ''}`);
+  }
+}
+
+// ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');
 for (const e of ergebnisse) console.log(`| ${e.titel.slice(0, 120)} | ${e.rot ? `**${e.rot} rot**, ${e.ok} ok` : `grün (${e.ok} ok)`} |`);
 console.log(fehler ? `\n${fehler} FEHLER` : '\nAlle Prüfungen bestanden.');
