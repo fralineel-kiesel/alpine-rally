@@ -625,31 +625,56 @@ export function baueSeiten(api) {
     if (d > 0) return { text: `+${zahl}`, farbe: RA.farbeLangsamer };
     return { text: zahl, farbe: RA.farbeGleich };
   };
-  const grosseZeit = (zeit) => ({
-    typ: 'info', hoehe: 25, breite: () => textBreite(formatZeit(zeit), 3), inhalt: () => formatZeit(zeit),
-    zeichne(c, x, y, b) { pixelText(c, formatZeit(zeit), x + b / 2, y + 2, 3, M.farbeText, 'mitte'); },
-  });
-  const vergleichZeile = (e) => {
-    const u = e.bisher ? unterschied(e.zeit, e.bisher.zeit) : null;
-    if (!u) return textZeile('ziel.ersteZeit', M.farbeHinweis, true);
+  // M11a: Zeit und Vergleich in einer Zeile (die Tafel rollt sonst mit den Sprung-Zeilen): links die grosse Zeit, rechts
+  // daneben der Unterschied zur Bestzeit (gross, farbig) oder klein "ERSTE ZEIT". Die Vergleichszeile bleibt ein eigener
+  // Eintrag (Daten für Tests), hat aber keine Höhe: diese Zeile zeichnet sie mit.
+  const LUECKE_Z = 10;
+  const zielZeitZeile = (e) => {
+    const neben = () => vergleichDaten(e);
+    const nebenB = () => { const v = neben(); return v ? textBreite(v.text, v.gross) : 0; };
+    const gesamtB = () => textBreite(formatZeit(e.zeit), 3) + LUECKE_Z + nebenB();
     return {
-      typ: 'info', hoehe: 17, breite: () => textBreite(u.text, 2), inhalt: () => u.text, farbe: u.farbe,
-      zeichne(c, x, y, b) { pixelText(c, u.text, x + b / 2, y + 1, 2, u.farbe, 'mitte'); },
+      typ: 'info', hoehe: 25, breite: gesamtB, inhalt: () => formatZeit(e.zeit),
+      zeichne(c, x, y, b) {
+        const xl = x + Math.round((b - gesamtB()) / 2), v = neben();
+        pixelText(c, formatZeit(e.zeit), xl, y + 2, 3, M.farbeText);
+        // unten bündig mit der grossen Zeit (7 Pixel hohe Schrift mal Massstab)
+        if (v) pixelText(c, v.text, xl + textBreite(formatZeit(e.zeit), 3) + LUECKE_Z, y + 2 + 21 - 7 * v.gross, v.gross, v.farbe);
+      },
     };
   };
-  const CP_B = 30, CP_ZEIT = 48, CP_LUECKE = 12, CP_DIFF = 36; // Spalten: "CP 1" | Zeit | Unterschied (z. B. +12.34)
-  const cpZeile = (e, n) => {
+  const vergleichDaten = (e) => {
+    const u = e.bisher ? unterschied(e.zeit, e.bisher.zeit) : null;
+    return u ? { text: u.text, farbe: u.farbe, gross: 2 } : { text: t('ziel.ersteZeit'), farbe: M.farbeHinweis, gross: 1 };
+  };
+  const vergleichZeile = (e) => ({
+    typ: 'info', hoehe: 0, breite: 0, inhalt: () => vergleichDaten(e).text, farbe: vergleichDaten(e).farbe, zeichne() {},
+  });
+  // Zwischenzeiten (M11a: zwei nebeneinander, die Zeile mit der geraden Nummer zeichnet ihre Nachbarin mit; die zweite
+  // ist ein Eintrag ohne Höhe, Daten für Tests)
+  const CP_B = 30, CP_ZEIT = 48, CP_LUECKE = 12, CP_DIFF = 36, CP_SPALTE = 16; // Spalten: "CP 1" | Zeit | Unterschied (z. B. +12.34)
+  const CP_EINE = CP_B + CP_ZEIT + CP_LUECKE + CP_DIFF;
+  const cpDaten = (e, n) => {
     const zz = e.cps[n], alt = e.bisher && e.bisher.cps ? e.bisher.cps[n] : null;
-    const u = zz != null && alt != null ? unterschied(zz, alt) : null;
-    const zeit = zz == null ? '--:--.--' : formatZeit(zz);
+    return { u: zz != null && alt != null ? unterschied(zz, alt) : null, zeit: zz == null ? '--:--.--' : formatZeit(zz) };
+  };
+  const cpZeile = (e, n) => {
+    const { u, zeit } = cpDaten(e, n), links = n % 2 === 0, paar = links && n + 1 < e.cps.length;
+    const zeichneEine = (c, x0, y, k) => {
+      const d = cpDaten(e, k);
+      pixelText(c, t('ziel.cp', { n: k + 1 }), x0, y + 1, 1, M.farbeGruppe);
+      pixelText(c, d.zeit, x0 + CP_B, y + 1, 1, M.farbeText);
+      if (d.u) pixelText(c, d.u.text, x0 + CP_B + CP_ZEIT + CP_LUECKE, y + 1, 1, d.u.farbe);
+    };
+    const bAlle = e.cps.length > 1 ? 2 * CP_EINE + CP_SPALTE : CP_EINE;
     return {
-      typ: 'info', hoehe: 9, breite: CP_B + CP_ZEIT + CP_LUECKE + CP_DIFF,
+      typ: 'info', hoehe: links ? 9 : 0, breite: links ? bAlle : 0,
       inhalt: () => `${t('ziel.cp', { n: n + 1 })} ${zeit}${u ? ` ${u.text}` : ''}`, farbe: u ? u.farbe : null,
       zeichne(c, x, y, b) {
-        const x0 = x + Math.round((b - (CP_B + CP_ZEIT + CP_LUECKE + CP_DIFF)) / 2);
-        pixelText(c, t('ziel.cp', { n: n + 1 }), x0, y + 1, 1, M.farbeGruppe);
-        pixelText(c, zeit, x0 + CP_B, y + 1, 1, M.farbeText);
-        if (u) pixelText(c, u.text, x0 + CP_B + CP_ZEIT + CP_LUECKE, y + 1, 1, u.farbe);
+        if (!links) return;
+        const x0 = x + Math.round((b - bAlle) / 2);
+        zeichneEine(c, x0, y, n);
+        if (paar) zeichneEine(c, x0 + CP_EINE + CP_SPALTE, y, n + 1);
       },
     };
   };
@@ -740,9 +765,9 @@ export function baueSeiten(api) {
       // (vergleichZeile und Zwischenzeiten vergleichen mit e.bisher = Bestzeit dieses Autos vor dem Lauf, M8h)
       return [
         ...platzZeile(e),
-        grosseZeit(e.zeit),
+        zielZeitZeile(e),
         vergleichZeile(e),
-        leer(4),
+        leer(3),
         ...e.cps.map((_, n) => cpZeile(e, n)),
         leer(e.spruenge ? 3 : 5),
         statZeile(e),

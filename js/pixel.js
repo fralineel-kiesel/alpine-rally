@@ -476,6 +476,63 @@ export function schotterTextur(farben, seed = 37) {
   return t;
 }
 
+// M11a: Schneestrasse (Gletscher): helles, leicht bläuliches Weiss mit zwei dunklen, festgefahrenen Spurrillen (damit
+// die Strasse im weissen Hang lesbar bleibt) und ein paar glitzernden Pixeln. Aufbau wie Schotter (48x32, rechts 16
+// Pixel ohne Spuren für die Ecken an den Einfahrten). Farben: umgebung.farben.schneeWeg / schneeSpur / schneeGlitzer
+export function schneeTextur(farben, seed = 41) {
+  const B = 48, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const weiss = hexZuRgb(farben.schneeWeg), spur = hexZuRgb(farben.schneeSpur), glitzer = hexZuRgb(farben.schneeGlitzer);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < B; x++) {
+      const weg = x < 32;
+      const welle = Math.round(Math.sin((y / H) * Math.PI * 2) * 0.6);
+      // Spurrillen: breiter als beim Schotter, in der Mitte am dunkelsten
+      const d1 = Math.abs(x - (11 + welle)), d2 = Math.abs(x - (20 + welle));
+      const inSpur = weg && (d1 <= 1.5 || d2 <= 1.5), kern = weg && (d1 <= 0.5 || d2 <= 0.5);
+      let c = inSpur ? (kern ? variiere(spur, 0.9) : spur) : weiss;
+      const r = rnd();
+      if (!inSpur && r < 0.025) c = glitzer;
+      else if (r < 0.12) c = variiere(c, 0.93);
+      else c = variiere(c, 0.97 + rnd() * 0.04);
+      setze(l, x, y, c);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  return t;
+}
+// M11a: Eisstelle: Eisblau mit hellen, schrägen Glanzstreifen (die Fahrbahn "glänzt", nur Farbe) und feinen Rissen,
+// die Spuren nur angedeutet. Farben: umgebung.farben.eisWeg / eisGlanz / eisRiss
+export function eisTextur(farben, seed = 43) {
+  const B = 48, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const eis = hexZuRgb(farben.eisWeg), glanz = hexZuRgb(farben.eisGlanz), riss = hexZuRgb(farben.eisRiss);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < B; x++) {
+      const weg = x < 32;
+      const welle = Math.round(Math.sin((y / H) * Math.PI * 2) * 0.6);
+      const inSpur = weg && (Math.abs(x - (11 + welle)) <= 1 || Math.abs(x - (20 + welle)) <= 1);
+      let c = inSpur ? variiere(eis, 0.9) : eis;
+      // Glanzstreifen schräg über die Fahrbahn
+      const st = (x + y * 2) % 23;
+      if (st === 0 || st === 1) c = glanz;
+      else if (st === 2) c = variiere(glanz, 0.92);
+      const r = rnd();
+      if (r < 0.03) c = riss;
+      else c = variiere(c, 0.98 + rnd() * 0.03);
+      setze(l, x, y, c);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  return t;
+}
+
 // Wiesenweg (Meilenstein 3b): Feldweg über die Wiese. Erdbraun mit zwei festgefahrenen, etwas
 // dunkleren Fahrspuren; in der Mitte zwischen den Spuren und am Rand wächst Gras herein (unregelmässig,
 // wellig entlang des Wegs). Kein Mittelstrich.

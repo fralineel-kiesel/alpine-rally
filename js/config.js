@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.10d';
+export const VERSION = '0.11a';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -48,6 +48,8 @@ export const CONFIG = {
     asphalt: { breite: 7, mittellinie: true },     // wie bisher
     schotter: { breite: 6.2, mittellinie: false }, // Schotter-Nebenweg: etwas schmaler, kein Mittelstrich
     wiesenweg: { breite: 5.2, mittellinie: false, grasRand: true }, // M3b: Feldweg über die Wiese, schmaler; Rand grasig statt Erde
+    schnee: { breite: 6.2, mittellinie: false },   // M11a: Schneestrasse (Gletscher), so breit wie Schotter
+    eis: { breite: 6.2, mittellinie: false },      // M11a: Eisstelle auf der Schneestrasse (gleich breit, sonst springt der Rand)
   },
 
   // --- Nebenwege (Meilenstein 3a) ---------------------------------------
@@ -96,7 +98,9 @@ export const CONFIG = {
   // Absperrungen auf den Stummeln (js/absperrungen.js). Kollision hart wie ein Zaun.
   absperrung: {
     reihenfolge: ['band', 'reifen', 'heu', 'zaun'], // ohne Angabe beim Nebenweg: reihum, nie zweimal dieselbe hintereinander
-    abstandWeg: 0.5,           // M3a.1: Leitwand steht so weit (Meter) neben dem Bankett der Etappe (Kurven-Aussenseite)
+    // M3a.1: Leitwand steht so weit (Meter) neben dem Bankett der Etappe (Kurven-Aussenseite). M11a: mit Schneewall (Gletscher)
+    // 2.5 m: an der Kreuzung fehlt dort der Wall, wer auf Schnee weit rutscht, soll nicht gleich in der Absperrung (Strafe) stehen
+    abstandWeg: S.strassenrand && S.strassenrand.schneewall && S.strassenrand.schneewall.an ? 2.5 : 0.5,
     kreisRadius: 0.32,         // Kollision: Kreise entlang der Leitwand ...
     kreisAbstand: 0.5,         // ... alle so viele Meter
     seed: Z.absperrung,  // Zufallszahl (Höhe der Reifenstapel, schiefe Böcke ...) (Streckendatei)
@@ -337,7 +341,7 @@ export const CONFIG = {
   // Reine Deko ohne Kollision (man fährt "drüber"), darum ändern sie nichts an den Abkürzungen.
   // Eigener seed: die Bäume und Steine von oben bleiben genau gleich.
   buesche: {
-    an: true,                  // false = keine Büsche, Jungtannen und Grasbüschel
+    an: N.buesche.an ?? true,  // false = keine Büsche, Jungtannen und Grasbüschel (M11a: Streckendatei natur.buesche.an, Gletscher aus)
     seed: Z.buesche,  // Zufallszahl (gleich = gleiche Büsche) (Streckendatei)
     mindestAbstand: 6,         // so nah dürfen sie an die Strassenmitte (Bankett endet bei 5.5)
     hoehe: [0.6, 1.2],         // Büsche: Höhe von bis (Meter)
@@ -476,13 +480,15 @@ export const CONFIG = {
     lastVorneAnteil: 0.5,      // Anteil des Gewichts auf der Vorderachse (0.5 = gleich). Mehr = vorne mehr Haftung, hinten weniger
     gewichtstransfer: 0,       // Gewichtsverlagerung längs: Bremsen = mehr Last vorne, Gas = mehr hinten (0 = aus, 0.35 = deutlich)
     gewichtstransferGlaettung: 0.1, // ... so weich (Sekunden) folgt die Verlagerung der Beschleunigung (kein Zittern)
-    heckJeBelag: { schotter: 1, wiesenweg: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
-    vorneJeBelag: { schotter: 1, wiesenweg: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
+    heckJeBelag: { schotter: 1, wiesenweg: 1, schnee: 1, eis: 1 }, // Haftung hinten zusätzlich mal diesem Wert, je Belag (1 = wie bisher)
+    vorneJeBelag: { schotter: 1, wiesenweg: 1, schnee: 1, eis: 1 }, // M8b: Haftung vorne zusätzlich mal diesem Wert, je Belag (1 = wie bisher;
                                // fehlt ein Belag, gilt 1. Asphalt, Bankett und Gras bewusst nicht: sonst lohnen Abkürzungen)
     schotterGrip: 1,           // M10b.1: Griff (vorne und hinten) nur auf Schotter mal diesem Wert; 1 = wie bisher (alle Autos ausser Escorta)
     schotterHeck: 1,           // M10b.2: auf Schotter lockern Gas im Drift und der Schub hinten das Heck nur zu diesem Anteil; 1 = wie bisher
     schotterTraktion: 1,       // M10b.2: Traktion (Haftung beim Beschleunigen) nur auf Schotter mal diesem Wert; 1 = wie bisher
     schotterStabil: 1,         // M10b.2: auf Schotter fängt sich das Auto im Drift mit dieser Stabilität (mal stabilitaet); 1 = wie bisher
+    schneeGrip: 1,             // M11a: wie schotterGrip, aber nur auf Schnee: Griff vorne/hinten und Traktion mal diesem Wert
+    eisGrip: 1,                // M11a: ... nur auf Eis (1 = keine Rechnung). Schotter-Werte gelten auf Schnee/Eis NICHT
   },
 
   // --- Getriebe und Motor (Meilenstein 1.2) ----------------------------
@@ -523,7 +529,7 @@ export const CONFIG = {
     zugkraftFaktor: 1,         // Schub aller Gänge mal diesem Wert (1 = wie "zugkraft")
     // Allrad: so viel mehr Schub geht je Belag auf den Boden (mal traktion; 1 = wie bisher). Eigentlich ein
     // Traktions-Faktor: über 1 = Allrad zieht besser, unter 1 = Hinterradantrieb (M8c, Fard Escorta) zieht schlechter
-    allrad: { asphalt: 1, bankett: 1, gras: 1, schotter: 1, wiesenweg: 1 },
+    allrad: { asphalt: 1, bankett: 1, gras: 1, schotter: 1, wiesenweg: 1, schnee: 1, eis: 1 },
     // Turbo: Ladedruck (0..1) baut sich mit Gas oberhalb "ab" in "aufbau" Sekunden auf und fällt ohne Gas in "abbau".
     // Schub mal (1 - verlust) + (verlust + mehr) x Ladedruck. Anti-Lag: in der Schaltpause und beim Gaswegnehmen über
     // antiLagAb fällt er höchstens auf antiLagMin. Der Motorton liest den Ladedruck (noch) nicht.
@@ -551,12 +557,13 @@ export const CONFIG = {
         traegheit: 2.5,          // schwerer, ruhiger Wagen (Prototyp 2.3)
         gewichtstransfer: 0.45,  // Bremsen in der Kurve = Heck kommt; Gas = Heck stabil, Front schiebt etwas (M8a: 0.35)
         gasImDrift: 0.07,        // Gas lockert das Heck im Drift weniger (Prototyp 0.12): Allrad zieht gerade
-        heckJeBelag: { schotter: 1.15, wiesenweg: 1.25 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser (M8a: 1.1 / 1.15)
-        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.06 }, // M8b: Allrad zieht die Front auf losem Boden in die Kurve
+        heckJeBelag: { schotter: 1.15, wiesenweg: 1.25, schnee: 1.15, eis: 1.12 }, // Allrad hält das Heck auf Schotter und Wiesenweg besser (M8a: 1.1 / 1.15; M11a: auch Schnee/Eis)
+        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.06, schnee: 1.06, eis: 1.05 }, // M8b: Allrad zieht die Front auf losem Boden in die Kurve
+        schneeGrip: 1.0, eisGrip: 1.0, // M11a: Schnee/Eis-Griff (Audan: Massstab, Allrad-Vorteil steckt in allrad/heckJeBelag)
                                  // (Asphalt, Bankett, Gras: kein Vorteil, sonst lohnen sich Abkürzungen)
       },
       getriebe: {
-        allrad: { schotter: 1.2, wiesenweg: 1.15 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil; M8a: 1.15 / 1.1)
+        allrad: { schotter: 1.2, wiesenweg: 1.15, schnee: 1.4, eis: 1.35 }, // mehr Traktion auf losem Untergrund (Gras und Bankett: kein Vorteil; M8a: 1.15 / 1.1; M11a: Schnee/Eis)
         zugkraftFaktor: 0.99,    // Schub 1 % weniger: Anfahren auf Asphalt bleibt wie beim Prototyp (der Turbo gibt voll 4 % mehr)
         turbo: { an: true },     // dezenter Turbo (Werte siehe getriebe.turbo oben)
       },
@@ -578,11 +585,12 @@ export const CONFIG = {
         gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve (+3.2°) ...
         stabilitaet: 7.5,        // ... und wird schnell wieder gefangen (Prototyp 5; sonst kam der flotte Testfahrer bei
                                  // 694 m beim harten Bremsen mit 130 km/h quer)
-        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.08 }, // Allrad zieht die Front auf losem Boden in die Kurve
-        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit (sonst rutscht hinten zuerst)
+        vorneJeBelag: { schotter: 1.06, wiesenweg: 1.08, schnee: 1.06, eis: 1.05 }, // Allrad zieht die Front auf losem Boden in die Kurve
+        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22, schnee: 1.12, eis: 1.1 },  // ... und das Heck hält mit (sonst rutscht hinten zuerst)
+        schneeGrip: 1.0, eisGrip: 1.0, // M11a: Schnee/Eis-Griff wie der Audan (Allrad-Vorteil steckt in allrad/heckJeBelag)
       },
       getriebe: {
-        allrad: { schotter: 1.15, wiesenweg: 1.1, bankett: 0.9 }, // Traktion auf losem Boden; Bankett weniger, damit
+        allrad: { schotter: 1.15, wiesenweg: 1.1, bankett: 0.9, schnee: 1.35, eis: 1.3 }, // Traktion auf losem Boden (M11a: Schnee/Eis); Bankett weniger, damit
                                  // es dort trotz mehr Schub keinen Vorteil gibt (Abkürzungen)
         zugkraftFaktor: 1.02,    // leichter = zieht kräftiger (0-100 km/h Asphalt 4 % schneller)
         gaenge: [48, 80, 112, 140, 166], // 4. und 5. Gang kürzer: Höchsttempo 5 % tiefer, oben herum zieht er weniger
@@ -638,9 +646,13 @@ export const CONFIG = {
                                  // (bricht später und sanfter aus; bei digitalem Vollausschlag 3° statt 37° Schwimmwinkel)
         schotterStabil: 4,         // M10b.2: auf Schotter fängt er sich im Drift 4x so stark von selbst (ohne Gegenlenken)
         schotterTraktion: 1.05,    // M10b.2: auf Schotter 5 % mehr Traktion beim Beschleunigen (Räder drehen weniger durch)
+        // M11a: Schnee/Eis – KEIN Schotter-Bonus (die vier schotter*-Werte gelten nur auf Schotter). Hinterrad: das Heck
+        // hält auf Schnee/Eis nur normal (kein Ausgleich wie auf Schotter), Vortrieb bricht früher weg (allrad unten)
+        heckJeBelag: { schotter: 1.15, wiesenweg: 1.25, schnee: 1.0, eis: 1.0 },
+        schneeGrip: 1.0, eisGrip: 1.0,
       },
       getriebe: {
-        allrad: { schotter: 0.95, wiesenweg: 0.9 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden
+        allrad: { schotter: 0.95, wiesenweg: 0.9, schnee: 0.9, eis: 0.85 }, // unter 1 = Hinterrad: weniger Traktion auf losem Boden (M11a: Schnee/Eis)
         zugkraftFaktor: 0.92,    // etwas weniger Leistung (kein Turbo)
         gaenge: [48, 82, 118, 150, 168], // 4. und 5. Gang kürzer: Höchsttempo ca. 8 % tiefer
         turbo: { an: false },    // kein Turbo (auch kein Pfeifen und kein Blow-off im Ton, siehe ton)
@@ -700,11 +712,13 @@ export const CONFIG = {
                                  // Gemessen: unter 1.05 deutlich weniger, von 1.05 bis 2.4 fast gleich (kein Kippen).
                                  // M8e sprang das Heck beim Bremsen in der Kurve (1.15 = +7.3°, 1.25 = +13°); seit M8f
                                  // (stabilitaet 6.8) glatt: 1.05 bis 1.35 = +6.2° bis +6.0°
-        heckJeBelag: { schotter: 1.34, wiesenweg: 1.4 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
+        heckJeBelag: { schotter: 1.34, wiesenweg: 1.4, schnee: 1.2, eis: 1.15 }, // gleicht antriebHinten und den kleinen Heck-Grip im Kreis auf
                                  // losem Boden aus (sonst Kreis Schotter -5 %); unter Gas bleibt das Heck locker
+                                 // (M11a: auf Schnee/Eis weniger Ausgleich: das zickigste Auto, aber fahrbar)
+        schneeGrip: 0.97, eisGrip: 0.97, // M11a: Schnee/Eis-Griff etwas kleiner (bleibt das zickigste Auto)
       },
       getriebe: {
-        allrad: { schotter: 1.0, wiesenweg: 0.95, bankett: 0.85, gras: 0.995 }, // Hinterrad, aber der Motor drückt auf
+        allrad: { schotter: 1.0, wiesenweg: 0.95, bankett: 0.85, gras: 0.995, schnee: 0.88, eis: 0.82 }, // Hinterrad, aber der Motor drückt auf
                                  // die Antriebsräder (besser als der Escorta 0.95 / 0.9); Bankett und Gras weniger, damit
                                  // es dort trotz viel Schub keinen Vorteil gibt (Abkürzungen)
         zugkraftFaktor: 1.15,    // leicht und kräftig: das schnellste Auto aus dem Stand (0-100 km/h -10 %)
@@ -763,13 +777,14 @@ export const CONFIG = {
         gripVorne: 1.05,         // tiefer Schwerpunkt: die Front hält etwas mehr (Prototyp 1.0)
         gewichtstransfer: 0.4,   // Heck kommt beim Bremsen in der Kurve nur leicht (+3.0°) ...
         stabilitaet: 6.8,        // ... und ist sofort wieder gefangen (0.33 s; Prototyp 5)
-        vorneJeBelag: { schotter: 1.05, wiesenweg: 1.05 }, // Allrad zieht die Front auf losem Boden in die Kurve ...
-        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22 },  // ... und das Heck hält mit
+        vorneJeBelag: { schotter: 1.05, wiesenweg: 1.05, schnee: 1.05, eis: 1.05 }, // Allrad zieht die Front auf losem Boden in die Kurve ...
+        heckJeBelag: { schotter: 1.12, wiesenweg: 1.22, schnee: 1.12, eis: 1.1 },  // ... und das Heck hält mit
+        schneeGrip: 1.0, eisGrip: 1.0, // M11a: Schnee/Eis-Griff
       },
       getriebe: {
         // Traktion auf losem Boden; Bankett und Gras weniger (Abkürzungen; M8f Gras 0.99: mit mehr Schub wäre der Subora
         // auf der Wiese sonst 0.08 % schneller als der Prototyp)
-        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9, gras: 0.99 },
+        allrad: { schotter: 1.17, wiesenweg: 1.12, bankett: 0.9, gras: 0.99, schnee: 1.37, eis: 1.32 }, // (M11a: Schnee/Eis)
         zugkraftFaktor: 1.03,    // Schub 3 % mehr als der Prototyp (M8e 1.0; gleicht die längeren Gänge aus, der Turbo gibt
                                  // voll noch 4 % dazu)
         // M8f (Lino: „soll höher drehen“, der Boxer dreht hoch): Schaltpunkte höher, Gänge auf 8000/min bezogen,
@@ -852,6 +867,14 @@ export const CONFIG = {
     // Schotter, wie in M3a). Mit heck 0.7 und stabilitaet 0.5 kommt das Heck unter Gas deutlich (ca. 11-16°),
     // lässt sich nach der Handbremse aber in unter 1 s wieder einfangen.
     wiesenweg: { grip: 0.64, rollen: 0.9, rollenTempo: 0.03, rueckwaerts: 1.4, heck: 0.7, stabilitaet: 0.5, geradeaus: 0.4 },
+    // --- M11a: Schnee und Eis (Etappe Gletscher). EIN Block zum Drehen. Gemessen mit tools/schnee-messung.mjs ---
+    // Bremsweg aus 100 km/h (Schotter = 1.0): Schnee ca. 1.5, Eis ca. 2.8. Die Bremse wirkt mit min(1, grip + 0.2),
+    // darum steuert "grip" hier Bremsweg UND seitlichen Halt; "rollen" bremst zusätzlich (Schnee schiebt, Eis kaum).
+    // Schnee: gut kontrollierbare Drifts (heck, stabilitaet wie Schotter, etwas weniger Halt).
+    // Eis: lange Rutscher (wenig Halt, kaum Stabilitätshilfe, schiebt nach dem Loslassen lange seitlich).
+    //   traktion (nur Schnee/Eis): Schub beim Anfahren mal diesem Wert (Spikes: auf Eis mehr, als der Grip hergibt)
+    schnee: { grip: 0.42, rollen: 0.45, rollenTempo: 0.012, rueckwaerts: 1.3, heck: 0.82, stabilitaet: 0.5, geradeaus: 0.4, traktion: 1.0 },
+    eis:    { grip: 0.11, rollen: 0.1, rollenTempo: 0.002, rueckwaerts: 1.0, heck: 0.9, stabilitaet: 0.25, geradeaus: 0.15, traktion: 2.0 },
   },
 
   // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------
@@ -877,6 +900,8 @@ export const CONFIG = {
     belaege: {
       schotter: { farbe: '#d6ccb4', staerke: 1 },      // helles Staub-Beige
       wiesenweg: { farbe: '#8c7356', staerke: 0.55 },  // dunkler, erdig, schwächer
+      schnee: { farbe: '#f4f8ff', staerke: 0.85 },     // M11a: weisser Schneestaub
+      eis: { farbe: '#dceaf6', staerke: 0.12 },        // M11a: auf Eis kaum Staub (nur ein Hauch Eiskristalle)
     },
   },
 
@@ -1056,8 +1081,47 @@ export const CONFIG = {
   // --- Strassenrand: Leitplanken, Holzzäune, Schilder (Meilenstein 2a) ---
   // Wo was steht, wird beim Laden aus der Strecke abgeleitet (js/strassenrand.js).
   // Gleicher seed = gleiche Zäune und Lücken bei jeder Fahrt.
+  // --- Schneewall (M11a, js/schneewall.js): weicher Rand der Gletscher-Etappe statt Leitplanken ----------------
+  // Wo: Streckendatei strassenrand.schneewall { an, ohne: [[von, bis, seite]] }; sonst (Alpen, Finnland) keiner.
+  // Fährt man hinein, taucht das Auto ein, wird gebremst und rutscht wieder heraus. Keine Wand-Strafe, keine MOTOR-Leuchte.
+  schneewall: {
+    abstand: 0.3,              // so viele Meter hinter dem Bankett beginnt der Wall (innere Kante)
+    breite: 2.2,               // Breite des Walls (Meter, quer)
+    hoehe: 1.0,                // Höhe über der Strasse (Meter) ...
+    welle: 0.15,               // ... mal 1 ± diesem Anteil (unregelmässig, sieht geschaufelt aus)
+    autoHalb: 0.9,             // halbe Autobreite: ab hier berührt die Karosserie den Wall
+    tiefeVoll: 0.5,            // ab so viel Eintauchen (m) bremst er voll ...
+    verlustJeSek: 0.5,         // ... so viel vom Tempo je Sekunde Kontakt (Richtwert Lino: 40 bis 50 %)
+    schlucken: 6,              // das Tempo IN den Wall wird so schnell geschluckt (1/s, taucht ein statt abzuprallen) ...
+    reibung: 0,                // ... und kostet mal diesem Wert Tempo entlang des Walls (M11a gemessen: bremst wie eine
+                               // Bremse und macht den Wall in Kehren eher besser, darum 0)
+    feder: 9,                  // schiebt mit so viel m/s² je Meter Eintauchen zur Strasse zurück
+    herausJeSek: 1.2,          // ... und direkt an der Position mit so viel m/s je Meter Eintauchen (auch im Stand)
+    ausrichten: 0.7,           // schaut die Nase in den Wall, dreht er sie so schnell (rad/s) parallel zum Wall ...
+    wegWinkel: 0.1,            // ... und noch so viel (ca. 6°) zur Strasse hin;
+    ausrichtenBis: 12,         // ... voll nur bis so viel m/s (ca. 43 km/h), schneller weniger (keine Lenkhilfe in Kehren)
+    ausrichtenEis: 0.2,        // ... auf Eis nur so ein Anteil davon
+    tiefeMax: 1.0,             // tiefer kommt das Auto nicht (kein Abkürzen durch den Wall)
+    drehBremse: 1.5,           // bremst ein Drehen des Autos im Schnee (Anteil je Sekunde)
+    kreuzungLuecke: 45,        // an Abzweig/Einmündung so viele Meter um die Kreuzung: Lücke für den Stummel
+    mindestLaenge: 8,          // kürzere Wall-Stücke weglassen
+    schritt: 4,                // Form: alle so viele Meter ein Querschnitt
+    farbeOben: '#f6f9ff',      // oben: Schneeweiss
+    farbeInnen: '#dfe8f4',     // zur Strasse: hell, leicht bläulich
+    farbeSchatten: '#9fb4d6',  // aussen: blauer Schatten
+    stangenAbstand: 30,        // rot-weisse Schneestangen auf dem Wall: alle so viele Meter (je Seite versetzt)
+    stangeHoehe: 1.8,          // so hoch über dem Wall (Meter) ...
+    stangeBreite: 0.12,        // ... so dick ...
+    stangeTeile: 4,            // ... in so vielen rot-weissen Stücken
+    stangeRot: '#d8262a', stangeWeiss: '#f6f6f6',
+    tonWucht: 0.45,            // Aufprall-Ton (Material "weich") mit so viel der Wucht: dumpf und gedämpft
+    staubJe: 1.2,              // weisser Schneestaub beim Eintauchen: so viele Wölkchen je m/s ...
+    staubMax: 18,              // ... höchstens so viele
+  },
+
   strassenrand: {
     seed: Z.strassenrand,  // Zufallszahl für Zaun-Felder, Lücken, Tore, kaputte Latten (Streckendatei)
+    schneewall: (S.strassenrand && S.strassenrand.schneewall) || null, // M11a: Schneewall (Streckendatei, nur Gletscher)
     abstand: 6.0,              // Abstand Strassenmitte -> Vorderkante Leitplanke (Bankett endet bei 5.5).
                                // Zaun und Schilder stehen etwas dahinter (siehe versatz)
     puffer: 20,                // so viele Meter vor/nach einer gesperrten Kurve ("nicht schneiden") bleibt die Innenseite frei
@@ -1071,6 +1135,7 @@ export const CONFIG = {
       an: true,                // false = keine Leitplanken
       // M10c.1: hier keine Leitplanke (Streckendatei strassenrand.ohnePlanke: [[von, bis, seite], ...], Finnland: Seekehre)
       ohne: (S.strassenrand && S.strassenrand.ohnePlanke) || [],
+      // M11a: mit Schneewall (Gletscher) gar keine Leitplanken
       hoehe: 0.75,             // Oberkante der Planke über dem Boden
       profil: 0.32,            // Höhe des Wellprofils (Blech)
       pfostenAbstand: 4,       // Abstand der Pfosten (Meter)
@@ -1090,7 +1155,7 @@ export const CONFIG = {
     },
 
     zaun: {
-      an: true,                // false = keine Holzzäune
+      an: !(S.strassenrand && S.strassenrand.ohneZaun), // false = keine Holzzäune (M11a: Streckendatei strassenrand.ohneZaun, Gletscher)
       versatz: 0.35,           // steht so viel weiter weg als die Leitplanken (randAbstand + versatz)
       hoehe: 1.1,              // Höhe der Pfosten
       latten: [0.4, 0.75, 1.0], // Höhe der Querlatten (2 oder 3 Stück)
@@ -1212,6 +1277,7 @@ export const CONFIG = {
       windMehr: 0.35,          // Fahrtwind in der Luft so viel lauter (0.35 = +35 %)
       schlagPegel: 0.55,       // (bis 0.10c.1: dumpfer Federungsschlag; seit M10c.2 ersetzt durch wumms.bass)
       kiesPegel: 0.35,         // Schotterknirschen bei jeder Landung
+      schnee: { pegel: 0.7, kiesMal: 0.6, tiefpass: 800 }, // M11a: Landung auf Schnee/Eis: Wums leiser (mal pegel), Knirschen leiser und dumpfer (Tiefpass Hz)
       hartPegel: 0.7,          // hart: lauter Schlag mit Knirschen
       auaPegel: 0.6,           // sehr hart: kurzer tiefer "Aua"-Ton dazu
       // M10c.2: Landungs-Wums (Lino: „viel zu leise“). Mit dieser einen Zahl lässt sich der ganze Wums lauter/leiser stellen
@@ -1501,6 +1567,7 @@ export const CONFIG = {
     zielVor: null,             // "ZIEL" so viele Meter vorher (null = wie alle anderen Ansagen, nach Vorlaufzeit)
     // --- Sprung (M10c) ---
     sprungVor: 175,            // "SPRUNG" so viele Meter vor der Absprungkante (Kuppen/Senken in der Sprungzone ersetzt er)
+    eisVor: 150,               // M11a: "EIS" (Schneeflocke) so viele Meter vor dem Anfang einer Eisstelle
 
     // --- Zusammenfassen ---
     zusammen: 28,              // Ansagen näher beisammen (Meter) werden intern eine Ansage (Text mit "UND")
@@ -1551,6 +1618,7 @@ export const CONFIG = {
       schotter: 'SCHOTTER', wiesenweg: 'WIESENWEG', felswand: 'FELSWAND', ziel: 'ZIEL',
       schneiden: 'SCHNEIDEN', nichtSchneiden: 'NICHT SCHNEIDEN', sprung: 'SPRUNG',
       eng: 'ENG', weit: 'WEIT', lang: 'LANG', oeffnet: 'ÖFFNET', ziehtZu: 'ZIEHT ZU',
+      schnee: 'SCHNEE', eis: 'EIS', // M11a
     },
   },
 
@@ -2007,6 +2075,11 @@ export const CONFIG = {
         gras: { art: 'weich', pegel: 0.08, grenze: 240, grenzeTempo: 5 },
         schotter: { art: 'kies', pegel: 0.16, grenze: 2600, grenzeTempo: 40 },
         wiesenweg: { art: 'weich', pegel: 0.11, grenze: 340, grenzeTempo: 8 },
+        // M11a: Schnee = dumpfes Knirschen (dieselbe Kies-Schicht, tiefer, leiser und langsamer: rate = Abspieltempo mal),
+        // beim Rutschen weicher (rutschMal); Eis = leises Surren, beim Rutschen helles, leises Zischen/Quietschen statt
+        // Knirschen (quietschMal = Anteil des Asphalt-Quietschens)
+        schnee: { art: 'kies', pegel: 0.11, grenze: 900, grenzeTempo: 18, rate: 0.6, rutschMal: 0.7 },
+        eis: { art: 'surren', pegel: 0.035, grenze: 2400, grenzeTempo: 30, quietschMal: 0.35 },
       },
       wechsel: 0.05,           // Überblendung beim Untergrundwechsel (Zeitkonstante; nach ca. 0.15 s fertig)
       kiesRate: 0.7,           // Kies: Abspieltempo im Schritttempo ...

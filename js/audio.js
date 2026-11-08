@@ -838,15 +838,16 @@ export function baueKlangwerk(ctx) {
     if (b.art === 'surren') setze(W_SURRLP, surrenLp.frequency, hell, R.wechsel);
     if (b.art === 'weich') setze(W_WEICHLP, weichLp.frequency, hell, R.wechsel);
     if (b.art === 'kies') setze(W_KIESBP, kiesBp.frequency, hell, R.wechsel);
-    if (kiesQuelle) setze(W_KIESRATE, kiesQuelle.playbackRate, R.kiesRate + v * R.kiesRateTempo);
+    if (kiesQuelle) setze(W_KIESRATE, kiesQuelle.playbackRate, (R.kiesRate + v * R.kiesRateTempo) * (b.rate ?? 1)); // (M11a: Schnee tiefer)
     // Quietschen (Asphalt) bzw. Rutschen (loser Untergrund)
     const t0 = R.quietschTempo[0], t1 = R.quietschTempo[1];
     const tq = begr((v - t0) / (t1 - t0), 0, 1);
     let q = begr((Math.abs(z.drift) - R.quietschAb) / (R.quietschVoll - R.quietschAb), 0, 1) * tq;
     if (z.handbremse && v > t0) q = Math.max(q, R.handbremseQuietschen * tq);
     const asphalt = z.untergrund === 'asphalt';
-    zu.quietschen = asphalt ? R.quietschPegel * q : 0;
-    zu.rutschen = asphalt ? 0 : R.rutschPegel * q;
+    // M11a: Eis quietscht leise und hell (quietschMal) statt zu knirschen, Schnee knirscht weicher (rutschMal)
+    zu.quietschen = asphalt ? R.quietschPegel * q : b.quietschMal ? R.quietschPegel * b.quietschMal * q : 0;
+    zu.rutschen = asphalt || b.quietschMal ? 0 : R.rutschPegel * q * (b.rutschMal ?? 1);
     setze(W_QUIETSCH, quietschGain.gain, zu.quietschen, 0.04); setze(W_RUTSCH, rutschGain.gain, zu.rutschen, 0.04);
     const qhz = mische(R.quietschTon[0], R.quietschTon[1], q);
     setze(W_QHZ, quietschOsz.frequency, qhz, 0.08); setze(W_QBP, quietschBp.frequency, qhz, 0.08);
@@ -974,7 +975,9 @@ export function baueKlangwerk(ctx) {
     // M10c.2: richtiger „Wums“ (Lino: viel zu leise): tiefer Bass-Schlag, gedämpfter Rausch-Stoss, Federungs-Klack,
     // Schotterknirschen wie bisher; sehr hart dazu ein tiefer „Aua“-Ton. Alles mal LANDUNG_WUMMS_LAUTSTAERKE und Stärke je
     // Landehärte. Der Motor tritt kurz zurück (Ducking). (Zufallszahlen in derselben Reihenfolge wie bis 0.10c.1)
-    const W = T.wumms, L = T.LANDUNG_WUMMS_LAUTSTAERKE * (W.stufen[info.klasse] ?? 1);
+    // M11a: Landung auf Schnee/Eis: derselbe Wums, nur leiser (schnee.pegel) und das Knirschen dumpfer (schnee.tiefpass)
+    const SN = (info.untergrund === 'schnee' || info.untergrund === 'eis') && T.schnee ? T.schnee : null;
+    const W = T.wumms, L = T.LANDUNG_WUMMS_LAUTSTAERKE * (W.stufen[info.klasse] ?? 1) * (SN ? SN.pegel : 1);
     const r1 = rnd();
     // M10d: hart / sehr hart länger ausklingen lassen (mehr Lautheit, gleiche Spitze); sauber unverändert
     const X = W.laenger && W.laenger[info.klasse];
@@ -983,7 +986,7 @@ export function baueKlangwerk(ctx) {
     wummsTon('landung', bass, L * W.bass.pegel * (1 + 0.04 * (r1 - 0.5)));
     wummsRauschen('landung', rausch, L * W.rauschen.pegel * (X ? X.rauschPegel : 1));
     spiele('landung', 'klack', fahrzeug, L * W.klackPegel, 0, W.klackTempo);
-    spiele('aufprall', 'aufprall-stein', fahrzeug, T.LANDUNG_WUMMS_LAUTSTAERKE * T.kiesPegel * (0.4 + 0.6 * h), 0, 1.15 + 0.2 * rnd(), 2600);
+    spiele('aufprall', 'aufprall-stein', fahrzeug, T.LANDUNG_WUMMS_LAUTSTAERKE * T.kiesPegel * (0.4 + 0.6 * h) * (SN ? SN.kiesMal : 1), 0, 1.15 + 0.2 * rnd(), SN ? SN.tiefpass : 2600);
     if (info.klasse !== 'sauber') spiele('aufprall', 'aufprall-stein', fahrzeug, L * T.hartPegel * h, 0, 0.9 + 0.1 * rnd());
     if (info.klasse === 'sehrHart') { wummsTon('landung', W.aua, L * W.aua.pegel); spiele('schlag', 'schlag', fahrzeug, L * T.auaPegel, 0.04, 0.45); }
     ducke(X ? X.duckDb : W.duckDb, X ? X.duckDauer : W.duckDauer, W.duckZurueck, false);

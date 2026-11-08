@@ -59,6 +59,7 @@ import { baueStartZiel } from './startziel.js';
 import { baueLeben, lebenPlaetze } from './leben.js';
 import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
+import { baueSchneewall } from './schneewall.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
@@ -164,6 +165,9 @@ const welt = baueWelt(szene, strecke, netz);
 const pflanzen = bauePflanzen(szene, strecke, welt);
 // Leitplanken, Holzzäune, Schilder (Meilenstein 2a) – sind auch Hindernisse
 const strassenrand = baueStrassenrand(szene, strecke, welt, pflanzen);
+// M11a: Schneewall (nur Strecken mit strassenrand.schneewall, Gletscher): weicher Rand statt Leitplanken
+const schneewall = baueSchneewall(strecke, netz, welt);
+if (schneewall.mesh) szene.add(schneewall.mesh);
 // Absperrungen auf den Stummeln der Nebenwege (M3a) – Hindernisse wie der Strassenrand
 const absperrungen = baueAbsperrungen(szene, welt, [...pflanzen.hindernisse, ...strassenrand.hindernisse]);
 strassenrand.hindernisse.push(...absperrungen.hindernisse);
@@ -317,6 +321,7 @@ function aufprallZaehlen(wucht) {
 const grenzWucht = (nx, nz) => Math.max(0, physik.vx * nx + physik.vz * nz);
 // Für den Ton (M7a, nur gelesen): stärkster Kontakt im Bild (Wucht, Material), Kontakt zum Schleifen, Pedale aus der Physik
 const FELS = materialNr('fels');
+const WEICH = materialNr('weich'); // M11a: Schneewall
 const tonInfo = { wucht: 0, art: 0, kontaktArt: -1, kontaktTempo: 0 };
 const tonEingabe = { gas: 0, bremse: 0, handbremse: false };
 let pnStand = 0; // so viele Pace-Notes-Kacheln sind schon erschienen (für das Signal)
@@ -326,7 +331,7 @@ const kam = { yaw: 0, pos: new THREE.Vector3(), ziel: new THREE.Vector3() };
 // bleibt im Flug auf ihrer Höhe), land = Zeit seit der Landung, ruck = Federungs-Ruck (ganze Bildpunkte), frei = Gewicht
 // der frei drehenden Motordrehzahl (1 in der Luft, nach der Landung zurück auf 0), dz = diese Drehzahl
 const sk = { e: 0, yAb: 0, land: 99, ruckT: 99, ruckAmp: 0, ruckPx: 0, ruckAktiv: 0, ab: 0, landung: 0, frei: 0, dz: 0 };
-const sprungTonInfo = { haerte: 0, klasse: 'sauber', s: 0 };
+const sprungTonInfo = { haerte: 0, klasse: 'sauber', s: 0, untergrund: 'asphalt' };
 const optik = { neigX: 0, neigZ: 0 }; // Neigung zum Gelände (seit M8a: Nicken und Rollen in js/federung.js)
 
 // M10b.2: Wasserbad (zu tief ins Wasser): aktiv = Schwarzbild läuft, t = Zeit seitdem, sicherS = letzte sichere Stelle
@@ -543,6 +548,15 @@ function physikSchritt(dt, e, nurFahren = false) {
   if (wand.strafe) {
     tonW = Math.max(tonW, wand.verlust);
     if (!nurFahren) staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(Math.min(CONFIG.kollision.wand.staubMax, wand.verlust * CONFIG.kollision.wand.staubJe)), 0.3 + Math.min(0.7, wand.verlust / 20), untergrund);
+  }
+  // M11a: Schneewall (weicher Rand): bremst, schiebt zurück, keine Wand-Strafe; dumpfer Ton (weich), weisser Staub
+  if (schneewall.an && !fliegt) {
+    const sw = schneewall.wirke(physik, q2, dt);
+    if (sw) {
+      const SW = CONFIG.schneewall, wSw = sw.wucht * SW.tonWucht;
+      if (wSw > tonW) { tonW = wSw; tonArt = WEICH; }
+      if (sw.neu && sw.wucht > 1 && !nurFahren) staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(Math.min(SW.staubMax, sw.wucht * SW.staubJe)), 0.5, 'schnee');
+    }
   }
   if (q2.wandSeite && Math.sign(q2.seite) !== q2.wandSeite && q2.wandStaerke > 0.3) {
     // Abhang auf der anderen Seite
@@ -925,7 +939,7 @@ function sprungBild(dt, imRennen) {
     sk.land = 0;
     // M10c.1: Ruck als Anteil der Bildhöhe (bleibt gleich gross, egal welche Auflösung), mindestens 1 Bildpunkt
     sk.ruckT = 0; sk.ruckAmp = an ? Math.max(1, (K.ruckAnteil[0] + (K.ruckAnteil[1] - K.ruckAnteil[0]) * L.haerte) * renderer.domElement.height) : 0;
-    sprungTonInfo.haerte = L.haerte; sprungTonInfo.klasse = L.klasse; sprungTonInfo.s = rennen.letztesS;
+    sprungTonInfo.haerte = L.haerte; sprungTonInfo.klasse = L.klasse; sprungTonInfo.s = rennen.letztesS; sprungTonInfo.untergrund = untergrund; // (M11a: Schnee-Landung)
     if (imRennen) { ton.sprung('landung', sprungTonInfo); spielTick('landung', L.haerte); }
     staub.stoss(physik.x, bodenHoehe(physik.x, physik.z), physik.z, Math.round(ST.landungMin + (ST.landungMax - ST.landungMin) * L.haerte), 0.4 + 0.6 * L.haerte, untergrund);
   }
@@ -1564,7 +1578,7 @@ if (fahrlaborAn) {
 // start(): am Menü vorbei ins Rennen wie "STARTEN" (mit Countdown); start({ countdown: false }): ohne Countdown wie vor M5b
 // rennSchritt(dt, e): ein fester Schritt wie in der Spielschleife (Countdown oder Physik), lauf/stat: Rennablauf, Statistik
 window.__alpineRally = {
-  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision, wand,
+  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision, wand, schneewall, // (M11a: schneewall)
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
   ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,

@@ -10,7 +10,7 @@ import { pruefeSprung } from './sprung.js';
 export const FORMAT = 1;
 
 // Bekannte Beläge (müssen zu den Schlüsseln von config.belaege passen, prüft tools/m10a-test.mjs)
-export const BELAEGE = ['asphalt', 'schotter', 'wiesenweg'];
+export const BELAEGE = ['asphalt', 'schotter', 'wiesenweg', 'schnee', 'eis']; // M11a: Schnee und Eis (Gletscher)
 // Bekannte Absperrungen und Seitenschutz an Stummeln und Verlängerungen
 export const SPERREN = ['band', 'reifen', 'heu', 'zaun'];
 export const SEITENSCHUTZ = ['planke', 'zaun'];
@@ -23,7 +23,7 @@ export const SEEDS = ['gelaende', 'sprites', 'buesche', 'fernwald', 'berge', 'ku
 // Fahnen js/motive.js, Tiere js/kuhbild.js, Häuser js/leben.js (HAUS_TYPEN), Bäume js/pixel.js
 export const DEKO = {
   fahne: ['schweiz', 'finnland'],
-  tier: ['kuh', 'rentier'],
+  tier: ['kuh', 'rentier', 'steinbock'], // (M11a: steinbock)
   tierKlang: ['glocke', 'rentier', null], // (M10b.2: rentier)
   haus: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
   stadel: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
@@ -226,6 +226,11 @@ export function pruefeStrecke(d, { voll = false } = {}) {
   const U = d.umgebung;
   for (const k of ['farben', 'licht', 'nebel', 'berge', 'gelaende', 'fernwald']) if (!istObjekt(U[k])) fehler(`umgebung.${k}`, 'fehlt');
   if (istObjekt(U.farben)) for (const k of FARBEN) if (!farbe(U.farben[k])) fehler(`umgebung.farben.${k}`, `${JSON.stringify(U.farben[k])}: Farbe wie "#4e9a2c" erwartet`);
+  // M11a: wer Schnee oder Eis fährt, braucht die Farben der Schneestrasse und des Eises (js/pixel.js)
+  const belagListe = [...(d.nebenwege || []).map((w) => w && w.belag), ...(d.belagAbschnitte || []).map((b) => b && b.belag)];
+  if (istObjekt(U.farben) && belagListe.some((b) => b === 'schnee' || b === 'eis')) {
+    for (const k of ['schneeWeg', 'schneeSpur', 'schneeGlitzer', 'eisWeg', 'eisGlanz', 'eisRiss']) if (!farbe(U.farben[k])) fehler(`umgebung.farben.${k}`, `${JSON.stringify(U.farben[k])}: Farbe erwartet (Strecke mit Schnee/Eis)`);
+  }
   if (istObjekt(U.licht)) {
     if (!farbe(U.licht.sonneFarbe) || !farbe(U.licht.umgebungFarbe)) fehler('umgebung.licht', 'sonneFarbe/umgebungFarbe: Farbe erwartet');
     if (!(U.licht.sonneStaerke >= 0 && U.licht.sonneStaerke <= 10)) fehler('umgebung.licht.sonneStaerke', `${U.licht.sonneStaerke}: 0 bis 10 erwartet`);
@@ -236,6 +241,13 @@ export function pruefeStrecke(d, { voll = false } = {}) {
   }
   if (!Array.isArray(U.landschaft)) fehler('umgebung.landschaft', 'Liste erwartet (darf leer sein)');
   else U.landschaft.forEach((b, i) => { if (!['x', 'z', 'radius', 'hoehe'].every((k) => istZahl(b[k])) || b.radius <= 0) fehler(`umgebung.landschaft[${i}]`, '{ x, z, radius > 0, hoehe } erwartet'); });
+  // M11a: Schneewall (freiwillig): strassenrand.schneewall = { an: true/false, ohne: [[von, bis, seite], ...] }
+  if (istObjekt(d.strassenrand) && 'schneewall' in d.strassenrand) {
+    const SW = d.strassenrand.schneewall;
+    if (!istObjekt(SW) || typeof SW.an !== 'boolean') fehler('strassenrand.schneewall', 'Objekt { an: true/false, ohne: [[von, bis, seite]] } erwartet');
+    else if ('ohne' in SW && (!Array.isArray(SW.ohne) || !SW.ohne.every((x) => Array.isArray(x) && x.length === 3 && istZahl(x[0]) && istZahl(x[1]) && x[0] < x[1] && [-1, 0, 1].includes(x[2])))) fehler('strassenrand.schneewall.ohne', 'Liste von [von, bis, seite] erwartet (von < bis, seite -1/0/1)');
+  }
+  if ('schatten' in d && istObjekt(d.schatten) && 'farbe' in d.schatten && !farbe(d.schatten.farbe)) fehler('schatten.farbe', `${JSON.stringify(d.schatten.farbe)}: Farbe erwartet (M11a, freiwillig)`);
   // M10b.2: Kunst-Schatten (freiwillig, oberste Ebene): Sonne (Himmelsrichtung), Länge, Dunkelheit
   if ('schatten' in d) {
     const Sch = d.schatten, BER = { sonne: [0, 360], laenge: [0.2, 6], dunkelheit: [0.1, 1] };

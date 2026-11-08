@@ -49,6 +49,9 @@ function wandMeter(A) {
     if (Math.abs(q.seite) < 8) an[Math.max(0, Math.min(an.length - 1, Math.round(q.s)))] = 1;
   }
   for (let i = 0; i < S.anzahl && i < an.length; i++) if (S.wandStaerke[i] > 0.5) an[i] = 1;
+  // M11a: Schneewall (Gletscher) zählt für den Stil "wand" wie eine Wand (der Fahrer nutzt ihn in engen Kurven)
+  const SW = A.schneewall;
+  if (SW && SW.an) for (let i = 0; i < S.anzahl && i < an.length; i++) if (SW.links[i] || SW.rechts[i]) an[i] = 1;
   return an;
 }
 

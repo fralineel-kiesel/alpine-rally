@@ -320,7 +320,7 @@ async function spielMitMenue(auto, { breite = 640, hoehe = 360, gamepad = false 
         return A.lauf.ergebnis;
       },
       bisZielschirm() { let n = 0; while (A.ablauf.zustand !== 'ziel' && n < 5000) { A.rennSchritt(A.SCHRITT, LEER); n++; } return n; },
-      zielZeilen() { return A.seiten.ziel.eintraege().map((e) => ({ typ: e.typ, text: e.inhalt ? e.inhalt() : e.text, farbe: e.farbe || null, farben: e.farben || null })); },
+      zielZeilen() { return A.seiten.ziel.eintraege().map((e) => ({ h: e.hoehe, typ: e.typ, text: e.inhalt ? e.inhalt() : e.text, farbe: e.farbe || null, farben: e.farben || null })); },
     };
   }, fahrerCode);
   return s;
@@ -398,7 +398,7 @@ if (teil('i')) {
         A.menue.neuZeichnen();
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
         const m = A.menue.rollen;
-        out.masse[`${sp}-${a}`] = { hoehe: m.hoehe, max: m.max, breite: m.breite, inhalt: m.inhalt, titel: z.titel() };
+        out.masse[`${sp}-${a}`] = { hoehe: m.hoehe, max: m.max, breite: m.breite, inhalt: m.inhalt, titel: z.titel(), gesamt: m.gesamt, sichtH: m.sichtH }; // (M11a: dazu Inhalt/sichtbar)
       }
     }
     TX.setzeSprache('de'); E.setze('aufloesung', 0);
@@ -411,7 +411,8 @@ if (teil('i')) {
   // M10d: seit den Alpen-Sprüngen hat auch der Alpen-Zielbildschirm die Sprung-Zeilen (wie Finnland seit M10c): Tafel bis 175
   // statt 163 hoch (Bild 180 Zeilen), weiter nichts gerollt
   // (M10d: nur der ungünstigste Fall „voll“ darf mit den Sprung-Zeilen höchstens 10 Pixel rollen – gemessen 9; im Bericht gemeldet)
-  const layoutOk = (f, k) => Object.values(f.masse).every((m) => (m.max === 0 || (k === 'voll' && m.max <= 10)) && m.hoehe <= 175 && m.breite <= 316);
+  // M11a: Zeit und Vergleich in einer Zeile, Zwischenzeiten zweispaltig: auch „voll“ rollt nicht mehr (vorher bis 9 Pixel)
+  const layoutOk = (f) => Object.values(f.masse).every((m) => m.max === 0 && m.hoehe <= 175 && m.breite <= 316);
   const lay = (f) => `Tafel ${Math.max(...Object.values(f.masse).map((m) => m.hoehe))} hoch, ${Math.max(...Object.values(f.masse).map((m) => m.breite))} breit`;
   const faelle = {};
   // 1. allererste Zeit überhaupt
@@ -449,7 +450,7 @@ if (teil('i')) {
     'Gesamtrekord mit der ersten Delto-Zeit: GESAMTREKORD!, ERSTE ZEIT, lange Fanfare');
   melde(!f.voll.erg.gespeichert && text(f.voll, /NICHT GESPEICHERT/) && text(f.voll, /^PLATZ 2 VON 2 · GESAMT PLATZ 3$/),
     `ungünstigster Fall (beide Plätze, nicht gespeichert): ${lay(f.voll)}`);
-  melde(Object.entries(f).every(([k, v]) => layoutOk(v, k)), `Layout in 320x180, 480x270, 640x360, de und en: nichts gerollt (seit M10d „voll“ bis 10 Pixel), Tafel höchstens 175 hoch (seit M10d mit Sprung-Zeilen; bis 0.10c.2 163), höchstens 316 breit; ${Object.entries(f).map(([k, v]) => `${k} ${lay(v)}`).join('; ')}${Object.entries(f).flatMap(([k, v]) => Object.entries(v.masse).filter(([, m]) => !(m.max === 0 && m.hoehe <= 175 && m.breite <= 316)).map(([q, m]) => ` – ABWEICHUNG ${k} ${q}: ${m.breite}x${m.hoehe}, gerollt ${m.max}`)).join('')}`);
+  melde(Object.entries(f).every(([k, v]) => layoutOk(v, k)), `Layout in 320x180, 480x270, 640x360, de und en: nichts gerollt (seit M11a auch „voll“ nicht), Tafel höchstens 175 hoch (seit M10d mit Sprung-Zeilen; bis 0.10c.2 163), höchstens 316 breit; ${Object.entries(f).map(([k, v]) => `${k} ${lay(v)}`).join('; ')}${Object.entries(f).flatMap(([k, v]) => Object.entries(v.masse).filter(([, m]) => !(m.max === 0 && m.hoehe <= 175 && m.breite <= 316)).map(([q, m]) => ` – ABWEICHUNG ${k} ${q}: ${m.breite}x${m.hoehe}, gerollt ${m.max} (Inhalt ${m.gesamt}, sichtbar ${m.sichtH})`)).join('')}`);
   melde(f.rekord.masse['en-0'].titel === 'OVERALL RECORD!' && f.neueBest.masse['en-0'].titel === 'NEW BEST TIME!' && f.erste.masse['en-0'].titel === 'FINISH!', 'englisch: OVERALL RECORD!, NEW BEST TIME!, FINISH!');
   // Einstellung VERGLEICH MIT: Text BESTZEIT AUTO, Seite nicht breiter (Tafelbreite gegen den Text "BESTZEIT" von 0.8g)
   const e = await p.evaluate(async () => {

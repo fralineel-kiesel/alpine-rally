@@ -295,7 +295,7 @@ export function baueMenue({ tasteBelegen, tasteLesen, tasteName, aktionName, kla
   }
 
   // --- Zeichnen ----------------------------------------------------------------------------------
-  const zeilenHoehe = (e) => e.hoehe || (e.typ === 'gruppe' ? 10 : M.zeile);
+  const zeilenHoehe = (e) => e.hoehe ?? (e.typ === 'gruppe' ? 10 : M.zeile); // (M11a: ?? statt ||, damit Daten-Einträge ohne eigene Zeile die Höhe 0 haben dürfen)
   const SLOT = 56; // Breite eines Tasten-Felds in der Tastenbelegung
 
   function optionText(e, w) { const o = e.optionen().find((x) => x.wert === w); return o ? txt(o.text) : ''; }

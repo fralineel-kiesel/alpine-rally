@@ -97,6 +97,9 @@ if (!nurPruefen && !nurReihen) {
     const ms = performance.now() - t0;
     // auch mit der echten Autobreite (1.8 m) – geplant wird gegen beide
     const linien18 = m.findeAbkuerzungen(A.strecke, A.welt, kol, { breite: 1.8 });
+    // M11a: Schneewall (Gletscher): das Auto kommt höchstens schneewall.tiefeMax in den Wall, abkürzen geht nicht –
+    // keine Sperren, keine "schneiden"-Ansagen (die Sperre ist der Wall selbst; nachgemessen in m11a-test (n))
+    if (A.schneewall && A.schneewall.an) { linien.length = 0; linien18.length = 0; }
     const zahlen = {};
     for (const g of [5, 10]) zahlen[g] = m.findeAbkuerzungen(A.strecke, A.welt, kol, { minGewinn: g }).length;
     // Kurvenzonen bilden, jede bewerten und auswählen (Meilenstein 1.2)
@@ -278,6 +281,7 @@ const nach = await page.evaluate(async () => {
   const ABKUERZUNGEN = (await import('/js/streckenlader.js')).STRECKE.erzeugt.abkuerzungen;
   const linien = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision);
   const linien18 = m.findeAbkuerzungen(A.strecke, A.welt, A.kollision, { breite: 1.8 });
+  if (A.schneewall && A.schneewall.an) { linien.length = 0; linien18.length = 0; } // M11a: Schneewall (siehe oben)
   const offenKeys = linien.concat(linien18).map((l) => `${l.i}-${l.j}-${l.halb}`);
   const luecke = m.groessteLuecke(A.strecke, A.welt, ABKUERZUNGEN.sperren, tex, A.pflanzen.hindernisse.filter((h) => !h.sperre));
   // Wie nah kommt ein sichtbarer Teil einer Sperre der Strassenmitte? (Bankett endet bei 5.5 m)

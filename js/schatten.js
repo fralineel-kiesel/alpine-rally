@@ -9,6 +9,7 @@
 //    Abschnitt vor dem Auto; über Wasser keine Schatten. Ein Zeichenaufruf (instanziert), keine Objekte pro Bild.
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
+import { STRECKE } from './streckenlader.js';
 import { leinwand, setze, zuTextur, hexZuRgb } from './pixel.js';
 import { imWasser } from './wasser.js';
 
@@ -17,7 +18,7 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 // Farbe = wie viel jeder Farbkanal abgedunkelt wird (Abdunklung mal Stufe), Mischung: Untergrund mal (1 - Farbe) –
 // so wird jeder Untergrund dunkler und kühler (blau bleibt mehr), nie heller und nie schwarz übermalt
 function fleckTextur(dunkel) {
-  const C = CONFIG.schatten, n = 32, l = leinwand(n, n), f = hexZuRgb(C.farbe);
+  const C = CONFIG.schatten, n = 32, l = leinwand(n, n), f = hexZuRgb((STRECKE.schatten && STRECKE.schatten.farbe) || C.farbe); // M11a: Farbe je Strecke (Gletscher bläulich)
   const ab = f.map((k) => 1 - k / 255); // je Kanal: so viel geht weg (Farbe dunkelblau = Rot/Grün mehr als Blau)
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const dx = (x + 0.5) / n * 2 - 1, dy = (y + 0.5) / n * 2 - 1, r = Math.sqrt(dx * dx + dy * dy);

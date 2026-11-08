@@ -72,7 +72,7 @@ if (process.argv.includes('--kurven-vergleich')) {
           if (sanftT >= 0) { const p = Math.min(1, sanftT / sanftDauer); gm = Math.min(gm, 0.25 + 0.75 * p * p * (3 - 2 * p)); sanftT += dt; }
         }
         schritt(dt, gm < 1 && e.gas > gm ? { ...e, gas: gm } : e, nf);
-        if (A.wand.kontakt) kontakt++;
+        if (A.wand.kontakt || (A.schneewall && A.schneewall.kontakt)) kontakt++; // (M11a: auch der Schneewall)
         else if (A.kollision.letzterAufprall !== l0) baum = true;
         if (A.wand.strafeRest > 0) strafeZeit += dt;
       };
@@ -97,6 +97,19 @@ if (process.argv.includes('--kurven-vergleich')) {
       for (const st of ['flott', 'digital', 'mittel']) for (const anteil of [0.3, 0.5, 0.7]) for (const dauer of [2, 3.5]) {
         const x = { stil: `${st} sanft ab ${Math.round(anteil * 100)} % in ${dauer} s`, ...lauf(voll[st].vZiel, a, b, v0, 1, c.von + (c.bis - c.von) * anteil, dauer) };
         if (x.fertig && !x.kontakt && !x.baum) dosiert.push(x);
+      }
+      // M11a: auf Schnee/Eis fährt der Testfahrer mit seinem Kurvenfaktor (für Asphalt/Schotter) viel langsamer als die
+      // Physik erlaubt (Eiskehre: ca. 12 statt 24 km/h). Damit „wand“ gegen eine faire Fahrt antritt: zusätzliche kontaktfreie
+      // Varianten mit höherem Kurventempo (quer mal 1.5 / 2 / 3), nur wenn das Fenster Schnee oder Eis enthält
+      let schneeFenster = false;
+      for (let i = a; i < b; i++) if (A.netz.belag[i] === 'schnee' || A.netz.belag[i] === 'eis') { schneeFenster = true; break; }
+      // (auch mit der sanften Gas-Rampe aus der Kehre: Hinterrad auf Eis)
+      if (schneeFenster) for (const st of ['flott', 'digital']) for (const mal of [1.25, 1.5, 1.75, 2, 2.5, 3]) {
+        const vq = f.bauePfad(A, Array.from(S.px), Array.from(S.pz), { ...f.PROFILE[st], quer: f.PROFILE[st].quer * mal }).vZiel;
+        for (const [anteil, dauer] of [[null, 0], [0.3, 2], [0.5, 3.5]]) {
+          const x = { stil: `${st} Kurventempo mal ${mal}${anteil != null ? `, sanft ab ${anteil * 100} % in ${dauer} s` : ''}`, ...lauf(vq, a, b, v0, 1, anteil != null ? c.von + (c.bis - c.von) * anteil : null, dauer || 3.5) };
+          if (x.fertig && !x.kontakt && !x.baum) dosiert.push(x);
+        }
       }
       const bestDosiert = dosiert.reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
       const bestAlle = [best, bestDosiert].filter(Boolean).reduce((m, x) => (!m || x.zeit < m.zeit ? x : m), null);
@@ -147,6 +160,7 @@ for (const profil of STILE) {
     const MAT = (C.audio && C.audio.aufprall && C.audio.aufprall.materialien) || [];
     const wandMat = new Set(['metall', 'holz'].map((m) => MAT.indexOf(m)));
     const wandKontakte = []; let wandLetzt = -99, wandEp = null;
+    const schneewallKontakte = []; let swLetzt = -99; // M11a: Kontakte mit dem Schneewall (Gletscher, keine Strafe)
     // M10c.2: Motor-Strafen (Wand-Treffer mit Motor-Drossel): Ort, Verlust, Dauer; Zeit mit Strafe
     const motorStrafen = []; let msVor = A.wand && A.wand.strafen != null ? A.wand.strafen : 0, strafeZeit = 0;
     const zeitBei = new Float64Array(Math.ceil(S.laenge / 10) + 2).fill(-1);
@@ -175,6 +189,7 @@ for (const profil of STILE) {
         if (A.wand && A.wand.strafe) wandEp.strafen++;
         wandLetzt = A.rennen.uhr;
       }
+      if (A.schneewall && A.schneewall.kontakt) { if (A.rennen.uhr - swLetzt > 0.25) schneewallKontakte.push({ s: Math.round(s), kmh: Math.round(p.tempo * 3.6) }); swLetzt = A.rennen.uhr; }
       if (A.wand && A.wand.strafen != null) {
         if (A.wand.strafen !== msVor) { msVor = A.wand.strafen; const l = A.wand.strafeLetzte; motorStrafen.push({ s: Math.round(s), verlust: Math.round(l.verlust), dauer: +l.dauer.toFixed(2), frontal: l.frontal }); }
         if (A.wand.strafeRest > 0) strafeZeit += A.SCHRITT;
@@ -211,10 +226,10 @@ for (const profil of STILE) {
     }
     const tempoMarken = MARKEN.map((m) => ({ ...m, kmh: tempo[Math.round(m.s)] || 0 }));
     const tempoKanten = Z.map((z) => ({ name: z.name, s: z.kante, kmh: Math.max(...[-3, -2, -1, 0].map((d) => tempo[Math.round(z.kante) + d] || 0)) }));
-    return { ...e, ab, gras, wand, stand, wandKontakte, wasserBad, motorStrafen, strafeZeit, zeitBei: Array.from(zeitBei), stellen, spruenge, ausserhalb, luftSchritte, tempoMarken, tempoKanten, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
+    return { ...e, ab, gras, wand, stand, wandKontakte, schneewallKontakte, wasserBad, motorStrafen, strafeZeit, zeitBei: Array.from(zeitBei), stellen, spruenge, ausserhalb, luftSchritte, tempoMarken, tempoKanten, checkpoints: A.checkpoints.map((c) => c.s), wandGrenze: C.grenze.wandGrenze,
       tempoProfil: { vMax, nahAnteil: n ? nah / n : 0, gefahren: sZ - sA, profil100, zeit100 } };
   }, [profil, MARKEN]);
-  sprungStat.push({ stil: profil, zeit: r.ziel ? r.zeit : null, cps: r.cps, aufpralle: r.aufpralle.length, aufprallListe: r.aufpralle, wandKontakte: r.wandKontakte, motorStrafen: r.motorStrafen, strafeZeit: r.strafeZeit, zeitBei: r.zeitBei, wasserBad: r.wasserBad, gras: r.gras, spruenge: r.spruenge, ausserhalb: r.ausserhalb, luftSchritte: r.luftSchritte, tempoMarken: r.tempoMarken, tempoKanten: r.tempoKanten });
+  sprungStat.push({ stil: profil, zeit: r.ziel ? r.zeit : null, cps: r.cps, aufpralle: r.aufpralle.length, aufprallListe: r.aufpralle, wandKontakte: r.wandKontakte, schneewallKontakte: r.schneewallKontakte, motorStrafen: r.motorStrafen, strafeZeit: r.strafeZeit, zeitBei: r.zeitBei, wasserBad: r.wasserBad, gras: r.gras, spruenge: r.spruenge, ausserhalb: r.ausserhalb, luftSchritte: r.luftSchritte, tempoMarken: r.tempoMarken, tempoKanten: r.tempoKanten });
   zeiten.push(r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL');
   const m = (l) => l.map(([a, b]) => `${Math.round(a)}–${Math.round(b)} m`).join(', ') || 'keine';
   zeilen.push('', `${profil}: ${r.ziel ? fmt(r.zeit) : 'NICHT IM ZIEL'}`,

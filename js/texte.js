@@ -368,6 +368,8 @@ export const TEXTE = {
   'untergrund.gras': { de: 'GRAS', en: 'GRASS' },
   'untergrund.schotter': { de: 'SCHOTTER', en: 'GRAVEL' },
   'untergrund.wiesenweg': { de: 'WIESENWEG', en: 'MEADOW TRACK' },
+  'untergrund.schnee': { de: 'SCHNEE', en: 'SNOW' }, // M11a
+  'untergrund.eis': { de: 'EIS', en: 'ICE' },        // M11a
 };
 
 export const SPRACHEN = ['de', 'en'];
