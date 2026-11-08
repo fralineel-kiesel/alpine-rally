@@ -216,7 +216,14 @@ console.log(`Zusammengefasst ("UND"): ${d.notes.filter((n) => n.text.includes(' 
   // Steht in erzeugt.kurvenTempo noch das, was die Physik heute misst?
   const alsZahl = (x) => (x == null ? Infinity : x);
   const imSpiel = d.notes.flatMap((n) => n.teile).flatMap((t) => t.kurven);
-  const veraltet = messung.filter((k) => imSpiel.some((c) => c.von === k.von && c.bis === k.bis && c.gemessen
+  // M11a.1 (Entscheidung „Erwartung alt → anpassen“): Liegt die Kante eines Sprungs (seit M10c) in der Kurve, hebt die
+  // Messfahrt (festes Tempo, Grenztempo = Griff-Frage) dort ab und landet schräg – das misst den Sprung, nicht den Griff.
+  // Solche Kurven (Finnland 1812–1964 m mit der Birkenkuppe 1830 m) nur melden; erzeugt.kurvenTempo bleibt unverändert.
+  const kanten = ((await import(`${pathToFileURL(STRECKEN_DATEI()).href}?k${Date.now()}`)).default.sprung || [])
+    .filter((z) => z.von != null).map((z) => z.kante ?? z.s);
+  const mitSprung = (k) => kanten.some((m) => m >= k.von && m <= k.bis);
+  for (const k of messung.filter(mitSprung)) console.log(`       (c) nur gemeldet (Sprungkante in der Kurve): ${Math.round(k.von)}–${Math.round(k.bis)} m heute ${k.kmh == null ? 'Vollgas' : k.kmh.toFixed(1) + ' km/h'}`);
+  const veraltet = messung.filter((k) => !mitSprung(k) && imSpiel.some((c) => c.von === k.von && c.bis === k.bis && c.gemessen
     && alsZahl(c.kmh) !== alsZahl(k.kmh) && !(Math.abs(alsZahl(c.kmh) - alsZahl(k.kmh)) <= 0.11)));
   if (REFERENZ) {
     melde(ok, `(c) Stufen monoton zum gemessenen Kurventempo${fall ? ` – nicht bei ${fall}` : ''}`);
@@ -255,7 +262,12 @@ console.log(`Zusammengefasst ("UND"): ${d.notes.filter((n) => n.text.includes(' 
 // --- (d) Abstand ---
 {
   let min = Infinity, wo = null;
+  // M11a.1 (Entscheidung „Erwartung alt → anpassen“): SPRUNG und EIS sind feste Ansagen mit eigenem Vorlauf und eigener
+  // Kachel (js/pacenotes.js FEST); sie werden nie mit einer Kurve zusammengefasst. Die 25-m-Regel gilt nur zwischen
+  // den übrigen Ansagen (Finnland: Kurve 1812 m und SPRUNG 1830 m, beide Kacheln stehen nebeneinander).
+  const nurFest = (n) => n.teile.length > 0 && n.teile.every((t) => t.art === 'sprung' || t.art === 'eis');
   for (let i = 1; i < d.notes.length; i++) {
+    if (nurFest(d.notes[i]) || nurFest(d.notes[i - 1])) continue;
     const a = d.notes[i].s - d.notes[i - 1].s;
     if (a < min) { min = a; wo = `${Math.round(d.notes[i - 1].s)} / ${Math.round(d.notes[i].s)} m`; }
   }
