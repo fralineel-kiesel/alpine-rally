@@ -368,7 +368,7 @@ export const CONFIG = {
   // 1. Geländefarbe nach denselben Waldstücken wie nahe der Strasse (kostet nichts beim Zeichnen)
   // 2. eine dünne Schicht grosser Tannen zwischen ca. 200 und 700 m (ein Zeichenaufruf)
   fernwald: {
-    faerben: true,             // false = Gelände in der Ferne wie früher (nur Gras/Fels)
+    faerben: U.fernwald.faerben ?? true, // false = Gelände in der Ferne wie früher (nur Gras/Fels) (Streckendatei, M11a.1: Gletscher ohne Wald)
     farbeAb: [140, 230],       // ab so vielen Metern neben der Strasse wird eingefärbt, voll ab dem zweiten Wert
     dichteAb: [250, 600],      // Talflanken: ab hier wird der Wald dichter als an der Strasse, ab dem zweiten Wert normal
                                // (an der Strasse gilt die Baumdichte des Abschnitts, z. B. im Tal nur 35 %)
@@ -379,7 +379,7 @@ export const CONFIG = {
     wiesenStaerke: 0.35,       // ... so stark (0 = wie früher)
     geroellFarbe: U.fernwald.geroellFarbe,  // Geröllflecken an Hängen (Streckendatei)
     geroell: 0.74,             // Geröll, wo das Rauschen über diesem Wert liegt (höher = weniger Flecken)
-    baeume: true,              // false = keine Fernbäume
+    baeume: U.fernwald.baeume ?? true, // false = keine Fernbäume (Streckendatei, M11a.1: auf dem Gletscher wachsen keine Bäume)
     seed: Z.fernwald,  // Zufallszahl für die Fernbäume (Streckendatei)
     baeumeProKm: 6500,         // Versuche pro km Strecke (stehen bleiben nur die an Waldstellen)
     von: 195,                  // Fernbäume ab so vielen Metern neben der Strasse ...
@@ -1159,6 +1159,23 @@ export const CONFIG = {
     staubSchwelle: 0.72,       // Schneestaub-Flecken: Rauschen über diesem Wert (kleiner = mehr Staub)
     staubEnde: 0.7,            // ab diesem Anteil der halben Länge liegt mehr Schnee auf dem Eis (Ein- und Ausfahrt)
     risse: [7, 10],            // so viele Risse je 80 m Seelänge (von … bis)
+  },
+
+  // --- Skipiste (M11a.1, js/skipiste.js): reine Deko am Hang (Streckendatei skipiste), keine Kollision, kein Ton -------
+  skipiste: {
+    farbe: '#fbfdff',          // präparierte Piste: fast weiss ...
+    farbeSpur: '#cfdcee',      // ... mit bläulichen Rillen längs (Pistenspuren)
+    heben: 0.25,               // so viel über dem Gelände (Meter, gegen Flimmern)
+    schritt: 6,                // Form: alle so viele Meter eine Reihe (dem Hang nach) ...
+    spalten: 4,                // ... und so viele Stücke quer
+    stangenAbstand: 14,        // Pistenstangen alle so viele Meter, links rot, rechts blau
+    stangeLinks: '#d8262a', stangeRechts: '#1f5fc8',
+    stangeHoehe: 1.8,
+    groesse: 2.2,              // Skifahrer: so hoch (Meter; etwas grösser als echt, damit man sie von der Strasse sieht)
+    jacken: ['#e8402a', '#2a7de8', '#f2c21a', '#2fb84a', '#c43ad0', '#ff8a1c'], // bunte Jacken (der Reihe nach)
+    dauer: [26, 38],           // so viele Sekunden braucht ein Fahrer von oben bis unten (von … bis)
+    boegen: [5, 8],            // so viele Schwünge je Abfahrt (von … bis)
+    wegPunkte: 240,            // vorberechnete Punkte je Weg
   },
 
   strassenrand: {

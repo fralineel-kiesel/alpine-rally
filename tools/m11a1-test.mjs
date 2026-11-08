@@ -689,6 +689,76 @@ async function bildzeitTest(buchstabe, text, grenze = null) {
 }
 if (teil('w')) await bildzeitTest('w', 'Gletscher vor/nachher Teil C gegen Finnland');
 
+// ===================================================================== Teil D: Bäume weg, Berge, Skipiste
+if (teil('x')) {
+  titel('(x) Keine Bäume auf dem Gletscher: Daten (kein Baum-Typ, keine Baumquelle) und im Spiel 0 Bäume');
+  const t = fs.readFileSync(G_DATEI, 'utf8');
+  const daten = { tannenProKm0: /tannenProKm: 0,/.test(t), laubProKm0: /laubProKm: 0,/.test(t), nebenwegNurSteine: /steinAnteil: 1,/.test(t),
+    startOhneGruppen: /gruppen: \[\],/.test(t), stummelOhneTannen: (t.match(/sichtschutz: 0 \}/g) || []).length === 2, fernOhne: /baeume: false, faerben: false/.test(t) };
+  melde(Object.values(daten).every(Boolean), `Daten: ${Object.entries(daten).map(([k, v]) => `${k} ${v ? 'ja' : 'NEIN'}`).join(', ')}`);
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher');
+  const r = await s.page.evaluate(() => { const A = window.__alpineRally; return { tannen: A.pflanzen.tannen.length, laub: A.pflanzen.laubbaeume.length, startZiel: A.startZiel.tannen.length + A.startZiel.laub.length, fern: A.deko.fernbaeume.length, jung: A.deko.jungTannen.length, steine: A.pflanzen.steine.length, findlinge: A.leben.hindernisse.filter((h) => h.leben === 'findling' || h.rand === 'findling').length }; });
+  await s.schliessen();
+  melde(r.tannen + r.laub + r.startZiel + r.fern + r.jung === 0, `im Spiel: Nadelbäume ${r.tannen}, Laubbäume ${r.laub}, Start/Ziel ${r.startZiel}, Fernbäume ${r.fern}, Jungtannen ${r.jung} (vorher u. a. 196 Kiefern, 7 an der Talstation, 3267 Fernbäume); dafür Steine/Felsbrocken ${r.steine}`);
+}
+if (teil('y')) {
+  titel('(y) Berge: Reihen Gletscher ≥ Alpen (besser 1–2 mehr), höhere Gipfel, Gletscherzungen, Gipfelkreuz');
+  const info2 = async (strecke) => { const s = await oeffne(WURZEL, `?menue=aus&ton=aus&strecke=${strecke}`); const r = await s.page.evaluate(() => { const A = window.__alpineRally, W = A.welt, B = A.CONFIG.berge; const z = A.strecke.punktBei(A.strecke.zielS); return { ...W.berge, hoehe: B.hoehe, kreuz: W.gipfelkreuz || null, abstandZiel: W.gipfelkreuz ? Math.hypot(W.gipfelkreuz.x - z.x, W.gipfelkreuz.z - z.z) : null, zungen: B.extra ? B.extra.zungeAlle : null }; }); await s.schliessen(); return r; };
+  const g = await info2('gletscher'), a = await info2('alpen');
+  melde(g.reihen >= a.reihen + 1 && g.anzahl >= a.anzahl, `Reihen: Gletscher ${g.reihen} (${g.anzahl} Berge) gegen Alpen ${a.reihen} (${a.anzahl} Berge); Höhe Gletscher ${g.hoehe.join('–')} m (0.11a: 380–720), Alpen ${a.hoehe.join('–')} m; Gletscherzunge an jedem ${g.zungen}. Berg der vorderen zwei Reihen`);
+  melde(!!g.kreuz, `Gipfelkreuz: ${g.kreuz ? `${g.kreuz.hoehe} m hoch auf ${g.kreuz.y.toFixed(0)} m, ${g.abstandZiel.toFixed(0)} m vom Ziel` : 'FEHLT'}`);
+}
+if (teil('z')) {
+  titel('(z) Kontrast Fahrbahn gegen Hang/Bank mit den neuen Bergen: mindestens 40 Stufen (7 Punkte, 320x180)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher&aufloesung=320x180', { uhr: true });
+  await s.page.evaluate(() => { window.__alpineRally.anhalten = true; });
+  const r = await s.page.evaluate(KONTRAST, { stellen: [600, 1300, 1950, 2450, 3650, 1560, 4060] });
+  await s.schliessen();
+  melde(r.every((x) => Math.abs(x.diff) >= 40), r.map((x) => `${x.s} m ${x.diff.toFixed(0)}`).join(', '));
+}
+// (aa) Skipiste: Skifahrer bewegen sich (Bild-Uhr), kein Garbage je Bild, keine Kollision
+const SKI_TEST = async () => {
+  const A = window.__alpineRally, K = A.skipiste; if (!K.an) return { an: false };
+  const sichtbar = (f) => f.sprites[f.sprites[0].visible ? 0 : 1].position.clone(); // (je Fahrer die gerade sichtbare Haltung)
+  const vorher = K.fahrer.map(sichtbar);
+  window.__bild(60, 1000 / 60); // 1 s Spielzeit
+  const bewegt = K.fahrer.map((f, j) => sichtbar(f).distanceTo(vorher[j]));
+  // Garbage: 200 000 Aufrufe von aktualisiere ohne GC dazwischen
+  const m0 = performance.memory ? performance.memory.usedJSHeapSize : 0;
+  for (let i = 0; i < 200000; i++) K.aktualisiere(1 / 60);
+  const m1 = performance.memory ? performance.memory.usedJSHeapSize : 0;
+  // keine Kollision: nichts von der Piste in den Hindernis-Listen, und das Auto fährt ungebremst hindurch
+  const S = A.strecke, P = A.physik, q = {};
+  const nahe = (l) => l.filter((h) => Math.hypot(h.x - K.oben[0], h.z - K.oben[1]) < 3 || Math.hypot(h.x - K.unten[0], h.z - K.unten[1]) < 3).length;
+  const pist = nahe(A.pflanzen.hindernisse) + nahe(A.leben.hindernisse) + nahe(A.strassenrand.hindernisse);
+  return { an: true, fahrer: K.fahrer.length, bewegt, zuwachs: m1 - m0, laenge: K.laenge, pist, sichtbar: K.fahrer.every((f) => f.sprites.some((s) => s.visible)) };
+};
+if (teil('aa')) {
+  titel('(aa) Skipiste: 4–6 Skifahrer fahren (Animation), kein Garbage je Bild, keine Kollision, kein Ton');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=gletscher', { uhr: true });
+  await s.page.evaluate(() => { window.__bild(5, 1000 / 60); });
+  const r = await s.page.evaluate(SKI_TEST);
+  await s.schliessen();
+  if (!r.an) melde(false, 'Skipiste nicht gebaut');
+  else {
+    melde(r.fahrer >= 4 && r.fahrer <= 6 && r.bewegt.every((d) => (d > 1 && d < 30) || d > r.laenge * 0.7) && r.sichtbar, `${r.fahrer} Skifahrer, in 1 s bewegt: ${r.bewegt.map((d) => (d > r.laenge * 0.7 ? `${d.toFixed(0)} m (unten angekommen, oben neu gestartet)` : `${d.toFixed(1)} m`)).join(', ')}; Piste ${r.laenge.toFixed(0)} m lang`);
+    melde(r.zuwachs < 200000, `200 000 Aufrufe von aktualisiere: Speicher-Zuwachs ${(r.zuwachs / 1024).toFixed(0)} KB (ohne GC dazwischen; Wege vorberechnet, je Bild nur position.set)`);
+    melde(r.pist === 0, `keine Hindernisse an der Piste (${r.pist}); Skipiste ohne Ton (kein Eintrag in klang)`);
+  }
+}
+if (teil('ab')) {
+  titel('(ab) Bildzeit Gletscher: mit Bergen (ohne Skipiste) und mit Skipiste (höchstens +5 %), gegen Finnland und 0.11a');
+  const g = [], ga = [], f = [], o = [];
+  for (let i = 0; i < 5; i++) {
+    o.push(await bildzeit(WURZEL, 'gletscher&skipiste=aus', 3600, 3)); g.push(await bildzeit(WURZEL, 'gletscher', 3600, 3));
+    f.push(await bildzeit(WURZEL, 'finnland', 3020, 3)); if (ALT) ga.push(await bildzeit(ALT, 'gletscher', 3600, 3));
+  }
+  const mo = median(o), mg = median(g), mf = median(f), ma = ALT ? median(ga) : null;
+  info(`ohne Skipiste ${o.map((x) => x.toFixed(0)).join('/')}, mit ${g.map((x) => x.toFixed(0)).join('/')}, Finnland ${f.map((x) => x.toFixed(0)).join('/')}${ALT ? `, 0.11a ${ga.map((x) => x.toFixed(0)).join('/')}` : ''} ms`);
+  melde(mg <= mo * 1.05 + 1 && mg <= mf * 1.03, `Median: Gletscher mit Bergen ${mo.toFixed(1)} ms, mit Skipiste ${mg.toFixed(1)} ms (${((mg / mo - 1) * 100).toFixed(1)} %, Grenze +5 %), Finnland ${mf.toFixed(1)} ms${ma != null ? `, Gletscher 0.11a ${ma.toFixed(1)} ms` : ''}`);
+}
+if (teil('ac')) await unveraendert('ac', { bilder: true });
+
 // ===================================================================== Zusammenfassung (Teile B bis E folgen)
 console.log('\n| Test | Ergebnis |\n|---|---|');
 for (const e of ergebnisse) console.log(`| ${e.titel.slice(0, 120)} | ${e.rot ? `**${e.rot} rot**, ${e.ok} ok` : `grün (${e.ok} ok)`} |`);

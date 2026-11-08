@@ -923,6 +923,12 @@ export function baueWelt(szene, strecke, netz) {
     const rndB = zufall(b.seed);
     const pos = [], col = [], dunst = [];
     const cFels = new THREE.Color(f.bergFels), cSchnee = new THREE.Color(f.schnee), cFuss = new THREE.Color(f.bergFuss);
+    // M11a.1 (nur wenn die Streckendatei es will, Gletscher): Schnee in mehreren Weisstönen, Fels-Flecken im Schnee,
+    // blaue Gletscherzungen, Gipfelkreuz. Eigener Zufall (rndX), damit die Berge der Alpen und Finnlands gleich bleiben
+    const X = b.extra || null, rndX = zufall((b.seed || 1) + 991);
+    const cSchneeStufen = X && X.schneeStufen ? X.schneeStufen.map((c) => new THREE.Color(c)) : null;
+    const cEis = X && X.eis ? new THREE.Color(X.eis) : null;
+    let zunge = null; // (Richtung der Gletscherzunge des gerade gebauten Bergs, sonst null)
     // Wie viel Dunst auf einem Punkt liegt: oben wenig, zum Fuss hin mehr.
     // Wird erst nach dem Licht beigemischt (wie der Nebel auf dem Gelände),
     // darum hat der Bergfuss genau die Farbe des fernen Geländes.
@@ -951,11 +957,25 @@ export function baueWelt(szene, strecke, netz) {
         pos.push(a.x, a.y, a.z, bb.x, bb.y, bb.z, c.x, c.y, c.z);
         const my = (a.y + bb.y + c.y) / 3;
         const maxY = Math.max(a.y, bb.y, c.y);
-        const schnee = my > schneeY + (rndB() - 0.5) * H * 0.15 || (maxY >= H - 1 && rndB() < 0.8);
+        let schnee = my > schneeY + (rndB() - 0.5) * H * 0.15 || (maxY >= H - 1 && rndB() < 0.8);
         // unten bewaldet (grün), nach oben Fels
-        const farbe = schnee
+        let farbe = schnee
           ? cSchnee.clone().multiplyScalar(1.35) // Schnee soll leuchten
           : cFuss.clone().lerp(cFels, glatt(0, b.fussBis, my / H)).multiplyScalar(0.8 + rndB() * 0.3);
+        if (X) {
+          const mx = (a.x + bb.x + c.x) / 3, mz = (a.z + bb.z + c.z) / 3;
+          // Gletscherzunge: unterhalb der Schneegrenze, auf der Seite zur Strecke hin, blau (mit hellen Spalten-Streifen)
+          let istZunge = false;
+          if (zunge && !schnee && my < schneeY) {
+            let d = Math.atan2(mz - zunge.cz, mx - zunge.cx) - zunge.w; d = Math.atan2(Math.sin(d), Math.cos(d));
+            if (Math.abs(d) < zunge.breite * (0.6 + 0.4 * (my + 120) / (schneeY + 120))) { farbe = cEis.clone().multiplyScalar(0.95 + rndX() * 0.2); schnee = true; istZunge = true; }
+          }
+          if (schnee && cSchneeStufen && !istZunge) {
+            // Schnee: oben am hellsten, darunter zwei Stufen grauer/bläulicher; ab und zu dunkler Fels als Kontrast
+            const stufe = my > H * 0.78 ? 0 : my > H * 0.55 ? 1 : 2;
+            farbe = rndX() < (X.felsImSchnee || 0) && maxY < H - 1 ? cFels.clone().multiplyScalar(0.75) : cSchneeStufen[stufe].clone().multiplyScalar(1.3);
+          }
+        }
         for (let k = 0; k < 3; k++) col.push(farbe.r, farbe.g, farbe.b);
         // Schnee bekommt weniger Dunst, damit die Gipfel weiss bleiben
         for (const p of [a, bb, c]) dunst.push(dunstAnteil(p.y, H) * (schnee ? 0.3 : 1));
@@ -977,14 +997,46 @@ export function baueWelt(szene, strecke, netz) {
     // Abstand vom Streckenmittelpunkt: wächst mit der Grösse der Strecke,
     // damit die Berge immer hinter dem Gelände stehen
     const basisR = ausdehnung + g.aussenRand * 1.45;
-    for (const reihe of [{ r: 1, h: 1, n: b.anzahl }, { r: 0.8, h: 0.55, n: Math.round(b.anzahl * 0.7) }]) {
+    // M11a.1: Reihen aus der Streckendatei (berge.reihen [{ r, h, n }], z. B. Gletscher: 4 Reihen = Talkessel); sonst zwei
+    const reihen = b.reihen ? b.reihen.map((x) => ({ r: x.r, h: x.h, n: x.n })) : [{ r: 1, h: 1, n: b.anzahl }, { r: 0.8, h: 0.55, n: Math.round(b.anzahl * 0.7) }];
+    const gipfel = []; // (Gipfel aller Berge der vordersten Reihe, für das Gipfelkreuz)
+    reihen.forEach((reihe, ri) => {
       for (let n = 0; n < reihe.n; n++) {
         const winkel = (n / reihe.n) * Math.PI * 2 + (rndB() - 0.5) * 0.12;
         const r = (basisR + mische(b.abstand[0], b.abstand[1], rndB())) * reihe.r;
         // grössere Entfernung = etwas höhere Berge (damit sie gleich gross wirken)
         const H = mische(b.hoehe[0], b.hoehe[1], rndB()) * reihe.h * (r / reihe.r / b.bezugsAbstand);
-        berg(mitte.x + Math.cos(winkel) * r, mitte.z + Math.sin(winkel) * r, H, H * (0.75 + rndB() * 0.35));
+        const cx = mitte.x + Math.cos(winkel) * r, cz = mitte.z + Math.sin(winkel) * r;
+        // M11a.1: jeder zungeAlle-te Berg der vorderen Reihen bekommt eine Gletscherzunge zur Strecke hin
+        zunge = X && cEis && X.zungeAlle && ri >= reihen.length - 2 && n % X.zungeAlle === 1 ? { cx, cz, w: Math.atan2(mitte.z - cz, mitte.x - cx), breite: 0.55 + rndX() * 0.3 } : null;
+        const n0 = pos.length / 3;
+        berg(cx, cz, H, H * (0.75 + rndB() * 0.35));
+        if (X && ri === reihen.length - 1) {
+          let top = n0; for (let k = n0 + 1; k < pos.length / 3; k++) if (pos[k * 3 + 1] > pos[top * 3 + 1]) top = k; // (höchster Punkt)
+          gipfel.push({ x: pos[top * 3], y: pos[top * 3 + 1], z: pos[top * 3 + 2] });
+        }
       }
+    });
+    zunge = null;
+    welt.berge = { reihen: reihen.length, anzahl: reihen.reduce((a, x) => a + x.n, 0) }; // (für Tests)
+    // M11a.1: Gipfelkreuz auf dem Gipfel der vordersten Reihe, der dem Ziel am nächsten ist (dunkles Holz, zwei gekreuzte
+    // Flächen, von allen Seiten sichtbar; gross, weil der Berg weit weg ist)
+    if (X && X.gipfelkreuz && gipfel.length) {
+      const zl = strecke.punktBei(strecke.zielS ?? strecke.laenge);
+      const gp = gipfel.reduce((m, p) => (!m || (p.x - zl.x) ** 2 + (p.z - zl.z) ** 2 < (m.x - zl.x) ** 2 + (m.z - zl.z) ** 2 ? p : m), null);
+      const K = X.gipfelkreuz, cK = new THREE.Color(K.farbe);
+      welt.gipfelkreuz = { x: gp.x, y: gp.y, z: gp.z, hoehe: K.hoehe };
+      const balken = (y0, y1, b2, quer) => {
+        for (const [dx, dz] of [[1, 0], [0, 1]]) {
+          const ox = quer ? dx * quer : dx * b2, oz = quer ? dz * quer : dz * b2;
+          const P = [[gp.x - ox, y0, gp.z - oz], [gp.x + ox, y0, gp.z + oz], [gp.x + ox, y1, gp.z + oz], [gp.x - ox, y1, gp.z - oz]];
+          for (const [i0, i1, i2] of [[0, 1, 2], [0, 2, 3]]) {
+            for (const k of [i0, i1, i2]) { pos.push(...P[k]); col.push(cK.r, cK.g, cK.b); dunst.push(CONFIG.nebel.bergDunst * 0.5); }
+          }
+        }
+      };
+      balken(gp.y - 2, gp.y + K.hoehe, K.dicke / 2, 0);                                        // Stamm
+      balken(gp.y + K.hoehe * 0.62, gp.y + K.hoehe * 0.62 + K.dicke, 0, K.hoehe * 0.32);         // Querbalken
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));

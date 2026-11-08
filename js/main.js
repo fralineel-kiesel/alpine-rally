@@ -61,6 +61,7 @@ import { bauePaceNotes } from './pacenotes.js';
 import { winkelNorm, begrenze } from './util.js';
 import { baueSchneewall } from './schneewall.js';
 import { baueEisseen } from './eissee.js';
+import { baueSkipiste } from './skipiste.js';
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
@@ -220,6 +221,7 @@ strassenrand.hindernisse.push(...leben.hindernisse);
 // M10b: Seen, Flüsse und Brücken (nur wenn die Strecke Wasser hat) – Brückengeländer sind Hindernisse
 const wasser = baueWasser(szene, strecke, netz, welt.wasser);
 const eisseen = baueEisseen(szene, strecke, welt.eisseen); // M11a.1: Eisseen (nur Gletscher)
+const skipiste = baueSkipiste(szene, strecke, welt); // M11a.1: Skipiste mit Skifahrern (nur Gletscher, reine Deko)
 strassenrand.hindernisse.push(...wasser.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
@@ -1406,6 +1408,7 @@ function schleife(jetzt) {
   strassenrand.aktualisiere(kamera.position);
   startZiel.aktualisiere(dtWelt, kamera.position);
   leben.aktualisiere(dtWelt, kamera.position);
+  skipiste.aktualisiere(dtWelt); // M11a.1: Skifahrer (Pause: steht still)
   nebenwegSperrenZeigen(kamera.position);
   schatten.aktualisiere(physik.x, physik.z, physik.richtung, flug.inLuft ? flug.ueberBoden : 0); // M10b.2 (M10c: Flughöhe)
   renderer.render(szene, kamera);
@@ -1600,7 +1603,7 @@ window.__alpineRally = {
   get untergrund() { return untergrund; },
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
-  eisseen, // M11a.1 (Tests): Eisseen (Plan: welt.eisseen)
+  eisseen, skipiste, // M11a.1 (Tests): Eisseen (Plan: welt.eisseen), Skipiste
   autoAuf, // M10c.1 (Tests): AUTO-Auflösung
   flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };

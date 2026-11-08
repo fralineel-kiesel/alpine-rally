@@ -7,4 +7,6 @@ Testfahrer mittel: Allrad 3:21.1–3:21.4, Escorta 3:31.1, Lanza 3:32.4 (+5.7 %)
 **C fertig:** Tiefschnee 80 km/h → −83 % / −71 % (Gas los / voll) in 2 s, Gras Alpen −44 %; Hohlwege 845–985, 1500–1700,
 4030–4170 m (0.8 m tief, Bank 2.0–2.3 m); Kurven-Vergleich inkl. Tiefschnee-Abkürzen 0 Treffer; Hang 0; Kontrast 44–76.
 Lanza digital 336 m: Tiefschnee vor dem Abzweig, Zaun, 3.1 s, rückwärts frei (Testfahrer-Stil wie A).
-**Offen:** Teile D und E.
+**D fertig:** Bäume 0 (vorher 196 Kiefern, 7 Start, 3267 Fernbäume); Berge 4 Reihen/102 (Alpen 2/58), 1000–1800 m, Zungen,
+Gipfelkreuz 60 m (2 km vom Ziel); Skipiste 3550–3620 m rechts, 5 Skifahrer, 0 KB Garbage; Bildzeit 34 ms (0.11a 73, Finnland 344).
+**Offen:** Teil E (Gesamtlauf, Bilder, Bericht, Version, PR).
