@@ -17,8 +17,23 @@ const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // abzweig/einmuendung: Nebenweg, marke: Text für die Tabelle (Orte für M11c, Sprünge)
 // M11b: Höhenprofil "Steil": hoch zur Bergstation (Spitzkehren), Grat, steile Abfahrt, Ziel im Talboden.
 export const ENTWURF = [
-  // Platzhalter (M11b Teil A): flaches Dorf mit einer Schleife; der echte Verlauf kommt in Teil B
-  { ab: 'Dorf' }, { gerade: 300, g: 0, welle: 0 }, { kurve: 60, radius: 150 }, { gerade: 250 }, { kurve: -60, radius: 150 }, { gerade: 300 },
+  { ab: 'Dorf' }, { gerade: 230, g: 0 },
+  // Pistenzufahrt: Schenkel je 50 m vor und nach einer Kehre flacher (sonst wird der Hang zwischen zwei Schenkeln
+  // zu steil, Hang-Check), dazwischen steil; das STEILSTÜCK ist die steilste Stelle (Anfahren am Hang, Teil B)
+  { ab: 'Zufahrt' }, { kurve: -65, radius: 40, g: 1, abzweig: 'Pistenzufahrt' }, { gerade: 70, g: 7 }, { gerade: 120, g: 23, marke: 'STEILSTÜCK' }, { gerade: 70, g: 7 },
+  { ab: 'Kehren' }, { kurve: 128, radius: 18, g: 3 }, { gerade: 70, g: 6 }, { gerade: 70, g: 22 }, { gerade: 70, g: 6 },
+  { kurve: -128, radius: 18, g: 3 }, { gerade: 70, g: 6 }, { gerade: 70, g: 22 }, { gerade: 70, g: 6 },
+  { kurve: 128, radius: 18, g: 3 }, { gerade: 70, g: 6 }, { gerade: 50, g: 22 }, { gerade: 70, g: 6 },
+  { kurve: -128, radius: 18, g: 3 }, { gerade: 70, g: 6 }, { gerade: 70, g: 22 }, { gerade: 70, g: 6 },
+  { kurve: 128, radius: 18, g: 3 }, { gerade: 70, g: 6 }, { gerade: 50, g: 21 }, { gerade: 70, g: 6 },
+  { kurve: -128, radius: 18, g: 3 }, { gerade: 70, g: 6 }, { gerade: 60, g: 14 },
+  { ab: 'Bergstation' }, { kurve: 65, radius: 60, g: 4 }, { gerade: 80, g: 0, marke: 'BERGSTATION' },
+  { ab: 'Grat' }, { kurve: 60, radius: 150, g: 2.5, welle: 3 }, { gerade: 150, g: 1.5 }, { kurve: 30, radius: 200, g: 0 },
+  { ab: 'Abfahrt' }, { kurve: 20, radius: 150, g: -12, welle: 0 }, { gerade: 200, g: -23, marke: 'NATÜRLICHER SPRUNG' }, { gerade: 70, g: -6 },
+  { kurve: 130, radius: 18, g: -3 }, { gerade: 70, g: -6 }, { gerade: 70, g: -23 }, { gerade: 70, g: -6 },
+  { kurve: -130, radius: 18, g: -3 }, { gerade: 70, g: -6 }, { gerade: 180, g: -22 },
+  { ab: 'Funpark' }, { kurve: 50, radius: 150, g: -16 }, { gerade: 400, g: -15, marke: 'KICKER' }, { kurve: -40, radius: 200, g: -16 }, { gerade: 70, g: -14 }, { gerade: 50, g: -3 },
+  { ab: 'Zielarena' }, { kurve: -90, radius: 30, g: 0, einmuendung: 'Pistenzufahrt' }, { gerade: 120, g: 0 },
 ];
 
 // Höhenprofil: Steigung je Stück (Prozent), über +-GLATT Meter gemittelt (weiche Übergänge, kein Knick), aufsummiert.
@@ -91,7 +106,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const hs = pkt.map((p) => p.h);
   let steil = 0;
   for (let i = 1; i < pkt.length; i++) steil = Math.max(steil, Math.abs(pkt[i].h - pkt[i - 1].h) / (pkt[i].s - pkt[i - 1].s));
-  console.log(`Höhe ${Math.min(...hs).toFixed(1)} bis ${Math.max(...hs).toFixed(1)} m, steilstes Stück ${(steil * 100).toFixed(1)} %`);
+  console.log(`Höhe ${Math.min(...hs).toFixed(1)} bis ${Math.max(...hs).toFixed(1)} m (Höhenunterschied ${(Math.max(...hs) - Math.min(...hs)).toFixed(1)} m, Ziel auf ${hs[hs.length - 1].toFixed(1)} m), steilstes Stück ${(steil * 100).toFixed(1)} %`);
   let eng = { d: Infinity };
   for (let i = 0; i < pkt.length; i++) for (let j = i + 1; j < pkt.length; j++) if (pkt[j].s - pkt[i].s > 150) { const d = Math.hypot(pkt[i].x - pkt[j].x, pkt[i].z - pkt[j].z); if (d < eng.d) eng = { d, a: pkt[i].s, b: pkt[j].s }; }
   console.log(`engster Abstand zweier Teile: ${eng.d.toFixed(0)} m (bei ${eng.a.toFixed(0)} und ${eng.b.toFixed(0)} m)`);

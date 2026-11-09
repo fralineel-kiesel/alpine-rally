@@ -51,6 +51,9 @@ export const CONFIG = {
     schnee: { breite: 6.2, mittellinie: false },   // M11a: Schneestrasse (Gletscher), so breit wie Schotter
     eis: { breite: 6.2, mittellinie: false },      // M11a: Eisstelle auf der Schneestrasse (gleich breit, sonst springt der Rand)
   },
+  // M11b: Breite je Abschnitt (Streckendatei strassenBreite, js/breite.js): so viele Meter vor/nach einem Abschnitt geht
+  // die Breite weich von der Belag-Breite zur neuen über
+  strassenBreiteRampe: 25,
 
   // --- Nebenwege (Meilenstein 3a) ---------------------------------------
   // Untergrund-Abschnitte: die Etappe biegt auf einen Nebenweg ab und mündet später wieder ein (Stummel abgesperrt).
@@ -439,7 +442,9 @@ export const CONFIG = {
     bremse: 10,                // Bremskraft (m/s²)
     rueckwaertsTempo: 6,       // max. Tempo rückwärts (m/s); auf Asphalt mal untergrund.asphalt.rueckwaertsMax (M5a.1)
     rueckwaertsBeschl: 3,      // Beschleunigung rückwärts (m/s²)
-    steigungsFaktor: 0.45,     // wie stark Steigung/Gefälle wirkt (1 = voll, 0 = gar nicht)
+    // wie stark Steigung/Gefälle wirkt (1 = voll, 0 = gar nicht). M11b: mal dem Hangabtrieb der Strecke (Streckendatei
+    // "hangabtrieb", fehlt = 1: Alpen und Finnland unverändert; Skigebiet stärker, damit die Autos am Hang kämpfen)
+    steigungsFaktor: 0.45 * (S.hangabtrieb ?? 1),
 
     radstand: 2.52,            // Abstand Vorder- zu Hinterachse
     schwerpunktVorne: 0.48,    // Anteil Radstand vom Schwerpunkt bis Vorderachse (0..1)

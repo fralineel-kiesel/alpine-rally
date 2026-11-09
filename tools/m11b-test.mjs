@@ -3,6 +3,8 @@
 // Gamepad, Ton nur gemessen (nicht gehört). Vorlage: tools/m11a1-test.mjs.
 //   Teil A – Gletscher raus, Skigebiet rein: (a) Gletscher weg, (b) Skigebiet wählbar/startet, (c) alte Tests entschieden,
 //       (d) Alpen/Finnland bit-gleich
+//   Teil B – Höhenprofil, Physik, Verlauf: (e) Länge/Steigung/Höhe gegen Alpen, (f) Testfahrer, (g) Staffelung,
+//       (h) Anfahren am Hang Allrad/Hinterrad, (i) Hang-Prüfung, (j) Alpen/Finnland bit-gleich
 //   (zz) nur mit --lang: frühere Tests (einmal)
 // Umgebungsvariablen: M11B_AUTOS=rt4,l073 (weniger Autos), M11B_NEU=1 (Testfahrer-Läufe neu statt aus /tmp/m11b).
 
@@ -213,7 +215,97 @@ if (teil('c')) {
 }
 if (teil('d')) await unveraendert('d', { bilder: true });
 
-// <TEILE B-F>
+// ===================================================================== Teil B: Höhenprofil, Physik, Streckenverlauf
+// Höhenprofil aus dem Kartenbericht (strecke-karte: Steigung über 25 m, Höhenmeter; mit Sprungrampen)
+function profilZahlen(strecke) {
+  const r = werkzeug('strecke-karte.mjs', ['--strecke', strecke, '--aus', LOG]);
+  const st = /Steigung \(über 25 m\): max\. \+([\d.]+) % bei (\d+) m, Gefälle max\. -([\d.]+) %/.exec(r.text);
+  const hm = /tiefster Punkt (-?[\d.]+) m, höchster (-?[\d.]+) m/.exec(r.text);
+  const L = /Länge: ([\d.]+) m/.exec(r.text), b = /Belag zwischen Start und Ziel: (.*)/.exec(r.text);
+  return { steigung: +st[1], bei: +st[2], gefaelle: +st[3], tief: +hm[1], hoch: +hm[2], diff: +hm[2] - +hm[1], laenge: +L[1], belag: b ? b[1] : '', text: r.text };
+}
+if (teil('e')) {
+  titel('(e) Länge 3800–4400 m, Höhenprofil gegen Alpen/Finnland: maximale Steigung ≥ 1.5× Alpen, Höhenunterschied ≥ 1.5× Alpen');
+  const s = profilZahlen('skigebiet'), a = profilZahlen('alpen'), f = profilZahlen('finnland');
+  fs.writeFileSync(path.join(LOG, 'profil.txt'), s.text);
+  melde(s.laenge >= 3800 && s.laenge <= 4400, `Länge ${s.laenge.toFixed(1)} m; Belag ${s.belag}`);
+  info(`Alpen: max +${a.steigung} % (bei ${a.bei} m), Gefälle −${a.gefaelle} %, Höhe ${a.tief}…${a.hoch} m (${a.diff.toFixed(1)} m); Finnland: +${f.steigung} % / −${f.gefaelle} %, ${f.diff.toFixed(1)} m`);
+  melde(s.steigung >= 1.5 * a.steigung - 0.05, `Skigebiet max +${s.steigung} % bei ${s.bei} m = ${(s.steigung / a.steigung).toFixed(2)}× Alpen (Alpen-Maximum ist die Sprungrampe bei 2129 m; ohne Sprung ca. 11.6 %)`);
+  melde(s.diff >= 1.5 * a.diff, `Höhenunterschied ${s.diff.toFixed(1)} m (${s.tief}…${s.hoch} m) = ${(s.diff / a.diff).toFixed(2)}× Alpen; Gefälle max −${s.gefaelle} %`);
+  const q = fs.readFileSync(G_DATEI, 'utf8'), ha = /hangabtrieb: ([\d.]+)/.exec(q), br = /strassenBreite: \[\{ von: (\d+), bis: (\d+), breite: ([\d.]+) \}\]/.exec(q);
+  info(`Hangabtrieb ${ha && ha[1]} (Alpen/Finnland 1 = Faktor 0.45 g·Steigung, Skigebiet ${(0.45 * +ha[1]).toFixed(2)} g·Steigung); schmale Strasse ${br && `${br[1]}–${br[2]} m: ${br[3]} m (${(+br[3] / 7 * 100).toFixed(0)} % der Alpen-Breite 7 m)`}`);
+}
+// Testfahrer Skigebiet (alle Autos, mittel/flott/digital): Zeiten gestaffelt, im Ziel, kein Stillstand/Klemmen
+const STILE_S = ['mittel', 'flott', 'digital'];
+const SKI = {};
+async function skiLaeufe(stand) { if (!SKI[stand]) SKI[stand] = await parallel(AUTOS.map((id) => () => testfahrerLauf(G_DATEI, id, WURZEL, stand, STILE_S)), 3); return SKI[stand]; }
+async function skiTestfahrer(buchstabe, text, stand) {
+  titel(`(${buchstabe}) Testfahrer Skigebiet ${text}: alle im Ziel, kein Stillstand/Klemmen`);
+  const d = await skiLaeufe(stand);
+  const tab = ['| Auto | ' + STILE_S.join(' | ') + ' | Aufpralle / Strafen (m · f · d) | Stillstand |', '|---|---|---|---|---|---|'];
+  let alleIm = true; const stand2 = [];
+  AUTOS.forEach((id, k) => {
+    const z = (st) => d[k].stile.find((x) => x.stil === st);
+    for (const st of STILE_S) if (z(st).zeit == null) alleIm = false;
+    const f = path.join(LOG, `fahrt-${stand}-skigebiet-${id}-${STILE_S.join('').slice(0, 24)}.txt`);
+    const sl = fs.existsSync(f) ? fs.readFileSync(f, 'utf8').split('\n').filter((x) => /Stillstand über 1 s: (?!keiner)/.test(x)).map((x) => x.trim().slice(0, 60)) : [];
+    for (const x of sl) stand2.push(`${id}: ${x}`);
+    tab.push(`| ${id} | ${STILE_S.map((st) => fmtZ(z(st).zeit)).join(' | ')} | ${STILE_S.map((st) => `${z(st).aufpralle}/${(z(st).motorStrafen || []).length}`).join(' · ')} | ${sl.length ? sl.join('; ') : '–'} |`);
+  });
+  fs.writeFileSync(path.join(LOG, `testfahrer-skigebiet-${buchstabe}.md`), tab.join('\n') + '\n');
+  for (const z of tab) info(z);
+  melde(alleIm && stand2.length === 0, `alle ${AUTOS.length * 3} Läufe im Ziel, kein Stillstand über 1 s${stand2.length ? ` – ${stand2.join('; ')}` : ''}`);
+  return d;
+}
+function staffelung(buchstabe, d) {
+  titel(`(${buchstabe}) Zeiten gestaffelt: Allrad (Audan, Delto, Imprexa) vorn, Escorta dahinter, Lanza 073 am Ende, höchstens ca. +30 %`);
+  for (const st of STILE_S) {
+    const t = Object.fromEntries(AUTOS.map((id, k) => [id, d[k].stile.find((x) => x.stil === st).zeit ?? 9999]));
+    const best = Math.min(...Object.values(t)), schlecht = Math.max(...Object.values(t));
+    const allradVorn = Math.max(...ALLRAD.map((id) => t[id])) < Math.min(...HINTERRAD.map((id) => t[id]));
+    const reihe = !t.escorta || !t.l073 || t.escorta <= t.l073;
+    melde(allradVorn && reihe && schlecht <= best * 1.3, `${st}: Allrad ${ALLRAD.map((id) => fmtZ(t[id])).join(' / ')}, Escorta ${fmtZ(t.escorta)}, Lanza 073 ${fmtZ(t.l073)}; langsamster +${((schlecht / best - 1) * 100).toFixed(1)} % zum Besten`);
+  }
+}
+if (teil('f') || teil('g')) {
+  const d = await skiTestfahrer('f', '(Stile mittel, flott, digital; strecke-abfahren)', 'neuB');
+  if (teil('g')) staffelung('g', d);
+}
+// (h) Anfahren am steilsten Hang: 0 → 40 km/h aus dem Stand, Vollgas geradeaus, gegen dasselbe im flachen Dorf
+const ANFAHREN = ([s0]) => {
+  const A = window.__alpineRally, P = A.physik; A.anhalten = true;
+  A.setzeAuf(s0); P.vx = 0; P.vz = 0;
+  const steig = A.strecke.punktBei(s0 + 15).h - A.strecke.punktBei(s0 - 15).h;
+  let t = 0; for (; t < 20 && P.tempo * 3.6 < 40; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { gas: 1, bremse: 0, lenkung: 0, handbremse: false }, true);
+  return { t, steigung: steig / 30, untergrund: A.untergrund };
+};
+if (teil('h')) {
+  titel('(h) Steilster Anstieg: Allrad fährt merklich besser an als Hinterrad (0–40 km/h aus dem Stand am Hang, gegen flach im Dorf)');
+  const prof = profilZahlen('skigebiet'), s0 = prof.bei - 10;
+  const z = {};
+  for (const id of AUTOS) {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet', { auto: id });
+    z[id] = { hang: await s.page.evaluate(ANFAHREN, [s0]), flach: await s.page.evaluate(ANFAHREN, [100]) };
+    await s.schliessen();
+  }
+  const zeile = (id) => `${id} ${z[id].hang.t.toFixed(2)} s (flach ${z[id].flach.t.toFixed(2)} s, +${((z[id].hang.t / z[id].flach.t - 1) * 100).toFixed(0)} %)`;
+  info(`Hang bei ${s0} m: Steigung ${(z[AUTOS[0]].hang.steigung * 100).toFixed(1)} %, Untergrund ${z[AUTOS[0]].hang.untergrund}`);
+  info(AUTOS.map(zeile).join('; '));
+  const allrad = Math.max(...ALLRAD.map((id) => z[id].hang.t)), hinten = Math.min(...HINTERRAD.map((id) => z[id].hang.t));
+  const verlustA = Math.max(...ALLRAD.map((id) => z[id].hang.t - z[id].flach.t)), verlustH = Math.min(...HINTERRAD.map((id) => z[id].hang.t - z[id].flach.t));
+  melde(allrad < hinten && hinten >= allrad * 1.15, `langsamster Allrad ${allrad.toFixed(2)} s, schnellster Hinterrad ${hinten.toFixed(2)} s (+${((hinten / allrad - 1) * 100).toFixed(0)} %, Ziel mindestens +15 %)`);
+  info(`Zeitverlust durch den Hang: Allrad höchstens +${verlustA.toFixed(2)} s, Hinterrad mindestens +${verlustH.toFixed(2)} s`);
+}
+if (teil('i')) {
+  titel('(i) Hang-Prüfung (tools/hang-pruefen.mjs --pruefen): 0 Fehler (seit M11b zählt auch Tiefschnee-Gelände)');
+  const h = werkzeug('hang-pruefen.mjs', ['--strecke', 'skigebiet', '--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'hang-skigebiet.log'), h.text);
+  const z = h.text.split('\n').filter((x) => /Stellen über|grösste/.test(x)).join(' | ');
+  melde(h.code === 0, `Rückgabe ${h.code}: ${z.slice(0, 300)}`);
+}
+if (teil('j')) await unveraendert('j', { bilder: true });
+
+// <TEILE C-F>
 
 // ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');

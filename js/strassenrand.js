@@ -25,12 +25,22 @@ import { CONFIG } from './config.js';
 import { zufall, mische, rauschen } from './util.js';
 import { strassenrandAtlas } from './pixel.js';
 import { baueKollision } from './kollision.js';
+import { breiteAn, breiteBei } from './breite.js'; // M11b: Breite je Abschnitt
 
 // Seitlicher Abstand der Randobjekte zur Strassenmitte (Vorderkante der Leitplanke), Meter.
 // s = Streckenmeter, seite = -1 links / +1 rechts.
 // Seit Meilenstein 3a je Belag: Auf einem schmaleren Nebenweg (Schotter) rücken Planken, Zäune
 // und Schilder um so viel näher, wie der Weg schmaler ist als die Asphaltstrasse.
 export function randAbstand(s, seite) { // eslint-disable-line no-unused-vars
+  const a = randAbstandBelag(s);
+  // M11b: Breite je Abschnitt (js/breite.js): Randobjekte rücken mit der schmaleren Strasse näher (ohne Feld: a)
+  return breiteAn ? a - (randBreite(s) - breiteBei(s, randBreite(s))) / 2 : a;
+}
+// Fahrbahnbreite des Belags bei s (wie randAbstandBelag sie annimmt)
+function randBreite(s) {
+  return CONFIG.belaege.asphalt.breite - 2 * (CONFIG.strassenrand.abstand - randAbstandBelag(s));
+}
+function randAbstandBelag(s) {
   const B = CONFIG.belaege;
   for (const nw of CONFIG.nebenwege || []) {
     if (s > nw.abzweig && s < nw.einmuendung) return CONFIG.strassenrand.abstand - (B.asphalt.breite - B[nw.belag || 'schotter'].breite) / 2;

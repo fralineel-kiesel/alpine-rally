@@ -106,6 +106,16 @@ Alles freiwillig; Alpen und Finnland nutzen nichts davon und bleiben gleich.
 | `umgebung.fernwald.baeume`, `.faerben` | `false` = keine Fernbäume, kein Wald-Einfärben des fernen Geländes |
 | `skipiste` | `{ s: [oben, unten], seite, lat: [oben, unten], breite, skifahrer }`: Skipiste am Hang (`js/skipiste.js`), reine Deko ohne Kollision und Ton |
 
+## Skigebiet: Hangabtrieb, Breite je Abschnitt, Fangnetze (seit M11b)
+
+Alles freiwillig; Alpen und Finnland nutzen nichts davon und bleiben Bit für Bit gleich.
+
+| Feld | Inhalt |
+|---|---|
+| `hangabtrieb` | Faktor auf die Wirkung der Steigung (`CONFIG.auto.steigungsFaktor` = 0.45 mal diesen Wert), fehlt = 1. Skigebiet 1.6: bergauf zieht es stärker, Allrad hat mehr Traktion übrig als Hinterrad (`getriebe.allrad` je Auto) |
+| `strassenBreite` | `[{ von, bis, breite }]`: Fahrbahnbreite in Metern statt der Breite des Belags (`js/breite.js`), davor/danach über `CONFIG.strassenBreiteRampe` (25 m) weich übergehend. Bankett, Randobjekte, Schneestangen, Tiefschnee-Grenze und Fangnetze rücken mit. Skigebiet: 4.9 m (70 % der Alpen-Strasse) auf Zufahrt, Kehren und Grat |
+| `fangnetze` | `[{ von, bis, seite, art }]`: orange Fangnetze (`art: 'netz'`) oder Fangzäune (`'zaun'`) neben dem Bankett (`js/fangnetz.js`, Werte `CONFIG.fangnetz`); wirken wie Zaun und Leitplanke (Wand mit Wand-Strafe) |
+
 ## Sprünge (seit M10c, `js/sprung.js`)
 
 Ein Eintrag in `sprung` mit **`von`/`bis`** ist eine Sprungzone. Nur dort kann das Auto abheben (ausserhalb fährt es Bit für

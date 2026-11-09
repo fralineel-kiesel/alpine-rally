@@ -12,7 +12,7 @@ export default {
   name: { de: 'SKIGEBIET', en: 'SKI RESORT' },
   beschreibung: { de: 'SCHNEE, STEIL, SPRÜNGE', en: 'SNOW, STEEP, JUMPS' },
   untergrundInfo: { de: 'SCHNEE', en: 'SNOW' },
-  laenge: 1164.098,              // Meter (Kontrolle: das Spiel rechnet nach, mehr als 0.5 m daneben = Fehlerseite)
+  laenge: 4329.006,              // Meter (Kontrolle: das Spiel rechnet nach, mehr als 0.5 m daneben = Fehlerseite)
 
   // Deko-Sets: was der Spielcode malt (Pixelbilder im Code)
   deko: {
@@ -27,6 +27,12 @@ export default {
     tierschild: 'allgemein',
   },
 
+  // M11b: Hangabtrieb (Steigung zieht stärker als in Alpen/Finnland, dort 1): die Autos kämpfen im Anstieg; Allrad hat
+  // dort mehr Traktion übrig (config.js, getriebe.allrad je Auto) als die Hinterrad-Autos
+  hangabtrieb: 1.6,
+  // M11b: schmale Pistenzufahrt und Grat (ca. 70 % der Alpen-Strasse: 4.9 statt 7 m), Abfahrt und Dorf normal breit
+  strassenBreite: [{ von: 300, bis: 2400, breite: 4.9 }],
+
   sprung: [],
 
   // --- Zufallszahlen (gleiche Zahl = gleiche Welt) ---
@@ -39,64 +45,271 @@ export default {
   // --- Abschnitte (baeume, wald, nah, voegel; keine Vögel im Hochgebirge) ---
   // --- Abschnitte (baeume, wald, nah, voegel) ---
   abschnitte: {
-    'Dorf': { baeume: 0, wald: 0, voegel: 0 },
+    'Dorf': { baeume: 0, wald: 0, voegel: 0.3 },
+    'Zufahrt': { baeume: 0, wald: 0, voegel: 0 },
+    'Kehren': { baeume: 0, wald: 0, voegel: 0 },
+    'Bergstation': { baeume: 0, wald: 0, voegel: 0 },
+    'Grat': { baeume: 0, wald: 0, voegel: 0 },
+    'Abfahrt': { baeume: 0, wald: 0, voegel: 0 },
+    'Funpark': { baeume: 0, wald: 0, voegel: 0 },
+    'Zielarena': { baeume: 0, wald: 0, voegel: 0 },
   },
 
   punkte: [
     // <punkte> (geschrieben von tools/skigebiet-entwurf.mjs – Entwurf dort ändern)
     'Dorf',
     [0.0, 0.0, 0.00],
-    // gerade 300 m
-    [0.0, -25.0, 0.00],
-    [0.0, -50.0, 0.00],
-    [0.0, -75.0, 0.00],
-    [0.0, -100.0, 0.00],
-    [0.0, -125.0, 0.00],
-    [0.0, -150.0, 0.00],
-    [0.0, -175.0, 0.00],
-    [0.0, -200.0, 0.00],
-    [0.0, -225.0, 0.00],
-    [0.0, -250.0, 0.00],
-    [0.0, -275.0, 0.00],
-    [0.0, -300.0, 0.00],
+    // gerade 230 m
+    [0.0, -25.6, 0.00],
+    [0.0, -51.1, 0.00],
+    [0.0, -76.7, 0.00],
+    [0.0, -102.2, 0.00],
+    [0.0, -127.8, 0.00],
+    [0.0, -153.3, 0.00],
+    [0.0, -178.9, 0.00],
+    [0.0, -204.4, 0.00],
+    [0.0, -230.0, 0.05],
+
+    'Zufahrt',
+    // Kurve links 65°, Radius 40 m
+    [-6.3, -251.5, 0.23],
+    [-23.1, -266.3, 0.77],
+    // gerade 70 m
+    [-44.2, -276.1, 2.11],
+    [-65.4, -286.0, 3.74],
+    [-86.5, -295.8, 6.23],
+    // gerade 120 m
+    [-108.3, -306.0, 10.96],
+    [-130.0, -316.1, 16.48],
+    [-151.8, -326.3, 22.00],
+    [-173.5, -336.4, 27.52],
+    [-195.3, -346.5, 32.19],
+    // gerade 70 m
+    [-216.4, -356.4, 34.61],
+    [-237.6, -366.3, 36.24],
+    [-258.7, -376.1, 37.66],
+
+    'Kehren',
+    // Kurve rechts 128°, Radius 18 m
+    [-267.8, -385.6, 38.24],
+    [-268.0, -398.7, 38.69],
+    [-259.3, -408.5, 39.23],
+    // gerade 70 m
+    [-238.5, -419.1, 40.49],
+    [-217.7, -429.7, 41.89],
+    [-196.9, -440.3, 44.15],
+    // gerade 70 m
+    [-176.1, -450.9, 48.51],
+    [-155.3, -461.5, 53.65],
+    [-134.6, -472.0, 57.91],
+    // gerade 70 m
+    [-113.8, -482.6, 60.09],
+    [-93.0, -493.2, 61.49],
+    [-72.2, -503.8, 62.72],
+    // Kurve links 128°, Radius 18 m
+    [-63.5, -513.6, 63.25],
+    [-63.7, -526.7, 63.69],
+    [-72.8, -536.2, 64.24],
+    // gerade 70 m
+    [-93.9, -546.0, 65.50],
+    [-115.0, -555.9, 66.90],
+    [-136.2, -565.8, 69.18],
+    // gerade 70 m
+    [-157.3, -575.6, 73.56],
+    [-178.5, -585.5, 78.69],
+    [-199.6, -595.3, 82.94],
+    // gerade 70 m
+    [-220.8, -605.2, 85.10],
+    [-241.9, -615.1, 86.50],
+    [-263.1, -624.9, 87.73],
+    // Kurve rechts 128°, Radius 18 m
+    [-272.1, -634.4, 88.26],
+    [-272.3, -647.5, 88.70],
+    [-263.6, -657.3, 89.23],
+    // gerade 70 m
+    [-242.9, -667.9, 90.48],
+    [-222.1, -678.5, 91.88],
+    [-201.3, -689.1, 94.10],
+    // gerade 50 m
+    [-179.0, -700.4, 98.78],
+    [-156.7, -711.8, 103.46],
+    // gerade 70 m
+    [-135.9, -722.3, 105.68],
+    [-115.1, -732.9, 107.08],
+    [-94.4, -743.5, 108.33],
+    // Kurve links 128°, Radius 18 m
+    [-85.6, -753.3, 108.86],
+    [-85.9, -766.4, 109.30],
+    [-94.9, -775.9, 109.84],
+    // gerade 70 m
+    [-116.1, -785.7, 111.09],
+    [-137.2, -795.6, 112.49],
+    [-158.4, -805.5, 114.73],
+    // gerade 70 m
+    [-179.5, -815.3, 119.06],
+    [-200.7, -825.2, 124.20],
+    [-221.8, -835.1, 128.49],
+    // gerade 70 m
+    [-242.9, -844.9, 130.69],
+    [-264.1, -854.8, 132.09],
+    [-285.2, -864.6, 133.34],
+    // Kurve rechts 128°, Radius 18 m
+    [-294.3, -874.1, 133.87],
+    [-294.5, -887.2, 134.31],
+    [-285.8, -897.0, 134.85],
+    // gerade 70 m
+    [-265.0, -907.6, 136.11],
+    [-244.2, -918.2, 137.51],
+    [-223.4, -928.8, 139.71],
+    // gerade 50 m
+    [-201.2, -940.1, 144.22],
+    [-178.9, -951.5, 148.67],
+    // gerade 70 m
+    [-158.1, -962.1, 150.81],
+    [-137.3, -972.7, 152.21],
+    [-116.5, -983.2, 153.45],
+    // Kurve links 128°, Radius 18 m
+    [-107.8, -993.0, 153.98],
+    [-108.0, -1006.1, 154.42],
+    [-117.1, -1015.6, 154.96],
+    // gerade 70 m
+    [-138.2, -1025.5, 156.22],
+    [-159.4, -1035.3, 157.62],
+    [-180.5, -1045.2, 159.46],
+    // gerade 60 m
+    [-207.7, -1057.9, 163.27],
+    [-234.9, -1070.5, 166.93],
+
+    'Bergstation',
+    // Kurve rechts 65°, Radius 60 m
+    [-253.2, -1083.7, 168.31],
+    [-265.3, -1102.8, 169.22],
+    [-269.5, -1124.9, 169.91],
+    // gerade 80 m
+    [-269.5, -1151.6, 170.10],
+    [-269.5, -1178.2, 170.17],
+    [-269.5, -1204.9, 171.81],
+
+    'Grat',
     // Kurve rechts 60°, Radius 150 m
-    [2.3, -326.0, 0.00],
-    [9.0, -351.3, 0.00],
-    [20.1, -375.0, 0.00],
-    [35.1, -396.4, 0.00],
-    [53.6, -414.9, 0.00],
-    [75.0, -429.9, 0.00],
-    // gerade 250 m
-    [96.7, -442.4, 0.00],
-    [118.3, -454.9, 0.00],
-    [140.0, -467.4, 0.00],
-    [161.6, -479.9, 0.00],
-    [183.3, -492.4, 0.00],
-    [204.9, -504.9, 0.00],
-    [226.6, -517.4, 0.00],
-    [248.2, -529.9, 0.00],
-    [269.9, -542.4, 0.00],
-    [291.5, -554.9, 0.00],
-    // Kurve links 60°, Radius 150 m
-    [312.9, -569.9, 0.00],
-    [331.4, -588.4, 0.00],
-    [346.4, -609.8, 0.00],
-    [357.5, -633.5, 0.00],
-    [364.2, -658.8, 0.00],
-    [366.5, -684.8, 0.00],
-    // gerade 300 m
-    [366.5, -709.8, 0.00],
-    [366.5, -734.8, 0.00],
-    [366.5, -759.8, 0.00],
-    [366.5, -784.8, 0.00],
-    [366.5, -809.8, 0.00],
-    [366.5, -834.8, 0.00],
-    [366.5, -859.8, 0.00],
-    [366.5, -884.8, 0.00],
-    [366.5, -909.8, 0.00],
-    [366.5, -934.8, 0.00],
-    [366.5, -959.8, 0.00],
-    [366.5, -984.8, 0.00],
+    [-267.3, -1231.0, 171.16],
+    [-260.5, -1256.2, 172.87],
+    [-249.4, -1279.9, 174.69],
+    [-234.4, -1301.3, 172.74],
+    [-216.0, -1319.8, 175.89],
+    [-194.5, -1334.8, 175.58],
+    // gerade 150 m
+    [-172.9, -1347.3, 174.68],
+    [-151.2, -1359.8, 177.72],
+    [-129.6, -1372.3, 176.10],
+    [-107.9, -1384.8, 176.30],
+    [-86.3, -1397.3, 178.89],
+    [-64.6, -1409.8, 176.59],
+    // Kurve rechts 30°, Radius 200 m
+    [-41.2, -1421.4, 177.84],
+    [-16.4, -1429.8, 178.80],
+    [9.3, -1434.9, 176.28],
+    [35.4, -1436.6, 176.86],
+
+    'Abfahrt',
+    // Kurve rechts 20°, Radius 150 m
+    [61.4, -1434.3, 173.35],
+    [86.7, -1427.6, 169.32],
+    // gerade 200 m
+    [110.2, -1419.0, 164.08],
+    [133.6, -1410.5, 158.33],
+    [157.1, -1401.9, 152.58],
+    [180.6, -1393.4, 146.83],
+    [204.1, -1384.8, 141.08],
+    [227.6, -1376.3, 135.33],
+    [251.1, -1367.7, 129.58],
+    [274.6, -1359.2, 124.78],
+    // gerade 70 m
+    [296.5, -1351.2, 122.58],
+    [318.5, -1343.2, 121.18],
+    [340.4, -1335.2, 119.95],
+    // Kurve rechts 130°, Radius 18 m
+    [350.3, -1326.4, 119.41],
+    [351.5, -1313.1, 118.97],
+    [343.2, -1302.7, 118.42],
+    // gerade 70 m
+    [323.0, -1291.1, 117.16],
+    [302.8, -1279.4, 115.76],
+    [282.6, -1267.7, 113.43],
+    // gerade 70 m
+    [262.4, -1256.1, 108.87],
+    [242.2, -1244.4, 103.51],
+    [222.0, -1232.7, 99.07],
+    // gerade 70 m
+    [201.8, -1221.1, 96.86],
+    [181.6, -1209.4, 95.46],
+    [161.4, -1197.7, 94.23],
+    // Kurve links 130°, Radius 18 m
+    [153.1, -1187.3, 93.69],
+    [154.3, -1174.1, 93.25],
+    [164.2, -1165.2, 92.70],
+    // gerade 70 m
+    [186.1, -1157.2, 91.44],
+    [208.1, -1149.3, 90.04],
+    [230.0, -1141.3, 87.78],
+    // gerade 180 m
+    [254.1, -1132.5, 82.89],
+    [278.3, -1123.7, 77.24],
+    [302.5, -1114.9, 71.58],
+    [326.6, -1106.1, 65.92],
+    [350.8, -1097.3, 60.27],
+    [375.0, -1088.5, 54.61],
+    [399.1, -1079.7, 49.28],
+
+    'Funpark',
+    // Kurve rechts 50°, Radius 150 m
+    [422.8, -1068.7, 44.80],
+    [444.2, -1053.7, 40.61],
+    [462.7, -1035.2, 36.42],
+    [477.7, -1013.8, 32.23],
+    [488.8, -990.1, 28.09],
+    // gerade 400 m
+    [497.3, -966.6, 24.30],
+    [505.9, -943.1, 20.55],
+    [514.4, -919.6, 16.80],
+    [523.0, -896.1, 13.05],
+    [531.5, -872.6, 9.30],
+    [540.1, -849.1, 5.55],
+    [548.6, -825.6, 1.80],
+    [557.2, -802.1, -1.95],
+    [565.7, -778.6, -5.70],
+    [574.3, -755.1, -9.45],
+    [582.8, -731.6, -13.20],
+    [591.4, -708.2, -16.95],
+    [599.9, -684.7, -20.70],
+    [608.5, -661.2, -24.45],
+    [617.0, -637.7, -28.20],
+    [625.6, -614.2, -32.01],
+    // Kurve links 40°, Radius 200 m
+    [634.8, -592.8, -35.68],
+    [646.4, -572.7, -39.41],
+    [660.3, -554.0, -43.13],
+    [676.3, -537.1, -46.85],
+    [694.1, -522.2, -50.58],
+    [713.5, -509.4, -54.20],
+    // gerade 70 m
+    [733.7, -497.7, -57.56],
+    [753.9, -486.0, -60.83],
+    [774.1, -474.4, -63.53],
+    // gerade 50 m
+    [795.8, -461.9, -64.84],
+    [817.4, -449.4, -65.43],
+
+    'Zielarena',
+    // Kurve links 90°, Radius 30 m
+    [840.2, -446.4, -65.58],
+    [858.4, -460.4, -65.58],
+    // gerade 120 m
+    [870.4, -481.1, -65.58],
+    [882.4, -501.9, -65.58],
+    [894.4, -522.7, -65.58],
+    [906.4, -543.5, -65.58],
+    [918.4, -564.3, -65.58],
     // </punkte>
   ],
 
@@ -104,10 +317,33 @@ export default {
   // Rand (M11a.1): keine Leitplanken; neben der Strasse Tiefschnee (bremst stark, keine Strafe, wie Gras in den Alpen),
   // Schneestangen markieren den Rand; der weiche Schneewall (js/schneewall.js) steht nur noch in den Hohlwegen als Bank
   strassenrand: { ohnePlanke: [[0, 4400, -1], [0, 4400, 1]], ohneZaun: true, tiefschnee: true, schneewall: { an: true, ohne: [], nurHohlwege: true } },
-  checkpoints: [300, 600, 900],
-  nebenwege: [],
+  // Checkpoints: nach der Anstiegsmitte, an der Bergstation, in der Abfahrt (nicht in Sprungzonen, 60 m Abstand)
+  checkpoints: [1120, 2000, 3100],
+  // Vorbereitung M11c (nur Kommentar, noch ohne Wirkung):
+  //   Absturzkante (offener Hang ausserhalb einer Kehre, dort kein Netz, nur Tiefschnee): Kehre 3 (1036–1076 m, aussen
+  //   links), Kehre 5 (1516–1556 m, aussen links), erste Abfahrt-Kehre (2799–2840 m, aussen links)
+  //   Querende Skifahrer: Pistenkreuzungen bei ca. 2950 m (zweiter Abfahrt-Ast) und 3200 m (dritter Abfahrt-Ast)
+  // Die Pistenzufahrt ist ein Nebenweg mit Belag Schnee: im Dorf biegt die Etappe von der Dorfstrasse (Asphalt) links ab
+  // (geradeaus läuft die Dorfstrasse als abgesperrter Stummel weiter), in der Zielarena mündet sie in deren Zufahrt ein
+  nebenwege: [
+    {
+      name: 'Pistenzufahrt',
+      abzweig: 230,
+      einmuendung: 4178.2,
+      belag: 'schnee',
+      sperreAbzweig: 'band', sperreEinmuendung: 'band',
+      wald: { vor: 0, nach: 0, innenVorNach: 0, steinAnteil: 1,
+        innen: { abstand: [12, 14], gruppe: [1, 2], schritt: [4, 6], luecke: [40, 80], zweiteReihe: 0, zweiteAbstand: [14, 16] },
+        aussen: { abstand: [13, 18], gruppe: [1, 2], schritt: [4, 6], luecke: [50, 90], zweiteReihe: 0, zweiteAbstand: [16, 20] } },
+      stummelAbzweig: { kurve: 70, radius: 50, seitenschutz: 'zaun', hoeheAngleichen: [26, 46], sichtschutz: 0 },
+      stummelEinmuendung: { kurve: -70, radius: 55, seitenschutz: 'zaun', hoeheAngleichen: [26, 46], sichtschutz: 0 },
+    },
+  ],
+  // Untergrund: Schotter am Anfang der Pistenzufahrt (Pistenraupen-Weg) und auf dem Platz der Bergstation, sonst
+  // präparierter Schnee bis zur Zielarena (das Steilstück liegt schon auf Schnee: dort zählt die Traktion auf Schnee)
   belagAbschnitte: [
-    { von: 0, bis: 99999, belag: 'schnee' },
+    { von: 230, bis: 370, belag: 'schotter' },
+    { von: 1945, bis: 2030, belag: 'schotter' },
   ],
 
   umgebung: {
@@ -167,7 +403,9 @@ export default {
     },
     fernwald: { waldFarbe: '#56625c', waldDunkel: '#3f4944', wiesenFarbe: '#e3eaf3', geroellFarbe: '#7a808b', baeume: false, faerben: false }, // M11a.1: kein Wald, keine Fernbäume
     gelaende: { huegelHoehe: 5, grundWeite: 250, wandBerg: 0, talTiefe: 0, randAnstiegAb: 320, randAnstiegBis: 950, randHoehe: 110 },
-    landschaft: [],
+    // M11b: der Berg unter Anstieg, Bergstation und Grat (das Gelände folgt der Strasse nur bis ca. 90 m, weiter weg
+    // braucht es diese Hügel, sonst stünde die Strasse auf einer Mauer)
+    landschaft: [{ x: -130, z: -1000, radius: 380, hoehe: 180 }, { x: 150, z: -1250, radius: 320, hoehe: 150 }, { x: 420, z: -1050, radius: 260, hoehe: 70 }],
     boeschung: { schulter: 3, steigung: 0.28, weich: 5, reichweite: 40 },
   },
 
@@ -267,7 +505,7 @@ export default {
     //   minGewinn Meter Weg gegenüber der Strassenmitte) -> Pace-Note "schneiden".
     //   sVon/sBis = Streckenmeter, seite = Kurveninnenseite, gewinn = gesparte Meter.
     abkuerzungen: {
-      streckenLaenge: 1164.1,
+      streckenLaenge: 4329.01,
       minGewinn: 3,
       sperren: [
       ],
@@ -288,8 +526,21 @@ export default {
     // Daraus macht js/pacenotes.js die Stufe 1-6 (Grenzen: config.js, pacenotes.stufenGrenzen).
     kurvenTempo: {
       kurven: [
-        { von: 290, bis: 467, kmh: 95.8 }, // rechts 61°, Radius 123 m, schnee
-        { von: 698, bis: 874, kmh: 96.2 }, // links 60°, Radius 123 m, schnee
+        { von: 216, bis: 288, kmh: 72.9 }, // links 69°, Radius 29 m, schotter
+        { von: 526, bis: 591, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 777, bis: 843, kmh: 35.2 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 1029, bis: 1095, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 1260, bis: 1326, kmh: 35.6 }, // links 132°, Radius 15 m, schnee, Kehre
+        { von: 1512, bis: 1578, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 1743, bis: 1809, kmh: 35.2 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 1913, bis: 2008, kmh: 75.4 }, // rechts 67°, Radius 49 m, schotter
+        { von: 2066, bis: 2242, kmh: 101.9 }, // rechts 60°, Radius 118 m, schnee
+        { von: 2394, bis: 2551, kmh: 110.1 }, // rechts 48°, Radius 126 m, schnee
+        { von: 2803, bis: 2869, kmh: 33.8 }, // rechts 134°, Radius 15 m, schnee, Kehre
+        { von: 3055, bis: 3122, kmh: 33.8 }, // links 134°, Radius 15 m, schnee, Kehre
+        { von: 3354, bis: 3505, kmh: 95.1 }, // rechts 50°, Radius 121 m, schnee
+        { von: 3910, bis: 4048, kmh: 108.7 }, // links 37°, Radius 166 m, schnee
+        { von: 4148, bis: 4223, kmh: 65 }, // links 96°, Radius 21 m, asphalt
       ],
     },
     // </erzeugt>
