@@ -6,7 +6,7 @@
 export const STRECKEN = [
   { id: 'alpen', datei: 'alpen.js' },
   { id: 'finnland', datei: 'finnland.js' },
-  { id: 'gletscher', datei: 'gletscher.js' }, // M11a: Schnee und Eis
+  { id: 'skigebiet', datei: 'skigebiet.js' }, // M11b: Skigebiet (ersetzt den Gletscher aus M11a)
 ];
 
 export const SPEICHER_ETAPPE = 'alpineRally.etappe'; // gewählte Strecke (Id), Standard: die erste (Alpen)
