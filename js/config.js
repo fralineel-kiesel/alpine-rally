@@ -1179,6 +1179,22 @@ export const CONFIG = {
     fahnenFarben: ['#d8262a', '#f0c020', '#2456d8', '#2a9a4a'], fahneHoehe: 3.2, fahnenAbstand: 25, // Fahnen am Funpark
   },
 
+  // --- Seilbahn (M11b, js/seilbahn.js): Gondelbahn Talstation – Bergstation im Skigebiet (Streckendatei seilbahn) ----
+  seilbahn: {
+    mastHoehe: 16,             // Höhe der Masten über dem Gelände (Meter; höher, wo das Seil sonst zu tief hängt)
+    stationHoehe: 7,           // Seilhöhe an Tal- und Bergstation
+    mastBreite: 0.9,           // Mast-Querschnitt (Meter)
+    spur: 6,                   // Abstand der zwei Seile (hinauf / hinunter)
+    durchhang: 3,              // so viele Meter hängt das Seil zwischen zwei Masten durch
+    bodenFrei: 8,              // so viel Platz bleibt mindestens unter dem Seil
+    strasseAbstand: 6,         // Masten mindestens so weit neben dem Bankett
+    seilSchritt: 10,           // Seil als Linienzug, alle so viele Meter ein Punkt
+    gondel: [2.2, 2.4, 2.2],   // Kabine breit, hoch, lang (Meter)
+    gehaenge: 1.2,             // Abstand Seil – Kabine
+    tempo: 5,                  // m/s entlang des Seils (langsam)
+    mastFarbe: '#7d848f', seilFarbe: '#30343c', gondelFarbe: '#d8262a',
+  },
+
   // --- Eisseen (M11a.1, js/eissee.js): kleine gefrorene Seen auf der Strasse der Gletscher-Etappe ------------------
   // Wo und wie gross: Streckendatei eisseen [{ s, laenge, breite }]; Farben: umgebung.farben (see…). Sonst keine.
   // Auf dem See ist der Boden überall Eis (Griff wie die Eis-Strasse: untergrund.eis), nichts steht darauf.

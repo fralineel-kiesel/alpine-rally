@@ -8,6 +8,7 @@
 //   Teil C – Ränder, Stationen: (k) Netz/Tiefschnee, (l) Kurven-Vergleich/Abkürzungen, (m) Kontrast, (n) Stationen,
 //       (o) Pistenkreuzungen, (p) Alpen/Finnland bit-gleich
 //   Teil D – Sprünge: (q) Weiten, (r) Landungen, (s) Zeit je Sprung, (t) Sprung-Statistik, (u) Alpen/Finnland bit-gleich
+//   Teil E – Szenerie: (v) Berge, (w) keine Bäume am Berg, (x) Gondeln/Skifahrer, (y) Kontrast, (z) Bildzeit, (aa) bit-gleich
 //   (zz) nur mit --lang: frühere Tests (einmal)
 // Umgebungsvariablen: M11B_AUTOS=rt4,l073 (weniger Autos), M11B_NEU=1 (Testfahrer-Läufe neu statt aus /tmp/m11b).
 
@@ -401,7 +402,7 @@ const KONTRAST = async ({ stellen }) => {
   }
   return out;
 };
-const KONTRAST_STELLEN = [[640, 'Anstieg'], [930, 'Anstieg'], [1500, 'vor Kehre 5'], [2150, 'Grat'], [2300, 'Grat'], [2780, 'vor Abfahrt-Kehre'], [3600, 'Funpark'], [3400, 'Abfahrt (Funpark-Einfahrt)']]; // (Stellen, an denen kein oranges Netz im Messpunkt steht)
+const KONTRAST_STELLEN = [[640, 'Anstieg'], [930, 'Anstieg'], [1500, 'vor Kehre 5'], [2150, 'Grat'], [2300, 'Grat'], [2780, 'vor Abfahrt-Kehre'], [3400, 'Abfahrt (Funpark-Einfahrt)']]; // (Stellen ohne oranges Netz im Messpunkt; im steilen Funpark verdeckt das eigene Auto den Punkt)
 async function kontrastTest(buchstabe, text) {
   titel(`(${buchstabe}) Kontrast Fahrbahn gegen Hang ${text}: mindestens 40 Helligkeitsstufen (320x180)`);
   const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
@@ -531,7 +532,106 @@ if (teil('t')) {
 }
 if (teil('u')) await unveraendert('u', { bilder: true });
 
-// <TEILE E-F>
+// ===================================================================== Teil E: Szenerie (Berge, Seilbahn, Skifahrer)
+if (teil('v')) {
+  titel('(v) Berge: Reihen Skigebiet ≥ Alpen, schneebedeckte Gipfel in mehreren Weisstönen, Gipfelkreuz');
+  const info2 = async (strecke) => { const s = await oeffne(WURZEL, `?menue=aus&ton=aus&strecke=${strecke}`); const r = await s.page.evaluate(() => { const A = window.__alpineRally, W = A.welt, B = A.CONFIG.berge; return { reihen: W.berge.reihen, anzahl: W.berge.anzahl, hoehe: B.hoehe, kreuz: W.gipfelkreuz || null, stufen: (B.extra && B.extra.schneeStufen) || [] }; }); await s.schliessen(); return r; };
+  const g = await info2('skigebiet'), a = await info2('alpen');
+  melde(g.reihen >= a.reihen && g.anzahl >= a.anzahl && g.stufen.length >= 3, `Reihen: Skigebiet ${g.reihen} (${g.anzahl} Berge) gegen Alpen ${a.reihen} (${a.anzahl} Berge); Höhe ${g.hoehe.join('–')} m; Schnee in ${g.stufen.length} Weisstönen (${g.stufen.join(', ')}), dunkler Fels im Schnee`);
+  melde(!!g.kreuz, `Gipfelkreuz: ${g.kreuz ? `${g.kreuz.hoehe} m hoch auf ${g.kreuz.y.toFixed(0)} m` : 'FEHLT'}`);
+}
+if (teil('w')) {
+  titel('(w) Keine Bäume auf dem Berg: nur einzelne Tannen am Dorfrand (Start), sonst 0');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, q = {};
+    const liste = [...A.pflanzen.tannen, ...A.pflanzen.laubbaeume, ...A.startZiel.tannen, ...A.startZiel.laub]; // (die Start-Tannen stehen auch in pflanzen)
+    const lage = liste.map((b) => { const x = b.x ?? (b.position && b.position.x), z = b.z ?? (b.position && b.position.z); S.abfrage(x, z, q); return { s: q.s, h: A.welt.gelaendeHoehe(x, z) }; });
+    return { tannen: A.pflanzen.tannen.length, laub: A.pflanzen.laubbaeume.length, fern: A.deko.fernbaeume.length, jung: A.deko.jungTannen.length, start: liste.length, lage };
+  });
+  await s.schliessen();
+  const imDorf = r.lage.every((x) => x.s <= 300 && x.h < 15);
+  melde(r.fern + r.jung === 0 && r.start > 0 && r.start <= 30 && imDorf, `Bäume (Liste, auch doppelt gezählt) ${r.start}, davon an der Strecke ${r.tannen + r.laub}; Fernbäume ${r.fern}, Jungtannen ${r.jung}; alle im Dorf (bis ${Math.max(...r.lage.map((x) => x.s)).toFixed(0)} m, höchstens ${Math.max(...r.lage.map((x) => x.h)).toFixed(1)} m über dem Dorf)`);
+}
+// (x) Gondeln und Skifahrer: bewegen sich (Bild-Uhr), kein Garbage je Bild, keine Kollision, Masten neben der Strasse
+const SZENE_TEST = () => {
+  const A = window.__alpineRally, SB = A.seilbahn, K = A.skipiste, S = A.strecke, q = {};
+  const g0 = SB.lage(); window.__bild(60, 1000 / 60); const g1 = SB.lage();
+  const sichtbar = (f) => f.sprites[f.sprites[0].visible ? 0 : 1].position.clone();
+  const vor = K.fahrer.map(sichtbar); window.__bild(60, 1000 / 60); const bewegt = K.fahrer.map((f, j) => sichtbar(f).distanceTo(vor[j]));
+  const m0 = performance.memory ? performance.memory.usedJSHeapSize : 0;
+  for (let i = 0; i < 200000; i++) { SB.aktualisiere(1 / 60); K.aktualisiere(1 / 60); }
+  const m1 = performance.memory ? performance.memory.usedJSHeapSize : 0;
+  const masten = SB.masten.filter((m) => !m.station).map((m) => { S.abfrage(m.x, m.z, q); return { abstand: Math.abs(q.seite) - A.netz.halbBei(q.s), hoch: m.oben - m.boden }; });
+  const alle = [...A.strassenrand.hindernisse, ...A.pflanzen.hindernisse];
+  const nahMast = SB.masten.filter((m) => alle.some((h) => Math.hypot(h.x - m.x, h.z - m.z) < 1.5)).length;
+  return { gondeln: SB.gondeln, weg: g1 - g0, masten, fahrer: K.fahrer.length, pisten: K.pisten ? K.pisten.map((p) => p.fahrer.length) : [K.fahrer.length], bewegt, laenge: K.laenge, zuwachs: m1 - m0, nahMast };
+};
+if (teil('x')) {
+  titel('(x) Gondeln und Skifahrer animiert, kein Garbage je Bild, keine Kollision, Masten nicht auf der Strasse');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet', { uhr: true });
+  await s.page.evaluate(() => { window.__bild(5, 1000 / 60); });
+  const r = await s.page.evaluate(SZENE_TEST);
+  await s.schliessen();
+  melde(r.gondeln >= 4 && r.gondeln <= 8 && r.weg > 1, `${r.gondeln} Gondeln, in 1 s ${r.weg.toFixed(1)} m gefahren; ${r.masten.length} Masten (${r.masten.map((m) => `${m.abstand.toFixed(0)} m neben der Fahrbahn, ${m.hoch.toFixed(0)} m hoch`).join('; ')})`);
+  melde(r.masten.every((m) => m.abstand > 2 + 3) && r.nahMast === 0, `Masten mindestens ${Math.min(...r.masten.map((m) => m.abstand)).toFixed(1)} m neben der Fahrbahn, keine Kollisionskreise an Masten (${r.nahMast})`);
+  melde(r.pisten.length >= 2 && r.pisten.every((n) => n >= 4 && n <= 6) && r.bewegt.every((d) => d > 1 || d > r.laenge * 0.7), `${r.pisten.length} Pisten mit ${r.pisten.join(' / ')} Skifahrern, alle bewegen sich (${r.bewegt.map((d) => d.toFixed(0)).join(', ')} m in 1 s)`);
+  melde(r.zuwachs < 200000, `200 000 Aufrufe (Gondeln und Skifahrer): Speicher-Zuwachs ${(r.zuwachs / 1024).toFixed(0)} KB`);
+}
+if (teil('y')) await kontrastTest('y', 'mit Bergen, Seilbahn und Skifahrern');
+// (z) Bildzeit: Median aus 5 Läufen (abwechselnd), 110 km/h, 320x180; was kosten Berge, Gondeln, Skifahrer?
+async function bildzeit(strecke, s0, cp, extra = '', ohneBerge = false) {
+  const s = await oeffne(WURZEL, `?menue=aus&ton=aus&strecke=${strecke}&aufloesung=320x180${extra}`);
+  await s.page.evaluate(() => new Promise((ok) => setTimeout(ok, 4500)));
+  const r = await s.page.evaluate(async ([s0, cp, ohneBerge]) => {
+    const A = window.__alpineRally, P = A.physik;
+    if (ohneBerge && A.welt.berge.mesh) A.welt.berge.mesh.visible = false;
+    A.rennen.naechsterCp = cp; A.setzeAuf(s0); A.kameraSofort();
+    P.vx = Math.sin(P.richtung) * 110 / 3.6; P.vz = Math.cos(P.richtung) * 110 / 3.6; A.testEingabe = { gas: 1 };
+    const zeiten = []; let t0 = performance.now();
+    await new Promise((ok) => { const f = () => { const t = performance.now(); zeiten.push(t - t0); t0 = t; if (zeiten.length < 150) requestAnimationFrame(f); else ok(); }; requestAnimationFrame(f); });
+    A.testEingabe = null; zeiten.sort((a, b) => a - b);
+    return zeiten[Math.floor(zeiten.length / 2)];
+  }, [s0, cp, ohneBerge]);
+  await s.schliessen();
+  return r;
+}
+const median = (l) => { const a = [...l].sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+if (teil('z')) {
+  titel('(z) Bildzeit Skigebiet gegen Finnland (Median aus 5, abwechselnd, 110 km/h, 320x180) und Kosten von Bergen, Gondeln, Skifahrern');
+  const v = { voll: [], ohneBerge: [], ohneSeilbahn: [], ohneSkipiste: [], finnland: [] };
+  for (let i = 0; i < 5; i++) {
+    v.voll.push(await bildzeit('skigebiet', 2120, 2)); v.ohneBerge.push(await bildzeit('skigebiet', 2120, 2, '', true));
+    v.ohneSeilbahn.push(await bildzeit('skigebiet', 2120, 2, '&seilbahn=aus')); v.ohneSkipiste.push(await bildzeit('skigebiet', 2120, 2, '&skipiste=aus'));
+    v.finnland.push(await bildzeit('finnland', 3020, 3));
+  }
+  const m = Object.fromEntries(Object.entries(v).map(([k, l]) => [k, median(l)]));
+  info(Object.entries(v).map(([k, l]) => `${k} ${l.map((x) => x.toFixed(0)).join('/')}`).join('; ') + ' ms');
+  const p = (a) => `${((m.voll / a - 1) * 100).toFixed(1)} %`;
+  melde(m.voll < m.finnland, `Median Skigebiet ${m.voll.toFixed(1)} ms gegen Finnland ${m.finnland.toFixed(1)} ms (${((m.voll / m.finnland - 1) * 100).toFixed(0)} %); Kosten: Berge ${p(m.ohneBerge)}, Gondeln ${p(m.ohneSeilbahn)}, Skifahrer ${p(m.ohneSkipiste)}`);
+  fs.writeFileSync(path.join(LOG, 'bildzeit.json'), JSON.stringify({ v, m }, null, 1));
+}
+if (teil('aa')) await unveraendert('aa', { bilder: true });
+
+// ===================================================================== Teil F: volle Regression (nur mit --lang, einmal)
+if (teil('zz') && process.argv.includes('--lang')) {
+  titel('(zz) frühere Tests (--lang): nur neue Abweichungen melden');
+  const laeufe = [
+    ['pacenotes-test.mjs', []], ['pacenotes-test.mjs', ['--strecke', 'finnland']], ['pacenotes-test.mjs', ['--strecke', 'skigebiet']],
+    ['leben-test.mjs', []], ['kuh-test.mjs', []], ['startziel-test.mjs', []], ['strassenrand-test.mjs', []], ['nebenweg-test.mjs', []],
+    ['felswand-test.mjs', []], ['belag-test.mjs', []], ['rennablauf-test.mjs', []], ['menue-test.mjs', []], ['overlay-test.mjs', []],
+    ['m9a2-test.mjs', ['--nur', 'a,c,e,f,g,h,k,l,m']], ['m9a1-test.mjs', ['--nur', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']], ['m8h-test.mjs', []],
+    ['m10d-test.mjs', ['--nur', 'a,a3,b,c,g,h,i,j,k,l,m,n,s,t,u,w']],
+    ['m11a-test.mjs', ['--nur', 'a,b,d,e,f,h,j,r,t,u,v']], ['m11a1-test.mjs', ['--nur', 'a,d,i,j,p,q,aa']], ['kommentar-waechter.mjs', []],
+  ];
+  for (const [datei, a] of laeufe) {
+    const r = werkzeug(datei, a);
+    fs.writeFileSync(path.join(LOG, `zz-${datei.replace('.mjs', '')}${a.length ? '-' + a.join('').replace(/[^a-z0-9]/gi, '') : ''}.log`), r.text);
+    const z = r.text.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x));
+    const rot = z.filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim().slice(0, 160));
+    melde(rot.length === 0 && r.code === 0, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok${rot.length ? `, ${rot.length} rot: ${rot.join(' | ')}` : ''}${r.code ? ` (Rückgabe ${r.code})` : ''}`);
+  }
+}
 
 // ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');

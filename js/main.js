@@ -64,6 +64,7 @@ import { baueEisseen } from './eissee.js';
 import { baueSkipiste } from './skipiste.js';
 import { baueFangnetze } from './fangnetz.js'; // M11b: Fangnetze (Skigebiet)
 import { baueSkigebietDeko } from './skigebiet.js'; // M11b: Tribüne, Pistenkreuzungen (Skigebiet)
+import { baueSeilbahn } from './seilbahn.js'; // M11b: Gondelbahn (Skigebiet)
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
@@ -231,6 +232,7 @@ const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...s
 const fangnetze = baueFangnetze(szene, strecke, netz, welt);
 strassenrand.hindernisse.push(...fangnetze.hindernisse);
 const skigebietDeko = baueSkigebietDeko(szene, strecke, netz, welt); // M11b: reine Deko, keine Kollision
+const seilbahn = baueSeilbahn(szene, strecke, netz, welt); // M11b: Masten, Seil, fahrende Gondeln (reine Deko)
 // (materialVon, M7a: Material je Hindernis nur für den Aufprallton; die Kollisionsrechnung bleibt gleich)
 // M10c.1: Wand-Strafe (js/wand.js) für Leitplanken, Zäune, Geländer, Absperr-Wände und die Felswand
 const wand = baueWand();
@@ -1415,6 +1417,7 @@ function schleife(jetzt) {
   startZiel.aktualisiere(dtWelt, kamera.position);
   leben.aktualisiere(dtWelt, kamera.position);
   skipiste.aktualisiere(dtWelt); // M11a.1: Skifahrer (Pause: steht still)
+  seilbahn.aktualisiere(dtWelt); // M11b: Gondeln (Pause: stehen still)
   nebenwegSperrenZeigen(kamera.position);
   schatten.aktualisiere(physik.x, physik.z, physik.richtung, flug.inLuft ? flug.ueberBoden : 0); // M10b.2 (M10c: Flughöhe)
   renderer.render(szene, kamera);
@@ -1610,7 +1613,7 @@ window.__alpineRally = {
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
   eisseen, skipiste, // M11a.1 (Tests): Eisseen (Plan: welt.eisseen), Skipiste
-  fangnetze, skigebietDeko, // M11b (Tests): Fangnetze, Tribüne und Pistenkreuzungen
+  fangnetze, skigebietDeko, seilbahn, // M11b (Tests): Fangnetze, Tribüne und Pistenkreuzungen, Seilbahn
   autoAuf, // M10c.1 (Tests): AUTO-Auflösung
   flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };

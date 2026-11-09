@@ -21,7 +21,7 @@ export default {
     tierKlang: null,           // ... ohne Ton (keine Glocken)
     haus: 'alphuette',         // Berghütte
     stadel: 'heustadel',       // kleiner Holzschopf
-    nadelbaum: 'kiefer',       // (M11a.1: keine Bäume mehr auf der Etappe; nur noch für Sperren, die es hier nicht gibt)
+    nadelbaum: 'tanne',        // M11b: nur ein paar Tannen am Dorfrand (startZiel.landschaft.gruppen), auf dem Berg keine       // (M11a.1: keine Bäume mehr auf der Etappe; nur noch für Sperren, die es hier nicht gibt)
     laubbaum: 'laub',          // (keine Laubbäume: laubProKm 0)
     unterholz: null,
     tierschild: 'allgemein',
@@ -45,6 +45,15 @@ export default {
       form: { anlauf: 20, rampe: 0.06, kante: 2, gefaelle: 0.06, auslauf: 15, weich: 8 } },
     { s: 3780, name: 'KICKER', von: 3720, bis: 3825, kante: 3780, landeVon: 3784, landeBis: 3808, staerke: 1.0,
       form: { anlauf: 20, rampe: 0.06, kante: 2, gefaelle: 0.06, auslauf: 15, weich: 8 } },
+  ],
+  // M11b Teil E: Gondelbahn von der Talstation (75 m, rechts) zur Bergstation (2020 m, links), 6 Masten (ca. 140 m
+  // Abstand), 6 Gondeln
+  seilbahn: { von: [75, 24], bis: [2020, -22], masten: 6, gondeln: 6 },
+  // M11b Teil E: zwei Skipisten mit Skifahrern (js/skipiste.js, wie M11a.1): vom Grat nach Norden und von der
+  // Pistenkreuzung bei 3200 m nach Süden; oben an der Strasse, gut sichtbar, nicht bei den Kickern
+  skipiste: [
+    { s: [2200, 2260], seite: -1, lat: [30, 250], breite: 28, skifahrer: 5, seed: 5151 },
+    { s: [3200, 3230], seite: 1, lat: [30, 230], breite: 26, skifahrer: 5, seed: 5152 },
   ],
   // M11b Teil D: Funpark-Optik (js/skigebiet.js): farbige Kanten an den Kickern, Fahnenreihe, Bande am Ende
   funpark: { von: 3490, bis: 3840, kicker: [3560, 3670, 3780], bande: 3870 },
@@ -381,9 +390,9 @@ export default {
       dunst: '#cfe2f6',          // klarer, heller Horizont (= Nebelfarbe)
       gras: '#eef3f9',           // Schneehänge (das Gelände)
       grasDunkel: '#d7e1ee',
-      fels: '#4b4f58',           // dunkler Fels als Kontrast
-      felsDunkel: '#33363d',
-      erde: '#8a909a',
+      fels: '#8d97a6',           // M11b: steile Schneehänge hellgrau (vorher dunkler Fels: der steile Berg über der Zufahrt wirkte wie ein Gewitterhimmel)
+      felsDunkel: '#717c8d',
+      erde: '#c3ccd8',           // M11b: abgeblasener Schnee statt grauer Erde
       bankett: '#aab6c6',        // festgefahrener, grauer Schneerand
       asphalt: '#4a4c50',
       mittellinie: '#d8d4c8',
@@ -426,15 +435,15 @@ export default {
       anzahl: 28, abstand: [1200, 2000], hoehe: [1000, 1800], bezugsAbstand: 3300, schneeAb: 0.22, fussBis: 0.5,
       reihen: [{ r: 1.15, h: 1.1, n: 30 }, { r: 1, h: 0.9, n: 28 }, { r: 0.86, h: 0.62, n: 24 }, { r: 0.74, h: 0.4, n: 20 }],
       extra: {
-        schneeStufen: ['#f7faff', '#dde7f3', '#c2d0e3'], felsImSchnee: 0.12, eis: '#7db5e8', zungeAlle: 4,
+        schneeStufen: ['#f7faff', '#dde7f3', '#c2d0e3'], felsImSchnee: 0.12, eis: '#7db5e8', zungeAlle: 0, // M11b: keine Gletscherzungen
         gipfelkreuz: { hoehe: 60, dicke: 6, farbe: '#3a2a1e' }, // (gross: der Berg ist ca. 2 km weit weg)
       },
     },
     fernwald: { waldFarbe: '#56625c', waldDunkel: '#3f4944', wiesenFarbe: '#e3eaf3', geroellFarbe: '#7a808b', baeume: false, faerben: false }, // M11a.1: kein Wald, keine Fernbäume
     gelaende: { huegelHoehe: 5, grundWeite: 250, wandBerg: 0, talTiefe: 0, randAnstiegAb: 320, randAnstiegBis: 950, randHoehe: 110 },
-    // M11b: der Berg unter Anstieg, Bergstation und Grat (das Gelände folgt der Strasse nur bis ca. 90 m, weiter weg
-    // braucht es diese Hügel, sonst stünde die Strasse auf einer Mauer)
-    landschaft: [{ x: -130, z: -1000, radius: 380, hoehe: 180 }, { x: 150, z: -1250, radius: 320, hoehe: 150 }, { x: 420, z: -1050, radius: 260, hoehe: 70 }],
+    // M11b: keine Hügel von Hand: das Grundgelände folgt schon der geglätteten Strassenhöhe (grundWeite); zusätzliche
+    // Hügel standen neben dem Grat als Wand über der Strasse
+    landschaft: [],
     boeschung: { schulter: 3, steigung: 0.28, weich: 5, reichweite: 40 },
   },
 
@@ -463,7 +472,10 @@ export default {
       sperreBei: 150, sperreBogen: 2.0, sperreUeber: 0.3, sperreArt: 'reifen',
     },
     landschaft: {
-      gruppen: [], // M11a.1: keine Bäume an der Talstation (stattdessen Findlinge, leben.wiesenweg.findlinge)
+      gruppen: [ // M11b: einzelne Tannen am Dorfrand (nur im Tal, auf dem Berg keine Bäume)
+        { bereich: 'start', seite: -1, m: [80, 200], lat: [30, 60], anzahl: 3 },
+        { bereich: 'start', seite: 1, m: [-60, 40], lat: [32, 60], anzahl: 2 },
+      ],
       proGruppe: [1, 3], gruppeRadius: 6, laubAnteil: 0, strasse: 12, buesche: 0, buschLat: [8, 30],
     },
   },

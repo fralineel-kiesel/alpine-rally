@@ -1067,6 +1067,7 @@ export function baueWelt(szene, strecke, netz) {
     const berge = new THREE.Mesh(geo, mat);
     berge.frustumCulled = false;
     szene.add(berge);
+    welt.berge.mesh = berge; // M11b (nur Tests: Bildzeit ohne Berge)
   }
 
   // ---------------------------------------------------------------
