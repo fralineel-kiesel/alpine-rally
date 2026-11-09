@@ -209,7 +209,9 @@ const ENGINE = { hohlweg: [2230, 2360], see: { s: 2425, laenge: 60, breite: 30 }
 function engineVariante() {
   const t = fs.readFileSync(G_DATEI, 'utf8'), E = ENGINE;
   const vonEis = E.see.s - E.see.laenge / 2 + 6, bisEis = E.see.s + E.see.laenge / 2 - 6;
-  let neu = t.replace(/\n  sprung: \[/, `\n  hohlwege: [{ von: ${E.hohlweg[0]}, bis: ${E.hohlweg[1]} }],\n  eisseen: [{ s: ${E.see.s}, laenge: ${E.see.laenge}, breite: ${E.see.breite} }],\n  skipiste: ${JSON.stringify(E.piste)},\n  sprung: [`);
+  // (seit M11b hat das Skigebiet selbst zwei Pisten als Liste: die wird hier durch die eine Engine-Piste ersetzt)
+  const ohnePisten = t.replace(/\n  skipiste: \[\n[\s\S]*?\n  \],/, '');
+  let neu = ohnePisten.replace(/\n  sprung: \[/, `\n  hohlwege: [{ von: ${E.hohlweg[0]}, bis: ${E.hohlweg[1]} }],\n  eisseen: [{ s: ${E.see.s}, laenge: ${E.see.laenge}, breite: ${E.see.breite} }],\n  skipiste: ${JSON.stringify(E.piste)},\n  sprung: [`);
   // Eis-Belag als letzten Eintrag der belagAbschnitte (spätere Einträge gehen vor)
   const ba = neu.indexOf('\n  belagAbschnitte: ['), ende = neu.indexOf('\n  ],', ba);
   neu = `${neu.slice(0, ende)}\n    { von: ${vonEis}, bis: ${bisEis}, belag: 'eis' },${neu.slice(ende)}`;

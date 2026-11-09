@@ -12,4 +12,4 @@ Ziel: dritte Etappe „Skigebiet“ (hoch mit Spitzkehren, Grat, steile Abfahrt 
   25 Läufen ok; jeder Sprung kostet Zeit (+0.23…+1.37 s); Rekord unter „skigebiet“. Funpark-Optik in `js/skigebiet.js`.
 - **E fertig:** 4 Bergreihen/102 + Gipfelkreuz, 10 Tannen nur im Dorf, Gondelbahn (6 Masten, 6 Gondeln, 0 KB Garbage), 2 Pisten
   × 5 Skifahrer. Bildzeit 30.8 ms gegen Finnland 398.8 (Berge +10 %, Rest Rauschen). Hügel von Hand raus (Wand am Grat), Fels hell.
-- Nächster Teil: F (Version, voller Lauf `--lang`, Bericht `m11b.md`, STAND/KONZEPT schon vorbereitet, PR).
+- **F fertig:** 0.11b, Gesamtlauf `--lang` grün bis auf (c) (Testlücke, behoben, einzeln grün), `m11b.md`, 4 Bilder.
