@@ -1124,6 +1124,7 @@ export const CONFIG = {
     stangeBreite: 0.12,        // ... so dick ...
     stangeTeile: 4,            // ... in so vielen rot-weissen Stücken
     stangeRot: '#d8262a', stangeWeiss: '#f6f6f6',
+    stangeBlau: '#2456d8',     // M11b: Pistenstangen rechts blau (Streckendatei strassenrand.schneewall.pistenStangen)
     tonWucht: 0.45,            // Aufprall-Ton (Material "weich") mit so viel der Wucht: dumpf und gedämpft
     staubJe: 1.2,              // weisser Schneestaub beim Eintauchen: so viele Wölkchen je m/s ...
     staubMax: 18,              // ... höchstens so viele
@@ -1146,6 +1147,33 @@ export const CONFIG = {
   hohlweg: {
     tiefe: 0.8,                // so viel liegt die Strasse tiefer (Meter, Richtwert 0.5 bis 1) ...
     rampe: 35,                 // ... ein- und ausgefahren über so viele Meter (sanft, kein harter Schnitt)
+  },
+
+  // --- Fangnetze (M11b, js/fangnetz.js): orange Netze und Fangzäune im Skigebiet (Streckendatei fangnetze) ----------
+  fangnetz: {
+    abstand: 0.6,              // so weit hinter dem Bankett steht das Netz (Meter)
+    hoehe: 1.6,                // Höhe des Netzes (Meter)
+    hoeheZaun: 1.1,            // Höhe des Fangzauns (Meter)
+    schritt: 2,                // alle so viele Meter ein Punkt der Netzlinie (Pfosten jeden zweiten)
+    kreisAbstand: 0.8,         // Kollision: alle so viele Meter ein Kreis ...
+    kreisRadius: 0.35,         // ... mit diesem Radius (rand 'zaun': Wand mit Wand-Strafe)
+    farbe: '#ff6a10',          // Netz orange
+    farbeDunkel: '#c8460a',    // Kante, Maschen-Schatten
+    pfosten: '#3a3d44',        // Pfosten dunkelgrau
+    leuchten: '#3a1404',       // etwas Eigenlicht, damit das Orange auch im Schatten leuchtet
+  },
+
+  // --- Skigebiet-Deko (M11b, js/skigebiet.js): Tribüne in der Zielarena, Pistenkreuzungen (Schild und Spuren) -------
+  skigebietDeko: {
+    stufeHoehe: 0.5, stufeTiefe: 0.9, // Tribüne: Stufen (Meter)
+    segment: 2.4,              // je so viele Meter eine Gruppe von 4 gemalten Zuschauern
+    beton: '#b8bcc4', betonDunkel: '#8a8f99',
+    jacken: ['#d8262a', '#2456d8', '#f0c020', '#2a9a4a', '#ff6a10', '#e040a0', '#20242c'], // bunte Winterjacken
+    spurBreite: 8,             // Pistenkreuzung: so breit ist das Spurenband (Meter entlang der Strasse) ...
+    spurWeite: 30,             // ... und so weit reicht es links und rechts der Mitte
+    spur: '#ffffff', spurDunkel: '#d6dfea',
+    schildVor: 40,             // Schild "Pistenkreuzung" so viele Meter vor der Kreuzung (rechts)
+    schildHoehe: 1.4, schildGroesse: 1.1, // Unterkante und Grösse der Tafel (Meter)
   },
 
   // --- Eisseen (M11a.1, js/eissee.js): kleine gefrorene Seen auf der Strasse der Gletscher-Etappe ------------------

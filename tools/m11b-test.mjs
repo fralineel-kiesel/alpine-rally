@@ -5,6 +5,8 @@
 //       (d) Alpen/Finnland bit-gleich
 //   Teil B – Höhenprofil, Physik, Verlauf: (e) Länge/Steigung/Höhe gegen Alpen, (f) Testfahrer, (g) Staffelung,
 //       (h) Anfahren am Hang Allrad/Hinterrad, (i) Hang-Prüfung, (j) Alpen/Finnland bit-gleich
+//   Teil C – Ränder, Stationen: (k) Netz/Tiefschnee, (l) Kurven-Vergleich/Abkürzungen, (m) Kontrast, (n) Stationen,
+//       (o) Pistenkreuzungen, (p) Alpen/Finnland bit-gleich
 //   (zz) nur mit --lang: frühere Tests (einmal)
 // Umgebungsvariablen: M11B_AUTOS=rt4,l073 (weniger Autos), M11B_NEU=1 (Testfahrer-Läufe neu statt aus /tmp/m11b).
 
@@ -305,7 +307,152 @@ if (teil('i')) {
 }
 if (teil('j')) await unveraendert('j', { bilder: true });
 
-// <TEILE C-F>
+// ===================================================================== Teil C: Ränder, Stationen, Zielarena
+// (k) Fangnetz: schräg hinein (25°, 60 km/h, Gas halb) -> Wand-Strafe; Tiefschnee-Rand: 80 km/h hineinversetzt, 2 s
+const NETZ_TEST = ({ stellen }) => {
+  const A = window.__alpineRally, P = A.physik, S = A.strecke; A.anhalten = true;
+  const LEER = { gas: 0, bremse: 0, lenkung: 0, handbremse: false }, out = [];
+  for (const [s0, sd] of stellen) {
+    A.setzeAuf(s0); P.richtung -= sd * 25 * Math.PI / 180; // (Richtung kleiner = nach rechts)
+    P.vx = Math.sin(P.richtung) * 60 / 3.6; P.vz = Math.cos(P.richtung) * 60 / 3.6;
+    const st0 = A.wand.strafen; let maxSeite = 0; const q = {};
+    for (let t = 0; t < 3; t += A.SCHRITT) { A.physikSchritt(A.SCHRITT, { ...LEER, gas: 0.5 }, true); S.abfrage(P.x, P.z, q); maxSeite = Math.max(maxSeite, Math.abs(q.seite)); }
+    out.push({ s: s0, seite: sd, strafen: A.wand.strafen - st0, maxSeite, halb: A.netz.halbBei(s0) });
+  }
+  return out;
+};
+const RAND_BREMSEN = async ({ s0, lat }) => {
+  const A = window.__alpineRally, P = A.physik, S = A.strecke; A.anhalten = true;
+  const LEER = { gas: 0, bremse: 0, lenkung: 0, handbremse: false }, out = {};
+  for (const [name, gas] of [['los', 0], ['voll', 1]]) {
+    A.setzeAuf(s0); const p = S.punktBei(s0); P.x = p.x - p.tz * lat; P.z = p.z + p.tx * lat;
+    P.vx = Math.sin(P.richtung) * 80 / 3.6; P.vz = Math.cos(P.richtung) * 80 / 3.6;
+    const st0 = A.wand.strafen; let art = null;
+    for (let t = 0; t < 2; t += A.SCHRITT) { A.physikSchritt(A.SCHRITT, { ...LEER, gas }, true); art = art || A.untergrund; }
+    const v2 = P.tempo * 3.6;
+    const x0 = P.x, z0 = P.z; for (let t = 0; t < 3; t += A.SCHRITT) A.physikSchritt(A.SCHRITT, { ...LEER, bremse: 1 }, true);
+    out[name] = { v2, verlust: 1 - v2 / 80, art, strafen: A.wand.strafen - st0, rueck: Math.hypot(P.x - x0, P.z - z0) };
+  }
+  return out;
+};
+if (teil('k')) {
+  titel('(k) Fangnetze lösen die Wand-Strafe aus (wie Zaun/Leitplanke); Tiefschnee-Rand bremst ≥ 60 % in 2 s ohne Strafe');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const n = await s.page.evaluate(NETZ_TEST, { stellen: [[440, -1], [700, 1], [1200, 1], [2900, -1], [3280, 1]] });
+  const daten = await s.page.evaluate(() => ({ an: window.__alpineRally.fangnetze.an, n: window.__alpineRally.fangnetze.liste.length, kreise: window.__alpineRally.fangnetze.hindernisse.length }));
+  info(`${daten.n} Netz-Abschnitte, ${daten.kreise} Kollisionskreise (rand 'zaun')`);
+  for (const x of n) melde(x.strafen >= 1 && x.maxSeite < x.halb + 4.5, `Netz ${x.s} m ${x.seite < 0 ? 'links' : 'rechts'}: ${x.strafen} Wand-Strafe(n), weiteste Lage ${x.maxSeite.toFixed(1)} m neben der Mitte (Netz bei ${(x.halb + 2.6).toFixed(1)} m)`);
+  for (const [s0, lat] of [[2150, 9], [2300, -9], [3600, 10], [3700, -9]]) {
+    const x = await s.page.evaluate(RAND_BREMSEN, { s0, lat });
+    melde(x.los.art === 'tiefschnee' && x.los.verlust >= 0.6 && !x.los.strafen && !x.voll.strafen && x.los.rueck >= 2, `Tiefschnee ${s0} m ${lat < 0 ? 'links' : 'rechts'}: Gas los −${(x.los.verlust * 100).toFixed(0)} %, Vollgas −${(x.voll.verlust * 100).toFixed(0)} % in 2 s, Strafen ${x.los.strafen + x.voll.strafen}, rückwärts ${x.los.rueck.toFixed(1)} m in 3 s`);
+  }
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.join(' | ').slice(0, 200)})`);
+  await s.schliessen();
+}
+// (l) Kurven-Vergleich (alle Kehren und engen Kurven, alle Autos): Rand-Kontakt (Netz-„wand“, Tiefschnee-Abkürzen) gegen die beste Fahrt
+function kurvenVergleich(auto, stand) {
+  const datei = path.join(LOG, `kurven-${stand}-${auto}.json`);
+  if (!fs.existsSync(datei) || process.env.M11B_NEU) {
+    const r = werkzeug('strecke-abfahren.mjs', [G_DATEI, '--auto', auto, '--kurven-vergleich', '--json', datei]);
+    if (!fs.existsSync(datei)) { console.log(r.text.slice(-1500)); throw new Error(`kurven-vergleich ${auto}`); }
+  }
+  return JSON.parse(fs.readFileSync(datei, 'utf8'));
+}
+if (teil('l')) {
+  titel('(l) Kein Exploit: Netz/Tiefschnee in keiner Kehre > 0.1 s schneller als die beste Fahrt auf der Strasse (alle 5 Autos); Abkürzungs-Prüfung 0 Funde');
+  const neu = await parallel(AUTOS.map((id) => async () => kurvenVergleich(id, 'neuC')), 3);
+  const d = (x) => (x == null ? '–' : `${x >= 0 ? '+' : ''}${x.toFixed(2)} s`);
+  const tab = ['| Auto | Kurve (m) | beste auf der Strasse | Rand-Kontakt: Unterschied |', '|---|---|---|---|'];
+  const schneller = []; let knapp = Infinity;
+  AUTOS.forEach((id, k) => {
+    for (const c of neu[k]) {
+      tab.push(`| ${id} | ${c.von}–${c.bis} | ${c.bestAlle ? `${c.bestAlle.stil} ${c.bestAlle.zeit.toFixed(2)} s` : '–'} | ${d(c.diff)}${c.wand.kontakt ? ` (Kontakt ${c.wand.kontakt.toFixed(2)} s)` : ' (ohne Kontakt)'}${c.wand.strafen ? `, ${c.wand.strafen} Strafen` : ''} |`);
+      if (c.diff != null && c.wand.kontakt) knapp = Math.min(knapp, c.diff);
+      if (c.diff != null && c.diff < -0.1 && c.wand.kontakt) schneller.push(`${id} ${c.von} m ${d(c.diff)}`);
+    }
+  });
+  fs.writeFileSync(path.join(LOG, 'kurven-C.md'), tab.join('\n') + '\n');
+  info(`Tabelle: ${LOG}/kurven-C.md (${tab.length - 2} Zeilen)`);
+  melde(schneller.length === 0, `Rand-Kontakt in ${schneller.length} Kurven mehr als 0.1 s schneller${schneller.length ? `: ${schneller.join('; ')}` : ''}; knappste Linie mit Kontakt ${d(knapp === Infinity ? null : knapp)}`);
+  const a = werkzeug('abkuerzungen.mjs', ['--strecke', 'skigebiet', '--pruefen']);
+  fs.writeFileSync(path.join(LOG, 'abkuerzungen-skigebiet.log'), a.text);
+  const z = a.text.split('\n').filter((x) => /Abkürzungen mit Gewinn|Durchkommen/.test(x)).map((x) => x.trim()).join(' | ');
+  melde(a.code === 0 && /Abkürzungen mit Gewinn >= 3 m: 0 /.test(a.text), `abkuerzungen --pruefen: Rückgabe ${a.code}; ${z.slice(0, 250)}`);
+}
+// (m) Kontrast Fahrbahn gegen Hang (Helligkeit 0–255, 18 m vor dem Auto, 320x180), Stellen ohne Netz im Blick
+const KONTRAST = async ({ stellen }) => {
+  const A = window.__alpineRally, out = [];
+  for (const s0 of stellen) {
+    A.setzeAuf(s0); A.kameraSofort(); window.__bild(3, 1000 / 60);
+    const c = document.getElementById('spiel'), g = c.getContext('webgl2') || c.getContext('webgl');
+    const w = g.drawingBufferWidth, h = g.drawingBufferHeight, px = new Uint8Array(w * h * 4);
+    A.renderer.render(A.szene, A.kamera); g.readPixels(0, 0, w, h, g.RGBA, g.UNSIGNED_BYTE, px);
+    const S = A.strecke, V = new A.THREE.Vector3();
+    const hell = (s, lat, y = 0.05) => {
+      const p = S.punktBei(s + 18); V.set(p.x - p.tz * lat, p.h + y, p.z + p.tx * lat).project(A.kamera);
+      const x = Math.round((V.x + 1) / 2 * w), yy = Math.round((V.y + 1) / 2 * h); let sum = 0, n = 0;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const i = ((yy + dy) * w + (x + dx)) * 4; if (i >= 0 && i < px.length) { sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]; n++; } }
+      return n ? sum / n : null;
+    };
+    const fb = A.netz.halbBei(s0 + 18) * 0.5, lh = A.netz.halbBei(s0 + 18) + 6;
+    const fahrbahn = (hell(s0, -fb) + hell(s0, fb)) / 2, hang = (hell(s0, -lh) + hell(s0, lh)) / 2;
+    out.push({ s: s0, fahrbahn, hang, diff: hang - fahrbahn, belag: A.netz.belag[Math.round(s0 + 18)] });
+  }
+  return out;
+};
+const KONTRAST_STELLEN = [[640, 'Anstieg'], [930, 'Anstieg'], [1500, 'vor Kehre 5'], [2150, 'Grat'], [2300, 'Grat'], [2780, 'vor Abfahrt-Kehre'], [3600, 'Funpark'], [3400, 'Abfahrt (Funpark-Einfahrt)']]; // (Stellen, an denen kein oranges Netz im Messpunkt steht)
+async function kontrastTest(buchstabe, text) {
+  titel(`(${buchstabe}) Kontrast Fahrbahn gegen Hang ${text}: mindestens 40 Helligkeitsstufen (320x180)`);
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
+  await s.page.evaluate(() => { window.__alpineRally.anhalten = true; });
+  const r = await s.page.evaluate(KONTRAST, { stellen: KONTRAST_STELLEN.map((x) => x[0]) });
+  await s.schliessen();
+  r.forEach((x, i) => melde(Math.abs(x.diff) >= 40, `${x.s} m ${KONTRAST_STELLEN[i][1]} (${x.belag}): Fahrbahn ${x.fahrbahn.toFixed(0)}, Hang ${x.hang.toFixed(0)}, Unterschied ${x.diff.toFixed(0)}`));
+}
+if (teil('m')) await kontrastTest('m', '(Anstieg, Kehren, Grat, Abfahrt)');
+// (n) Talstation, Bergstation, Zielarena: laden ohne Fehler, Deko steht nicht auf der Strasse, keine Kollision ausser Netzen
+if (teil('n')) {
+  titel('(n) Talstation, Bergstation, Zielarena laden ohne Fehler; Deko ohne Kollision (ausser Netze), nicht auf der Strasse');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, q = {}, D = A.skigebietDeko;
+    const haeuser = A.STRECKE ? null : null;
+    const alle = [...A.strassenrand.hindernisse, ...A.pflanzen.hindernisse];
+    // Kollisionskreise nahe Tribüne und Pistenkreuzungen (ausser Netzen): soll 0 sein
+    const nahe = (s0, lat, r) => alle.filter((h) => { if (h.netz) return false; S.abfrage(h.x, h.z, q); return Math.abs(q.s - s0) < r && Math.sign(q.seite) === Math.sign(lat) && Math.abs(Math.abs(q.seite) - Math.abs(lat)) < 8; }).length;
+    const trib = D.tribuenen.map((t) => ({ s: t.s, kreise: nahe(t.s, t.seite * (t.lat + 2), t.laenge / 2), lat: t.lat }));
+    const netzAufStrasse = A.fangnetze.hindernisse.filter((h) => { S.abfrage(h.x, h.z, q); return Math.abs(q.seite) < A.netz.halbBei(q.s) + A.CONFIG.strasse.bankett; }).length;
+    return { trib, netzAufStrasse, kreuzungen: D.kreuzungen.length, haeuser: A.leben.haeuser ? A.leben.haeuser.length : null, parkwagen: (A.leben.parkwagen || []).length };
+  });
+  const q = fs.readFileSync(G_DATEI, 'utf8');
+  melde(/Talstation \(Gondelhaus\)/.test(q) && /Bergstation/.test(q) && /Hütte \(Après-Ski\)/.test(q) && /parkwagen: \[/.test(q) && /name: 'apres'/.test(q) && /name: 'arena'/.test(q), 'Daten: Talstation (Gondelhaus), Parkplatz mit 7 Deko-Autos, Bergstation, Hütte mit Après-Ski-Gruppe (5 Figuren), Zielarena mit Tribüne und Zuschauern');
+  melde(r.trib.every((x) => x.kreise === 0 && x.lat >= 12), `Tribüne: ${r.trib.map((x) => `${x.s} m, ${x.lat} m neben der Mitte, ${x.kreise} Kollisionskreise`).join('; ')}`);
+  melde(r.netzAufStrasse === 0, `kein Netz auf Fahrbahn oder Bankett (${r.netzAufStrasse} Kreise)`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.join(' | ').slice(0, 200)})`);
+  await s.schliessen();
+}
+// (o) Pistenkreuzungen: nur Optik und Schild, keine Wirkung aufs Fahren (keine Hindernisse, Untergrund unverändert)
+if (teil('o')) {
+  titel('(o) Pistenkreuzungen (2): Schild und Spuren da, keine Wirkung aufs Fahren (kein Hindernis, Untergrund und Tempo gleich)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, P = A.physik, q = {}, D = A.skigebietDeko, out = [];
+    for (const k of D.kreuzungen) {
+      const kreise = [...A.strassenrand.hindernisse, ...A.pflanzen.hindernisse].filter((h) => { S.abfrage(h.x, h.z, q); return Math.abs(q.s - k.s) < 6 && Math.abs(q.seite) < 12 && !h.netz; }).length;
+      const p = S.punktBei(k.s), art = A.welt.bodenBei(p.x, p.z).art;
+      // durchfahren mit 60 km/h, Gas halb: Tempo vor und nach der Kreuzung (gegen dieselbe Fahrt 40 m früher)
+      const fahrt = (s0) => { A.anhalten = true; A.setzeAuf(s0); P.vx = Math.sin(P.richtung) * 60 / 3.6; P.vz = Math.cos(P.richtung) * 60 / 3.6; let v = []; for (let t = 0; t < 1.2; t += A.SCHRITT) { A.physikSchritt(A.SCHRITT, { gas: 0.5, bremse: 0, lenkung: 0, handbremse: false }, true); } v = P.tempo * 3.6; return v; };
+      out.push({ s: k.s, kreise, art, v: fahrt(k.s - 10), schild: k.schildS });
+    }
+    return out;
+  });
+  await s.schliessen();
+  melde(r.length === 2, `${r.length} Kreuzungen: ${r.map((x) => `${x.s} m (Schild bei ${x.schild} m)`).join(', ')}`);
+  for (const x of r) melde(x.kreise === 0 && x.art === 'schnee', `${x.s} m: ${x.kreise} Hindernisse auf ±6 m, Untergrund ${x.art}, nach 1.2 s ${x.v.toFixed(1)} km/h (kein Bremsen)`);
+}
+if (teil('p')) await unveraendert('p', { bilder: true });
+
+// <TEILE D-F>
 
 // ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');

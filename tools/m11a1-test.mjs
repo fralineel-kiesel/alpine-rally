@@ -204,8 +204,8 @@ if (teil('e')) await unveraendert('e');
 // ===================================================================== Engine-Test-Variante (M11b)
 // Keine Strecke nutzt mehr Eissee, Hohlweg und (bis Teil E) die Skipiste. Damit der Code geprüft bleibt, wird das
 // Skigebiet kopiert und ein Hohlweg, ein Eissee (mit Eis-Belag 6 m hinter dem Ufer) und eine Skipiste eingesetzt.
-// ENGINE: Orte (Streckenmeter) auf geraden Stücken des Skigebiets.
-const ENGINE = { hohlweg: [500, 660], see: { s: 950, laenge: 70, breite: 32 }, piste: { s: [700, 640], seite: 1, lat: [220, 50], breite: 28, skifahrer: 5, seed: 5150 } };
+// ENGINE: Orte (Streckenmeter) auf dem Grat des Skigebiets (dort stehen weder Netze noch Deko).
+const ENGINE = { hohlweg: [2230, 2360], see: { s: 2425, laenge: 60, breite: 30 }, piste: { s: [2200, 2150], seite: -1, lat: [200, 50], breite: 28, skifahrer: 5, seed: 5150 } };
 function engineVariante() {
   const t = fs.readFileSync(G_DATEI, 'utf8'), E = ENGINE;
   const vonEis = E.see.s - E.see.laenge / 2 + 6, bisEis = E.see.s + E.see.laenge / 2 - 6;
@@ -289,7 +289,7 @@ if (teil('p')) {
   for (const x of r) melde(x.vEin != null && x.strafen === 0 && x.rueck >= 2 && x.tief <= 1.05 && (x.v1 == null || x.v1 < x.vEin), `${x.von} m ${x.sd < 0 ? 'links' : 'rechts'} ${x.winkel}°${x.gas ? ' Vollgas' : ''}: Kontakt mit ${x.vEin && x.vEin.toFixed(0)} km/h, nach 1 s ${x.v1 == null ? '(schon draussen)' : `${x.v1.toFixed(0)} km/h`}, wieder draussen nach ${x.raus == null ? '–' : `${x.raus.toFixed(2)} s`}, tiefstes Eintauchen ${x.tief.toFixed(2)} m, Strafen ${x.strafen}, rückwärts aus voller Tiefe (stehend, quer) in 3 s ${x.rueck.toFixed(1)} m`);
 }
 // M11b: Stellen auf dem Skigebiet (gerade Stücke ohne Netz/Deko daneben)
-const TIEFSCHNEE_STELLEN = [[200, 9], [200, -9], [560, 10], [1000, -9]];
+const TIEFSCHNEE_STELLEN = [[2150, 9], [2300, -9], [3600, 10], [3700, -9]]; // (Grat, Funpark: dort kein Netz)
 // (q) Tiefschnee-Rand: 80 km/h seitlich hineinversetzt, 2 s (Gas los / Vollgas); Vergleich Gras in den Alpen
 const RAND_BREMSEN = async ({ s0, lat }) => {
   const A = window.__alpineRally, P = A.physik, S = A.strecke; A.anhalten = true;

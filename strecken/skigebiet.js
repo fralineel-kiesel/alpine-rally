@@ -316,13 +316,28 @@ export default {
   strasse: { startBeiMeter: 25, zielVorEnde: 45, spawnBeiMeter: 10 },
   // Rand (M11a.1): keine Leitplanken; neben der Strasse Tiefschnee (bremst stark, keine Strafe, wie Gras in den Alpen),
   // Schneestangen markieren den Rand; der weiche Schneewall (js/schneewall.js) steht nur noch in den Hohlwegen als Bank
-  strassenrand: { ohnePlanke: [[0, 4400, -1], [0, 4400, 1]], ohneZaun: true, tiefschnee: true, schneewall: { an: true, ohne: [], nurHohlwege: true } },
+  strassenrand: { ohnePlanke: [[0, 4400, -1], [0, 4400, 1]], ohneZaun: true, tiefschnee: true, schneewall: { an: true, ohne: [], nurHohlwege: true, pistenStangen: true } },
   // Checkpoints: nach der Anstiegsmitte, an der Bergstation, in der Abfahrt (nicht in Sprungzonen, 60 m Abstand)
+  // M11b: Fangnetze (orange) und Fangzäune an der Talseite und aussen an den Kehren: Wand mit Wand-Strafe (js/fangnetz.js).
+  // Offen bleiben die Aussenseiten von Kehre 3, Kehre 5 und der ersten Abfahrt-Kehre (Absturzkante in M11c), die
+  // Landezone des natürlichen Sprungs, der Grat (Ausblick) und die Pistenkreuzungen; sonst Tiefschnee mit Pistenstangen
+  fangnetze: [
+    { von: 300, bis: 600, seite: -1 }, { von: 576, bis: 850, seite: 1 }, { von: 826, bis: 1020, seite: -1 },
+    { von: 1090, bis: 1330, seite: 1 }, { von: 1306, bis: 1500, seite: -1 }, { von: 1570, bis: 1810, seite: 1 },
+    { von: 1810, bis: 1915, seite: -1, art: 'zaun' },
+    { von: 2490, bis: 2600, seite: 1 }, { von: 2730, bis: 2785, seite: 1 },
+    { von: 2855, bis: 2925, seite: -1 }, { von: 2955, bis: 3040, seite: -1 }, { von: 3040, bis: 3105, seite: 1, art: 'zaun' },
+    { von: 3105, bis: 3185, seite: 1 }, { von: 3215, bis: 3330, seite: 1 },
+  ],
+  // M11b: Pistenkreuzungen (nur Optik und Schild, js/skigebiet.js; querende Skifahrer erst in M11c)
+  pistenkreuzungen: [{ s: 2940 }, { s: 3200 }],
+  // M11b: kleine Tribüne in der Zielarena (Zuschauer auf die Stufen gemalt)
+  tribuenen: [{ s: 4255, seite: -1, lat: 16, laenge: 24, reihen: 4 }],
   checkpoints: [1120, 2000, 3100],
   // Vorbereitung M11c (nur Kommentar, noch ohne Wirkung):
   //   Absturzkante (offener Hang ausserhalb einer Kehre, dort kein Netz, nur Tiefschnee): Kehre 3 (1036–1076 m, aussen
   //   links), Kehre 5 (1516–1556 m, aussen links), erste Abfahrt-Kehre (2799–2840 m, aussen links)
-  //   Querende Skifahrer: Pistenkreuzungen bei ca. 2950 m (zweiter Abfahrt-Ast) und 3200 m (dritter Abfahrt-Ast)
+  //   Querende Skifahrer: Pistenkreuzungen bei ca. 2940 m (zweiter Abfahrt-Ast) und 3200 m (dritter Abfahrt-Ast)
   // Die Pistenzufahrt ist ein Nebenweg mit Belag Schnee: im Dorf biegt die Etappe von der Dorfstrasse (Asphalt) links ab
   // (geradeaus läuft die Dorfstrasse als abgesperrter Stummel weiter), in der Zielarena mündet sie in deren Zufahrt ein
   nebenwege: [
@@ -367,7 +382,7 @@ export default {
       bergFuss: '#7c889c',
       schnee: '#f7faff',
       // M11a: Schneestrasse und Eis (js/pixel.js schneeTextur/eisTextur): Fahrbahn grauer als die Hänge, dunkle Spurrillen
-      schneeWeg: '#a0abbc',      // (M11a: vorher #c2ccd9, im Gegenlicht nur 20 Stufen; M11a.1: #a8b3c3 → etwas dunkler, 600 m nur 38)
+      schneeWeg: '#939eb0',      // (M11b: eine Stufe dunkler als beim Gletscher: auf dem Grat sonst nur 40 Stufen Kontrast)
       schneeSpur: '#646f80',
       schneeGlitzer: '#ffffff',
       eisWeg: '#6fa3d2',         // (vorher #8fbde3)
@@ -451,15 +466,39 @@ export default {
     },
     wiesenweg: {
       holzstapel: false,
-      haeuser: [],
-      stege: [], boote: [], holzstapelOrte: [], briefkaesten: [], holzzaeune: [], parkwagen: [], heurollen: [],
-      findlinge: [],
+      haeuser: [
+        { s: 75, seite: 1, lat: 24, drehung: 0, laenge: 18, tiefe: 11, hoehe: 6, typ: 'alphuette', dach: 'rot' },        // Talstation (Gondelhaus)
+        { s: 150, seite: 1, lat: 20, drehung: 8, laenge: 9, tiefe: 7, hoehe: 3.5, typ: 'alphuette', dach: 'rot' },        // Dorf
+        { s: 205, seite: -1, lat: 19, drehung: -6, laenge: 8, tiefe: 7, hoehe: 3.2, typ: 'alphuette', dach: 'braun' },   // Dorf
+        { s: 2020, seite: -1, lat: 22, drehung: 0, laenge: 16, tiefe: 10, hoehe: 5.5, typ: 'alphuette', dach: 'rot' },   // Bergstation
+        { s: 2048, seite: 1, lat: 17, drehung: 4, laenge: 8, tiefe: 6, hoehe: 3, typ: 'alphuette', dach: 'braun' },      // Hütte (Après-Ski)
+      ],
+      stege: [], boote: [], holzstapelOrte: [], briefkaesten: [], holzzaeune: [], heurollen: [],
+      // Parkplatz an der Talstation (stehende Deko-Autos)
+      parkwagen: [
+        { s: 110, seite: -1, lat: 14, drehung: 90, farbe: '#c8202a' }, { s: 116, seite: -1, lat: 14, drehung: 90, farbe: '#2456d8' },
+        { s: 122, seite: -1, lat: 14, drehung: 90, farbe: '#e8e8e0' }, { s: 128, seite: -1, lat: 14, drehung: 90, farbe: '#20242c' },
+        { s: 113, seite: -1, lat: 20, drehung: 90, farbe: '#2a9a4a' }, { s: 119, seite: -1, lat: 20, drehung: 90, farbe: '#f0c020' },
+        { s: 125, seite: -1, lat: 20, drehung: 90, farbe: '#8a8f99' },
+      ],
+      // Felsbrocken an der Bergseite der Zufahrt und auf dem Grat (statt einer Felswand: die Alpen-Felswand gibt auf der
+      // schmalen Strasse zu steile Übergänge, siehe Bericht)
+      findlinge: [[400, 1, 13, 1.4], [440, 1, 15, 1.1], [680, -1, 13, 1.3], [930, 1, 14, 1.5], [1170, -1, 13, 1.2], [1410, 1, 14, 1.3], [1650, -1, 13, 1.4], [2150, -1, 16, 1.6], [2300, 1, 18, 1.2]],
     },
     fans: {
       abstand: 7.2, gruppe: [3, 7], gruppeLaenge: 6, radius: 0.35, dicht: 0.75, blickStreuung: 0.6,
       posen: [0.2, 0.16, 0.14, 0.22, 0.08, 0.1, 0.1],
       kinder: 0.1,
-      spots: [],
+      spots: [
+        {
+          name: 'apres', s: [2036, 2054], seite: 1, lat: [10.5, 13], anzahl: 5, blickS: null, // Après-Ski-Gruppe an der Hütte
+          band: [], banner: [[2045, 9.8, 'apres']], fahnen: [[2040, 12, 'motiv'], [2052, 12.5, 'motiv']], stuehle: 1,
+        },
+        {
+          name: 'arena', s: [4235, 4275], seite: 1, lat: [9.5, 14], anzahl: 22, blickS: null, // Zielarena gegenüber der Tribüne
+          band: [[4233, 4277, 9.2]], banner: [[4255, 10.5, 'arena']], fahnen: [[4242, 12, 'motiv'], [4268, 13, 'motiv']], stuehle: 0,
+        },
+      ],
     },
     wracks: [],
     kreisRadius: 0.92, postenJacken: ['#ff6a10', '#e2f02a'], postenFahne: '#f4d21a',
@@ -468,7 +507,10 @@ export default {
 
   // --- Beschriftungen (erfundene Namen) ---
   beschriftung: {
-    banner: {},
+    banner: {
+      apres: ['APRES SKI', '#e040a0', '#f2f0e8'],
+      arena: ['ZIELARENA', '#2456d8', '#f2f0e8'],
+    },
     wegweiser: ['BERGSTATION 2 KM', 'TALSTATION', 'ZIELARENA 4 KM'],
     sponsoren: [
       ['FIRNWERK', '#1f4f9e', '#f2f0e8'], ['PULVERBRÄU', '#c8202a', '#f2f0e8'], ['EISKRISTALL', '#7fb8e6', '#13233a'], ['BERGFUNK', '#f0c020', '#1c1c1c'],
@@ -480,6 +522,7 @@ export default {
     publikumOrte: {
       start: { staerke: 0.8, von: -70, bis: 70 },
       ziel: { staerke: 0.9, von: -70, bis: 350 },
+      apres: { staerke: 0.5 }, arena: { staerke: 0.8 },
     },
     boeenAbschnitt: 'Dorf', // Windböen (pfeifender Wind) auf der Hochebene
     wasser: [],
@@ -527,12 +570,12 @@ export default {
     kurvenTempo: {
       kurven: [
         { von: 216, bis: 288, kmh: 72.9 }, // links 69°, Radius 29 m, schotter
-        { von: 526, bis: 591, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 777, bis: 843, kmh: 35.2 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 526, bis: 591, kmh: 34.1 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 777, bis: 843, kmh: 34.1 }, // links 132°, Radius 16 m, schnee, Kehre
         { von: 1029, bis: 1095, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 1260, bis: 1326, kmh: 35.6 }, // links 132°, Radius 15 m, schnee, Kehre
+        { von: 1260, bis: 1326, kmh: 34.1 }, // links 132°, Radius 15 m, schnee, Kehre
         { von: 1512, bis: 1578, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 1743, bis: 1809, kmh: 35.2 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 1743, bis: 1809, kmh: 34.1 }, // links 132°, Radius 16 m, schnee, Kehre
         { von: 1913, bis: 2008, kmh: 75.4 }, // rechts 67°, Radius 49 m, schotter
         { von: 2066, bis: 2242, kmh: 101.9 }, // rechts 60°, Radius 118 m, schnee
         { von: 2394, bis: 2551, kmh: 110.1 }, // rechts 48°, Radius 126 m, schnee

@@ -62,6 +62,8 @@ import { winkelNorm, begrenze } from './util.js';
 import { baueSchneewall } from './schneewall.js';
 import { baueEisseen } from './eissee.js';
 import { baueSkipiste } from './skipiste.js';
+import { baueFangnetze } from './fangnetz.js'; // M11b: Fangnetze (Skigebiet)
+import { baueSkigebietDeko } from './skigebiet.js'; // M11b: Tribüne, Pistenkreuzungen (Skigebiet)
 import { baueTon, materialVon, materialNr } from './audio.js';
 import { nachEtappenwahl } from './etappenwahl.js';
 import { baueWasser, wasserTiefe, nahSee } from './wasser.js';
@@ -225,6 +227,10 @@ const skipiste = baueSkipiste(szene, strecke, welt); // M11a.1: Skipiste mit Ski
 strassenrand.hindernisse.push(...wasser.hindernisse);
 // Büsche, Jungtannen, Grasbüschel, Wald in der Ferne (M2b) – reine Deko, keine Hindernisse
 const deko = baueDeko(szene, strecke, welt, pflanzen, strassenrand, kuehe, [...startZiel.buesche, ...leben.buesche]);
+// M11b: Fangnetze und Fangzäune (nur Strecken mit "fangnetze", Skigebiet): Wand mit Wand-Strafe wie der Zaun
+const fangnetze = baueFangnetze(szene, strecke, netz, welt);
+strassenrand.hindernisse.push(...fangnetze.hindernisse);
+const skigebietDeko = baueSkigebietDeko(szene, strecke, netz, welt); // M11b: reine Deko, keine Kollision
 // (materialVon, M7a: Material je Hindernis nur für den Aufprallton; die Kollisionsrechnung bleibt gleich)
 // M10c.1: Wand-Strafe (js/wand.js) für Leitplanken, Zäune, Geländer, Absperr-Wände und die Felswand
 const wand = baueWand();
@@ -1604,6 +1610,7 @@ window.__alpineRally = {
   touch, // M9a (Tests): Touch-Steuerung
   wasserBad, wasserSchwarz, schatten, // M10b.2 (Tests): Wasserbad, Schatten
   eisseen, skipiste, // M11a.1 (Tests): Eisseen (Plan: welt.eisseen), Skipiste
+  fangnetze, skigebietDeko, // M11b (Tests): Fangnetze, Tribüne und Pistenkreuzungen
   autoAuf, // M10c.1 (Tests): AUTO-Auflösung
   flug, sk, sprungBild, ruckSetzen, // M10c (Tests, Testfahrer): Flugphase (inLuft, y, letzteLandung, ereignis), Sprungkamera
 };
