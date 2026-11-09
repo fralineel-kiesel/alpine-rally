@@ -12,7 +12,7 @@ import { zufall } from './util.js';
 // Bild 64 x 32 in vier Feldern (je 16 breit): 0 Zuschauer-Reihe (Köpfe, bunte Jacken), 1 Beton (Stufen), 2 Schild
 // "Pistenkreuzung" (rotes Warndreieck mit Skifahrer), 3 Pistenspuren (helle Rillen mit Lücken, Rest durchsichtig)
 function dekoTextur(C) {
-  const l = leinwand(64, 32), rnd = zufall(8123);
+  const l = leinwand(96, 32), rnd = zufall(8123);
   const beton = hexZuRgb(C.beton), betonD = hexZuRgb(C.betonDunkel), haut = hexZuRgb('#e8b896'), muetze = hexZuRgb('#20242c');
   const jacken = C.jacken.map(hexZuRgb);
   for (let y = 0; y < 32; y++) for (let x = 0; x < 16; x++) setze(l, x, y, betonD);
@@ -34,14 +34,23 @@ function dekoTextur(C) {
   // Spuren: Rillen längs (Pistenraupe), zwischendurch Lücken
   const spur = hexZuRgb(C.spur), spurD = hexZuRgb(C.spurDunkel);
   for (let y = 0; y < 32; y++) for (let x = 48; x < 64; x++) if ((x % 3 === 0 && rnd() < 0.85) || rnd() < 0.08) setze(l, x, y, x % 6 === 0 ? spurD : spur);
+  // Feld 4: Kicker-Kante (Streifen blau/orange, quer) – Feld 5: Fahne (bunt, oben) mit Stange (unten)
+  const kb = hexZuRgb(C.kickerFarben[0]), ko = hexZuRgb(C.kickerFarben[1]);
+  for (let y = 0; y < 32; y++) for (let x = 64; x < 80; x++) setze(l, x, y, Math.floor(x / 4) % 2 ? kb : ko);
+  const fa = C.fahnenFarben.map(hexZuRgb), stange = hexZuRgb('#30343c');
+  for (let y = 0; y < 32; y++) for (let x = 80; x < 96; x++) {
+    if (x === 80 || x === 81) setze(l, x, y, stange);
+    else if (y >= 18 && x < 94 - (31 - y) * 0.3) setze(l, x, y, fa[Math.floor((x - 82) / 3) % fa.length]);
+  }
   return zuTextur(l, { wiederholen: false, mipmaps: false });
 }
 
 export function baueSkigebietDeko(szene, strecke, netz, welt) {
   const C = CONFIG.skigebietDeko, T = (STRECKE && STRECKE.tribuenen) || [], P = (STRECKE && STRECKE.pistenkreuzungen) || [];
-  if (!C || (!T.length && !P.length)) return { an: false, meshes: [], kreuzungen: [], tribuenen: [] };
+  const F = (STRECKE && STRECKE.funpark) || null;
+  if (!C || (!T.length && !P.length && !F)) return { an: false, meshes: [], kreuzungen: [], tribuenen: [], kicker: [] };
   const pos = [], uv = [], idx = [];
-  const feld = (f, u, v) => [(f * 16 + u * 15.98 + 0.01) / 64, v];
+  const feld = (f, u, v) => [(f * 16 + u * 15.98 + 0.01) / 96, v];
   const quad = (a, b, c, d, f, vU = 1) => { // a unten links, b unten rechts, c oben rechts, d oben links
     const n = pos.length / 3;
     for (const [p, uu, vv] of [[a, 0, 0], [b, 1, 0], [c, 1, vU], [d, 0, vU]]) { pos.push(...p); uv.push(...feld(f, uu, vv)); }
@@ -86,11 +95,33 @@ export function baueSkigebietDeko(szene, strecke, netz, welt) {
     quad(S(-0.05, 0), S(0.05, 0), S(0.05, C.schildHoehe), S(-0.05, C.schildHoehe), 1); // Pfosten
     kreuzungen.push({ s: k.s, schildS: sS });
   }
+  // --- Funpark (M11b Teil D): farbige Kante quer über jeden Kicker, Stangen mit Fahne links und rechts der Kante,
+  // Fahnenreihe am Rand, Bande am Ende. Die Schanze selbst ist die Sprungzone (Höhe der Strasse, js/sprung.js).
+  const kicker = [];
+  if (F) {
+    const fahne = (s, lat, h) => { // Stange mit Fahne, quer zur Strasse (Bild Feld 5)
+      const q = seitlich(s, lat), y = welt.gelaendeHoehe(q.x, q.z) - 0.1, ax = q.tx * 0.5, az = q.tz * 0.5;
+      quad([q.x - ax, y, q.z - az], [q.x + ax, y, q.z + az], [q.x + ax, y + h, q.z + az], [q.x - ax, y + h, q.z - az], 5);
+    };
+    for (const k of F.kicker) {
+      const hb = netz.halbBei(k) + CONFIG.strasse.bankett * 0.5;
+      const e = (s, lat) => { const q = seitlich(s, lat); return [q.x, welt.bodenBei(q.x, q.z).h + 0.05, q.z]; };
+      for (let i = 0; i < 6; i++) { const l0 = -hb + (2 * hb * i) / 6, l1 = -hb + (2 * hb * (i + 1)) / 6; quad(e(k - C.kanteBreite, l0), e(k - C.kanteBreite, l1), e(k, l1), e(k, l0), 4, 0.5); }
+      for (const sd of [-1, 1]) fahne(k, sd * (hb + 1.2), C.fahneHoehe);
+      kicker.push({ kante: k });
+    }
+    for (let s = F.von; s <= F.bis; s += C.fahnenAbstand) for (const sd of [-1, 1]) fahne(s, sd * (netz.halbBei(s) + CONFIG.strasse.bankett + 3), C.fahneHoehe * 0.8);
+    if (F.bande) { // Bande quer hinter dem Ende (Werbetafel-Optik aus dem Beton-Feld und Kicker-Streifen)
+      const q0 = seitlich(F.bande, -(netz.halbBei(F.bande) + 9)), q1 = seitlich(F.bande, -(netz.halbBei(F.bande) + 25));
+      const y0 = welt.gelaendeHoehe(q0.x, q0.z) - 0.1, y1 = welt.gelaendeHoehe(q1.x, q1.z) - 0.1;
+      quad([q0.x, y0, q0.z], [q1.x, y1, q1.z], [q1.x, y1 + 1.1, q1.z], [q0.x, y0 + 1.1, q0.z], 4, 0.3);
+    }
+  }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geo.setIndex(idx); geo.computeVertexNormals();
   const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: dekoTextur(C), alphaTest: 0.5, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
   szene.add(mesh);
-  return { an: true, meshes: [mesh], kreuzungen, tribuenen };
+  return { an: true, meshes: [mesh], kreuzungen, tribuenen, kicker };
 }

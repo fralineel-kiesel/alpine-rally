@@ -33,7 +33,21 @@ export default {
   // M11b: schmale Pistenzufahrt und Grat (ca. 70 % der Alpen-Strasse: 4.9 statt 7 m), Abfahrt und Dorf normal breit
   strassenBreite: [{ von: 300, bis: 2400, breite: 4.9 }],
 
-  sprung: [],
+  // M11b Teil D: Sprünge (Format "Sprünge", js/sprung.js): ein natürlicher Sprung über eine Kuppe am Steilhang der
+  // ersten Abfahrt und drei Kicker im Funpark (Schanzen aus Schnee, 110 m Abstand). Landezonen auf Schnee, mindestens
+  // 40 m frei, nicht am Ende einer Kehre, nicht an einem Netz; Checkpoints 60 m weg
+  sprung: [
+    { s: 2640, name: 'SCHNEEKUPPE', von: 2560, bis: 2735, kante: 2640, landeVon: 2645, landeBis: 2690, staerke: 1.0,
+      form: { anlauf: 40, rampe: 0.07, kante: 2, gefaelle: 0.07, auslauf: 35, weich: 15 } },
+    { s: 3560, name: 'KICKER', von: 3500, bis: 3605, kante: 3560, landeVon: 3564, landeBis: 3588, staerke: 1.0,
+      form: { anlauf: 20, rampe: 0.06, kante: 2, gefaelle: 0.06, auslauf: 15, weich: 8 } },
+    { s: 3670, name: 'KICKER', von: 3610, bis: 3715, kante: 3670, landeVon: 3674, landeBis: 3698, staerke: 1.0,
+      form: { anlauf: 20, rampe: 0.06, kante: 2, gefaelle: 0.06, auslauf: 15, weich: 8 } },
+    { s: 3780, name: 'KICKER', von: 3720, bis: 3825, kante: 3780, landeVon: 3784, landeBis: 3808, staerke: 1.0,
+      form: { anlauf: 20, rampe: 0.06, kante: 2, gefaelle: 0.06, auslauf: 15, weich: 8 } },
+  ],
+  // M11b Teil D: Funpark-Optik (js/skigebiet.js): farbige Kanten an den Kickern, Fahnenreihe, Bande am Ende
+  funpark: { von: 3490, bis: 3840, kicker: [3560, 3670, 3780], bande: 3870 },
 
   // --- Zufallszahlen (gleiche Zahl = gleiche Welt) ---
   seeds: {

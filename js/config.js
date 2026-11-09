@@ -1174,6 +1174,9 @@ export const CONFIG = {
     spur: '#ffffff', spurDunkel: '#d6dfea',
     schildVor: 40,             // Schild "Pistenkreuzung" so viele Meter vor der Kreuzung (rechts)
     schildHoehe: 1.4, schildGroesse: 1.1, // Unterkante und Grösse der Tafel (Meter)
+    kanteBreite: 1.2,          // Funpark: farbiger Streifen an der Kicker-Kante (Meter entlang der Strasse)
+    kickerFarben: ['#2456d8', '#ff6a10'], // Streifen blau / orange
+    fahnenFarben: ['#d8262a', '#f0c020', '#2456d8', '#2a9a4a'], fahneHoehe: 3.2, fahnenAbstand: 25, // Fahnen am Funpark
   },
 
   // --- Eisseen (M11a.1, js/eissee.js): kleine gefrorene Seen auf der Strasse der Gletscher-Etappe ------------------

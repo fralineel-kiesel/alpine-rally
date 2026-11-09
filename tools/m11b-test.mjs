@@ -7,6 +7,7 @@
 //       (h) Anfahren am Hang Allrad/Hinterrad, (i) Hang-Prüfung, (j) Alpen/Finnland bit-gleich
 //   Teil C – Ränder, Stationen: (k) Netz/Tiefschnee, (l) Kurven-Vergleich/Abkürzungen, (m) Kontrast, (n) Stationen,
 //       (o) Pistenkreuzungen, (p) Alpen/Finnland bit-gleich
+//   Teil D – Sprünge: (q) Weiten, (r) Landungen, (s) Zeit je Sprung, (t) Sprung-Statistik, (u) Alpen/Finnland bit-gleich
 //   (zz) nur mit --lang: frühere Tests (einmal)
 // Umgebungsvariablen: M11B_AUTOS=rt4,l073 (weniger Autos), M11B_NEU=1 (Testfahrer-Läufe neu statt aus /tmp/m11b).
 
@@ -452,7 +453,85 @@ if (teil('o')) {
 }
 if (teil('p')) await unveraendert('p', { bilder: true });
 
-// <TEILE D-F>
+// ===================================================================== Teil D: Sprünge und Funpark-Kicker
+if (teil('q')) {
+  titel('(q) Weiten bei 100 km/h: natürlicher Sprung 15–25 m, Kicker 10–20 m (alle 5 Autos), Landung auf Schnee');
+  for (const id of AUTOS) {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet', { auto: id });
+    const r = await s.page.evaluate(WEITEN, [100]);
+    await s.schliessen();
+    const z = Object.entries(r.out).map(([name, l]) => ({ name, ...l[0] }));
+    const ok = z.every((x) => x.ab && x.belag === 'schnee' && (x.name === 'KICKER' ? x.weite >= 10 && x.weite <= 20 : x.weite >= 15 && x.weite <= 25));
+    melde(ok, `${id}: ${z.map((x) => `${x.name} ${x.ab ? `${x.weite.toFixed(1)} m (${x.belag}, Verlust ${(x.verlust * 100).toFixed(0)} %)` : 'rollt'}`).join(', ')}`);
+  }
+  info('(WEITEN misst je Name einmal: die drei Kicker sind gleich gebaut, gemessen wird der letzte Eintrag je Name)');
+}
+// Sprünge im Testfahrer (alle Autos, alle Stile): sauber gelandet (auf der Strasse, nicht ausserhalb), keine Strafe
+if (teil('r')) {
+  titel('(r) Alle Landungen in Ordnung: alle 5 Autos, alle 5 Stile (strecke-abfahren), auf der Strasse, keine Strafe, kein Flug ausserhalb');
+  const d = await parallel(AUTOS.map((id) => () => testfahrerLauf(G_DATEI, id, WURZEL, 'neuD', STILE)), 3);
+  const schlecht = [], wandStrafen = []; let n = 0, weit = 0;
+  AUTOS.forEach((id, k) => {
+    for (const st of d[k].stile) {
+      for (const j of st.spruenge || []) { n++; weit = Math.max(weit, j.weite); if (Math.abs(j.seite || 0) > 4.5 || j.ausserhalb) schlecht.push(`${id}/${st.stil} ${j.weite.toFixed(0)} m seitlich ${(j.seite || 0).toFixed(1)}`); }
+      if (st.zeit == null) schlecht.push(`${id}/${st.stil} nicht im Ziel`);
+      // (der Stil „wand“ fährt absichtlich an Netze und Zäune – seine Strafen sind kein Landungsfehler, nur gemeldet)
+      if ((st.motorStrafen || []).length) (st.stil === 'wand' ? wandStrafen : schlecht).push(`${id}/${st.stil} ${(st.motorStrafen || []).length} Strafen`);
+    }
+  });
+  melde(schlecht.length === 0, `${n} Sprünge in ${AUTOS.length * STILE.length} Läufen, weitester ${weit.toFixed(1)} m${schlecht.length ? ` – ${schlecht.join('; ')}` : ''}`);
+  if (wandStrafen.length) info(`Stil „wand“ (fährt absichtlich an die Netze): ${wandStrafen.join('; ')}`);
+}
+// (s) Zeit je Sprung: Testfahrer „mittel“ mit gegen ohne Sprungzonen (dieselbe Strecke, Kuppen ohne Zone = keine Kuppe)
+function ohneSpruenge() {
+  const t2 = fs.readFileSync(G_DATEI, 'utf8');
+  let n = 0;
+  const neu = t2.replace(/\{ s: (\d+), name: '([^']+)', von:[^\n]*\n\s*form: \{[^}]*\} \}/g, (_, a, b) => { n++; return `{ s: ${a}, name: '${b}' }`; });
+  if (n !== 4) throw new Error(`ohneSpruenge: ${n} statt 4 Sprungzonen ersetzt`);
+  const datei = path.join(LOG, 'skigebiet-ohne-spruenge.js');
+  fs.writeFileSync(datei, neu);
+  return datei;
+}
+if (teil('s')) {
+  titel('(s) Zeit je Sprung (Testfahrer „mittel“, alle Autos): mit gegen ohne Sprungzone, kein Gewinn über 0.2 s');
+  const ohne = ohneSpruenge();
+  const kanten = [...fs.readFileSync(G_DATEI, 'utf8').matchAll(/, kante: (\d{3,}),/g)].map((m) => +m[1]);
+  const zt = (z, k) => z[Math.round((k + 150) / 10)] - z[Math.round((k - 100) / 10)];
+  const tab = ['| Auto | ' + kanten.map((k) => `${k} m: mit / ohne / Unterschied`).join(' | ') + ' | Flugweiten |', '|---|' + kanten.map(() => '---|').join('') + '---|'];
+  const gewinn = [];
+  const l = await parallel(AUTOS.flatMap((id) => [() => testfahrerLauf(G_DATEI, id, WURZEL, 'neuD', STILE), () => testfahrerLauf(ohne, id, WURZEL, 'ohne', ['mittel'])]), 4);
+  AUTOS.forEach((id, k) => {
+    const m = l[2 * k].stile.find((x) => x.stil === 'mittel'), o = l[2 * k + 1].stile[0];
+    const z = kanten.map((kk) => [zt(m.zeitBei, kk), zt(o.zeitBei, kk)]);
+    z.forEach(([a, b], j) => { if (a - b < -0.2) gewinn.push(`${id} ${kanten[j]} m ${(a - b).toFixed(2)} s`); });
+    tab.push(`| ${id} | ${z.map(([a, b]) => `${a.toFixed(2)} / ${b.toFixed(2)} / ${a - b >= 0 ? '+' : ''}${(a - b).toFixed(2)} s`).join(' | ')} | ${(m.spruenge || []).map((x) => `${x.weite.toFixed(0)} m`).join(' / ')} |`);
+  });
+  fs.writeFileSync(path.join(LOG, 'zeit-je-sprung.md'), tab.join('\n') + '\n');
+  for (const z of tab) info(z);
+  melde(gewinn.length === 0, `kein Sprung bringt mehr als 0.2 s${gewinn.length ? ` – ${gewinn.join('; ')}` : ''}`);
+}
+// (t) Sprung-Statistik: ein ganzer Lauf (Testfahrer im Spiel) zählt die Sprünge und speichert den Rekord unter "skigebiet"
+if (teil('t')) {
+  titel('(t) Sprung-Statistik fürs Skigebiet: Anzahl und weitester Sprung im Zielbildschirm, Rekord unter „skigebiet“');
+  const s = await oeffne(WURZEL, '?ton=aus&menue=aus&strecke=skigebiet', { speicher: {} });
+  const code = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+  const r = await s.page.evaluate(async (code) => {
+    const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    const A = window.__alpineRally; A.neustart();
+    let n = 0; while (A.ablauf.zustand === 'countdown' && n++ < 3000) A.rennSchritt(A.SCHRITT, { gas: 0, bremse: 0, lenkung: 0, handbremse: false });
+    const z = f.fahreEtappe(A, 'mittel');
+    await new Promise((ok) => { let k = 0; const g = () => (++k > 10 ? ok() : requestAnimationFrame(g)); requestAnimationFrame(g); });
+    return { ziel: z.ziel, erg: A.lauf.ergebnis && A.lauf.ergebnis.spruenge, speicher: localStorage.getItem('alpineRally.sprungRekorde') };
+  }, code);
+  await s.schliessen();
+  const rek = r.speicher ? JSON.parse(r.speicher).skigebiet : null;
+  melde(r.ziel && r.erg && r.erg.anzahl >= 3 && r.erg.weitester > 10, `Lauf im Ziel: ${r.erg && r.erg.anzahl} Sprünge gezählt, weitester ${r.erg && r.erg.weitester.toFixed(1)} m`);
+  melde(!!rek && Math.abs(rek.weite - Math.round(r.erg.weitester * 10) / 10) < 1e-9, `Rekord gespeichert unter „skigebiet“: ${rek && rek.weite} m (${rek && rek.auto})`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.join(' | ').slice(0, 200)})`);
+}
+if (teil('u')) await unveraendert('u', { bilder: true });
+
+// <TEILE E-F>
 
 // ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');
