@@ -180,7 +180,7 @@ export function baueSchneewall(strecke, netz, welt) {
   }
   // Schneestangen (rot-weiss, Orientierung am Rand): alle stangenAbstand Meter auf dem Wall, zwei gekreuzte schmale
   // Flächen (von allen Seiten sichtbar), im selben Zeichenaufruf wie der Wall
-  const rot = new THREE.Color(C.stangeRot), weissS = new THREE.Color(C.stangeWeiss);
+  const rot = new THREE.Color(C.stangeRot), weissS = new THREE.Color(C.stangeWeiss), blau = new THREE.Color(C.stangeBlau || C.stangeRot);
   for (const [sd, a] of [[-1, links], [1, rechts]]) {
     for (let k = Math.round(C.stangenAbstand / 2) + (sd > 0 ? Math.round(C.stangenAbstand / 2) : 0); k < n; k += C.stangenAbstand) {
       if (!a[k]) continue;
@@ -226,7 +226,8 @@ export function baueSchneewall(strecke, netz, welt) {
         const l = sd * (kante[k] + 0.3), x = strecke.px[k] - strecke.tz[k] * l, z = strecke.pz[k] + strecke.tx[k] * l;
         const y0 = Math.min(strecke.py[k], welt.gelaendeHoehe(x, z)) - 0.1, b = C.stangeBreite / 2, teil = (C.stangeHoehe + 0.5) / C.stangeTeile;
         for (let t = 0; t < C.stangeTeile; t++) {
-          const farbe = t % 2 ? weissS : rot, ya = y0 + t * teil, yb = ya + teil;
+          // (M11b: Pistenstangen = rechts blau statt rot, Streckendatei schneewall.pistenStangen, Skigebiet)
+          const farbe = t % 2 ? weissS : (D.pistenStangen && sd > 0 ? blau : rot), ya = y0 + t * teil, yb = ya + teil;
           for (const [dx, dz] of [[b, 0], [0, b]]) {
             const b0 = pos.length / 3;
             for (const [px, py, pz] of [[x - dx, ya, z - dz], [x + dx, ya, z + dz], [x + dx, yb, z + dz], [x - dx, yb, z - dz]]) { pos.push(px, py, pz); col.push(farbe.r, farbe.g, farbe.b); }

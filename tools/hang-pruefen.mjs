@@ -57,7 +57,8 @@ export async function hangPruefen({ wurzel = WURZEL, strecke = STRECKE_ARG || 'a
           const lat = hb + k * 0.5, x = p.x + rx * lat, z = p.z + rz * lat;
           // nur Gelände, das zu dieser Stelle der Etappe gehört (nicht die Kehre darüber, kein Stummel)
           S.abfrage(x, z, q);
-          const fremd = Math.abs(q.s - s) > 25 || W.bodenBei(x, z).art !== 'gras';
+          // (M11b: Tiefschnee zählt wie Gras – vorher wurde Gelände mit Tiefschnee-Rand gar nicht gemessen)
+          const art = W.bodenBei(x, z).art, fremd = Math.abs(q.s - s) > 25 || (art !== 'gras' && art !== 'tiefschnee');
           const wd = wasserAbstand(x, z);
           if (wd < 25) nahWasser = true;
           // erster Punkt = äussere Bankett-Kante (Strassenhöhe - 0.35): so zählt auch eine Stufe Strasse -> Gras

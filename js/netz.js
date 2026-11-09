@@ -20,6 +20,7 @@
 import { ShapeUtils, Vector2 } from 'three';
 import { CONFIG } from './config.js';
 import { glatt, mische } from './util.js';
+import { breiteAn, breiteBei } from './breite.js'; // M11b: Breite je Abschnitt
 
 const ARTEN = ['band', 'reifen', 'heu', 'zaun'];
 const GRAD = Math.PI / 180;
@@ -133,7 +134,14 @@ export function baueNetz(strecke) {
   for (const ab of C.belagAbschnitte || []) {
     for (let i = Math.ceil(ab.von); i <= Math.floor(ab.bis); i++) if (i >= 0 && i < n) belag[i] = ab.belag;
   }
-  const halbBei = (s) => C.belaege[belag[Math.max(0, Math.min(n - 1, Math.round(s)))]].breite / 2;
+  // M11b: Breite je Abschnitt (js/breite.js, Streckendatei strassenBreite); ohne das Feld genau wie bisher
+  const halbBelag = (s) => C.belaege[belag[Math.max(0, Math.min(n - 1, Math.round(s)))]].breite / 2;
+  let halbBei = halbBelag;
+  if (breiteAn) {
+    const halbJe = new Float64Array(n);
+    for (let i = 0; i < n; i++) halbJe[i] = breiteBei(i, C.belaege[belag[i]].breite) / 2;
+    halbBei = (s) => halbJe[Math.max(0, Math.min(n - 1, Math.round(s)))];
+  }
 
   // --- Stummel ------------------------------------------------------------------------
   const aeste = [];
@@ -339,7 +347,7 @@ export function baueNetz(strecke) {
 
   const qs = {}, qg = {};
   const netz = {
-    aeste, nebenwege, belag, halbBei, inEcke, hinterSperre, etappePunkt: (s) => etappePunkt(strecke, s),
+    aeste, nebenwege, belag, halbBei, halbBelag, inEcke, hinterSperre, etappePunkt: (s) => etappePunkt(strecke, s),
     halbAsphalt: halbA, bankett: bank,
     // M3c: nur die Stummel der Nebenwege / nur die Verlängerungen an Start und Ziel
     stummel: aeste.filter((a) => !a.ende), enden,

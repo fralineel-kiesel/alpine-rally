@@ -7,6 +7,7 @@ import { CONFIG } from './config.js';
 import { STRECKE } from './streckenlader.js';
 import { wasserFlaechen, wasserSchnitt, imWasser, uferAnstieg, flussAbstand, nahSee } from './wasser.js';
 import { planeEisseen } from './eissee.js';
+import { breiteAn } from './breite.js'; // M11b: Breite je Abschnitt
 import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
@@ -567,6 +568,14 @@ export function baueWelt(szene, strecke, netz) {
   }
   const nahKreuzung = (x, z) => aeste.some((ast) => Math.hypot(x - ast.px[0], z - ast.pz[0]) < 75);
 
+  // M11b: Breite je Abschnitt (js/breite.js): Querpunkte der Fahrbahn strecken, Bankett um denselben Betrag nach aussen
+  // schieben. Nur mit Streckenfeld strassenBreite (sonst wird diese Funktion nie gerufen: Alpen/Finnland unverändert).
+  const BREITE_AN = breiteAn && !!netz;
+  function breiteLat(lat, i) {
+    const hb = netz.halbBelag(i), hn = netz.halbBei(i);
+    if (hb === hn) return lat;
+    return Math.abs(lat) <= hb + 1e-6 ? lat * (hn / hb) : lat + Math.sign(lat) * (hn - hb);
+  }
   // Baut ein Band aus Teilen. Teil: { weg, von, bis, quer, anpassen }. quer = Liste von Streifen,
   // jeder Streifen = Liste von Querpunkten { lat (Abstand zur Mitte, + = rechts), dy (Höhe), u (Textur quer) }.
   // vLaenge = so viele Meter entspricht eine Texturlänge.
@@ -578,7 +587,8 @@ export function baueWelt(szene, strecke, netz) {
         for (let i = von; i <= bis; i++) {
           const rx = -weg.tz[i], rz = weg.tx[i];
           for (let c = 0; c < m; c++) {
-            const x = weg.px[i] + rx * streifen[c].lat, z = weg.pz[i] + rz * streifen[c].lat;
+            const lat = BREITE_AN && weg === etappeWeg ? breiteLat(streifen[c].lat, i) : streifen[c].lat; // M11b
+            const x = weg.px[i] + rx * lat, z = weg.pz[i] + rz * lat;
             // Stummel nahe der Kreuzung: jeder Punkt auf Höhe der Etappe (M3a.1, netz.js)
             let y = (weg.hoeheBei && i < weg.angleichenBis ? weg.hoeheBei(x, z, i, weg.pyEigen[i]) : weg.py[i]) + streifen[c].dy;
             if (anpassen && nahKreuzung(x, z)) y = anpassen(x, z, y);
@@ -1057,6 +1067,7 @@ export function baueWelt(szene, strecke, netz) {
     const berge = new THREE.Mesh(geo, mat);
     berge.frustumCulled = false;
     szene.add(berge);
+    welt.berge.mesh = berge; // M11b (nur Tests: Bildzeit ohne Berge)
   }
 
   // ---------------------------------------------------------------

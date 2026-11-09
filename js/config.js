@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.11a.1';
+export const VERSION = '0.11b';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -51,6 +51,9 @@ export const CONFIG = {
     schnee: { breite: 6.2, mittellinie: false },   // M11a: Schneestrasse (Gletscher), so breit wie Schotter
     eis: { breite: 6.2, mittellinie: false },      // M11a: Eisstelle auf der Schneestrasse (gleich breit, sonst springt der Rand)
   },
+  // M11b: Breite je Abschnitt (Streckendatei strassenBreite, js/breite.js): so viele Meter vor/nach einem Abschnitt geht
+  // die Breite weich von der Belag-Breite zur neuen über
+  strassenBreiteRampe: 25,
 
   // --- Nebenwege (Meilenstein 3a) ---------------------------------------
   // Untergrund-Abschnitte: die Etappe biegt auf einen Nebenweg ab und mündet später wieder ein (Stummel abgesperrt).
@@ -439,7 +442,9 @@ export const CONFIG = {
     bremse: 10,                // Bremskraft (m/s²)
     rueckwaertsTempo: 6,       // max. Tempo rückwärts (m/s); auf Asphalt mal untergrund.asphalt.rueckwaertsMax (M5a.1)
     rueckwaertsBeschl: 3,      // Beschleunigung rückwärts (m/s²)
-    steigungsFaktor: 0.45,     // wie stark Steigung/Gefälle wirkt (1 = voll, 0 = gar nicht)
+    // wie stark Steigung/Gefälle wirkt (1 = voll, 0 = gar nicht). M11b: mal dem Hangabtrieb der Strecke (Streckendatei
+    // "hangabtrieb", fehlt = 1: Alpen und Finnland unverändert; Skigebiet stärker, damit die Autos am Hang kämpfen)
+    steigungsFaktor: 0.45 * (S.hangabtrieb ?? 1),
 
     radstand: 2.52,            // Abstand Vorder- zu Hinterachse
     schwerpunktVorne: 0.48,    // Anteil Radstand vom Schwerpunkt bis Vorderachse (0..1)
@@ -1119,6 +1124,7 @@ export const CONFIG = {
     stangeBreite: 0.12,        // ... so dick ...
     stangeTeile: 4,            // ... in so vielen rot-weissen Stücken
     stangeRot: '#d8262a', stangeWeiss: '#f6f6f6',
+    stangeBlau: '#2456d8',     // M11b: Pistenstangen rechts blau (Streckendatei strassenrand.schneewall.pistenStangen)
     tonWucht: 0.45,            // Aufprall-Ton (Material "weich") mit so viel der Wucht: dumpf und gedämpft
     staubJe: 1.2,              // weisser Schneestaub beim Eintauchen: so viele Wölkchen je m/s ...
     staubMax: 18,              // ... höchstens so viele
@@ -1141,6 +1147,52 @@ export const CONFIG = {
   hohlweg: {
     tiefe: 0.8,                // so viel liegt die Strasse tiefer (Meter, Richtwert 0.5 bis 1) ...
     rampe: 35,                 // ... ein- und ausgefahren über so viele Meter (sanft, kein harter Schnitt)
+  },
+
+  // --- Fangnetze (M11b, js/fangnetz.js): orange Netze und Fangzäune im Skigebiet (Streckendatei fangnetze) ----------
+  fangnetz: {
+    abstand: 0.6,              // so weit hinter dem Bankett steht das Netz (Meter)
+    hoehe: 1.6,                // Höhe des Netzes (Meter)
+    hoeheZaun: 1.1,            // Höhe des Fangzauns (Meter)
+    schritt: 2,                // alle so viele Meter ein Punkt der Netzlinie (Pfosten jeden zweiten)
+    kreisAbstand: 0.8,         // Kollision: alle so viele Meter ein Kreis ...
+    kreisRadius: 0.35,         // ... mit diesem Radius (rand 'zaun': Wand mit Wand-Strafe)
+    farbe: '#ff6a10',          // Netz orange
+    farbeDunkel: '#c8460a',    // Kante, Maschen-Schatten
+    pfosten: '#3a3d44',        // Pfosten dunkelgrau
+    leuchten: '#3a1404',       // etwas Eigenlicht, damit das Orange auch im Schatten leuchtet
+  },
+
+  // --- Skigebiet-Deko (M11b, js/skigebiet.js): Tribüne in der Zielarena, Pistenkreuzungen (Schild und Spuren) -------
+  skigebietDeko: {
+    stufeHoehe: 0.5, stufeTiefe: 0.9, // Tribüne: Stufen (Meter)
+    segment: 2.4,              // je so viele Meter eine Gruppe von 4 gemalten Zuschauern
+    beton: '#b8bcc4', betonDunkel: '#8a8f99',
+    jacken: ['#d8262a', '#2456d8', '#f0c020', '#2a9a4a', '#ff6a10', '#e040a0', '#20242c'], // bunte Winterjacken
+    spurBreite: 8,             // Pistenkreuzung: so breit ist das Spurenband (Meter entlang der Strasse) ...
+    spurWeite: 30,             // ... und so weit reicht es links und rechts der Mitte
+    spur: '#ffffff', spurDunkel: '#d6dfea',
+    schildVor: 40,             // Schild "Pistenkreuzung" so viele Meter vor der Kreuzung (rechts)
+    schildHoehe: 1.4, schildGroesse: 1.1, // Unterkante und Grösse der Tafel (Meter)
+    kanteBreite: 1.2,          // Funpark: farbiger Streifen an der Kicker-Kante (Meter entlang der Strasse)
+    kickerFarben: ['#2456d8', '#ff6a10'], // Streifen blau / orange
+    fahnenFarben: ['#d8262a', '#f0c020', '#2456d8', '#2a9a4a'], fahneHoehe: 3.2, fahnenAbstand: 25, // Fahnen am Funpark
+  },
+
+  // --- Seilbahn (M11b, js/seilbahn.js): Gondelbahn Talstation – Bergstation im Skigebiet (Streckendatei seilbahn) ----
+  seilbahn: {
+    mastHoehe: 16,             // Höhe der Masten über dem Gelände (Meter; höher, wo das Seil sonst zu tief hängt)
+    stationHoehe: 7,           // Seilhöhe an Tal- und Bergstation
+    mastBreite: 0.9,           // Mast-Querschnitt (Meter)
+    spur: 6,                   // Abstand der zwei Seile (hinauf / hinunter)
+    durchhang: 3,              // so viele Meter hängt das Seil zwischen zwei Masten durch
+    bodenFrei: 8,              // so viel Platz bleibt mindestens unter dem Seil
+    strasseAbstand: 6,         // Masten mindestens so weit neben dem Bankett
+    seilSchritt: 10,           // Seil als Linienzug, alle so viele Meter ein Punkt
+    gondel: [2.2, 2.4, 2.2],   // Kabine breit, hoch, lang (Meter)
+    gehaenge: 1.2,             // Abstand Seil – Kabine
+    tempo: 5,                  // m/s entlang des Seils (langsam)
+    mastFarbe: '#7d848f', seilFarbe: '#30343c', gondelFarbe: '#d8262a',
   },
 
   // --- Eisseen (M11a.1, js/eissee.js): kleine gefrorene Seen auf der Strasse der Gletscher-Etappe ------------------

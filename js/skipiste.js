@@ -33,11 +33,22 @@ function fahrerTextur(jacke, rechts) {
   return t;
 }
 
+// M11b: "skipiste" darf auch eine Liste sein (mehrere Pisten, Skigebiet); ein einzelnes Objekt wie bisher
 export function baueSkipiste(szene, strecke, welt) {
-  const D = STRECKE && STRECKE.skipiste, C = CONFIG.skipiste;
-  // (?skipiste=aus in der Adresse: nur für den Bildzeit-Vergleich in tools/m11a1-test.mjs)
+  const S = STRECKE && STRECKE.skipiste, C = CONFIG.skipiste;
+  // (?skipiste=aus in der Adresse: nur für den Bildzeit-Vergleich in den Tests)
   const aus = typeof location !== 'undefined' && /[?&]skipiste=aus/.test(location.search);
-  if (!D || !C || aus) return { an: false, aktualisiere: () => {}, fahrer: [], meshes: [] };
+  if (!S || !C || aus) return { an: false, aktualisiere: () => {}, fahrer: [], meshes: [] };
+  if (!Array.isArray(S)) return bauePiste(szene, strecke, welt, S, C);
+  const teile = S.map((D) => bauePiste(szene, strecke, welt, D, C));
+  const aktualisiere = (dt) => { for (let i = 0; i < teile.length; i++) teile[i].aktualisiere(dt); };
+  return {
+    an: true, aktualisiere, fahrer: teile.flatMap((x) => x.fahrer), meshes: teile.flatMap((x) => x.meshes), pisten: teile,
+    laenge: Math.min(...teile.map((x) => x.laenge)), oben: teile[0].oben, unten: teile[0].unten,
+  };
+}
+
+function bauePiste(szene, strecke, welt, D, C) {
   const sd = D.seite >= 0 ? 1 : -1;
   const punkt = (s, lat) => { const p = strecke.punktBei(s); return [p.x - p.tz * sd * lat, p.z + p.tx * sd * lat]; };
   const [ox, oz] = punkt(D.s[0], D.lat[0]), [ux, uz] = punkt(D.s[1], D.lat[1]); // oben, unten

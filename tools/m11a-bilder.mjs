@@ -2,6 +2,9 @@
 // 01 Gletscher, Schnee-Passage am Gletscherrand (blauer Himmel), 02 Eisstelle in der Senke am Eisfeld (Fahrbahn glänzt),
 // 03 Etappenwahl mit 3 Etappen im Handy-Hochformat (Touch emuliert), 04 Sprung über die Moränenkuppe (in der Luft).
 // Alles Chromium mit Software-Grafik, 3D-Bild fest 320x180 (doppelt vergrössert gezeigt).
+// M11b: Die Etappe Gletscher ist entfernt. Dieses Werkzeug malte Gletscher-Bilder und läuft nur noch im alten Stand
+// (git worktree add <ordner> 471d726 = 0.11a.1, dort ausführen). Die Bilder liegen weiter unter screenshots/.
+if (!process.argv.includes('--trotzdem')) { console.log('Gletscher entfernt (M11b): nur im Stand 0.11a.1 ausführen (git worktree add <ordner> 471d726).'); process.exit(0); }
 import fs from 'node:fs';
 import path from 'node:path';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';

@@ -857,8 +857,12 @@ console.log('[M6 g] Taste H: HUD aus/an');
   pruefe(an.zeit > 100 && an.minimap > 500 && an.tachos > 500, 'HUD an: Zeit-Tafel, Minimap, Tachos sichtbar');
   pruefe(!aus.an && aus.zeit === 0 && aus.minimap === 0 && aus.tachos === 0 && aus.hinweis > 50, 'Taste H: Zeit-Tafel, Minimap, Tachos weg, kurzer Hinweis "HUD AUS" unten', `${aus.hinweis} Pixel Hinweis`);
   // Hinweis verschwindet nach ca. 1.5 s
+  // M11b: robuster – mit Software-Grafik läuft die Spieluhr bei langsamen Bildern hinter der echten Zeit her (das war
+  // der bekannte Wackler). Darum nach 1.8 s bis zu 8-mal je 0.4 s nachsehen (höchstens ca. 5 s), statt einmal fest.
   await p.waitForTimeout(1800); await bilderAbwarten(p, 2);
-  pruefe((await zaehle('hinweis')) === 0, 'Hinweis nach 1.5 s weg (ganzes Bild leer)', `${(await A(p, () => window.__T.hudPixel(0, 0, 320, 180).sichtbar))} Pixel im ganzen HUD`);
+  let hinweisRest = await zaehle('hinweis');
+  for (let versuch = 0; versuch < 8 && hinweisRest !== 0; versuch++) { await p.waitForTimeout(400); await bilderAbwarten(p, 2); hinweisRest = await zaehle('hinweis'); }
+  pruefe(hinweisRest === 0, 'Hinweis nach 1.5 s weg (ganzes Bild leer)', `${(await A(p, () => window.__T.hudPixel(0, 0, 320, 180).sichtbar))} Pixel im ganzen HUD`);
   // Pause bleibt sichtbar
   await A(p, () => window.__alpineRally.pausieren()); await p.waitForTimeout(400); await bilderAbwarten(p, 2);
   const pause = await A(p, () => ({ z: window.__alpineRally.ablauf.zustand, sicht: window.__alpineRally.blenden.sicht, seite: window.__alpineRally.menue.seite.id }));

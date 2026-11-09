@@ -2,6 +2,9 @@
 // 01 Eissee von der Strasse aus (kleiner See am Gletscherrand), 02 Hohlweg im Linksbogen (Schneebank, Fels, Spurrillen),
 // 03 Panorama: Strecke zwischen den Bergen (vier Reihen, Gletscherzunge), 04 Skipiste mit Skifahrern am Hang (Hochebene).
 // Alles Chromium mit Software-Grafik, 3D-Bild 640x360 (Standard AUTO), doppelt vergrössert, unten zugeschnitten (HUD/Auto).
+// M11b: Die Etappe Gletscher ist entfernt. Dieses Werkzeug malte Gletscher-Bilder und läuft nur noch im alten Stand
+// (git worktree add <ordner> 471d726 = 0.11a.1, dort ausführen). Die Bilder liegen weiter unter screenshots/.
+if (!process.argv.includes('--trotzdem')) { console.log('Gletscher entfernt (M11b): nur im Stand 0.11a.1 ausführen (git worktree add <ordner> 471d726).'); process.exit(0); }
 import fs from 'node:fs';
 import path from 'node:path';
 import { starteSpiel, WURZEL } from './spiel-browser.mjs';
