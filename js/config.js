@@ -1430,6 +1430,20 @@ export const CONFIG = {
     positionGlaetten: 12,      // Glättung der Kameraposition
     wandAbstand: 0.5,          // so viel Luft (Meter) hält die Kamera mindestens zur Felswand (M3a.3)
     sichtweite: 9000,          // weiter weg wird nichts gezeichnet
+    // M11b.1: Kamera folgt dem Gefälle (Streckenfeld kameraGefaelle, fehlt = 0: Kamera genau wie bisher, Alpen/Finnland).
+    // Bergab geht die Kamera höher und schaut weiter voraus, damit man die Strecke sieht statt nur das Heck. Bergauf und
+    // in der Ebene bleibt sie wie bisher. In der Luft hält sie den Wert vom Absprung (Sprungkamera hat Vorrang).
+    gefaelle: {
+      staerke: S.kameraGefaelle ?? 0, // 0 = aus, 1 = volle Wirkung (Skigebiet)
+      schwelle: 0.03,          // erst ab so viel Gefälle (3 %) beginnt die Wirkung
+      bis: 0.3,                // ab so viel Gefälle (30 %) wächst sie nicht mehr
+      hoehe: 8,                // so viele Meter höher je 100 % Gefälle über der Schwelle (bei 23 %: 1.6 m)
+      abstand: 4,              // so viele Meter weiter zurück je 100 % (bei 23 %: 0.8 m)
+      voraus: 45,              // Blickpunkt so viele Meter weiter vorn je 100 % (bei 23 %: 9 m) ...
+      senken: 0.8,             // ... und so tief wie die Strasse dort (Anteil des Gefälles mal Blick-Abstand)
+      hinten: 5, vorne: 35,    // Gefälle der Strasse von 5 m hinter bis 35 m vor dem Auto (schaut voraus: hebt sich vor der Kante)
+      glaetten: 1.5,           // Tiefpass (je Sekunde): kleiner = weicher; kein Wackeln auf Kuppen und Mulden
+    },
   },
 
   // --- Steuerung -------------------------------------------------------

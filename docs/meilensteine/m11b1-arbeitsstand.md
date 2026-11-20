@@ -15,3 +15,6 @@ Referenz 0.11b = 59a6a32 (`git worktree add <ordner> 59a6a32`), Test: `node tool
   Hang 0–40 Allrad 3.2–3.4, Hinterrad 7.4–8.4 s. Testfahrer +7.3/+8.9/+7.4 %, sauber. Tiefschnee-Kehre ≥ +5.1 s. **Commit 2.**
   Tiefschnee: grip 0.65, rollen 0.8, rollenTempo 0.1, neu rollenQuadrat 0.03 (physics.js). Ein harter km/h-Deckel existierte nie
   (0.11b: rollenTempo 0.7 = Gleichgewicht ca. 20–25 km/h). Herauskommen 2.3–3.5 s (80 Fahrten), Verlust 2 s: −44…−74 %.
+- **Teil C (Kamera):** `kameraGefaelle: 1` (Skigebiet), Werte `CONFIG.kamera.gefaelle` (Schwelle 3 %, +8 m Höhe / +45 m Blick
+  je 100 % Gefälle, Tiefpass 1.5/s, in der Luft eingefroren). Steilstücke: Kamera 2.5 → 3.8–4.0 m über dem Auto, sichtbare
+  Strecke 0/58/0 → 93/140/140 m. Eben/bergauf: Lage gleich 0.11b, Bild pixelgleich. Ruckeln max 1.4 cm/Bild. **Commit 3.**

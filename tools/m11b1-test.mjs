@@ -458,12 +458,17 @@ const SICHT = async ({ stellen, staerke }) => {
       const hit = ray.intersectObjects(ziele, false).find((h) => !(h.object.isSprite));
       if (!hit) { sicht += 2.5; weitest = d; }
     }
-    out.push({ s: s0, hoehe: kp.y - autoY, f: A.kameraGefaelle.f, sicht, weitest });
+    // Auto im Bild und frei sichtbar (Dachmitte: Strahl trifft vorher nichts ausser dem Auto selbst)
+    const ap = A.autoModell.objekt.position, dach = new T.Vector3(ap.x, ap.y + 1.1, ap.z), va = dach.clone().project(A.kamera);
+    const dA = dach.clone().sub(kp), LA = dA.length(); ray.set(kp, dA.normalize()); ray.far = LA - 0.3;
+    let istAuto = (o) => { for (let q = o; q; q = q.parent) if (q === A.autoModell.objekt) return true; return false; };
+    const vor = ray.intersectObjects(ziele, false).filter((h) => !h.object.isSprite && !istAuto(h.object));
+    out.push({ s: s0, hoehe: kp.y - autoY, f: A.kameraGefaelle.f, sicht, weitest, autoImBild: Math.abs(va.x) < 0.9 && Math.abs(va.y) < 0.9, autoFrei: vor.length === 0, autoY: va.y });
   }
   G.staerke = alt;
   return out;
 };
-const STEIL = [2600, 2950, 3250]; // steilste Gefälle (−22…−23 %)
+const STEIL = [2540, 2950, 3250]; // steilste Gefälle (−22…−23 %; 2540 m: 100 m vor der Schneekuppe, dahinter verdeckt die Kuppe)
 if (teil('o')) {
   titel('(o) Kamera bergab: im steilsten Gefälle deutlich höher, sichtbare Strecke voraus ≥ ca. 60 m (vorher/nachher, 320x180)');
   const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
@@ -471,6 +476,7 @@ if (teil('o')) {
   const vor = await s.page.evaluate(SICHT, { stellen: STEIL, staerke: 0 }), nach = await s.page.evaluate(SICHT, { stellen: STEIL, staerke: 1 });
   await s.schliessen();
   fs.writeFileSync(path.join(LOG, 'kamera-sicht.json'), JSON.stringify({ vor, nach }, null, 1));
+  melde(nach.every((x) => x.autoImBild && x.autoFrei), `Auto immer im Bild und frei sichtbar (nicht von Netz/Mast verdeckt): ${nach.map((x) => `${x.s} m Bildhöhe ${((x.autoY + 1) * 50).toFixed(0)} %`).join(', ')}`);
   STEIL.forEach((m, i) => melde(nach[i].hoehe >= vor[i].hoehe + 1 && nach[i].sicht >= 60, `${m} m: Kamera ${vor[i].hoehe.toFixed(2)} → ${nach[i].hoehe.toFixed(2)} m über dem Auto; Strecke sichtbar (0–150 m voraus) ${vor[i].sicht.toFixed(0)} → ${nach[i].sicht.toFixed(0)} m, weitester sichtbarer Punkt ${vor[i].weitest.toFixed(0)} → ${nach[i].weitest.toFixed(0)} m`));
 }
 // Kamera ohne Gefälle unverändert: Kamera-Lage gleich wie 0.11b (Zahlen) und Bild gleich wie mit kameraGefaelle 0
@@ -490,9 +496,13 @@ if (teil('p')) {
   await n.page.evaluate(() => { window.__alpineRally.anhalten = true; window.__bild(5, 1000 / 60); });
   const lageNeu = await n.page.evaluate(KAM_LAGE, { stellen, staerke: 1 });
   const bildMit = await n.page.evaluate(BILD_SUMME, { stellen });
-  await n.page.evaluate(() => { window.__alpineRally.CONFIG.kamera.gefaelle.staerke = 0; });
-  const bildOhne = await n.page.evaluate(BILD_SUMME, { stellen });
   await n.schliessen();
+  // (zweite Seite mit derselben Bild-Uhr: Gondeln und Skifahrer stehen an derselben Stelle)
+  const o = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
+  await o.page.evaluate(() => { window.__alpineRally.anhalten = true; window.__bild(5, 1000 / 60); });
+  await o.page.evaluate(KAM_LAGE, { stellen, staerke: 0 });
+  const bildOhne = await o.page.evaluate(BILD_SUMME, { stellen });
+  await o.schliessen();
   if (ALT) {
     const a = await oeffne(ALT, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
     await a.page.evaluate(() => { window.__alpineRally.anhalten = true; window.__bild(5, 1000 / 60); });
@@ -511,14 +521,15 @@ const RUCKELN = async ({ von, bis }) => {
   const proBild = Math.round((1 / 60) / A.SCHRITT);
   f.fahreBis(A, 'mittel', { bisS: bis, proSchritt: () => {
     if (++n % proBild) return;
-    A.kameraFuehren(1 / 60);
+    A.autoZeichnen(1 / 60, 0); A.kameraFuehren(1 / 60); // (wie im Spiel je Bild: erst das Auto, dann die Kamera)
     const off = A.kamera.position.y - A.autoModell.objekt.position.y;
     const df = Math.abs(K.f - fAlt) * G.hoehe; fAlt = K.f;
     if (df > maxDF) maxDF = df;
     if (yAlt != null && Math.abs(off - yAlt) > maxDY) { maxDY = Math.abs(off - yAlt); dyBei = A.rennen.letztesS; }
     yAlt = off; if (K.f > maxF) { maxF = K.f; maxFbei = A.rennen.letztesS; }
+    A.kamera.updateMatrixWorld(); const va = A.autoModell.objekt.position.clone().project(A.kamera); if (Math.abs(va.x) > 0.95 || Math.abs(va.y) > 0.95) tUeber++;
   } });
-  return { maxDF, maxDY, dyBei, maxF, maxFbei, bilder: Math.floor(n / proBild) };
+  return { maxDF, maxDY, dyBei, maxF, maxFbei, bilder: Math.floor(n / proBild), ausserhalb: tUeber };
 };
 if (teil('q')) {
   titel('(q) Kein Ruckeln: Kamerahöhe aus dem Gefälle ändert sich je Bild (60/s) um höchstens 2 cm (Testfahrer Grat → Ziel)');
@@ -526,7 +537,7 @@ if (teil('q')) {
   await mitFahrer(s);
   const r = await s.page.evaluate(RUCKELN, { von: 2300, bis: 4100 });
   await s.schliessen();
-  melde(r.maxDF <= 0.02, `${r.bilder} Bilder: grösster Sprung der Gefälle-Höhe je Bild ${(r.maxDF * 100).toFixed(2)} cm (Grenze 2 cm); grösste Wirkung ${(r.maxF * 8).toFixed(2)} m höher bei ${r.maxFbei.toFixed(0)} m; Kamera gegen Auto gesamt höchstens ${(r.maxDY * 100).toFixed(1)} cm je Bild (bei ${r.dyBei.toFixed(0)} m, mit Federung/Sprüngen)`);
+  melde(r.maxDF <= 0.02 && r.ausserhalb === 0, `${r.bilder} Bilder (Auto ${r.ausserhalb ? `${r.ausserhalb}-mal ausserhalb` : 'immer'} im Bild): grösster Sprung der Gefälle-Höhe je Bild ${(r.maxDF * 100).toFixed(2)} cm (Grenze 2 cm); grösste Wirkung ${(r.maxF * 8).toFixed(2)} m höher bei ${r.maxFbei.toFixed(0)} m; Kamera gegen Auto gesamt höchstens ${(r.maxDY * 100).toFixed(1)} cm je Bild (bei ${r.dyBei.toFixed(0)} m, mit Federung/Sprüngen)`);
 }
 if (teil('r')) await unveraendert('r', { bilder: true, stile: ['mittel'] });
 

@@ -872,23 +872,39 @@ function dreckSchritt(dt) {
 }
 
 // --- Verfolgerkamera ---
+// M11b.1: Kamera folgt dem Gefälle (CONFIG.kamera.gefaelle, nur mit Streckenfeld kameraGefaelle). kg.f = gedämpftes
+// Gefälle über der Schwelle (0 = keine Wirkung: dann rechnet die Kamera Zahl für Zahl wie bisher)
+const kg = { f: 0, q: {} };
+function gefaelleZiel() {
+  const G = CONFIG.kamera.gefaelle, q = strecke.abfrage(physik.x, physik.z, kg.q);
+  const n = strecke.anzahl, i = Math.max(0, Math.min(n - 1, Math.round(q.s)));
+  // Fahrtrichtung entlang der Strecke (rückwärts gedreht: Gefälle andersherum)
+  const r = Math.sin(physik.richtung) * strecke.tx[i] + Math.cos(physik.richtung) * strecke.tz[i] >= 0 ? 1 : -1;
+  const a = Math.max(0, Math.min(n - 1, i - r * G.hinten)), b = Math.max(0, Math.min(n - 1, i + r * G.vorne));
+  if (a === b) return 0;
+  const g = (strecke.py[a] - strecke.py[b]) / Math.abs(b - a); // + = bergab
+  return Math.max(0, Math.min(G.bis, g) - G.schwelle) * G.staerke;
+}
 function kameraZiel() {
   const c = CONFIG.kamera;
   let y = auto.objekt.position.y;
+  if (kg.f > 0) y += CONFIG.kamera.gefaelle.hoehe * kg.f; // M11b.1 (bergab höher)
+  const ab = kg.f > 0 ? c.abstand + CONFIG.kamera.gefaelle.abstand * kg.f : c.abstand;
   if (sk.e > 0 || (flug.inLuft && einstellungen.sprungkamera !== 'aus')) {
     // M10c: Sprungkamera. M10c.1: steifer – sie folgt dem Auto auch in der Luft in der Höhe (kein Halten auf der
     // Abhebe-Höhe mehr, sonst schaut sie bei der Landung steil von oben), zieht nur wenig zurück und hebt sich wenig
     const K = skWerte(); // M10c.2: Stufe RUHIG oder NORMAL
-    const abstand = c.abstand * (1 + K.zurueck * sk.e);
+    const abstand = ab * (1 + K.zurueck * sk.e);
     kam.ziel.set(physik.x - Math.sin(kam.yaw) * abstand, y + c.hoehe + K.heben * sk.e, physik.z - Math.cos(kam.yaw) * abstand);
     return;
   }
-  kam.ziel.set(physik.x - Math.sin(kam.yaw) * c.abstand, y + c.hoehe, physik.z - Math.cos(kam.yaw) * c.abstand);
+  kam.ziel.set(physik.x - Math.sin(kam.yaw) * ab, y + c.hoehe, physik.z - Math.cos(kam.yaw) * ab);
 }
 function kameraSofort() {
   flug.reset(); // M10c: neu hingesetzt = am Boden
   sk.e = 0; sk.land = 99; sk.ruckT = 99; sk.frei = 0; sk.ab = flug.ereignis.abheben; sk.landung = flug.ereignis.landung; ruckSetzen(0);
   kam.yaw = physik.richtung;
+  kg.f = CONFIG.kamera.gefaelle.staerke > 0 ? gefaelleZiel() : 0; // M11b.1: sofort, ohne Dämpfung
   federung.reset(); // M8a: neu hingesetzt = Karosserie in Ruhe
   autoZeichnen(0, 0);
   kameraZiel();
@@ -905,6 +921,9 @@ function kameraFuehren(dt) {
     ziel = physik.richtung + winkelNorm(fahrt - physik.richtung) * c.fahrtrichtungAnteil;
   }
   kam.yaw += winkelNorm(ziel - kam.yaw) * (1 - Math.exp(-c.nachfuehren * dt));
+  // M11b.1: Gefälle gedämpft nachführen (in der Luft eingefroren: die Sprungkamera hat Vorrang)
+  const G = c.gefaelle;
+  if (G.staerke > 0 && !flug.inLuft) kg.f += (gefaelleZiel() - kg.f) * (1 - Math.exp(-G.glaetten * dt));
   kameraZiel();
   const yAlt = kam.pos.y;
   kam.pos.lerp(kam.ziel, 1 - Math.exp(-c.positionGlaetten * dt));
@@ -914,7 +933,11 @@ function kameraFuehren(dt) {
   kamera.position.copy(kam.pos);
   const y = auto.objekt.position.y;
   ruckSetzen(sk.ruckPx); // M10c: Federungs-Ruck bei der Landung (ganze Bildpunkte der Zeichenfläche, sonst 0 = nichts)
-  kamera.lookAt(
+  if (kg.f > 0) {
+    // M11b.1: bergab weiter voraus und tiefer schauen (dorthin, wo die Strasse ist), Kamera selbst sitzt höher
+    const bv = c.blickVoraus + G.voraus * kg.f, yb = y + c.blickHoehe - G.senken * (kg.f / G.staerke + G.schwelle) * bv;
+    kamera.lookAt(physik.x + Math.sin(kam.yaw) * bv, yb, physik.z + Math.cos(kam.yaw) * bv);
+  } else kamera.lookAt(
     physik.x + Math.sin(kam.yaw) * c.blickVoraus, y + c.blickHoehe, physik.z + Math.cos(kam.yaw) * c.blickVoraus,
   );
   // nur für automatische Screenshots: Kamera frei setzen
@@ -1594,7 +1617,7 @@ if (fahrlaborAn) {
 // start(): am Menü vorbei ins Rennen wie "STARTEN" (mit Countdown); start({ countdown: false }): ohne Countdown wie vor M5b
 // rennSchritt(dt, e): ein fester Schritt wie in der Spielschleife (Countdown oder Physik), lauf/stat: Rennablauf, Statistik
 window.__alpineRally = {
-  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kollision, wand, schneewall, // (M11a: schneewall)
+  THREE, physik, getriebe, strecke, netz, welt, rennen, kamera, renderer, szene, setzeAuf, aufStrasse, pflanzen, kameraSofort, kameraFuehren, kameraGefaelle: kg, kollision, wand, schneewall, // (M11a: schneewall)
   physikSchritt, SCHRITT, neustart, rTaste, rueck, checkpoints, CONFIG, strassenrand, kuehe, deko, absperrungen, staub, startZiel, leben, paceNotes,
   hudMeldung: () => (rennen.meldung && rennen.uhr < rennen.meldung.bis ? rennen.meldung.text : ''),
   ablauf, menue, seiten, demo, einstellungen, start: (o) => starten(o), pausieren, weiter, zumHauptmenue, menueAn,

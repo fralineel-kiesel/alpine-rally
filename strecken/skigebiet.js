@@ -30,6 +30,8 @@ export default {
   // M11b: Hangabtrieb (Steigung zieht stärker als in Alpen/Finnland, dort 1): die Autos kämpfen im Anstieg; Allrad hat
   // dort mehr Traktion übrig (config.js, getriebe.allrad je Auto) als die Hinterrad-Autos
   hangabtrieb: 1.6,
+  // M11b.1: Kamera folgt dem Gefälle (config.js, kamera.gefaelle): bergab höher und weiter voraus, sonst wie bisher
+  kameraGefaelle: 1,
   // M11b.1: Untergrund nur für diese Strecke (überschreibt einzelne Werte aus config.js, Block untergrund):
   // Piste griffiger (Bremsweg ca. 1.2x Schotter statt 1.5x); Tiefschnee: mehr Grip zum Herauskommen, Widerstand wächst mit
   // dem Tempo im Quadrat (langsam kommt man gut voran, schnell bremst er sehr stark: Abkürzen lohnt nie)
