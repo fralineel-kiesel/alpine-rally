@@ -552,7 +552,7 @@ export function pisteTextur(farben, seed = 47) {
         if (Math.abs(x - 11) <= 1 || Math.abs(x - 21) <= 1) c = variiere(c, 0.96);
       }
       const r = rnd();
-      if (r < 0.02) c = glitzer;
+      if (r < 0.004) c = variiere(glitzer, 0.92); // (wenig Glitzer: einzelne weisse Pixel sahen aus wie Strichmarkierungen)
       else c = variiere(c, 0.985 + rnd() * 0.03);
       setze(l, x, y, c);
     }

@@ -25,3 +25,5 @@ Referenz 0.11b = 59a6a32 (`git worktree add <ordner> 59a6a32`), Test: `node tool
   ≥ 4.5 m hinter dem Bankett. Felswand nein (steht fest 5.2 m neben der Mitte) → 163 eingeschneite Felsen/Felsrücken in 5
   Abschnitten. Deko: 6 eingeschneite Hütten/Heustadel, Holzzäune + Holzstapel am Dorf, Wegweiser. Bildzeit 27 → 79 ms
   (Tannen +138 %, Rest ~1 %), Finnland 339 ms. Kontrast 50–67. Optionale Deko nicht gebaut. **Commit 5.** Danach: Teil F.
+- **Teil F:** Gesamtlauf 96/96 grün; Regression 6 rot = Pause/Weiter-Timing (0.11b gleich) + 2 gewollte Erwartungen (nachgeführt).
+  Bilder 4 (screenshots/m11b1), Bericht docs/meilensteine/m11b1.md, Version 0.11b.1. **Commit 6, PR.**

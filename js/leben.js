@@ -522,7 +522,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     const p = ort(s, sd * lat), r = h * 0.75;
     if (!platzOk(p.x, p.z, r * 0.9, { krone: true })) { abgelehnt.push(`findling ${s}` + ` (${grund})`); return; }
     T = (q) => q;
-    const k = rnd() < 0.5 ? 'fels' : 'flechte';
+    const k = rnd() < 0.5 || schnee ? 'fels' : 'flechte'; // (M11b.1: eingeschneit ohne Flechten)
     brocken([p.x, boden(p.x, p.z), p.z], r, h, k, 0.92 + rnd() * 0.12, schnee ? 'schnee' : k); // (M11b.1: eingeschneit = weisse Spitze)
     kreis(p.x, p.z, r * 0.8, 'findling');
     stelleHin(p.x, p.z, 1, 0, r, r, 0.3);

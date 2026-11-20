@@ -378,6 +378,8 @@ export default {
   //   Absturzkante (offener Hang ausserhalb einer Kehre, dort kein Netz, nur Tiefschnee): Kehre 3 (1036–1076 m, aussen
   //   links), Kehre 5 (1516–1556 m, aussen links), erste Abfahrt-Kehre (2799–2840 m, aussen links)
   //   Querende Skifahrer: Pistenkreuzungen bei ca. 2940 m (zweiter Abfahrt-Ast) und 3200 m (dritter Abfahrt-Ast)
+  //   M11b.1 (breite Piste): Kante jetzt 6.75 m (Kehren 3/5) bzw. 7.5 m (Abfahrt) neben der Mitte; an der Abfahrt-Kehre steht
+  //   4.6 m hinter dem Bankett eine Tannengruppe, an der Kreuzung 2940 m stehen Tannen im Spurband (Korridor frei machen)
   // Die Pistenzufahrt ist ein Nebenweg mit Belag Schnee: im Dorf biegt die Etappe von der Dorfstrasse (Asphalt) links ab
   // (geradeaus läuft die Dorfstrasse als abgesperrter Stummel weiter), in der Zielarena mündet sie in deren Zufahrt ein
   nebenwege: [
@@ -677,20 +679,20 @@ export default {
     kurvenTempo: {
       kurven: [
         { von: 216, bis: 288, kmh: 72.9 }, // links 69°, Radius 29 m, schotter
-        { von: 526, bis: 591, kmh: 34.1 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 777, bis: 843, kmh: 34.1 }, // links 132°, Radius 16 m, schnee, Kehre
-        { von: 1029, bis: 1095, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 1260, bis: 1326, kmh: 34.1 }, // links 132°, Radius 15 m, schnee, Kehre
-        { von: 1512, bis: 1578, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 1743, bis: 1809, kmh: 34.1 }, // links 132°, Radius 16 m, schnee, Kehre
-        { von: 1913, bis: 2008, kmh: 75.4 }, // rechts 67°, Radius 49 m, schotter
-        { von: 2066, bis: 2242, kmh: 101.9 }, // rechts 60°, Radius 118 m, schnee
-        { von: 2394, bis: 2551, kmh: 110.1 }, // rechts 48°, Radius 126 m, schnee
-        { von: 2803, bis: 2869, kmh: 33.8 }, // rechts 134°, Radius 15 m, schnee, Kehre
-        { von: 3055, bis: 3122, kmh: 33.8 }, // links 134°, Radius 15 m, schnee, Kehre
-        { von: 3354, bis: 3505, kmh: 95.1 }, // rechts 50°, Radius 121 m, schnee
-        { von: 3910, bis: 4048, kmh: 108.7 }, // links 37°, Radius 166 m, schnee
-        { von: 4148, bis: 4223, kmh: 65 }, // links 96°, Radius 21 m, asphalt
+        { von: 526, bis: 591, kmh: 39.9 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 777, bis: 843, kmh: 39.9 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 1029, bis: 1095, kmh: 39.9 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 1260, bis: 1326, kmh: 39.5 }, // links 132°, Radius 15 m, schnee, Kehre
+        { von: 1512, bis: 1578, kmh: 39.9 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 1743, bis: 1809, kmh: 39.9 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 1913, bis: 2008, kmh: 78.2 }, // rechts 67°, Radius 49 m, schotter
+        { von: 2066, bis: 2242, kmh: 103.7 }, // rechts 60°, Radius 118 m, schnee
+        { von: 2394, bis: 2551, kmh: 115.2 }, // rechts 48°, Radius 126 m, schnee
+        { von: 2803, bis: 2869, kmh: 39.1 }, // rechts 134°, Radius 15 m, schnee, Kehre
+        { von: 3055, bis: 3122, kmh: 39.1 }, // links 134°, Radius 15 m, schnee, Kehre
+        { von: 3354, bis: 3505, kmh: 103.3 }, // rechts 50°, Radius 121 m, schnee
+        { von: 3910, bis: 4048, kmh: 117.3 }, // links 37°, Radius 166 m, schnee
+        { von: 4148, bis: 4223, kmh: 64.6 }, // links 96°, Radius 21 m, asphalt
       ],
     },
     // </erzeugt>
