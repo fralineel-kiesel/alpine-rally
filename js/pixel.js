@@ -84,7 +84,7 @@ export function tannenTextur(varianten = 3, seed = 11) {
     setze(l, ox + 7, 0, farben[2]);
     setze(l, ox + 8, 0, farben[1]);
   }
-  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
+  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H, leinwand: l }; // (M11b.1: leinwand für die Schneetanne)
 }
 
 // Laubbäume: runde Krone aus Kreisen, je 24x32 Pixel
@@ -244,8 +244,32 @@ export function birkenTextur(varianten = 2, seed = 29) {
   return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
 }
 
+// M11b.1: verschneite Tanne (Skigebiet, deko.nadelbaum 'schneetanne'): dieselben Tannen wie in den Alpen, darauf
+// Schneehauben auf jeder Ast-Stufe (oben auf den Ästen, links im Licht heller, rechts bläulicher Schatten), eine weisse
+// Spitze und ein paar Schneeflecken. Eigene Zufallszahlen, damit die Tannen der Alpen genau gleich bleiben.
+const SCHNEE_TANNE = ['#f6f9fd', '#e2eaf4', '#bccbdf'];
+export function schneetannenTextur(varianten = 3, seed = 11) {
+  const t = tannenTextur(varianten, seed), l = t.leinwand, rnd = zufall(seed + 500);
+  const weiss = SCHNEE_TANNE.map(hexZuRgb), B = 16, H = 32;
+  const deckend = (x, y) => x >= 0 && y >= 0 && x < l.b && y < l.h && l.bild.data[(y * l.b + x) * 4 + 3] > 0;
+  for (let v = 0; v < varianten; v++) {
+    const ox = v * B;
+    for (let y = 0; y < 28; y++) for (let x = 0; x < B; x++) {
+      if (!deckend(ox + x, y)) continue;
+      // Schnee liegt dort, wo darüber (bis 2 Pixel) Luft ist: oben auf jeder Stufe und an der Spitze
+      const oben = !deckend(ox + x, y - 1) || (!deckend(ox + x, y - 2) && rnd() < 0.6);
+      const fleck = rnd() < 0.07;
+      if (!oben && !fleck) continue;
+      const dx = x + 0.5 - 8, f = dx < -1.5 ? 0 : dx > 2 ? 2 : 1;
+      setze(l, ox + x, y, weiss[fleck && !oben ? Math.min(2, f + 1) : f]);
+    }
+  }
+  t.textur.needsUpdate = true; l.ctx.putImageData(l.bild, 0, 0);
+  return t;
+}
+
 // M10b: Bäume nach Typ (Streckendatei deko.nadelbaum / deko.laubbaum)
-const NADEL = { tanne: () => tannenTextur(), kiefer: () => kiefernTextur(), fichte: () => fichtenTextur(), nordwald: () => nordwaldTextur() };
+const NADEL = { tanne: () => tannenTextur(), kiefer: () => kiefernTextur(), fichte: () => fichtenTextur(), nordwald: () => nordwaldTextur(), schneetanne: () => schneetannenTextur() };
 const LAUBB = { laub: () => laubTextur(), birke: () => birkenTextur() };
 export const BAUM_TYPEN = { nadelbaum: Object.keys(NADEL), laubbaum: Object.keys(LAUBB) };
 export function nadelbaumTextur(typ = 'tanne') {

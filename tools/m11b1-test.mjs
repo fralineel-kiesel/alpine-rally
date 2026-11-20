@@ -654,6 +654,136 @@ if (teil('v')) {
 }
 if (teil('w')) await unveraendert('w', { bilder: true, stile: ['mittel', 'wand'] });
 
+// ===================================================================== Teil E: Schneetannen, Felsen, Deko
+const BAEUME = () => {
+  const A = window.__alpineRally, S = A.strecke, q = {}, B = A.CONFIG.strasse.bankett;
+  const ab = A.strecke.abschnitte ? null : null;
+  const t = A.pflanzen.tannen.concat((A.startZiel && A.startZiel.baeume) || []);
+  let minRand = Infinity, minWo = null, aufStrasse = 0, inLande = 0;
+  const zonen = S.sprungZonen || [];
+  const proAbschnitt = {};
+  const grenzen = [[0, 230, 'Dorf'], [230, 535, 'Zufahrt'], [535, 1917, 'Kehren'], [1917, 2065, 'Bergstation'], [2065, 2477, 'Grat'], [2477, 3341, 'Abfahrt'], [3341, 4131, 'Funpark'], [4131, 4400, 'Zielarena']];
+  for (const b of A.pflanzen.tannen) {
+    S.abfrage(b.x, b.z, q);
+    const rand = q.abstand - A.netz.halbBei(q.s) - B;
+    if (rand < minRand) { minRand = rand; minWo = Math.round(q.s); }
+    if (q.abstand < A.netz.halbBei(q.s) + B) aufStrasse++;
+    if (zonen.some((z) => q.s >= z.kante - 25 && q.s <= z.landeBis + 10 && q.abstand < A.netz.halbBei(q.s) + B + 3)) inLande++;
+    const g = grenzen.find(([v, bis]) => q.s >= v && q.s < bis); const n = g ? g[2] : '?';
+    proAbschnitt[n] = (proAbschnitt[n] || 0) + 1;
+  }
+  const dichte = Object.fromEntries(grenzen.map(([v, bis, n]) => [n, ((proAbschnitt[n] || 0) / ((bis - v) / 1000)).toFixed(0)]));
+  // Gruppen: Bäume näher als 9 m gehören zusammen
+  const L = A.pflanzen.tannen, frei = new Uint8Array(L.length), gr = [];
+  for (let i = 0; i < L.length; i++) { if (frei[i]) continue; let n = 0; const st = [i]; frei[i] = 1; while (st.length) { const k = st.pop(); n++; for (let j = 0; j < L.length; j++) if (!frei[j] && Math.hypot(L[j].x - L[k].x, L[j].z - L[k].z) < 9) { frei[j] = 1; st.push(j); } } gr.push(n); }
+  gr.sort((a, b) => a - b);
+  return { n: A.pflanzen.tannen.length, minRand, minWo, aufStrasse, inLande, proAbschnitt, dichte, gruppen: gr.length, gruppeMedian: gr[Math.floor(gr.length / 2)], gruppeMax: gr[gr.length - 1], einzeln: gr.filter((x) => x === 1).length, typ: A.CONFIG.deko.nadelbaum, schatten: A.schatten ? A.schatten.anzahl : null };
+};
+if (teil('x')) {
+  titel('(x) Verschneite Tannen: vorhanden (Typ schneetanne), überall verteilt, nicht auf der Fahrbahn und nicht im Landebereich, mindestens 3 m vom Pistenrand');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = await s.page.evaluate(BAEUME);
+  await s.schliessen();
+  info(`Tannen je Abschnitt: ${Object.entries(r.proAbschnitt).map(([k, v]) => `${k} ${v}`).join(', ')}; Dichte je km: ${Object.entries(r.dichte).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+  info(`Gruppen (Bäume < 9 m auseinander): ${r.gruppen}, Median ${r.gruppeMedian} Bäume, grösste ${r.gruppeMax}, einzeln ${r.einzeln}`);
+  melde(r.typ === 'schneetanne' && r.n >= 1000 && Object.values(r.proAbschnitt).length >= 7 && (r.proAbschnitt.Grat || 0) > 0, `${r.n} Schneetannen (Typ ${r.typ}) in ${Object.keys(r.proAbschnitt).length} Abschnitten, auch auf dem Grat (${r.proAbschnitt.Grat || 0})`);
+  melde(r.aufStrasse === 0 && r.inLande === 0 && r.minRand >= 3, `auf Fahrbahn/Bankett ${r.aufStrasse}, im Landebereich ${r.inLande}, kleinster Abstand zum Pistenrand (nach dem Bankett) ${r.minRand.toFixed(1)} m (bei ${r.minWo} m)`);
+}
+if (teil('y')) { titel('(y) Hang-Prüfung mit Tannen, Felsen und Deko (tools/hang-pruefen.mjs --pruefen): 0 Fehler'); hangTest(); }
+
+if (teil('z')) {
+  titel('(z) Felsen (Ersatz für die Felswand): Felsgruppen und Felsrücken in mindestens 3 Abschnitten à 150–300 m, nicht auf der Strasse, nicht in Landezonen');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, q = {};
+    const f = A.leben.hindernisse.filter((h) => h.rand === 'findling').map((h) => { S.abfrage(h.x, h.z, q); return { s: q.s, abstand: q.abstand, r: h.r }; });
+    const abgelehnt = A.leben.statistik.abgelehnt.filter((x) => x.startsWith('findling'));
+    const zonen = S.sprungZonen || [];
+    return { f, abgelehnt: abgelehnt.length, abgelehntListe: abgelehnt.slice(0, 6), aufStrasse: f.filter((x) => x.abstand - x.r < A.netz.halbBei(x.s) + A.CONFIG.strasse.bankett + 3).length, inLande: f.filter((x) => zonen.some((z) => x.s >= z.kante - 30 && x.s <= z.landeBis + 20)).length };
+  });
+  await s.schliessen();
+  const abschnitte = [[300, 530], [600, 770], [1100, 1250], [1580, 1740], [2080, 2380]].map(([v, b]) => ({ v, b, n: r.f.filter((x) => x.s >= v - 5 && x.s <= b + 15).length, gross: r.f.filter((x) => x.s >= v - 5 && x.s <= b + 15 && x.r >= 3).length }));
+  info(abschnitte.map((a) => `${a.v}–${a.b} m: ${a.n} Felsen (${a.gross} grosse)`).join('; ') + `; abgelehnt (Platzprüfung): ${r.abgelehnt}${r.abgelehnt ? ` z. B. ${r.abgelehnt ? r.abgelehntListe.join(', ') : ''}` : ''}`);
+  melde(abschnitte.filter((a) => a.n >= 8 && a.b - a.v >= 150).length >= 3, `${r.f.length} Felsen gesamt, ${abschnitte.filter((a) => a.n >= 8).length} Abschnitte mit Felsgruppen (150–300 m)`);
+  melde(r.aufStrasse === 0 && r.inLande === 0, `auf der Piste (bis 3 m hinter dem Bankett) ${r.aufStrasse}, in Landezonen ${r.inLande}`);
+  info('Alpen-Felswand nicht verwendet: sie steht fest 5.2 m neben der Strassenmitte (folgt strassenBreite nicht) – auf der 9.5-m-Piste (halbe Breite 4.75 m + 2 m Bankett) stünde sie auf Bankett und Fahrbahn; Umbau = Engine-Änderung');
+}
+if (teil('aa')) {
+  titel('(aa) Mindestens 3 neue Deko-Sorten (eingeschneite Hütten/Heustadel, Holzzäune und Holzstapel am Dorf, Wegweiser), nicht auf der Fahrbahn, Kollision nur Zäune');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = await s.page.evaluate(() => {
+    const A = window.__alpineRally, S = A.strecke, q = {}, st = A.leben.statistik;
+    const arten = {}; for (const h of A.leben.hindernisse) arten[h.rand] = (arten[h.rand] || 0) + 1;
+    const nahe = A.leben.hindernisse.filter((h) => { S.abfrage(h.x, h.z, q); return q.abstand < A.netz.halbBei(q.s) + A.CONFIG.strasse.bankett; }).map((h) => `${h.rand} ${Math.round(q.s)}`);
+    return { arten, nahe, abgelehnt: st.abgelehnt.filter((x) => /haus|holzstapel|holzzaun|wegweiser/.test(x)), dachSchnee: (A.STRECKE || null) };
+  });
+  await s.schliessen();
+  const q = fs.readFileSync(G_DATEI, 'utf8');
+  const huetten = (q.match(/dach: 'schnee'/g) || []).length;
+  info(`Kollisionskreise der Deko nach Art: ${Object.entries(r.arten).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+  melde(huetten >= 6 && /holzstapelOrte: \[\n\s+\{/.test(q) && /holzzaeune: \[\n\s+\{/.test(q) && /wegweiser: \{ s: 2072/.test(q) && r.abgelehnt.length === 0, `Sorten: ${huetten} eingeschneite Hütten/Heustadel, Holzstapel und Holzzäune am Dorf, Wegweiser an der Bergstation; abgelehnt: ${r.abgelehnt.length ? r.abgelehnt.join(', ') : 'keine'}`);
+  melde(r.nahe.length === 0, `nichts auf Fahrbahn oder Bankett (${r.nahe.length}${r.nahe.length ? `: ${r.nahe.slice(0, 5).join(', ')}` : ''})`);
+  info('Optional nicht gebaut (fällt laut Auftrag zuerst weg): Ton, Snowboarder, Pistenschilder/Pistenplan, Schneekanonen, Pistenraupe, Schneemänner/Iglu');
+}
+if (teil('ab')) await kontrastTest('ab', '(mit Tannen, Felsen und Deko)');
+async function bildzeit(wurzel, strecke, s0, cp, verstecken = null) {
+  const s = await oeffne(wurzel, `?menue=aus&ton=aus&strecke=${strecke}&aufloesung=320x180`);
+  await s.page.evaluate(() => new Promise((ok) => setTimeout(ok, 4500)));
+  const r = await s.page.evaluate(async ([s0, cp, verstecken]) => {
+    const A = window.__alpineRally, P = A.physik;
+    if (verstecken === 'tannen' && A.pflanzen.meshes.tannen) A.pflanzen.meshes.tannen.visible = false;
+    if (verstecken === 'deko') { for (const m of A.leben.meshes) m.visible = false; if (A.skigebietDeko.kickerMesh) A.skigebietDeko.kickerMesh.visible = false; A.leben.aktualisiere = () => {}; }
+    A.rennen.naechsterCp = cp; A.setzeAuf(s0); A.kameraSofort();
+    P.vx = Math.sin(P.richtung) * 110 / 3.6; P.vz = Math.cos(P.richtung) * 110 / 3.6; A.testEingabe = { gas: 1 };
+    const zeiten = []; let t0 = performance.now();
+    await new Promise((ok) => { const f = () => { const t = performance.now(); zeiten.push(t - t0); t0 = t; if (zeiten.length < 150) requestAnimationFrame(f); else ok(); }; requestAnimationFrame(f); });
+    A.testEingabe = null; zeiten.sort((a, b) => a - b);
+    return zeiten[Math.floor(zeiten.length / 2)];
+  }, [s0, cp, verstecken]);
+  await s.schliessen();
+  return r;
+}
+const median = (l) => { const a = [...l].sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+if (teil('ac')) {
+  titel('(ac) Bildzeit (Median aus 5, abwechselnd, 110 km/h, 320x180): Skigebiet 0.11b / jetzt / ohne Tannen / ohne Deko, Abfahrt; gegen Finnland');
+  const v = { alt: [], neu: [], ohneTannen: [], ohneDeko: [], gratAlt: [], gratNeu: [], finnland: [] };
+  for (let i = 0; i < 5; i++) {
+    if (ALT) v.alt.push(await bildzeit(ALT, 'skigebiet', 2760, 2));
+    v.neu.push(await bildzeit(WURZEL, 'skigebiet', 2760, 2)); v.ohneTannen.push(await bildzeit(WURZEL, 'skigebiet', 2760, 2, 'tannen'));
+    v.ohneDeko.push(await bildzeit(WURZEL, 'skigebiet', 2760, 2, 'deko'));
+    if (ALT) v.gratAlt.push(await bildzeit(ALT, 'skigebiet', 2120, 2));
+    v.gratNeu.push(await bildzeit(WURZEL, 'skigebiet', 2120, 2));
+    v.finnland.push(await bildzeit(WURZEL, 'finnland', 3020, 3));
+  }
+  const m = Object.fromEntries(Object.entries(v).filter(([, l]) => l.length).map(([k, l]) => [k, median(l)]));
+  info(Object.entries(v).map(([k, l]) => `${k} ${l.map((x) => x.toFixed(0)).join('/')}`).join('; ') + ' ms');
+  const p = (a) => `${((m.neu / a - 1) * 100).toFixed(1)} %`;
+  melde(m.neu < m.finnland && m.gratNeu < m.finnland, `Abfahrt 2760 m: 0.11b ${m.alt?.toFixed(1)} → jetzt ${m.neu.toFixed(1)} ms (Kosten Tannen ${p(m.ohneTannen)}, Deko/Felsen/Kicker ${p(m.ohneDeko)}); Grat 2120 m: ${m.gratAlt?.toFixed(1)} → ${m.gratNeu.toFixed(1)} ms; Finnland ${m.finnland.toFixed(1)} ms`);
+  fs.writeFileSync(path.join(LOG, 'bildzeit.json'), JSON.stringify({ v, m }, null, 1));
+}
+if (teil('ad')) await unveraendert('ad', { bilder: true });
+
+// ===================================================================== Teil F: volle Regression (nur mit --lang, einmal)
+// (m11b-test --nur a,b,c: Gletscher weg, Skigebiet startet, alte Tests entschieden – (c) war im M11b-Gesamtlauf einmal rot)
+if (teil('zz') && process.argv.includes('--lang')) {
+  titel('(zz) frühere Tests (--lang): nur neue Abweichungen melden');
+  const laeufe = [
+    ['pacenotes-test.mjs', []], ['pacenotes-test.mjs', ['--strecke', 'finnland']], ['pacenotes-test.mjs', ['--strecke', 'skigebiet']],
+    ['leben-test.mjs', []], ['kuh-test.mjs', []], ['startziel-test.mjs', []], ['strassenrand-test.mjs', []], ['nebenweg-test.mjs', []],
+    ['felswand-test.mjs', []], ['belag-test.mjs', []], ['rennablauf-test.mjs', []], ['menue-test.mjs', []], ['overlay-test.mjs', []],
+    ['m9a2-test.mjs', ['--nur', 'a,c,e,f,g,h,k,l,m']], ['m9a1-test.mjs', ['--nur', 'a,b,c,e,f,g,h,i,j,k,m,n,o,p,r']], ['m8h-test.mjs', []],
+    ['m10d-test.mjs', ['--nur', 'a,a3,b,c,g,h,i,j,k,l,m,n,s,t,u,w']],
+    ['m11a-test.mjs', ['--nur', 'a,b,d,e,f,h,j,r,t,u,v']], ['m11a1-test.mjs', ['--nur', 'a,d,i,j,p,q,aa']], ['m11b-test.mjs', ['--nur', 'a,b,c']], ['kommentar-waechter.mjs', []],
+  ];
+  for (const [datei, a] of laeufe) {
+    const r = werkzeug(datei, a);
+    fs.writeFileSync(path.join(LOG, `zz-${datei.replace('.mjs', '')}${a.length ? '-' + a.join('').replace(/[^a-z0-9]/gi, '') : ''}.log`), r.text);
+    const z = r.text.split('\n').filter((x) => /^\s*(ok|OK|FEHLER)\s/.test(x));
+    const rot = z.filter((x) => /^\s*FEHLER/.test(x)).map((x) => x.trim().slice(0, 160));
+    melde(rot.length === 0 && r.code === 0, `${datei} ${a.join(' ')}: ${z.length - rot.length} ok${rot.length ? `, ${rot.length} rot: ${rot.join(' | ')}` : ''}${r.code ? ` (Rückgabe ${r.code})` : ''}`);
+  }
+}
+
 // ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');
 for (const e of ergebnisse) console.log(`| ${e.titel.slice(0, 120)} | ${e.rot ? `**${e.rot} rot**, ${e.ok} ok` : `grün (${e.ok} ok)`} |`);

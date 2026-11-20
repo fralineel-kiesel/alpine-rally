@@ -322,6 +322,10 @@ export const CONFIG = {
     verteilung: 1.8,           // > 1 = nahe der Strasse dichter, weiter weg dünner
     mindestAbstand: N.sprites.mindestAbstand ?? 9, // so nah dürfen Objekte an die Strassenmitte (M10b.1: Streckendatei darf ändern)
     waldAbstand: N.sprites.waldAbstand ?? 7.5,      // im Waldstück dürfen Bäume näher ran (M10b.1: Streckendatei darf ändern)
+    einzelNah: N.sprites.einzelNah,  // M11b.1: Chance einzelner Tannen nahe der Strasse ausserhalb der Waldstücke (fehlt = 0.32, Streckendatei)
+    einzelFern: N.sprites.einzelFern, // ... und weiter weg (fehlt = 0.06); kleiner = Tannen stehen in Gruppen
+    gruppe: N.sprites.gruppe,         // M11b.1: [von, bis] Tannen je Gruppe um jede gewürfelte Tanne (fehlt = keine Gruppen, Streckendatei)
+    gruppeRadius: N.sprites.gruppeRadius ?? 8, // ... in diesem Umkreis (Meter, dazu 2.5 m Mindestabstand)
     tannenHoehe: [8, 15],      // Höhe von bis (Meter)
     laubHoehe: [7, 11],
     steinHoehe: [0.8, 2.2],

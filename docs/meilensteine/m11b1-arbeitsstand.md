@@ -21,3 +21,7 @@ Referenz 0.11b = 59a6a32 (`git worktree add <ordner> 59a6a32`), Test: `node tool
 - **Teil D (Kicker):** Befund: gebaut, aber unsichtbar (Rampe = Knick −15 → −9 % im Hang). Neu `kickerMesh` (js/skigebiet.js):
   Schneewände, rot-orange Lippe, Schattenband, Tor mit Banner, Fangzaun am Landehang, Fahnen; Zuschauer FUNPARK.
   Aus 100 m: 12 px hoch, 120 px, Kontrast 118 (vorher 18 px Fläche); 150 m: 9 px. Weiten 16.5–16.9 / 19.8–20.4 m. **Commit 4.**
+- **Teil E (Szene):** Schneetannen (`schneetannenTextur`, Gruppen `natur.sprites.gruppe` 3–12): 3544 Stück, Gruppen-Median 7,
+  ≥ 4.5 m hinter dem Bankett. Felswand nein (steht fest 5.2 m neben der Mitte) → 163 eingeschneite Felsen/Felsrücken in 5
+  Abschnitten. Deko: 6 eingeschneite Hütten/Heustadel, Holzzäune + Holzstapel am Dorf, Wegweiser. Bildzeit 27 → 79 ms
+  (Tannen +138 %, Rest ~1 %), Finnland 339 ms. Kontrast 50–67. Optionale Deko nicht gebaut. **Commit 5.** Danach: Teil F.
