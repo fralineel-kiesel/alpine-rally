@@ -235,6 +235,10 @@ export function lebenAtlas(seed = 313) {
     kachel('hfensterWeiss', 12, 8, voll(12, 8, (x, y) => (x <= 1 || x >= 10 || y === 0 || y === 7 || x === 5 || x === 6 || y === 3 ? WEISS : y < 3 && x < 5 ? hx('#7f9db0') : hx('#26343f'))));
   }
 
+  // --- M11b.1: Schnee auf Dächern und Felsen (nur im Winter-Skigebiet: Tannen-Typ schneetanne, sonst bleibt der Atlas
+  // genau wie vorher). Weiss mit leicht bläulichen Flecken. 8x8
+  if (CONFIG.deko.nadelbaum === 'schneetanne') kachel('schnee', 8, 8, voll(8, 8, () => (rnd() < 0.2 ? hx('#dbe5f1') : hx('#f5f8fc'))));
+
   const textur = zuTextur(l);
   return {
     textur,

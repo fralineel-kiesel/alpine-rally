@@ -280,7 +280,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     if (ende) { poly(B, uvRing, ende, endeHell, f); poly([...A].reverse(), [...uvRing].reverse(), ende, endeHell * 0.9, f); }
   }
   // Brocken (Findling, Stein): drei unregelmässige Ringe und eine Spitze, Mitte unten m, Radius r, Höhe h
-  function brocken(m, r, h, kachel, hell = 1) {
+  function brocken(m, r, h, kachel, hell = 1, oben = kachel) { // (M11b.1: oben = eigene Kachel für die Spitze, z. B. Schnee)
     const n = 6, w0 = rnd() * Math.PI;
     const ring = (rr, y, dw) => Array.from({ length: n }, (_, k) => {
       const w = w0 + dw + (k / n) * Math.PI * 2, f2 = rr * (0.8 + rnd() * 0.35);
@@ -289,7 +289,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     const R = [ring(r * 0.85, -0.25, 0), ring(r, h * 0.42, 0.5), ring(r * 0.55, h * 0.82, 0.2)];
     const top = [m[0] + (rnd() - 0.5) * r * 0.3, m[1] + h, m[2] + (rnd() - 0.5) * r * 0.3];
     for (let j = 0; j < 2; j++) for (let k = 0; k < n; k++) viereck(R[j][k], R[j][(k + 1) % n], R[j + 1][(k + 1) % n], R[j + 1][k], kachel, hell * (0.8 + 0.25 * ((k + j) % 3) / 2));
-    for (let k = 0; k < n; k++) dreieck(R[2][k], R[2][(k + 1) % n], top, kachel, hell * 1.08);
+    for (let k = 0; k < n; k++) dreieck(R[2][k], R[2][(k + 1) % n], top, oben, hell * 1.08);
   }
   const kreuz = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const norm = (a) => { const l = Math.hypot(...a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
@@ -342,7 +342,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     const dachF = DACH_FARBEN[cfg.dach] ? farbe(DACH_FARBEN[cfg.dach]) : WEISS;
     for (const sd of [-1, 1]) {
       const unten = (bb) => [sd * (ta + ue), yt - ue * (dach / ta), bb], oben = (bb) => [0, yf + 0.06, bb];
-      viereck(unten(-lb - ueb), unten(lb + ueb), oben(lb + ueb), oben(-lb - ueb), T.dach, sd > 0 ? 1.04 : 0.86, dachF);
+      viereck(unten(-lb - ueb), unten(lb + ueb), oben(lb + ueb), oben(-lb - ueb), cfg.dach === 'schnee' ? 'schnee' : T.dach, sd > 0 ? 1.04 : 0.86, dachF); // (M11b.1: dach 'schnee' = eingeschneit)
     }
     // Front: Tür und Fenster; Rückseite ein Fenster
     const fa = vorn * (ta + 0.02);
@@ -518,11 +518,12 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     stelleHin(p.x, p.z, ach[0], ach[2], 0.6, 0.68, 0.3);
   }
 
-  function findling(s, sd, lat, h) {
+  function findling(s, sd, lat, h, schnee = 0) {
     const p = ort(s, sd * lat), r = h * 0.75;
     if (!platzOk(p.x, p.z, r * 0.9, { krone: true })) { abgelehnt.push(`findling ${s}` + ` (${grund})`); return; }
     T = (q) => q;
-    brocken([p.x, boden(p.x, p.z), p.z], r, h, rnd() < 0.5 ? 'fels' : 'flechte', 0.92 + rnd() * 0.12);
+    const k = rnd() < 0.5 || schnee ? 'fels' : 'flechte'; // (M11b.1: eingeschneit ohne Flechten)
+    brocken([p.x, boden(p.x, p.z), p.z], r, h, k, 0.92 + rnd() * 0.12, schnee ? 'schnee' : k); // (M11b.1: eingeschneit = weisse Spitze)
     kreis(p.x, p.z, r * 0.8, 'findling');
     stelleHin(p.x, p.z, 1, 0, r, r, 0.3);
   }
@@ -1011,7 +1012,7 @@ export function baueLeben(szene, strecke, welt, { pflanzen, rand, kuehe }) {
     if (W.wegweiser) wegweiser(W.wegweiser);
     for (const [s, sd, lat] of W.steinmaennchen || []) versuche(`steinmann ${s}`, (ds, dl) => steinmann(s + ds, sd, lat + dl));
     for (const [s, sd, lat] of W.heurollen || []) versuche(`heurolle ${s}`, (ds, dl) => heurolle(s + ds * 0.5, sd, lat + dl * 0.5));
-    for (const [s, sd, lat, hh] of W.findlinge || []) versuche(`findling ${s}`, (ds, dl) => findling(s + ds, sd, lat + dl, hh));
+    for (const [s, sd, lat, hh, sn] of W.findlinge || []) versuche(`findling ${s}`, (ds, dl) => findling(s + ds, sd, lat + dl, hh, sn));
     orte.push({ name: 'wiesenweg', s: (W.huette || W.stadel || W.brunnen || W.wegweiser || { s: 0 }).s, huette: h }); // (M10a: ohne feste Zahl)
   }
   // 2. Fan-Spots

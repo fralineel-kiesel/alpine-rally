@@ -12,14 +12,14 @@ import { zufall, fbm, glatt, mische, begrenze } from './util.js';
 import {
   koernungTextur, asphaltTextur, ASPHALT_LAENGE, bankettTextur, BANKETT_LAENGE, mittellinienTextur, zielTextur,
   schotterTextur, SCHOTTER_LAENGE, SCHOTTER_U, fransenTextur, FRANSEN_LAENGE,
-  wiesenwegTextur, WIESENWEG_LAENGE, WIESENWEG_U, wiesenwegRandTextur, schneeTextur, eisTextur,
+  wiesenwegTextur, WIESENWEG_LAENGE, WIESENWEG_U, wiesenwegRandTextur, schneeTextur, eisTextur, pisteTextur,
 } from './pixel.js';
 
 // Beläge der Nebenwege (seit M3b mehrere): Textur, Länge einer Texturkachel (Meter), Anteil der Wegbreite im Bild
 const NEBEN_BELAEGE = {
   schotter: { textur: schotterTextur, laenge: SCHOTTER_LAENGE, u: SCHOTTER_U },
   wiesenweg: { textur: wiesenwegTextur, laenge: WIESENWEG_LAENGE, u: WIESENWEG_U },
-  schnee: { textur: schneeTextur, laenge: SCHOTTER_LAENGE, u: SCHOTTER_U }, // M11a (Aufbau wie Schotter)
+  schnee: { textur: (f) => (f.pisteWeg ? pisteTextur(f) : schneeTextur(f)), laenge: SCHOTTER_LAENGE, u: SCHOTTER_U }, // M11a (Aufbau wie Schotter); M11b.1: präparierte Piste, wenn die Strecke pisteWeg hat
   eis: { textur: eisTextur, laenge: SCHOTTER_LAENGE, u: SCHOTTER_U },       // M11a
 };
 

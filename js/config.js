@@ -10,7 +10,7 @@ import { STRECKE } from './streckenlader.js';
 const S = STRECKE, U = S.umgebung, N = S.natur, Z = S.seeds;
 
 // Versionsnummer (Credits im Menü)
-export const VERSION = '0.11b';
+export const VERSION = '0.11b.1';
 
 export const CONFIG = {
   // --- Bild / Pixel-Look -------------------------------------------
@@ -322,6 +322,10 @@ export const CONFIG = {
     verteilung: 1.8,           // > 1 = nahe der Strasse dichter, weiter weg dünner
     mindestAbstand: N.sprites.mindestAbstand ?? 9, // so nah dürfen Objekte an die Strassenmitte (M10b.1: Streckendatei darf ändern)
     waldAbstand: N.sprites.waldAbstand ?? 7.5,      // im Waldstück dürfen Bäume näher ran (M10b.1: Streckendatei darf ändern)
+    einzelNah: N.sprites.einzelNah,  // M11b.1: Chance einzelner Tannen nahe der Strasse ausserhalb der Waldstücke (fehlt = 0.32, Streckendatei)
+    einzelFern: N.sprites.einzelFern, // ... und weiter weg (fehlt = 0.06); kleiner = Tannen stehen in Gruppen
+    gruppe: N.sprites.gruppe,         // M11b.1: [von, bis] Tannen je Gruppe um jede gewürfelte Tanne (fehlt = keine Gruppen, Streckendatei)
+    gruppeRadius: N.sprites.gruppeRadius ?? 8, // ... in diesem Umkreis (Meter, dazu 2.5 m Mindestabstand)
     tannenHoehe: [8, 15],      // Höhe von bis (Meter)
     laubHoehe: [7, 11],
     steinHoehe: [0.8, 2.2],
@@ -878,12 +882,15 @@ export const CONFIG = {
     // Schnee: gut kontrollierbare Drifts (heck, stabilitaet wie Schotter, etwas weniger Halt).
     // Eis: lange Rutscher (wenig Halt, kaum Stabilitätshilfe, schiebt nach dem Loslassen lange seitlich).
     //   traktion (nur Schnee/Eis): Schub beim Anfahren mal diesem Wert (Spikes: auf Eis mehr, als der Grip hergibt)
-    schnee: { grip: 0.42, rollen: 0.45, rollenTempo: 0.012, rueckwaerts: 1.3, heck: 0.82, stabilitaet: 0.5, geradeaus: 0.4, traktion: 1.0 },
+    // M11b.1: eine Strecke kann einzelne Werte überschreiben (Streckenfeld untergrund.schnee / untergrund.tiefschnee, z. B.
+    // das Skigebiet: griffigere Piste, Tiefschnee mit Widerstand, der mit dem Tempo wächst); ohne Feld gilt das hier
+    schnee: { grip: 0.42, rollen: 0.45, rollenTempo: 0.012, rueckwaerts: 1.3, heck: 0.82, stabilitaet: 0.5, geradeaus: 0.4, traktion: 1.0, ...(S.untergrund && S.untergrund.schnee) },
     eis:    { grip: 0.11, rollen: 0.1, rollenTempo: 0.002, rueckwaerts: 1.0, heck: 0.9, stabilitaet: 0.25, geradeaus: 0.15, traktion: 2.0 },
     // M11a.1: Tiefschnee neben der Gletscherstrasse (Streckendatei strassenrand.tiefschnee): bremst sehr stark, je
     // schneller desto mehr (rollenTempo: aus 80 km/h ohne Gas in 2 s über 60 % weg, viel stärker als Gras), keine Wand-
     // Strafe; im Schritttempo bremst er wenig (rollen klein), rückwärts kräftig (rueckwaerts): man kommt immer heraus.
-    tiefschnee: { grip: 0.38, rollen: 1.2, rollenTempo: 0.7, rueckwaerts: 2.6, heck: 0.85, stabilitaet: 0.6, geradeaus: 0.4, traktion: 1.0 },
+    //   rollenQuadrat (M11b.1, freiwillig): Widerstand zusätzlich mal Tempo² (m/s² je (m/s)²): langsam kaum, schnell sehr stark
+    tiefschnee: { grip: 0.38, rollen: 1.2, rollenTempo: 0.7, rueckwaerts: 2.6, heck: 0.85, stabilitaet: 0.6, geradeaus: 0.4, traktion: 1.0, ...(S.untergrund && S.untergrund.tiefschnee) },
   },
 
   // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------
@@ -1151,7 +1158,7 @@ export const CONFIG = {
 
   // --- Fangnetze (M11b, js/fangnetz.js): orange Netze und Fangzäune im Skigebiet (Streckendatei fangnetze) ----------
   fangnetz: {
-    abstand: 0.6,              // so weit hinter dem Bankett steht das Netz (Meter)
+    abstand: 2.0,              // so weit hinter dem Bankett steht das Netz (Meter; M11b.1: 2.0 statt 0.6, nicht mehr direkt am Fahrbahnrand)
     hoehe: 1.6,                // Höhe des Netzes (Meter)
     hoeheZaun: 1.1,            // Höhe des Fangzauns (Meter)
     schritt: 2,                // alle so viele Meter ein Punkt der Netzlinie (Pfosten jeden zweiten)
@@ -1175,7 +1182,15 @@ export const CONFIG = {
     schildVor: 40,             // Schild "Pistenkreuzung" so viele Meter vor der Kreuzung (rechts)
     schildHoehe: 1.4, schildGroesse: 1.1, // Unterkante und Grösse der Tafel (Meter)
     kanteBreite: 1.2,          // Funpark: farbiger Streifen an der Kicker-Kante (Meter entlang der Strasse)
-    kickerFarben: ['#2456d8', '#ff6a10'], // Streifen blau / orange
+    kickerFarben: ['#d8262a', '#ff6a10'], // Streifen rot / orange (M11b.1, vorher blau/orange)
+    // M11b.1: Kicker sichtbar machen (nur Optik, keine Kollision): Schneewände links und rechts der Rampe, dunkles Band
+    // unter der Lippe, Tor mit Banner über dem Anlauf, oranger Fangzaun neben dem Landehang
+    kickerWand: { anlauf: 22, hoehe: [0.25, 1.2], breite: 0.9, abstand: 0.15, fahnen: 6 }, // Länge vor der Kante, Höhe über der Piste (Anfang/Kante), Breite, Abstand zur Fahrbahnkante, Fahne alle so viele Meter
+    kickerSchatten: 2.2,       // dunkles Band hinter der Lippe (Meter entlang der Strasse)
+    kickerTor: { vor: 16, hoehe: 6.8, banner: 1.5, abstand: 2.6, dicke: 0.35 }, // Tor so viele Meter vor der Kante, Höhe, Banner-Höhe, Pfosten neben der Fahrbahnkante, Pfostendicke
+    kickerZaun: { hoehe: 1.0, abstand: 1.0 }, // Fangzaun am Landehang: Höhe, Abstand hinter dem Bankett
+    kickerWandFarbe: '#c4d1e3', kickerWandDunkel: '#97a8c2', kickerSchnee: '#f4f8fd', kickerSchattenFarbe: '#4f5b72',
+    torFarben: ['#ff6a10', '#2456d8', '#f6f6f6'], zaunFarbe: '#ff6a10', pfostenFarbe: '#30343c',
     fahnenFarben: ['#d8262a', '#f0c020', '#2456d8', '#2a9a4a'], fahneHoehe: 3.2, fahnenAbstand: 25, // Fahnen am Funpark
   },
 
@@ -1427,6 +1442,20 @@ export const CONFIG = {
     positionGlaetten: 12,      // Glättung der Kameraposition
     wandAbstand: 0.5,          // so viel Luft (Meter) hält die Kamera mindestens zur Felswand (M3a.3)
     sichtweite: 9000,          // weiter weg wird nichts gezeichnet
+    // M11b.1: Kamera folgt dem Gefälle (Streckenfeld kameraGefaelle, fehlt = 0: Kamera genau wie bisher, Alpen/Finnland).
+    // Bergab geht die Kamera höher und schaut weiter voraus, damit man die Strecke sieht statt nur das Heck. Bergauf und
+    // in der Ebene bleibt sie wie bisher. In der Luft hält sie den Wert vom Absprung (Sprungkamera hat Vorrang).
+    gefaelle: {
+      staerke: S.kameraGefaelle ?? 0, // 0 = aus, 1 = volle Wirkung (Skigebiet)
+      schwelle: 0.03,          // erst ab so viel Gefälle (3 %) beginnt die Wirkung
+      bis: 0.3,                // ab so viel Gefälle (30 %) wächst sie nicht mehr
+      hoehe: 8,                // so viele Meter höher je 100 % Gefälle über der Schwelle (bei 23 %: 1.6 m)
+      abstand: 4,              // so viele Meter weiter zurück je 100 % (bei 23 %: 0.8 m)
+      voraus: 45,              // Blickpunkt so viele Meter weiter vorn je 100 % (bei 23 %: 9 m) ...
+      senken: 0.8,             // ... und so tief wie die Strasse dort (Anteil des Gefälles mal Blick-Abstand)
+      hinten: 5, vorne: 35,    // Gefälle der Strasse von 5 m hinter bis 35 m vor dem Auto (schaut voraus: hebt sich vor der Kante)
+      glaetten: 1.5,           // Tiefpass (je Sekunde): kleiner = weicher; kein Wackeln auf Kuppen und Mulden
+    },
   },
 
   // --- Steuerung -------------------------------------------------------

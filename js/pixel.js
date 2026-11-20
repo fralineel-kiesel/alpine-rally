@@ -84,7 +84,7 @@ export function tannenTextur(varianten = 3, seed = 11) {
     setze(l, ox + 7, 0, farben[2]);
     setze(l, ox + 8, 0, farben[1]);
   }
-  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
+  return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H, leinwand: l }; // (M11b.1: leinwand für die Schneetanne)
 }
 
 // Laubbäume: runde Krone aus Kreisen, je 24x32 Pixel
@@ -244,8 +244,32 @@ export function birkenTextur(varianten = 2, seed = 29) {
   return { textur: zuTextur(l), varianten, seitenVerhaeltnis: B / H };
 }
 
+// M11b.1: verschneite Tanne (Skigebiet, deko.nadelbaum 'schneetanne'): dieselben Tannen wie in den Alpen, darauf
+// Schneehauben auf jeder Ast-Stufe (oben auf den Ästen, links im Licht heller, rechts bläulicher Schatten), eine weisse
+// Spitze und ein paar Schneeflecken. Eigene Zufallszahlen, damit die Tannen der Alpen genau gleich bleiben.
+const SCHNEE_TANNE = ['#f6f9fd', '#e2eaf4', '#bccbdf'];
+export function schneetannenTextur(varianten = 3, seed = 11) {
+  const t = tannenTextur(varianten, seed), l = t.leinwand, rnd = zufall(seed + 500);
+  const weiss = SCHNEE_TANNE.map(hexZuRgb), B = 16, H = 32;
+  const deckend = (x, y) => x >= 0 && y >= 0 && x < l.b && y < l.h && l.bild.data[(y * l.b + x) * 4 + 3] > 0;
+  for (let v = 0; v < varianten; v++) {
+    const ox = v * B;
+    for (let y = 0; y < 28; y++) for (let x = 0; x < B; x++) {
+      if (!deckend(ox + x, y)) continue;
+      // Schnee liegt dort, wo darüber (bis 2 Pixel) Luft ist: oben auf jeder Stufe und an der Spitze
+      const oben = !deckend(ox + x, y - 1) || (!deckend(ox + x, y - 2) && rnd() < 0.6);
+      const fleck = rnd() < 0.07;
+      if (!oben && !fleck) continue;
+      const dx = x + 0.5 - 8, f = dx < -1.5 ? 0 : dx > 2 ? 2 : 1;
+      setze(l, ox + x, y, weiss[fleck && !oben ? Math.min(2, f + 1) : f]);
+    }
+  }
+  t.textur.needsUpdate = true; l.ctx.putImageData(l.bild, 0, 0);
+  return t;
+}
+
 // M10b: Bäume nach Typ (Streckendatei deko.nadelbaum / deko.laubbaum)
-const NADEL = { tanne: () => tannenTextur(), kiefer: () => kiefernTextur(), fichte: () => fichtenTextur(), nordwald: () => nordwaldTextur() };
+const NADEL = { tanne: () => tannenTextur(), kiefer: () => kiefernTextur(), fichte: () => fichtenTextur(), nordwald: () => nordwaldTextur(), schneetanne: () => schneetannenTextur() };
 const LAUBB = { laub: () => laubTextur(), birke: () => birkenTextur() };
 export const BAUM_TYPEN = { nadelbaum: Object.keys(NADEL), laubbaum: Object.keys(LAUBB) };
 export function nadelbaumTextur(typ = 'tanne') {
@@ -496,6 +520,40 @@ export function schneeTextur(farben, seed = 41) {
       if (!inSpur && r < 0.025) c = glitzer;
       else if (r < 0.12) c = variiere(c, 0.93);
       else c = variiere(c, 0.97 + rnd() * 0.04);
+      setze(l, x, y, c);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  return t;
+}
+// M11b.1: präparierte Skipiste (Skigebiet, nur wenn umgebung.farben.pisteWeg gesetzt ist): gleichmässige, helle
+// Schneefläche mit feinen Längsrillen der Pistenraupe (Cord), zwei Raupen-Bahnen mit leicht anderer Helligkeit und
+// einer feinen Naht dazwischen, schwache Querstreifen (Fräse) und nur angedeutete Fahrspuren. Aufbau wie Schotter
+// (48x32, rechts 16 Pixel ohne Rillen für die Ecken an den Einfahrten). Farben: pisteWeg / pisteRille / schneeGlitzer
+export function pisteTextur(farben, seed = 47) {
+  const B = 48, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const flaeche = hexZuRgb(farben.pisteWeg), rille = hexZuRgb(farben.pisteRille), glitzer = hexZuRgb(farben.schneeGlitzer);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < B; x++) {
+      const weg = x < 32;
+      let c = flaeche;
+      if (weg) {
+        // zwei Raupen-Bahnen (links etwas heller), Naht in der Mitte, Cord-Rillen jeder zweite Pixel
+        c = variiere(flaeche, x < 16 ? 1.02 : 0.99);
+        if (x % 2 === 1) c = variiere(rille, x < 16 ? 1.02 : 0.99);
+        if (x === 15 || x === 16) c = variiere(rille, 0.96);
+        // Querstreifen der Fräse (alle 8 Pixel, ca. 1.5 m), sehr schwach
+        if (y % 8 === 0) c = variiere(c, 0.97);
+        // angedeutete Fahrspuren (breit, kaum dunkler)
+        if (Math.abs(x - 11) <= 1 || Math.abs(x - 21) <= 1) c = variiere(c, 0.96);
+      }
+      const r = rnd();
+      if (r < 0.004) c = variiere(glitzer, 0.92); // (wenig Glitzer: einzelne weisse Pixel sahen aus wie Strichmarkierungen)
+      else c = variiere(c, 0.985 + rnd() * 0.03);
       setze(l, x, y, c);
     }
   }

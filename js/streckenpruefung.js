@@ -28,7 +28,7 @@ export const DEKO = {
   haus: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
   stadel: ['alphuette', 'heustadel', 'holzhaus', 'holzschuppen'],
   // (M10b.1: Haus-Typen je Haus in leben.wiesenweg.haeuser[].typ, = HAUS_TYPEN in js/leben.js)
-  nadelbaum: ['tanne', 'kiefer', 'fichte', 'nordwald'],
+  nadelbaum: ['tanne', 'kiefer', 'fichte', 'nordwald', 'schneetanne'], // (M11b.1: schneetanne)
   laubbaum: ['laub', 'birke'],
   unterholz: [null, 'nordisch'],   // M10b.1
   tierschild: ['allgemein', 'elch'], // M10b.1
@@ -322,7 +322,7 @@ export function pruefeStrecke(d, { voll = false } = {}) {
         const pflicht = k === 'haeuser' ? ['s', 'lat', 'laenge', 'tiefe', 'hoehe'] : k === 'stege' || k === 'holzzaeune' ? ['s', 'lat', 'laenge'] : ['s', 'lat'];
         if (!istObjekt(h) || !pflicht.every((x) => istZahl(h[x])) || (h.seite !== 1 && h.seite !== -1)) fehler(`leben.wiesenweg.${k}[${i}]`, `{ ${pflicht.join(', ')}, seite: 1/-1 } erwartet`);
         else if (k === 'haeuser' && h.typ != null && !HAUS_TYPEN_PRUEFER.includes(h.typ)) fehler(`leben.wiesenweg.haeuser[${i}].typ`, `"${h.typ}" unbekannt (bekannt: ${HAUS_TYPEN_PRUEFER.join(', ')})`);
-        else if (k === 'haeuser' && h.dach != null && !['rot', 'braun', 'grau'].includes(h.dach)) fehler(`leben.wiesenweg.haeuser[${i}].dach`, `"${h.dach}" unbekannt (rot, braun, grau)`);
+        else if (k === 'haeuser' && h.dach != null && !['rot', 'braun', 'grau', 'schnee'].includes(h.dach)) fehler(`leben.wiesenweg.haeuser[${i}].dach`, `"${h.dach}" unbekannt (rot, braun, grau, schnee)`); // (M11b.1: schnee)
       });
     }
     (L.wracks || []).forEach((w, i) => { if (w.sponsor && !(w.sponsor in banner)) fehler(`leben.wracks[${i}].sponsor`, `"${w.sponsor}" steht nicht in beschriftung.banner`); });

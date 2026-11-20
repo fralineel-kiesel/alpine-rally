@@ -196,12 +196,29 @@ export function bauePflanzen(szene, strecke, welt) {
   const tanne = nadelbaumTextur(CONFIG.deko.nadelbaum), laub = laubbaumTextur(CONFIG.deko.laubbaum), stein = steinTextur(); // Baum-Typen der Strecke (deko)
 
   // Tannen: Waldstücke an den Hängen und einzelne nahe der Strasse
+  // (M11b.1: einzelNah/einzelFern = Chance für einzelne Tannen ausserhalb der Waldstücke, je Strecke; fehlt = wie bisher.
+  // Skigebiet: kaum einzelne Bäume, dafür Gruppen in den Waldstücken)
   const tannen = verteile(c.tannenProKm, tanne, c.tannenHoehe, (wald, d, steil) => {
     if (steil > 1.1) return 0.02;
     if (wald > 0.53) return 0.95;
-    if (d < 16) return 0.32;
-    return 0.06;
+    if (d < 16) return c.einzelNah ?? 0.32;
+    return c.einzelFern ?? 0.06;
   }, 0);
+  // M11b.1: Tannen-Gruppen (natur.sprites.gruppe = [von, bis] Bäume je Gruppe, nur Skigebiet): um jede gewürfelte Tanne
+  // stehen weitere im Umkreis gruppeRadius. Eigener Zufall: Laubbäume und Steine bleiben, wie sie sind; ohne das Feld nichts
+  if (c.gruppe) {
+    const rndG = zufall(c.seed + 77), basis = tannen.slice();
+    for (const b of basis) {
+      const n = c.gruppe[0] - 1 + Math.floor(rndG() * (c.gruppe[1] - c.gruppe[0] + 1));
+      for (let k = 0; k < n; k++) {
+        const w = rndG() * Math.PI * 2, r = 2.5 + rndG() * c.gruppeRadius, h = mische(c.tannenHoehe[0], c.tannenHoehe[1], rndG());
+        const x = b.x + Math.cos(w) * r, z = b.z + Math.sin(w) * r, variante = Math.floor(rndG() * tanne.varianten), hell = 0.82 + rndG() * 0.26, spiegeln = rndG() < 0.5;
+        if (!frei(x, z, c.mindestAbstand) || steilheit(x, z) > 1.1 || welt.imFels(x, z, CONFIG.kollision.stammRadius)) continue;
+        if (tannen.some((t) => Math.abs(t.x - x) < 2.4 && Math.abs(t.z - z) < 2.4)) continue; // nicht ineinander
+        tannen.push({ x, z, y: welt.gelaendeHoehe(x, z) - 0.25, h, b: h * tanne.seitenVerhaeltnis, variante, hell, spiegeln });
+      }
+    }
+  }
   // Laubbäume: eher am Waldrand und weiter unten
   const laubbaeume = verteile(c.laubProKm, laub, c.laubHoehe, (wald, d, steil, x, z) => {
     if (steil > 0.7) return 0;

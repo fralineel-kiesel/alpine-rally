@@ -425,12 +425,13 @@ if (teil('u')) {
     for (let i = 0; i < 3; i++) { wahl.setzen(i); A.menue.neuZeichnen(); out.seiten[i] = zeiten(); }
     out.alpenGleich = JSON.stringify(vorher['passstrasse-r2']) === JSON.stringify(nach['passstrasse-r2']);
     out.finnlandGleich = JSON.stringify(vorher['finnland-r3']) === JSON.stringify(nach['finnland-r3']);
-    out.gletscher = nach.skigebiet ? Object.keys(nach.skigebiet) : null;
+    out.gletscher = nach['skigebiet-r2'] ? Object.keys(nach['skigebiet-r2']) : null; // (M11b.1: revision 2 -> Schlüssel skigebiet-r2)
     return out;
   });
-  // (revision 1 = Schlüssel ohne Zusatz, docs/strecken-format.md: erst ab revision 2 heisst er <etappe>-r<revision>)
-  melde(r.schluessel.join() === 'passstrasse-r2,finnland-r3,skigebiet' && r.optionen === 3, `Schlüssel ${r.schluessel.join(', ')}; Umschalter mit ${r.optionen} Etappen`);
-  melde(r.alpenGleich && r.finnlandGleich && r.gletscher && r.gletscher.includes('delto'), `Skigebiet-Zeit unter „skigebiet“ (${r.gletscher}); Alpen und Finnland unverändert: ${r.alpenGleich} / ${r.finnlandGleich}`);
+  // (revision 1 = Schlüssel ohne Zusatz, docs/strecken-format.md: erst ab revision 2 heisst er <etappe>-r<revision>;
+  // M11b.1: Erwartung alt – Skigebiet jetzt revision 2 (breite Piste, Belag, Rand), Schlüssel skigebiet-r2)
+  melde(r.schluessel.join() === 'passstrasse-r2,finnland-r3,skigebiet-r2' && r.optionen === 3, `Schlüssel ${r.schluessel.join(', ')}; Umschalter mit ${r.optionen} Etappen`);
+  melde(r.alpenGleich && r.finnlandGleich && r.gletscher && r.gletscher.includes('delto'), `Skigebiet-Zeit unter „skigebiet-r2“ (${r.gletscher}); Alpen und Finnland unverändert: ${r.alpenGleich} / ${r.finnlandGleich}`);
   melde(/02:50\.50/.test(r.seiten[0]) && !/03:34\.10/.test(r.seiten[0]) && /02:45\.25/.test(r.seiten[1]) && /03:34\.10/.test(r.seiten[2]) && !/02:50\.50|02:45\.25/.test(r.seiten[2]), `keine Vermischung: Alpen „${r.seiten[0].slice(0, 60)}“; Finnland „${r.seiten[1].slice(0, 60)}“; Skigebiet „${r.seiten[2].slice(0, 60)}“`);
   melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.join(' | ').slice(0, 200)})`);
   await s.schliessen();

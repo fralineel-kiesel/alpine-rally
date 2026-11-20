@@ -122,6 +122,17 @@ Alles freiwillig; Alpen und Finnland nutzen nichts davon und bleiben Bit für Bi
 | `skipiste` (M11b) | darf jetzt auch eine **Liste** sein (mehrere Pisten, je eigener `seed`) |
 | `funpark` | `{ von, bis, kicker: [Meter der Kanten], bande }`: Funpark-Optik (farbige Kante quer über jeden Kicker, Stangen mit Fahne, Fahnenreihe, Bande); die Schanzen selbst sind Sprungzonen (`sprung`) |
 
+## Skigebiet-Feinschliff: Untergrund und Kamera je Strecke (seit M11b.1)
+
+Alles freiwillig; Alpen und Finnland nutzen nichts davon und bleiben Bit für Bit gleich.
+
+| Feld | Inhalt |
+|---|---|
+| `untergrund` | `{ schnee: {…}, tiefschnee: {…} }`: überschreibt einzelne Werte aus `CONFIG.untergrund` nur für diese Strecke (`grip`, `rollen`, `rollenTempo`, `heck`, `traktion`, …). Neu beim Tiefschnee: `rollenQuadrat` (Widerstand mal Tempo², `js/physics.js`): langsam kommt man voran, schnell bremst er sehr stark. Skigebiet: Piste `grip 0.6, traktion 0.8, heck 1.0` (Bremsweg 1.2× Schotter), Tiefschnee `grip 0.65, rollen 0.8, rollenTempo 0.1, rollenQuadrat 0.03` |
+| `kameraGefaelle` | Stärke der Gefälle-Kamera (`CONFIG.kamera.gefaelle`), fehlt = 0 (Kamera wie bisher). Bergab hebt sich die Kamera und schaut weiter voraus (gedämpft, in der Luft eingefroren), bergauf und eben unverändert. Skigebiet 1 |
+| `umgebung.farben.pisteWeg`, `.pisteRille` | präparierte Piste statt Schneestrasse (`js/pixel.js` `pisteTextur`: Cord-Rillen, zwei Raupen-Bahnen) |
+| `strassenBreite` (M11b.1) | aneinanderliegende Einträge gehen über die Rampe weich ineinander über (gewichtetes Mittel) |
+
 ## Sprünge (seit M10c, `js/sprung.js`)
 
 Ein Eintrag in `sprung` mit **`von`/`bis`** ist eine Sprungzone. Nur dort kann das Auto abheben (ausserhalb fährt es Bit für

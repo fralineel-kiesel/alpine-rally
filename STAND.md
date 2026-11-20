@@ -2,11 +2,11 @@
 
 ## Aktuell
 
-Aktuell: **Meilenstein 11b fertig** (Version 0.11b) – **Etappe „Skigebiet“ ersetzt den Gletscher**: Dorf mit Talstation,
-schmale Pistenzufahrt mit 6 Spitzkehren steil hoch (Allrad klar im Vorteil), Bergstation, Grat, steile Abfahrt mit Schneekuppe
-und 3 Funpark-Kickern, Zielarena im Talboden; Fangnetze, Tiefschnee-Rand, Gondelbahn, zwei Skipisten. Alpen und Finnland
-unverändert. **Nur Chromium, kein Handy, kein Gamepad.** **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m11b.md`.**
-Nächster Schritt: M11c (Absturzkante, querende Skifahrer), siehe `KONZEPT.md`.
+Aktuell: **Meilenstein 11b.1 fertig** (Version 0.11b.1) – **Skigebiet-Feinschliff** nach Linos Test: breite präparierte Piste
+(9.5 / 11 m), griffigere Piste und Tiefschnee, aus dem man wieder herauskommt, Kamera folgt bergab dem Gefälle, sichtbare
+Funpark-Kicker, verschneite Tannen, Felsen und mehr Deko. Alpen und Finnland unverändert. **Nur Chromium, kein Handy, kein
+Gamepad.** **Bitte zuerst die Test-Anleitung in `docs/meilensteine/m11b1.md`.** Nächster Schritt: M11c (Absturzkante, querende
+Skifahrer), siehe `KONZEPT.md`.
 Konzept und Fahrplan: `KONZEPT.md`. Die alte, lange Stand-Datei (alle Berichte bis M8e) liegt in
 `docs/archiv/STAND-bis-m8e.md` – **nie ganz lesen**, Inhaltsverzeichnis mit Zeilennummern: `docs/archiv/INDEX.md`.
 Ausführliche Berichte ab M8f: `docs/meilensteine/<name>.md`.
@@ -139,13 +139,16 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 - **Finnland (seit M10c):** Länge 4161.6 m, Draufsicht/Checkpoints/Untergrund wie 0.10b.2, 4 Sprungzonen (Kante 495 / 1830 /
   3090 / 3656 m), `revision` 3, Hang-Check 0 Stellen über 0.45. Seit M10c.1: Seekehre (keine Planke aussen 3260–3400 m, See).
   Testfahrer-Zeiten: Tabelle in `docs/meilensteine/m10c1.md`.
-- **Skigebiet (seit M11b, revision 1):** Länge 4329.0 m (gefahren 4259.0 m), 6 + 2 Kehren, max +22.7 %, Höhe −65.6…178.9 m,
-  `hangabtrieb` 1.6, Breite 4.9 m auf 300–2400 m, Sprünge 2640 / 3560 / 3670 / 3780 m (20 / 16.7 m bei 100 km/h), Hang-Check 0,
-  Bestzeiten-Schlüssel `skigebiet`. Testfahrer-Zeiten: Tabelle in `docs/meilensteine/m11b.md`. (Gletscher entfernt.)
+- **Skigebiet (seit M11b.1, revision 2):** Länge 4329.0 m (gefahren 4259.0 m), 6 + 2 Kehren (128/130°), max +22.7 %, Höhe
+  −65.6…178.9 m, `hangabtrieb` 1.6, Breite Dorf 10 / Anstieg+Grat 9.5 / Abfahrt 11 m, eigener `untergrund` (Bremsweg Piste 1.2×
+  Schotter), `kameraGefaelle` 1, Sprünge 2640 / 3560 / 3670 / 3780 m (20 / 16.7 m bei 100 km/h), Hang-Check 0, Bestzeiten-Schlüssel
+  `skigebiet`. Testfahrer-Zeiten: Tabelle in `docs/meilensteine/m11b1.md`. (Gletscher entfernt.)
 - **Limits:** Draw Calls pro Auto ≤ 12, Dreiecke pro Auto ≤ 1800, kein Garbage pro Bild, Ladezeit gleich, Ton ändert nie das Spiel.
 
 ## Werkzeuge und Tests
 
+- `node tools/m11b1-test.mjs --alt <0.11b = 59a6a32> [--nur a,b] [--stand F] [--lang]` – alle Prüfungen von M11b.1 (a … ad, zz);
+  `node tools/m11b1-bilder.mjs` – 4 Bilder nach `screenshots/m11b1/`; `node tools/schnee-messung.mjs --strecke skigebiet`.
 - `node tools/m11b-test.mjs --alt <0.11a.1 = 471d726> [--nur a,b] [--lang]` – alle Prüfungen von M11b (a … aa, zz = frühere Tests
   mit `--lang`); `node tools/m11b-bilder.mjs` – 4 Bilder nach `screenshots/m11b/`; `node tools/skigebiet-entwurf.mjs [--schreiben]` –
   Verlauf und Höhenprofil des Skigebiets (Steigung je Stück). `hang-pruefen` misst seit M11b auch Gelände mit Tiefschnee.
@@ -209,6 +212,9 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Bekannte Probleme
 
+- **Pause → WEITER (seit M11b.1 beobachtet, auch 0.11b):** auf der Test-Maschine springt die Zeit im ersten Bild nach dem
+  Fortsetzen um 0.3 s (rennablauf-/menue-test rot) – Timing der Software-Grafik, nicht vom Code; auf echter Grafik prüfen.
+
 - **Ähnlichkeit der Allradler:** Audan, Delto und Subora liegen in 8–9 von 12 Messzeilen nah beieinander (Regel: höchstens 2),
   siehe Vergleich – weil sich ihre Zielbereiche überlappen.
 - Mehrere Fahrmesswerte liegen **knapp am Rand** des Ziels (siehe Messtabelle); schon kleine Änderungen an Lanza-Werten
@@ -244,6 +250,11 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Ideen/Vorschläge (nicht umgesetzt)
 
+- **Offen aus M11b.1:** optionale Deko (Ton: Seilbahn-Rattern/Wind/Gemurmel; Snowboarder an den Kickern; Pistenschilder und
+  Pistenplan-Tafel; Schneekanonen mit Dampf; Pistenraupe; Schneemänner/Iglu), Schneehaufen/Sessellift; echte Felswand (die
+  Alpen-Felswand müsste der Strassenbreite folgen: Engine-Umbau), steilere Hänge direkt neben der Piste (Gelände folgt der
+  geglätteten Strassenhöhe, quer fast flach). Ideen: Kamera-Gefälle als Einstellung (AUS/SANFT/STARK) und für Alpen/Finnland,
+  Tannen-Dichte als Einstellung fürs Handy (Tannen kosten im Skigebiet am meisten Bildzeit).
 - **Offen aus M11b:** Ton im Skigebiet (Seilbahn-Rattern, Wind auf dem Grat, Gemurmel/Musik an der Bergstation), Pistenraupe
   (Deko), Schneekanonen mit Dampf, Snowboarder in der Luft an den Kickern, Pistenschilder (blau/rot/schwarz) und Wegweiser; echte
   Felswand an der schmalen Zufahrt (Alpen-Felswand gibt dort zu steile Übergänge und NaN); weicher Übergang Schotter → Schnee ohne
@@ -331,6 +342,13 @@ Werkzeuge in `tools/` (nur für Tests, das Spiel lädt sie nicht):
 
 ## Meilensteine (Zusammenfassungen, neueste oben)
 
+- **M11b.1** (0.11b.1) – **Skigebiet-Feinschliff** nach Linos Test. Piste breit (Dorf 10, Anstieg/Grat 9.5, Abfahrt 11 m statt
+  4.9/6.2 m; Verlauf und Kehren unverändert), präparierte Optik (Cord-Rillen, heller Rand, Netze weiter aussen). Piste griffiger
+  (Bremsweg 1.2× statt 1.5× Schotter), Tiefschnee mit Widerstand, der mit dem Tempo wächst (Streckenfeld `untergrund`,
+  `rollenQuadrat`): herauskommen in höchstens ca. 3.5 s, Abkürzen in jeder Kehre mindestens 5 s langsamer. Kamera folgt bergab dem
+  Gefälle (`kameraGefaelle`): 93–140 m Strecke sichtbar statt 0–58 m. Kicker sichtbar (Wände, Lippe, Tor, Zaun, Zuschauer).
+  ca. 3500 Schneetannen in Gruppen, 163 eingeschneite Felsen (statt Felswand), Hütten, Zäune, Holzstapel, Wegweiser.
+  Alpen/Finnland bit- und pixelgleich. Bericht: `docs/meilensteine/m11b1.md`.
 - **M11b** (0.11b) – **Etappe „Skigebiet“ ersetzt den Gletscher** (`strecken/gletscher.js` gelöscht, alte Tests gekürzt:
   „Erwartung alt, Gletscher entfernt“). Skigebiet 4329 m: Dorf, Pistenzufahrt mit 6 Spitzkehren (4.9 m schmal, `strassenBreite`),
   max +22.7 % (1.57× Alpen), 244.5 m Höhe (1.54×), `hangabtrieb` 1.6 (Alpen/Finnland 1): am Steilhang 0–40 km/h Allrad ca. 4 s,

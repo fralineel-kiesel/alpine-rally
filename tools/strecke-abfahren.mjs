@@ -123,7 +123,10 @@ if (process.argv.includes('--kurven-vergleich')) {
       const abkuerzen = [];
       if (A.CONFIG.strassenrand.tiefschnee) {
         const innen = c.richtung > 0 ? 1 : -1;
-        for (const d of [4, 7, 10, 14]) {
+        // M11b.1: auf breiter Piste (Streckenfeld strassenBreite) rücken die Linien um so viel nach innen, wie die Fahrbahn
+        // breiter ist als die 4.9 m von 0.11b (sonst erreichen sie den Tiefschnee nicht); dazu eine tiefere Linie (+18 m)
+        const mehr = A.netz.halbBei((c.von + c.bis) / 2) > 2.45 ? A.netz.halbBei((c.von + c.bis) / 2) - 2.45 : 0;
+        for (const d of (mehr ? [4, 7, 10, 14, 18].map((x) => x + mehr) : [4, 7, 10, 14])) {
           const xs = Array.from(S.px), zs = Array.from(S.pz);
           for (let i = a; i < b; i++) {
             const t = Math.min(Math.max(0, Math.min(1, (i - (c.von - 25)) / 25)), Math.max(0, Math.min(1, ((c.bis + 25) - i) / 25)));

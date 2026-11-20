@@ -8,7 +8,7 @@ export default {
   format: 1,
   id: 'skigebiet',
   etappe: 'skigebiet',        // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
-  revision: 1,                 // Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
+  revision: 2,                 // (M11b.1: 2, breite Piste, Belag und Rand neu) Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
   name: { de: 'SKIGEBIET', en: 'SKI RESORT' },
   beschreibung: { de: 'SCHNEE, STEIL, SPRÜNGE', en: 'SNOW, STEEP, JUMPS' },
   untergrundInfo: { de: 'SCHNEE', en: 'SNOW' },
@@ -21,7 +21,7 @@ export default {
     tierKlang: null,           // ... ohne Ton (keine Glocken)
     haus: 'alphuette',         // Berghütte
     stadel: 'heustadel',       // kleiner Holzschopf
-    nadelbaum: 'tanne',        // M11b: nur ein paar Tannen am Dorfrand (startZiel.landschaft.gruppen), auf dem Berg keine       // (M11a.1: keine Bäume mehr auf der Etappe; nur noch für Sperren, die es hier nicht gibt)
+    nadelbaum: 'schneetanne',  // M11b.1: verschneite Tannen (js/pixel.js schneetannenTextur), überall verteilt, dichter an Dorf und Abfahrt
     laubbaum: 'laub',          // (keine Laubbäume: laubProKm 0)
     unterholz: null,
     tierschild: 'allgemein',
@@ -30,8 +30,24 @@ export default {
   // M11b: Hangabtrieb (Steigung zieht stärker als in Alpen/Finnland, dort 1): die Autos kämpfen im Anstieg; Allrad hat
   // dort mehr Traktion übrig (config.js, getriebe.allrad je Auto) als die Hinterrad-Autos
   hangabtrieb: 1.6,
-  // M11b: schmale Pistenzufahrt und Grat (ca. 70 % der Alpen-Strasse: 4.9 statt 7 m), Abfahrt und Dorf normal breit
-  strassenBreite: [{ von: 300, bis: 2400, breite: 4.9 }],
+  // M11b.1: Kamera folgt dem Gefälle (config.js, kamera.gefaelle): bergab höher und weiter voraus, sonst wie bisher
+  kameraGefaelle: 1,
+  // M11b.1: Untergrund nur für diese Strecke (überschreibt einzelne Werte aus config.js, Block untergrund):
+  // Piste griffiger (Bremsweg ca. 1.2x Schotter statt 1.5x); Tiefschnee: mehr Grip zum Herauskommen, Widerstand wächst mit
+  // dem Tempo im Quadrat (langsam kommt man gut voran, schnell bremst er sehr stark: Abkürzen lohnt nie)
+  untergrund: {
+    schnee: { grip: 0.6, traktion: 0.8, heck: 1.0 }, // (traktion: Schub nur wenig besser als 0.11b, sonst wird der Hang zu leicht; heck: mit mehr Tempo bleibt das Heck ruhiger)
+    tiefschnee: { grip: 0.65, rollen: 0.8, rollenTempo: 0.1, rollenQuadrat: 0.03 },
+  },
+  // M11b.1: breite präparierte Piste (Lino: 4.9 m war viel zu schmal). Alpen-Strasse zum Vergleich 7 m.
+  // Dorfstrasse 10 m (zwischen Startbereich und Abzweig: Startbogen, Band und Stroh stehen fest für 7 m), Anstieg mit
+  // Kehren, Bergstation und Grat 9.5 m, Abfahrt und Funpark 11 m (bis vor die Einmündung in die Zielarena, die wie der
+  // Startbereich 7 m bleibt). Zwischen den Abschnitten je 25 m Übergang (CONFIG.strassenBreiteRampe)
+  strassenBreite: [
+    { von: 95, bis: 200, breite: 10 },
+    { von: 290, bis: 2480, breite: 9.5 },
+    { von: 2480, bis: 4115, breite: 11 },
+  ],
 
   // M11b Teil D: Sprünge (Format "Sprünge", js/sprung.js): ein natürlicher Sprung über eine Kuppe am Steilhang der
   // ersten Abfahrt und drei Kicker im Funpark (Schanzen aus Schnee, 110 m Abstand). Landezonen auf Schnee, mindestens
@@ -67,15 +83,16 @@ export default {
 
   // --- Abschnitte (baeume, wald, nah, voegel; keine Vögel im Hochgebirge) ---
   // --- Abschnitte (baeume, wald, nah, voegel) ---
+  // M11b.1: verschneite Tannen (Lino: überall, auch oben einzelne Gruppen): baeume = Dichte, wald = geschlossene Stücke
   abschnitte: {
-    'Dorf': { baeume: 0, wald: 0, voegel: 0.3 },
-    'Zufahrt': { baeume: 0, wald: 0, voegel: 0 },
-    'Kehren': { baeume: 0, wald: 0, voegel: 0 },
-    'Bergstation': { baeume: 0, wald: 0, voegel: 0 },
-    'Grat': { baeume: 0, wald: 0, voegel: 0 },
-    'Abfahrt': { baeume: 0, wald: 0, voegel: 0 },
-    'Funpark': { baeume: 0, wald: 0, voegel: 0 },
-    'Zielarena': { baeume: 0, wald: 0, voegel: 0 },
+    'Dorf': { baeume: 1, wald: 0.35, voegel: 0.3 },
+    'Zufahrt': { baeume: 0.6, wald: 0.1, voegel: 0 },
+    'Kehren': { baeume: 0.45, wald: 0.05, voegel: 0 },
+    'Bergstation': { baeume: 0.3, wald: 0, voegel: 0 },
+    'Grat': { baeume: 0.3, wald: 0, voegel: 0 },
+    'Abfahrt': { baeume: 0.9, wald: 0.3, voegel: 0 },
+    'Funpark': { baeume: 0.6, wald: 0.1, voegel: 0 },
+    'Zielarena': { baeume: 1, wald: 0.3, voegel: 0 },
   },
 
   punkte: [
@@ -361,6 +378,8 @@ export default {
   //   Absturzkante (offener Hang ausserhalb einer Kehre, dort kein Netz, nur Tiefschnee): Kehre 3 (1036–1076 m, aussen
   //   links), Kehre 5 (1516–1556 m, aussen links), erste Abfahrt-Kehre (2799–2840 m, aussen links)
   //   Querende Skifahrer: Pistenkreuzungen bei ca. 2940 m (zweiter Abfahrt-Ast) und 3200 m (dritter Abfahrt-Ast)
+  //   M11b.1 (breite Piste): Kante jetzt 6.75 m (Kehren 3/5) bzw. 7.5 m (Abfahrt) neben der Mitte; an der Abfahrt-Kehre steht
+  //   4.6 m hinter dem Bankett eine Tannengruppe, an der Kreuzung 2940 m stehen Tannen im Spurband (Korridor frei machen)
   // Die Pistenzufahrt ist ein Nebenweg mit Belag Schnee: im Dorf biegt die Etappe von der Dorfstrasse (Asphalt) links ab
   // (geradeaus läuft die Dorfstrasse als abgesperrter Stummel weiter), in der Zielarena mündet sie in deren Zufahrt ein
   nebenwege: [
@@ -393,7 +412,7 @@ export default {
       fels: '#8d97a6',           // M11b: steile Schneehänge hellgrau (vorher dunkler Fels: der steile Berg über der Zufahrt wirkte wie ein Gewitterhimmel)
       felsDunkel: '#717c8d',
       erde: '#c3ccd8',           // M11b: abgeblasener Schnee statt grauer Erde
-      bankett: '#aab6c6',        // festgefahrener, grauer Schneerand
+      bankett: '#dbe4f0',        // M11b.1: heller Pistenrand (klare Kante zwischen Piste und Tiefschnee; vorher grau #aab6c6)
       asphalt: '#4a4c50',
       mittellinie: '#d8d4c8',
       schotter: '#9a9184',       // Moränen-Schotter, grau
@@ -408,6 +427,10 @@ export default {
       schneeWeg: '#939eb0',      // (M11b: eine Stufe dunkler als beim Gletscher: auf dem Grat sonst nur 40 Stufen Kontrast)
       schneeSpur: '#646f80',
       schneeGlitzer: '#ffffff',
+      // M11b.1: präparierte Piste (js/pixel.js pisteTextur): gleichmässig, etwas heller als die alte Schneestrasse,
+      // feine Cord-Rillen der Pistenraupe; Rand (bankett) hell wie eine frisch gefräste Kante
+      pisteWeg: '#8f9aac',
+      pisteRille: '#7d889b',
       eisWeg: '#6fa3d2',         // (vorher #8fbde3)
       eisGlanz: '#d8ecff',
       eisRiss: '#5f93c4',
@@ -450,9 +473,9 @@ export default {
   // Kunst-Schatten: Mittagssonne aus Süden (kurz wie in den Alpen), bläulich auf dem Schnee (farbe, M11a)
   schatten: { sonne: 170, laenge: 0.7, dunkelheit: 0.55, steine: true, farbe: '#3a5c9a' },
 
-  // --- Natur: über der Baumgrenze (M11a.1: keine Bäume mehr), viele Steine und Findlinge ---
+  // --- Natur: verschneite Tannen (M11b.1), viele Steine und Findlinge ---
   natur: {
-    sprites: { tannenProKm: 0, laubProKm: 0, steineProKm: 1100, mindestAbstand: 12, waldAbstand: 12 },
+    sprites: { tannenProKm: 500, laubProKm: 0, steineProKm: 1100, mindestAbstand: 12, waldAbstand: 12, einzelNah: 0.1, einzelFern: 0.02, gruppe: [3, 12], gruppeRadius: 7 }, // M11b.1: Tannen in Gruppen von 3 bis 12 (vorher keine)
     buesche: { an: false, blueten: 0, beeren: 0 },
     kuehe: {                   // (Tiere: Steinböcke, deko.tier)
       anzahl: 4, einzeln: 2, anteilTal: 1, alpAb: 999, alpBreite: [20, 40], passBei: 2000,
@@ -498,8 +521,24 @@ export default {
         { s: 205, seite: -1, lat: 19, drehung: -6, laenge: 8, tiefe: 7, hoehe: 3.2, typ: 'alphuette', dach: 'braun' },   // Dorf
         { s: 2020, seite: -1, lat: 22, drehung: 0, laenge: 16, tiefe: 10, hoehe: 5.5, typ: 'alphuette', dach: 'rot' },   // Bergstation
         { s: 2048, seite: 1, lat: 17, drehung: 4, laenge: 8, tiefe: 6, hoehe: 3, typ: 'alphuette', dach: 'braun' },      // Hütte (Après-Ski)
+        // M11b.1: eingeschneite Holzhütten und Heustadel am Hang (dach 'schnee')
+        { s: 470, seite: -1, lat: 30, drehung: 12, laenge: 7, tiefe: 5, hoehe: 2.8, typ: 'heustadel', dach: 'schnee' },
+        { s: 920, seite: 1, lat: 34, drehung: -20, laenge: 8, tiefe: 6, hoehe: 3, typ: 'alphuette', dach: 'schnee' },
+        { s: 1420, seite: -1, lat: 28, drehung: 8, laenge: 6, tiefe: 5, hoehe: 2.6, typ: 'heustadel', dach: 'schnee' },
+        { s: 2260, seite: 1, lat: 36, drehung: 30, laenge: 9, tiefe: 6, hoehe: 3.2, typ: 'alphuette', dach: 'schnee' },
+        { s: 2880, seite: 1, lat: 32, drehung: -10, laenge: 7, tiefe: 5, hoehe: 2.8, typ: 'heustadel', dach: 'schnee' },
+        { s: 3420, seite: -1, lat: 38, drehung: 15, laenge: 8, tiefe: 6, hoehe: 3, typ: 'alphuette', dach: 'schnee' },
       ],
-      stege: [], boote: [], holzstapelOrte: [], briefkaesten: [], holzzaeune: [], heurollen: [],
+      stege: [], boote: [], briefkaesten: [], heurollen: [],
+      // M11b.1: Holzstapel und Holzzäune am Dorfrand
+      holzstapelOrte: [
+        { s: 140, seite: 1, lat: 15, drehung: 0, laenge: 4 }, { s: 190, seite: -1, lat: 14, drehung: 5, laenge: 3 }, { s: 100, seite: 1, lat: 15, drehung: 0, laenge: 5, hoehe: 1.3 },
+      ],
+      holzzaeune: [
+        { s: 160, seite: 1, lat: 13, laenge: 12 }, { s: 176, seite: -1, lat: 13, laenge: 10 }, { s: 60, seite: -1, lat: 14, laenge: 10 },
+      ],
+      // M11b.1: Wegweiser an der Bergstation (Tafeln aus beschriftung.wegweiser)
+      wegweiser: { s: 2072, seite: 1, lat: 9.5 },
       // Parkplatz an der Talstation (stehende Deko-Autos)
       parkwagen: [
         { s: 110, seite: -1, lat: 14, drehung: 90, farbe: '#c8202a' }, { s: 116, seite: -1, lat: 14, drehung: 90, farbe: '#2456d8' },
@@ -507,9 +546,48 @@ export default {
         { s: 113, seite: -1, lat: 20, drehung: 90, farbe: '#2a9a4a' }, { s: 119, seite: -1, lat: 20, drehung: 90, farbe: '#f0c020' },
         { s: 125, seite: -1, lat: 20, drehung: 90, farbe: '#8a8f99' },
       ],
-      // Felsbrocken an der Bergseite der Zufahrt und auf dem Grat (statt einer Felswand: die Alpen-Felswand gibt auf der
-      // schmalen Strasse zu steile Übergänge, siehe Bericht)
-      findlinge: [[400, 1, 13, 1.4], [440, 1, 15, 1.1], [680, -1, 13, 1.3], [930, 1, 14, 1.5], [1170, -1, 13, 1.2], [1410, 1, 14, 1.3], [1650, -1, 13, 1.4], [2150, -1, 16, 1.6], [2300, 1, 18, 1.2]],
+      // Felsbrocken an der Zufahrt und auf dem Grat (statt einer Felswand: die Alpen-Felswand steht fest 5.2 m neben der
+      // Strassenmitte und folgt der Breite nicht – auf der breiten Piste stünde sie auf der Fahrbahn; Bericht M11b.1)
+      findlinge: [[400, 1, 13, 1.4], [440, 1, 15, 1.1], [680, -1, 13, 1.3], [930, 1, 14, 1.5], [1170, -1, 13, 1.2], [1410, 1, 14, 1.3], [1650, -1, 13, 1.4], [2150, -1, 16, 1.6], [2300, 1, 18, 1.2],
+        // M11b.1: Felsgruppen und Felsrücken (eingeschneit: 5. Wert 1) an Zufahrt, drei Kehren-Schenkeln und dem Grat
+        [300, 1, 20.9, 2.8, 1], [297, 1, 25.0, 1.6, 1], [301, 1, 24.4, 1.3, 1], [320, -1, 22.4, 2.4, 1], [321, -1, 27.6, 2.2, 1],
+        [343, 1, 19.2, 3.3, 1], [341, 1, 24.0, 1.9, 1], [347, 1, 22.5, 1.5, 1], [365, -1, 21.7, 2.4, 1], [368, -1, 23.8, 1.7, 1],
+        [385, 1, 20.0, 3.3, 1], [382, 1, 24.6, 1.9, 1], [405, -1, 23.7, 4.1, 1], [406, -1, 26.2, 1.7, 1], [426, 1, 21.3, 4.3, 1],
+        [429, 1, 25.8, 1.0, 1], [446, -1, 16.0, 3.4, 1], [443, -1, 21.2, 1.1, 1], [465, 1, 16.8, 4.2, 1], [465, 1, 20.3, 1.1, 1],
+        [464, 1, 20.0, 1.5, 1], [483, -1, 23.5, 4.0, 1], [484, -1, 25.6, 2.2, 1], [502, 1, 18.1, 3.9, 1], [505, 1, 20.9, 1.8, 1],
+        [499, 1, 24.1, 1.0, 1], [521, -1, 24.0, 3.7, 1], [519, -1, 28.5, 1.2, 1], [310, 1, 51.0, 7.0, 1], [317, 1, 51.6, 4.0, 1],
+        [348, 1, 34.9, 5.9, 1], [356, 1, 40.9, 6.2, 1], [385, 1, 36.6, 7.7, 1], [394, 1, 53.6, 4.6, 1], [416, -1, 53.7, 6.7, 1],
+        [424, -1, 37.2, 4.9, 1], [454, 1, 39.7, 6.7, 1], [461, 1, 51.8, 6.7, 1], [490, 1, 44.5, 7.5, 1], [499, 1, 54.0, 5.2, 1],
+        [524, 1, 41.6, 6.8, 1], [530, 1, 49.1, 6.8, 1], [600, 1, 23.5, 4.3, 1], [601, 1, 27.5, 1.8, 1], [604, 1, 25.8, 1.0, 1],
+        [620, -1, 20.5, 3.6, 1], [621, -1, 24.8, 1.9, 1], [643, 1, 22.4, 2.7, 1], [645, 1, 28.1, 1.7, 1], [667, -1, 15.1, 3.9, 1],
+        [670, -1, 18.5, 2.0, 1], [665, -1, 17.2, 2.1, 1], [689, 1, 22.3, 2.3, 1], [685, 1, 25.4, 1.8, 1], [707, -1, 19.1, 4.3, 1],
+        [704, -1, 21.6, 1.9, 1], [731, 1, 22.4, 3.2, 1], [733, 1, 25.0, 2.0, 1], [755, -1, 18.4, 3.8, 1], [757, -1, 23.1, 1.5, 1],
+        [610, -1, 50.7, 6.1, 1], [617, -1, 51.9, 5.2, 1], [646, 1, 52.6, 5.5, 1], [653, 1, 50.6, 4.9, 1], [685, 1, 38.5, 5.6, 1],
+        [694, 1, 43.4, 5.0, 1], [722, 1, 51.0, 8.6, 1], [730, 1, 38.6, 6.4, 1], [754, 1, 50.5, 8.6, 1], [762, 1, 48.1, 5.2, 1],
+        [1100, 1, 23.6, 2.7, 1], [1103, 1, 28.6, 1.6, 1], [1097, 1, 28.5, 1.6, 1], [1124, -1, 18.4, 4.4, 1], [1127, -1, 20.5, 2.2, 1],
+        [1144, 1, 15.6, 3.1, 1], [1143, 1, 17.9, 1.1, 1], [1163, -1, 21.3, 2.1, 1], [1162, -1, 26.5, 1.0, 1], [1183, 1, 17.9, 3.6, 1],
+        [1185, 1, 22.1, 1.6, 1], [1205, -1, 15.0, 2.7, 1], [1205, -1, 20.3, 1.3, 1], [1208, -1, 17.7, 1.3, 1], [1227, 1, 17.5, 3.5, 1],
+        [1226, 1, 20.0, 2.1, 1], [1230, 1, 21.4, 1.9, 1], [1248, -1, 15.7, 4.0, 1], [1250, -1, 17.7, 1.3, 1], [1110, -1, 32.7, 8.1, 1],
+        [1120, -1, 47.5, 5.2, 1], [1148, -1, 54.0, 6.2, 1], [1156, -1, 40.4, 4.3, 1], [1184, -1, 44.8, 8.4, 1], [1192, -1, 40.3, 4.8, 1],
+        [1220, 1, 37.2, 7.7, 1], [1227, 1, 43.1, 4.6, 1], [1580, 1, 18.8, 2.6, 1], [1581, 1, 20.9, 2.0, 1], [1603, -1, 17.6, 2.0, 1],
+        [1600, -1, 22.7, 1.0, 1], [1599, -1, 21.5, 1.9, 1], [1625, 1, 21.1, 2.2, 1], [1629, 1, 25.8, 1.8, 1], [1646, -1, 19.0, 2.9, 1],
+        [1650, -1, 24.2, 1.4, 1], [1650, -1, 23.5, 1.7, 1], [1667, 1, 20.3, 2.2, 1], [1668, 1, 23.1, 2.0, 1], [1687, -1, 16.3, 3.8, 1],
+        [1688, -1, 19.3, 1.0, 1], [1705, 1, 16.4, 3.9, 1], [1705, 1, 19.3, 1.3, 1], [1727, -1, 17.9, 2.1, 1], [1725, -1, 22.2, 2.0, 1],
+        [1590, -1, 48.6, 8.4, 1], [1600, -1, 47.2, 7.0, 1], [1627, -1, 45.0, 6.8, 1], [1637, -1, 37.8, 6.2, 1], [1658, 1, 40.1, 7.7, 1],
+        [1666, 1, 44.1, 6.1, 1], [1696, 1, 50.3, 5.9, 1], [1705, 1, 41.9, 6.3, 1], [1735, -1, 48.3, 7.6, 1], [1741, -1, 51.1, 4.7, 1],
+        [2080, 1, 16.2, 2.0, 1], [2078, 1, 20.4, 2.1, 1], [2077, 1, 18.7, 1.9, 1], [2099, -1, 23.8, 4.3, 1], [2097, -1, 25.9, 1.5, 1],
+        [2095, -1, 29.0, 2.2, 1], [2118, 1, 21.6, 2.6, 1], [2121, 1, 26.2, 1.9, 1], [2115, 1, 27.0, 1.8, 1], [2139, -1, 16.4, 3.2, 1],
+        [2139, -1, 19.4, 1.3, 1], [2158, 1, 18.6, 3.2, 1], [2155, 1, 23.0, 1.7, 1], [2177, -1, 18.3, 4.1, 1], [2175, -1, 23.1, 2.1, 1],
+        [2196, 1, 17.0, 4.4, 1], [2196, 1, 22.4, 1.9, 1], [2220, -1, 20.1, 3.7, 1], [2217, -1, 24.1, 2.0, 1], [2241, 1, 18.4, 3.4, 1],
+        [2238, 1, 21.8, 1.2, 1], [2244, 1, 21.2, 1.5, 1], [2259, -1, 19.8, 3.2, 1], [2257, -1, 25.0, 1.5, 1], [2258, -1, 25.2, 1.4, 1],
+        [2279, 1, 15.7, 4.1, 1], [2281, 1, 18.0, 1.6, 1], [2280, 1, 20.3, 2.0, 1], [2297, -1, 15.6, 4.4, 1], [2295, -1, 21.5, 1.5, 1],
+        [2296, -1, 19.4, 1.1, 1], [2316, 1, 22.3, 4.1, 1], [2320, 1, 26.6, 1.5, 1], [2320, 1, 26.0, 2.2, 1], [2340, -1, 18.1, 2.0, 1],
+        [2340, -1, 21.2, 1.0, 1], [2341, -1, 21.7, 1.2, 1], [2361, 1, 18.9, 3.4, 1], [2363, 1, 21.2, 1.2, 1], [2360, 1, 24.3, 1.3, 1],
+        [2090, 1, 48.0, 6.8, 1], [2099, 1, 47.1, 6.0, 1], [2130, 1, 42.5, 7.3, 1], [2137, 1, 36.2, 5.9, 1], [2167, -1, 33.5, 5.9, 1],
+        [2174, -1, 52.4, 5.2, 1], [2202, 1, 46.4, 6.5, 1], [2211, 1, 48.3, 4.4, 1], [2236, -1, 44.6, 5.2, 1], [2246, -1, 37.8, 6.4, 1],
+        [2276, -1, 37.3, 7.4, 1], [2285, -1, 50.3, 5.1, 1], [2308, -1, 53.4, 9.0, 1], [2314, -1, 52.0, 4.3, 1], [2348, 1, 42.3, 8.1, 1],
+        [2357, 1, 44.1, 5.8, 1]
+      ],
     },
     fans: {
       abstand: 7.2, gruppe: [3, 7], gruppeLaenge: 6, radius: 0.35, dicht: 0.75, blickStreuung: 0.6,
@@ -519,6 +597,10 @@ export default {
         {
           name: 'apres', s: [2036, 2054], seite: 1, lat: [10.5, 13], anzahl: 5, blickS: null, // Après-Ski-Gruppe an der Hütte
           band: [], banner: [[2045, 9.8, 'apres']], fahnen: [[2040, 12, 'motiv'], [2052, 12.5, 'motiv']], stuehle: 1,
+        },
+        {
+          name: 'funpark', s: [3632, 3652], seite: -1, lat: [11, 14], anzahl: 9, blickS: 3670, // M11b.1: Zuschauer am Funpark (zwischen Kicker 1 und 2, neben dem Anlauf)
+          band: [], banner: [[3642, 11.5, 'funpark']], fahnen: [[3634, 13.5, 'motiv'], [3650, 14, 'motiv']], stuehle: 0,
         },
         {
           name: 'arena', s: [4235, 4275], seite: 1, lat: [9.5, 14], anzahl: 22, blickS: null, // Zielarena gegenüber der Tribüne
@@ -536,8 +618,9 @@ export default {
     banner: {
       apres: ['APRES SKI', '#e040a0', '#f2f0e8'],
       arena: ['ZIELARENA', '#2456d8', '#f2f0e8'],
+      funpark: ['FUNPARK', '#ff6a10', '#1c1c1c'], // M11b.1
     },
-    wegweiser: ['BERGSTATION 2 KM', 'TALSTATION', 'ZIELARENA 4 KM'],
+    wegweiser: ['FUNPARK 1.5 KM', 'ZIELARENA 2 KM', 'TALSTATION'], // (M11b.1: Wegweiser an der Bergstation)
     sponsoren: [
       ['FIRNWERK', '#1f4f9e', '#f2f0e8'], ['PULVERBRÄU', '#c8202a', '#f2f0e8'], ['EISKRISTALL', '#7fb8e6', '#13233a'], ['BERGFUNK', '#f0c020', '#1c1c1c'],
     ],
@@ -548,7 +631,7 @@ export default {
     publikumOrte: {
       start: { staerke: 0.8, von: -70, bis: 70 },
       ziel: { staerke: 0.9, von: -70, bis: 350 },
-      apres: { staerke: 0.5 }, arena: { staerke: 0.8 },
+      apres: { staerke: 0.5 }, arena: { staerke: 0.8 }, funpark: { staerke: 0.5 }, // (M11b.1: Funpark-Zuschauer)
     },
     boeenAbschnitt: 'Dorf', // Windböen (pfeifender Wind) auf der Hochebene
     wasser: [],
@@ -596,20 +679,20 @@ export default {
     kurvenTempo: {
       kurven: [
         { von: 216, bis: 288, kmh: 72.9 }, // links 69°, Radius 29 m, schotter
-        { von: 526, bis: 591, kmh: 34.1 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 777, bis: 843, kmh: 34.1 }, // links 132°, Radius 16 m, schnee, Kehre
-        { von: 1029, bis: 1095, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 1260, bis: 1326, kmh: 34.1 }, // links 132°, Radius 15 m, schnee, Kehre
-        { von: 1512, bis: 1578, kmh: 35.6 }, // rechts 132°, Radius 16 m, schnee, Kehre
-        { von: 1743, bis: 1809, kmh: 34.1 }, // links 132°, Radius 16 m, schnee, Kehre
-        { von: 1913, bis: 2008, kmh: 75.4 }, // rechts 67°, Radius 49 m, schotter
-        { von: 2066, bis: 2242, kmh: 101.9 }, // rechts 60°, Radius 118 m, schnee
-        { von: 2394, bis: 2551, kmh: 110.1 }, // rechts 48°, Radius 126 m, schnee
-        { von: 2803, bis: 2869, kmh: 33.8 }, // rechts 134°, Radius 15 m, schnee, Kehre
-        { von: 3055, bis: 3122, kmh: 33.8 }, // links 134°, Radius 15 m, schnee, Kehre
-        { von: 3354, bis: 3505, kmh: 95.1 }, // rechts 50°, Radius 121 m, schnee
-        { von: 3910, bis: 4048, kmh: 108.7 }, // links 37°, Radius 166 m, schnee
-        { von: 4148, bis: 4223, kmh: 65 }, // links 96°, Radius 21 m, asphalt
+        { von: 526, bis: 591, kmh: 39.9 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 777, bis: 843, kmh: 39.9 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 1029, bis: 1095, kmh: 39.9 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 1260, bis: 1326, kmh: 39.5 }, // links 132°, Radius 15 m, schnee, Kehre
+        { von: 1512, bis: 1578, kmh: 39.9 }, // rechts 132°, Radius 16 m, schnee, Kehre
+        { von: 1743, bis: 1809, kmh: 39.9 }, // links 132°, Radius 16 m, schnee, Kehre
+        { von: 1913, bis: 2008, kmh: 78.2 }, // rechts 67°, Radius 49 m, schotter
+        { von: 2066, bis: 2242, kmh: 103.7 }, // rechts 60°, Radius 118 m, schnee
+        { von: 2394, bis: 2551, kmh: 115.2 }, // rechts 48°, Radius 126 m, schnee
+        { von: 2803, bis: 2869, kmh: 39.1 }, // rechts 134°, Radius 15 m, schnee, Kehre
+        { von: 3055, bis: 3122, kmh: 39.1 }, // links 134°, Radius 15 m, schnee, Kehre
+        { von: 3354, bis: 3505, kmh: 103.3 }, // rechts 50°, Radius 121 m, schnee
+        { von: 3910, bis: 4048, kmh: 117.3 }, // links 37°, Radius 166 m, schnee
+        { von: 4148, bis: 4223, kmh: 64.6 }, // links 96°, Radius 21 m, asphalt
       ],
     },
     // </erzeugt>

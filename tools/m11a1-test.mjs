@@ -324,7 +324,7 @@ if (teil('q')) {
   }
   await a.schliessen();
   info(`Gras Alpen (${gras.s0} m, ${gras.lat} m neben der Mitte, ${gras.los.art}): Gas los −${(gras.los.verlust * 100).toFixed(0)} % (${gras.los.v2.toFixed(0)} km/h), Vollgas −${(gras.voll.verlust * 100).toFixed(0)} %`);
-  for (const x of t) melde(x.los.art === 'tiefschnee' && x.los.verlust >= 0.6 && x.los.verlust > gras.los.verlust + 0.15 && x.voll.verlust > gras.voll.verlust && !x.los.strafen && !x.voll.strafen && !x.los.motor && !x.voll.motor && x.los.rueck >= 2 && x.voll.rueck >= 2,
+  for (const x of t) melde(x.los.art === 'tiefschnee' && x.los.verlust >= 0.6 && x.los.verlust > gras.los.verlust + 0.15 && x.voll.verlust > gras.voll.verlust && !x.los.strafen && !x.voll.strafen && !x.los.motor && !x.voll.motor && x.los.rueck >= 2, // (M11b.1: Erwartung alt für „rückwärts nach Vollgas“ – der Skigebiet-Tiefschnee hat eigene Werte, nach 2 s Vollgas ist das Auto noch ca. 45 km/h schnell; neue Werte prüft m11b1-test j, k, l)
     `${x.s0} m ${x.lat < 0 ? 'links' : 'rechts'} (${x.los.art}): Gas los −${(x.los.verlust * 100).toFixed(0)} % (${x.los.v2.toFixed(0)} km/h), Vollgas −${(x.voll.verlust * 100).toFixed(0)} % (${x.voll.v2.toFixed(0)} km/h), Strafen ${x.los.strafen + x.voll.strafen}, MOTOR ${x.los.motor || x.voll.motor ? 'AN' : 'aus'}, rückwärts ${x.los.rueck.toFixed(1)} / ${x.voll.rueck.toFixed(1)} m in 3 s`);
   melde(!!extra.staub && extra.staub.farbe === '#ffffff', `Schneestaub im Tiefschnee weiss (${JSON.stringify(extra.staub)}); Ton: Rollgeräusch „weich“ (dumpf, 200 Hz), nur gemessen`);
 }

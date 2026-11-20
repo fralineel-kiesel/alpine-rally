@@ -181,6 +181,8 @@ export class Fahrphysik {
     widerstand += c.luftwiderstand * (vVor / LUFT_BEZUG) ** 2;
     widerstand += motor.motorbremse;
     widerstand += boden.rollen + boden.rollenTempo * Math.abs(vVor);
+    // M11b.1: Widerstand mit dem Tempo im Quadrat (nur wo der Untergrund rollenQuadrat hat: Tiefschnee im Skigebiet)
+    if (boden.rollenQuadrat) widerstand += boden.rollenQuadrat * vVor * vVor;
     if (eingabe.bremse > 0 && vVor > 0.5) widerstand += eingabe.bremse * c.bremse * Math.min(1, boden.grip + 0.2);
     if (eingabe.gas > 0 && vVor < -0.5) widerstand += eingabe.gas * c.bremse * 0.6;
     // Handbremse: die blockierten Hinterräder rutschen und bremsen das Auto entlang seiner Fahrtrichtung,
