@@ -1178,7 +1178,15 @@ export const CONFIG = {
     schildVor: 40,             // Schild "Pistenkreuzung" so viele Meter vor der Kreuzung (rechts)
     schildHoehe: 1.4, schildGroesse: 1.1, // Unterkante und Grösse der Tafel (Meter)
     kanteBreite: 1.2,          // Funpark: farbiger Streifen an der Kicker-Kante (Meter entlang der Strasse)
-    kickerFarben: ['#2456d8', '#ff6a10'], // Streifen blau / orange
+    kickerFarben: ['#d8262a', '#ff6a10'], // Streifen rot / orange (M11b.1, vorher blau/orange)
+    // M11b.1: Kicker sichtbar machen (nur Optik, keine Kollision): Schneewände links und rechts der Rampe, dunkles Band
+    // unter der Lippe, Tor mit Banner über dem Anlauf, oranger Fangzaun neben dem Landehang
+    kickerWand: { anlauf: 22, hoehe: [0.25, 1.2], breite: 0.9, abstand: 0.15, fahnen: 6 }, // Länge vor der Kante, Höhe über der Piste (Anfang/Kante), Breite, Abstand zur Fahrbahnkante, Fahne alle so viele Meter
+    kickerSchatten: 2.2,       // dunkles Band hinter der Lippe (Meter entlang der Strasse)
+    kickerTor: { vor: 16, hoehe: 6.8, banner: 1.5, abstand: 2.6, dicke: 0.35 }, // Tor so viele Meter vor der Kante, Höhe, Banner-Höhe, Pfosten neben der Fahrbahnkante, Pfostendicke
+    kickerZaun: { hoehe: 1.0, abstand: 1.0 }, // Fangzaun am Landehang: Höhe, Abstand hinter dem Bankett
+    kickerWandFarbe: '#c4d1e3', kickerWandDunkel: '#97a8c2', kickerSchnee: '#f4f8fd', kickerSchattenFarbe: '#4f5b72',
+    torFarben: ['#ff6a10', '#2456d8', '#f6f6f6'], zaunFarbe: '#ff6a10', pfostenFarbe: '#30343c',
     fahnenFarben: ['#d8262a', '#f0c020', '#2456d8', '#2a9a4a'], fahneHoehe: 3.2, fahnenAbstand: 25, // Fahnen am Funpark
   },
 

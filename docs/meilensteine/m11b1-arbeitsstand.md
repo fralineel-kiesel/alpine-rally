@@ -18,3 +18,6 @@ Referenz 0.11b = 59a6a32 (`git worktree add <ordner> 59a6a32`), Test: `node tool
 - **Teil C (Kamera):** `kameraGefaelle: 1` (Skigebiet), Werte `CONFIG.kamera.gefaelle` (Schwelle 3 %, +8 m Höhe / +45 m Blick
   je 100 % Gefälle, Tiefpass 1.5/s, in der Luft eingefroren). Steilstücke: Kamera 2.5 → 3.8–4.0 m über dem Auto, sichtbare
   Strecke 0/58/0 → 93/140/140 m. Eben/bergauf: Lage gleich 0.11b, Bild pixelgleich. Ruckeln max 1.4 cm/Bild. **Commit 3.**
+- **Teil D (Kicker):** Befund: gebaut, aber unsichtbar (Rampe = Knick −15 → −9 % im Hang). Neu `kickerMesh` (js/skigebiet.js):
+  Schneewände, rot-orange Lippe, Schattenband, Tor mit Banner, Fangzaun am Landehang, Fahnen; Zuschauer FUNPARK.
+  Aus 100 m: 12 px hoch, 120 px, Kontrast 118 (vorher 18 px Fläche); 150 m: 9 px. Weiten 16.5–16.9 / 19.8–20.4 m. **Commit 4.**

@@ -541,6 +541,119 @@ if (teil('q')) {
 }
 if (teil('r')) await unveraendert('r', { bilder: true, stile: ['mittel'] });
 
+// ===================================================================== Teil D: Kicker sichtbar machen
+// Sichtbarkeit: Auto (Kamera) steht dist Meter vor der Kicker-Kante; Bild mit und ohne Kicker-Deko (320x180). Pixel, die
+// sich um mindestens 20 Helligkeitsstufen ändern = Kicker-Deko. Ergebnis: Höhe (Bildzeilen) und mittlerer Kontrast.
+const KICKER_SICHT = async ({ kante, dist, meshes }) => {
+  const A = window.__alpineRally, D = A.skigebietDeko, M = meshes === 'alle' ? D.meshes : [D.kickerMesh].filter(Boolean);
+  A.setzeAuf(kante - dist); A.kameraSofort(); window.__bild(2, 1000 / 60);
+  const c = document.getElementById('spiel'), g = c.getContext('webgl2') || c.getContext('webgl');
+  const w = g.drawingBufferWidth, h = g.drawingBufferHeight;
+  const lies = () => { const px = new Uint8Array(w * h * 4); A.renderer.render(A.szene, A.kamera); g.readPixels(0, 0, w, h, g.RGBA, g.UNSIGNED_BYTE, px); const l = new Float32Array(w * h); for (let i = 0; i < w * h; i++) l[i] = 0.299 * px[4 * i] + 0.587 * px[4 * i + 1] + 0.114 * px[4 * i + 2]; return l; };
+  const mit = lies(); for (const m of M) m.visible = false; const ohne = lies(); for (const m of M) m.visible = true;
+  let y0 = h, y1 = -1, x0 = w, x1 = -1, n = 0, sum = 0;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const d = Math.abs(mit[y * w + x] - ohne[y * w + x]); if (d >= 20) { n++; sum += d; y0 = Math.min(y0, y); y1 = Math.max(y1, y); x0 = Math.min(x0, x); x1 = Math.max(x1, x); } }
+  return { pixel: n, hoehe: n ? y1 - y0 + 1 : 0, breite: n ? x1 - x0 + 1 : 0, kontrast: n ? sum / n : 0 };
+};
+if (teil('s')) {
+  titel('(s) Kicker in den Daten und gezeichnet (Sprungzonen KICKER, Funpark-Optik, Kicker-Mesh mit Wänden, Tor, Zaun)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = await s.page.evaluate(() => { const A = window.__alpineRally, D = A.skigebietDeko; return { zonen: A.strecke.sprungZonen.map((z) => [z.name, z.kante, z.landeVon, z.landeBis]), kicker: D.kicker.map((k) => k.kante), mesh: !!D.kickerMesh, dreiecke: D.kickerMesh ? D.kickerMesh.geometry.index.count / 3 : 0, meshes: D.meshes.length }; });
+  await s.schliessen();
+  const k = r.zonen.filter((z) => z[0] === 'KICKER');
+  melde(k.length === 3 && r.kicker.length === 3, `Sprungzonen: ${r.zonen.map((z) => `${z[0]} ${z[1]} m`).join(', ')}; Funpark-Kanten ${r.kicker.join(' / ')} m`);
+  melde(r.mesh && r.dreiecke > 100, `Kicker-Mesh gezeichnet: ${r.dreiecke} Dreiecke (Wände, Schattenband, Tor, Zaun, Fahnen), ${r.meshes} Zeichenaufrufe Skigebiet-Deko`);
+  info('Befund 0.11b: Kicker waren gebaut (Sprungzonen + farbiger Streifen + 2 Fahnen), aber die Rampe ist nur ein Knick im −15-%-Hang (−15 % → −9 %): von weitem nicht als Schanze zu sehen');
+}
+if (teil('t')) {
+  titel('(t) Kicker aus 100 und 150 m sichtbar: mindestens ca. 8 Pixel hoch und ≥ 40 Helligkeitsstufen Kontrast bei 100 m (320x180), vorher/nachher');
+  const z = [];
+  for (const [w, wurzel] of [['nachher', WURZEL], ['vorher (0.11b)', ALT]]) {
+    if (!wurzel) continue;
+    const s = await oeffne(wurzel, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
+    await s.page.evaluate(() => { window.__alpineRally.anhalten = true; window.__bild(5, 1000 / 60); });
+    for (const [kante, dist] of [[3560, 100], [3560, 120], [3560, 150]]) z.push({ w, kante, dist, ...(await s.page.evaluate(KICKER_SICHT, { kante, dist, meshes: w === 'nachher' ? 'kicker' : 'alle' })) });
+    await s.schliessen();
+  }
+  for (const x of z) info(`${x.w}: Kicker ${x.kante} m aus ${x.dist} m: ${x.hoehe} Pixel hoch, ${x.breite} breit, ${x.pixel} Pixel, Kontrast ${x.kontrast.toFixed(0)}`);
+  const n100 = z.filter((x) => x.w === 'nachher' && x.dist === 100), n150 = z.find((x) => x.w === 'nachher' && x.dist === 150);
+  melde(n100.every((x) => x.hoehe >= 8 && x.kontrast >= 40), `100 m: ${n100.map((x) => `${x.hoehe} px / Kontrast ${x.kontrast.toFixed(0)}`).join(', ')} (Ziel ≥ 8 px, ≥ 40)`);
+  melde(n150.hoehe >= 5, `150 m: ${n150.hoehe} px hoch, Kontrast ${n150.kontrast.toFixed(0)} (noch erkennbar)`);
+}
+if (teil('u')) {
+  titel('(u) Sprünge wie bisher mit der breiten Piste: Weiten bei 100 km/h (Kuppe 15–25 m, Kicker 10–20 m), Landungen, Zeitgewinn ≤ 0.2 s');
+  for (const id of AUTOS) {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet', { auto: id });
+    const r = await s.page.evaluate(WEITEN, [100]);
+    await s.schliessen();
+    const z = Object.entries(r.out).map(([name, l]) => ({ name, ...l[0] }));
+    const ok = z.every((x) => x.ab && x.belag === 'schnee' && (x.name === 'KICKER' ? x.weite >= 10 && x.weite <= 20 : x.weite >= 15 && x.weite <= 25));
+    melde(ok, `${id}: ${z.map((x) => `${x.name} ${x.ab ? `${x.weite.toFixed(1)} m (${x.belag}, Verlust ${(x.verlust * 100).toFixed(0)} %)` : 'rollt'}`).join(', ')}`);
+  }
+  info('(WEITEN misst je Name einmal: die drei Kicker sind gleich gebaut, gemessen wird der letzte Eintrag je Name)');
+
+  {
+  const d = await parallel(AUTOS.map((id) => () => testfahrerLauf(G_DATEI, id, WURZEL, 'neuD1', STILE)), 3);
+  const schlecht = [], wandStrafen = []; let n = 0, weit = 0;
+  AUTOS.forEach((id, k) => {
+    for (const st of d[k].stile) {
+      for (const j of st.spruenge || []) { n++; weit = Math.max(weit, j.weite); if (Math.abs(j.seite || 0) > 4.5 || j.ausserhalb) schlecht.push(`${id}/${st.stil} ${j.weite.toFixed(0)} m seitlich ${(j.seite || 0).toFixed(1)}`); }
+      if (st.zeit == null) schlecht.push(`${id}/${st.stil} nicht im Ziel`);
+      // (der Stil „wand“ fährt absichtlich an Netze und Zäune – seine Strafen sind kein Landungsfehler, nur gemeldet)
+      if ((st.motorStrafen || []).length) (st.stil === 'wand' ? wandStrafen : schlecht).push(`${id}/${st.stil} ${(st.motorStrafen || []).length} Strafen`);
+    }
+  });
+  melde(schlecht.length === 0, `${n} Sprünge in ${AUTOS.length * STILE.length} Läufen, weitester ${weit.toFixed(1)} m${schlecht.length ? ` – ${schlecht.join('; ')}` : ''}`);
+  if (wandStrafen.length) info(`Stil „wand“ (fährt absichtlich an die Netze): ${wandStrafen.join('; ')}`);
+  }
+  {
+  const ohne = ohneSpruenge();
+  const kanten = [...fs.readFileSync(G_DATEI, 'utf8').matchAll(/, kante: (\d{3,}),/g)].map((m) => +m[1]);
+  const zt = (z, k) => z[Math.round((k + 150) / 10)] - z[Math.round((k - 100) / 10)];
+  const tab = ['| Auto | ' + kanten.map((k) => `${k} m: mit / ohne / Unterschied`).join(' | ') + ' | Flugweiten |', '|---|' + kanten.map(() => '---|').join('') + '---|'];
+  const gewinn = [];
+  const l = await parallel(AUTOS.flatMap((id) => [() => testfahrerLauf(G_DATEI, id, WURZEL, 'neuD1', STILE), () => testfahrerLauf(ohne, id, WURZEL, 'ohne', ['mittel'])]), 4);
+  AUTOS.forEach((id, k) => {
+    const m = l[2 * k].stile.find((x) => x.stil === 'mittel'), o = l[2 * k + 1].stile[0];
+    const z = kanten.map((kk) => [zt(m.zeitBei, kk), zt(o.zeitBei, kk)]);
+    z.forEach(([a, b], j) => { if (a - b < -0.2) gewinn.push(`${id} ${kanten[j]} m ${(a - b).toFixed(2)} s`); });
+    tab.push(`| ${id} | ${z.map(([a, b]) => `${a.toFixed(2)} / ${b.toFixed(2)} / ${a - b >= 0 ? '+' : ''}${(a - b).toFixed(2)} s`).join(' | ')} | ${(m.spruenge || []).map((x) => `${x.weite.toFixed(0)} m`).join(' / ')} |`);
+  });
+  fs.writeFileSync(path.join(LOG, 'zeit-je-sprung.md'), tab.join('\n') + '\n');
+  for (const z of tab) info(z);
+  melde(gewinn.length === 0, `kein Sprung bringt mehr als 0.2 s${gewinn.length ? ` – ${gewinn.join('; ')}` : ''}`);
+  }
+}
+function ohneSpruenge() {
+  const t2 = fs.readFileSync(G_DATEI, 'utf8');
+  let n = 0;
+  const neu = t2.replace(/\{ s: (\d+), name: '([^']+)', von:[^\n]*\n\s*form: \{[^}]*\} \}/g, (_, a, b) => { n++; return `{ s: ${a}, name: '${b}' }`; });
+  if (n !== 4) throw new Error(`ohneSpruenge: ${n} statt 4 Sprungzonen ersetzt`);
+  const datei = path.join(LOG, 'skigebiet-ohne-spruenge.js');
+  fs.writeFileSync(datei, neu);
+  return datei;
+}
+
+if (teil('v')) {
+  titel('(v) Sprung-Statistik fürs Skigebiet zählt die Kicker: Anzahl und weitester Sprung im Zielbildschirm, Rekord unter „skigebiet“');
+  const s = await oeffne(WURZEL, '?ton=aus&menue=aus&strecke=skigebiet', { speicher: {} });
+  const code = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+  const r = await s.page.evaluate(async (code) => {
+    const f = await import(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    const A = window.__alpineRally; A.neustart();
+    let n = 0; while (A.ablauf.zustand === 'countdown' && n++ < 3000) A.rennSchritt(A.SCHRITT, { gas: 0, bremse: 0, lenkung: 0, handbremse: false });
+    const z = f.fahreEtappe(A, 'mittel');
+    await new Promise((ok) => { let k = 0; const g = () => (++k > 10 ? ok() : requestAnimationFrame(g)); requestAnimationFrame(g); });
+    return { ziel: z.ziel, erg: A.lauf.ergebnis && A.lauf.ergebnis.spruenge, speicher: localStorage.getItem('alpineRally.sprungRekorde') };
+  }, code);
+  await s.schliessen();
+  const rek = r.speicher ? JSON.parse(r.speicher).skigebiet : null;
+  melde(r.ziel && r.erg && r.erg.anzahl >= 3 && r.erg.weitester > 10, `Lauf im Ziel: ${r.erg && r.erg.anzahl} Sprünge gezählt, weitester ${r.erg && r.erg.weitester.toFixed(1)} m`);
+  melde(!!rek && Math.abs(rek.weite - Math.round(r.erg.weitester * 10) / 10) < 1e-9, `Rekord gespeichert unter „skigebiet“: ${rek && rek.weite} m (${rek && rek.auto})`);
+  melde(s.fehler.length === 0, `Konsole ohne Fehler (${s.fehler.join(' | ').slice(0, 200)})`);
+}
+if (teil('w')) await unveraendert('w', { bilder: true, stile: ['mittel', 'wand'] });
+
 // ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');
 for (const e of ergebnisse) console.log(`| ${e.titel.slice(0, 120)} | ${e.rot ? `**${e.rot} rot**, ${e.ok} ok` : `grün (${e.ok} ok)`} |`);

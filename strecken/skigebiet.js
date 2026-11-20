@@ -541,6 +541,10 @@ export default {
           band: [], banner: [[2045, 9.8, 'apres']], fahnen: [[2040, 12, 'motiv'], [2052, 12.5, 'motiv']], stuehle: 1,
         },
         {
+          name: 'funpark', s: [3632, 3652], seite: -1, lat: [11, 14], anzahl: 9, blickS: 3670, // M11b.1: Zuschauer am Funpark (zwischen Kicker 1 und 2, neben dem Anlauf)
+          band: [], banner: [[3642, 11.5, 'funpark']], fahnen: [[3634, 13.5, 'motiv'], [3650, 14, 'motiv']], stuehle: 0,
+        },
+        {
           name: 'arena', s: [4235, 4275], seite: 1, lat: [9.5, 14], anzahl: 22, blickS: null, // Zielarena gegenüber der Tribüne
           band: [[4233, 4277, 9.2]], banner: [[4255, 10.5, 'arena']], fahnen: [[4242, 12, 'motiv'], [4268, 13, 'motiv']], stuehle: 0,
         },
@@ -556,6 +560,7 @@ export default {
     banner: {
       apres: ['APRES SKI', '#e040a0', '#f2f0e8'],
       arena: ['ZIELARENA', '#2456d8', '#f2f0e8'],
+      funpark: ['FUNPARK', '#ff6a10', '#1c1c1c'], // M11b.1
     },
     wegweiser: ['BERGSTATION 2 KM', 'TALSTATION', 'ZIELARENA 4 KM'],
     sponsoren: [
@@ -568,7 +573,7 @@ export default {
     publikumOrte: {
       start: { staerke: 0.8, von: -70, bis: 70 },
       ziel: { staerke: 0.9, von: -70, bis: 350 },
-      apres: { staerke: 0.5 }, arena: { staerke: 0.8 },
+      apres: { staerke: 0.5 }, arena: { staerke: 0.8 }, funpark: { staerke: 0.5 }, // (M11b.1: Funpark-Zuschauer)
     },
     boeenAbschnitt: 'Dorf', // Windböen (pfeifender Wind) auf der Hochebene
     wasser: [],
