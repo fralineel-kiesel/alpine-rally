@@ -1,4 +1,4 @@
-// Kurzmessungen auf Schnee und Eis (M11a, Teil B):  node tools/schnee-messung.mjs [--wurzel <ordner>] [--json <datei>]
+// Kurzmessungen auf Schnee und Eis (M11a, Teil B):  node tools/schnee-messung.mjs [--wurzel <ordner>] [--json <datei>] [--strecke <id>]
 // Ohne Browser, echte Fahrphysik (js/physics.js) und Getriebe (tools/fahrmessung.js), alle Autos, Beläge
 // asphalt / schotter / schnee / eis:
 //   bremsweg  Vollbremsung 100 -> 0 km/h geradeaus (m), dazu Verhältnis gegen Schotter
@@ -17,7 +17,9 @@ const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.a
 export const AUTOS = ['prototyp', 'rt4', 'delto', 'escorta', 'l073', 'imprexa'];
 export const BELAEGE = ['asphalt', 'schotter', 'schnee', 'eis'];
 
-export async function schneeMessung(wurzel = WURZEL, { belaege = BELAEGE, autos = AUTOS, kreis = true } = {}) {
+export async function schneeMessung(wurzel = WURZEL, { belaege = BELAEGE, autos = AUTOS, kreis = true, strecke = null } = {}) {
+  // M11b.1: strecke = Werte dieser Strecke (z. B. 'skigebiet' mit eigenem Schnee-Grip); muss vor dem ersten Laden gesetzt sein
+  if (strecke) globalThis.location = { search: `?strecke=${strecke}` };
   const lade = (d) => import(pathToFileURL(path.join(wurzel, 'js', d)).href);
   const { CONFIG } = await lade('config.js');
   const { Fahrphysik } = await lade('physics.js');
@@ -49,7 +51,7 @@ export function messText(e) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const e = await schneeMessung(arg('--wurzel') ? path.resolve(arg('--wurzel')) : WURZEL, { kreis: !process.argv.includes('--ohne-kreis') });
+  const e = await schneeMessung(arg('--wurzel') ? path.resolve(arg('--wurzel')) : WURZEL, { kreis: !process.argv.includes('--ohne-kreis'), strecke: arg('--strecke') });
   console.log(messText(e));
   if (arg('--json')) fs.writeFileSync(arg('--json'), JSON.stringify(e, null, 1));
 }

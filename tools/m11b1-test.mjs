@@ -316,12 +316,219 @@ if (teil('d')) {
 }
 if (teil('e')) await kontrastTest('e', '(breite Piste, heller Rand)');
 if (teil('f')) {
-  await skiTestfahrer('f', 'neuA');
+  await skiTestfahrer('f', `neu${arg('--stand') || 'A'}`); // (--stand B, C, …: frische Läufe nach jedem Teil)
   const z = await anfahren([['hang', HANG_S, 40]]);
   const allrad = Math.max(...ALLRAD.map((id) => z[id].hang.t)), hinten = Math.min(...HINTERRAD.map((id) => z[id].hang.t));
   melde(allrad < hinten && hinten >= allrad * 1.15, `Anfahren am steilsten Hang (${HANG_S} m, ${(z[AUTOS[0]].hang.steigung * 100).toFixed(1)} %, 0–40 km/h): ${AUTOS.map((id) => `${id} ${z[id].hang.t.toFixed(2)} s`).join(', ')} – Allrad klar vorn`);
 }
 if (teil('g')) await unveraendert('g', { bilder: true });
+
+// ===================================================================== Teil B: Grip Piste und Tiefschnee
+const FAHRER_CODE = fs.readFileSync(path.join(WURZEL, 'tools/testfahrer-browser.js'), 'utf8');
+async function mitFahrer(s) { await s.page.evaluate((code) => { window.__alpineRally.anhalten = true; window.__fahrerUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); }, FAHRER_CODE); }
+// Herauskommen: Auto steht still 5 m neben der Piste (Fahrbahnkante + 5 m, Tiefschnee), Blick in Fahrtrichtung. Der
+// Testfahrer (Stil mittel/flott) fährt eine Linie schräg zurück zur Strassenmitte (25 m), vorwärts, ohne Rückwärts-Trick.
+// Gemessen: Zeit bis das Auto wieder auf der Piste ist (Mitte innerhalb der Fahrbahn)
+const HERAUS = async ({ stellen, stile }) => {
+  const f = await import(window.__fahrerUrl);
+  const A = window.__alpineRally, S = A.strecke, q = {}, out = [];
+  A.anhalten = true;
+  for (const [s0, sd] of stellen) for (const stil of stile) {
+    const hb = A.netz.halbBei(s0), lat0 = sd * (hb + 5), xs = [], zs = [];
+    for (let i = 0; i <= 70; i++) {
+      const p = S.punktBei(s0 + i), t = Math.min(1, i / 25), l = lat0 * (1 - t * t * (3 - 2 * t));
+      xs.push(p.x - p.tz * l); zs.push(p.z + p.tx * l);
+    }
+    const pf = f.bauePfad(A, xs, zs, f.PROFILE[stil]); pf.vZiel[0] = 0;
+    let tPiste = null, t = 0, art0 = null, rueck = false; const schritt = A.physikSchritt;
+    A.physikSchritt = (dt, e, nf) => {
+      schritt(dt, e, nf); t += dt; art0 = art0 || A.untergrund;
+      if (e.bremse > 0.05 && A.physik.vVor < 0) rueck = true;
+      S.abfrage(A.physik.x, A.physik.z, q);
+      if (tPiste == null && Math.abs(q.seite) <= A.netz.halbBei(q.s)) tPiste = t;
+    };
+    try { f.fahreStueck(A, pf, 40); } finally { A.physikSchritt = schritt; }
+    out.push({ s: s0, seite: sd, stil, t: tPiste, start: art0, rueck });
+  }
+  return out;
+};
+// Aus kmh in den Tiefschnee (Auto 3 m hinter der Fahrbahnkante hineinversetzt, geradeaus), 2 s Gas los bzw. Vollgas:
+// Tempo-Verlauf je 0.1 s (kein fester Deckel: das Tempo fällt stetig)
+const TIEF_BREMSEN = async ({ s0, sd, kmh }) => {
+  const A = window.__alpineRally, P = A.physik, S = A.strecke; A.anhalten = true;
+  const LEER = { gas: 0, bremse: 0, lenkung: 0, handbremse: false }, out = {};
+  for (const [name, gas] of [['los', 0], ['voll', 1]]) {
+    A.setzeAuf(s0); const p = S.punktBei(s0), lat = sd * (A.netz.halbBei(s0) + A.CONFIG.strasse.bankett + 3);
+    P.x = p.x - p.tz * lat; P.z = p.z + p.tx * lat; if (A.getriebe) A.getriebe.reset();
+    P.vx = Math.sin(P.richtung) * kmh / 3.6; P.vz = Math.cos(P.richtung) * kmh / 3.6; P.vVor = kmh / 3.6;
+    const st0 = A.wand.strafen, verlauf = []; let art = null, tief = true;
+    for (let t = 0, k = 0; t < 2 - 1e-9; t += A.SCHRITT, k++) {
+      A.physikSchritt(A.SCHRITT, { ...LEER, gas }, true); art = art || A.untergrund; if (A.untergrund !== 'tiefschnee') tief = false;
+      if (k % Math.round(0.1 / A.SCHRITT) === Math.round(0.1 / A.SCHRITT) - 1) verlauf.push(P.tempo * 3.6);
+    }
+    out[name] = { v2: P.tempo * 3.6, verlust: 1 - P.tempo * 3.6 / kmh, art, tief, strafen: A.wand.strafen - st0, verlauf, motorLeuchte: A.wand.strafeRest > 0 };
+  }
+  return out;
+};
+const ROLLEN_STELLEN = [[700, 1, 'Anstieg'], [2150, -1, 'Grat'], [2900, 1, 'Abfahrt'], [3700, -1, 'Funpark']];
+if (teil('h') || teil('i')) {
+  const e = await (await import('./schnee-messung.mjs')).schneeMessung(WURZEL, { kreis: false, strecke: 'skigebiet', autos: AUTOS, belaege: ['schotter', 'schnee'] });
+  fs.writeFileSync(path.join(LOG, 'schnee-messung.json'), JSON.stringify(e, null, 1));
+  if (teil('h')) {
+    titel('(h) Piste (Belag Schnee, Skigebiet) griffiger: Bremsweg 100 → 0 = 1.15–1.25 × Schotter (0.11b: 1.48–1.49)');
+    const v = AUTOS.map((id) => [id, e[id].schnee.bremsweg / e[id].schotter.bremsweg]);
+    melde(v.every(([, x]) => x >= 1.15 && x <= 1.25), `Bremsweg Schnee/Schotter: ${v.map(([id, x]) => `${id} ${x.toFixed(2)}`).join(', ')}`);
+    const a = (await import('./schnee-messung.mjs')).schneeMessung;
+    info('Alpen/Finnland haben keinen Schnee-Belag (geprüft: nur strecken/skigebiet.js nutzt belag schnee); der Grundwert in config.js bleibt (Engine-Test m11a1 (i) unverändert 1.48–1.49)');
+  }
+  if (teil('i')) {
+    titel('(i) 0–60 km/h auf der Piste (eben) und Anfahren am 22.5-%-Hang (0–40): etwas besser, Allrad klar vor Hinterrad');
+    info(`0–60 (schnee-messung, eben): ${AUTOS.map((id) => `${id} ${e[id].schnee.null60.toFixed(2)} s`).join(', ')} (0.11b: Allrad 4.2–4.4 s, Hinterrad 6.9–7.4 s)`);
+    const a60 = Math.max(...ALLRAD.map((id) => e[id].schnee.null60)), h60 = Math.min(...HINTERRAD.map((id) => e[id].schnee.null60));
+    melde(a60 < 4.4 && a60 * 1.15 < h60 && h60 < 7.4, `0–60 eben: langsamster Allrad ${a60.toFixed(2)} s < schnellster Hinterrad ${h60.toFixed(2)} s (+${((h60 / a60 - 1) * 100).toFixed(0)} %), beide besser als 0.11b`);
+    const z = await anfahren([['hang', HANG_S, 40], ['flach', 100, 40]]);
+    const allrad = Math.max(...ALLRAD.map((id) => z[id].hang.t)), hinten = Math.min(...HINTERRAD.map((id) => z[id].hang.t));
+    info(`Hang ${HANG_S} m (${(z[AUTOS[0]].hang.steigung * 100).toFixed(1)} %, ${z[AUTOS[0]].hang.untergrund}): ${AUTOS.map((id) => `${id} ${z[id].hang.t.toFixed(2)} s`).join(', ')} (0.11b: Allrad 3.98–4.25, Escorta 10.08, Lanza 073 11.42)`);
+    melde(allrad < hinten && hinten >= allrad * 1.15 && hinten <= 11.42, `Hang 0–40: langsamster Allrad ${allrad.toFixed(2)} s, schnellster Hinterrad ${hinten.toFixed(2)} s (+${((hinten / allrad - 1) * 100).toFixed(0)} %), Hinterrad nicht schlechter als 0.11b`);
+  }
+}
+if (teil('j') || teil('l')) {
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet');
+  const r = [];
+  for (const [s0, sd, wo] of ROLLEN_STELLEN) r.push({ wo, s0, sd, x80: await s.page.evaluate(TIEF_BREMSEN, { s0, sd, kmh: 80 }), x120: await s.page.evaluate(TIEF_BREMSEN, { s0, sd, kmh: 120 }) });
+  const cfg = await s.page.evaluate(() => window.__alpineRally.CONFIG.untergrund.tiefschnee);
+  await s.schliessen();
+  if (teil('j')) {
+    titel('(j) Kein hartes Tempolimit im Tiefschnee: aus 80 und 120 km/h fällt das Tempo stetig (Widerstand wächst mit dem Tempo), kein fester Deckel');
+    info(`Tiefschnee Skigebiet: ${JSON.stringify(cfg)} (0.11b: rollen 1.2, rollenTempo 0.7, kein rollenQuadrat; einen festen km/h-Deckel gab es auch dort nicht)`);
+    for (const x of r) {
+      // kein Deckel: (1) das Tempo fällt stetig, (2) nach 0.5 s ist die Fahrt aus 120 km/h noch mindestens 10 km/h schneller
+      // als die aus 80 (ein fester Deckel setzte beide sofort auf denselben Wert), (3) kein Abfall über 15 km/h je 0.1 s (kein Ruck)
+      const v = x.x120.voll.verlauf, w = x.x80.voll.verlauf, stetig = v.every((y, i) => i === 0 || y < v[i - 1] + 0.01);
+      const sprung = Math.max(...v.map((y, i) => (i ? v[i - 1] - y : 120 - y)));
+      melde(stetig && x.x120.voll.tief && v[4] - w[4] >= 10 && sprung <= 15, `${x.wo} ${x.s0} m: Vollgas aus 120 km/h ${v.filter((_, i) => i % 4 === 3).map((y) => y.toFixed(0)).join(' → ')} km/h, aus 80 ${w.filter((_, i) => i % 4 === 3).map((y) => y.toFixed(0)).join(' → ')} km/h; nach 0.5 s ${v[4].toFixed(0)} gegen ${w[4].toFixed(0)} km/h, grösster Abfall je 0.1 s ${sprung.toFixed(1)} km/h`);
+    }
+  }
+  if (teil('l')) {
+    titel('(l) Tempoverlust: aus 80 km/h in 2 s mindestens ca. 40 % (Gas los und Vollgas), ohne Wand-Strafe und ohne MOTOR-Leuchte');
+    for (const x of r) melde(x.x80.los.verlust >= 0.4 && x.x80.voll.verlust >= 0.4 && !x.x80.los.strafen && !x.x80.voll.strafen && !x.x80.voll.motorLeuchte && x.x80.los.art === 'tiefschnee',
+      `${x.wo} ${x.s0} m: Gas los −${(x.x80.los.verlust * 100).toFixed(0)} %, Vollgas −${(x.x80.voll.verlust * 100).toFixed(0)} % (${x.x80.voll.v2.toFixed(0)} km/h), Strafen ${x.x80.los.strafen + x.x80.voll.strafen}`);
+  }
+}
+if (teil('k')) {
+  titel('(k) Herauskommen: Stillstand 5 m neben der Piste, alle 5 Autos (Testfahrer mittel und flott), in höchstens ca. 4 s zurück auf der Piste, ohne Rückwärts');
+  const stellen = [[700, -1], [1200, -1], [1400, 1], [2150, 1], [2150, -1], [2900, 1], [3300, -1], [3600, 1]]; // (Seiten ohne Fangnetz: hinter dem Netz kommt man nicht vorwärts zurück)
+  const tab = [];
+  let alle = true, max = 0, maxWo = '';
+  for (const id of AUTOS) {
+    const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet', { auto: id });
+    await mitFahrer(s);
+    const r = await s.page.evaluate(HERAUS, { stellen, stile: ['mittel', 'flott'] });
+    await s.schliessen();
+    for (const x of r) { if (x.t == null || x.t > 4.05 || x.rueck || x.start !== 'tiefschnee') alle = false; if ((x.t ?? 99) > max) { max = x.t ?? 99; maxWo = `${id} ${x.s} m ${x.seite < 0 ? 'links' : 'rechts'} ${x.stil}`; } }
+    tab.push(`${id}: ${r.map((x) => `${x.s}${x.seite < 0 ? 'L' : 'R'}/${x.stil[0]} ${x.t == null ? '–' : x.t.toFixed(1)}`).join(' ')}`);
+  }
+  for (const z of tab) info(z);
+  melde(alle, `alle ${AUTOS.length * stellen.length * 2} Fahrten zurück auf der Piste, langsamste ${max.toFixed(2)} s (${maxWo}), kein Rückwärts`);
+}
+if (teil('m')) {
+  titel('(m) Kein Exploit: Tiefschnee-Linie in jeder Kehre mindestens 0.3 s langsamer als die beste Fahrt auf der Strasse, Netz nie schneller; Abkürzungen 0');
+  await kurvenTest('neuB', 0.3, 'Tiefschnee/Netz weniger als 0.3 s langsamer');
+  abkuerzungTest();
+}
+if (teil('n')) await unveraendert('n', { bilder: true });
+
+// ===================================================================== Teil C: Kamera folgt dem Gefälle
+// Sicht: Bild rendern, Punkte der Strassenmitte alle 2.5 m von 0 bis 150 m voraus prüfen: im Bild und nicht verdeckt
+// (Strahl von der Kamera trifft nichts, was mehr als 1 m davor liegt: Auto, Gelände, Netze). Ergebnis in Metern.
+const SICHT = async ({ stellen, staerke }) => {
+  const A = window.__alpineRally, S = A.strecke, T = A.THREE, out = [];
+  const G = A.CONFIG.kamera.gefaelle, alt = G.staerke; G.staerke = staerke;
+  const ray = new T.Raycaster(); ray.camera = A.kamera;
+  const ziele = []; A.szene.traverse((o) => { if ((o.isMesh || o.isInstancedMesh) && o.visible !== false && !(o.material && o.material.transparent && o.material.opacity < 0.5)) ziele.push(o); });
+  for (const s0 of stellen) {
+    A.setzeAuf(s0); A.kameraSofort(); window.__bild(2, 1000 / 60);
+    A.kamera.updateMatrixWorld(); const kp = A.kamera.position.clone();
+    const autoY = A.autoModell.objekt.position.y;
+    let sicht = 0, weitest = 0;
+    for (let d = 2.5; d <= 150; d += 2.5) {
+      const p = S.punktBei(s0 + d), P = new T.Vector3(p.x, p.h + 0.3, p.z), v = P.clone().project(A.kamera);
+      if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1 || v.z > 1) continue;
+      const dir = P.clone().sub(kp), L = dir.length(); ray.set(kp, dir.normalize()); ray.far = L - 1;
+      const hit = ray.intersectObjects(ziele, false).find((h) => !(h.object.isSprite));
+      if (!hit) { sicht += 2.5; weitest = d; }
+    }
+    out.push({ s: s0, hoehe: kp.y - autoY, f: A.kameraGefaelle.f, sicht, weitest });
+  }
+  G.staerke = alt;
+  return out;
+};
+const STEIL = [2600, 2950, 3250]; // steilste Gefälle (−22…−23 %)
+if (teil('o')) {
+  titel('(o) Kamera bergab: im steilsten Gefälle deutlich höher, sichtbare Strecke voraus ≥ ca. 60 m (vorher/nachher, 320x180)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
+  await s.page.evaluate(() => { window.__alpineRally.anhalten = true; });
+  const vor = await s.page.evaluate(SICHT, { stellen: STEIL, staerke: 0 }), nach = await s.page.evaluate(SICHT, { stellen: STEIL, staerke: 1 });
+  await s.schliessen();
+  fs.writeFileSync(path.join(LOG, 'kamera-sicht.json'), JSON.stringify({ vor, nach }, null, 1));
+  STEIL.forEach((m, i) => melde(nach[i].hoehe >= vor[i].hoehe + 1 && nach[i].sicht >= 60, `${m} m: Kamera ${vor[i].hoehe.toFixed(2)} → ${nach[i].hoehe.toFixed(2)} m über dem Auto; Strecke sichtbar (0–150 m voraus) ${vor[i].sicht.toFixed(0)} → ${nach[i].sicht.toFixed(0)} m, weitester sichtbarer Punkt ${vor[i].weitest.toFixed(0)} → ${nach[i].weitest.toFixed(0)} m`));
+}
+// Kamera ohne Gefälle unverändert: Kamera-Lage gleich wie 0.11b (Zahlen) und Bild gleich wie mit kameraGefaelle 0
+const KAM_LAGE = async ({ stellen, staerke }) => {
+  const A = window.__alpineRally, out = [];
+  if (A.CONFIG.kamera.gefaelle) A.CONFIG.kamera.gefaelle.staerke = staerke;
+  for (const s0 of stellen) {
+    A.setzeAuf(s0); A.kameraSofort(); window.__bild(3, 1000 / 60);
+    A.kamera.updateMatrixWorld(); out.push(Array.from(A.kamera.matrixWorld.elements).map((x) => x.toFixed(9)).join(','));
+  }
+  return out;
+};
+if (teil('p')) {
+  titel('(p) Ebene und bergauf: Kamera wie 0.11b (Lage Zahl für Zahl) und Bild pixelgleich zu „ohne Kamera-Gefälle“ (Skigebiet an 3 Stellen)');
+  const stellen = [150, 700, 2300]; // Dorf (eben), Anstieg (bergauf), Grat (eben/wellig)
+  const n = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
+  await n.page.evaluate(() => { window.__alpineRally.anhalten = true; window.__bild(5, 1000 / 60); });
+  const lageNeu = await n.page.evaluate(KAM_LAGE, { stellen, staerke: 1 });
+  const bildMit = await n.page.evaluate(BILD_SUMME, { stellen });
+  await n.page.evaluate(() => { window.__alpineRally.CONFIG.kamera.gefaelle.staerke = 0; });
+  const bildOhne = await n.page.evaluate(BILD_SUMME, { stellen });
+  await n.schliessen();
+  if (ALT) {
+    const a = await oeffne(ALT, '?menue=aus&ton=aus&strecke=skigebiet&aufloesung=320x180', { uhr: true });
+    await a.page.evaluate(() => { window.__alpineRally.anhalten = true; window.__bild(5, 1000 / 60); });
+    const lageAlt = await a.page.evaluate(KAM_LAGE, { stellen, staerke: 0 });
+    await a.schliessen();
+    melde(lageNeu.every((x, i) => x === lageAlt[i]), `Kamera-Lage an ${stellen.join(' / ')} m ${lageNeu.map((x, i) => (x === lageAlt[i] ? 'gleich' : 'ANDERS')).join(' / ')} wie 0.11b`);
+  }
+  melde(bildMit.every((x, i) => x === bildOhne[i]), `Bild mit/ohne Kamera-Gefälle an ${stellen.join(' / ')} m: ${bildMit.map((x, i) => (x === bildOhne[i] ? 'pixelgleich' : 'ANDERS')).join(' / ')}`);
+}
+// Ruckeln: Testfahrer (mittel, 60 Bilder/s) fährt Grat → Abfahrt → Funpark; Kamera wird jedes Bild nachgeführt
+const RUCKELN = async ({ von, bis }) => {
+  const f = await import(window.__fahrerUrl);
+  const A = window.__alpineRally, K = A.kameraGefaelle, G = A.CONFIG.kamera.gefaelle; A.anhalten = true;
+  A.setzeAuf(von); A.kameraSofort(); A.rennen.zustand = 'laeuft';
+  let n = 0, fAlt = K.f, yAlt = null, maxDF = 0, maxDY = 0, maxF = 0, maxFbei = 0, dyBei = 0, tUeber = 0;
+  const proBild = Math.round((1 / 60) / A.SCHRITT);
+  f.fahreBis(A, 'mittel', { bisS: bis, proSchritt: () => {
+    if (++n % proBild) return;
+    A.kameraFuehren(1 / 60);
+    const off = A.kamera.position.y - A.autoModell.objekt.position.y;
+    const df = Math.abs(K.f - fAlt) * G.hoehe; fAlt = K.f;
+    if (df > maxDF) maxDF = df;
+    if (yAlt != null && Math.abs(off - yAlt) > maxDY) { maxDY = Math.abs(off - yAlt); dyBei = A.rennen.letztesS; }
+    yAlt = off; if (K.f > maxF) { maxF = K.f; maxFbei = A.rennen.letztesS; }
+  } });
+  return { maxDF, maxDY, dyBei, maxF, maxFbei, bilder: Math.floor(n / proBild) };
+};
+if (teil('q')) {
+  titel('(q) Kein Ruckeln: Kamerahöhe aus dem Gefälle ändert sich je Bild (60/s) um höchstens 2 cm (Testfahrer Grat → Ziel)');
+  const s = await oeffne(WURZEL, '?menue=aus&ton=aus&strecke=skigebiet', { auto: 'rt4' });
+  await mitFahrer(s);
+  const r = await s.page.evaluate(RUCKELN, { von: 2300, bis: 4100 });
+  await s.schliessen();
+  melde(r.maxDF <= 0.02, `${r.bilder} Bilder: grösster Sprung der Gefälle-Höhe je Bild ${(r.maxDF * 100).toFixed(2)} cm (Grenze 2 cm); grösste Wirkung ${(r.maxF * 8).toFixed(2)} m höher bei ${r.maxFbei.toFixed(0)} m; Kamera gegen Auto gesamt höchstens ${(r.maxDY * 100).toFixed(1)} cm je Bild (bei ${r.dyBei.toFixed(0)} m, mit Federung/Sprüngen)`);
+}
+if (teil('r')) await unveraendert('r', { bilder: true, stile: ['mittel'] });
 
 // ===================================================================== Zusammenfassung
 console.log('\n| Test | Ergebnis |\n|---|---|');

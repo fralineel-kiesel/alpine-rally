@@ -21,7 +21,7 @@ export function baueMessung({ CONFIG, Fahrphysik, Getriebe }) {
     return {
       grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: 0,
       rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1, geradeaus: u.geradeaus ?? 1,
-      rueckwaertsMax: u.rueckwaertsMax ?? 1, belag: art,
+      rueckwaertsMax: u.rueckwaertsMax ?? 1, belag: art, rollenQuadrat: u.rollenQuadrat ?? 0, // (M11b.1)
     };
   }
   // Auto bei (0, 0), Blick +z, Tempo v (m/s), Getriebe eingeschwungen (wie belag-test)

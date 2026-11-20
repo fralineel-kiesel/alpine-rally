@@ -496,7 +496,7 @@ function physikSchritt(dt, e, nurFahren = false) {
   else physik.schritt(dt, eingabe, {
     grip: u.grip, rollen: u.rollen, rollenTempo: u.rollenTempo, steigung: begrenze((hv - hh) / 2.6, -0.5, 0.5),
     rueckwaerts: u.rueckwaerts ?? 1, heck: u.heck ?? 1, stabilitaet: u.stabilitaet ?? 1, geradeaus: u.geradeaus ?? 1,
-    rueckwaertsMax: u.rueckwaertsMax ?? 1, belag: boden.art,
+    rueckwaertsMax: u.rueckwaertsMax ?? 1, belag: boden.art, rollenQuadrat: u.rollenQuadrat ?? 0, // (M11b.1: Tiefschnee im Skigebiet)
   }, motor);
 
   // Zu steiler Hang (neben der Strasse): da kommt das Auto nicht hoch

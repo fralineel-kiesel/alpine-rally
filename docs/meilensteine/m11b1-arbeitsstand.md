@@ -10,3 +10,8 @@ Referenz 0.11b = 59a6a32 (`git worktree add <ordner> 59a6a32`), Test: `node tool
 - Offen in A: Kurven-Vergleich erreichte den Tiefschnee nicht (Abkürz-Linien 4–14 m) → Linien um (halb − 2.45) nach innen.
   → erledigt: Kurven-Vergleich jetzt mit Tiefschnee-Linien 6–20 m innen: knappste +11.15 s (Escorta 2803 m), 134/200
   Linien bleiben stecken; Netze werden auf der breiten Piste nicht mehr berührt. Abkürzungen 0. **Teil A fertig (Commit 1).**
+- **Teil B (Grip):** Streckenfeld `untergrund` (überschreibt config.js je Belag, nur Skigebiet). Piste: grip 0.6, traktion 0.8,
+  heck 1.0 (sonst drifteten Escorta/Lanza 073 mit mehr Tempo ab) → Bremsweg 1.20×; 0–60 Allrad 3.6–3.8, Hinterrad 5.9–6.3 s;
+  Hang 0–40 Allrad 3.2–3.4, Hinterrad 7.4–8.4 s. Testfahrer +7.3/+8.9/+7.4 %, sauber. Tiefschnee-Kehre ≥ +5.1 s. **Commit 2.**
+  Tiefschnee: grip 0.65, rollen 0.8, rollenTempo 0.1, neu rollenQuadrat 0.03 (physics.js). Ein harter km/h-Deckel existierte nie
+  (0.11b: rollenTempo 0.7 = Gleichgewicht ca. 20–25 km/h). Herauskommen 2.3–3.5 s (80 Fahrten), Verlust 2 s: −44…−74 %.

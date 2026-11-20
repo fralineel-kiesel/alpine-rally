@@ -878,12 +878,15 @@ export const CONFIG = {
     // Schnee: gut kontrollierbare Drifts (heck, stabilitaet wie Schotter, etwas weniger Halt).
     // Eis: lange Rutscher (wenig Halt, kaum Stabilitätshilfe, schiebt nach dem Loslassen lange seitlich).
     //   traktion (nur Schnee/Eis): Schub beim Anfahren mal diesem Wert (Spikes: auf Eis mehr, als der Grip hergibt)
-    schnee: { grip: 0.42, rollen: 0.45, rollenTempo: 0.012, rueckwaerts: 1.3, heck: 0.82, stabilitaet: 0.5, geradeaus: 0.4, traktion: 1.0 },
+    // M11b.1: eine Strecke kann einzelne Werte überschreiben (Streckenfeld untergrund.schnee / untergrund.tiefschnee, z. B.
+    // das Skigebiet: griffigere Piste, Tiefschnee mit Widerstand, der mit dem Tempo wächst); ohne Feld gilt das hier
+    schnee: { grip: 0.42, rollen: 0.45, rollenTempo: 0.012, rueckwaerts: 1.3, heck: 0.82, stabilitaet: 0.5, geradeaus: 0.4, traktion: 1.0, ...(S.untergrund && S.untergrund.schnee) },
     eis:    { grip: 0.11, rollen: 0.1, rollenTempo: 0.002, rueckwaerts: 1.0, heck: 0.9, stabilitaet: 0.25, geradeaus: 0.15, traktion: 2.0 },
     // M11a.1: Tiefschnee neben der Gletscherstrasse (Streckendatei strassenrand.tiefschnee): bremst sehr stark, je
     // schneller desto mehr (rollenTempo: aus 80 km/h ohne Gas in 2 s über 60 % weg, viel stärker als Gras), keine Wand-
     // Strafe; im Schritttempo bremst er wenig (rollen klein), rückwärts kräftig (rueckwaerts): man kommt immer heraus.
-    tiefschnee: { grip: 0.38, rollen: 1.2, rollenTempo: 0.7, rueckwaerts: 2.6, heck: 0.85, stabilitaet: 0.6, geradeaus: 0.4, traktion: 1.0 },
+    //   rollenQuadrat (M11b.1, freiwillig): Widerstand zusätzlich mal Tempo² (m/s² je (m/s)²): langsam kaum, schnell sehr stark
+    tiefschnee: { grip: 0.38, rollen: 1.2, rollenTempo: 0.7, rueckwaerts: 2.6, heck: 0.85, stabilitaet: 0.6, geradeaus: 0.4, traktion: 1.0, ...(S.untergrund && S.untergrund.tiefschnee) },
   },
 
   // --- Staub auf Schotter (Meilenstein 3a, js/staub.js) -------------------

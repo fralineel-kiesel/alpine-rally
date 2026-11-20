@@ -30,6 +30,13 @@ export default {
   // M11b: Hangabtrieb (Steigung zieht stärker als in Alpen/Finnland, dort 1): die Autos kämpfen im Anstieg; Allrad hat
   // dort mehr Traktion übrig (config.js, getriebe.allrad je Auto) als die Hinterrad-Autos
   hangabtrieb: 1.6,
+  // M11b.1: Untergrund nur für diese Strecke (überschreibt einzelne Werte aus config.js, Block untergrund):
+  // Piste griffiger (Bremsweg ca. 1.2x Schotter statt 1.5x); Tiefschnee: mehr Grip zum Herauskommen, Widerstand wächst mit
+  // dem Tempo im Quadrat (langsam kommt man gut voran, schnell bremst er sehr stark: Abkürzen lohnt nie)
+  untergrund: {
+    schnee: { grip: 0.6, traktion: 0.8, heck: 1.0 }, // (traktion: Schub nur wenig besser als 0.11b, sonst wird der Hang zu leicht; heck: mit mehr Tempo bleibt das Heck ruhiger)
+    tiefschnee: { grip: 0.65, rollen: 0.8, rollenTempo: 0.1, rollenQuadrat: 0.03 },
+  },
   // M11b.1: breite präparierte Piste (Lino: 4.9 m war viel zu schmal). Alpen-Strasse zum Vergleich 7 m.
   // Dorfstrasse 10 m (zwischen Startbereich und Abzweig: Startbogen, Band und Stroh stehen fest für 7 m), Anstieg mit
   // Kehren, Bergstation und Grat 9.5 m, Abfahrt und Funpark 11 m (bis vor die Einmündung in die Zielarena, die wie der
