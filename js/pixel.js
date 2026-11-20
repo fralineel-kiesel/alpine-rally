@@ -504,6 +504,40 @@ export function schneeTextur(farben, seed = 41) {
   t.minFilter = THREE.LinearMipmapLinearFilter;
   return t;
 }
+// M11b.1: präparierte Skipiste (Skigebiet, nur wenn umgebung.farben.pisteWeg gesetzt ist): gleichmässige, helle
+// Schneefläche mit feinen Längsrillen der Pistenraupe (Cord), zwei Raupen-Bahnen mit leicht anderer Helligkeit und
+// einer feinen Naht dazwischen, schwache Querstreifen (Fräse) und nur angedeutete Fahrspuren. Aufbau wie Schotter
+// (48x32, rechts 16 Pixel ohne Rillen für die Ecken an den Einfahrten). Farben: pisteWeg / pisteRille / schneeGlitzer
+export function pisteTextur(farben, seed = 47) {
+  const B = 48, H = 32;
+  const l = leinwand(B, H);
+  const rnd = zufall(seed);
+  const flaeche = hexZuRgb(farben.pisteWeg), rille = hexZuRgb(farben.pisteRille), glitzer = hexZuRgb(farben.schneeGlitzer);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < B; x++) {
+      const weg = x < 32;
+      let c = flaeche;
+      if (weg) {
+        // zwei Raupen-Bahnen (links etwas heller), Naht in der Mitte, Cord-Rillen jeder zweite Pixel
+        c = variiere(flaeche, x < 16 ? 1.02 : 0.99);
+        if (x % 2 === 1) c = variiere(rille, x < 16 ? 1.02 : 0.99);
+        if (x === 15 || x === 16) c = variiere(rille, 0.96);
+        // Querstreifen der Fräse (alle 8 Pixel, ca. 1.5 m), sehr schwach
+        if (y % 8 === 0) c = variiere(c, 0.97);
+        // angedeutete Fahrspuren (breit, kaum dunkler)
+        if (Math.abs(x - 11) <= 1 || Math.abs(x - 21) <= 1) c = variiere(c, 0.96);
+      }
+      const r = rnd();
+      if (r < 0.02) c = glitzer;
+      else c = variiere(c, 0.985 + rnd() * 0.03);
+      setze(l, x, y, c);
+    }
+  }
+  const t = zuTextur(l, { wiederholen: true });
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  return t;
+}
 // M11a: Eisstelle: Eisblau mit hellen, schrägen Glanzstreifen (die Fahrbahn "glänzt", nur Farbe) und feinen Rissen,
 // die Spuren nur angedeutet. Farben: umgebung.farben.eisWeg / eisGlanz / eisRiss
 export function eisTextur(farben, seed = 43) {

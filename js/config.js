@@ -1151,7 +1151,7 @@ export const CONFIG = {
 
   // --- Fangnetze (M11b, js/fangnetz.js): orange Netze und Fangzäune im Skigebiet (Streckendatei fangnetze) ----------
   fangnetz: {
-    abstand: 0.6,              // so weit hinter dem Bankett steht das Netz (Meter)
+    abstand: 2.0,              // so weit hinter dem Bankett steht das Netz (Meter; M11b.1: 2.0 statt 0.6, nicht mehr direkt am Fahrbahnrand)
     hoehe: 1.6,                // Höhe des Netzes (Meter)
     hoeheZaun: 1.1,            // Höhe des Fangzauns (Meter)
     schritt: 2,                // alle so viele Meter ein Punkt der Netzlinie (Pfosten jeden zweiten)

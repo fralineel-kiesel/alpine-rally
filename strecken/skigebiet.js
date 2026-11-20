@@ -8,7 +8,7 @@ export default {
   format: 1,
   id: 'skigebiet',
   etappe: 'skigebiet',        // Kennung für Bestzeiten und letzten Lauf – nie ändern (sonst sind die Bestzeiten weg)
-  revision: 1,                 // Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
+  revision: 2,                 // (M11b.1: 2, breite Piste, Belag und Rand neu) Verlauf-Stand: neuer Verlauf = neue Zahl, alte Bestzeiten zählen dann nicht mehr
   name: { de: 'SKIGEBIET', en: 'SKI RESORT' },
   beschreibung: { de: 'SCHNEE, STEIL, SPRÜNGE', en: 'SNOW, STEEP, JUMPS' },
   untergrundInfo: { de: 'SCHNEE', en: 'SNOW' },
@@ -30,8 +30,15 @@ export default {
   // M11b: Hangabtrieb (Steigung zieht stärker als in Alpen/Finnland, dort 1): die Autos kämpfen im Anstieg; Allrad hat
   // dort mehr Traktion übrig (config.js, getriebe.allrad je Auto) als die Hinterrad-Autos
   hangabtrieb: 1.6,
-  // M11b: schmale Pistenzufahrt und Grat (ca. 70 % der Alpen-Strasse: 4.9 statt 7 m), Abfahrt und Dorf normal breit
-  strassenBreite: [{ von: 300, bis: 2400, breite: 4.9 }],
+  // M11b.1: breite präparierte Piste (Lino: 4.9 m war viel zu schmal). Alpen-Strasse zum Vergleich 7 m.
+  // Dorfstrasse 10 m (zwischen Startbereich und Abzweig: Startbogen, Band und Stroh stehen fest für 7 m), Anstieg mit
+  // Kehren, Bergstation und Grat 9.5 m, Abfahrt und Funpark 11 m (bis vor die Einmündung in die Zielarena, die wie der
+  // Startbereich 7 m bleibt). Zwischen den Abschnitten je 25 m Übergang (CONFIG.strassenBreiteRampe)
+  strassenBreite: [
+    { von: 95, bis: 200, breite: 10 },
+    { von: 290, bis: 2480, breite: 9.5 },
+    { von: 2480, bis: 4115, breite: 11 },
+  ],
 
   // M11b Teil D: Sprünge (Format "Sprünge", js/sprung.js): ein natürlicher Sprung über eine Kuppe am Steilhang der
   // ersten Abfahrt und drei Kicker im Funpark (Schanzen aus Schnee, 110 m Abstand). Landezonen auf Schnee, mindestens
@@ -393,7 +400,7 @@ export default {
       fels: '#8d97a6',           // M11b: steile Schneehänge hellgrau (vorher dunkler Fels: der steile Berg über der Zufahrt wirkte wie ein Gewitterhimmel)
       felsDunkel: '#717c8d',
       erde: '#c3ccd8',           // M11b: abgeblasener Schnee statt grauer Erde
-      bankett: '#aab6c6',        // festgefahrener, grauer Schneerand
+      bankett: '#dbe4f0',        // M11b.1: heller Pistenrand (klare Kante zwischen Piste und Tiefschnee; vorher grau #aab6c6)
       asphalt: '#4a4c50',
       mittellinie: '#d8d4c8',
       schotter: '#9a9184',       // Moränen-Schotter, grau
@@ -408,6 +415,10 @@ export default {
       schneeWeg: '#939eb0',      // (M11b: eine Stufe dunkler als beim Gletscher: auf dem Grat sonst nur 40 Stufen Kontrast)
       schneeSpur: '#646f80',
       schneeGlitzer: '#ffffff',
+      // M11b.1: präparierte Piste (js/pixel.js pisteTextur): gleichmässig, etwas heller als die alte Schneestrasse,
+      // feine Cord-Rillen der Pistenraupe; Rand (bankett) hell wie eine frisch gefräste Kante
+      pisteWeg: '#8f9aac',
+      pisteRille: '#7d889b',
       eisWeg: '#6fa3d2',         // (vorher #8fbde3)
       eisGlanz: '#d8ecff',
       eisRiss: '#5f93c4',

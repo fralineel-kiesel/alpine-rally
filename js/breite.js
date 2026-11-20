@@ -10,13 +10,17 @@ const LISTE = (STRECKE && STRECKE.strassenBreite) || [];
 export const breiteAn = LISTE.length > 0;
 
 // Fahrbahnbreite bei Streckenmeter s; "normal" = Breite des Belags dort. Ohne Eintrag: normal (unverändert).
+// M11b.1: Liegen zwei Abschnitte aneinander (z. B. Anstieg 9.5 m, Abfahrt 11 m), gehen ihre Rampen ineinander über
+// (gewichtetes Mittel), statt dass die Breite an der Grenze kurz auf die Belag-Breite zurückfällt.
 export function breiteBei(s, normal) {
   if (!breiteAn) return normal;
   const R = CONFIG.strassenBreiteRampe;
+  let summeT = 0, summeB = 0;
   for (const e of LISTE) {
     if (s < e.von - R || s > e.bis + R) continue;
     const t = s < e.von ? (s - (e.von - R)) / R : s > e.bis ? ((e.bis + R) - s) / R : 1;
-    return normal + (e.breite - normal) * t;
+    summeT += t; summeB += t * e.breite;
   }
-  return normal;
+  if (summeT <= 0) return normal;
+  return summeT >= 1 ? summeB / summeT : normal + (summeB - summeT * normal); // (ein Abschnitt allein: wie bisher)
 }
